@@ -146,16 +146,16 @@ func (m *Model) applyHistory(msg historyMsg) tea.Cmd {
 	return nil
 }
 
-func (m *Model) panelTitle() string {
+func (m *Model) panelID() string {
 	switch m.panel {
 	case reviewsPanel:
-		return "REVIEWS · 1"
+		return "reviews"
 	case outputPanel:
-		return "WORKER OUTPUT · 2"
+		return "output"
 	case statePanel:
-		return "STATE & TRANSITIONS · 3"
+		return "state"
 	default:
-		return "UNKNOWN VIEW"
+		return "unknown"
 	}
 }
 

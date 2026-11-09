@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/diagram"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -61,15 +62,16 @@ func (m *Model) stateView(width int) string {
 		previous = label
 	}
 
-	if len(path) > 0 && path[len(path)-1] == statusLabel(job.GetStatus()) {
-		path[len(path)-1] = m.theme.Heading().Render("[" + path[len(path)-1] + "]")
-	}
-
-	rows := []string{m.theme.Heading().Render("Observed state path")}
+	rows := []string{m.theme.Heading().Render("Observed state diagram · latest transition highlighted")}
 	if len(path) == 0 {
 		rows = append(rows, "No persisted transitions loaded yet.")
 	} else {
-		rows = append(rows, ansi.Wrap(strings.Join(path, arrow), max(1, width), ""))
+		graph := observedDiagram(path, statusLabel(job.GetStatus()), m.snapshot.GetAllowedTransitions())
+		if rendered, err := graph.View(max(1, width), m.theme); err == nil {
+			rows = append(rows, rendered)
+		} else {
+			rows = append(rows, ansi.Wrap("Diagram unavailable: "+safe(err.Error()), max(1, width), ""), ansi.Wrap(strings.Join(path, arrow), max(1, width), ""))
+		}
 	}
 
 	if record.loading {
@@ -168,4 +170,58 @@ func (m *Model) workerLines() []string {
 	}
 
 	return []string{first, slot}
+}
+
+func observedDiagram(path []string, current string, allowed []*v1.StateTransition) diagram.StateDiagram {
+	graph := diagram.StateDiagram{}
+	states := map[string]bool{}
+	edges := map[[2]string]int{}
+	outgoing := map[string]bool{}
+	known := map[string]bool{}
+
+	for _, edge := range allowed {
+		from, to := statusLabel(edge.GetFrom()), statusLabel(edge.GetTo())
+		outgoing[from] = true
+		known[from] = true
+		known[to] = true
+	}
+
+	previous := ""
+
+	for i, label := range path {
+		if !states[label] {
+			outcome := diagram.OutcomeNone
+			if label == "succeeded" {
+				outcome = diagram.OutcomeSuccess
+			}
+
+			if label == "failed" || label == "interrupted" {
+				outcome = diagram.OutcomeError
+			}
+
+			graph.States = append(graph.States, diagram.State{ID: label, Label: label, Initial: i == 0 && label == "queued", Final: known[label] && !outgoing[label], Outcome: outcome})
+			states[label] = true
+		}
+
+		if previous != "" {
+			edge := [2]string{previous, label}
+
+			index, ok := edges[edge]
+			if !ok {
+				index = len(graph.Transitions)
+				edges[edge] = index
+				graph.Transitions = append(graph.Transitions, diagram.Transition{From: edge[0], To: edge[1]})
+			}
+
+			graph.Trace.Steps = append(graph.Trace.Steps, index)
+		}
+
+		previous = label
+	}
+
+	if previous != "" && previous == current {
+		graph.Active = current
+	}
+
+	return graph
 }

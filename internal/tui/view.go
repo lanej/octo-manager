@@ -12,7 +12,9 @@ import (
 	"charm.land/log/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/collection"
+	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/layout"
+	"github.com/lanej/charmed/navigation"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -41,7 +43,7 @@ func (m *Model) geometry() geometry {
 		activity = min(8, max(5, body/4))
 	}
 
-	result := body
+	result := body - 1
 	if activity > 0 {
 		result -= activity + 1
 	}
@@ -182,6 +184,7 @@ func (m *Model) resizeContent() {
 	}
 
 	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+	inner.Width = max(1, inner.Width-1)
 	content := "Submit a public PR URL from another terminal."
 
 	if job := m.job(); job != nil {
@@ -278,13 +281,10 @@ func counted(count int, noun string) string {
 }
 
 func (m *Model) header() []string {
-	connected := "connected"
+	connection := feedback.Connected
 	if m.snapshot == nil || m.connectionError != "" {
-		connected = "reconnecting"
+		connection = feedback.Disconnected
 	}
-
-	dispatch := strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_"))
-	heading := m.theme.Heading().Render("OCTO MANAGER") + " · " + connected + " · dispatch " + dispatch
 
 	identity := m.currentSubject().url
 	if identity == "" {
@@ -295,8 +295,10 @@ func (m *Model) header() []string {
 		identity = "Select a public PR URL"
 	}
 
-	lines := []string{heading}
-	lines = append(lines, strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")...)
+	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
+	chrome := layout.Header{Title: "OCTO MANAGER", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
+	lines := strings.Split(chrome.View(m.size.Width, m.theme), "\n")
+	lines = append(lines, context[1:]...)
 
 	return append(lines, "")
 }
@@ -314,12 +316,14 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	title := m.panelTitle()
-	if m.result.TotalLineCount() > m.result.Height() {
-		title += fmt.Sprintf(" · %.0f%%", m.result.ScrollPercent()*100)
-	}
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}}, m.theme)
+	tabs.Select(m.panelID())
+	tabs.SetWidth(g.right)
 
-	right := layout.Panel(title, m.result.View(), layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
+	scrollbar := feedback.Scrollbar{Total: m.result.TotalLineCount(), Visible: m.result.Height(), Offset: m.result.YOffset(), Height: m.result.Height()}
+	content := layout.Row(m.result.View(), scrollbar.View(m.theme))
+
+	right := tabs.View() + "\n" + layout.Panel("", content, layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
 	if g.activity > 0 {
 		lines := m.workerLines()
 		logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
@@ -337,9 +341,9 @@ func (m *Model) View() string {
 		body = layout.Row(m.queue(g), strings.Repeat(" ", 2), right)
 	}
 
-	help := "1 reviews · 2 output · 3 state · u refresh · o browser · [/] scroll · tab pane · q quit"
+	help := "u refresh · o browser · [/] scroll · tab pane · q quit"
 	if m.size.Width < 96 {
-		help = "1 reviews · 2 output · 3 state · o browser · [/] scroll · q quit"
+		help = "o browser · [/] scroll · q quit"
 	}
 
 	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
@@ -351,5 +355,8 @@ func (m *Model) View() string {
 		notice = m.commandError
 	}
 
-	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+m.theme.Subtle().Render(help)+"\n"+m.theme.Subtle().Render(notice), m.size)
+	dispatch := strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_"))
+	footer := layout.Footer{Help: help, Status: "dispatch " + dispatch}
+
+	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+footer.View(m.size.Width, m.theme)+"\n"+m.theme.Subtle().Render(notice), m.size)
 }

@@ -42,13 +42,13 @@ If no usable session exists, `bin/octo-manager login` opens Pi with tools and di
 
 ## Dashboard and commands
 
-The dashboard centers on pull requests, with one URL header and a compact PR list. **1 Reviews** shows actual GitHub reviews, inline comments, and discussion, including author, message link, observed PR head, and earlier-commit markers. **2 Output** shows the selected worker’s Markdown response. **3 State** shows its observed state path, timestamped transitions, and the allowed state map from the coordinator. The worker pane stays visible with run status, attempt, process exit observation, and recent tool calls.
+The dashboard centers on pull requests, with one URL header and a compact PR list. **1 Reviews** shows actual GitHub reviews, inline comments, and discussion, including author, message link, observed PR head, and earlier-commit markers. **2 Output** shows the selected worker’s Markdown response. **3 State** shows its observed Charmed state diagram with the latest transition highlighted, timestamped transitions, and the allowed state map from the coordinator. The worker pane stays visible with run status, attempt, process exit observation, and recent tool calls.
 
 Reviews load on first selection; press `u` to refresh. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
 Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
 
-The dashboard uses Charmed themes, panels, focus, viewports, structured logs, and Glamour Markdown. The main view and recent tools scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, `1/2/3` to change view, Tab to change scroll pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
+The dashboard pins Charmed’s merged `4b6d537` revision and uses its native tabs, header/footer, connection indicator, scrollbar, state diagram, themes, panels, focus, viewports, structured logs, and Glamour Markdown. Retry cycles retain chronological transition traces. Diagrams can grow vertically inside the scrollable State view; terminals too narrow for a diagram retain the textual path and full history. The main view and recent tools scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, `1/2/3` to change view, Tab to change scroll pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
 
 ```text
 octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
