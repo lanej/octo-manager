@@ -7,31 +7,35 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { Coordinator } from "./coordinator.js";
 import { request } from "./client.js";
-import { dashboard } from "./dashboard.js";
+import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
 async function main(): Promise<void> {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { state: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
-  const directory = resolve(values.state ?? process.env.PI_GITHUB_STATE ?? join(homedir(), ".local", "state", "pi-github"));
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { state: { type: "string" }, theme: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
+  const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
   if (!command || values.help) {
-    console.log("pi-github dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Only public PR inspection and disposable fixture writes are supported."); return;
+    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Only public PR inspection and disposable fixture writes are supported."); return;
   }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
     const child = spawn(process.execPath, [fileURLToPath(new URL("../node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js", import.meta.url)), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); }); return;
   }
-  if (command === "dashboard" || command === "serve") {
-    if (command === "dashboard" && !process.stdin.isTTY) throw new Error("Dashboard needs a terminal; use serve for foreground headless operation");
+  if (command === "dashboard") {
+    if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
+    const binary = fileURLToPath(new URL("../build/octo-manager-tui", import.meta.url));
+    if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
+    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "dark"], { stdio: "inherit" });
+    process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });
+    return;
+  }
+  if (command === "serve") {
     const coordinator = new Coordinator(directory, { model: values.model });
     await coordinator.start();
-    if (command === "dashboard") await dashboard(coordinator);
-    else {
-      console.log(JSON.stringify({ ready: true, state: directory }));
-      await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
-    }
+    console.log(JSON.stringify({ ready: true, state: directory }));
+    await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
     return;
   }
   const id = argument;

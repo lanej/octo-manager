@@ -1,6 +1,9 @@
 import { EventEmitter } from "node:events";
 import { fork, type ChildProcess } from "node:child_process";
-import { createServer, type Server, type Socket } from "node:net";
+import { createServer, type Server } from "node:http";
+import type { Socket } from "node:net";
+import { connectNodeAdapter } from "@connectrpc/connect-node";
+import { schedulerRoutes } from "./rpc.js";
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,7 +62,11 @@ export class Coordinator extends EventEmitter {
         if (!lstatSync(this.socketPath).isSocket()) throw new Error("Refusing to replace a non-socket control path");
         unlinkSync(this.socketPath);
       }
-      this.server = createServer(socket => this.connection(socket));
+      this.server = createServer(connectNodeAdapter({ routes: router => schedulerRoutes(this, router), readMaxBytes: 16384, writeMaxBytes: 4 * 1024 * 1024, grpc: false, grpcWeb: false }));
+      this.server.headersTimeout = 5000;
+      this.server.on("connection", socket => {
+        this.sockets.add(socket); socket.on("close", () => this.sockets.delete(socket)); socket.on("error", () => {});
+      });
       await new Promise<void>((resolve, reject) => { this.server!.once("error", reject); this.server!.listen(this.socketPath, () => { this.server!.off("error", reject); resolve(); }); });
       chmodSync(this.socketPath, 0o600);
       this.timer = setInterval(() => this.tick(), 100);
@@ -101,18 +108,6 @@ export class Coordinator extends EventEmitter {
     }
     throw new Error("Unsupported command or arguments");
   }
-  private connection(socket: Socket): void {
-    this.sockets.add(socket); socket.on("close", () => this.sockets.delete(socket)); socket.on("error", () => {});
-    socket.setTimeout(5000, () => socket.destroy());
-    let input = "";
-    socket.on("data", chunk => {
-      input += chunk.toString();
-      if (Buffer.byteLength(input) > 16384) { socket.end(JSON.stringify({ ok: false, error: "Request too large" }) + "\n"); return; }
-      if (!input.includes("\n")) return;
-      try { socket.end(JSON.stringify({ ok: true, result: this.command(JSON.parse(input.slice(0, input.indexOf("\n")))) }) + "\n"); }
-      catch (error) { socket.end(JSON.stringify({ ok: false, error: errorText(error) }) + "\n"); }
-    });
-  }
   tick(): void {
     for (const pid of this.recoveryPids) if (!processAlive(pid)) {
       this.recoveryPids.delete(pid);
@@ -132,7 +127,7 @@ export class Coordinator extends EventEmitter {
     const claimed = this.change(job.id, "running", "Worker claimed", { error: undefined, result: undefined, attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] });
     const active: Active = { jobId: job.id, attempt: claimed.attempts.length, abort: new AbortController(), exited: Promise.resolve() };
     this.active = active;
-    active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) this.active = undefined; this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });
+    active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, "worker_idle", "Worker slot released"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });
   }
   private cancel(id: string): Job {
     const job = this.store.get(id);

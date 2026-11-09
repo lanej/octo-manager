@@ -1,23 +1,23 @@
 # Live steel-thread acceptance
 
-On 2026-11-08, the native Pi dashboard ran the two-job `demo` under Bun 1.4.4 from `tools/pi-github`, using the existing file-backed Codex ChatGPT session and existing GitHub CLI authentication. No additional sign-in or credential file was created.
+On 2026-11-08, Octo Manager ran the two-job `demo` under Bun 1.4.4 with the native Go/Charmed dashboard attached through the generated Connect client over a Unix socket. The Pi workers used the existing file-backed Codex ChatGPT session and existing GitHub CLI authentication. No additional sign-in or credential file was created.
 
-![Live dashboard after both jobs succeeded](images/dashboard.png)
+![Charmed dashboard after both jobs succeeded](images/dashboard.png)
 
-The screenshot is the actual dashboard output captured from a 132-column, 40-row PTY showing this run’s persisted results, replayed in xterm.js and photographed by headless Chromium. Its queue, job details, and events come from the live coordinator; no sample snapshot was substituted. The capture process continuously drained the PTY so terminal backpressure could not stall the coordinator.
+The screenshot shows actual persisted results from a 132-column, 40-row PTY. The captured ANSI output was replayed in xterm.js and photographed by headless Chromium; no sample snapshot was substituted. The PTY was continuously drained to avoid terminal backpressure. The final capture enables terminal colors rather than inheriting the automation environment's `NO_COLOR` setting.
 
-The conflict job `d2b3e0aa-8660-4d7a-8d65-40677e7887c3` passed through `queued`, `running`, `conflicted`, `resolving`, and `succeeded`. Its event stream contained actual Git conflict markers, then the live model called `read_conflict`, `write_resolution`, and `validate_resolution`. The coordinator independently checked the required policy, clean worktree, and two-parent merge before reporting success.
+The conflict job `3fda0d35-3196-487c-8b43-34549c18f2ae` passed through `queued`, `running`, `conflicted`, `resolving`, and `succeeded`. Its events contain real Git conflict markers and the live model's `read_conflict`, `write_resolution`, and `validate_resolution` calls. The coordinator independently checked the combined policy, clean worktree, and two-parent merge before reporting success.
 
 ```json
-{"policy":{"maxAttempts":3,"timeoutSeconds":60,"retryDelaySeconds":1},"mergeCommit":"03920e1492c76eb4ca4d5793d4f1189f4ed1191b","clean":true}
+{"policy":{"maxAttempts":3,"timeoutSeconds":60,"retryDelaySeconds":1},"mergeCommit":"244a5420b432593b271bc9d3f4e6ff2155e21dd6","clean":true}
 ```
 
-The conflict worker's exit was observed before job `beb66e93-cf8f-458f-8e0f-b74f788d2470` started. That second job read public [Pi PR 11546](https://github.com/earendil-works/pi/pull/11546) through the coordinator and successfully returned a summary of its output-buffer cap and related changes. Both jobs succeeded on their first attempt, and their worker exits were recorded. Remote GitHub writes were not exercised; this worker supports reads only.
+While that job was resolving, `q` exited the dashboard successfully. The coordinator remained alive, the job remained resolving, and both jobs completed without the dashboard attached. A new dashboard then attached and displayed their persisted results. The `bin/octo-manager dashboard` wrapper also attached and exited successfully. Resizing the native Go PTY to 80 columns and 32 rows produced the stacked layout below.
 
-`bun run check` passed all 27 tests, including synthetic auth-reference tests and scheduler/process regressions. Independent static review found no remaining actionable issues in the renderer, keyboard behavior, or terminal resize handling. The disposable repository and temporary scheduler state were removed after inspection; the recorded merge hash identifies that local acceptance run and is not a published commit.
+![PR summary in the resized Charmed dashboard](images/dashboard-narrow.png)
 
-To repeat, enter `tools/pi-github`, run `bun install --frozen-lockfile --ignore-scripts` and `bun run build`, start `bin/pi-github dashboard`, and run `bin/pi-github demo --request-id YOUR_UNIQUE_ID --json` from another terminal using the same state directory. Inspect both job handles with `get` and `events`. A usable existing session and network access are required; this result establishes the observed run, not future provider availability.
+The conflict worker's exit was observed before job `600ebba4-1d23-47ac-a339-134eafd6263f` started. That second job read public [Pi PR 11546](https://github.com/earendil-works/pi/pull/11546) through the coordinator and returned a formatted summary. Both jobs succeeded on their first attempt, and both worker exits were recorded. Remote GitHub writes were not exercised; the worker supports public reads only.
 
-The formatted [PR summary](images/dashboard-pr.png) was captured after selecting the second job. Resizing the actual PTY to 80 columns and 32 rows produced the stacked layout below. Result and activity scrolling, Markdown formatting, terminal control sanitization, and small-terminal quit help have automated regression coverage.
+`bun run check` builds both applications and passes the Bun scheduler/API tests plus the strict Go profile, race tests, and reachable-vulnerability scan. The generated Go client also runs unary and server-streaming calls against an actual Bun Unix-socket server in controlled tests. Independent review's stream-resynchronization and retry-output findings have regression coverage, including a real rejected Connect stream.
 
-![Formatted PR summary in an 80-column terminal](images/dashboard-narrow.png)
+To repeat, follow the README build instructions, run `bin/octo-manager serve --state DIR`, attach `bin/octo-manager dashboard --state DIR` separately, and submit `bin/octo-manager demo --state DIR --request-id YOUR_UNIQUE_ID --json` from another terminal. Inspect both job handles with `get` and `events`. Existing usable credentials and network access are required; this records an observed run, not future provider availability. The recorded merge hash belongs to the disposable local acceptance repository and is not a published commit.

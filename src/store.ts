@@ -26,6 +26,7 @@ export class Store {
     try {
       this.db = new DatabaseSync(join(directory, "jobs.sqlite"));
       this.db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+      this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.ownership.close(); throw error; }
   }
@@ -65,7 +66,22 @@ export class Store {
       : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
     return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string }));
   }
+  sequence(): number { return Number(this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()!.seq); }
+  instanceId(): string { return this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()!.value as string; }
+  eventsSince(after: number, jobId?: string): JobEvent[] {
+    const rows = jobId === undefined
+      ? this.db.prepare("SELECT * FROM events WHERE seq>? ORDER BY seq LIMIT 200").all(after)
+      : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
+    return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string }));
+  }
   paused(): boolean { return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.value === "true"; }
-  setPaused(value: boolean): void { this.db.prepare("INSERT INTO settings VALUES ('paused',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(value)); }
+  setPaused(value: boolean): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db.prepare("INSERT INTO settings VALUES ('paused',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(value));
+      this.event("", value ? "scheduler_paused" : "scheduler_resumed", "Dispatch setting changed");
+      this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
   close(): void { if (this.closed) return; this.closed = true; this.db.close(); this.ownership.close(); }
 }

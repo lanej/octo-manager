@@ -42,7 +42,7 @@ function tool(name: string, description: string, parameters = Type.Object({}, { 
 function diagnosis(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/needs refreshing/i.test(message)) return "Existing Codex authentication needs refreshing through Codex";
-  if (/auth|credential|api.key|401|403|login/i.test(message)) return "Authentication required: use a signed-in Codex session or run pi-github login";
+  if (/auth|credential|api.key|401|403|login/i.test(message)) return "Authentication required: use a signed-in Codex session or run octo-manager login";
   if (/429|rate.limit/i.test(message)) return "Provider rate limit (429)";
   if (/500|502|503|504|ECONNRESET|ETIMEDOUT|EAI_AGAIN/i.test(message)) return "Provider temporarily unavailable (503)";
   if (/model.*not|unknown.*model/i.test(message)) return "Configured OpenAI Codex model is unavailable; select a supported model with --model";
