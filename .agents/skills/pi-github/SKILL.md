@@ -5,7 +5,7 @@ description: Submit and observe jobs in this project's Pi scheduler, including p
 
 # Pi GitHub scheduler
 
-Use this repository's `bin/pi-github` executable after `npm run build`. A user runs `bin/pi-github dashboard` in a terminal; Codex submits work from another process. All commands must use the same `--state DIR` when a nondefault state directory is selected.
+Use this repository's `bin/pi-github` executable after `bun run build`. A user runs `bin/pi-github dashboard` in a terminal; Codex submits work from another process. All commands must use the same `--state DIR` when a nondefault state directory is selected.
 
 Submit a public PR with `bin/pi-github submit summarize-pr --url URL --request-id ID --json`. Retain the request ID and returned job ID; retry an uncertain submission with the same request ID rather than generating another one. A reused request ID with different task content is rejected.
 

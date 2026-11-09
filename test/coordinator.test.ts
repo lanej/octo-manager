@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -71,6 +71,7 @@ test('transient retry waits for injected clock; auth failure does not auto-retry
   await withCoordinator('auth', async c => {
     const job = submit(c, 'auth'); await waitFor(() => c.store.get(job.id), j => j.status === 'failed');
     assert.equal(c.store.get(job.id).attempts.length, 1);
+    await waitFor(() => c.snapshot().worker, worker => worker === 'idle');
     c.command({ op: 'pause' }); c.command({ op: 'retry', id: job.id }); assert.equal(c.store.get(job.id).status, 'queued');
   });
 });
@@ -123,9 +124,11 @@ test('a killed coordinator releases ownership and its child stops on disconnect'
 test('simultaneous coordinator startup admits exactly one owner', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
   const children = Array.from({ length: 2 }, () => spawn(process.execPath, [fileURLToPath(new URL('./coordinator-process.mjs', import.meta.url)), directory], { stdio: ['ignore', 'pipe', 'pipe'] }));
+  const errors = children.map(() => '');
+  children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));
   try {
     const outcomes = await Promise.all(children.map(child => Promise.race([once(child.stdout!, 'data').then(() => 'ready'), once(child, 'exit').then(() => 'exited')])));
-    assert.deepEqual(outcomes.sort(), ['exited', 'ready']);
+    assert.deepEqual(outcomes.sort(), ['exited', 'ready'], errors.join('\n'));
     const snapshot = await request(directory, { op: 'snapshot' });
     assert.equal(snapshot.scheduler, 'running');
   } finally {
@@ -159,6 +162,6 @@ test('production Pi worker fails cleanly without login and releases its slot', a
     assert.match(c.store.get(job.id).error!, /Authentication required/);
     assert.equal(c.store.get(job.id).attempts.length, 1);
     assert.ok(c.store.get(job.id).attempts[0]!.exitObservedAt);
-    assert.equal(c.snapshot().worker, 'idle');
+    await waitFor(() => c.snapshot().worker, worker => worker === 'idle');
   } finally { await c.close(); await rm(directory, { recursive: true, force: true }); }
 });
