@@ -261,6 +261,11 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.resizeContent()
 
 		return m.loadHistory()
+	case "4":
+		m.panel = allowedPanel
+		m.focus.Set("result")
+		m.result.GotoTop()
+		m.resizeContent()
 	case "u":
 		if m.panel == reviewsPanel {
 			return m.loadReviews(true)

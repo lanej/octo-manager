@@ -195,13 +195,15 @@ func (m *Model) resizeContent() {
 			content = markdown(job, m.events())
 		case statePanel:
 			content = m.stateView(inner.Width)
+		case allowedPanel:
+			content = m.allowedStatesView(inner.Width)
 		default:
 			content = "Unknown view"
 		}
 	}
 
 	rendered := content
-	if m.panel != statePanel {
+	if m.panel != statePanel && m.panel != allowedPanel {
 		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
 			rendered = value
 		} else {
@@ -316,7 +318,7 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}}, m.theme)
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "allowed", Label: "4 Allowed states"}}, m.theme)
 	tabs.Select(m.panelID())
 	tabs.SetWidth(g.right)
 

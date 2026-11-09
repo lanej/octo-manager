@@ -84,7 +84,22 @@ func (m *Model) stateView(width int) string {
 
 	rows = append(rows, "", m.theme.Heading().Render("Transition history · UTC · sequence order"))
 	rows = append(rows, history...)
-	rows = append(rows, "", m.theme.Heading().Render("Allowed state map · coordinator contract"))
+
+	return strings.Join(rows, "\n")
+}
+
+func (m *Model) allowedStatesView(width int) string {
+	job := m.job()
+	if job == nil {
+		return "Select a run to inspect its allowed states."
+	}
+
+	arrow := " ─▶ "
+	if m.theme.ASCII {
+		arrow = " -> "
+	}
+
+	rows := []string{m.theme.Heading().Render("Allowed state map · coordinator contract"), ""}
 
 	edges := map[v1.JobStatus][]v1.JobStatus{}
 	for _, edge := range m.snapshot.GetAllowedTransitions() {

@@ -60,8 +60,8 @@ github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUq
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
-github.com/lanej/charmed v0.0.0-20261109155634-4b6d5370e821 h1:EXWYJq4W0BvuVm/9bLZHu08NCBVLrbt9t9nMq98q3VU=
-github.com/lanej/charmed v0.0.0-20261109155634-4b6d5370e821/go.mod h1:xxI4LTbQdwaz2VMh8E44tPyxlFDySEs4Yw4Z+bL7i40=
+github.com/lanej/charmed v0.0.0-20261109171153-f502811ed4e8 h1:CpSgWmWmebEXl3Psda+qlLC4L/DGd7AAfDvP+DRxuFc=
+github.com/lanej/charmed v0.0.0-20261109171153-f502811ed4e8/go.mod h1:xxI4LTbQdwaz2VMh8E44tPyxlFDySEs4Yw4Z+bL7i40=
 github.com/lucasb-eyer/go-colorful v1.4.1 h1:1EO+WB73+EH8EVbzlrG3KLAfEypQWVHIBqlTf+2hNss=
 github.com/lucasb-eyer/go-colorful v1.4.1/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/mattn/go-runewidth v0.0.31 h1:1oCV4ReTlosDBc6rYRw5cL8S/4y8iv5oRl4SJ5IBgwo=
