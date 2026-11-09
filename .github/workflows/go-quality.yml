@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2
+        with:
+          tool: shellcheck@0.11.0
       - uses: actions/cache@v4
         with:
           path: ~/.cache/go-quality
