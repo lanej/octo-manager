@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/scheduler.proto.
  */
 export const file_octomanager_v1_scheduler: GenFile = /*@__PURE__*/
-  fileDesc("Ch5vY3RvbWFuYWdlci92MS9zY2hlZHVsZXIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxIicKGFN1bW1hcml6ZVB1bGxSZXF1ZXN0VGFzaxILCgN1cmwYASABKAkiFQoTUmVzb2x2ZUNvbmZsaWN0VGFzayKbAQoEVGFzaxJKChZzdW1tYXJpemVfcHVsbF9yZXF1ZXN0GAEgASgLMigub2N0b21hbmFnZXIudjEuU3VtbWFyaXplUHVsbFJlcXVlc3RUYXNrSAASPwoQcmVzb2x2ZV9jb25mbGljdBgCIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLlJlc29sdmVDb25mbGljdFRhc2tIAEIGCgRraW5kItoBCgdBdHRlbXB0Eg4KBm51bWJlchgBIAEoDRIVCg1zdGFydGVkX2F0X21zGAIgASgDEhgKC2VuZGVkX2F0X21zGAMgASgDSACIAQESFwoKd29ya2VyX3BpZBgEIAEoA0gBiAEBEiAKE2V4aXRfb2JzZXJ2ZWRfYXRfbXMYBSABKANIAogBARISCgVlcnJvchgGIAEoCUgDiAEBQg4KDF9lbmRlZF9hdF9tc0INCgtfd29ya2VyX3BpZEIWChRfZXhpdF9vYnNlcnZlZF9hdF9tc0IICgZfZXJyb3IiywIKA0pvYhIKCgJpZBgBIAEoCRISCgpyZXF1ZXN0X2lkGAIgASgJEiIKBHRhc2sYAyABKAsyFC5vY3RvbWFuYWdlci52MS5UYXNrEikKBnN0YXR1cxgEIAEoDjIZLm9jdG9tYW5hZ2VyLnYxLkpvYlN0YXR1cxIVCg1jcmVhdGVkX2F0X21zGAUgASgDEhUKDXVwZGF0ZWRfYXRfbXMYBiABKAMSFwoPYXZhaWxhYmxlX2F0X21zGAcgASgDEikKCGF0dGVtcHRzGAggAygLMhcub2N0b21hbmFnZXIudjEuQXR0ZW1wdBITCgtyZXRyeV9jb3VudBgJIAEoDRIcCg9yZXN1bHRfbWFya2Rvd24YCiABKAlIAIgBARISCgVlcnJvchgLIAEoCUgBiAEBQhIKEF9yZXN1bHRfbWFya2Rvd25CCAoGX2Vycm9yIlkKCEpvYkV2ZW50EhAKCHNlcXVlbmNlGAEgASgEEg4KBmpvYl9pZBgCIAEoCRINCgVhdF9tcxgDIAEoAxIMCgRraW5kGAQgASgJEg4KBmRldGFpbBgFIAEoCSKRAgoIU25hcHNob3QSEwoLaW5zdGFuY2VfaWQYASABKAkSEAoIc2VxdWVuY2UYAiABKAQSMQoJc2NoZWR1bGVyGAMgASgOMh4ub2N0b21hbmFnZXIudjEuU2NoZWR1bGVyU3RhdGUSKwoGd29ya2VyGAQgASgOMhsub2N0b21hbmFnZXIudjEuV29ya2VyU3RhdGUSIQoEam9icxgFIAMoCzITLm9jdG9tYW5hZ2VyLnYxLkpvYhIvCg1yZWNlbnRfZXZlbnRzGAYgAygLMhgub2N0b21hbmFnZXIudjEuSm9iRXZlbnQSGQoMcmVjb3ZlcnlfcGlkGAcgASgDSACIAQFCDwoNX3JlY292ZXJ5X3BpZCJKChBTdWJtaXRKb2JSZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSIgoEdGFzaxgCIAEoCzIULm9jdG9tYW5hZ2VyLnYxLlRhc2siNQoRU3VibWl0Sm9iUmVzcG9uc2USIAoDam9iGAEgASgLMhMub2N0b21hbmFnZXIudjEuSm9iIhsKDUdldEpvYlJlcXVlc3QSCgoCaWQYASABKAkiMgoOR2V0Sm9iUmVzcG9uc2USIAoDam9iGAEgASgLMhMub2N0b21hbmFnZXIudjEuSm9iIhQKEkdldFNuYXBzaG90UmVxdWVzdCJBChNHZXRTbmFwc2hvdFJlc3BvbnNlEioKCHNuYXBzaG90GAEgASgLMhgub2N0b21hbmFnZXIudjEuU25hcHNob3QiWwoMV2F0Y2hSZXF1ZXN0EhMKC2luc3RhbmNlX2lkGAEgASgJEhYKDmFmdGVyX3NlcXVlbmNlGAIgASgEEhMKBmpvYl9pZBgDIAEoCUgAiAEBQgkKB19qb2JfaWQiOAoNV2F0Y2hSZXNwb25zZRInCgVldmVudBgBIAEoCzIYLm9jdG9tYW5hZ2VyLnYxLkpvYkV2ZW50Ih4KEENhbmNlbEpvYlJlcXVlc3QSCgoCaWQYASABKAkiNQoRQ2FuY2VsSm9iUmVzcG9uc2USIAoDam9iGAEgASgLMhMub2N0b21hbmFnZXIudjEuSm9iIh0KD1JldHJ5Sm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI0ChBSZXRyeUpvYlJlc3BvbnNlEiAKA2pvYhgBIAEoCzITLm9jdG9tYW5hZ2VyLnYxLkpvYiIiChBTZXRQYXVzZWRSZXF1ZXN0Eg4KBnBhdXNlZBgBIAEoCCI/ChFTZXRQYXVzZWRSZXNwb25zZRIqCghzbmFwc2hvdBgBIAEoCzIYLm9jdG9tYW5hZ2VyLnYxLlNuYXBzaG90IksKEUxpc3RFdmVudHNSZXF1ZXN0EhYKDmFmdGVyX3NlcXVlbmNlGAEgASgEEhMKBmpvYl9pZBgCIAEoCUgAiAEBQgkKB19qb2JfaWQiPgoSTGlzdEV2ZW50c1Jlc3BvbnNlEigKBmV2ZW50cxgBIAMoCzIYLm9jdG9tYW5hZ2VyLnYxLkpvYkV2ZW50KqgCCglKb2JTdGF0dXMSGgoWSk9CX1NUQVRVU19VTlNQRUNJRklFRBAAEhUKEUpPQl9TVEFUVVNfUVVFVUVEEAESFgoSSk9CX1NUQVRVU19SVU5OSU5HEAISGQoVSk9CX1NUQVRVU19DT05GTElDVEVEEAMSGAoUSk9CX1NUQVRVU19SRVNPTFZJTkcQBBIZChVKT0JfU1RBVFVTX1JFVFJZX1dBSVQQBRIZChVKT0JfU1RBVFVTX0NBTkNFTExJTkcQBhIYChRKT0JfU1RBVFVTX0NBTkNFTExFRBAHEhgKFEpPQl9TVEFUVVNfU1VDQ0VFREVEEAgSFQoRSk9CX1NUQVRVU19GQUlMRUQQCRIaChZKT0JfU1RBVFVTX0lOVEVSUlVQVEVEEAoqpQEKDlNjaGVkdWxlclN0YXRlEh8KG1NDSEVEVUxFUl9TVEFURV9VTlNQRUNJRklFRBAAEhsKF1NDSEVEVUxFUl9TVEFURV9SVU5OSU5HEAESGgoWU0NIRURVTEVSX1NUQVRFX1BBVVNFRBACEhwKGFNDSEVEVUxFUl9TVEFURV9TVE9QUElORxADEhsKF1NDSEVEVUxFUl9TVEFURV9TVE9QUEVEEAQqdgoLV29ya2VyU3RhdGUSHAoYV09SS0VSX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRV09SS0VSX1NUQVRFX0lETEUQARIVChFXT1JLRVJfU1RBVEVfQlVTWRACEhsKF1dPUktFUl9TVEFURV9SRUNPVkVSSU5HEAMylQUKEFNjaGVkdWxlclNlcnZpY2USUAoJU3VibWl0Sm9iEiAub2N0b21hbmFnZXIudjEuU3VibWl0Sm9iUmVxdWVzdBohLm9jdG9tYW5hZ2VyLnYxLlN1Ym1pdEpvYlJlc3BvbnNlEkcKBkdldEpvYhIdLm9jdG9tYW5hZ2VyLnYxLkdldEpvYlJlcXVlc3QaHi5vY3RvbWFuYWdlci52MS5HZXRKb2JSZXNwb25zZRJWCgtHZXRTbmFwc2hvdBIiLm9jdG9tYW5hZ2VyLnYxLkdldFNuYXBzaG90UmVxdWVzdBojLm9jdG9tYW5hZ2VyLnYxLkdldFNuYXBzaG90UmVzcG9uc2USUwoKTGlzdEV2ZW50cxIhLm9jdG9tYW5hZ2VyLnYxLkxpc3RFdmVudHNSZXF1ZXN0GiIub2N0b21hbmFnZXIudjEuTGlzdEV2ZW50c1Jlc3BvbnNlEkYKBVdhdGNoEhwub2N0b21hbmFnZXIudjEuV2F0Y2hSZXF1ZXN0Gh0ub2N0b21hbmFnZXIudjEuV2F0Y2hSZXNwb25zZTABElAKCUNhbmNlbEpvYhIgLm9jdG9tYW5hZ2VyLnYxLkNhbmNlbEpvYlJlcXVlc3QaIS5vY3RvbWFuYWdlci52MS5DYW5jZWxKb2JSZXNwb25zZRJNCghSZXRyeUpvYhIfLm9jdG9tYW5hZ2VyLnYxLlJldHJ5Sm9iUmVxdWVzdBogLm9jdG9tYW5hZ2VyLnYxLlJldHJ5Sm9iUmVzcG9uc2USUAoJU2V0UGF1c2VkEiAub2N0b21hbmFnZXIudjEuU2V0UGF1c2VkUmVxdWVzdBohLm9jdG9tYW5hZ2VyLnYxLlNldFBhdXNlZFJlc3BvbnNlQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MTtvY3RvbWFuYWdlcnYxYgZwcm90bzM");
+  fileDesc("Ch5vY3RvbWFuYWdlci92MS9zY2hlZHVsZXIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxIicKGFN1bW1hcml6ZVB1bGxSZXF1ZXN0VGFzaxILCgN1cmwYASABKAkiFQoTUmVzb2x2ZUNvbmZsaWN0VGFzayKbAQoEVGFzaxJKChZzdW1tYXJpemVfcHVsbF9yZXF1ZXN0GAEgASgLMigub2N0b21hbmFnZXIudjEuU3VtbWFyaXplUHVsbFJlcXVlc3RUYXNrSAASPwoQcmVzb2x2ZV9jb25mbGljdBgCIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLlJlc29sdmVDb25mbGljdFRhc2tIAEIGCgRraW5kItoBCgdBdHRlbXB0Eg4KBm51bWJlchgBIAEoDRIVCg1zdGFydGVkX2F0X21zGAIgASgDEhgKC2VuZGVkX2F0X21zGAMgASgDSACIAQESFwoKd29ya2VyX3BpZBgEIAEoA0gBiAEBEiAKE2V4aXRfb2JzZXJ2ZWRfYXRfbXMYBSABKANIAogBARISCgVlcnJvchgGIAEoCUgDiAEBQg4KDF9lbmRlZF9hdF9tc0INCgtfd29ya2VyX3BpZEIWChRfZXhpdF9vYnNlcnZlZF9hdF9tc0IICgZfZXJyb3IiywIKA0pvYhIKCgJpZBgBIAEoCRISCgpyZXF1ZXN0X2lkGAIgASgJEiIKBHRhc2sYAyABKAsyFC5vY3RvbWFuYWdlci52MS5UYXNrEikKBnN0YXR1cxgEIAEoDjIZLm9jdG9tYW5hZ2VyLnYxLkpvYlN0YXR1cxIVCg1jcmVhdGVkX2F0X21zGAUgASgDEhUKDXVwZGF0ZWRfYXRfbXMYBiABKAMSFwoPYXZhaWxhYmxlX2F0X21zGAcgASgDEikKCGF0dGVtcHRzGAggAygLMhcub2N0b21hbmFnZXIudjEuQXR0ZW1wdBITCgtyZXRyeV9jb3VudBgJIAEoDRIcCg9yZXN1bHRfbWFya2Rvd24YCiABKAlIAIgBARISCgVlcnJvchgLIAEoCUgBiAEBQhIKEF9yZXN1bHRfbWFya2Rvd25CCAoGX2Vycm9yIlkKCEpvYkV2ZW50EhAKCHNlcXVlbmNlGAEgASgEEg4KBmpvYl9pZBgCIAEoCRINCgVhdF9tcxgDIAEoAxIMCgRraW5kGAQgASgJEg4KBmRldGFpbBgFIAEoCSLPAgoIU25hcHNob3QSEwoLaW5zdGFuY2VfaWQYASABKAkSEAoIc2VxdWVuY2UYAiABKAQSMQoJc2NoZWR1bGVyGAMgASgOMh4ub2N0b21hbmFnZXIudjEuU2NoZWR1bGVyU3RhdGUSKwoGd29ya2VyGAQgASgOMhsub2N0b21hbmFnZXIudjEuV29ya2VyU3RhdGUSIQoEam9icxgFIAMoCzITLm9jdG9tYW5hZ2VyLnYxLkpvYhIvCg1yZWNlbnRfZXZlbnRzGAYgAygLMhgub2N0b21hbmFnZXIudjEuSm9iRXZlbnQSGQoMcmVjb3ZlcnlfcGlkGAcgASgDSACIAQESPAoTYWxsb3dlZF90cmFuc2l0aW9ucxgIIAMoCzIfLm9jdG9tYW5hZ2VyLnYxLlN0YXRlVHJhbnNpdGlvbkIPCg1fcmVjb3ZlcnlfcGlkIkoKEFN1Ym1pdEpvYlJlcXVlc3QSEgoKcmVxdWVzdF9pZBgBIAEoCRIiCgR0YXNrGAIgASgLMhQub2N0b21hbmFnZXIudjEuVGFzayI1ChFTdWJtaXRKb2JSZXNwb25zZRIgCgNqb2IYASABKAsyEy5vY3RvbWFuYWdlci52MS5Kb2IiGwoNR2V0Sm9iUmVxdWVzdBIKCgJpZBgBIAEoCSIyCg5HZXRKb2JSZXNwb25zZRIgCgNqb2IYASABKAsyEy5vY3RvbWFuYWdlci52MS5Kb2IiFAoSR2V0U25hcHNob3RSZXF1ZXN0IkEKE0dldFNuYXBzaG90UmVzcG9uc2USKgoIc25hcHNob3QYASABKAsyGC5vY3RvbWFuYWdlci52MS5TbmFwc2hvdCJbCgxXYXRjaFJlcXVlc3QSEwoLaW5zdGFuY2VfaWQYASABKAkSFgoOYWZ0ZXJfc2VxdWVuY2UYAiABKAQSEwoGam9iX2lkGAMgASgJSACIAQFCCQoHX2pvYl9pZCI4Cg1XYXRjaFJlc3BvbnNlEicKBWV2ZW50GAEgASgLMhgub2N0b21hbmFnZXIudjEuSm9iRXZlbnQiHgoQQ2FuY2VsSm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI1ChFDYW5jZWxKb2JSZXNwb25zZRIgCgNqb2IYASABKAsyEy5vY3RvbWFuYWdlci52MS5Kb2IiHQoPUmV0cnlKb2JSZXF1ZXN0EgoKAmlkGAEgASgJIjQKEFJldHJ5Sm9iUmVzcG9uc2USIAoDam9iGAEgASgLMhMub2N0b21hbmFnZXIudjEuSm9iIiIKEFNldFBhdXNlZFJlcXVlc3QSDgoGcGF1c2VkGAEgASgIIj8KEVNldFBhdXNlZFJlc3BvbnNlEioKCHNuYXBzaG90GAEgASgLMhgub2N0b21hbmFnZXIudjEuU25hcHNob3QiSwoRTGlzdEV2ZW50c1JlcXVlc3QSFgoOYWZ0ZXJfc2VxdWVuY2UYASABKAQSEwoGam9iX2lkGAIgASgJSACIAQFCCQoHX2pvYl9pZCI+ChJMaXN0RXZlbnRzUmVzcG9uc2USKAoGZXZlbnRzGAEgAygLMhgub2N0b21hbmFnZXIudjEuSm9iRXZlbnQiYQoPU3RhdGVUcmFuc2l0aW9uEicKBGZyb20YASABKA4yGS5vY3RvbWFuYWdlci52MS5Kb2JTdGF0dXMSJQoCdG8YAiABKA4yGS5vY3RvbWFuYWdlci52MS5Kb2JTdGF0dXMi0QEKDVJldmlld01lc3NhZ2USCgoCaWQYASABKAkSCwoDdXJsGAIgASgJEg4KBmF1dGhvchgDIAEoCRIMCgRraW5kGAQgASgJEg0KBXN0YXRlGAUgASgJEhUKDWJvZHlfbWFya2Rvd24YBiABKAkSDQoFYXRfbXMYByABKAMSDAoEcGF0aBgIIAEoCRIRCgRsaW5lGAkgASgDSACIAQESEgoKY29tbWl0X3NoYRgKIAEoCRIWCg5ib2R5X3RydW5jYXRlZBgLIAEoCEIHCgVfbGluZSK6AQoSUHVsbFJlcXVlc3REZXRhaWxzEgsKA3VybBgBIAEoCRINCgV0aXRsZRgCIAEoCRINCgVzdGF0ZRgDIAEoCRIQCghoZWFkX3NoYRgEIAEoCRIWCg5vYnNlcnZlZF9hdF9tcxgFIAEoAxIvCghtZXNzYWdlcxgGIAMoCzIdLm9jdG9tYW5hZ2VyLnYxLlJldmlld01lc3NhZ2USHgoWbWF5X2hhdmVfbW9yZV9tZXNzYWdlcxgHIAEoCCIkChVHZXRQdWxsUmVxdWVzdFJlcXVlc3QSCwoDdXJsGAEgASgJIlIKFkdldFB1bGxSZXF1ZXN0UmVzcG9uc2USOAoMcHVsbF9yZXF1ZXN0GAEgASgLMiIub2N0b21hbmFnZXIudjEuUHVsbFJlcXVlc3REZXRhaWxzKqgCCglKb2JTdGF0dXMSGgoWSk9CX1NUQVRVU19VTlNQRUNJRklFRBAAEhUKEUpPQl9TVEFUVVNfUVVFVUVEEAESFgoSSk9CX1NUQVRVU19SVU5OSU5HEAISGQoVSk9CX1NUQVRVU19DT05GTElDVEVEEAMSGAoUSk9CX1NUQVRVU19SRVNPTFZJTkcQBBIZChVKT0JfU1RBVFVTX1JFVFJZX1dBSVQQBRIZChVKT0JfU1RBVFVTX0NBTkNFTExJTkcQBhIYChRKT0JfU1RBVFVTX0NBTkNFTExFRBAHEhgKFEpPQl9TVEFUVVNfU1VDQ0VFREVEEAgSFQoRSk9CX1NUQVRVU19GQUlMRUQQCRIaChZKT0JfU1RBVFVTX0lOVEVSUlVQVEVEEAoqpQEKDlNjaGVkdWxlclN0YXRlEh8KG1NDSEVEVUxFUl9TVEFURV9VTlNQRUNJRklFRBAAEhsKF1NDSEVEVUxFUl9TVEFURV9SVU5OSU5HEAESGgoWU0NIRURVTEVSX1NUQVRFX1BBVVNFRBACEhwKGFNDSEVEVUxFUl9TVEFURV9TVE9QUElORxADEhsKF1NDSEVEVUxFUl9TVEFURV9TVE9QUEVEEAQqdgoLV29ya2VyU3RhdGUSHAoYV09SS0VSX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRV09SS0VSX1NUQVRFX0lETEUQARIVChFXT1JLRVJfU1RBVEVfQlVTWRACEhsKF1dPUktFUl9TVEFURV9SRUNPVkVSSU5HEAMy9gUKEFNjaGVkdWxlclNlcnZpY2USUAoJU3VibWl0Sm9iEiAub2N0b21hbmFnZXIudjEuU3VibWl0Sm9iUmVxdWVzdBohLm9jdG9tYW5hZ2VyLnYxLlN1Ym1pdEpvYlJlc3BvbnNlEkcKBkdldEpvYhIdLm9jdG9tYW5hZ2VyLnYxLkdldEpvYlJlcXVlc3QaHi5vY3RvbWFuYWdlci52MS5HZXRKb2JSZXNwb25zZRJfCg5HZXRQdWxsUmVxdWVzdBIlLm9jdG9tYW5hZ2VyLnYxLkdldFB1bGxSZXF1ZXN0UmVxdWVzdBomLm9jdG9tYW5hZ2VyLnYxLkdldFB1bGxSZXF1ZXN0UmVzcG9uc2USVgoLR2V0U25hcHNob3QSIi5vY3RvbWFuYWdlci52MS5HZXRTbmFwc2hvdFJlcXVlc3QaIy5vY3RvbWFuYWdlci52MS5HZXRTbmFwc2hvdFJlc3BvbnNlElMKCkxpc3RFdmVudHMSIS5vY3RvbWFuYWdlci52MS5MaXN0RXZlbnRzUmVxdWVzdBoiLm9jdG9tYW5hZ2VyLnYxLkxpc3RFdmVudHNSZXNwb25zZRJGCgVXYXRjaBIcLm9jdG9tYW5hZ2VyLnYxLldhdGNoUmVxdWVzdBodLm9jdG9tYW5hZ2VyLnYxLldhdGNoUmVzcG9uc2UwARJQCglDYW5jZWxKb2ISIC5vY3RvbWFuYWdlci52MS5DYW5jZWxKb2JSZXF1ZXN0GiEub2N0b21hbmFnZXIudjEuQ2FuY2VsSm9iUmVzcG9uc2USTQoIUmV0cnlKb2ISHy5vY3RvbWFuYWdlci52MS5SZXRyeUpvYlJlcXVlc3QaIC5vY3RvbWFuYWdlci52MS5SZXRyeUpvYlJlc3BvbnNlElAKCVNldFBhdXNlZBIgLm9jdG9tYW5hZ2VyLnYxLlNldFBhdXNlZFJlcXVlc3QaIS5vY3RvbWFuYWdlci52MS5TZXRQYXVzZWRSZXNwb25zZUJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
 
 /**
  * @generated from message octomanager.v1.SummarizePullRequestTask
@@ -255,6 +255,11 @@ export type Snapshot = Message<"octomanager.v1.Snapshot"> & {
    * @generated from field: optional int64 recovery_pid = 7;
    */
   recoveryPid?: bigint | undefined;
+
+  /**
+   * @generated from field: repeated octomanager.v1.StateTransition allowed_transitions = 8;
+   */
+  allowedTransitions: StateTransition[];
 };
 
 /**
@@ -553,6 +558,176 @@ export const ListEventsResponseSchema: GenMessage<ListEventsResponse> = /*@__PUR
   messageDesc(file_octomanager_v1_scheduler, 22);
 
 /**
+ * @generated from message octomanager.v1.StateTransition
+ */
+export type StateTransition = Message<"octomanager.v1.StateTransition"> & {
+  /**
+   * @generated from field: octomanager.v1.JobStatus from = 1;
+   */
+  from: JobStatus;
+
+  /**
+   * @generated from field: octomanager.v1.JobStatus to = 2;
+   */
+  to: JobStatus;
+};
+
+/**
+ * Describes the message octomanager.v1.StateTransition.
+ * Use `create(StateTransitionSchema)` to create a new message.
+ */
+export const StateTransitionSchema: GenMessage<StateTransition> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_scheduler, 23);
+
+/**
+ * @generated from message octomanager.v1.ReviewMessage
+ */
+export type ReviewMessage = Message<"octomanager.v1.ReviewMessage"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string url = 2;
+   */
+  url: string;
+
+  /**
+   * @generated from field: string author = 3;
+   */
+  author: string;
+
+  /**
+   * @generated from field: string kind = 4;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: string state = 5;
+   */
+  state: string;
+
+  /**
+   * @generated from field: string body_markdown = 6;
+   */
+  bodyMarkdown: string;
+
+  /**
+   * @generated from field: int64 at_ms = 7;
+   */
+  atMs: bigint;
+
+  /**
+   * @generated from field: string path = 8;
+   */
+  path: string;
+
+  /**
+   * @generated from field: optional int64 line = 9;
+   */
+  line?: bigint | undefined;
+
+  /**
+   * @generated from field: string commit_sha = 10;
+   */
+  commitSha: string;
+
+  /**
+   * @generated from field: bool body_truncated = 11;
+   */
+  bodyTruncated: boolean;
+};
+
+/**
+ * Describes the message octomanager.v1.ReviewMessage.
+ * Use `create(ReviewMessageSchema)` to create a new message.
+ */
+export const ReviewMessageSchema: GenMessage<ReviewMessage> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_scheduler, 24);
+
+/**
+ * @generated from message octomanager.v1.PullRequestDetails
+ */
+export type PullRequestDetails = Message<"octomanager.v1.PullRequestDetails"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string state = 3;
+   */
+  state: string;
+
+  /**
+   * @generated from field: string head_sha = 4;
+   */
+  headSha: string;
+
+  /**
+   * @generated from field: int64 observed_at_ms = 5;
+   */
+  observedAtMs: bigint;
+
+  /**
+   * @generated from field: repeated octomanager.v1.ReviewMessage messages = 6;
+   */
+  messages: ReviewMessage[];
+
+  /**
+   * @generated from field: bool may_have_more_messages = 7;
+   */
+  mayHaveMoreMessages: boolean;
+};
+
+/**
+ * Describes the message octomanager.v1.PullRequestDetails.
+ * Use `create(PullRequestDetailsSchema)` to create a new message.
+ */
+export const PullRequestDetailsSchema: GenMessage<PullRequestDetails> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_scheduler, 25);
+
+/**
+ * @generated from message octomanager.v1.GetPullRequestRequest
+ */
+export type GetPullRequestRequest = Message<"octomanager.v1.GetPullRequestRequest"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+};
+
+/**
+ * Describes the message octomanager.v1.GetPullRequestRequest.
+ * Use `create(GetPullRequestRequestSchema)` to create a new message.
+ */
+export const GetPullRequestRequestSchema: GenMessage<GetPullRequestRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_scheduler, 26);
+
+/**
+ * @generated from message octomanager.v1.GetPullRequestResponse
+ */
+export type GetPullRequestResponse = Message<"octomanager.v1.GetPullRequestResponse"> & {
+  /**
+   * @generated from field: octomanager.v1.PullRequestDetails pull_request = 1;
+   */
+  pullRequest?: PullRequestDetails | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.GetPullRequestResponse.
+ * Use `create(GetPullRequestResponseSchema)` to create a new message.
+ */
+export const GetPullRequestResponseSchema: GenMessage<GetPullRequestResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_scheduler, 27);
+
+/**
  * @generated from enum octomanager.v1.JobStatus
  */
 export enum JobStatus {
@@ -704,6 +879,14 @@ export const SchedulerService: GenService<{
     methodKind: "unary";
     input: typeof GetJobRequestSchema;
     output: typeof GetJobResponseSchema;
+  },
+  /**
+   * @generated from rpc octomanager.v1.SchedulerService.GetPullRequest
+   */
+  getPullRequest: {
+    methodKind: "unary";
+    input: typeof GetPullRequestRequestSchema;
+    output: typeof GetPullRequestResponseSchema;
   },
   /**
    * @generated from rpc octomanager.v1.SchedulerService.GetSnapshot

@@ -114,7 +114,18 @@ func (m *Model) moveRun(delta int) {
 }
 
 func (m *Model) selectJob(job *v1.Job) {
+	old := m.currentSubject().key
+
 	m.selected = job.GetId()
+
+	m.history = historyState{version: m.history.version + 1}
+	if old != m.currentSubject().key {
+		m.panel = reviewsPanel
+		if m.currentSubject().url == "" {
+			m.panel = statePanel
+		}
+	}
+
 	m.result.GotoTop()
 	m.activity.GotoBottom()
 	m.resizeContent()

@@ -58,11 +58,16 @@ type Model struct {
 	connectionError string
 	commandError    string
 	commandPending  bool
+	panel           panelView
+	reviews         map[string]*v1.PullRequestDetails
+	reviewErrors    map[string]string
+	reviewLoading   map[string]bool
+	history         historyState
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme) *Model {
 	session, cancel := context.WithCancel(ctx)
-	return &Model{ctx: session, cancel: cancel, api: api, theme: t, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+	return &Model{ctx: session, cancel: cancel, api: api, theme: t, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd { return tea.Batch(m.refresh(), tick()) }
@@ -123,6 +128,10 @@ func (m *Model) watchFailed(err error) {
 
 func (m *Model) Update(message tea.Msg) tea.Cmd {
 	switch msg := message.(type) {
+	case reviewMsg:
+		return m.applyReview(msg)
+	case historyMsg:
+		return m.applyHistory(msg)
 	case snapshotMsg:
 		m.refreshing = false
 		if msg.err != nil {
@@ -152,10 +161,10 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		m.resizeContent()
 
 		if !m.watching {
-			return tea.Batch(closing, m.watch())
+			return tea.Batch(closing, m.watch(), m.loadHistory(), m.loadReviews(false))
 		}
 
-		return closing
+		return tea.Batch(closing, m.loadHistory(), m.loadReviews(false))
 	case watchMsg:
 		if msg.instance != m.instance {
 			if msg.stream != nil {
@@ -236,6 +245,30 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.moveRun(1)
 	case "o":
 		return m.openPullRequest()
+	case "1":
+		m.panel = reviewsPanel
+		m.result.GotoTop()
+		m.resizeContent()
+
+		return m.loadReviews(false)
+	case "2":
+		m.panel = outputPanel
+		m.result.GotoTop()
+		m.resizeContent()
+	case "3":
+		m.panel = statePanel
+		m.result.GotoTop()
+		m.resizeContent()
+
+		return m.loadHistory()
+	case "u":
+		if m.panel == reviewsPanel {
+			return m.loadReviews(true)
+		}
+
+		m.history.seenThrough = 0
+
+		return m.loadHistory()
 	case "enter":
 		m.expanded = !m.expanded
 		m.resizeContent()
@@ -259,7 +292,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		return m.control(key.String())
 	}
 
-	return nil
+	return tea.Batch(m.loadHistory(), m.loadReviews(false))
 }
 
 func (m *Model) control(key string) tea.Cmd {
@@ -300,7 +333,13 @@ func (m *Model) ensureSelection() {
 		items := m.subjects()
 		if len(items) > 0 {
 			jobs := items[0].jobs
+
 			m.selected = jobs[len(jobs)-1].GetId()
+
+			m.panel = reviewsPanel
+			if items[0].url == "" {
+				m.panel = statePanel
+			}
 		}
 	}
 }

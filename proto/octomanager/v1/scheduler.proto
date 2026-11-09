@@ -5,6 +5,7 @@ option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanage
 service SchedulerService {
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
   rpc GetJob(GetJobRequest) returns (GetJobResponse);
+  rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
   rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
   rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);
@@ -82,6 +83,7 @@ message Snapshot {
   repeated Job jobs = 5;
   repeated JobEvent recent_events = 6;
   optional int64 recovery_pid = 7;
+  repeated StateTransition allowed_transitions = 8;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
@@ -104,3 +106,29 @@ message SetPausedResponse { Snapshot snapshot = 1; }
 
 message ListEventsRequest { uint64 after_sequence = 1; optional string job_id = 2; }
 message ListEventsResponse { repeated JobEvent events = 1; }
+
+message StateTransition { JobStatus from = 1; JobStatus to = 2; }
+message ReviewMessage {
+  string id = 1;
+  string url = 2;
+  string author = 3;
+  string kind = 4;
+  string state = 5;
+  string body_markdown = 6;
+  int64 at_ms = 7;
+  string path = 8;
+  optional int64 line = 9;
+  string commit_sha = 10;
+  bool body_truncated = 11;
+}
+message PullRequestDetails {
+  string url = 1;
+  string title = 2;
+  string state = 3;
+  string head_sha = 4;
+  int64 observed_at_ms = 5;
+  repeated ReviewMessage messages = 6;
+  bool may_have_more_messages = 7;
+}
+message GetPullRequestRequest { string url = 1; }
+message GetPullRequestResponse { PullRequestDetails pull_request = 1; }

@@ -77,6 +77,15 @@ func TestGeneratedGoClientTalksToBunOverUnixSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	reviews, err := api.RPC.GetPullRequest(ctx, connect.NewRequest(&v1.GetPullRequestRequest{Url: "https://github.com/owner/repo/pull/12"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reviews.Msg.GetPullRequest().GetHeadSha() != "controlled" || len(reviews.Msg.GetPullRequest().GetMessages()) != 1 || reviews.Msg.GetPullRequest().GetMessages()[0].GetBodyMarkdown() != "Looks good" {
+		t.Fatal("generated review contract lost fields")
+	}
+
 	request := &v1.SubmitJobRequest{RequestId: "go-contract", Task: &v1.Task{Kind: &v1.Task_ResolveConflict{ResolveConflict: &v1.ResolveConflictTask{}}}}
 
 	accepted, err := api.RPC.SubmitJob(ctx, connect.NewRequest(request))

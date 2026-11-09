@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { setTimeout as delay } from "node:timers/promises";
 import { SchedulerService, JobSchema, AttemptSchema, JobEventSchema, SnapshotSchema, JobStatus, SchedulerState, WorkerState, type Task as WireTask } from "./gen/octomanager/v1/scheduler_pb.js";
-import { parseTask, type Job, type JobEvent, type Status } from "./domain.js";
+import { jobTransitions, parseTask, type Job, type JobEvent, type Status } from "./domain.js";
 import type { Coordinator } from "./coordinator.js";
 
 const statuses: Record<Status, JobStatus> = {
@@ -28,6 +28,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
+    allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
   });
 }
 function task(value?: WireTask) {
@@ -56,6 +57,18 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       return { job: wireJob(command(coordinator, { op: "submit", requestId: request.requestId, task: parsed }) as Job) };
     },
     getJob(request) { return { job: wireJob(command(coordinator, { op: "get", id: request.id }) as Job) }; },
+    async getPullRequest(request, context) {
+      try { parseTask({ kind: "summarize_pr", url: request.url }); }
+      catch { throw new ConnectError("A valid GitHub PR URL is required", Code.InvalidArgument); }
+      try {
+        const value = await coordinator.pullRequestDetails(request.url, context.signal);
+        return { pullRequest: { ...value, observedAtMs: BigInt(value.observedAtMs), messages: value.messages.map(message => ({ ...message, atMs: BigInt(message.atMs), line: message.line === undefined ? undefined : BigInt(message.line) })) } };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "GitHub read failed";
+        if (message.includes("Only confirmed public")) throw new ConnectError("Only confirmed public repository PRs are supported", Code.PermissionDenied);
+        throw new ConnectError("GitHub reviews unavailable; check gh authentication, access, and connectivity", Code.Unavailable);
+      }
+    },
     getSnapshot() { return { snapshot: wireSnapshot(coordinator) }; },
     cancelJob(request) { return { job: wireJob(command(coordinator, { op: "cancel", id: request.id }) as Job) }; },
     retryJob(request) { return { job: wireJob(command(coordinator, { op: "retry", id: request.id }) as Job) }; },

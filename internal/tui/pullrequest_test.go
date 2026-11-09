@@ -37,7 +37,7 @@ func TestPRNavigationGroupsRunsAndKeepsDemoDistinct(t *testing.T) {
 	}
 
 	view := m.View()
-	if !strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "run 2/2") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
+	if !strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "Run 2/2") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
 		t.Fatal("PR identity and run history not visible")
 	}
 

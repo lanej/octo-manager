@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -17,12 +18,12 @@ import (
 )
 
 type geometry struct {
-	body, left, right, result, activity, compact int
-	split                                        bool
+	body, left, right, result, activity int
+	split                               bool
 }
 
 func (m *Model) geometry() geometry {
-	body := max(1, m.size.Height-5)
+	body := max(1, m.size.Height-len(m.header())-2)
 	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded
 
 	left := 0
@@ -35,22 +36,17 @@ func (m *Model) geometry() geometry {
 		right = max(1, right-2)
 	}
 
-	compact := 0
-	if !split && !m.expanded {
-		compact = 2
-	}
-
 	activity := 0
 	if m.size.Height >= 18 && m.size.Width >= 32 {
 		activity = min(8, max(5, body/4))
 	}
 
-	result := body - compact
+	result := body
 	if activity > 0 {
 		result -= activity + 1
 	}
 
-	return geometry{body: body, left: left, right: right, result: max(1, result), activity: activity, compact: compact, split: split}
+	return geometry{body: body, left: left, right: right, result: max(1, result), activity: activity, split: split}
 }
 
 func safe(value string) string {
@@ -93,45 +89,6 @@ func jobTone(status v1.JobStatus) text.Tone {
 	default:
 		return text.Neutral
 	}
-}
-
-func (m *Model) metadata(job *v1.Job, height, width int) []string {
-	status := text.Pill(statusLabel(job.GetStatus()), jobTone(job.GetStatus()), m.theme)
-	if height < 10 {
-		return []string{status}
-	}
-
-	duration := ""
-
-	attempts := job.GetAttempts()
-	if len(attempts) > 0 && attempts[len(attempts)-1].EndedAtMs != nil {
-		a := attempts[len(attempts)-1]
-		duration = fmt.Sprintf(" · %.1fs", float64(a.GetEndedAtMs()-a.GetStartedAtMs())/1000)
-	}
-
-	item := m.currentSubject()
-
-	heading := item.label
-	if heading == "" {
-		heading = jobTitle(job)
-	}
-
-	rows := []string{m.theme.Heading().Render(heading)}
-	if item.url != "" {
-		rows = append(rows, strings.Split(ansi.Hardwrap(item.url, max(1, width), false), "\n")...)
-	}
-
-	run := 1
-
-	for i, candidate := range item.jobs {
-		if candidate.GetId() == job.GetId() {
-			run = i + 1
-		}
-	}
-
-	rows = append(rows, jobTitle(job)+fmt.Sprintf(" · run %d/%d", run, max(1, len(item.jobs))), status+fmt.Sprintf("  Attempt %d%s", len(attempts), duration), "")
-
-	return rows
 }
 
 func markdown(job *v1.Job, events []*v1.JobEvent) string {
@@ -194,13 +151,26 @@ func markdown(job *v1.Job, events []*v1.JobEvent) string {
 }
 
 func (m *Model) events() []*v1.JobEvent {
-	var events []*v1.JobEvent
+	bySequence := map[uint64]*v1.JobEvent{}
+
+	if m.history.job == m.selected && m.history.instance == m.instance {
+		for _, event := range m.history.events {
+			bySequence[event.GetSequence()] = event
+		}
+	}
 
 	for _, event := range m.snapshot.GetRecentEvents() {
 		if event.GetJobId() == m.selected || event.GetJobId() == "" {
-			events = append(events, event)
+			bySequence[event.GetSequence()] = event
 		}
 	}
+
+	events := make([]*v1.JobEvent, 0, len(bySequence))
+	for _, event := range bySequence {
+		events = append(events, event)
+	}
+
+	sort.Slice(events, func(i, j int) bool { return events[i].GetSequence() < events[j].GetSequence() })
 
 	return events
 }
@@ -212,47 +182,43 @@ func (m *Model) resizeContent() {
 	}
 
 	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
-	content := "Submit a job from another terminal with `bin/octo-manager demo`."
-	metadata := 0
+	content := "Submit a public PR URL from another terminal."
 
 	if job := m.job(); job != nil {
-		content = markdown(job, m.events())
-		metadata = len(m.metadata(job, g.result, inner.Width))
+		switch m.panel {
+		case reviewsPanel:
+			content = m.reviewsMarkdown()
+		case outputPanel:
+			content = markdown(job, m.events())
+		case statePanel:
+			content = m.stateView(inner.Width)
+		default:
+			content = "Unknown view"
+		}
 	}
 
-	rendered, err := text.Markdown(content, max(1, inner.Width), m.theme)
-	if err != nil {
-		rendered = safe(content)
+	rendered := content
+	if m.panel != statePanel {
+		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
+			rendered = value
+		} else {
+			rendered = safe(content)
+		}
 	}
 
 	m.result.SetWidth(max(1, inner.Width))
-	m.result.SetHeight(max(1, inner.Height-metadata))
+	m.result.SetHeight(max(1, inner.Height))
 	m.result.SetContent(rendered)
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
-	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height), m.theme)
+	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
 	for _, event := range m.events() {
-		if event.GetKind() == "worker_started" || (event.GetKind() == "progress" && !strings.HasPrefix(event.GetDetail(), "Using existing ")) {
+		if event.GetKind() != "tool" {
 			continue
 		}
 
-		message := strings.ReplaceAll(event.GetKind(), "_", " ")
-		if event.GetKind() == "tool" || event.GetKind() == "progress" {
-			message = strings.ReplaceAll(safe(event.GetDetail()), "_", " ")
-		}
-
-		level := log.InfoLevel
-		if event.GetKind() == "failed" {
-			level = log.ErrorLevel
-		}
-
-		if event.GetKind() == "conflicted" {
-			level = log.WarnLevel
-			message = "Merge conflict detected"
-		}
-
-		m.activity.Append(collection.LogEntry{Time: time.UnixMilli(event.GetAtMs()).UTC(), Level: level, Message: message})
+		m.activity.Append(collection.LogEntry{Time: time.UnixMilli(event.GetAtMs()).UTC(), Level: log.InfoLevel, Message: strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
 	}
 
 	if follow {
@@ -263,7 +229,7 @@ func (m *Model) resizeContent() {
 }
 
 func (m *Model) queue(g geometry) string {
-	capacity := max(1, (g.body-2)/4)
+	capacity := max(1, (g.body-2)/3)
 	items := m.subjects()
 	current := m.currentSubject().key
 	index := 0
@@ -282,14 +248,18 @@ func (m *Model) queue(g geometry) string {
 		prefix := "  "
 		heading := item.label
 
-		job := item.jobs[len(item.jobs)-1]
+		available := max(1, layout.PanelContentSize(layout.Size{Width: g.left, Height: g.body}).Width-2)
+		if marker := strings.LastIndex(heading, "#"); marker >= 0 && ansi.StringWidth(heading) > available {
+			suffix := heading[marker:]
+			heading = ansi.Truncate(heading[:marker], max(0, available-ansi.StringWidth(suffix)), "…") + suffix
+		}
+
 		if item.key == current {
 			prefix = "› "
 			heading = m.theme.Heading().Render(heading)
-			job = m.job()
 		}
 
-		rows = append(rows, prefix+heading, "  "+jobTitle(job)+" · "+counted(len(item.jobs), "run"), "  "+text.Pill(statusLabel(job.GetStatus()), jobTone(job.GetStatus()), m.theme), "")
+		rows = append(rows, prefix+heading, "  "+counted(len(item.jobs), "run"), "")
 	}
 
 	if len(items) == 0 {
@@ -306,42 +276,34 @@ func counted(count int, noun string) string {
 
 	return fmt.Sprintf("%d %s", count, noun)
 }
-func shortID(value string) string { return string([]rune(value)[:min(8, len([]rune(value)))]) }
-func (m *Model) View() string {
+
+func (m *Model) header() []string {
 	connected := "connected"
 	if m.snapshot == nil || m.connectionError != "" {
 		connected = "reconnecting"
 	}
 
-	heading := m.theme.Heading().Render("OCTO MANAGER") + "  " + m.theme.Subtle().Render(connected)
+	dispatch := strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_"))
+	heading := m.theme.Heading().Render("OCTO MANAGER") + " · " + connected + " · dispatch " + dispatch
 
-	prCount := 0
-
-	for _, item := range m.subjects() {
-		if item.url != "" {
-			prCount++
-		}
+	identity := m.currentSubject().url
+	if identity == "" {
+		identity = m.currentSubject().label
 	}
 
-	detail := fmt.Sprintf("%s · %s · %s · worker %s", counted(prCount, "PR"), counted(len(m.snapshot.GetJobs()), "run"), strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")), strings.ToLower(strings.TrimPrefix(m.snapshot.GetWorker().String(), "WORKER_STATE_")))
-	if m.snapshot.GetRecoveryPid() != 0 {
-		detail = fmt.Sprintf("Waiting for previous worker PID %d", m.snapshot.GetRecoveryPid())
+	if identity == "" {
+		identity = "Select a public PR URL"
 	}
 
-	if m.connectionError != "" {
-		detail = m.connectionError
-	}
+	lines := []string{heading}
+	lines = append(lines, strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")...)
 
-	if m.commandError != "" {
-		detail = m.commandError
-	}
+	return append(lines, "")
+}
 
-	header := []string{heading, m.theme.Subtle().Render(detail), ""}
+func (m *Model) View() string {
+	header := m.header()
 	if m.size.Width < 32 || m.size.Height < 12 {
-		if job := m.job(); job != nil {
-			header = append(header, jobTitle(job), statusLabel(job.GetStatus()))
-		}
-
 		header = header[:min(len(header), max(0, m.size.Height-1))]
 		for len(header) < m.size.Height-1 {
 			header = append(header, "")
@@ -352,28 +314,22 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	content := m.result.View()
-	if job := m.job(); job != nil {
-		content = strings.Join(m.metadata(job, g.result, layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result}).Width), "\n") + "\n" + content
-	}
-
-	resultTitle := "RESULT"
+	title := m.panelTitle()
 	if m.result.TotalLineCount() > m.result.Height() {
-		resultTitle = fmt.Sprintf("RESULT · %.0f%%", m.result.ScrollPercent()*100)
+		title += fmt.Sprintf(" · %.0f%%", m.result.ScrollPercent()*100)
 	}
 
-	right := layout.Panel(resultTitle, content, layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
+	right := layout.Panel(title, m.result.View(), layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
 	if g.activity > 0 {
-		right += "\n\n" + layout.Panel("ACTIVITY · UTC", m.activity.View(), layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
-	}
+		lines := m.workerLines()
+		logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
-	if g.compact > 0 {
-		label := "No jobs yet"
-		if job := m.job(); job != nil {
-			label = m.currentSubject().label + " · " + statusLabel(job.GetStatus())
+		worker := strings.Join(lines, "\n")
+		if logSize.Height > len(lines) {
+			worker += "\n" + m.activity.View()
 		}
 
-		right = m.theme.Subtle().Render("PR · "+label) + "\n\n" + right
+		right += "\n\n" + layout.Panel("WORKER · recent tools UTC", worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
 	}
 
 	body := right
@@ -381,20 +337,19 @@ func (m *Model) View() string {
 		body = layout.Row(m.queue(g), strings.Repeat(" ", 2), right)
 	}
 
-	help := "j/k PRs · h/l runs · o open · tab pane · [/] scroll · p pause · c cancel · r retry · q quit"
+	help := "1 reviews · 2 output · 3 state · u refresh · o browser · [/] scroll · tab pane · q quit"
 	if m.size.Width < 96 {
-		help = "q quit · j/k PRs · h/l runs · o open · [/] scroll · enter expand"
+		help = "1 reviews · 2 output · 3 state · o browser · [/] scroll · q quit"
 	}
 
-	footer := []string{m.theme.Subtle().Render(help), ""}
-	if job := m.job(); job != nil {
-		identity := m.currentSubject().url
-		if identity == "" {
-			identity = "Local demo · " + shortID(job.GetId())
-		}
-
-		footer[1] = m.theme.Subtle().Render(identity)
+	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
+	if m.connectionError != "" {
+		notice = m.connectionError
 	}
 
-	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+strings.Join(footer, "\n"), m.size)
+	if m.commandError != "" {
+		notice = m.commandError
+	}
+
+	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+m.theme.Subtle().Render(help)+"\n"+m.theme.Subtle().Render(notice), m.size)
 }

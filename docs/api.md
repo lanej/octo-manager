@@ -14,7 +14,8 @@ The state directory is owner-only (0700), and the socket is owner-only (0600). T
 | --- | --- |
 | `SubmitJob` | Returns the durable job handle; acceptance is not completion. |
 | `GetJob` | Returns the current confirmed job state and optional result/error. |
-| `GetSnapshot` | Returns scheduler/worker state, jobs, the latest 100 events, an instance ID, and a sequence cursor. |
+| `GetSnapshot` | Returns scheduler/worker state, jobs, the latest 100 events, the canonical allowed transition graph, an instance ID, and a sequence cursor. |
+| `GetPullRequest` | Reads a validated public PR URL and returns observed PR details plus review, inline, and discussion messages. |
 | `ListEvents` | Returns up to 200 events strictly after a sequence, optionally filtered by job. |
 | `Watch` | Streams persisted events strictly after the requested sequence, optionally filtered by job. |
 | `CancelJob` | May return `cancelling`; inspect subsequent state until `cancelled`. |
@@ -36,9 +37,17 @@ The instance ID is persisted in that database and survives coordinator restart. 
 
 The Charmed frontend groups jobs by their canonical PR task URL; jobs and attempts remain execution handles below that identity. Case differences and a trailing slash do not create separate PR entries. Browser opening is local to the frontend and does not mutate scheduler state or GitHub.
 
-The Charmed frontend uses watch events to request fresh snapshots and also refreshes once per second for reconnection and liveness. It serializes snapshot requests, keeps results visible during connection loss, and displays unconfirmed command failures. Its activity pane shows recent transitions and tool calls; `ListEvents` exposes the complete paginated record, including streamed text fragments.
+The Charmed frontend uses watch events to request fresh snapshots and also refreshes once per second for reconnection and liveness. It serializes snapshot requests, keeps results visible during connection loss, and displays unconfirmed command failures. Its worker pane shows confirmed run/slot state, attempt PID and exit observation, and recent tool calls. The State tab paginates `ListEvents` from sequence zero for the selected run, independent of the latest 100 snapshot events. Selection and instance/version fences reject late history responses, including after reselecting the same run. The observed path includes only persisted transitions; a separate allowed-state map comes from `Snapshot.allowed_transitions`, generated from the same domain graph that validates transitions.
 
 Closing a watch or quitting the TUI cancels client I/O only. It does not cancel a job, stop the coordinator, or refresh provider credentials. Stop `serve` explicitly to shut down the coordinator; its existing interruption and worker-exit rules apply.
+
+## GitHub review observations
+
+`GetPullRequest` confirms `base.repo.private === false` before reading message endpoints. It uses the existing `gh` login and only GET requests. Reviews are separate from model output and are not sent to Pi by this operation. No review, reply, resolution, or comment is published.
+
+The response includes title, PR state, head SHA, and the timestamp at which those PR facts were read. Reviews, inline comments, and issue discussion are subsequent independent reads, not one atomic GitHub snapshot. The UI loads once per PR and refreshes on `u`, keeps prior observations visible if refresh fails, and displays their original timestamp. It does not imply real-time review state or resolved-thread tracking. Commit IDs on review/inline messages identify observations on earlier heads; the interface does not infer which findings remain unresolved.
+
+The implementation reads the first 100 records from each of GitHub’s [review](https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request), [inline comment](https://docs.github.com/en/rest/pulls/comments#list-review-comments-on-a-pull-request), and [issue discussion](https://docs.github.com/en/rest/issues/comments#list-issue-comments) endpoints. A full source page sets `may_have_more_messages`; exactly 100 items can also set this conservative flag. Message bodies are capped at 4,000 characters with a per-message truncation flag. Original message URLs let users inspect the full content on GitHub. Upstream responses are size/time bounded; read failures remain visible instead of appearing as an empty review feed.
 
 ## Idempotency and errors
 
@@ -51,10 +60,11 @@ Repeating a `SubmitJob` request ID with the same task returns the existing job. 
 | `AlreadyExists` | Request ID reused for a different task. |
 | `FailedPrecondition` | Retry fence/state violation or replaced state instance. |
 | `OutOfRange` | Cursor outside available history. |
-| `Unavailable` | Coordinator is shutting down or cannot be reached. |
+| `Unavailable` | Coordinator/GitHub cannot be reached or review reads fail. |
+| `PermissionDenied` | PR visibility is private or cannot be confirmed public. |
 | `Internal` | Unexpected coordinator failure; internal details are withheld. |
 
-The server limits decoded requests to 16 KiB and responses to 4 MiB. Unary application calls use ten-second deadlines; watch is a long-lived cancellable stream. The TypeScript client's default deadline can be overridden through Connect call options for a long-lived watch. Streaming framing, flow control, cancellation, and status encoding belong to the official Connect implementations.
+The server limits decoded requests to 16 KiB and responses to 4 MiB. Scheduler unary calls use ten-second deadlines; review reads use a thirty-second client deadline with twenty-second bounds on each `gh` invocation. Watch is a long-lived cancellable stream. The TypeScript client's default deadline can be overridden through Connect call options for a long-lived watch. Streaming framing, flow control, cancellation, and status encoding belong to the official Connect implementations.
 
 ## Verification
 

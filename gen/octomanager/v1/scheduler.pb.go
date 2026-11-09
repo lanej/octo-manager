@@ -648,16 +648,17 @@ func (x *JobEvent) GetDetail() string {
 }
 
 type Snapshot struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	Sequence      uint64                 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	Scheduler     SchedulerState         `protobuf:"varint,3,opt,name=scheduler,proto3,enum=octomanager.v1.SchedulerState" json:"scheduler,omitempty"`
-	Worker        WorkerState            `protobuf:"varint,4,opt,name=worker,proto3,enum=octomanager.v1.WorkerState" json:"worker,omitempty"`
-	Jobs          []*Job                 `protobuf:"bytes,5,rep,name=jobs,proto3" json:"jobs,omitempty"`
-	RecentEvents  []*JobEvent            `protobuf:"bytes,6,rep,name=recent_events,json=recentEvents,proto3" json:"recent_events,omitempty"`
-	RecoveryPid   *int64                 `protobuf:"varint,7,opt,name=recovery_pid,json=recoveryPid,proto3,oneof" json:"recovery_pid,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId         string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	Sequence           uint64                 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Scheduler          SchedulerState         `protobuf:"varint,3,opt,name=scheduler,proto3,enum=octomanager.v1.SchedulerState" json:"scheduler,omitempty"`
+	Worker             WorkerState            `protobuf:"varint,4,opt,name=worker,proto3,enum=octomanager.v1.WorkerState" json:"worker,omitempty"`
+	Jobs               []*Job                 `protobuf:"bytes,5,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	RecentEvents       []*JobEvent            `protobuf:"bytes,6,rep,name=recent_events,json=recentEvents,proto3" json:"recent_events,omitempty"`
+	RecoveryPid        *int64                 `protobuf:"varint,7,opt,name=recovery_pid,json=recoveryPid,proto3,oneof" json:"recovery_pid,omitempty"`
+	AllowedTransitions []*StateTransition     `protobuf:"bytes,8,rep,name=allowed_transitions,json=allowedTransitions,proto3" json:"allowed_transitions,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Snapshot) Reset() {
@@ -737,6 +738,13 @@ func (x *Snapshot) GetRecoveryPid() int64 {
 		return *x.RecoveryPid
 	}
 	return 0
+}
+
+func (x *Snapshot) GetAllowedTransitions() []*StateTransition {
+	if x != nil {
+		return x.AllowedTransitions
+	}
+	return nil
 }
 
 type SubmitJobRequest struct {
@@ -1467,6 +1475,362 @@ func (x *ListEventsResponse) GetEvents() []*JobEvent {
 	return nil
 }
 
+type StateTransition struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	From          JobStatus              `protobuf:"varint,1,opt,name=from,proto3,enum=octomanager.v1.JobStatus" json:"from,omitempty"`
+	To            JobStatus              `protobuf:"varint,2,opt,name=to,proto3,enum=octomanager.v1.JobStatus" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StateTransition) Reset() {
+	*x = StateTransition{}
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StateTransition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateTransition) ProtoMessage() {}
+
+func (x *StateTransition) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StateTransition.ProtoReflect.Descriptor instead.
+func (*StateTransition) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_scheduler_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *StateTransition) GetFrom() JobStatus {
+	if x != nil {
+		return x.From
+	}
+	return JobStatus_JOB_STATUS_UNSPECIFIED
+}
+
+func (x *StateTransition) GetTo() JobStatus {
+	if x != nil {
+		return x.To
+	}
+	return JobStatus_JOB_STATUS_UNSPECIFIED
+}
+
+type ReviewMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	Author        string                 `protobuf:"bytes,3,opt,name=author,proto3" json:"author,omitempty"`
+	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
+	State         string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	BodyMarkdown  string                 `protobuf:"bytes,6,opt,name=body_markdown,json=bodyMarkdown,proto3" json:"body_markdown,omitempty"`
+	AtMs          int64                  `protobuf:"varint,7,opt,name=at_ms,json=atMs,proto3" json:"at_ms,omitempty"`
+	Path          string                 `protobuf:"bytes,8,opt,name=path,proto3" json:"path,omitempty"`
+	Line          *int64                 `protobuf:"varint,9,opt,name=line,proto3,oneof" json:"line,omitempty"`
+	CommitSha     string                 `protobuf:"bytes,10,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
+	BodyTruncated bool                   `protobuf:"varint,11,opt,name=body_truncated,json=bodyTruncated,proto3" json:"body_truncated,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReviewMessage) Reset() {
+	*x = ReviewMessage{}
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReviewMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviewMessage) ProtoMessage() {}
+
+func (x *ReviewMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviewMessage.ProtoReflect.Descriptor instead.
+func (*ReviewMessage) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_scheduler_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ReviewMessage) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetBodyMarkdown() string {
+	if x != nil {
+		return x.BodyMarkdown
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetAtMs() int64 {
+	if x != nil {
+		return x.AtMs
+	}
+	return 0
+}
+
+func (x *ReviewMessage) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetLine() int64 {
+	if x != nil && x.Line != nil {
+		return *x.Line
+	}
+	return 0
+}
+
+func (x *ReviewMessage) GetCommitSha() string {
+	if x != nil {
+		return x.CommitSha
+	}
+	return ""
+}
+
+func (x *ReviewMessage) GetBodyTruncated() bool {
+	if x != nil {
+		return x.BodyTruncated
+	}
+	return false
+}
+
+type PullRequestDetails struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Url                 string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Title               string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	State               string                 `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	HeadSha             string                 `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
+	ObservedAtMs        int64                  `protobuf:"varint,5,opt,name=observed_at_ms,json=observedAtMs,proto3" json:"observed_at_ms,omitempty"`
+	Messages            []*ReviewMessage       `protobuf:"bytes,6,rep,name=messages,proto3" json:"messages,omitempty"`
+	MayHaveMoreMessages bool                   `protobuf:"varint,7,opt,name=may_have_more_messages,json=mayHaveMoreMessages,proto3" json:"may_have_more_messages,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PullRequestDetails) Reset() {
+	*x = PullRequestDetails{}
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PullRequestDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PullRequestDetails) ProtoMessage() {}
+
+func (x *PullRequestDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PullRequestDetails.ProtoReflect.Descriptor instead.
+func (*PullRequestDetails) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_scheduler_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *PullRequestDetails) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *PullRequestDetails) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *PullRequestDetails) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *PullRequestDetails) GetHeadSha() string {
+	if x != nil {
+		return x.HeadSha
+	}
+	return ""
+}
+
+func (x *PullRequestDetails) GetObservedAtMs() int64 {
+	if x != nil {
+		return x.ObservedAtMs
+	}
+	return 0
+}
+
+func (x *PullRequestDetails) GetMessages() []*ReviewMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+func (x *PullRequestDetails) GetMayHaveMoreMessages() bool {
+	if x != nil {
+		return x.MayHaveMoreMessages
+	}
+	return false
+}
+
+type GetPullRequestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPullRequestRequest) Reset() {
+	*x = GetPullRequestRequest{}
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPullRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPullRequestRequest) ProtoMessage() {}
+
+func (x *GetPullRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPullRequestRequest.ProtoReflect.Descriptor instead.
+func (*GetPullRequestRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_scheduler_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetPullRequestRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type GetPullRequestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PullRequest   *PullRequestDetails    `protobuf:"bytes,1,opt,name=pull_request,json=pullRequest,proto3" json:"pull_request,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPullRequestResponse) Reset() {
+	*x = GetPullRequestResponse{}
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPullRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPullRequestResponse) ProtoMessage() {}
+
+func (x *GetPullRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_scheduler_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPullRequestResponse.ProtoReflect.Descriptor instead.
+func (*GetPullRequestResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_scheduler_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetPullRequestResponse) GetPullRequest() *PullRequestDetails {
+	if x != nil {
+		return x.PullRequest
+	}
+	return nil
+}
+
 var File_octomanager_v1_scheduler_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_scheduler_proto_rawDesc = "" +
@@ -1513,7 +1877,7 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12\x13\n" +
 	"\x05at_ms\x18\x03 \x01(\x03R\x04atMs\x12\x12\n" +
 	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x16\n" +
-	"\x06detail\x18\x05 \x01(\tR\x06detail\"\xdb\x02\n" +
+	"\x06detail\x18\x05 \x01(\tR\x06detail\"\xad\x03\n" +
 	"\bSnapshot\x12\x1f\n" +
 	"\vinstance_id\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x1a\n" +
@@ -1522,7 +1886,8 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"\x06worker\x18\x04 \x01(\x0e2\x1b.octomanager.v1.WorkerStateR\x06worker\x12'\n" +
 	"\x04jobs\x18\x05 \x03(\v2\x13.octomanager.v1.JobR\x04jobs\x12=\n" +
 	"\rrecent_events\x18\x06 \x03(\v2\x18.octomanager.v1.JobEventR\frecentEvents\x12&\n" +
-	"\frecovery_pid\x18\a \x01(\x03H\x00R\vrecoveryPid\x88\x01\x01B\x0f\n" +
+	"\frecovery_pid\x18\a \x01(\x03H\x00R\vrecoveryPid\x88\x01\x01\x12P\n" +
+	"\x13allowed_transitions\x18\b \x03(\v2\x1f.octomanager.v1.StateTransitionR\x12allowedTransitionsB\x0f\n" +
 	"\r_recovery_pid\"[\n" +
 	"\x10SubmitJobRequest\x12\x1d\n" +
 	"\n" +
@@ -1562,7 +1927,37 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"\x06job_id\x18\x02 \x01(\tH\x00R\x05jobId\x88\x01\x01B\t\n" +
 	"\a_job_id\"F\n" +
 	"\x12ListEventsResponse\x120\n" +
-	"\x06events\x18\x01 \x03(\v2\x18.octomanager.v1.JobEventR\x06events*\xa8\x02\n" +
+	"\x06events\x18\x01 \x03(\v2\x18.octomanager.v1.JobEventR\x06events\"k\n" +
+	"\x0fStateTransition\x12-\n" +
+	"\x04from\x18\x01 \x01(\x0e2\x19.octomanager.v1.JobStatusR\x04from\x12)\n" +
+	"\x02to\x18\x02 \x01(\x0e2\x19.octomanager.v1.JobStatusR\x02to\"\xa9\x02\n" +
+	"\rReviewMessage\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x16\n" +
+	"\x06author\x18\x03 \x01(\tR\x06author\x12\x12\n" +
+	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\x12#\n" +
+	"\rbody_markdown\x18\x06 \x01(\tR\fbodyMarkdown\x12\x13\n" +
+	"\x05at_ms\x18\a \x01(\x03R\x04atMs\x12\x12\n" +
+	"\x04path\x18\b \x01(\tR\x04path\x12\x17\n" +
+	"\x04line\x18\t \x01(\x03H\x00R\x04line\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"commit_sha\x18\n" +
+	" \x01(\tR\tcommitSha\x12%\n" +
+	"\x0ebody_truncated\x18\v \x01(\bR\rbodyTruncatedB\a\n" +
+	"\x05_line\"\x83\x02\n" +
+	"\x12PullRequestDetails\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\x12\x19\n" +
+	"\bhead_sha\x18\x04 \x01(\tR\aheadSha\x12$\n" +
+	"\x0eobserved_at_ms\x18\x05 \x01(\x03R\fobservedAtMs\x129\n" +
+	"\bmessages\x18\x06 \x03(\v2\x1d.octomanager.v1.ReviewMessageR\bmessages\x123\n" +
+	"\x16may_have_more_messages\x18\a \x01(\bR\x13mayHaveMoreMessages\")\n" +
+	"\x15GetPullRequestRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\"_\n" +
+	"\x16GetPullRequestResponse\x12E\n" +
+	"\fpull_request\x18\x01 \x01(\v2\".octomanager.v1.PullRequestDetailsR\vpullRequest*\xa8\x02\n" +
 	"\tJobStatus\x12\x1a\n" +
 	"\x16JOB_STATUS_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11JOB_STATUS_QUEUED\x10\x01\x12\x16\n" +
@@ -1586,10 +1981,11 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"\x18WORKER_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKER_STATE_IDLE\x10\x01\x12\x15\n" +
 	"\x11WORKER_STATE_BUSY\x10\x02\x12\x1b\n" +
-	"\x17WORKER_STATE_RECOVERING\x10\x032\x95\x05\n" +
+	"\x17WORKER_STATE_RECOVERING\x10\x032\xf6\x05\n" +
 	"\x10SchedulerService\x12P\n" +
 	"\tSubmitJob\x12 .octomanager.v1.SubmitJobRequest\x1a!.octomanager.v1.SubmitJobResponse\x12G\n" +
-	"\x06GetJob\x12\x1d.octomanager.v1.GetJobRequest\x1a\x1e.octomanager.v1.GetJobResponse\x12V\n" +
+	"\x06GetJob\x12\x1d.octomanager.v1.GetJobRequest\x1a\x1e.octomanager.v1.GetJobResponse\x12_\n" +
+	"\x0eGetPullRequest\x12%.octomanager.v1.GetPullRequestRequest\x1a&.octomanager.v1.GetPullRequestResponse\x12V\n" +
 	"\vGetSnapshot\x12\".octomanager.v1.GetSnapshotRequest\x1a#.octomanager.v1.GetSnapshotResponse\x12S\n" +
 	"\n" +
 	"ListEvents\x12!.octomanager.v1.ListEventsRequest\x1a\".octomanager.v1.ListEventsResponse\x12F\n" +
@@ -1611,7 +2007,7 @@ func file_octomanager_v1_scheduler_proto_rawDescGZIP() []byte {
 }
 
 var file_octomanager_v1_scheduler_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_octomanager_v1_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_octomanager_v1_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_octomanager_v1_scheduler_proto_goTypes = []any{
 	(JobStatus)(0),                   // 0: octomanager.v1.JobStatus
 	(SchedulerState)(0),              // 1: octomanager.v1.SchedulerState
@@ -1639,6 +2035,11 @@ var file_octomanager_v1_scheduler_proto_goTypes = []any{
 	(*SetPausedResponse)(nil),        // 23: octomanager.v1.SetPausedResponse
 	(*ListEventsRequest)(nil),        // 24: octomanager.v1.ListEventsRequest
 	(*ListEventsResponse)(nil),       // 25: octomanager.v1.ListEventsResponse
+	(*StateTransition)(nil),          // 26: octomanager.v1.StateTransition
+	(*ReviewMessage)(nil),            // 27: octomanager.v1.ReviewMessage
+	(*PullRequestDetails)(nil),       // 28: octomanager.v1.PullRequestDetails
+	(*GetPullRequestRequest)(nil),    // 29: octomanager.v1.GetPullRequestRequest
+	(*GetPullRequestResponse)(nil),   // 30: octomanager.v1.GetPullRequestResponse
 }
 var file_octomanager_v1_scheduler_proto_depIdxs = []int32{
 	3,  // 0: octomanager.v1.Task.summarize_pull_request:type_name -> octomanager.v1.SummarizePullRequestTask
@@ -1650,36 +2051,43 @@ var file_octomanager_v1_scheduler_proto_depIdxs = []int32{
 	2,  // 6: octomanager.v1.Snapshot.worker:type_name -> octomanager.v1.WorkerState
 	7,  // 7: octomanager.v1.Snapshot.jobs:type_name -> octomanager.v1.Job
 	8,  // 8: octomanager.v1.Snapshot.recent_events:type_name -> octomanager.v1.JobEvent
-	5,  // 9: octomanager.v1.SubmitJobRequest.task:type_name -> octomanager.v1.Task
-	7,  // 10: octomanager.v1.SubmitJobResponse.job:type_name -> octomanager.v1.Job
-	7,  // 11: octomanager.v1.GetJobResponse.job:type_name -> octomanager.v1.Job
-	9,  // 12: octomanager.v1.GetSnapshotResponse.snapshot:type_name -> octomanager.v1.Snapshot
-	8,  // 13: octomanager.v1.WatchResponse.event:type_name -> octomanager.v1.JobEvent
-	7,  // 14: octomanager.v1.CancelJobResponse.job:type_name -> octomanager.v1.Job
-	7,  // 15: octomanager.v1.RetryJobResponse.job:type_name -> octomanager.v1.Job
-	9,  // 16: octomanager.v1.SetPausedResponse.snapshot:type_name -> octomanager.v1.Snapshot
-	8,  // 17: octomanager.v1.ListEventsResponse.events:type_name -> octomanager.v1.JobEvent
-	10, // 18: octomanager.v1.SchedulerService.SubmitJob:input_type -> octomanager.v1.SubmitJobRequest
-	12, // 19: octomanager.v1.SchedulerService.GetJob:input_type -> octomanager.v1.GetJobRequest
-	14, // 20: octomanager.v1.SchedulerService.GetSnapshot:input_type -> octomanager.v1.GetSnapshotRequest
-	24, // 21: octomanager.v1.SchedulerService.ListEvents:input_type -> octomanager.v1.ListEventsRequest
-	16, // 22: octomanager.v1.SchedulerService.Watch:input_type -> octomanager.v1.WatchRequest
-	18, // 23: octomanager.v1.SchedulerService.CancelJob:input_type -> octomanager.v1.CancelJobRequest
-	20, // 24: octomanager.v1.SchedulerService.RetryJob:input_type -> octomanager.v1.RetryJobRequest
-	22, // 25: octomanager.v1.SchedulerService.SetPaused:input_type -> octomanager.v1.SetPausedRequest
-	11, // 26: octomanager.v1.SchedulerService.SubmitJob:output_type -> octomanager.v1.SubmitJobResponse
-	13, // 27: octomanager.v1.SchedulerService.GetJob:output_type -> octomanager.v1.GetJobResponse
-	15, // 28: octomanager.v1.SchedulerService.GetSnapshot:output_type -> octomanager.v1.GetSnapshotResponse
-	25, // 29: octomanager.v1.SchedulerService.ListEvents:output_type -> octomanager.v1.ListEventsResponse
-	17, // 30: octomanager.v1.SchedulerService.Watch:output_type -> octomanager.v1.WatchResponse
-	19, // 31: octomanager.v1.SchedulerService.CancelJob:output_type -> octomanager.v1.CancelJobResponse
-	21, // 32: octomanager.v1.SchedulerService.RetryJob:output_type -> octomanager.v1.RetryJobResponse
-	23, // 33: octomanager.v1.SchedulerService.SetPaused:output_type -> octomanager.v1.SetPausedResponse
-	26, // [26:34] is the sub-list for method output_type
-	18, // [18:26] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	26, // 9: octomanager.v1.Snapshot.allowed_transitions:type_name -> octomanager.v1.StateTransition
+	5,  // 10: octomanager.v1.SubmitJobRequest.task:type_name -> octomanager.v1.Task
+	7,  // 11: octomanager.v1.SubmitJobResponse.job:type_name -> octomanager.v1.Job
+	7,  // 12: octomanager.v1.GetJobResponse.job:type_name -> octomanager.v1.Job
+	9,  // 13: octomanager.v1.GetSnapshotResponse.snapshot:type_name -> octomanager.v1.Snapshot
+	8,  // 14: octomanager.v1.WatchResponse.event:type_name -> octomanager.v1.JobEvent
+	7,  // 15: octomanager.v1.CancelJobResponse.job:type_name -> octomanager.v1.Job
+	7,  // 16: octomanager.v1.RetryJobResponse.job:type_name -> octomanager.v1.Job
+	9,  // 17: octomanager.v1.SetPausedResponse.snapshot:type_name -> octomanager.v1.Snapshot
+	8,  // 18: octomanager.v1.ListEventsResponse.events:type_name -> octomanager.v1.JobEvent
+	0,  // 19: octomanager.v1.StateTransition.from:type_name -> octomanager.v1.JobStatus
+	0,  // 20: octomanager.v1.StateTransition.to:type_name -> octomanager.v1.JobStatus
+	27, // 21: octomanager.v1.PullRequestDetails.messages:type_name -> octomanager.v1.ReviewMessage
+	28, // 22: octomanager.v1.GetPullRequestResponse.pull_request:type_name -> octomanager.v1.PullRequestDetails
+	10, // 23: octomanager.v1.SchedulerService.SubmitJob:input_type -> octomanager.v1.SubmitJobRequest
+	12, // 24: octomanager.v1.SchedulerService.GetJob:input_type -> octomanager.v1.GetJobRequest
+	29, // 25: octomanager.v1.SchedulerService.GetPullRequest:input_type -> octomanager.v1.GetPullRequestRequest
+	14, // 26: octomanager.v1.SchedulerService.GetSnapshot:input_type -> octomanager.v1.GetSnapshotRequest
+	24, // 27: octomanager.v1.SchedulerService.ListEvents:input_type -> octomanager.v1.ListEventsRequest
+	16, // 28: octomanager.v1.SchedulerService.Watch:input_type -> octomanager.v1.WatchRequest
+	18, // 29: octomanager.v1.SchedulerService.CancelJob:input_type -> octomanager.v1.CancelJobRequest
+	20, // 30: octomanager.v1.SchedulerService.RetryJob:input_type -> octomanager.v1.RetryJobRequest
+	22, // 31: octomanager.v1.SchedulerService.SetPaused:input_type -> octomanager.v1.SetPausedRequest
+	11, // 32: octomanager.v1.SchedulerService.SubmitJob:output_type -> octomanager.v1.SubmitJobResponse
+	13, // 33: octomanager.v1.SchedulerService.GetJob:output_type -> octomanager.v1.GetJobResponse
+	30, // 34: octomanager.v1.SchedulerService.GetPullRequest:output_type -> octomanager.v1.GetPullRequestResponse
+	15, // 35: octomanager.v1.SchedulerService.GetSnapshot:output_type -> octomanager.v1.GetSnapshotResponse
+	25, // 36: octomanager.v1.SchedulerService.ListEvents:output_type -> octomanager.v1.ListEventsResponse
+	17, // 37: octomanager.v1.SchedulerService.Watch:output_type -> octomanager.v1.WatchResponse
+	19, // 38: octomanager.v1.SchedulerService.CancelJob:output_type -> octomanager.v1.CancelJobResponse
+	21, // 39: octomanager.v1.SchedulerService.RetryJob:output_type -> octomanager.v1.RetryJobResponse
+	23, // 40: octomanager.v1.SchedulerService.SetPaused:output_type -> octomanager.v1.SetPausedResponse
+	32, // [32:41] is the sub-list for method output_type
+	23, // [23:32] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_scheduler_proto_init() }
@@ -1696,13 +2104,14 @@ func file_octomanager_v1_scheduler_proto_init() {
 	file_octomanager_v1_scheduler_proto_msgTypes[6].OneofWrappers = []any{}
 	file_octomanager_v1_scheduler_proto_msgTypes[13].OneofWrappers = []any{}
 	file_octomanager_v1_scheduler_proto_msgTypes[21].OneofWrappers = []any{}
+	file_octomanager_v1_scheduler_proto_msgTypes[24].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_scheduler_proto_rawDesc), len(file_octomanager_v1_scheduler_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   23,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

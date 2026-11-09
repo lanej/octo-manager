@@ -10,10 +10,10 @@ import { fileURLToPath } from "node:url";
 import { Store } from "./store.js";
 import { activeStates, cleanText, nextReady, parseTask, retryDelay, transition, type Job, type Snapshot, type Status } from "./domain.js";
 import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./fixture.js";
-import { readPullRequest } from "./github.js";
+import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv }
+export interface CoordinatorOptions { now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -72,6 +72,10 @@ export class Coordinator extends EventEmitter {
       this.timer = setInterval(() => this.tick(), 100);
       this.tick();
     } catch (error) { this.store.close(); throw error; }
+  }
+  async pullRequestDetails(url: string, signal?: AbortSignal) {
+    if (this.stopping) throw new Error("Coordinator is stopping");
+    return (this.options.reviewReader ?? readPullRequestDetails)(url, signal);
   }
   snapshot(): Snapshot {
     if (this.finalSnapshot) return this.finalSnapshot;

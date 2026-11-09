@@ -38,6 +38,9 @@ const (
 	SchedulerServiceSubmitJobProcedure = "/octomanager.v1.SchedulerService/SubmitJob"
 	// SchedulerServiceGetJobProcedure is the fully-qualified name of the SchedulerService's GetJob RPC.
 	SchedulerServiceGetJobProcedure = "/octomanager.v1.SchedulerService/GetJob"
+	// SchedulerServiceGetPullRequestProcedure is the fully-qualified name of the SchedulerService's
+	// GetPullRequest RPC.
+	SchedulerServiceGetPullRequestProcedure = "/octomanager.v1.SchedulerService/GetPullRequest"
 	// SchedulerServiceGetSnapshotProcedure is the fully-qualified name of the SchedulerService's
 	// GetSnapshot RPC.
 	SchedulerServiceGetSnapshotProcedure = "/octomanager.v1.SchedulerService/GetSnapshot"
@@ -61,6 +64,7 @@ const (
 type SchedulerServiceClient interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
+	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest]) (*connect.ServerStreamForClient[v1.WatchResponse], error)
@@ -90,6 +94,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceGetJobProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("GetJob")),
+			connect.WithClientOptions(opts...),
+		),
+		getPullRequest: connect.NewClient[v1.GetPullRequestRequest, v1.GetPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 			connect.WithClientOptions(opts...),
 		),
 		getSnapshot: connect.NewClient[v1.GetSnapshotRequest, v1.GetSnapshotResponse](
@@ -133,14 +143,15 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
-	submitJob   *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
-	getJob      *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
-	getSnapshot *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
-	listEvents  *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
-	watch       *connect.Client[v1.WatchRequest, v1.WatchResponse]
-	cancelJob   *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
-	retryJob    *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
-	setPaused   *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+	submitJob      *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
+	getJob         *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
+	getPullRequest *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
+	getSnapshot    *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
+	listEvents     *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
+	watch          *connect.Client[v1.WatchRequest, v1.WatchResponse]
+	cancelJob      *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
+	retryJob       *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
+	setPaused      *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
 }
 
 // SubmitJob calls octomanager.v1.SchedulerService.SubmitJob.
@@ -151,6 +162,11 @@ func (c *schedulerServiceClient) SubmitJob(ctx context.Context, req *connect.Req
 // GetJob calls octomanager.v1.SchedulerService.GetJob.
 func (c *schedulerServiceClient) GetJob(ctx context.Context, req *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error) {
 	return c.getJob.CallUnary(ctx, req)
+}
+
+// GetPullRequest calls octomanager.v1.SchedulerService.GetPullRequest.
+func (c *schedulerServiceClient) GetPullRequest(ctx context.Context, req *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error) {
+	return c.getPullRequest.CallUnary(ctx, req)
 }
 
 // GetSnapshot calls octomanager.v1.SchedulerService.GetSnapshot.
@@ -187,6 +203,7 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 type SchedulerServiceHandler interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
+	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest], *connect.ServerStream[v1.WatchResponse]) error
@@ -212,6 +229,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceGetJobProcedure,
 		svc.GetJob,
 		connect.WithSchema(schedulerServiceMethods.ByName("GetJob")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetPullRequestProcedure,
+		svc.GetPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceGetSnapshotHandler := connect.NewUnaryHandler(
@@ -256,6 +279,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceSubmitJobHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetJobProcedure:
 			schedulerServiceGetJobHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetPullRequestProcedure:
+			schedulerServiceGetPullRequestHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetSnapshotProcedure:
 			schedulerServiceGetSnapshotHandler.ServeHTTP(w, r)
 		case SchedulerServiceListEventsProcedure:
@@ -283,6 +308,10 @@ func (UnimplementedSchedulerServiceHandler) SubmitJob(context.Context, *connect.
 
 func (UnimplementedSchedulerServiceHandler) GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetJob is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetPullRequest is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error) {

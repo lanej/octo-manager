@@ -30,6 +30,8 @@ func model(t *testing.T, mode theme.Mode) *Model {
 	m := New(context.Background(), client.New("/nonexistent/octo-manager.sock"), theme.New(mode))
 	m.snapshot = example()
 	m.ensureSelection()
+	m.panel = outputPanel
+
 	t.Cleanup(func() {
 		if err := m.Close(); err != nil {
 			t.Error(err)

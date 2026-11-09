@@ -11,11 +11,16 @@ import { JobStatus } from '../src/gen/octomanager/v1/scheduler_pb.js';
 const code = (expected: Code) => (error: unknown) => error instanceof ConnectError && error.code === expected;
 test('generated Connect contract has typed failures, atomic snapshot cursors, replay and bounded pagination', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'om-'));
-  const coordinator = new Coordinator(directory);
+  const coordinator = new Coordinator(directory,{reviewReader:async url=>({url,title:"Controlled PR",state:"open",headSha:"abc",observedAtMs:1234,messages:[{id:"review:1",url,author:"reviewer",kind:"review",state:"APPROVED",bodyMarkdown:"Looks good",atMs:1233,path:"",commitSha:"abc",bodyTruncated:false}],mayHaveMoreMessages:false})});
   try {
     await coordinator.start(); coordinator.command({ op: 'pause' });
     const client = schedulerClient(directory);
     const before = (await client.getSnapshot({})).snapshot!;
+    assert(before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.RUNNING));
+    assert(!before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.SUCCEEDED));
+    const review=await client.getPullRequest({url:'https://github.com/owner/repo/pull/12'});
+    assert.equal(review.pullRequest!.messages[0]!.bodyMarkdown,'Looks good');assert.equal(review.pullRequest!.observedAtMs,1234n);
+    await assert.rejects(client.getPullRequest({url:'file:///etc/passwd'}),code(Code.InvalidArgument));
     await assert.rejects(client.submitJob({ requestId: 'bad', task: {} }), code(Code.InvalidArgument));
     const request = { requestId: 'one', task: { kind: { case: 'resolveConflict' as const, value: {} } } };
     const accepted = (await client.submitJob(request)).job!;
