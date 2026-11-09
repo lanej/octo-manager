@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -84,61 +83,6 @@ func (m *Model) stateView(width int) string {
 
 	rows = append(rows, "", m.theme.Heading().Render("Transition history · UTC · sequence order"))
 	rows = append(rows, history...)
-
-	return strings.Join(rows, "\n")
-}
-
-func (m *Model) allowedStatesView(width int) string {
-	job := m.job()
-	if job == nil {
-		return "Select a run to inspect its allowed states."
-	}
-
-	arrow := " ─▶ "
-	if m.theme.ASCII {
-		arrow = " -> "
-	}
-
-	rows := []string{m.theme.Heading().Render("Allowed state map · coordinator contract"), ""}
-
-	edges := map[v1.JobStatus][]v1.JobStatus{}
-	for _, edge := range m.snapshot.GetAllowedTransitions() {
-		edges[edge.GetFrom()] = append(edges[edge.GetFrom()], edge.GetTo())
-		if _, ok := edges[edge.GetTo()]; !ok {
-			edges[edge.GetTo()] = nil
-		}
-	}
-
-	keys := make([]v1.JobStatus, 0, len(edges))
-	for state := range edges {
-		keys = append(keys, state)
-	}
-
-	slices.Sort(keys)
-
-	for _, state := range keys {
-		label := statusLabel(state)
-		if state == job.GetStatus() {
-			label = m.theme.Heading().Render("[" + label + "]")
-		}
-
-		targets := edges[state]
-		if len(targets) == 0 {
-			rows = append(rows, label+" (terminal)")
-			continue
-		}
-
-		names := make([]string, 0, len(targets))
-		for _, target := range targets {
-			names = append(names, statusLabel(target))
-		}
-
-		rows = append(rows, ansi.Wrap(label+arrow+strings.Join(names, " | "), max(1, width), ""))
-	}
-
-	if len(edges) == 0 {
-		rows = append(rows, "State contract unavailable from this coordinator.")
-	}
 
 	return strings.Join(rows, "\n")
 }

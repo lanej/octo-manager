@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/diagram"
 	"github.com/lanej/charmed/layout"
@@ -83,44 +82,6 @@ func TestStateDiagramWidthAndScrollableHistory(t *testing.T) {
 
 		if m.result.YOffset() == 0 {
 			t.Fatal("history cannot be reached")
-		}
-	}
-}
-
-func TestAllowedStatesHaveDedicatedScrollableView(t *testing.T) {
-	for _, mode := range []theme.Mode{theme.Dark, theme.Light, theme.Contrast, theme.Mono} {
-		m := model(t, mode)
-		m.snapshot.AllowedTransitions = []*v1.StateTransition{
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_CONFLICTED},
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_SUCCEEDED},
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_FAILED},
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_RETRY_WAIT},
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_CANCELLING},
-			{From: v1.JobStatus_JOB_STATUS_RUNNING, To: v1.JobStatus_JOB_STATUS_INTERRUPTED},
-			{From: v1.JobStatus_JOB_STATUS_INTERRUPTED, To: v1.JobStatus_JOB_STATUS_QUEUED},
-		}
-		m.Resize(layout.Size{Width: 132, Height: 40})
-		m.Update(tea.KeyPressMsg{Code: '4', Text: "4"})
-
-		if m.panel != allowedPanel || !strings.Contains(ansi.Strip(m.View()), "interrupted") || !strings.Contains(ansi.Strip(m.View()), "Allowed state map") {
-			t.Fatal("contract hidden below history")
-		}
-
-		if strings.Contains(m.stateView(90), "Allowed state map") {
-			t.Fatal("contract duplicated in history")
-		}
-
-		m.Resize(layout.Size{Width: 40, Height: 12})
-		m.result.GotoBottom()
-
-		if !strings.Contains(ansi.Strip(m.result.View()), "interrupted") {
-			t.Fatal("last contract row is inaccessible")
-		}
-
-		for _, line := range strings.Split(m.View(), "\n") {
-			if ansi.StringWidth(line) > 40 {
-				t.Fatal("contract overflows terminal")
-			}
 		}
 	}
 }
