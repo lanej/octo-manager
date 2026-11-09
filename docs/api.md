@@ -34,6 +34,8 @@ The single coordinator owns all writes, and snapshot reads do not yield. The sna
 
 The instance ID is persisted in that database and survives coordinator restart. Replacing the database creates a new instance. A mismatched instance produces `FailedPrecondition`; a cursor ahead of the available history produces `OutOfRange`. Both require a fresh snapshot rather than silently moving the cursor. Timestamps describe observations; sequence numbers determine order.
 
+The Charmed frontend groups jobs by their canonical PR task URL; jobs and attempts remain execution handles below that identity. Case differences and a trailing slash do not create separate PR entries. Browser opening is local to the frontend and does not mutate scheduler state or GitHub.
+
 The Charmed frontend uses watch events to request fresh snapshots and also refreshes once per second for reconnection and liveness. It serializes snapshot requests, keeps results visible during connection loss, and displays unconfirmed command failures. Its activity pane shows recent transitions and tool calls; `ListEvents` exposes the complete paginated record, including streamed text fragments.
 
 Closing a watch or quitting the TUI cancels client I/O only. It does not cancel a job, stop the coordinator, or refresh provider credentials. Stop `serve` explicitly to shut down the coordinator; its existing interruption and worker-exit rules apply.

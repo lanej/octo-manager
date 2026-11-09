@@ -15,6 +15,10 @@ flowchart LR
 
 Charmed provides semantic themes, panel geometry, focus, viewports, structured logs, and Glamour Markdown. The application retains native Bubble Tea commands and component models. It owns API calls, cancellation, selection, reconnect behavior, and result presentation. The UI library does not own scheduler policy or GitHub access. Charmed is pinned as a published Go module; there are no local path replacements or copied widget implementations.
 
+The dashboard’s primary identity is the canonical GitHub PR URL. Multiple submitted jobs for that URL appear as runs beneath one PR; each run retains its own attempts, result, cancellation, and retry history. The API’s job handles remain execution records. PRs appear before standalone demo fixtures, which never acquire a fabricated GitHub URL. Opening a PR is a client-side browser action with a validated HTTPS GitHub PR target; opener errors are displayed.
+
+The current read model derives PR identity from the typed task URL. It does not claim to track GitHub review, CI, mergeability, or merge state, and a completed summary does not establish any of those states. Those facts belong to a future coordinator-owned PR refresh operation, with observed timestamps and head SHA so stale results remain identifiable. Real PR conflict repair would be another authorized operation on that PR; the disposable conflict is an isolated acceptance fixture.
+
 The coordinator retains one active worker, durable FIFO order, idempotent submissions, bounded retries, and worker PID/exit fencing. Cancellation wins over late success and holds the slot until the worker exits. Authentication failures do not retry automatically. Restart interrupts unfinished jobs and fences replacement dispatch until every unresolved previous worker PID has disappeared.
 
 ```mermaid

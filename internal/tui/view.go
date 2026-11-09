@@ -27,7 +27,7 @@ func (m *Model) geometry() geometry {
 
 	left := 0
 	if split {
-		left = 30
+		left = 36
 	}
 
 	right := max(1, m.size.Width-left)
@@ -66,9 +66,9 @@ func safe(value string) string {
 func jobTitle(job *v1.Job) string {
 	switch job.GetTask().GetKind().(type) {
 	case *v1.Task_ResolveConflict:
-		return "Conflict resolution"
+		return "Conflict demo"
 	case *v1.Task_SummarizePullRequest:
-		return "Pull request summary"
+		return "Summarize PR"
 	default:
 		return "Unknown task"
 	}
@@ -95,7 +95,7 @@ func jobTone(status v1.JobStatus) text.Tone {
 	}
 }
 
-func (m *Model) metadata(job *v1.Job, height int) []string {
+func (m *Model) metadata(job *v1.Job, height, width int) []string {
 	status := text.Pill(statusLabel(job.GetStatus()), jobTone(job.GetStatus()), m.theme)
 	if height < 10 {
 		return []string{status}
@@ -109,7 +109,29 @@ func (m *Model) metadata(job *v1.Job, height int) []string {
 		duration = fmt.Sprintf(" · %.1fs", float64(a.GetEndedAtMs()-a.GetStartedAtMs())/1000)
 	}
 
-	return []string{m.theme.Heading().Render(jobTitle(job)), status + fmt.Sprintf("  Attempt %d%s", len(attempts), duration), m.theme.Subtle().Render(job.GetId()), ""}
+	item := m.currentSubject()
+
+	heading := item.label
+	if heading == "" {
+		heading = jobTitle(job)
+	}
+
+	rows := []string{m.theme.Heading().Render(heading)}
+	if item.url != "" {
+		rows = append(rows, strings.Split(ansi.Hardwrap(item.url, max(1, width), false), "\n")...)
+	}
+
+	run := 1
+
+	for i, candidate := range item.jobs {
+		if candidate.GetId() == job.GetId() {
+			run = i + 1
+		}
+	}
+
+	rows = append(rows, jobTitle(job)+fmt.Sprintf(" · run %d/%d", run, max(1, len(item.jobs))), status+fmt.Sprintf("  Attempt %d%s", len(attempts), duration), "")
+
+	return rows
 }
 
 func markdown(job *v1.Job, events []*v1.JobEvent) string {
@@ -195,7 +217,7 @@ func (m *Model) resizeContent() {
 
 	if job := m.job(); job != nil {
 		content = markdown(job, m.events())
-		metadata = len(m.metadata(job, g.result))
+		metadata = len(m.metadata(job, g.result, inner.Width))
 	}
 
 	rendered, err := text.Markdown(content, max(1, inner.Width), m.theme)
@@ -242,10 +264,12 @@ func (m *Model) resizeContent() {
 
 func (m *Model) queue(g geometry) string {
 	capacity := max(1, (g.body-2)/4)
+	items := m.subjects()
+	current := m.currentSubject().key
 	index := 0
 
-	for i, job := range m.snapshot.GetJobs() {
-		if job.GetId() == m.selected {
+	for i, item := range items {
+		if item.key == current {
 			index = i
 			break
 		}
@@ -254,24 +278,33 @@ func (m *Model) queue(g geometry) string {
 	start := max(0, index-capacity+1)
 	rows := []string{}
 
-	jobs := m.snapshot.GetJobs()
-	for _, job := range jobs[start:min(start+capacity, len(jobs))] {
+	for _, item := range items[start:min(start+capacity, len(items))] {
 		prefix := "  "
+		heading := item.label
 
-		heading := jobTitle(job)
-		if job.GetId() == m.selected {
+		job := item.jobs[len(item.jobs)-1]
+		if item.key == current {
 			prefix = "› "
 			heading = m.theme.Heading().Render(heading)
+			job = m.job()
 		}
 
-		rows = append(rows, prefix+heading, "  "+text.Pill(statusLabel(job.GetStatus()), jobTone(job.GetStatus()), m.theme), m.theme.Subtle().Render("  "+shortID(job.GetId())), "")
+		rows = append(rows, prefix+heading, "  "+jobTitle(job)+" · "+counted(len(item.jobs), "run"), "  "+text.Pill(statusLabel(job.GetStatus()), jobTone(job.GetStatus()), m.theme), "")
 	}
 
-	if len(jobs) == 0 {
-		rows = []string{"No jobs yet.", "", "Submit work with", "bin/octo-manager demo"}
+	if len(items) == 0 {
+		rows = []string{"No pull requests yet.", "", "Submit a public PR URL", "with the CLI."}
 	}
 
-	return layout.Panel(fmt.Sprintf("QUEUE · %d", len(jobs)), strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+}
+
+func counted(count int, noun string) string {
+	if count != 1 {
+		noun += "s"
+	}
+
+	return fmt.Sprintf("%d %s", count, noun)
 }
 func shortID(value string) string { return string([]rune(value)[:min(8, len([]rune(value)))]) }
 func (m *Model) View() string {
@@ -282,7 +315,15 @@ func (m *Model) View() string {
 
 	heading := m.theme.Heading().Render("OCTO MANAGER") + "  " + m.theme.Subtle().Render(connected)
 
-	detail := fmt.Sprintf("%d jobs · %s · worker %s", len(m.snapshot.GetJobs()), strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")), strings.ToLower(strings.TrimPrefix(m.snapshot.GetWorker().String(), "WORKER_STATE_")))
+	prCount := 0
+
+	for _, item := range m.subjects() {
+		if item.url != "" {
+			prCount++
+		}
+	}
+
+	detail := fmt.Sprintf("%s · %s · %s · worker %s", counted(prCount, "PR"), counted(len(m.snapshot.GetJobs()), "run"), strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")), strings.ToLower(strings.TrimPrefix(m.snapshot.GetWorker().String(), "WORKER_STATE_")))
 	if m.snapshot.GetRecoveryPid() != 0 {
 		detail = fmt.Sprintf("Waiting for previous worker PID %d", m.snapshot.GetRecoveryPid())
 	}
@@ -306,14 +347,14 @@ func (m *Model) View() string {
 			header = append(header, "")
 		}
 
-		return layout.Fit(strings.Join(append(header, "q quit · j/k jobs"), "\n"), m.size)
+		return layout.Fit(strings.Join(append(header, "q quit · j/k PRs"), "\n"), m.size)
 	}
 
 	g := m.geometry()
 
 	content := m.result.View()
 	if job := m.job(); job != nil {
-		content = strings.Join(m.metadata(job, g.result), "\n") + "\n" + content
+		content = strings.Join(m.metadata(job, g.result, layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result}).Width), "\n") + "\n" + content
 	}
 
 	resultTitle := "RESULT"
@@ -329,10 +370,10 @@ func (m *Model) View() string {
 	if g.compact > 0 {
 		label := "No jobs yet"
 		if job := m.job(); job != nil {
-			label = jobTitle(job) + " · " + statusLabel(job.GetStatus())
+			label = m.currentSubject().label + " · " + statusLabel(job.GetStatus())
 		}
 
-		right = m.theme.Subtle().Render("QUEUE · "+label) + "\n\n" + right
+		right = m.theme.Subtle().Render("PR · "+label) + "\n\n" + right
 	}
 
 	body := right
@@ -340,14 +381,19 @@ func (m *Model) View() string {
 		body = layout.Row(m.queue(g), strings.Repeat(" ", 2), right)
 	}
 
-	help := "j/k jobs · enter expand · tab pane · [/] scroll · p pause · c cancel · r retry · q quit"
+	help := "j/k PRs · h/l runs · o open · tab pane · [/] scroll · p pause · c cancel · r retry · q quit"
 	if m.size.Width < 96 {
-		help = "q quit · j/k jobs · tab pane · [/] scroll · enter expand"
+		help = "q quit · j/k PRs · h/l runs · o open · [/] scroll · enter expand"
 	}
 
 	footer := []string{m.theme.Subtle().Render(help), ""}
 	if job := m.job(); job != nil {
-		footer[1] = m.theme.Subtle().Render(shortID(job.GetId()) + " · " + jobTitle(job))
+		identity := m.currentSubject().url
+		if identity == "" {
+			identity = "Local demo · " + shortID(job.GetId())
+		}
+
+		footer[1] = m.theme.Subtle().Render(identity)
 	}
 
 	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+strings.Join(footer, "\n"), m.size)

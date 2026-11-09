@@ -33,6 +33,7 @@ type (
 		err    error
 	}
 	commandMsg      struct{ err error }
+	browserMsg      struct{ err error }
 	streamClosedMsg struct{ err error }
 	tickMsg         struct{}
 )
@@ -196,6 +197,14 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		}
 
 		return nil
+	case browserMsg:
+		if msg.err != nil {
+			m.commandError = fmt.Sprintf("Could not open PR: %s", safe(msg.err.Error()))
+		} else {
+			m.commandError = ""
+		}
+
+		return nil
 	case commandMsg:
 		m.commandPending = false
 		if msg.err != nil {
@@ -221,6 +230,12 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.move(1)
 	case "k", "up":
 		m.move(-1)
+	case "h", "left":
+		m.moveRun(-1)
+	case "l", "right":
+		m.moveRun(1)
+	case "o":
+		return m.openPullRequest()
 	case "enter":
 		m.expanded = !m.expanded
 		m.resizeContent()
@@ -281,8 +296,12 @@ func (m *Model) control(key string) tea.Cmd {
 }
 func (m *Model) Resize(size layout.Size) { m.size = size; m.resizeContent() }
 func (m *Model) ensureSelection() {
-	if m.job() == nil && len(m.snapshot.GetJobs()) > 0 {
-		m.selected = m.snapshot.GetJobs()[0].GetId()
+	if m.job() == nil {
+		items := m.subjects()
+		if len(items) > 0 {
+			jobs := items[0].jobs
+			m.selected = jobs[len(jobs)-1].GetId()
+		}
 	}
 }
 
@@ -297,17 +316,17 @@ func (m *Model) job() *v1.Job {
 }
 
 func (m *Model) move(delta int) {
-	jobs := m.snapshot.GetJobs()
-	for i, job := range jobs {
-		if job.GetId() == m.selected {
-			m.selected = jobs[min(max(0, i+delta), len(jobs)-1)].GetId()
-			break
+	items := m.subjects()
+
+	selected := m.currentSubject().key
+	for i, item := range items {
+		if item.key == selected {
+			jobs := items[min(max(0, i+delta), len(items)-1)].jobs
+			m.selectJob(jobs[len(jobs)-1])
+
+			return
 		}
 	}
-
-	m.result.GotoTop()
-	m.activity.GotoBottom()
-	m.resizeContent()
 }
 
 func (m *Model) Close() error {

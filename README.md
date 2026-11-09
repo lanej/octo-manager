@@ -1,8 +1,8 @@
 # Octo Manager
 
-A bounded GitHub worker coordinator with a Charmed terminal dashboard. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The first working path covers public PR summaries and an actual disposable merge conflict.
+A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The first working path covers public PR summaries and an actual disposable merge conflict.
 
-![Charmed dashboard showing the verified live conflict resolution](docs/images/dashboard.png)
+![PR-centric Charmed dashboard with a visible GitHub URL and two runs](docs/images/dashboard.png)
 
 See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
 
@@ -25,7 +25,7 @@ bin/octo-manager dashboard
 From Codex or a third terminal:
 
 ```sh
-bin/octo-manager demo --request-id first-demo --json
+bin/octo-manager submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
 bin/octo-manager get JOB_ID --json
 bin/octo-manager events JOB_ID --watch
 ```
@@ -42,7 +42,9 @@ If no usable session exists, `bin/octo-manager login` opens Pi with tools and di
 
 ## Dashboard and commands
 
-The dashboard uses Charmed themes, panels, focus, viewports, structured logs, and Glamour Markdown. Results and activity scroll independently. Use `j/k` or arrows to select a job, Enter to expand, Tab to change pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel, `r` to retry, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
+The dashboard centers on pull requests: each canonical GitHub PR URL has one entry, with its worker runs underneath it. The selected PR shows `owner/repo#number` and its full URL. Press `o` to open it with the system browser (`open` on macOS, `xdg-open` on Linux), or use the visible URL directly. The conflict fixture is labeled as a local demo and has no browser target. Run success describes worker completion, not the PR’s merge/review state.
+
+The dashboard uses Charmed themes, panels, focus, viewports, structured logs, and Glamour Markdown. Results and activity scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, Tab to change pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
 
 ```text
 octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
