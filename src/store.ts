@@ -1,3 +1,4 @@
+import { ActivityStore } from "./activity/store.js";
 import { TrackingStore } from "./tracking/store.js";
 import { DatabaseSync } from "node:sqlite";
 import { chmodSync, mkdirSync, lstatSync } from "node:fs";
@@ -13,6 +14,7 @@ export function privateDirectory(path: string): void {
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
+  readonly activity: ActivityStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -31,6 +33,7 @@ export class Store {
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id) VALUES(?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null);
       });
+      this.activity = new ActivityStore(this.db, this.now);
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }

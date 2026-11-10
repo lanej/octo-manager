@@ -26,7 +26,7 @@ type geometry struct {
 
 func (m *Model) geometry() geometry {
 	body := max(1, m.size.Height-len(m.header())-2)
-	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded
+	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded && m.panel != activityPanel
 
 	left := 0
 	if split {
@@ -39,7 +39,7 @@ func (m *Model) geometry() geometry {
 	}
 
 	activity := 0
-	if m.size.Height >= 18 && m.size.Width >= 32 {
+	if m.size.Height >= 18 && m.size.Width >= 32 && m.panel != activityPanel {
 		activity = min(8, max(5, body/4))
 	}
 
@@ -197,6 +197,8 @@ func (m *Model) resizeContent() {
 			content = m.stateView(inner.Width)
 		case trackingPanel:
 			content = m.trackingMarkdown()
+		case activityPanel:
+			content = m.activitySource()
 		default:
 			content = "Unknown view"
 		}
@@ -212,8 +214,14 @@ func (m *Model) resizeContent() {
 		}
 	}
 
+	if m.panel == activityPanel {
+		content = m.activitySource()
+	}
+
 	rendered := content
-	if m.panel != statePanel {
+	if m.panel == activityPanel {
+		rendered = m.renderedActivity(max(1, inner.Width))
+	} else if m.panel != statePanel {
 		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
 			rendered = value
 		} else {
@@ -224,6 +232,11 @@ func (m *Model) resizeContent() {
 	m.result.SetWidth(max(1, inner.Width))
 	m.result.SetHeight(max(1, inner.Height))
 	m.result.SetContent(rendered)
+
+	if m.panel == activityPanel {
+		return
+	}
+
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
@@ -312,6 +325,10 @@ func (m *Model) header() []string {
 		identity = "Track or submit a PR URL"
 	}
 
+	if m.panel == activityPanel {
+		identity = "All agent sessions"
+	}
+
 	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
 	chrome := layout.Header{Title: "OCTO MANAGER", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
 	lines := strings.Split(chrome.View(m.size.Width, m.theme), "\n")
@@ -333,7 +350,7 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "tracking", Label: "4 Tracking"}}, m.theme)
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "tracking", Label: "4 Tracking"}, {ID: "agent-activity", Label: "5 Activity"}}, m.theme)
 	tabs.Select(m.panelID())
 	tabs.SetWidth(g.right)
 
@@ -364,6 +381,12 @@ func (m *Model) View() string {
 	}
 
 	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
+
+	if m.panel == activityPanel {
+		help = "[/] scroll · q quit"
+		notice = "h/l older/newer · j/k scroll · u refresh"
+	}
+
 	if m.connectionError != "" {
 		notice = m.connectionError
 	}

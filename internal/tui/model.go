@@ -63,6 +63,8 @@ type Model struct {
 	reviewErrors    map[string]string
 	reviewLoading   map[string]bool
 	history         historyState
+	agentActivity   activityHistory
+	activityRender  activityRenderCache
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme) *Model {
@@ -128,6 +130,8 @@ func (m *Model) watchFailed(err error) {
 
 func (m *Model) Update(message tea.Msg) tea.Cmd {
 	switch msg := message.(type) {
+	case activityMsg:
+		return m.applyActivity(msg)
 	case reviewMsg:
 		return m.applyReview(msg)
 	case historyMsg:
@@ -161,10 +165,10 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		m.resizeContent()
 
 		if !m.watching {
-			return tea.Batch(closing, m.watch(), m.loadHistory(), m.loadReviews(false))
+			return tea.Batch(closing, m.watch(), m.loadHistory(), m.loadReviews(false), m.loadActivity())
 		}
 
-		return tea.Batch(closing, m.loadHistory(), m.loadReviews(false))
+		return tea.Batch(closing, m.loadHistory(), m.loadReviews(false), m.loadActivity())
 	case watchMsg:
 		if msg.instance != m.instance {
 			if msg.stream != nil {
@@ -236,15 +240,33 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.cancel()
 		return tea.Quit
 	case "j", "down":
-		m.move(1)
+		if m.panel == activityPanel {
+			m.result.ScrollDown(3)
+		} else {
+			m.move(1)
+		}
 	case "k", "up":
-		m.move(-1)
+		if m.panel == activityPanel {
+			m.result.ScrollUp(3)
+		} else {
+			m.move(-1)
+		}
 	case "h", "left":
-		m.moveRun(-1)
+		if m.panel == activityPanel {
+			m.moveActivityPage(1)
+		} else {
+			m.moveRun(-1)
+		}
 	case "l", "right":
-		m.moveRun(1)
+		if m.panel == activityPanel {
+			m.moveActivityPage(-1)
+		} else {
+			m.moveRun(1)
+		}
 	case "o":
-		return m.openPullRequest()
+		if m.panel != activityPanel {
+			return m.openPullRequest()
+		}
 	case "1":
 		m.panel = reviewsPanel
 		m.result.GotoTop()
@@ -255,6 +277,12 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.panel = outputPanel
 		m.result.GotoTop()
 		m.resizeContent()
+	case "5":
+		m.panel = activityPanel
+		m.result.GotoTop()
+		m.resizeContent()
+
+		return m.loadActivity()
 	case "4":
 		m.panel = trackingPanel
 		m.result.GotoTop()
@@ -266,6 +294,12 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 
 		return m.loadHistory()
 	case "u":
+		if m.panel == activityPanel {
+			m.agentActivity.seenThrough = 0
+
+			return m.loadActivity()
+		}
+
 		if m.panel == trackingPanel {
 			return m.refreshTracked()
 		}
@@ -281,7 +315,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.expanded = !m.expanded
 		m.resizeContent()
 	case "tab", "shift+tab":
-		if m.size.Height >= 18 && m.size.Width >= 32 {
+		if m.geometry().activity > 0 {
 			m.focus.Handle(key)
 		}
 	case "[", "pgup":
@@ -300,11 +334,11 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		return m.control(key.String())
 	}
 
-	return tea.Batch(m.loadHistory(), m.loadReviews(false))
+	return tea.Batch(m.loadHistory(), m.loadReviews(false), m.loadActivity())
 }
 
 func (m *Model) control(key string) tea.Cmd {
-	if m.snapshot == nil || m.commandPending {
+	if m.snapshot == nil || m.commandPending || (m.panel == activityPanel && key != "p") {
 		return nil
 	}
 
@@ -348,6 +382,17 @@ func (m *Model) ensureSelection() {
 }
 
 func (m *Model) selectSubject(item subject) {
+	if m.panel == activityPanel {
+		m.selected = item.key
+		if len(item.jobs) > 0 {
+			m.selected = item.jobs[len(item.jobs)-1].GetId()
+		}
+
+		m.history = historyState{version: m.history.version + 1}
+
+		return
+	}
+
 	if len(item.jobs) > 0 {
 		m.selectJob(item.jobs[len(item.jobs)-1])
 	} else {

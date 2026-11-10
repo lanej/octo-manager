@@ -1,9 +1,12 @@
 syntax = "proto3";
 package octomanager.v1;
 import "octomanager/v1/tracking.proto";
+import "octomanager/v1/activity.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
+  rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
   rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
   rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);
@@ -149,3 +152,10 @@ message PullRequestDetails {
 }
 message GetPullRequestRequest { string url = 1; }
 message GetPullRequestResponse { PullRequestDetails pull_request = 1; }
+
+message ListActivityResponse {
+  repeated ActivityReport activities = 1;
+  repeated JobEvent events = 2;
+  uint64 next_sequence = 3;
+  bool has_more = 4;
+}
