@@ -31,3 +31,17 @@ An earlier live pass grouped two summaries under one PR and exercised `h/l` run 
 `bun run check` passes scheduler/auth/API checks, generated Go-to-Bun unary and streaming calls (including review fields), strict Go lint, race tests, and reachable-vulnerability analysis. Independent review found no actionable issues in the Charmed component integration. Remote GitHub writes were not exercised and are unsupported. The merge hash belongs to the disposable local acceptance repository, not a published commit.
 
 To repeat, follow the README build instructions, start `serve --state DIR`, and run `demo --state DIR --url https://github.com/charmbracelet/bubbletea/pull/1836 --request-id UNIQUE_ID --json`. Attach `dashboard --state DIR`; use `1/2/3`, `u`, `j/k`, and `h/l` to inspect reviews, worker output, state, and runs. Usable credentials and network access are required; this records the observed run rather than future provider availability.
+
+## Tracking and Codex delivery
+
+On 2026-11-10, the tracking coordinator read the merged Octo Manager PR #1, including its actual head/base revisions and successful check runs. The native dashboard displayed that independently tracked PR with no worker job. Wide (132×40) and narrow (80×32) captures replay continuously drained native PTY output in xterm.js; the images below show actual GitHub observations, not sample PR state.
+
+![Tracked PR ownership and GitHub observations without worker jobs](images/tracking.png)
+
+![The same tracking view at 80 columns](images/tracking-narrow.png)
+
+The existing Codex daemon identified itself as 0.167.0. Its local control socket requires WebSocket framing; the CLI proxy forwards raw bytes and does not translate newline JSON. A disposable thread `01a1c40a-c72d-7b30-8114-1a4d63c20206` received delivery `870a99ab-bb50-45de-8d89-b46977d0f621` in turn `01a1c40b-b423-7393-bff3-ce9d45b76bce`. Thread history confirmed the stable delivery marker and the agent's triage response. No session model or permission overrides were sent.
+
+That delivery used an explicitly synthetic conflict observation in an isolated database to exercise notification; it does not establish that merged PR #1 had a conflict. Its placeholders were `acceptance-head` and `acceptance-base`. The receiving agent attempted the exact acknowledgment command but its sandbox received `ECONNREFUSED` for the coordinator socket. Therefore live message delivery and processing were confirmed; recorded live acknowledgment was not. The action remained open until the next real GitHub observation superseded it because the PR was merged. Controlled CLI/Connect tests separately verify acknowledgment and work reporting.
+
+The recipient's failed callback illustrates the retained boundary: a delivered message does not establish action acceptance, and Octo does not relax the session's permissions to manufacture success. Agents with denied socket access need their existing host approval path. No private provider-backed acceptance was performed; private metadata separation is covered with controlled GitHub responses.

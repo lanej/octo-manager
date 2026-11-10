@@ -1,0 +1,124 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+enum ActionState {
+  ACTION_STATE_UNSPECIFIED = 0;
+  ACTION_STATE_OPEN = 1;
+  ACTION_STATE_ACKNOWLEDGED = 2;
+  ACTION_STATE_WORKING = 3;
+  ACTION_STATE_RESOLVED = 4;
+  ACTION_STATE_SUPERSEDED = 5;
+}
+enum DeliveryState {
+  DELIVERY_STATE_UNSPECIFIED = 0;
+  DELIVERY_STATE_PENDING = 1;
+  DELIVERY_STATE_SENDING = 2;
+  DELIVERY_STATE_DELIVERED = 3;
+  DELIVERY_STATE_UNCERTAIN = 4;
+  DELIVERY_STATE_UNAVAILABLE = 5;
+  DELIVERY_STATE_CANCELLED = 6;
+}
+message AgentTarget { string harness = 1; string endpoint = 2; string session_id = 3; optional string label = 4; }
+message AgentReference {
+  string id = 1;
+  AgentTarget target = 2;
+  optional string harness_version = 3;
+  optional int64 version_observed_at_ms = 4;
+}
+message TrackingObservation {
+  uint64 id = 1;
+  int64 observed_at_ms = 2;
+  string head_sha = 3;
+  string base_sha = 4;
+  string lifecycle = 5;
+  string mergeability = 6;
+  string checks_json = 7;
+  string reviews_json = 8;
+}
+message TrackedPullRequest {
+  string id = 1;
+  string url = 2;
+  string origin_agent_id = 3;
+  string owner_agent_id = 4;
+  bool enabled = 5;
+  int64 created_at_ms = 6;
+  int64 updated_at_ms = 7;
+  optional string refresh_error = 8;
+  optional int64 refresh_error_at_ms = 9;
+  TrackingObservation observation = 10;
+}
+message ExecutionProfile { string name = 1; string instructions = 2; optional string harness = 3; optional string model = 4; }
+message ConflictBlocker { string head_sha = 1; string base_sha = 2; }
+message CheckBlocker { string source_id = 1; string check_name = 2; string head_sha = 3; string check_key = 4; }
+message ReviewBlocker { string review_id = 1; string reviewer = 2; string reviewed_head_sha = 3; }
+message PendingAction {
+  string id = 1;
+  string pr_id = 2;
+  uint64 opened_observation_id = 3;
+  string source_key = 4;
+  string owner_agent_id = 5;
+  oneof blocker {
+    ConflictBlocker conflict = 6;
+    CheckBlocker check_failed = 7;
+    ReviewBlocker changes_requested = 8;
+  }
+  string summary = 9;
+  string evidence_url = 10;
+  ExecutionProfile profile = 11;
+  ActionState state = 12;
+  optional int64 progress_at_ms = 13;
+  optional string progress_agent_id = 14;
+  optional uint64 resolved_observation_id = 15;
+  optional string close_reason = 16;
+  int64 created_at_ms = 17;
+  int64 updated_at_ms = 18;
+}
+message ActionDelivery {
+  string id = 1;
+  string action_id = 2;
+  string recipient_agent_id = 3;
+  DeliveryState state = 4;
+  string progress_json = 5;
+  int64 created_at_ms = 6;
+  int64 updated_at_ms = 7;
+}
+message DeliveryAttempt {
+  string delivery_id = 1;
+  uint32 number = 2;
+  int64 started_at_ms = 3;
+  optional string harness_version = 4;
+  string outcome_json = 5;
+}
+message TrackingSnapshot {
+  repeated TrackedPullRequest prs = 1;
+  repeated AgentReference agents = 2;
+  repeated PendingAction actions = 3;
+  repeated ActionDelivery deliveries = 4;
+  repeated DeliveryAttempt attempts = 5;
+}
+message TrackPullRequestRequest { string url = 1; AgentTarget owner = 2; }
+message ListTrackedPullRequestsRequest {}
+message ListTrackedPullRequestsResponse { repeated TrackedPullRequest prs = 1; }
+message AssignPullRequestRequest { string id = 1; AgentTarget owner = 2; }
+message ListActionsRequest { optional string pr_id = 1; }
+message ListActionsResponse { repeated PendingAction actions = 1; }
+message RetryDeliveryRequest { string id = 1; }
+message RetryDeliveryResponse { ActionDelivery delivery = 1; }
+
+message TrackPullRequestResponse { TrackedPullRequest pr = 1; }
+message GetTrackedPullRequestRequest { string id = 1; }
+message GetTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
+message RefreshTrackedPullRequestRequest { string id = 1; }
+message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
+message AssignPullRequestResponse { TrackedPullRequest pr = 1; }
+message UntrackPullRequestRequest { string id = 1; }
+message UntrackPullRequestResponse { TrackedPullRequest pr = 1; }
+message GetActionRequest { string id = 1; }
+message GetActionResponse { PendingAction action = 1; }
+message AcknowledgeActionRequest { string id = 1; string agent_id = 2; }
+message AcknowledgeActionResponse { PendingAction action = 1; }
+message StartActionRequest { string id = 1; string agent_id = 2; }
+message StartActionResponse { PendingAction action = 1; }
+message ReprofileActionRequest { string id = 1; }
+message ReprofileActionResponse { PendingAction action = 1; }

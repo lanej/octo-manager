@@ -49,3 +49,7 @@ stateDiagram-v2
 `Active` groups running, conflicted, and resolving states with the shared outgoing transitions. Job completion and worker-slot cleanup are distinct observations. Pause and recovery are scheduler/worker states, separate from the job state machine.
 
 Workers use in-memory Pi sessions with project discovery and built-in shell tools disabled. They can read the requested public PR or read/write/validate the generated policy fixture. The coordinator independently validates the combined policy and confirms a clean two-parent merge before success. This implementation performs no remote GitHub mutations. Pi and its dependencies remain trusted host code; this tool boundary is not an OS sandbox.
+
+## Tracking ownership
+
+Tracked PRs and pending actions belong to the TypeScript coordinator independently of execution jobs. Pure blocker policy consumes explicit GitHub observations; storage owns transactional uniqueness and observation references. Harness-neutral agent references and action profile snapshots keep execution preferences out of tracking policy. The Codex adapter attaches to an existing daemon over a Unix WebSocket and requests triage without overriding the owning session. Delivery acceptance, agent acknowledgment, and verified GitHub resolution remain separate. See [tracking](tracking.md) for the data and recovery contracts.

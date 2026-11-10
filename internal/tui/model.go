@@ -255,6 +255,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.panel = outputPanel
 		m.result.GotoTop()
 		m.resizeContent()
+	case "4":
+		m.panel = trackingPanel
+		m.result.GotoTop()
+		m.resizeContent()
 	case "3":
 		m.panel = statePanel
 		m.result.GotoTop()
@@ -262,6 +266,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 
 		return m.loadHistory()
 	case "u":
+		if m.panel == trackingPanel {
+			return m.refreshTracked()
+		}
+
 		if m.panel == reviewsPanel {
 			return m.loadReviews(true)
 		}
@@ -329,19 +337,34 @@ func (m *Model) control(key string) tea.Cmd {
 }
 func (m *Model) Resize(size layout.Size) { m.size = size; m.resizeContent() }
 func (m *Model) ensureSelection() {
-	if m.job() == nil {
-		items := m.subjects()
-		if len(items) > 0 {
-			jobs := items[0].jobs
-
-			m.selected = jobs[len(jobs)-1].GetId()
-
-			m.panel = reviewsPanel
-			if items[0].url == "" {
-				m.panel = statePanel
-			}
-		}
+	if m.currentSubject().key != "" {
+		return
 	}
+
+	items := m.subjects()
+	if len(items) > 0 {
+		m.selectSubject(items[0])
+	}
+}
+
+func (m *Model) selectSubject(item subject) {
+	if len(item.jobs) > 0 {
+		m.selectJob(item.jobs[len(item.jobs)-1])
+	} else {
+		m.selected = item.key
+		m.history = historyState{version: m.history.version + 1}
+		m.result.GotoTop()
+	}
+
+	if item.tracked != nil {
+		m.panel = trackingPanel
+	} else if item.url == "" {
+		m.panel = statePanel
+	} else {
+		m.panel = reviewsPanel
+	}
+
+	m.resizeContent()
 }
 
 func (m *Model) job() *v1.Job {
@@ -360,8 +383,7 @@ func (m *Model) move(delta int) {
 	selected := m.currentSubject().key
 	for i, item := range items {
 		if item.key == selected {
-			jobs := items[min(max(0, i+delta), len(items)-1)].jobs
-			m.selectJob(jobs[len(jobs)-1])
+			m.selectSubject(items[min(max(0, i+delta), len(items)-1)])
 
 			return
 		}

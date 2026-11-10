@@ -1,8 +1,21 @@
 syntax = "proto3";
 package octomanager.v1;
+import "octomanager/v1/tracking.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
+  rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
+  rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);
+  rpc RefreshTrackedPullRequest(RefreshTrackedPullRequestRequest) returns (RefreshTrackedPullRequestResponse);
+  rpc AssignPullRequest(AssignPullRequestRequest) returns (AssignPullRequestResponse);
+  rpc UntrackPullRequest(UntrackPullRequestRequest) returns (UntrackPullRequestResponse);
+  rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
+  rpc GetAction(GetActionRequest) returns (GetActionResponse);
+  rpc AcknowledgeAction(AcknowledgeActionRequest) returns (AcknowledgeActionResponse);
+  rpc StartAction(StartActionRequest) returns (StartActionResponse);
+  rpc RetryDelivery(RetryDeliveryRequest) returns (RetryDeliveryResponse);
+  rpc ReprofileAction(ReprofileActionRequest) returns (ReprofileActionResponse);
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
   rpc GetJob(GetJobRequest) returns (GetJobResponse);
   rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
@@ -74,6 +87,8 @@ message JobEvent {
   int64 at_ms = 3;
   string kind = 4;
   string detail = 5;
+  optional string pr_id = 6;
+  optional string action_id = 7;
 }
 message Snapshot {
   string instance_id = 1;
@@ -84,6 +99,7 @@ message Snapshot {
   repeated JobEvent recent_events = 6;
   optional int64 recovery_pid = 7;
   repeated StateTransition allowed_transitions = 8;
+  TrackingSnapshot tracking = 9;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
@@ -95,6 +111,7 @@ message WatchRequest {
   string instance_id = 1;
   uint64 after_sequence = 2;
   optional string job_id = 3;
+  optional string pr_id = 4;
 }
 message WatchResponse { JobEvent event = 1; }
 message CancelJobRequest { string id = 1; }
@@ -104,7 +121,7 @@ message RetryJobResponse { Job job = 1; }
 message SetPausedRequest { bool paused = 1; }
 message SetPausedResponse { Snapshot snapshot = 1; }
 
-message ListEventsRequest { uint64 after_sequence = 1; optional string job_id = 2; }
+message ListEventsRequest { uint64 after_sequence = 1; optional string job_id = 2; optional string pr_id = 3; }
 message ListEventsResponse { repeated JobEvent events = 1; }
 
 message StateTransition { JobStatus from = 1; JobStatus to = 2; }

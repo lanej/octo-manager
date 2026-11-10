@@ -17,6 +17,7 @@ const (
 	reviewsPanel panelView = iota
 	outputPanel
 	statePanel
+	trackingPanel
 )
 
 type (
@@ -154,6 +155,8 @@ func (m *Model) panelID() string {
 		return "output"
 	case statePanel:
 		return "state"
+	case trackingPanel:
+		return "tracking"
 	default:
 		return "unknown"
 	}

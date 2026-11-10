@@ -69,3 +69,9 @@ The server limits decoded requests to 16 KiB and responses to 4 MiB. Scheduler u
 ## Verification
 
 Automated checks run actual generated Go unary/streaming calls against the Bun server over a Unix socket, with a real disposable Git conflict and a controlled worker. They check snapshot/watch gaps, replay, typed failures, duplicate submissions, pagination, stream cancellation, and persisted identity on restart. Scheduler tests continue to exercise process fencing and recovery. Provider-backed acceptance is recorded separately and is not established by the controlled worker.
+
+## Tracking operations
+
+`TrackPullRequest`, `ListTrackedPullRequests`, `GetTrackedPullRequest`, `RefreshTrackedPullRequest`, `AssignPullRequest`, and `UntrackPullRequest` manage durable ownership independently of jobs. `ListActions`, `GetAction`, `AcknowledgeAction`, `StartAction`, `RetryDelivery`, and `ReprofileAction` expose pending work and recovery. `Snapshot.tracking` includes PRs, agents, actions, deliveries, and attempts. See the [tracking guide](tracking.md) for lifecycle rules.
+
+Tracking observations may read private metadata through existing GitHub authentication. `GetPullRequest` review messages and worker tools retain their public-only behavior. A refresh can return the retained PR with `refresh_error` when GitHub is unavailable; that is not a fresh successful observation. PR event filters preserve the existing global sequence and replay rules.
