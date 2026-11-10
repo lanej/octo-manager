@@ -8,7 +8,7 @@ export interface Job {
   createdAt: number; updatedAt: number; attempts: Attempt[]; retryCount: number;
   availableAt: number; result?: string; error?: string; fixture?: string;
 }
-export interface JobEvent { seq: number; jobId: string; at: number; kind: string; detail: string }
+export interface JobEvent { seq: number; jobId: string; at: number; kind: string; detail: string; prId?: string; actionId?: string }
 export interface Snapshot { scheduler: "running" | "paused" | "stopping" | "stopped"; worker: "idle" | "busy" | "recovering"; jobs: Job[]; events: JobEvent[]; recoveryPid?: number }
 export const activeStates: Status[] = ["running", "conflicted", "resolving", "cancelling"];
 export const terminalStates: Status[] = ["succeeded", "failed", "cancelled", "interrupted"];

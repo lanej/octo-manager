@@ -1,3 +1,4 @@
+import { wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { setTimeout as delay } from "node:timers/promises";
@@ -19,7 +20,7 @@ export function wireJob(job: Job) {
     retryCount: job.retryCount, resultMarkdown: job.result, error: job.error,
   });
 }
-export function wireEvent(event: JobEvent) { return create(JobEventSchema, { sequence: BigInt(event.seq), jobId: event.jobId, atMs: BigInt(event.at), kind: event.kind, detail: event.detail }); }
+export function wireEvent(event: JobEvent) { return create(JobEventSchema, { sequence: BigInt(event.seq), jobId: event.jobId, atMs: BigInt(event.at), kind: event.kind, detail: event.detail, prId: event.prId, actionId: event.actionId }); }
 export function wireSnapshot(coordinator: Coordinator) {
   // WHY: A single owner executes these synchronous reads without yielding; the cursor covers exactly the state returned.
   const snapshot = coordinator.snapshot();
@@ -27,6 +28,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     instanceId: coordinator.store.instanceId(), sequence: BigInt(coordinator.store.sequence()),
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
+    tracking: wireTracking(coordinator.tracking),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
   });
@@ -50,7 +52,24 @@ function command(coordinator: Coordinator, value: object): unknown {
   }
 }
 export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter): void {
+  const tracking=coordinator.tracking;
+  const owner=(value?:{harness:string;endpoint:string;sessionId:string;label?:string})=>{
+    if(!value)throw new ConnectError("Owner is required",Code.InvalidArgument);
+    return value;
+  };
   router.service(SchedulerService, {
+    async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
+    async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
+    async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},
+    async refreshTrackedPullRequest(r){return trackingOperation(async()=>{await tracking.refresh(r.id);return {pr:wirePR(tracking.store.pr(r.id))};});},
+    async assignPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.assign(r.id,owner(r.owner)))}));},
+    async untrackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.untrack(r.id))}));},
+    async listActions(r){return {actions:tracking.store.actions().filter(a=>!r.prId||a.prId===r.prId).map(wireAction)};},
+    async getAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.action(r.id))}));},
+    async acknowledgeAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.progress(r.id,r.agentId,false))}));},
+    async startAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.progress(r.id,r.agentId,true))}));},
+    async retryDelivery(r){return trackingOperation(()=>({delivery:wireDelivery(tracking.store.retryDelivery(r.id))}));},
+    async reprofileAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.reprofile(r.id,tracking.config))}));},
     submitJob(request) {
       let parsed;
       try { parsed = task(request.task); } catch { throw new ConnectError("A supported task with a valid public GitHub PR URL is required", Code.InvalidArgument); }
@@ -74,16 +93,18 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     retryJob(request) { return { job: wireJob(command(coordinator, { op: "retry", id: request.id }) as Job) }; },
     setPaused(request) { command(coordinator, { op: request.paused ? "pause" : "resume" }); return { snapshot: wireSnapshot(coordinator) }; },
     listEvents(request) {
+      if(request.jobId!==undefined && request.prId!==undefined)throw new ConnectError("Choose job or PR filter",Code.InvalidArgument);
       if (request.afterSequence < 0n || request.afterSequence > BigInt(coordinator.store.sequence())) throw new ConnectError("Cursor is outside retained history", Code.OutOfRange);
-      return { events: coordinator.store.eventsSince(Number(request.afterSequence), request.jobId).map(wireEvent) };
+      return { events: coordinator.store.eventsSince(Number(request.afterSequence), request.jobId, request.prId).map(wireEvent) };
     },
     async *watch(request, context) {
+      if(request.jobId!==undefined && request.prId!==undefined)throw new ConnectError("Choose job or PR filter",Code.InvalidArgument);
       if (request.instanceId !== coordinator.store.instanceId()) throw new ConnectError("State instance changed; obtain a fresh snapshot", Code.FailedPrecondition);
       if (request.afterSequence < 0n || request.afterSequence > BigInt(coordinator.store.sequence())) throw new ConnectError("Cursor is ahead of retained history; obtain a fresh snapshot", Code.OutOfRange);
       let cursor = Number(request.afterSequence);
       while (!context.signal.aborted) {
         if (coordinator.snapshot().scheduler === "stopping" || coordinator.snapshot().scheduler === "stopped") throw new ConnectError("Coordinator is stopping", Code.Unavailable);
-        const events = coordinator.store.eventsSince(cursor, request.jobId);
+        const events = coordinator.store.eventsSince(cursor, request.jobId, request.prId);
         for (const event of events) { cursor = event.seq; yield { event: wireEvent(event) }; }
         await delay(50, undefined, { signal: context.signal }).catch(() => {});
       }

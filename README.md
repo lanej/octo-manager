@@ -8,7 +8,7 @@ See the [live acceptance record](docs/live-acceptance.md) for the actual conflic
 
 ## Run
 
-Requires Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
+Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts
@@ -30,7 +30,7 @@ bin/octo-manager get JOB_ID --json
 bin/octo-manager events JOB_ID --watch
 ```
 
-All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. There is no installed daemon, automatic dotfiles setup, or MCP configuration change.
+All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. There is no installed Octo daemon, automatic dotfiles setup, or MCP configuration change. Codex notifications attach to an already running local Codex app-server.
 
 Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. Use `--theme dark`, `light`, `contrast`, or `mono` when launching the dashboard.
 
@@ -39,6 +39,10 @@ Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explici
 The worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
 
 If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub reads use the existing `gh` login. Private or indeterminate repository visibility is rejected before content reaches the model. Public PR content goes to the selected model provider. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
+
+## PR tracking
+
+Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. See the [tracking guide](docs/tracking.md) for profiles, acknowledgment, recovery, and private-data boundaries.
 
 ## Dashboard and commands
 
@@ -73,8 +77,11 @@ Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls,
 ## Development
 
 ```sh
+node scripts/check-typescript.mjs tools
 bun run generate
 bun run check
 ```
 
-Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, exercise the Bun scheduler and Connect API, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
+Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, run the dotfiles TypeScript compiler/lint/format profile, exercise the Bun scheduler and Connect API, audit Bun dependencies, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. TypeScript uses the existing-code retrofit: `.typescript-quality-baseline.json` records current findings and cannot grow; this is not full TypeScript compliance. Go uses strict enforcement without a baseline. Quality tools are isolated under `.typescript-quality/` with their own pinned npm lockfile; application dependencies remain managed by Bun. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
+
+The quality compiler includes source, tests, and generation scripts. It uses Bun-compatible module resolution while preserving the independent NodeNext application build. Only generated Protobuf and Codex protocol files are excluded from lint/format inventory. Imported dependency declarations are still checked; current Bun/Gaxios declaration incompatibilities are visible in the retrofit baseline. After fixing existing findings, run `node scripts/check-typescript.mjs ratchet` and commit the reduced baseline. New findings, missing modules, and suppression-policy violations fail the check.

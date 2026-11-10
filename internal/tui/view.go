@@ -162,7 +162,7 @@ func (m *Model) events() []*v1.JobEvent {
 	}
 
 	for _, event := range m.snapshot.GetRecentEvents() {
-		if event.GetJobId() == m.selected || event.GetJobId() == "" {
+		if event.GetPrId() == "" && (event.GetJobId() == m.selected || event.GetJobId() == "") {
 			bySequence[event.GetSequence()] = event
 		}
 	}
@@ -185,7 +185,7 @@ func (m *Model) resizeContent() {
 
 	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
 	inner.Width = max(1, inner.Width-1)
-	content := "Submit a public PR URL from another terminal."
+	content := "Track or submit a PR URL from another terminal."
 
 	if job := m.job(); job != nil {
 		switch m.panel {
@@ -195,8 +195,20 @@ func (m *Model) resizeContent() {
 			content = markdown(job, m.events())
 		case statePanel:
 			content = m.stateView(inner.Width)
+		case trackingPanel:
+			content = m.trackingMarkdown()
 		default:
 			content = "Unknown view"
+		}
+	}
+
+	if m.panel == trackingPanel {
+		content = m.trackingMarkdown()
+	} else if m.job() == nil {
+		if m.panel == reviewsPanel && m.currentSubject().url != "" {
+			content = m.reviewsMarkdown()
+		} else if m.currentSubject().tracked != nil {
+			content = "No worker runs. Use **4 Tracking** for ownership and pending actions."
 		}
 	}
 
@@ -262,11 +274,16 @@ func (m *Model) queue(g geometry) string {
 			heading = m.theme.Heading().Render(heading)
 		}
 
-		rows = append(rows, prefix+heading, "  "+counted(len(item.jobs), "run"), "")
+		summary := counted(len(item.jobs), "run")
+		if item.tracked != nil {
+			summary += " · " + counted(m.openActions(item.tracked.GetId()), "action")
+		}
+
+		rows = append(rows, prefix+heading, "  "+summary, "")
 	}
 
 	if len(items) == 0 {
-		rows = []string{"No pull requests yet.", "", "Submit a public PR URL", "with the CLI."}
+		rows = []string{"No pull requests yet.", "", "Track or submit a PR URL", "with the CLI."}
 	}
 
 	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
@@ -292,7 +309,7 @@ func (m *Model) header() []string {
 	}
 
 	if identity == "" {
-		identity = "Select a public PR URL"
+		identity = "Track or submit a PR URL"
 	}
 
 	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
@@ -316,7 +333,7 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}}, m.theme)
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "tracking", Label: "4 Tracking"}}, m.theme)
 	tabs.Select(m.panelID())
 	tabs.SetWidth(g.right)
 

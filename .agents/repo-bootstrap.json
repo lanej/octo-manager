@@ -125,6 +125,51 @@
       "kind": "file",
       "sha256": "e5f8ef42b839bc4935124bdf5116d19e36400186bfe1f1acfe84f2eed19ca722"
     },
+    ".agents/skills/typescript/SKILL.md": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "6a590e88ff9efc2c81928b6312e761f6b435081392ba7648fde45c0b9ec7ec99"
+    },
+    ".agents/skills/typescript/assets/check-typescript.mjs": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "137c534a310dfcb007a8668f2c4bffa48af4c9df688f25eaf9ef33de0788e285"
+    },
+    ".agents/skills/typescript/assets/eslint.config.mjs": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "099c2cab6abc5fba5f73fd82859fbda7832eaac877f9e8190cc924678b00c7a9"
+    },
+    ".agents/skills/typescript/assets/gitignore": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "ca1838cde9e4cfb493f3ea87a08bf973a9d6102aac688fc8828107d5586042aa"
+    },
+    ".agents/skills/typescript/assets/package.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "4fd1598aec6150b98a872279c5ff858603cb700b32e2ec3e9b3c63e604b8f7ea"
+    },
+    ".agents/skills/typescript/assets/tsconfig.strict.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "59cdc0da48eacbead9da6fc588026e6aae3d6bbc16aae0062074f38fa826c6d8"
+    },
+    ".agents/skills/typescript/assets/typescript-quality.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "5442c25894b8a79eb152db6ed2c4813a5ca54828337d4fc6829bb355b0465b17"
+    },
+    ".agents/skills/typescript/assets/typescript-quality.yml": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "b9086e6fc90b6add0c9a09ab5acca099072751b5d8088fd46274c841fc060c5b"
+    },
+    ".agents/skills/typescript/references/correctness.md": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "6d78585f07017626da8b8e333a964faf6fa914a9e1175d610fad90e2533d60b9"
+    },
     ".github/workflows/go-quality.yml": {
       "executable": false,
       "kind": "file",
@@ -140,10 +185,40 @@
       "kind": "file",
       "sha256": "21f5462c4ad46639adafbc44930c756fbc8354307440f32b589e3a841423d953"
     },
+    ".typescript-quality.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "a1a3e5bae28e61329c8a49907ef06c033ee42b698dcbd85c3a3c739489fb058f"
+    },
+    ".typescript-quality/.gitignore": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "ca1838cde9e4cfb493f3ea87a08bf973a9d6102aac688fc8828107d5586042aa"
+    },
+    ".typescript-quality/eslint.config.mjs": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "099c2cab6abc5fba5f73fd82859fbda7832eaac877f9e8190cc924678b00c7a9"
+    },
+    ".typescript-quality/package.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "4fd1598aec6150b98a872279c5ff858603cb700b32e2ec3e9b3c63e604b8f7ea"
+    },
+    ".typescript-quality/tsconfig.strict.json": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "59cdc0da48eacbead9da6fc588026e6aae3d6bbc16aae0062074f38fa826c6d8"
+    },
     "scripts/check-go.sh": {
       "executable": true,
       "kind": "file",
       "sha256": "9559687a64611f3f5b1bdbabd81b7eb22038916cb09e58d1564db0a07e44114d"
+    },
+    "scripts/check-typescript.mjs": {
+      "executable": false,
+      "kind": "file",
+      "sha256": "137c534a310dfcb007a8668f2c4bffa48af4c9df688f25eaf9ef33de0788e285"
     },
     "scripts/go-quality.py": {
       "executable": false,
@@ -155,6 +230,7 @@
   "go_profile": true,
   "go_rollout": "strict",
   "mode": "tracked",
-  "source_revision": "f9eecb2e8c2764b2c327e17b9abd76599ccb8928",
+  "source_revision": "6238b28195137b7e59655fefbdd1b183dd22a577",
+  "typescript_profile": true,
   "version": 1
 }

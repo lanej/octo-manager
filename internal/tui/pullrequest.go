@@ -15,10 +15,11 @@ import (
 )
 
 type subject struct {
-	key   string
-	url   string
-	label string
-	jobs  []*v1.Job
+	key     string
+	url     string
+	label   string
+	jobs    []*v1.Job
+	tracked *v1.TrackedPullRequest
 }
 
 func pullRequest(job *v1.Job) (string, string) {
@@ -66,6 +67,16 @@ func (m *Model) subjects() []subject {
 
 	indices := map[string]int{}
 
+	for _, tracked := range m.snapshot.GetTracking().GetPrs() {
+		address, label := parsePRURL(tracked.GetUrl())
+		if address == "" {
+			continue
+		}
+
+		indices[address] = len(prs)
+		prs = append(prs, subject{key: address, url: address, label: label, tracked: tracked})
+	}
+
 	for _, job := range m.snapshot.GetJobs() {
 		address, label := pullRequest(job)
 		if address == "" {
@@ -93,6 +104,10 @@ func (m *Model) subjects() []subject {
 
 func (m *Model) currentSubject() subject {
 	for _, item := range m.subjects() {
+		if item.key == m.selected {
+			return item
+		}
+
 		for _, job := range item.jobs {
 			if job.GetId() == m.selected {
 				return item
@@ -150,7 +165,7 @@ func browserCommand(ctx context.Context, platform, address string) (*exec.Cmd, e
 }
 
 func (m *Model) openPullRequest() tea.Cmd {
-	address, _ := pullRequest(m.job())
+	address := m.currentSubject().url
 	if address == "" {
 		m.commandError = "This demo has no GitHub PR URL"
 		return nil

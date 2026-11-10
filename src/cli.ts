@@ -6,17 +6,18 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { Coordinator } from "./coordinator.js";
-import { request } from "./client.js";
+import { loadTrackingConfig } from "./tracking/config.js";
+import { request, trackingRequest, cliJSON } from "./client.js";
 import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
 async function main(): Promise<void> {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { state: { type: "string" }, theme: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { config:{type:"string"}, harness:{type:"string"}, endpoint:{type:"string"}, "thread-id":{type:"string"}, "agent-id":{type:"string"}, label:{type:"string"}, state: { type: "string" }, theme: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
   if (!command || values.help) {
-    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Only public PR inspection and disposable fixture writes are supported."); return;
+    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
   }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
@@ -32,7 +33,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "serve") {
-    const coordinator = new Coordinator(directory, { model: values.model });
+    const coordinator = new Coordinator(directory, { model: values.model, trackingConfig: loadTrackingConfig(values.config) });
     await coordinator.start();
     console.log(JSON.stringify({ ready: true, state: directory }));
     await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
@@ -40,7 +41,9 @@ async function main(): Promise<void> {
   }
   const id = argument;
   let result: unknown;
-  if (command === "submit" && argument === "summarize-pr" && values.url) result = await request(directory, { op: "submit", requestId: values["request-id"] ?? randomUUID(), task: { kind: "summarize_pr", url: values.url } });
+  if (["track","tracked","pr","refresh","assign","untrack","actions","action","acknowledge","working","retry-delivery","reprofile","tracking"].includes(command)) {
+    result=await trackingRequest(directory,command,id,{url:values.url,harness:values.harness,endpoint:values.endpoint,sessionId:values["thread-id"],agentId:values["agent-id"],label:values.label});
+  } else if (command === "submit" && argument === "summarize-pr" && values.url) result = await request(directory, { op: "submit", requestId: values["request-id"] ?? randomUUID(), task: { kind: "summarize_pr", url: values.url } });
   else if (command === "demo") {
     const requestId = values["request-id"] ?? randomUUID();
     const conflict = await request(directory, { op: "submit", requestId: `${requestId}:conflict`, task: { kind: "resolve_conflict" } });
@@ -60,6 +63,6 @@ async function main(): Promise<void> {
     } while (true);
     return;
   } else throw new Error("Unsupported command; see --help");
-  console.log(JSON.stringify(result, null, values.json ? undefined : 2));
+  console.log(JSON.stringify(result, cliJSON, values.json ? undefined : 2));
 }
 main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });

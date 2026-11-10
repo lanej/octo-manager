@@ -33,6 +33,42 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceTrackPullRequestProcedure is the fully-qualified name of the SchedulerService's
+	// TrackPullRequest RPC.
+	SchedulerServiceTrackPullRequestProcedure = "/octomanager.v1.SchedulerService/TrackPullRequest"
+	// SchedulerServiceListTrackedPullRequestsProcedure is the fully-qualified name of the
+	// SchedulerService's ListTrackedPullRequests RPC.
+	SchedulerServiceListTrackedPullRequestsProcedure = "/octomanager.v1.SchedulerService/ListTrackedPullRequests"
+	// SchedulerServiceGetTrackedPullRequestProcedure is the fully-qualified name of the
+	// SchedulerService's GetTrackedPullRequest RPC.
+	SchedulerServiceGetTrackedPullRequestProcedure = "/octomanager.v1.SchedulerService/GetTrackedPullRequest"
+	// SchedulerServiceRefreshTrackedPullRequestProcedure is the fully-qualified name of the
+	// SchedulerService's RefreshTrackedPullRequest RPC.
+	SchedulerServiceRefreshTrackedPullRequestProcedure = "/octomanager.v1.SchedulerService/RefreshTrackedPullRequest"
+	// SchedulerServiceAssignPullRequestProcedure is the fully-qualified name of the SchedulerService's
+	// AssignPullRequest RPC.
+	SchedulerServiceAssignPullRequestProcedure = "/octomanager.v1.SchedulerService/AssignPullRequest"
+	// SchedulerServiceUntrackPullRequestProcedure is the fully-qualified name of the SchedulerService's
+	// UntrackPullRequest RPC.
+	SchedulerServiceUntrackPullRequestProcedure = "/octomanager.v1.SchedulerService/UntrackPullRequest"
+	// SchedulerServiceListActionsProcedure is the fully-qualified name of the SchedulerService's
+	// ListActions RPC.
+	SchedulerServiceListActionsProcedure = "/octomanager.v1.SchedulerService/ListActions"
+	// SchedulerServiceGetActionProcedure is the fully-qualified name of the SchedulerService's
+	// GetAction RPC.
+	SchedulerServiceGetActionProcedure = "/octomanager.v1.SchedulerService/GetAction"
+	// SchedulerServiceAcknowledgeActionProcedure is the fully-qualified name of the SchedulerService's
+	// AcknowledgeAction RPC.
+	SchedulerServiceAcknowledgeActionProcedure = "/octomanager.v1.SchedulerService/AcknowledgeAction"
+	// SchedulerServiceStartActionProcedure is the fully-qualified name of the SchedulerService's
+	// StartAction RPC.
+	SchedulerServiceStartActionProcedure = "/octomanager.v1.SchedulerService/StartAction"
+	// SchedulerServiceRetryDeliveryProcedure is the fully-qualified name of the SchedulerService's
+	// RetryDelivery RPC.
+	SchedulerServiceRetryDeliveryProcedure = "/octomanager.v1.SchedulerService/RetryDelivery"
+	// SchedulerServiceReprofileActionProcedure is the fully-qualified name of the SchedulerService's
+	// ReprofileAction RPC.
+	SchedulerServiceReprofileActionProcedure = "/octomanager.v1.SchedulerService/ReprofileAction"
 	// SchedulerServiceSubmitJobProcedure is the fully-qualified name of the SchedulerService's
 	// SubmitJob RPC.
 	SchedulerServiceSubmitJobProcedure = "/octomanager.v1.SchedulerService/SubmitJob"
@@ -62,6 +98,18 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v1.SchedulerService service.
 type SchedulerServiceClient interface {
+	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
+	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
+	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
+	RefreshTrackedPullRequest(context.Context, *connect.Request[v1.RefreshTrackedPullRequestRequest]) (*connect.Response[v1.RefreshTrackedPullRequestResponse], error)
+	AssignPullRequest(context.Context, *connect.Request[v1.AssignPullRequestRequest]) (*connect.Response[v1.AssignPullRequestResponse], error)
+	UntrackPullRequest(context.Context, *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error)
+	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
+	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
+	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
+	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
+	ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error)
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
@@ -84,6 +132,78 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		trackPullRequest: connect.NewClient[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceTrackPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("TrackPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		listTrackedPullRequests: connect.NewClient[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListTrackedPullRequestsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListTrackedPullRequests")),
+			connect.WithClientOptions(opts...),
+		),
+		getTrackedPullRequest: connect.NewClient[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetTrackedPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetTrackedPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		refreshTrackedPullRequest: connect.NewClient[v1.RefreshTrackedPullRequestRequest, v1.RefreshTrackedPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceRefreshTrackedPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RefreshTrackedPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		assignPullRequest: connect.NewClient[v1.AssignPullRequestRequest, v1.AssignPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceAssignPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("AssignPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		untrackPullRequest: connect.NewClient[v1.UntrackPullRequestRequest, v1.UntrackPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceUntrackPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("UntrackPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		listActions: connect.NewClient[v1.ListActionsRequest, v1.ListActionsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListActionsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListActions")),
+			connect.WithClientOptions(opts...),
+		),
+		getAction: connect.NewClient[v1.GetActionRequest, v1.GetActionResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetActionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetAction")),
+			connect.WithClientOptions(opts...),
+		),
+		acknowledgeAction: connect.NewClient[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse](
+			httpClient,
+			baseURL+SchedulerServiceAcknowledgeActionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeAction")),
+			connect.WithClientOptions(opts...),
+		),
+		startAction: connect.NewClient[v1.StartActionRequest, v1.StartActionResponse](
+			httpClient,
+			baseURL+SchedulerServiceStartActionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("StartAction")),
+			connect.WithClientOptions(opts...),
+		),
+		retryDelivery: connect.NewClient[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse](
+			httpClient,
+			baseURL+SchedulerServiceRetryDeliveryProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RetryDelivery")),
+			connect.WithClientOptions(opts...),
+		),
+		reprofileAction: connect.NewClient[v1.ReprofileActionRequest, v1.ReprofileActionResponse](
+			httpClient,
+			baseURL+SchedulerServiceReprofileActionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ReprofileAction")),
+			connect.WithClientOptions(opts...),
+		),
 		submitJob: connect.NewClient[v1.SubmitJobRequest, v1.SubmitJobResponse](
 			httpClient,
 			baseURL+SchedulerServiceSubmitJobProcedure,
@@ -143,15 +263,87 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
-	submitJob      *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
-	getJob         *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
-	getPullRequest *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
-	getSnapshot    *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
-	listEvents     *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
-	watch          *connect.Client[v1.WatchRequest, v1.WatchResponse]
-	cancelJob      *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
-	retryJob       *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
-	setPaused      *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+	trackPullRequest          *connect.Client[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse]
+	listTrackedPullRequests   *connect.Client[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse]
+	getTrackedPullRequest     *connect.Client[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse]
+	refreshTrackedPullRequest *connect.Client[v1.RefreshTrackedPullRequestRequest, v1.RefreshTrackedPullRequestResponse]
+	assignPullRequest         *connect.Client[v1.AssignPullRequestRequest, v1.AssignPullRequestResponse]
+	untrackPullRequest        *connect.Client[v1.UntrackPullRequestRequest, v1.UntrackPullRequestResponse]
+	listActions               *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
+	getAction                 *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
+	acknowledgeAction         *connect.Client[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse]
+	startAction               *connect.Client[v1.StartActionRequest, v1.StartActionResponse]
+	retryDelivery             *connect.Client[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse]
+	reprofileAction           *connect.Client[v1.ReprofileActionRequest, v1.ReprofileActionResponse]
+	submitJob                 *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
+	getJob                    *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
+	getPullRequest            *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
+	getSnapshot               *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
+	listEvents                *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
+	watch                     *connect.Client[v1.WatchRequest, v1.WatchResponse]
+	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
+	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
+	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+}
+
+// TrackPullRequest calls octomanager.v1.SchedulerService.TrackPullRequest.
+func (c *schedulerServiceClient) TrackPullRequest(ctx context.Context, req *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error) {
+	return c.trackPullRequest.CallUnary(ctx, req)
+}
+
+// ListTrackedPullRequests calls octomanager.v1.SchedulerService.ListTrackedPullRequests.
+func (c *schedulerServiceClient) ListTrackedPullRequests(ctx context.Context, req *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error) {
+	return c.listTrackedPullRequests.CallUnary(ctx, req)
+}
+
+// GetTrackedPullRequest calls octomanager.v1.SchedulerService.GetTrackedPullRequest.
+func (c *schedulerServiceClient) GetTrackedPullRequest(ctx context.Context, req *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error) {
+	return c.getTrackedPullRequest.CallUnary(ctx, req)
+}
+
+// RefreshTrackedPullRequest calls octomanager.v1.SchedulerService.RefreshTrackedPullRequest.
+func (c *schedulerServiceClient) RefreshTrackedPullRequest(ctx context.Context, req *connect.Request[v1.RefreshTrackedPullRequestRequest]) (*connect.Response[v1.RefreshTrackedPullRequestResponse], error) {
+	return c.refreshTrackedPullRequest.CallUnary(ctx, req)
+}
+
+// AssignPullRequest calls octomanager.v1.SchedulerService.AssignPullRequest.
+func (c *schedulerServiceClient) AssignPullRequest(ctx context.Context, req *connect.Request[v1.AssignPullRequestRequest]) (*connect.Response[v1.AssignPullRequestResponse], error) {
+	return c.assignPullRequest.CallUnary(ctx, req)
+}
+
+// UntrackPullRequest calls octomanager.v1.SchedulerService.UntrackPullRequest.
+func (c *schedulerServiceClient) UntrackPullRequest(ctx context.Context, req *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error) {
+	return c.untrackPullRequest.CallUnary(ctx, req)
+}
+
+// ListActions calls octomanager.v1.SchedulerService.ListActions.
+func (c *schedulerServiceClient) ListActions(ctx context.Context, req *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error) {
+	return c.listActions.CallUnary(ctx, req)
+}
+
+// GetAction calls octomanager.v1.SchedulerService.GetAction.
+func (c *schedulerServiceClient) GetAction(ctx context.Context, req *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error) {
+	return c.getAction.CallUnary(ctx, req)
+}
+
+// AcknowledgeAction calls octomanager.v1.SchedulerService.AcknowledgeAction.
+func (c *schedulerServiceClient) AcknowledgeAction(ctx context.Context, req *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error) {
+	return c.acknowledgeAction.CallUnary(ctx, req)
+}
+
+// StartAction calls octomanager.v1.SchedulerService.StartAction.
+func (c *schedulerServiceClient) StartAction(ctx context.Context, req *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error) {
+	return c.startAction.CallUnary(ctx, req)
+}
+
+// RetryDelivery calls octomanager.v1.SchedulerService.RetryDelivery.
+func (c *schedulerServiceClient) RetryDelivery(ctx context.Context, req *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error) {
+	return c.retryDelivery.CallUnary(ctx, req)
+}
+
+// ReprofileAction calls octomanager.v1.SchedulerService.ReprofileAction.
+func (c *schedulerServiceClient) ReprofileAction(ctx context.Context, req *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error) {
+	return c.reprofileAction.CallUnary(ctx, req)
 }
 
 // SubmitJob calls octomanager.v1.SchedulerService.SubmitJob.
@@ -201,6 +393,18 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v1.SchedulerService service.
 type SchedulerServiceHandler interface {
+	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
+	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
+	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
+	RefreshTrackedPullRequest(context.Context, *connect.Request[v1.RefreshTrackedPullRequestRequest]) (*connect.Response[v1.RefreshTrackedPullRequestResponse], error)
+	AssignPullRequest(context.Context, *connect.Request[v1.AssignPullRequestRequest]) (*connect.Response[v1.AssignPullRequestResponse], error)
+	UntrackPullRequest(context.Context, *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error)
+	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
+	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
+	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
+	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
+	ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error)
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
@@ -219,6 +423,78 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceTrackPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceTrackPullRequestProcedure,
+		svc.TrackPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("TrackPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListTrackedPullRequestsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListTrackedPullRequestsProcedure,
+		svc.ListTrackedPullRequests,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListTrackedPullRequests")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetTrackedPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetTrackedPullRequestProcedure,
+		svc.GetTrackedPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetTrackedPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceRefreshTrackedPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceRefreshTrackedPullRequestProcedure,
+		svc.RefreshTrackedPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("RefreshTrackedPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceAssignPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceAssignPullRequestProcedure,
+		svc.AssignPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("AssignPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceUntrackPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceUntrackPullRequestProcedure,
+		svc.UntrackPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("UntrackPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListActionsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListActionsProcedure,
+		svc.ListActions,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListActions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetActionHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetActionProcedure,
+		svc.GetAction,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceAcknowledgeActionHandler := connect.NewUnaryHandler(
+		SchedulerServiceAcknowledgeActionProcedure,
+		svc.AcknowledgeAction,
+		connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceStartActionHandler := connect.NewUnaryHandler(
+		SchedulerServiceStartActionProcedure,
+		svc.StartAction,
+		connect.WithSchema(schedulerServiceMethods.ByName("StartAction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceRetryDeliveryHandler := connect.NewUnaryHandler(
+		SchedulerServiceRetryDeliveryProcedure,
+		svc.RetryDelivery,
+		connect.WithSchema(schedulerServiceMethods.ByName("RetryDelivery")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceReprofileActionHandler := connect.NewUnaryHandler(
+		SchedulerServiceReprofileActionProcedure,
+		svc.ReprofileAction,
+		connect.WithSchema(schedulerServiceMethods.ByName("ReprofileAction")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceSubmitJobHandler := connect.NewUnaryHandler(
 		SchedulerServiceSubmitJobProcedure,
 		svc.SubmitJob,
@@ -275,6 +551,30 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v1.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceTrackPullRequestProcedure:
+			schedulerServiceTrackPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceListTrackedPullRequestsProcedure:
+			schedulerServiceListTrackedPullRequestsHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetTrackedPullRequestProcedure:
+			schedulerServiceGetTrackedPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceRefreshTrackedPullRequestProcedure:
+			schedulerServiceRefreshTrackedPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceAssignPullRequestProcedure:
+			schedulerServiceAssignPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceUntrackPullRequestProcedure:
+			schedulerServiceUntrackPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceListActionsProcedure:
+			schedulerServiceListActionsHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetActionProcedure:
+			schedulerServiceGetActionHandler.ServeHTTP(w, r)
+		case SchedulerServiceAcknowledgeActionProcedure:
+			schedulerServiceAcknowledgeActionHandler.ServeHTTP(w, r)
+		case SchedulerServiceStartActionProcedure:
+			schedulerServiceStartActionHandler.ServeHTTP(w, r)
+		case SchedulerServiceRetryDeliveryProcedure:
+			schedulerServiceRetryDeliveryHandler.ServeHTTP(w, r)
+		case SchedulerServiceReprofileActionProcedure:
+			schedulerServiceReprofileActionHandler.ServeHTTP(w, r)
 		case SchedulerServiceSubmitJobProcedure:
 			schedulerServiceSubmitJobHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetJobProcedure:
@@ -301,6 +601,54 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.TrackPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListTrackedPullRequests is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetTrackedPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) RefreshTrackedPullRequest(context.Context, *connect.Request[v1.RefreshTrackedPullRequestRequest]) (*connect.Response[v1.RefreshTrackedPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RefreshTrackedPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) AssignPullRequest(context.Context, *connect.Request[v1.AssignPullRequestRequest]) (*connect.Response[v1.AssignPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.AssignPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) UntrackPullRequest(context.Context, *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.UntrackPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListActions is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAction is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.AcknowledgeAction is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.StartAction is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RetryDelivery is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ReprofileAction is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.SubmitJob is not implemented"))

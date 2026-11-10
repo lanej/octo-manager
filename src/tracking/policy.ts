@@ -1,0 +1,132 @@
+import {
+  ActionState,
+  type Action,
+  type ActionProgress,
+  type Blocker,
+  type PRObservation,
+} from "./types.js";
+export interface Finding {
+  sourceKey: string;
+  blocker: Blocker;
+  summary: string;
+  evidenceUrl: string;
+}
+const failed = new Set([
+  "failure",
+  "timed_out",
+  "cancelled",
+  "action_required",
+  "startup_failure",
+  "stale",
+  "error",
+]);
+function latest<T>(
+  items: T[],
+  key: (item: T) => string,
+  at: (item: T) => number,
+): T[] {
+  const map = new Map<string, T>();
+  for (const item of items)
+    if (!map.has(key(item)) || at(item) >= at(map.get(key(item))!))
+      map.set(key(item), item);
+  return [...map.values()];
+}
+export function currentChecks(o: PRObservation) {
+  return o.checks.state === "unavailable"
+    ? []
+    : latest(
+        o.checks.value.filter((c) => c.headSha === o.headSha),
+        (c) => c.key,
+        (c) => c.at,
+      );
+}
+export function currentReviews(o: PRObservation) {
+  return o.reviews.state === "unavailable"
+    ? []
+    : latest(
+        o.reviews.value.filter((r) =>
+          ["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(r.state),
+        ),
+        (r) => r.author,
+        (r) => r.at,
+      );
+}
+export function findings(o: PRObservation, url: string): Finding[] {
+  if (o.lifecycle !== "open") return [];
+  const found: Finding[] = [];
+  if (o.mergeability === "conflicting")
+    found.push({
+      sourceKey: `${o.headSha}:${o.baseSha}`,
+      blocker: { kind: "conflict", headSha: o.headSha, baseSha: o.baseSha },
+      summary: "Merge conflict",
+      evidenceUrl: url,
+    });
+  for (const c of o.checks.state === "complete" ? currentChecks(o) : [])
+    if (failed.has(c.conclusion))
+      found.push({
+        sourceKey: c.id,
+        blocker: {
+          kind: "check_failed",
+          sourceId: c.id,
+          checkName: c.name,
+          headSha: o.headSha,
+          checkKey: c.key,
+        },
+        summary: `Failed check: ${c.name}`,
+        evidenceUrl: c.url || url,
+      });
+  for (const r of o.reviews.state === "complete" ? currentReviews(o) : [])
+    if (r.state === "CHANGES_REQUESTED")
+      found.push({
+        sourceKey: r.id,
+        blocker: {
+          kind: "changes_requested",
+          reviewId: r.id,
+          reviewer: r.author,
+          reviewedHeadSha: r.headSha,
+        },
+        summary: `Changes requested by ${r.author}`,
+        evidenceUrl: r.url || url,
+      });
+  return found;
+}
+export function closeProgress(
+  a: Action,
+  o: PRObservation,
+  now: number,
+): ActionProgress | undefined {
+  const supersede = (reason: string): ActionProgress => ({
+    state: ActionState.Superseded,
+    at: now,
+    reason,
+  });
+  const resolve = (reason: string): ActionProgress => ({
+    state: ActionState.Resolved,
+    at: now,
+    observationId: o.id,
+    reason,
+  });
+  if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
+  const b = a.blocker;
+  if (b.kind !== "changes_requested" && b.headSha !== o.headSha)
+    return supersede("PR head changed");
+  if (b.kind === "conflict") {
+    if (b.baseSha !== o.baseSha) return supersede("Base head changed");
+    if (o.mergeability === "mergeable")
+      return resolve("GitHub confirms no merge conflict");
+  }
+  if (b.kind === "check_failed" && o.checks.state === "complete") {
+    const c = currentChecks(o).find((c) => c.key === b.checkKey);
+    if (c && c.id !== b.sourceId)
+      return supersede("A newer check execution replaced this failure");
+    if (c && ["success", "neutral", "skipped"].includes(c.conclusion))
+      return resolve("GitHub confirms check succeeded");
+  }
+  if (b.kind === "changes_requested" && o.reviews.state === "complete") {
+    const r = currentReviews(o).find((r) => r.author === b.reviewer);
+    if (r && ["APPROVED", "DISMISSED"].includes(r.state))
+      return resolve("GitHub confirms review approved or dismissed");
+    if (r && r.id !== b.reviewId)
+      return supersede("A newer review replaced this request");
+  }
+}
