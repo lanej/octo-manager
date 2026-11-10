@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "rollout": "ratchet",
+  "projects": [
+    "tsconfig.quality.json"
+  ],
+  "exclude": [
+    {
+      "path": "src/gen",
+      "reason": "Protobuf bindings are regenerated and verified against the committed schema."
+    },
+    {
+      "path": "src/agents/protocol",
+      "reason": "Codex protocol types are generated from the pinned authoritative app-server contract."
+    }
+  ],
+  "commands": {
+    "legacy": [
+      [
+        "bun",
+        "run",
+        "build:server"
+      ]
+    ],
+    "test": [
+      "bun",
+      "run",
+      "test"
+    ],
+    "audit": [
+      "bun",
+      "audit",
+      "--audit-level=high"
+    ]
+  }
+}

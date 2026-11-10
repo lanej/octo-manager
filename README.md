@@ -8,7 +8,7 @@ See the [live acceptance record](docs/live-acceptance.md) for the actual conflic
 
 ## Run
 
-Requires Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
+Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts
@@ -77,8 +77,11 @@ Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls,
 ## Development
 
 ```sh
+node scripts/check-typescript.mjs tools
 bun run generate
 bun run check
 ```
 
-Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, exercise the Bun scheduler and Connect API, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
+Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, run the dotfiles TypeScript compiler/lint/format profile, exercise the Bun scheduler and Connect API, audit Bun dependencies, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. TypeScript uses the existing-code retrofit: `.typescript-quality-baseline.json` records current findings and cannot grow; this is not full TypeScript compliance. Go uses strict enforcement without a baseline. Quality tools are isolated under `.typescript-quality/` with their own pinned npm lockfile; application dependencies remain managed by Bun. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
+
+The quality compiler includes source, tests, and generation scripts. It uses Bun-compatible module resolution while preserving the independent NodeNext application build. Only generated Protobuf and Codex protocol files are excluded from lint/format inventory. Imported dependency declarations are still checked; current Bun/Gaxios declaration incompatibilities are visible in the retrofit baseline. After fixing existing findings, run `node scripts/check-typescript.mjs ratchet` and commit the reduced baseline. New findings, missing modules, and suppression-policy violations fail the check.
