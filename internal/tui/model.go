@@ -64,6 +64,7 @@ type Model struct {
 	reviewLoading   map[string]bool
 	history         historyState
 	agentActivity   activityHistory
+	activityRender  activityRenderCache
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme) *Model {
@@ -251,11 +252,15 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.move(-1)
 		}
 	case "h", "left":
-		if m.panel != activityPanel {
+		if m.panel == activityPanel {
+			m.moveActivityPage(1)
+		} else {
 			m.moveRun(-1)
 		}
 	case "l", "right":
-		if m.panel != activityPanel {
+		if m.panel == activityPanel {
+			m.moveActivityPage(-1)
+		} else {
 			m.moveRun(1)
 		}
 	case "o":
@@ -310,7 +315,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.expanded = !m.expanded
 		m.resizeContent()
 	case "tab", "shift+tab":
-		if m.size.Height >= 18 && m.size.Width >= 32 {
+		if m.geometry().activity > 0 {
 			m.focus.Handle(key)
 		}
 	case "[", "pgup":

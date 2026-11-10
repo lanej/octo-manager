@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { activityCLI } from "./activity/cli.js";
-import { parseArgs } from "node:util";
+import { parseCommand } from "./arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,8 +14,9 @@ import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
 async function main(): Promise<void> {
-  if (await activityCLI(process.argv.slice(2))) return;
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { config:{type:"string"}, harness:{type:"string"}, endpoint:{type:"string"}, "thread-id":{type:"string"}, "agent-id":{type:"string"}, label:{type:"string"}, state: { type: "string" }, theme: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
+  const parsed = parseCommand(process.argv.slice(2));
+  if (await activityCLI(parsed)) return;
+  const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
   if (!command || values.help) {

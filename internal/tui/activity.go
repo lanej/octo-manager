@@ -10,8 +10,17 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
+	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
+
+const activityPageSize = 50
+
+type activityRenderCache struct {
+	source, rendered string
+	width            int
+	valid            bool
+}
 
 type activityMsg struct {
 	instance        string
@@ -27,6 +36,7 @@ type activityHistory struct {
 	instance                     string
 	version, cursor, seenThrough uint64
 	loading                      bool
+	page                         int
 	entries                      []*v1.ActivityReport
 	events                       []*v1.JobEvent
 	err                          error
@@ -39,6 +49,8 @@ func (m *Model) loadActivity() tea.Cmd {
 
 	if m.agentActivity.instance != m.instance {
 		m.agentActivity = activityHistory{instance: m.instance, version: m.agentActivity.version + 1}
+		m.activityRender.valid = false
+		m.resizeContent()
 	}
 
 	if m.agentActivity.loading || (m.agentActivity.seenThrough >= m.snapshot.GetSequence() && m.agentActivity.err == nil) {
@@ -46,6 +58,7 @@ func (m *Model) loadActivity() tea.Cmd {
 	}
 
 	m.agentActivity.loading = true
+	m.activityRender.valid = false
 	m.resizeContent()
 	instance, version, cursor, target := m.instance, m.agentActivity.version, m.agentActivity.cursor, m.snapshot.GetSequence()
 
@@ -69,6 +82,7 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 
 	m.agentActivity.loading = false
 	m.agentActivity.err = msg.err
+	m.activityRender.valid = false
 
 	if msg.err != nil {
 		m.resizeContent()
@@ -156,24 +170,34 @@ func (m *Model) activityMarkdown() string {
 		result += "Loading activity history…\n\n"
 	}
 
-	if len(history.entries) == 0 && len(history.events) == 0 {
+	items := activityItems(history)
+	if len(items) == 0 {
 		return result + "No agent activity recorded yet. Use `record-activity --help` from an agent session to report a named operation."
 	}
 
-	for _, item := range activityItems(history) {
+	start := min(history.page*activityPageSize, ((len(items)-1)/activityPageSize)*activityPageSize)
+
+	end := min(start+activityPageSize, len(items))
+	if len(items) > activityPageSize {
+		result += fmt.Sprintf("Showing %d–%d of %d · h older · l newer\n\n", start+1, end, len(items))
+	}
+
+	parts := []string{result}
+
+	for _, item := range items[start:end] {
 		if item.event != nil {
 			event := item.event
-			result += "## Coordinator · " + strings.ReplaceAll(safe(event.GetKind()), "_", " ") + "\n\n"
-			result += fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(event.GetAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), event.GetSequence())
-			result += safe(event.GetDetail()) + "\n\n"
+			parts = append(parts, "## Coordinator · "+strings.ReplaceAll(safe(event.GetKind()), "_", " ")+"\n\n")
+			parts = append(parts, fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(event.GetAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), event.GetSequence()))
+			parts = append(parts, safe(event.GetDetail())+"\n\n")
 
 			for _, reference := range []string{event.GetPrId(), event.GetActionId(), event.GetJobId()} {
 				if reference != "" {
-					result += "`" + safe(reference) + "` "
+					parts = append(parts, "`"+safe(reference)+"` ")
 				}
 			}
 
-			result += "\n\n---\n\n"
+			parts = append(parts, "\n\n---\n\n")
 
 			continue
 		}
@@ -181,33 +205,33 @@ func (m *Model) activityMarkdown() string {
 		entry := item.report
 		report := entry.GetReport()
 		actor := report.GetActor()
-		result += "## " + activityTitle(report.GetName()) + " · " + activityOutcome(report.GetOutcome()) + "\n\n"
-		result += fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(entry.GetRecordedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), entry.GetSequence())
+		parts = append(parts, "## "+activityTitle(report.GetName())+" · "+activityOutcome(report.GetOutcome())+"\n\n")
+		parts = append(parts, fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(entry.GetRecordedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), entry.GetSequence()))
 		identity := safe(actor.GetHarness())
 
 		if actor.GetVersion() != "" {
 			identity += " " + safe(actor.GetVersion())
 		}
 
-		result += "**" + identity + "** · session `" + safe(actor.GetSessionId()) + "`\n\n"
+		parts = append(parts, "**"+identity+"** · session `"+safe(actor.GetSessionId())+"`\n\n")
 		if actor.GetModel() != "" {
-			result += "Model: `" + safe(actor.GetModel()) + "`\n\n"
+			parts = append(parts, "Model: `"+safe(actor.GetModel())+"`\n\n")
 		}
 
-		result += safe(report.GetDetail()) + "\n\n"
+		parts = append(parts, safe(report.GetDetail())+"\n\n")
 		if report.GetPrUrl() != "" {
-			result += safe(report.GetPrUrl()) + "\n\n"
+			parts = append(parts, safe(report.GetPrUrl())+"\n\n")
 		}
 
 		if report.GetEvidenceUrl() != "" {
-			result += "Evidence: " + safe(report.GetEvidenceUrl()) + "\n\n"
+			parts = append(parts, "Evidence: "+safe(report.GetEvidenceUrl())+"\n\n")
 		}
 
 		name := strings.ToLower(strings.TrimPrefix(report.GetName().String(), "ACTIVITY_NAME_"))
-		result += "`" + name + "` · operation `" + safe(report.GetOperationId()) + "`\n\n---\n\n"
+		parts = append(parts, "`"+name+"` · operation `"+safe(report.GetOperationId())+"`\n\n---\n\n")
 	}
 
-	return result
+	return strings.Join(parts, "")
 }
 
 type activityItem struct {
@@ -229,4 +253,43 @@ func activityItems(history activityHistory) []activityItem {
 	sort.Slice(items, func(i, j int) bool { return items[i].sequence > items[j].sequence })
 
 	return items
+}
+
+func (m *Model) activitySource() string {
+	if !m.activityRender.valid {
+		m.activityRender.source = m.activityMarkdown()
+		m.activityRender.width = -1
+		m.activityRender.valid = true
+	}
+
+	return m.activityRender.source
+}
+
+func (m *Model) renderedActivity(width int) string {
+	source := m.activitySource()
+	if m.activityRender.width != width {
+		rendered, err := text.Markdown(source, width, m.theme)
+		if err != nil {
+			rendered = safe(source)
+		}
+
+		m.activityRender.rendered = rendered
+		m.activityRender.width = width
+	}
+
+	return m.activityRender.rendered
+}
+
+func (m *Model) moveActivityPage(delta int) {
+	count := len(m.agentActivity.entries) + len(m.agentActivity.events)
+
+	page := min(max(0, m.agentActivity.page+delta), max(0, (count-1)/activityPageSize))
+	if page == m.agentActivity.page {
+		return
+	}
+
+	m.agentActivity.page = page
+	m.activityRender.valid = false
+	m.result.GotoTop()
+	m.resizeContent()
 }

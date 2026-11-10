@@ -33,69 +33,66 @@ function hasCode(code: Code): (error: unknown) => boolean {
   return (error) => error instanceof ConnectError && error.code === code;
 }
 
+async function cli(args: string[]): Promise<string> {
+  const child = Bun.spawn([process.execPath, "src/cli.ts", ...args], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [output, error, code] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  assert.equal(code, 0, error);
+  return output;
+}
+
 test("agent CLI reports survive restart without a worker or tracked PR and replay once", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-activity-"));
   const coordinator = new Coordinator(directory);
   try {
     await coordinator.start();
-    const child = Bun.spawn(
-      [
-        process.execPath,
-        "src/cli.ts",
-        "record-activity",
-        "--state",
-        directory,
-        "--request-id",
-        input.requestId,
-        "--operation-id",
-        input.operationId,
-        "--name",
-        "merge_pr",
-        "--outcome",
-        "succeeded",
-        "--harness",
-        input.actor.harness,
-        "--thread-id",
-        input.actor.sessionId,
-        "--harness-version",
-        input.actor.version,
-        "--model",
-        input.actor.model,
-        "--detail",
-        input.detail,
-        "--url",
-        input.prUrl,
-        "--evidence",
-        input.evidenceUrl,
-        "--json",
-      ],
-      { stdout: "pipe", stderr: "pipe" },
+    const reportArgs = [
+      "--request-id",
+      input.requestId,
+      "--operation-id",
+      input.operationId,
+      "--name",
+      "merge_pr",
+      "--outcome",
+      "succeeded",
+      "--harness",
+      input.actor.harness,
+      "--thread-id",
+      input.actor.sessionId,
+      "--harness-version",
+      input.actor.version,
+      "--model",
+      input.actor.model,
+      "--detail",
+      input.detail,
+      "--url",
+      input.prUrl,
+      "--evidence",
+      input.evidenceUrl,
+      "--json",
+    ];
+    for (const prefix of [
+      ["--state", directory, "record-activity"],
+      ["record-activity", "--state", directory],
+    ]) {
+      assert.match(await cli([...prefix, ...reportArgs]), /"sequence":"1"/u);
+    }
+    for (const args of [
+      ["--state", directory, "activity", "--json"],
+      ["activity", "--state", directory, "--json"],
+    ]) {
+      assert.match(await cli(args), /ACTIVITY_NAME_MERGE_PR/u);
+    }
+    assert.match(
+      await cli(["--state", directory, "tracking", "--json"]),
+      /"prs":\[\]/u,
     );
-    const output = await new Response(child.stdout).text();
-    assert.equal(
-      await child.exited,
-      0,
-      await new Response(child.stderr).text(),
-    );
-    assert.match(output, /"sequence":"1"/u);
-    const listing = Bun.spawn(
-      [
-        process.execPath,
-        "src/cli.ts",
-        "activity",
-        "--state",
-        directory,
-        "--json",
-      ],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    const listed = await new Response(listing.stdout).text();
-    assert.equal(
-      await listing.exited,
-      0,
-      await new Response(listing.stderr).text(),
-    );
-    assert.match(listed, /ACTIVITY_NAME_MERGE_PR/u);
     const client = schedulerClient(directory);
     const first = (await client.listActivity({})).activities;
     assert.equal(first.length, 1);

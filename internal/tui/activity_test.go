@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -119,5 +120,96 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 
 	if !strings.Contains(m.activityMarkdown(), "History incomplete") {
 		t.Fatal("failed activity reads appear as complete history")
+	}
+}
+
+func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
+	// rationale: AllocsPerRun requires the refresh measurement to run without parallel tests.
+	m := model(t, theme.Dark)
+	m.panel = activityPanel
+	m.snapshot.Jobs = nil
+	m.snapshot.Sequence = 3000
+	m.instance = "fixture"
+
+	m.agentActivity = activityHistory{instance: "fixture", cursor: 3000, seenThrough: 3000}
+	for sequence := uint64(1); sequence <= 3000; sequence++ {
+		m.agentActivity.entries = append(m.agentActivity.entries, &v1.ActivityReport{Sequence: sequence, Report: &v1.ActivityInput{
+			Name: v1.ActivityName_ACTIVITY_NAME_RUN_CHECKS, Outcome: v1.ActivityOutcome_ACTIVITY_OUTCOME_SUCCEEDED,
+			Actor: &v1.ActivityActor{Harness: "codex", SessionId: "caller"}, Detail: fmt.Sprintf("record-%04d-end", sequence),
+		}})
+	}
+
+	m.Resize(layout.Size{Width: 132, Height: 40})
+
+	latest := m.activitySource()
+	if strings.Count(latest, "## Run checks") != 50 || !strings.Contains(latest, "record-3000-end") || !strings.Contains(latest, "record-2951-end") || strings.Contains(latest, "record-2950-end") {
+		t.Fatal("latest activity window omitted records or rendered outside its bound")
+	}
+
+	m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+
+	older := m.activitySource()
+	if !strings.Contains(older, "record-2950-end") || !strings.Contains(older, "record-2901-end") || strings.Contains(older, "record-2951-end") {
+		t.Fatal("older activity page overlaps or skips records")
+	}
+
+	m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+
+	if m.activitySource() != latest {
+		t.Fatal("newer activity navigation did not return to the latest page")
+	}
+
+	allocations := testing.AllocsPerRun(3, func() { m.resizeContent() })
+	if allocations > 100000 {
+		t.Fatalf("unchanged activity refresh rebuilt Markdown: %.0f allocations", allocations)
+	}
+
+	m.result.GotoTop()
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.Update(tea.KeyPressMsg{Code: ']', Text: "]"})
+
+	if m.focus.Current() != "result" || m.result.YOffset() == 0 {
+		t.Fatal("Tab moved focus to a hidden pane instead of scrolling Activity")
+	}
+
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
+
+	if m.focus.Current() != "result" {
+		t.Fatal("Shift-Tab moved focus to a hidden pane")
+	}
+
+	m.applyActivity(activityMsg{instance: m.instance, version: m.agentActivity.version, target: 3000, next: 3000, err: errors.New("offline")})
+
+	if !strings.Contains(m.activitySource(), "History incomplete") {
+		t.Fatal("render cache hid an activity read error")
+	}
+
+	m.instance = "empty-replacement"
+	m.snapshot.Sequence = 0
+	m.loadActivity()
+
+	if strings.Contains(m.activitySource(), "record-3000-end") || !strings.Contains(m.activitySource(), "No agent activity") {
+		t.Fatal("cached activity survived a database instance replacement")
+	}
+}
+
+func BenchmarkActivityRefresh(b *testing.B) {
+	m := New(context.Background(), nil, theme.New(theme.Dark))
+	b.Cleanup(m.cancel)
+	m.snapshot = &v1.Snapshot{}
+
+	m.panel = activityPanel
+	for sequence := uint64(1); sequence <= 3000; sequence++ {
+		m.agentActivity.entries = append(m.agentActivity.entries, &v1.ActivityReport{Sequence: sequence, Report: &v1.ActivityInput{
+			Name: v1.ActivityName_ACTIVITY_NAME_RUN_CHECKS, Outcome: v1.ActivityOutcome_ACTIVITY_OUTCOME_SUCCEEDED,
+			Actor: &v1.ActivityActor{Harness: "codex", SessionId: "caller"}, Detail: "Strict TypeScript and Go checks completed successfully.",
+		}})
+	}
+
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	b.ReportAllocs()
+
+	for b.Loop() {
+		m.resizeContent()
 	}
 }

@@ -1,6 +1,6 @@
 # Agent activity
 
-Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, session/harness, optional runtime version and model, PR link, evidence, and recorded time. Use **j/k** or **[/]** to scroll and **u** to refresh.
+Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, session/harness, optional runtime version and model, PR link, evidence, and recorded time. The UI renders a cached window of 50 entries. Use **h/l** for older/newer pages, **j/k** or **[/]** to scroll within a page, and **u** to refresh. Loaded history remains available for page navigation; new reports can shift a page as the live timeline grows.
 
 Coordinator events are recorded automatically by existing operations. Work performed outside Octo, such as a calling agent merging a PR or running checks, must be reported explicitly through the CLI or typed RPC. This does not instrument every agent session automatically. Actor metadata and outcomes are supplied by the caller; recording a success does not independently verify execution, authenticate an agent identity, acknowledge a blocker, or resolve it.
 

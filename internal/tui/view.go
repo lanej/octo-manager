@@ -198,7 +198,7 @@ func (m *Model) resizeContent() {
 		case trackingPanel:
 			content = m.trackingMarkdown()
 		case activityPanel:
-			content = m.activityMarkdown()
+			content = m.activitySource()
 		default:
 			content = "Unknown view"
 		}
@@ -215,11 +215,13 @@ func (m *Model) resizeContent() {
 	}
 
 	if m.panel == activityPanel {
-		content = m.activityMarkdown()
+		content = m.activitySource()
 	}
 
 	rendered := content
-	if m.panel != statePanel {
+	if m.panel == activityPanel {
+		rendered = m.renderedActivity(max(1, inner.Width))
+	} else if m.panel != statePanel {
 		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
 			rendered = value
 		} else {
@@ -230,6 +232,11 @@ func (m *Model) resizeContent() {
 	m.result.SetWidth(max(1, inner.Width))
 	m.result.SetHeight(max(1, inner.Height))
 	m.result.SetContent(rendered)
+
+	if m.panel == activityPanel {
+		return
+	}
+
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
@@ -377,7 +384,7 @@ func (m *Model) View() string {
 
 	if m.panel == activityPanel {
 		help = "[/] scroll · q quit"
-		notice = "1–4 PR views · j/k scroll · u refresh"
+		notice = "h/l older/newer · j/k scroll · u refresh"
 	}
 
 	if m.connectionError != "" {
