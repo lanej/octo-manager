@@ -1,0 +1,92 @@
+import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
+import { setTimeout as delay } from "node:timers/promises";
+import { SchedulerService, JobSchema, AttemptSchema, JobEventSchema, SnapshotSchema, JobStatus, SchedulerState, WorkerState, type Task as WireTask } from "./gen/octomanager/v1/scheduler_pb.js";
+import { jobTransitions, parseTask, type Job, type JobEvent, type Status } from "./domain.js";
+import type { Coordinator } from "./coordinator.js";
+
+const statuses: Record<Status, JobStatus> = {
+  queued: JobStatus.QUEUED, running: JobStatus.RUNNING, conflicted: JobStatus.CONFLICTED,
+  resolving: JobStatus.RESOLVING, retry_wait: JobStatus.RETRY_WAIT, cancelling: JobStatus.CANCELLING,
+  cancelled: JobStatus.CANCELLED, succeeded: JobStatus.SUCCEEDED, failed: JobStatus.FAILED, interrupted: JobStatus.INTERRUPTED,
+};
+export function wireJob(job: Job) {
+  return create(JobSchema, {
+    id: job.id, requestId: job.requestId,
+    task: { kind: job.task.kind === "resolve_conflict" ? { case: "resolveConflict", value: {} } : { case: "summarizePullRequest", value: { url: job.task.url } } },
+    status: statuses[job.status], createdAtMs: BigInt(job.createdAt), updatedAtMs: BigInt(job.updatedAt), availableAtMs: BigInt(job.availableAt),
+    attempts: job.attempts.map(a => create(AttemptSchema, { number: a.number, startedAtMs: BigInt(a.startedAt), endedAtMs: a.endedAt === undefined ? undefined : BigInt(a.endedAt), workerPid: a.pid === undefined ? undefined : BigInt(a.pid), exitObservedAtMs: a.exitObservedAt === undefined ? undefined : BigInt(a.exitObservedAt), error: a.error })),
+    retryCount: job.retryCount, resultMarkdown: job.result, error: job.error,
+  });
+}
+export function wireEvent(event: JobEvent) { return create(JobEventSchema, { sequence: BigInt(event.seq), jobId: event.jobId, atMs: BigInt(event.at), kind: event.kind, detail: event.detail }); }
+export function wireSnapshot(coordinator: Coordinator) {
+  // WHY: A single owner executes these synchronous reads without yielding; the cursor covers exactly the state returned.
+  const snapshot = coordinator.snapshot();
+  return create(SnapshotSchema, {
+    instanceId: coordinator.store.instanceId(), sequence: BigInt(coordinator.store.sequence()),
+    scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
+    worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
+    jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
+    allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
+  });
+}
+function task(value?: WireTask) {
+  if (value?.kind.case === "resolveConflict") return parseTask({ kind: "resolve_conflict" });
+  if (value?.kind.case === "summarizePullRequest") return parseTask({ kind: "summarize_pr", url: value.kind.value.url });
+  throw new ConnectError("A supported task is required", Code.InvalidArgument);
+}
+function command(coordinator: Coordinator, value: object): unknown {
+  try { return coordinator.command(value); }
+  catch (error) {
+    if (error instanceof ConnectError) throw error;
+    const message = error instanceof Error ? error.message : "Unknown failure";
+    if (message === "Job not found") throw new ConnectError(message, Code.NotFound);
+    if (message.startsWith("Request ID already used")) throw new ConnectError(message, Code.AlreadyExists);
+    if (/previous worker|Only failed or interrupted/.test(message)) throw new ConnectError(message, Code.FailedPrecondition);
+    if (message === "Coordinator is stopping") throw new ConnectError(message, Code.Unavailable);
+    if (/Invalid|Expected|Unsupported|Task must/.test(message)) throw new ConnectError(message, Code.InvalidArgument);
+    throw new ConnectError("Coordinator operation failed", Code.Internal);
+  }
+}
+export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter): void {
+  router.service(SchedulerService, {
+    submitJob(request) {
+      let parsed;
+      try { parsed = task(request.task); } catch { throw new ConnectError("A supported task with a valid public GitHub PR URL is required", Code.InvalidArgument); }
+      return { job: wireJob(command(coordinator, { op: "submit", requestId: request.requestId, task: parsed }) as Job) };
+    },
+    getJob(request) { return { job: wireJob(command(coordinator, { op: "get", id: request.id }) as Job) }; },
+    async getPullRequest(request, context) {
+      try { parseTask({ kind: "summarize_pr", url: request.url }); }
+      catch { throw new ConnectError("A valid GitHub PR URL is required", Code.InvalidArgument); }
+      try {
+        const value = await coordinator.pullRequestDetails(request.url, context.signal);
+        return { pullRequest: { ...value, observedAtMs: BigInt(value.observedAtMs), messages: value.messages.map(message => ({ ...message, atMs: BigInt(message.atMs), line: message.line === undefined ? undefined : BigInt(message.line) })) } };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "GitHub read failed";
+        if (message.includes("Only confirmed public")) throw new ConnectError("Only confirmed public repository PRs are supported", Code.PermissionDenied);
+        throw new ConnectError("GitHub reviews unavailable; check gh authentication, access, and connectivity", Code.Unavailable);
+      }
+    },
+    getSnapshot() { return { snapshot: wireSnapshot(coordinator) }; },
+    cancelJob(request) { return { job: wireJob(command(coordinator, { op: "cancel", id: request.id }) as Job) }; },
+    retryJob(request) { return { job: wireJob(command(coordinator, { op: "retry", id: request.id }) as Job) }; },
+    setPaused(request) { command(coordinator, { op: request.paused ? "pause" : "resume" }); return { snapshot: wireSnapshot(coordinator) }; },
+    listEvents(request) {
+      if (request.afterSequence < 0n || request.afterSequence > BigInt(coordinator.store.sequence())) throw new ConnectError("Cursor is outside retained history", Code.OutOfRange);
+      return { events: coordinator.store.eventsSince(Number(request.afterSequence), request.jobId).map(wireEvent) };
+    },
+    async *watch(request, context) {
+      if (request.instanceId !== coordinator.store.instanceId()) throw new ConnectError("State instance changed; obtain a fresh snapshot", Code.FailedPrecondition);
+      if (request.afterSequence < 0n || request.afterSequence > BigInt(coordinator.store.sequence())) throw new ConnectError("Cursor is ahead of retained history; obtain a fresh snapshot", Code.OutOfRange);
+      let cursor = Number(request.afterSequence);
+      while (!context.signal.aborted) {
+        if (coordinator.snapshot().scheduler === "stopping" || coordinator.snapshot().scheduler === "stopped") throw new ConnectError("Coordinator is stopping", Code.Unavailable);
+        const events = coordinator.store.eventsSince(cursor, request.jobId);
+        for (const event of events) { cursor = event.seq; yield { event: wireEvent(event) }; }
+        await delay(50, undefined, { signal: context.signal }).catch(() => {});
+      }
+    },
+  });
+}

@@ -1,123 +1,80 @@
-# Pi GitHub scheduler
+# Octo Manager
 
-A working-path experiment in scheduling Pi workers: a persistent FIFO queue, explicit job states, a terminal dashboard, a real disposable Git conflict, and a public GitHub PR summary. The coordinator owns state and tools; Pi performs the bounded reasoning task.
+A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The working path covers public PR reviews and discussion, worker summaries, and an actual disposable merge conflict.
+
+![GitHub review messages with persistent worker status](docs/images/dashboard.png)
+
+See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
 
 ## Run
 
-Requires Bun 1.4.4 or newer, Git, and GitHub CLI. The project pins Pi 1.5.0 and uses its coding-agent SDK and terminal UI.
-
-From the dotfiles root:
+Requires Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
-cd tools/pi-github
 bun install --frozen-lockfile --ignore-scripts
 bun run build
+bin/octo-manager serve
 ```
 
-The worker uses existing Pi ChatGPT authentication when configured, otherwise references your existing file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). No additional sign-in is needed when that session has a sufficiently fresh access token. The reference is read-only and held in memory: it does not create a Pi credential file, pass through refresh or identity tokens, or change Codex authentication. Codex retains responsibility for refreshing its own session; expired or nearly expired sessions fail with a refresh diagnosis. This fallback currently supports file-backed ChatGPT sessions, not OS-keychain-only or API-key Codex sessions.
-
-If neither application has a usable session, `bin/pi-github login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and then `/quit`. Pi stores its own resulting authentication in its private agent directory; `PI_CODING_AGENT_DIR` can select a different directory. The default model is `gpt-6.1-terra`; pass `--model MODEL` when starting the coordinator to select another OpenAI Codex provider model.
-
-Run the remaining commands from `tools/pi-github`. Dependencies and builds remain local to the tool; runtime state lives in the selected state directory. This addition does not change dotfiles installation or MCP configuration.
-
-Start the dashboard in one terminal:
+In another terminal, attach the native Charmed dashboard:
 
 ```sh
-bin/pi-github dashboard
+bin/octo-manager dashboard
 ```
 
-In another terminal, or from Codex:
+From Codex or a third terminal:
 
 ```sh
-bin/pi-github demo --request-id first-demo --json
-bin/pi-github get JOB_ID --json
-bin/pi-github events JOB_ID --watch
+bin/octo-manager submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
+bin/octo-manager get JOB_ID --json
+bin/octo-manager events JOB_ID --watch
 ```
 
-Both processes must use the same state directory. The default is `~/.local/state/pi-github`; override it with `--state DIR` or `PI_GITHUB_STATE`. `serve` runs the same foreground coordinator without a dashboard for automation. It does not install a daemon or modify Codex MCP configuration.
+All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. There is no installed daemon, automatic dotfiles setup, or MCP configuration change.
 
-GitHub reads use the existing `gh` login. If authentication fails, use the supported `gh auth login -h github.com` flow. Private or indeterminate repository visibility is rejected before PR content enters model context. Public PR text still goes to the selected OpenAI model provider.
+Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. Use `--theme dark`, `light`, `contrast`, or `mono` when launching the dashboard.
 
-![Pi dashboard showing the completed live conflict and queued GitHub summary](docs/images/dashboard.png)
+## Existing authentication
 
-The screenshot shows a live Bun run using existing Codex and GitHub authentication. See the [acceptance record](docs/live-acceptance.md) for the observed merge and job results, a [PR summary view](docs/images/dashboard-pr.png), and a [narrow-terminal view](docs/images/dashboard-narrow.png).
+The worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
+
+If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub reads use the existing `gh` login. Private or indeterminate repository visibility is rejected before content reaches the model. Public PR content goes to the selected model provider. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
 
 ## Dashboard and commands
 
-The dashboard shows the queue, the selected job, and its transitions and progress. Use arrows or `j/k` to select a job, `Enter` to expand its result, and `Tab` to switch between result and activity. `[` moves up through the result or back through activity; `]` moves down or toward the latest activity. Each pane keeps its own bounded scroll position. Use `p` to pause/resume dispatch, `c` to cancel, `r` to retry failed/interrupted work, and `q` to shut down gracefully. Narrow terminals stack the panes; very small terminals retain a compact result and quit hint.
+The dashboard centers on pull requests, with one URL header and a compact PR list. **1 Reviews** shows actual GitHub reviews, inline comments, and discussion, including author, message link, observed PR head, and earlier-commit markers. **2 Output** shows the selected worker’s Markdown response. **3 State** shows its observed Charmed state diagram with the latest transition highlighted and timestamped transitions. The worker pane stays visible with run status, attempt, process exit observation, and recent tool calls.
 
-Results use Pi’s native Markdown renderer for headings, emphasis, links, lists, tables, and code blocks. JSON blocks are indented for readability. The merge result separates the worker’s explanation from the coordinator’s independently verified policy and commit. The compact activity pane shows transitions and tool calls; streamed worker text appears in the result pane instead of filling the event timeline. The CLI continues to expose the recorded result and full paginated events.
+Reviews load on first selection; press `u` to refresh. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
+
+Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
+
+The dashboard pins Charmed’s `f502811` revision ([log-level atoms PR](https://github.com/lanej/charmed/pull/29)) and uses its native tabs, header/footer, connection indicator, scrollbar, log-level atoms, state diagram, themes, panels, focus, viewports, structured logs, and Glamour Markdown. Retry cycles retain chronological transition traces. Diagrams can grow vertically inside the scrollable State view; terminals too narrow for a diagram retain the textual path and full history. The main view and recent tools scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, `1/2/3` to change view, Tab to change scroll pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
 
 ```text
-pi-github submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
-pi-github get JOB_ID --json
-pi-github events JOB_ID --after SEQUENCE [--watch]
-pi-github cancel JOB_ID
-pi-github retry JOB_ID
-pi-github pause
-pi-github resume
+octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
+octo-manager get JOB_ID --json
+octo-manager events JOB_ID --after SEQUENCE [--watch]
+octo-manager cancel JOB_ID
+octo-manager retry JOB_ID
+octo-manager pause
+octo-manager resume
 ```
 
-Submissions return a durable job handle. Repeating a request ID and task returns the existing job; changing the task under that ID fails. CLI results are JSON; `--json` selects compact output. Events are JSONL, with at most 200 records per page. With `--watch`, the client follows subsequent pages until terminal state; otherwise use the last sequence as the next cursor.
+CLI responses are JSON; `--json` selects compact output. Event pages contain at most 200 records. Retain submission request IDs when reconciling uncertain outcomes. Cancellation acknowledgment can precede worker exit; inspect the job until terminal. The project-local Codex skill under `.agents/skills/octo-manager` explains submission and observation without a global installation.
 
-The project-local Codex skill under `.agents/skills/pi-github` describes delegation and result retrieval. It applies when Codex works in `tools/pi-github`, without installing a user-wide integration.
+## API and architecture
 
-## Scheduling and state
+The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and Codex integration. The [Protobuf contract](proto/octomanager/v1/scheduler.proto) generates Go and TypeScript bindings. ConnectRPC runs over HTTP/1.1 on an owner-only Unix socket. The [API guide](docs/api.md) defines cursor/replay semantics, idempotency, errors, deadlines, and disconnect behavior. The [architecture guide](docs/architecture.md) includes ownership and state diagrams.
 
-One coordinator and one worker run per state directory. SQLite commits state and transition events before dispatch. A separate SQLite exclusive lock protects coordinator ownership before stale-socket cleanup. The socket and state directory are owner-only; this isolates other local accounts, not other unrestricted processes under the same account.
+`demo` first creates a real merge conflict in `retry-policy.json`, then queues a summary of public Pi PR 11546. The required merge keeps `maxAttempts=3` from the target and `timeoutSeconds=60` from the source, with `retryDelaySeconds=1`. The coordinator rejects either unchanged side, extra keys/paths, invalid values, and conflict markers, then commits and checks a clean two-parent merge. Only generated repositories are changed, and user hooks/signing are disabled for these fixtures.
 
-```mermaid
-stateDiagram-v2
-    [*] --> queued: submit
-    queued --> Active: dispatch
-    state Active {
-        [*] --> running
-        running --> conflicted: actual Git conflict
-        conflicted --> resolving: start Pi
-    }
-    Active --> succeeded: verified result and worker exit
-    Active --> failed: permanent failure or exhausted retries
-    Active --> retry_wait: transient failure
-    Active --> cancelling: cancel
-    Active --> interrupted: shutdown or restart
-    retry_wait --> queued: backoff elapsed
-    queued --> cancelled: cancel before dispatch
-    retry_wait --> cancelled: cancel
-    cancelling --> cancelled: worker exited
-    cancelling --> interrupted: shutdown or restart
-    failed --> queued: explicit retry
-    interrupted --> queued: explicit retry after PID fence clears
-```
+Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
 
-`Active` groups `running`, `conflicted`, and `resolving`; each can take the shared outgoing transitions. A job may already be terminal while fixture cleanup finishes; the worker slot remains busy until that cleanup completes. Scheduler pause/resume and worker recovery are separate from job state. During recovery, dispatch remains fenced until every unresolved previous worker PID has exited.
-
-Pause leaves active work running. Retryable provider or transport failures receive at most three attempts, delayed by one and five seconds. Authentication and invalid resolutions do not retry automatically. Manual retry resets that automatic retry budget while retaining the attempt history. Each conflict attempt gets a fresh fixture.
-
-Workers cannot start model or tool work before the coordinator persists their PID. Attempt IDs fence stale messages; cancellation takes precedence over late completion. A cancelled worker keeps the slot until it exits. On shutdown the coordinator aborts active work, escalates to process termination after five seconds, and preserves queued work. Restart marks unfinished work interrupted and waits for every unresolved previous worker PID to disappear before dispatch. A reused PID conservatively blocks recovery rather than risking termination of another process.
-
-The worker has a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. The coordinator permits only the tools appropriate to the current job. No shell or project tools are exposed, and project instructions, skills, extensions, and prompt discovery are disabled in worker sessions. Pi is not an operating-system sandbox; installed dependencies and the host process remain trusted.
-
-## Deliberate conflict
-
-`demo` queues a conflict-resolution job and then a summary of public Pi PR 11546. The first job generates a disposable repository, creates two branches, and performs an actual conflicting merge on `retry-policy.json`.
-
-| Version | maxAttempts | timeoutSeconds | retryDelaySeconds |
-| --- | ---: | ---: | ---: |
-| Base | 1 | 30 | 1 |
-| Target | 3 | 30 | 1 |
-| Source | 5 | 60 | 1 |
-| Required resolution | 3 | 60 | 1 |
-
-Pi reads the conflict and receives the explicit resolution requirements. Its write tool accepts a policy object and touches only the generated policy file. An independent checker rejects either unchanged side, conflict markers, invalid values, extra keys, and unrelated changed paths. Only the coordinator stages and commits the resolution. It confirms a clean merge with two parents, stores the result, and removes the fixture. Generated repositories ignore user Git hooks and signing configuration. No user's repository or remote GitHub object is changed.
-
-The scheduler and conflict states are the focus of this thread. PR summaries deliberately omit CI analysis, and this implementation has no recurring schedules, concurrent worker pool, MCP server, or remote mutation operations.
-
-## Verify
+## Development
 
 ```sh
+bun run generate
 bun run check
 ```
 
-The check builds the TypeScript source and exercises real fixture merges, controlled worker processes, local socket clients, durable scheduling, cancellation, retry timing, recovery, and terminal rendering. The controlled worker is a test fixture, not a substitute for live Pi acceptance. Tests require permission to create Unix sockets and inspect their own child processes.
-
-Live acceptance requires existing ChatGPT authentication and GitHub access. Run the dashboard and demo, inspect the conflict transitions and merged policy, and confirm the waiting PR job subsequently finishes. Tests use synthetic authentication fixtures and never use provider credentials or send private repository content.
+Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, exercise the Bun scheduler and Connect API, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.

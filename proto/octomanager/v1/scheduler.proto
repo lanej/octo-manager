@@ -1,0 +1,134 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+service SchedulerService {
+  rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
+  rpc GetJob(GetJobRequest) returns (GetJobResponse);
+  rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
+  rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
+  rpc SetPaused(SetPausedRequest) returns (SetPausedResponse);
+}
+message SummarizePullRequestTask { string url = 1; }
+message ResolveConflictTask {}
+message Task {
+  oneof kind {
+    SummarizePullRequestTask summarize_pull_request = 1;
+    ResolveConflictTask resolve_conflict = 2;
+  }
+}
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_QUEUED = 1;
+  JOB_STATUS_RUNNING = 2;
+  JOB_STATUS_CONFLICTED = 3;
+  JOB_STATUS_RESOLVING = 4;
+  JOB_STATUS_RETRY_WAIT = 5;
+  JOB_STATUS_CANCELLING = 6;
+  JOB_STATUS_CANCELLED = 7;
+  JOB_STATUS_SUCCEEDED = 8;
+  JOB_STATUS_FAILED = 9;
+  JOB_STATUS_INTERRUPTED = 10;
+}
+enum SchedulerState {
+  SCHEDULER_STATE_UNSPECIFIED = 0;
+  SCHEDULER_STATE_RUNNING = 1;
+  SCHEDULER_STATE_PAUSED = 2;
+  SCHEDULER_STATE_STOPPING = 3;
+  SCHEDULER_STATE_STOPPED = 4;
+}
+enum WorkerState {
+  WORKER_STATE_UNSPECIFIED = 0;
+  WORKER_STATE_IDLE = 1;
+  WORKER_STATE_BUSY = 2;
+  WORKER_STATE_RECOVERING = 3;
+}
+message Attempt {
+  uint32 number = 1;
+  int64 started_at_ms = 2;
+  optional int64 ended_at_ms = 3;
+  optional int64 worker_pid = 4;
+  optional int64 exit_observed_at_ms = 5;
+  optional string error = 6;
+}
+message Job {
+  string id = 1;
+  string request_id = 2;
+  Task task = 3;
+  JobStatus status = 4;
+  int64 created_at_ms = 5;
+  int64 updated_at_ms = 6;
+  int64 available_at_ms = 7;
+  repeated Attempt attempts = 8;
+  uint32 retry_count = 9;
+  optional string result_markdown = 10;
+  optional string error = 11;
+}
+message JobEvent {
+  uint64 sequence = 1;
+  string job_id = 2;
+  int64 at_ms = 3;
+  string kind = 4;
+  string detail = 5;
+}
+message Snapshot {
+  string instance_id = 1;
+  uint64 sequence = 2;
+  SchedulerState scheduler = 3;
+  WorkerState worker = 4;
+  repeated Job jobs = 5;
+  repeated JobEvent recent_events = 6;
+  optional int64 recovery_pid = 7;
+  repeated StateTransition allowed_transitions = 8;
+}
+message SubmitJobRequest { string request_id = 1; Task task = 2; }
+message SubmitJobResponse { Job job = 1; }
+message GetJobRequest { string id = 1; }
+message GetJobResponse { Job job = 1; }
+message GetSnapshotRequest {}
+message GetSnapshotResponse { Snapshot snapshot = 1; }
+message WatchRequest {
+  string instance_id = 1;
+  uint64 after_sequence = 2;
+  optional string job_id = 3;
+}
+message WatchResponse { JobEvent event = 1; }
+message CancelJobRequest { string id = 1; }
+message CancelJobResponse { Job job = 1; }
+message RetryJobRequest { string id = 1; }
+message RetryJobResponse { Job job = 1; }
+message SetPausedRequest { bool paused = 1; }
+message SetPausedResponse { Snapshot snapshot = 1; }
+
+message ListEventsRequest { uint64 after_sequence = 1; optional string job_id = 2; }
+message ListEventsResponse { repeated JobEvent events = 1; }
+
+message StateTransition { JobStatus from = 1; JobStatus to = 2; }
+message ReviewMessage {
+  string id = 1;
+  string url = 2;
+  string author = 3;
+  string kind = 4;
+  string state = 5;
+  string body_markdown = 6;
+  int64 at_ms = 7;
+  string path = 8;
+  optional int64 line = 9;
+  string commit_sha = 10;
+  bool body_truncated = 11;
+}
+message PullRequestDetails {
+  string url = 1;
+  string title = 2;
+  string state = 3;
+  string head_sha = 4;
+  int64 observed_at_ms = 5;
+  repeated ReviewMessage messages = 6;
+  bool may_have_more_messages = 7;
+}
+message GetPullRequestRequest { string url = 1; }
+message GetPullRequestResponse { PullRequestDetails pull_request = 1; }

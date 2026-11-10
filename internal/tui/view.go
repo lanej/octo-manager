@@ -1,0 +1,362 @@
+package tui
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+	"unicode"
+
+	"charm.land/log/v2"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/collection"
+	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/layout"
+	"github.com/lanej/charmed/navigation"
+	"github.com/lanej/charmed/text"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+)
+
+type geometry struct {
+	body, left, right, result, activity int
+	split                               bool
+}
+
+func (m *Model) geometry() geometry {
+	body := max(1, m.size.Height-len(m.header())-2)
+	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded
+
+	left := 0
+	if split {
+		left = 36
+	}
+
+	right := max(1, m.size.Width-left)
+	if split {
+		right = max(1, right-2)
+	}
+
+	activity := 0
+	if m.size.Height >= 18 && m.size.Width >= 32 {
+		activity = min(8, max(5, body/4))
+	}
+
+	result := body - 1
+	if activity > 0 {
+		result -= activity + 1
+	}
+
+	return geometry{body: body, left: left, right: right, result: max(1, result), activity: activity, split: split}
+}
+
+func safe(value string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) && r != '\n' && r != '\t' {
+			return -1
+		}
+
+		return r
+	}, ansi.Strip(value))
+}
+
+func jobTitle(job *v1.Job) string {
+	switch job.GetTask().GetKind().(type) {
+	case *v1.Task_ResolveConflict:
+		return "Conflict demo"
+	case *v1.Task_SummarizePullRequest:
+		return "Summarize PR"
+	default:
+		return "Unknown task"
+	}
+}
+
+func statusLabel(status v1.JobStatus) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(status.String(), "JOB_STATUS_"), "_", " "))
+}
+
+func jobTone(status v1.JobStatus) text.Tone {
+	switch status {
+	case v1.JobStatus_JOB_STATUS_SUCCEEDED:
+		return text.Success
+	case v1.JobStatus_JOB_STATUS_FAILED:
+		return text.Danger
+	case v1.JobStatus_JOB_STATUS_CONFLICTED, v1.JobStatus_JOB_STATUS_RETRY_WAIT:
+		return text.Warning
+	case v1.JobStatus_JOB_STATUS_RUNNING, v1.JobStatus_JOB_STATUS_RESOLVING, v1.JobStatus_JOB_STATUS_CANCELLING:
+		return text.Info
+	case v1.JobStatus_JOB_STATUS_UNSPECIFIED, v1.JobStatus_JOB_STATUS_QUEUED, v1.JobStatus_JOB_STATUS_CANCELLED, v1.JobStatus_JOB_STATUS_INTERRUPTED:
+		return text.Neutral
+	default:
+		return text.Neutral
+	}
+}
+
+func markdown(job *v1.Job, events []*v1.JobEvent) string {
+	if job.GetResultMarkdown() != "" {
+		raw := safe(job.GetResultMarkdown())
+
+		index := strings.LastIndex(raw, "\n\n")
+		if job.GetStatus() == v1.JobStatus_JOB_STATUS_SUCCEEDED && job.GetTask().GetResolveConflict() != nil && index >= 0 {
+			var receipt struct {
+				Clean  bool   `json:"clean"`
+				Commit string `json:"mergeCommit"`
+				Policy struct {
+					Attempts int `json:"maxAttempts"`
+					Timeout  int `json:"timeoutSeconds"`
+					Delay    int `json:"retryDelaySeconds"`
+				} `json:"policy"`
+			}
+			if err := json.Unmarshal([]byte(raw[index+2:]), &receipt); err == nil && receipt.Clean {
+				hash, hashErr := hex.DecodeString(receipt.Commit)
+
+				policy, policyErr := json.MarshalIndent(receipt.Policy, "", "  ")
+				if hashErr == nil && len(hash) == 20 && policyErr == nil {
+					return raw[:index] + "\n\n---\n\n**Independently verified** · clean two-parent merge\n\n```json\n" + string(policy) + "\n```\n\nCommit `" + receipt.Commit + "`"
+				}
+			}
+		}
+
+		return raw
+	}
+
+	if job.GetError() != "" {
+		return "**" + statusLabel(job.GetStatus()) + "**\n\n" + safe(job.GetError())
+	}
+
+	var (
+		progress     []string
+		attemptStart int64
+	)
+	if attempts := job.GetAttempts(); len(attempts) > 0 {
+		attemptStart = attempts[len(attempts)-1].GetStartedAtMs()
+	}
+
+	for _, event := range events {
+		if event.GetAtMs() >= attemptStart && event.GetKind() == "progress" && !strings.HasPrefix(event.GetDetail(), "Using existing ") {
+			progress = append(progress, safe(event.GetDetail()))
+		}
+	}
+
+	if len(progress) > 0 {
+		return strings.Join(progress, "")
+	}
+
+	for i := len(events) - 1; i >= 0; i-- {
+		if events[i].GetAtMs() >= attemptStart && events[i].GetKind() == "conflicted" {
+			return "**Reconciling the two branches**\n\n```diff\n" + safe(events[i].GetDetail()) + "\n```"
+		}
+	}
+
+	return "Waiting for worker output…"
+}
+
+func (m *Model) events() []*v1.JobEvent {
+	bySequence := map[uint64]*v1.JobEvent{}
+
+	if m.history.job == m.selected && m.history.instance == m.instance {
+		for _, event := range m.history.events {
+			bySequence[event.GetSequence()] = event
+		}
+	}
+
+	for _, event := range m.snapshot.GetRecentEvents() {
+		if event.GetJobId() == m.selected || event.GetJobId() == "" {
+			bySequence[event.GetSequence()] = event
+		}
+	}
+
+	events := make([]*v1.JobEvent, 0, len(bySequence))
+	for _, event := range bySequence {
+		events = append(events, event)
+	}
+
+	sort.Slice(events, func(i, j int) bool { return events[i].GetSequence() < events[j].GetSequence() })
+
+	return events
+}
+
+func (m *Model) resizeContent() {
+	g := m.geometry()
+	if g.activity == 0 {
+		m.focus.Set("result")
+	}
+
+	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+	inner.Width = max(1, inner.Width-1)
+	content := "Submit a public PR URL from another terminal."
+
+	if job := m.job(); job != nil {
+		switch m.panel {
+		case reviewsPanel:
+			content = m.reviewsMarkdown()
+		case outputPanel:
+			content = markdown(job, m.events())
+		case statePanel:
+			content = m.stateView(inner.Width)
+		default:
+			content = "Unknown view"
+		}
+	}
+
+	rendered := content
+	if m.panel != statePanel {
+		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
+			rendered = value
+		} else {
+			rendered = safe(content)
+		}
+	}
+
+	m.result.SetWidth(max(1, inner.Width))
+	m.result.SetHeight(max(1, inner.Height))
+	m.result.SetContent(rendered)
+	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
+	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
+
+	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
+	for _, event := range m.events() {
+		if event.GetKind() != "tool" {
+			continue
+		}
+
+		m.activity.Append(collection.LogEntry{Time: time.UnixMilli(event.GetAtMs()).UTC(), Level: log.InfoLevel, Message: strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
+	}
+
+	if follow {
+		m.activity.GotoBottom()
+	} else {
+		m.activity.SetYOffset(oldOffset)
+	}
+}
+
+func (m *Model) queue(g geometry) string {
+	capacity := max(1, (g.body-2)/3)
+	items := m.subjects()
+	current := m.currentSubject().key
+	index := 0
+
+	for i, item := range items {
+		if item.key == current {
+			index = i
+			break
+		}
+	}
+
+	start := max(0, index-capacity+1)
+	rows := []string{}
+
+	for _, item := range items[start:min(start+capacity, len(items))] {
+		prefix := "  "
+		heading := item.label
+
+		available := max(1, layout.PanelContentSize(layout.Size{Width: g.left, Height: g.body}).Width-2)
+		if marker := strings.LastIndex(heading, "#"); marker >= 0 && ansi.StringWidth(heading) > available {
+			suffix := heading[marker:]
+			heading = ansi.Truncate(heading[:marker], max(0, available-ansi.StringWidth(suffix)), "…") + suffix
+		}
+
+		if item.key == current {
+			prefix = "› "
+			heading = m.theme.Heading().Render(heading)
+		}
+
+		rows = append(rows, prefix+heading, "  "+counted(len(item.jobs), "run"), "")
+	}
+
+	if len(items) == 0 {
+		rows = []string{"No pull requests yet.", "", "Submit a public PR URL", "with the CLI."}
+	}
+
+	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+}
+
+func counted(count int, noun string) string {
+	if count != 1 {
+		noun += "s"
+	}
+
+	return fmt.Sprintf("%d %s", count, noun)
+}
+
+func (m *Model) header() []string {
+	connection := feedback.Connected
+	if m.snapshot == nil || m.connectionError != "" {
+		connection = feedback.Disconnected
+	}
+
+	identity := m.currentSubject().url
+	if identity == "" {
+		identity = m.currentSubject().label
+	}
+
+	if identity == "" {
+		identity = "Select a public PR URL"
+	}
+
+	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
+	chrome := layout.Header{Title: "OCTO MANAGER", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
+	lines := strings.Split(chrome.View(m.size.Width, m.theme), "\n")
+	lines = append(lines, context[1:]...)
+
+	return append(lines, "")
+}
+
+func (m *Model) View() string {
+	header := m.header()
+	if m.size.Width < 32 || m.size.Height < 12 {
+		header = header[:min(len(header), max(0, m.size.Height-1))]
+		for len(header) < m.size.Height-1 {
+			header = append(header, "")
+		}
+
+		return layout.Fit(strings.Join(append(header, "q quit · j/k PRs"), "\n"), m.size)
+	}
+
+	g := m.geometry()
+
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}}, m.theme)
+	tabs.Select(m.panelID())
+	tabs.SetWidth(g.right)
+
+	scrollbar := feedback.Scrollbar{Total: m.result.TotalLineCount(), Visible: m.result.Height(), Offset: m.result.YOffset(), Height: m.result.Height()}
+	content := layout.Row(m.result.View(), scrollbar.View(m.theme))
+
+	right := tabs.View() + "\n" + layout.Panel("", content, layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
+	if g.activity > 0 {
+		lines := m.workerLines()
+		logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
+
+		worker := strings.Join(lines, "\n")
+		if logSize.Height > len(lines) {
+			worker += "\n" + m.activity.View()
+		}
+
+		right += "\n\n" + layout.Panel("WORKER · recent tools UTC", worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
+	}
+
+	body := right
+	if g.split {
+		body = layout.Row(m.queue(g), strings.Repeat(" ", 2), right)
+	}
+
+	help := "u refresh · o browser · [/] scroll · tab pane · q quit"
+	if m.size.Width < 96 {
+		help = "o browser · [/] scroll · q quit"
+	}
+
+	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
+	if m.connectionError != "" {
+		notice = m.connectionError
+	}
+
+	if m.commandError != "" {
+		notice = m.commandError
+	}
+
+	dispatch := strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_"))
+	footer := layout.Footer{Help: help, Status: "dispatch " + dispatch}
+
+	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+footer.View(m.size.Width, m.theme)+"\n"+m.theme.Subtle().Render(notice), m.size)
+}
