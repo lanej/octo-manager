@@ -1,3 +1,4 @@
+import { activityRoutes } from "./activity/rpc.js";
 import { wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
@@ -58,6 +59,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return value;
   };
   router.service(SchedulerService, {
+    ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
     async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},

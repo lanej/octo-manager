@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { activityCLI } from "./activity/cli.js";
 import { parseArgs } from "node:util";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -13,11 +14,12 @@ import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
 async function main(): Promise<void> {
+  if (await activityCLI(process.argv.slice(2))) return;
   const { values, positionals } = parseArgs({ allowPositionals: true, options: { config:{type:"string"}, harness:{type:"string"}, endpoint:{type:"string"}, "thread-id":{type:"string"}, "agent-id":{type:"string"}, label:{type:"string"}, state: { type: "string" }, theme: { type: "string" }, model: { type: "string" }, url: { type: "string" }, "request-id": { type: "string" }, json: { type: "boolean" }, after: { type: "string" }, watch: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
   if (!command || values.help) {
-    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
+    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
   }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");

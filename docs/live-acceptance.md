@@ -45,3 +45,15 @@ The existing Codex daemon identified itself as 0.167.0. Its local control socket
 That delivery used an explicitly synthetic conflict observation in an isolated database to exercise notification; it does not establish that merged PR #1 had a conflict. Its placeholders were `acceptance-head` and `acceptance-base`. The receiving agent attempted the exact acknowledgment command but its sandbox received `ECONNREFUSED` for the coordinator socket. Therefore live message delivery and processing were confirmed; recorded live acknowledgment was not. The action remained open until the next real GitHub observation superseded it because the PR was merged. Controlled CLI/Connect tests separately verify acknowledgment and work reporting.
 
 The recipient's failed callback illustrates the retained boundary: a delivered message does not establish action acceptance, and Octo does not relax the session's permissions to manufacture success. Agents with denied socket access need their existing host approval path. No private provider-backed acceptance was performed; private metadata separation is covered with controlled GitHub responses.
+
+## Named agent activity
+
+On 2026-11-10, the activity reporting CLI recorded the actual Octo PR #2 merge as `merge_pr` / `succeeded`, correlated by `octo-pr2-merge`. Its evidence links to merge commit `197e1b61054babefa12daa7eb017ab2dd4db06dd`, independently checked against GitHub and fetched `main` during the merge. This report was written after the merge; its recorded time describes ingestion, not execution time. Replaying the same request returned sequence 1 without duplicating it.
+
+The trial used an isolated coordinator database at `/private/tmp/octo-activity-runtime/live-state/jobs.sqlite`, not the default user database. The coordinator was stopped and reopened repeatedly during capture, and the same report remained visible without a worker job or tracked PR. External session activity still requires explicit CLI/RPC reporting; no automatic harness hook was installed.
+
+Actual native Go PTY output at 132×40 and 80×32 was replayed in xterm.js with its resize events, then photographed with headless Chrome. The captures were inspected at both sizes, including the bottom edge, selected Activity tab, wrapped evidence URL, and footer. No fixture snapshot was substituted for the API response.
+
+![Named merge activity from the actual reporting CLI](images/activity.png)
+
+![Named activity at 80 columns](images/activity-narrow.png)

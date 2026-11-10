@@ -1,0 +1,43 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+enum ActivityName {
+  ACTIVITY_NAME_UNSPECIFIED = 0;
+  ACTIVITY_NAME_MERGE_PR = 1;
+  ACTIVITY_NAME_RUN_CHECKS = 2;
+  ACTIVITY_NAME_RESOLVE_CONFLICT = 3;
+  ACTIVITY_NAME_SUMMARIZE_PR = 4;
+  ACTIVITY_NAME_NOTIFY_AGENT = 5;
+}
+enum ActivityOutcome {
+  ACTIVITY_OUTCOME_UNSPECIFIED = 0;
+  ACTIVITY_OUTCOME_ATTEMPTED = 1;
+  ACTIVITY_OUTCOME_SUCCEEDED = 2;
+  ACTIVITY_OUTCOME_FAILED = 3;
+  ACTIVITY_OUTCOME_UNCERTAIN = 4;
+}
+message ActivityActor {
+  string harness = 1;
+  string session_id = 2;
+  optional string version = 3;
+  optional string model = 4;
+}
+message ActivityInput {
+  string request_id = 1;
+  string operation_id = 2;
+  ActivityName name = 3;
+  ActivityOutcome outcome = 4;
+  ActivityActor actor = 5;
+  string detail = 6;
+  optional string pr_url = 7;
+  optional string evidence_url = 8;
+}
+message ActivityReport {
+  uint64 sequence = 1;
+  int64 recorded_at_ms = 2;
+  ActivityInput report = 3;
+}
+message RecordActivityRequest { ActivityInput report = 1; }
+message RecordActivityResponse { ActivityReport activity = 1; }
+message ListActivityRequest { uint64 after_sequence = 1; }
