@@ -2,6 +2,7 @@ package tui
 
 import (
 	"encoding/hex"
+	"errors"
 	"net/url"
 	"strings"
 
@@ -14,10 +15,10 @@ func (m *Model) field(label, value string) string {
 	return m.theme.Subtle().Render(label+": ") + text.Label(text.Inline(safe(value)), m.theme)
 }
 func (m *Model) muted(value string) string { return m.theme.Subtle().Render(safe(value)) }
-func (m *Model) link(value string) string {
+func webLink(value string) (text.Link, error) {
 	parsed, err := url.Parse(safe(value))
 	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
-		return m.muted("Link unavailable")
+		return text.Link{}, errors.New("link must use HTTPS without credentials")
 	}
 
 	label := parsed.Host + parsed.EscapedPath()
@@ -34,7 +35,24 @@ func (m *Model) link(value string) string {
 		}
 	}
 
-	return ansi.SetHyperlink(parsed.String()) + text.Label(ansi.Truncate(text.Inline(safe(label)), 80, "…"), m.theme) + ansi.ResetHyperlink()
+	link, err := text.NewWebLink(ansi.Truncate(text.Inline(safe(label)), 80, "…"), value)
+	link.Presentation = text.LabelOnly
+
+	return link, err
+}
+
+func (m *Model) link(value string) string {
+	link, err := webLink(value)
+	if err != nil {
+		return m.muted("Link unavailable")
+	}
+
+	view, err := link.View(m.theme)
+	if err != nil {
+		return m.muted("Link unavailable")
+	}
+
+	return view
 }
 
 func validCommit(sha string) bool {

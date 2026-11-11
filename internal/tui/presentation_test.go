@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -117,5 +118,50 @@ func TestLinksSanitizeDecodedLabelsAndUnchangedSnapshotsKeepCachedActivity(t *te
 
 	if m.activityRender.source == "cached activity marker" {
 		t.Fatal("new reference context did not invalidate cached presentation")
+	}
+}
+
+func TestCharmedTrackingLinksKeepTargetsAcrossResize(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	prURL := "https://github.com/owner/repo/pull/42"
+	head, base, target := strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("c", 40)
+	pr := &v1.TrackedPullRequest{Url: prURL, Observation: &v1.TrackingObservation{HeadSha: head, BaseSha: base, TargetBase: &v1.TargetBase{Ref: "main", Sha: target}}}
+
+	for _, width := range []int{132, 80, 40} {
+		m.Resize(layout.Size{Width: width, Height: 40})
+
+		content := m.trackingLinks(pr)
+		for _, destination := range []string{prURL, "https://github.com/owner/repo/commit/" + head, "https://github.com/owner/repo/commit/" + base, "https://github.com/owner/repo/commit/" + target} {
+			if !strings.Contains(content, ansi.SetHyperlink(destination)) {
+				t.Errorf("width %d lost target %q", width, destination)
+			}
+		}
+
+		for _, role := range []string{"Head:", "PR-reported base:", "Target main:"} {
+			if !strings.Contains(ansi.Strip(content), role) {
+				t.Errorf("width %d lost role %q", width, role)
+			}
+		}
+
+		g := m.geometry()
+
+		inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+		for _, line := range strings.Split(content, "\n") {
+			if ansi.StringWidth(line) > inner.Width-1 {
+				t.Fatalf("group exceeds its %d-cell panel", inner.Width-1)
+			}
+		}
+	}
+
+	address := "https://example.org/%7Epath?q=%2f#part"
+	if !strings.Contains(m.link(address), ansi.SetHyperlink(address)) {
+		t.Fatal("link changed the exact destination")
+	}
+
+	for _, address := range []string{"http://example.org/", "https://user@example.org/", "https://example.org/\npath", "https://example.org/?bad=%zz"} {
+		if strings.Contains(m.link(address), "\x1b]8;") {
+			t.Errorf("unsafe destination was linked: %q", address)
+		}
 	}
 }

@@ -100,3 +100,10 @@ Open-PR observations retain GitHub’s PR-reported `baseSha` separately from `ta
 The dashboard labels the PR-reported base and current target separately. Historical observations lack current-target evidence; closed PR observations do not require a surviving target branch. Legacy conflict notifications explicitly mark an unverified target rather than relabeling the old SHA as current.
 
 Codex RPC rejections retain the method, error code, bounded upstream message, and observed runtime version in the existing delivery and attempt reasons. Terminal controls are removed. Explicit rejection remains distinct from uncertain acceptance; this diagnostic change does not automatically resend an uncertain notification.
+
+
+## Terminal links
+
+PR, commit, and evidence references use Charmed’s OSC 8 link atom: a compact label retains its exact HTTPS destination. Tracking groups the PR, head, PR-reported base, and current target links in declaration order and wraps between complete items as the pane changes width. Missing revisions remain explicit. Hover, selection, and opening belong to the terminal.
+
+With the dotfiles Kitty mappings, `⌘⇧O` opens the last visible web link and `⌘⇧U` selects a labeled OSC 8 hyperlink through Kitty’s native picker. The hidden destination is used even when the label contains only a PR number or abbreviated commit. Kitty’s ordinary detected-URL hints remain available through `Ctrl+Shift+E`.
