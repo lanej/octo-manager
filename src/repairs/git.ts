@@ -1,9 +1,18 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, lstat, readFile, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  lstat,
+  readFile,
+  writeFile,
+  mkdtemp,
+  rm,
+} from "node:fs/promises";
 import { join, resolve, relative, isAbsolute } from "node:path";
 import { cleanText } from "../domain.js";
 import type { RebaseSource } from "./types.js";
+import { tmpdir } from "node:os";
+import type { ConflictVersions } from "./yaml.js";
 const exec = promisify(execFile);
 export class RebaseWorkspace {
   constructor(
@@ -105,7 +114,13 @@ export class RebaseWorkspace {
       resolve(this.directory, path) === this.directory
     )
       throw new Error("Invalid repair file path");
-    const tracked = await this.git(["ls-files", "--error-unmatch", "--", path]);
+    const tracked = await this.git([
+      "--literal-pathspecs",
+      "ls-files",
+      "--error-unmatch",
+      "--",
+      path,
+    ]);
     if (tracked === "")
       throw new Error("Repair reads are limited to tracked files");
     let current = this.directory;
@@ -148,7 +163,7 @@ export class RebaseWorkspace {
       const content = await this.read(path);
       if (/^(<<<<<<< |=======\s*$|>>>>>>> )/mu.test(content))
         throw new Error("Conflict markers remain");
-      await this.git(["add", "--", path]);
+      await this.git(["--literal-pathspecs", "add", "--", path]);
     }
   }
   async validate(checks: string[][], timeout: number): Promise<string> {
@@ -180,6 +195,98 @@ export class RebaseWorkspace {
         "Validation modified tracked or untracked files; inspect before pushing",
       );
     return this.git(["rev-parse", "HEAD"]);
+  }
+  async conflictInputs(
+    path: string,
+  ): Promise<{ refs: Partial<ConflictVersions>; inputs?: ConflictVersions }> {
+    const refs: Partial<ConflictVersions> = {};
+    const texts: Partial<ConflictVersions> = {};
+    const entries = (
+      await this.git([
+        "--literal-pathspecs",
+        "ls-files",
+        "-u",
+        "-z",
+        "--",
+        path,
+      ])
+    )
+      .split("\0")
+      .filter(Boolean);
+    for (const entry of entries) {
+      const match = /^(100644|100755) ([0-9a-f]+) ([123])\t/u.exec(entry);
+      if (match === null) continue;
+      const blob = match[2],
+        stage = match[3];
+      if (blob === undefined) continue;
+      const key =
+        stage === "1" ? "base" : stage === "2" ? "target" : "replayed";
+      refs[key] = blob;
+      try {
+        const { stdout } = await exec("git", ["cat-file", "blob", blob], {
+          cwd: this.directory,
+          signal: this.signal,
+          timeout: 10000,
+          maxBuffer: 256 * 1024,
+          encoding: "buffer",
+        });
+        const value = new TextDecoder("utf-8", {
+          fatal: true,
+          ignoreBOM: true,
+        }).decode(stdout);
+        if (!value.includes("\0")) texts[key] = value;
+      } catch {
+        /* Unsupported blob content remains unavailable alongside its reference. */
+      }
+    }
+    if (
+      texts.base === undefined ||
+      texts.target === undefined ||
+      texts.replayed === undefined
+    )
+      return { refs };
+    return {
+      refs,
+      inputs: {
+        base: texts.base,
+        target: texts.target,
+        replayed: texts.replayed,
+      },
+    };
+  }
+  async mergeText(inputs: ConflictVersions): Promise<string | undefined> {
+    const directory = await mkdtemp(join(tmpdir(), "octo-yaml-"));
+    try {
+      for (const key of ["base", "target", "replayed"] as const)
+        await writeFile(join(directory, key), inputs[key], { mode: 0o600 });
+      try {
+        const { stdout } = await exec(
+          "git",
+          [
+            "merge-file",
+            "-p",
+            join(directory, "target"),
+            join(directory, "base"),
+            join(directory, "replayed"),
+          ],
+          { signal: this.signal, timeout: 10000, maxBuffer: 256 * 1024 },
+        );
+        return stdout;
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof error.code === "number" &&
+          error.code >= 1 &&
+          error.code <= 127
+        )
+          return undefined;
+        throw error;
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   }
   async remoteHead(ref = this.source.headRef): Promise<string> {
     const line = await this.git(["ls-remote", "origin", `refs/heads/${ref}`]);

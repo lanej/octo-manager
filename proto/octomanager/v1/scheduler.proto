@@ -6,6 +6,8 @@ import "octomanager/v1/repairs.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc ListConflictCases(ListConflictCasesRequest) returns (ListConflictCasesResponse);
+  rpc GetConflictCase(GetConflictCaseRequest) returns (GetConflictCaseResponse);
   rpc RequestRebase(RequestRebaseRequest) returns (RequestRebaseResponse);
   rpc ListRepairs(ListRepairsRequest) returns (ListRepairsResponse);
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);

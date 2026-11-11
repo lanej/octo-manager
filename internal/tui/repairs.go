@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -48,7 +49,21 @@ func (m *Model) repairContent(prID string) string {
 
 func repairMethod(repair *v1.RepairAttempt) string {
 	if repair.GetUsedAgent() {
-		return repair.GetHarness() + " · " + repair.GetModel()
+		method := repair.GetHarness() + " · " + repair.GetModel()
+		if repair.GetMechanicalRepairs() > 0 {
+			method = fmt.Sprintf("%d mechanically resolved · ", repair.GetMechanicalRepairs()) + method
+		}
+
+		return method
+	}
+
+	if repair.GetMechanicalRepairs() > 0 {
+		noun := "files"
+		if repair.GetMechanicalRepairs() == 1 {
+			noun = "file"
+		}
+
+		return fmt.Sprintf("Git + YAML resolver · %d %s", repair.GetMechanicalRepairs(), noun)
 	}
 
 	return "Git tools"

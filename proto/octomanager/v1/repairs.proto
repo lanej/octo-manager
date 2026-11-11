@@ -31,8 +31,40 @@ message RepairAttempt {
  repeated string conflicted_paths = 16;
  bool used_agent = 17;
  repeated RepairUpdate history = 18;
+ uint32 mechanical_repairs = 19;
 }
 message RequestRebaseRequest { string request_id = 1; string url = 2; string profile = 3; }
 message RequestRebaseResponse { RepairAttempt repair = 1; }
 message ListRepairsRequest {}
 message ListRepairsResponse { repeated RepairAttempt repairs = 1; }
+enum ConflictDecision {
+ CONFLICT_DECISION_UNSPECIFIED = 0;
+ CONFLICT_DECISION_PENDING = 1;
+ CONFLICT_DECISION_APPLIED = 2;
+ CONFLICT_DECISION_DECLINED = 3;
+ CONFLICT_DECISION_ERROR = 4;
+}
+message ConflictCase {
+ uint64 id = 1;
+ string repair_id = 2;
+ string pr_url = 3;
+ uint32 round = 4;
+ string path = 5;
+ string recipe = 6;
+ ConflictDecision decision = 7;
+ string reason = 8;
+ int64 at_ms = 9;
+ optional string base_blob = 10;
+ optional string target_blob = 11;
+ optional string replayed_blob = 12;
+ optional string base_text = 13;
+ optional string target_text = 14;
+ optional string replayed_text = 15;
+ optional string candidate = 16;
+ optional string agent_result = 17;
+ string tool_version = 18;
+}
+message ListConflictCasesRequest { uint64 after_id = 1; }
+message ListConflictCasesResponse { repeated ConflictCase cases = 1; uint64 next_id = 2; }
+message GetConflictCaseRequest { uint64 id = 1; }
+message GetConflictCaseResponse { ConflictCase conflict_case = 1; }

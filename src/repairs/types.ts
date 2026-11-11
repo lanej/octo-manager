@@ -1,3 +1,4 @@
+import { cleanText } from "../domain.js";
 import { canonicalPR } from "../tracking/github.js";
 export enum RepairState {
   Queued = "queued",
@@ -52,6 +53,7 @@ export interface RepairAttempt {
   conflictedPaths: string[];
   workspace?: string;
   usedAgent: boolean;
+  mechanicalRepairs: number;
   history: {
     state: RepairState;
     step: RepairStep;
@@ -143,6 +145,16 @@ export function activeRepair(state: RepairState): boolean {
   );
 }
 
+export function diagnostic(value: unknown, name: string, limit = 2000): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    cleanText(value, limit) !== value
+  )
+    throw new Error(`Invalid repair ${name}`);
+  return value;
+}
+
 export function storedRepair(value: unknown): RepairAttempt {
   const r = record(value);
   const state = Object.values(RepairState).find((s) => s === r["state"]);
@@ -167,10 +179,12 @@ export function storedRepair(value: unknown): RepairAttempt {
     prId: single(r["prId"], "PR ID"),
     state,
     step,
-    detail: single(r["detail"], "detail", 2000),
+    detail: diagnostic(r["detail"], "detail"),
     createdAt,
     updatedAt,
     usedAgent: r["usedAgent"] === true,
+    mechanicalRepairs:
+      typeof r["mechanicalRepairs"] === "number" ? r["mechanicalRepairs"] : 0,
     history: [],
     conflictedPaths: paths.map((path: unknown) =>
       single(path, "file path", 4000),
@@ -194,7 +208,7 @@ export function storedRepair(value: unknown): RepairAttempt {
       state,
       step,
       at,
-      detail: single(h["detail"], "history detail", 2000),
+      detail: diagnostic(h["detail"], "history detail"),
     });
   }
   if (r["workspace"] !== undefined)

@@ -1,3 +1,5 @@
+import { mechanicalConflicts } from "./mechanical.js";
+import type { ConflictStore } from "./cases.js";
 import { join } from "node:path";
 import type { TrackingService } from "../tracking/service.js";
 import { readObservation } from "../tracking/github.js";
@@ -40,6 +42,7 @@ export class RepairService {
     private directory: string,
     private now: () => number = Date.now,
     private options: RepairOptions = {},
+    readonly conflicts?: ConflictStore,
   ) {
     for (const a of store.list())
       if (a.state === RepairState.Running)
@@ -176,19 +179,49 @@ export class RepairService {
     while (paths.length > 0) {
       if (++rounds > 32)
         throw new Error("Rebase exceeded 32 conflict stops; inspect manually");
+      if (this.conflicts === undefined)
+        throw new Error("Conflict evidence store is unavailable");
       a = this.update(
         a,
         RepairState.Running,
         RepairStep.Resolve,
-        `Repair session resolving ${String(paths.length)} conflicted file(s)`,
-        { conflictedPaths: paths, usedAgent: true },
+        "Trying deterministic conflict recipes before an agent",
+        { conflictedPaths: paths },
       );
-      await (this.options.resolve ?? resolveWithWorker)(
+      const mechanical = await mechanicalConflicts(
         workspace,
         paths,
-        a.profile,
-        signal,
+        this.conflicts,
+        a.id,
+        rounds,
       );
+      a = this.update(
+        a,
+        RepairState.Running,
+        RepairStep.Resolve,
+        `Mechanically resolved ${String(mechanical.applied)} file(s); ${String(mechanical.remaining.length)} remain`,
+        { mechanicalRepairs: a.mechanicalRepairs + mechanical.applied },
+      );
+      if (mechanical.remaining.length > 0) {
+        a = this.update(
+          a,
+          RepairState.Running,
+          RepairStep.Resolve,
+          `Repair session resolving ${String(mechanical.remaining.length)} remaining file(s)`,
+          { conflictedPaths: mechanical.remaining, usedAgent: true },
+        );
+        await (this.options.resolve ?? resolveWithWorker)(
+          workspace,
+          mechanical.remaining,
+          a.profile,
+          signal,
+        );
+        for (const path of mechanical.remaining) {
+          const id = mechanical.cases.get(path);
+          if (id !== undefined)
+            this.conflicts.agentResult(id, await workspace.read(path));
+        }
+      }
       await workspace.stage(paths);
       a = this.update(
         a,

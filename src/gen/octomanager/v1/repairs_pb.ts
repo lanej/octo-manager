@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/repairs.proto.
  */
 export const file_octomanager_v1_repairs: GenFile = /*@__PURE__*/
-  fileDesc("ChxvY3RvbWFuYWdlci92MS9yZXBhaXJzLnByb3RvEg5vY3RvbWFuYWdlci52MSJnCgxSZXBhaXJVcGRhdGUSKgoFc3RhdGUYASABKA4yGy5vY3RvbWFuYWdlci52MS5SZXBhaXJTdGF0ZRIMCgRzdGVwGAIgASgJEg4KBmRldGFpbBgDIAEoCRINCgVhdF9tcxgEIAEoAyLoAwoNUmVwYWlyQXR0ZW1wdBIKCgJpZBgBIAEoCRINCgVwcl9pZBgCIAEoCRIOCgZwcl91cmwYAyABKAkSKgoFc3RhdGUYBCABKA4yGy5vY3RvbWFuYWdlci52MS5SZXBhaXJTdGF0ZRIMCgRzdGVwGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1jcmVhdGVkX2F0X21zGAcgASgDEhUKDXVwZGF0ZWRfYXRfbXMYCCABKAMSDwoHcHJvZmlsZRgJIAEoCRIPCgdoYXJuZXNzGAogASgJEg0KBW1vZGVsGAsgASgJEhoKDW9yaWdpbmFsX2hlYWQYDCABKAlIAIgBARIXCgp0YXJnZXRfc2hhGA0gASgJSAGIAQESFwoKdGFyZ2V0X3JlZhgOIAEoCUgCiAEBEhgKC3Jlc3VsdF9oZWFkGA8gASgJSAOIAQESGAoQY29uZmxpY3RlZF9wYXRocxgQIAMoCRISCgp1c2VkX2FnZW50GBEgASgIEi0KB2hpc3RvcnkYEiADKAsyHC5vY3RvbWFuYWdlci52MS5SZXBhaXJVcGRhdGVCEAoOX29yaWdpbmFsX2hlYWRCDQoLX3RhcmdldF9zaGFCDQoLX3RhcmdldF9yZWZCDgoMX3Jlc3VsdF9oZWFkIkgKFFJlcXVlc3RSZWJhc2VSZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSCwoDdXJsGAIgASgJEg8KB3Byb2ZpbGUYAyABKAkiRgoVUmVxdWVzdFJlYmFzZVJlc3BvbnNlEi0KBnJlcGFpchgBIAEoCzIdLm9jdG9tYW5hZ2VyLnYxLlJlcGFpckF0dGVtcHQiFAoSTGlzdFJlcGFpcnNSZXF1ZXN0IkUKE0xpc3RSZXBhaXJzUmVzcG9uc2USLgoHcmVwYWlycxgBIAMoCzIdLm9jdG9tYW5hZ2VyLnYxLlJlcGFpckF0dGVtcHQq6wEKC1JlcGFpclN0YXRlEhwKGFJFUEFJUl9TVEFURV9VTlNQRUNJRklFRBAAEhcKE1JFUEFJUl9TVEFURV9RVUVVRUQQARIYChRSRVBBSVJfU1RBVEVfUlVOTklORxACEiAKHFJFUEFJUl9TVEFURV9BV0FJVElOR19DSEVDS1MQAxIaChZSRVBBSVJfU1RBVEVfU1VDQ0VFREVEEAQSGAoUUkVQQUlSX1NUQVRFX0JMT0NLRUQQBRIXChNSRVBBSVJfU1RBVEVfRkFJTEVEEAYSGgoWUkVQQUlSX1NUQVRFX1VOQ0VSVEFJThAHQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MTtvY3RvbWFuYWdlcnYxYgZwcm90bzM");
+  fileDesc("ChxvY3RvbWFuYWdlci92MS9yZXBhaXJzLnByb3RvEg5vY3RvbWFuYWdlci52MSJnCgxSZXBhaXJVcGRhdGUSKgoFc3RhdGUYASABKA4yGy5vY3RvbWFuYWdlci52MS5SZXBhaXJTdGF0ZRIMCgRzdGVwGAIgASgJEg4KBmRldGFpbBgDIAEoCRINCgVhdF9tcxgEIAEoAyKEBAoNUmVwYWlyQXR0ZW1wdBIKCgJpZBgBIAEoCRINCgVwcl9pZBgCIAEoCRIOCgZwcl91cmwYAyABKAkSKgoFc3RhdGUYBCABKA4yGy5vY3RvbWFuYWdlci52MS5SZXBhaXJTdGF0ZRIMCgRzdGVwGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1jcmVhdGVkX2F0X21zGAcgASgDEhUKDXVwZGF0ZWRfYXRfbXMYCCABKAMSDwoHcHJvZmlsZRgJIAEoCRIPCgdoYXJuZXNzGAogASgJEg0KBW1vZGVsGAsgASgJEhoKDW9yaWdpbmFsX2hlYWQYDCABKAlIAIgBARIXCgp0YXJnZXRfc2hhGA0gASgJSAGIAQESFwoKdGFyZ2V0X3JlZhgOIAEoCUgCiAEBEhgKC3Jlc3VsdF9oZWFkGA8gASgJSAOIAQESGAoQY29uZmxpY3RlZF9wYXRocxgQIAMoCRISCgp1c2VkX2FnZW50GBEgASgIEi0KB2hpc3RvcnkYEiADKAsyHC5vY3RvbWFuYWdlci52MS5SZXBhaXJVcGRhdGUSGgoSbWVjaGFuaWNhbF9yZXBhaXJzGBMgASgNQhAKDl9vcmlnaW5hbF9oZWFkQg0KC190YXJnZXRfc2hhQg0KC190YXJnZXRfcmVmQg4KDF9yZXN1bHRfaGVhZCJIChRSZXF1ZXN0UmViYXNlUmVxdWVzdBISCgpyZXF1ZXN0X2lkGAEgASgJEgsKA3VybBgCIAEoCRIPCgdwcm9maWxlGAMgASgJIkYKFVJlcXVlc3RSZWJhc2VSZXNwb25zZRItCgZyZXBhaXIYASABKAsyHS5vY3RvbWFuYWdlci52MS5SZXBhaXJBdHRlbXB0IhQKEkxpc3RSZXBhaXJzUmVxdWVzdCJFChNMaXN0UmVwYWlyc1Jlc3BvbnNlEi4KB3JlcGFpcnMYASADKAsyHS5vY3RvbWFuYWdlci52MS5SZXBhaXJBdHRlbXB0IqEECgxDb25mbGljdENhc2USCgoCaWQYASABKAQSEQoJcmVwYWlyX2lkGAIgASgJEg4KBnByX3VybBgDIAEoCRINCgVyb3VuZBgEIAEoDRIMCgRwYXRoGAUgASgJEg4KBnJlY2lwZRgGIAEoCRIyCghkZWNpc2lvbhgHIAEoDjIgLm9jdG9tYW5hZ2VyLnYxLkNvbmZsaWN0RGVjaXNpb24SDgoGcmVhc29uGAggASgJEg0KBWF0X21zGAkgASgDEhYKCWJhc2VfYmxvYhgKIAEoCUgAiAEBEhgKC3RhcmdldF9ibG9iGAsgASgJSAGIAQESGgoNcmVwbGF5ZWRfYmxvYhgMIAEoCUgCiAEBEhYKCWJhc2VfdGV4dBgNIAEoCUgDiAEBEhgKC3RhcmdldF90ZXh0GA4gASgJSASIAQESGgoNcmVwbGF5ZWRfdGV4dBgPIAEoCUgFiAEBEhYKCWNhbmRpZGF0ZRgQIAEoCUgGiAEBEhkKDGFnZW50X3Jlc3VsdBgRIAEoCUgHiAEBEhQKDHRvb2xfdmVyc2lvbhgSIAEoCUIMCgpfYmFzZV9ibG9iQg4KDF90YXJnZXRfYmxvYkIQCg5fcmVwbGF5ZWRfYmxvYkIMCgpfYmFzZV90ZXh0Qg4KDF90YXJnZXRfdGV4dEIQCg5fcmVwbGF5ZWRfdGV4dEIMCgpfY2FuZGlkYXRlQg8KDV9hZ2VudF9yZXN1bHQiLAoYTGlzdENvbmZsaWN0Q2FzZXNSZXF1ZXN0EhAKCGFmdGVyX2lkGAEgASgEIlkKGUxpc3RDb25mbGljdENhc2VzUmVzcG9uc2USKwoFY2FzZXMYASADKAsyHC5vY3RvbWFuYWdlci52MS5Db25mbGljdENhc2USDwoHbmV4dF9pZBgCIAEoBCIkChZHZXRDb25mbGljdENhc2VSZXF1ZXN0EgoKAmlkGAEgASgEIk4KF0dldENvbmZsaWN0Q2FzZVJlc3BvbnNlEjMKDWNvbmZsaWN0X2Nhc2UYASABKAsyHC5vY3RvbWFuYWdlci52MS5Db25mbGljdENhc2Uq6wEKC1JlcGFpclN0YXRlEhwKGFJFUEFJUl9TVEFURV9VTlNQRUNJRklFRBAAEhcKE1JFUEFJUl9TVEFURV9RVUVVRUQQARIYChRSRVBBSVJfU1RBVEVfUlVOTklORxACEiAKHFJFUEFJUl9TVEFURV9BV0FJVElOR19DSEVDS1MQAxIaChZSRVBBSVJfU1RBVEVfU1VDQ0VFREVEEAQSGAoUUkVQQUlSX1NUQVRFX0JMT0NLRUQQBRIXChNSRVBBSVJfU1RBVEVfRkFJTEVEEAYSGgoWUkVQQUlSX1NUQVRFX1VOQ0VSVEFJThAHKrABChBDb25mbGljdERlY2lzaW9uEiEKHUNPTkZMSUNUX0RFQ0lTSU9OX1VOU1BFQ0lGSUVEEAASHQoZQ09ORkxJQ1RfREVDSVNJT05fUEVORElORxABEh0KGUNPTkZMSUNUX0RFQ0lTSU9OX0FQUExJRUQQAhIeChpDT05GTElDVF9ERUNJU0lPTl9ERUNMSU5FRBADEhsKF0NPTkZMSUNUX0RFQ0lTSU9OX0VSUk9SEARCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw");
 
 /**
  * @generated from message octomanager.v1.RepairUpdate
@@ -137,6 +137,11 @@ export type RepairAttempt = Message<"octomanager.v1.RepairAttempt"> & {
    * @generated from field: repeated octomanager.v1.RepairUpdate history = 18;
    */
   history: RepairUpdate[];
+
+  /**
+   * @generated from field: uint32 mechanical_repairs = 19;
+   */
+  mechanicalRepairs: number;
 };
 
 /**
@@ -221,6 +226,181 @@ export const ListRepairsResponseSchema: GenMessage<ListRepairsResponse> = /*@__P
   messageDesc(file_octomanager_v1_repairs, 5);
 
 /**
+ * @generated from message octomanager.v1.ConflictCase
+ */
+export type ConflictCase = Message<"octomanager.v1.ConflictCase"> & {
+  /**
+   * @generated from field: uint64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: string repair_id = 2;
+   */
+  repairId: string;
+
+  /**
+   * @generated from field: string pr_url = 3;
+   */
+  prUrl: string;
+
+  /**
+   * @generated from field: uint32 round = 4;
+   */
+  round: number;
+
+  /**
+   * @generated from field: string path = 5;
+   */
+  path: string;
+
+  /**
+   * @generated from field: string recipe = 6;
+   */
+  recipe: string;
+
+  /**
+   * @generated from field: octomanager.v1.ConflictDecision decision = 7;
+   */
+  decision: ConflictDecision;
+
+  /**
+   * @generated from field: string reason = 8;
+   */
+  reason: string;
+
+  /**
+   * @generated from field: int64 at_ms = 9;
+   */
+  atMs: bigint;
+
+  /**
+   * @generated from field: optional string base_blob = 10;
+   */
+  baseBlob?: string | undefined;
+
+  /**
+   * @generated from field: optional string target_blob = 11;
+   */
+  targetBlob?: string | undefined;
+
+  /**
+   * @generated from field: optional string replayed_blob = 12;
+   */
+  replayedBlob?: string | undefined;
+
+  /**
+   * @generated from field: optional string base_text = 13;
+   */
+  baseText?: string | undefined;
+
+  /**
+   * @generated from field: optional string target_text = 14;
+   */
+  targetText?: string | undefined;
+
+  /**
+   * @generated from field: optional string replayed_text = 15;
+   */
+  replayedText?: string | undefined;
+
+  /**
+   * @generated from field: optional string candidate = 16;
+   */
+  candidate?: string | undefined;
+
+  /**
+   * @generated from field: optional string agent_result = 17;
+   */
+  agentResult?: string | undefined;
+
+  /**
+   * @generated from field: string tool_version = 18;
+   */
+  toolVersion: string;
+};
+
+/**
+ * Describes the message octomanager.v1.ConflictCase.
+ * Use `create(ConflictCaseSchema)` to create a new message.
+ */
+export const ConflictCaseSchema: GenMessage<ConflictCase> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_repairs, 6);
+
+/**
+ * @generated from message octomanager.v1.ListConflictCasesRequest
+ */
+export type ListConflictCasesRequest = Message<"octomanager.v1.ListConflictCasesRequest"> & {
+  /**
+   * @generated from field: uint64 after_id = 1;
+   */
+  afterId: bigint;
+};
+
+/**
+ * Describes the message octomanager.v1.ListConflictCasesRequest.
+ * Use `create(ListConflictCasesRequestSchema)` to create a new message.
+ */
+export const ListConflictCasesRequestSchema: GenMessage<ListConflictCasesRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_repairs, 7);
+
+/**
+ * @generated from message octomanager.v1.ListConflictCasesResponse
+ */
+export type ListConflictCasesResponse = Message<"octomanager.v1.ListConflictCasesResponse"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.ConflictCase cases = 1;
+   */
+  cases: ConflictCase[];
+
+  /**
+   * @generated from field: uint64 next_id = 2;
+   */
+  nextId: bigint;
+};
+
+/**
+ * Describes the message octomanager.v1.ListConflictCasesResponse.
+ * Use `create(ListConflictCasesResponseSchema)` to create a new message.
+ */
+export const ListConflictCasesResponseSchema: GenMessage<ListConflictCasesResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_repairs, 8);
+
+/**
+ * @generated from message octomanager.v1.GetConflictCaseRequest
+ */
+export type GetConflictCaseRequest = Message<"octomanager.v1.GetConflictCaseRequest"> & {
+  /**
+   * @generated from field: uint64 id = 1;
+   */
+  id: bigint;
+};
+
+/**
+ * Describes the message octomanager.v1.GetConflictCaseRequest.
+ * Use `create(GetConflictCaseRequestSchema)` to create a new message.
+ */
+export const GetConflictCaseRequestSchema: GenMessage<GetConflictCaseRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_repairs, 9);
+
+/**
+ * @generated from message octomanager.v1.GetConflictCaseResponse
+ */
+export type GetConflictCaseResponse = Message<"octomanager.v1.GetConflictCaseResponse"> & {
+  /**
+   * @generated from field: octomanager.v1.ConflictCase conflict_case = 1;
+   */
+  conflictCase?: ConflictCase | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.GetConflictCaseResponse.
+ * Use `create(GetConflictCaseResponseSchema)` to create a new message.
+ */
+export const GetConflictCaseResponseSchema: GenMessage<GetConflictCaseResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_repairs, 10);
+
+/**
  * @generated from enum octomanager.v1.RepairState
  */
 export enum RepairState {
@@ -270,4 +450,40 @@ export enum RepairState {
  */
 export const RepairStateSchema: GenEnum<RepairState> = /*@__PURE__*/
   enumDesc(file_octomanager_v1_repairs, 0);
+
+/**
+ * @generated from enum octomanager.v1.ConflictDecision
+ */
+export enum ConflictDecision {
+  /**
+   * @generated from enum value: CONFLICT_DECISION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CONFLICT_DECISION_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * @generated from enum value: CONFLICT_DECISION_APPLIED = 2;
+   */
+  APPLIED = 2,
+
+  /**
+   * @generated from enum value: CONFLICT_DECISION_DECLINED = 3;
+   */
+  DECLINED = 3,
+
+  /**
+   * @generated from enum value: CONFLICT_DECISION_ERROR = 4;
+   */
+  ERROR = 4,
+}
+
+/**
+ * Describes the enum octomanager.v1.ConflictDecision.
+ */
+export const ConflictDecisionSchema: GenEnum<ConflictDecision> = /*@__PURE__*/
+  enumDesc(file_octomanager_v1_repairs, 1);
 

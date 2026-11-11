@@ -85,6 +85,61 @@ func (RepairState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{0}
 }
 
+type ConflictDecision int32
+
+const (
+	ConflictDecision_CONFLICT_DECISION_UNSPECIFIED ConflictDecision = 0
+	ConflictDecision_CONFLICT_DECISION_PENDING     ConflictDecision = 1
+	ConflictDecision_CONFLICT_DECISION_APPLIED     ConflictDecision = 2
+	ConflictDecision_CONFLICT_DECISION_DECLINED    ConflictDecision = 3
+	ConflictDecision_CONFLICT_DECISION_ERROR       ConflictDecision = 4
+)
+
+// Enum value maps for ConflictDecision.
+var (
+	ConflictDecision_name = map[int32]string{
+		0: "CONFLICT_DECISION_UNSPECIFIED",
+		1: "CONFLICT_DECISION_PENDING",
+		2: "CONFLICT_DECISION_APPLIED",
+		3: "CONFLICT_DECISION_DECLINED",
+		4: "CONFLICT_DECISION_ERROR",
+	}
+	ConflictDecision_value = map[string]int32{
+		"CONFLICT_DECISION_UNSPECIFIED": 0,
+		"CONFLICT_DECISION_PENDING":     1,
+		"CONFLICT_DECISION_APPLIED":     2,
+		"CONFLICT_DECISION_DECLINED":    3,
+		"CONFLICT_DECISION_ERROR":       4,
+	}
+)
+
+func (x ConflictDecision) Enum() *ConflictDecision {
+	p := new(ConflictDecision)
+	*p = x
+	return p
+}
+
+func (x ConflictDecision) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConflictDecision) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v1_repairs_proto_enumTypes[1].Descriptor()
+}
+
+func (ConflictDecision) Type() protoreflect.EnumType {
+	return &file_octomanager_v1_repairs_proto_enumTypes[1]
+}
+
+func (x ConflictDecision) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConflictDecision.Descriptor instead.
+func (ConflictDecision) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{1}
+}
+
 type RepairUpdate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	State         RepairState            `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v1.RepairState" json:"state,omitempty"`
@@ -154,27 +209,28 @@ func (x *RepairUpdate) GetAtMs() int64 {
 }
 
 type RepairAttempt struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PrId            string                 `protobuf:"bytes,2,opt,name=pr_id,json=prId,proto3" json:"pr_id,omitempty"`
-	PrUrl           string                 `protobuf:"bytes,3,opt,name=pr_url,json=prUrl,proto3" json:"pr_url,omitempty"`
-	State           RepairState            `protobuf:"varint,4,opt,name=state,proto3,enum=octomanager.v1.RepairState" json:"state,omitempty"`
-	Step            string                 `protobuf:"bytes,5,opt,name=step,proto3" json:"step,omitempty"`
-	Detail          string                 `protobuf:"bytes,6,opt,name=detail,proto3" json:"detail,omitempty"`
-	CreatedAtMs     int64                  `protobuf:"varint,7,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
-	UpdatedAtMs     int64                  `protobuf:"varint,8,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
-	Profile         string                 `protobuf:"bytes,9,opt,name=profile,proto3" json:"profile,omitempty"`
-	Harness         string                 `protobuf:"bytes,10,opt,name=harness,proto3" json:"harness,omitempty"`
-	Model           string                 `protobuf:"bytes,11,opt,name=model,proto3" json:"model,omitempty"`
-	OriginalHead    *string                `protobuf:"bytes,12,opt,name=original_head,json=originalHead,proto3,oneof" json:"original_head,omitempty"`
-	TargetSha       *string                `protobuf:"bytes,13,opt,name=target_sha,json=targetSha,proto3,oneof" json:"target_sha,omitempty"`
-	TargetRef       *string                `protobuf:"bytes,14,opt,name=target_ref,json=targetRef,proto3,oneof" json:"target_ref,omitempty"`
-	ResultHead      *string                `protobuf:"bytes,15,opt,name=result_head,json=resultHead,proto3,oneof" json:"result_head,omitempty"`
-	ConflictedPaths []string               `protobuf:"bytes,16,rep,name=conflicted_paths,json=conflictedPaths,proto3" json:"conflicted_paths,omitempty"`
-	UsedAgent       bool                   `protobuf:"varint,17,opt,name=used_agent,json=usedAgent,proto3" json:"used_agent,omitempty"`
-	History         []*RepairUpdate        `protobuf:"bytes,18,rep,name=history,proto3" json:"history,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PrId              string                 `protobuf:"bytes,2,opt,name=pr_id,json=prId,proto3" json:"pr_id,omitempty"`
+	PrUrl             string                 `protobuf:"bytes,3,opt,name=pr_url,json=prUrl,proto3" json:"pr_url,omitempty"`
+	State             RepairState            `protobuf:"varint,4,opt,name=state,proto3,enum=octomanager.v1.RepairState" json:"state,omitempty"`
+	Step              string                 `protobuf:"bytes,5,opt,name=step,proto3" json:"step,omitempty"`
+	Detail            string                 `protobuf:"bytes,6,opt,name=detail,proto3" json:"detail,omitempty"`
+	CreatedAtMs       int64                  `protobuf:"varint,7,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	UpdatedAtMs       int64                  `protobuf:"varint,8,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	Profile           string                 `protobuf:"bytes,9,opt,name=profile,proto3" json:"profile,omitempty"`
+	Harness           string                 `protobuf:"bytes,10,opt,name=harness,proto3" json:"harness,omitempty"`
+	Model             string                 `protobuf:"bytes,11,opt,name=model,proto3" json:"model,omitempty"`
+	OriginalHead      *string                `protobuf:"bytes,12,opt,name=original_head,json=originalHead,proto3,oneof" json:"original_head,omitempty"`
+	TargetSha         *string                `protobuf:"bytes,13,opt,name=target_sha,json=targetSha,proto3,oneof" json:"target_sha,omitempty"`
+	TargetRef         *string                `protobuf:"bytes,14,opt,name=target_ref,json=targetRef,proto3,oneof" json:"target_ref,omitempty"`
+	ResultHead        *string                `protobuf:"bytes,15,opt,name=result_head,json=resultHead,proto3,oneof" json:"result_head,omitempty"`
+	ConflictedPaths   []string               `protobuf:"bytes,16,rep,name=conflicted_paths,json=conflictedPaths,proto3" json:"conflicted_paths,omitempty"`
+	UsedAgent         bool                   `protobuf:"varint,17,opt,name=used_agent,json=usedAgent,proto3" json:"used_agent,omitempty"`
+	History           []*RepairUpdate        `protobuf:"bytes,18,rep,name=history,proto3" json:"history,omitempty"`
+	MechanicalRepairs uint32                 `protobuf:"varint,19,opt,name=mechanical_repairs,json=mechanicalRepairs,proto3" json:"mechanical_repairs,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *RepairAttempt) Reset() {
@@ -331,6 +387,13 @@ func (x *RepairAttempt) GetHistory() []*RepairUpdate {
 		return x.History
 	}
 	return nil
+}
+
+func (x *RepairAttempt) GetMechanicalRepairs() uint32 {
+	if x != nil {
+		return x.MechanicalRepairs
+	}
+	return 0
 }
 
 type RequestRebaseRequest struct {
@@ -517,6 +580,370 @@ func (x *ListRepairsResponse) GetRepairs() []*RepairAttempt {
 	return nil
 }
 
+type ConflictCase struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	RepairId      string                 `protobuf:"bytes,2,opt,name=repair_id,json=repairId,proto3" json:"repair_id,omitempty"`
+	PrUrl         string                 `protobuf:"bytes,3,opt,name=pr_url,json=prUrl,proto3" json:"pr_url,omitempty"`
+	Round         uint32                 `protobuf:"varint,4,opt,name=round,proto3" json:"round,omitempty"`
+	Path          string                 `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
+	Recipe        string                 `protobuf:"bytes,6,opt,name=recipe,proto3" json:"recipe,omitempty"`
+	Decision      ConflictDecision       `protobuf:"varint,7,opt,name=decision,proto3,enum=octomanager.v1.ConflictDecision" json:"decision,omitempty"`
+	Reason        string                 `protobuf:"bytes,8,opt,name=reason,proto3" json:"reason,omitempty"`
+	AtMs          int64                  `protobuf:"varint,9,opt,name=at_ms,json=atMs,proto3" json:"at_ms,omitempty"`
+	BaseBlob      *string                `protobuf:"bytes,10,opt,name=base_blob,json=baseBlob,proto3,oneof" json:"base_blob,omitempty"`
+	TargetBlob    *string                `protobuf:"bytes,11,opt,name=target_blob,json=targetBlob,proto3,oneof" json:"target_blob,omitempty"`
+	ReplayedBlob  *string                `protobuf:"bytes,12,opt,name=replayed_blob,json=replayedBlob,proto3,oneof" json:"replayed_blob,omitempty"`
+	BaseText      *string                `protobuf:"bytes,13,opt,name=base_text,json=baseText,proto3,oneof" json:"base_text,omitempty"`
+	TargetText    *string                `protobuf:"bytes,14,opt,name=target_text,json=targetText,proto3,oneof" json:"target_text,omitempty"`
+	ReplayedText  *string                `protobuf:"bytes,15,opt,name=replayed_text,json=replayedText,proto3,oneof" json:"replayed_text,omitempty"`
+	Candidate     *string                `protobuf:"bytes,16,opt,name=candidate,proto3,oneof" json:"candidate,omitempty"`
+	AgentResult   *string                `protobuf:"bytes,17,opt,name=agent_result,json=agentResult,proto3,oneof" json:"agent_result,omitempty"`
+	ToolVersion   string                 `protobuf:"bytes,18,opt,name=tool_version,json=toolVersion,proto3" json:"tool_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConflictCase) Reset() {
+	*x = ConflictCase{}
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConflictCase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConflictCase) ProtoMessage() {}
+
+func (x *ConflictCase) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConflictCase.ProtoReflect.Descriptor instead.
+func (*ConflictCase) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ConflictCase) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *ConflictCase) GetRepairId() string {
+	if x != nil {
+		return x.RepairId
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetPrUrl() string {
+	if x != nil {
+		return x.PrUrl
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetRound() uint32 {
+	if x != nil {
+		return x.Round
+	}
+	return 0
+}
+
+func (x *ConflictCase) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetRecipe() string {
+	if x != nil {
+		return x.Recipe
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetDecision() ConflictDecision {
+	if x != nil {
+		return x.Decision
+	}
+	return ConflictDecision_CONFLICT_DECISION_UNSPECIFIED
+}
+
+func (x *ConflictCase) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetAtMs() int64 {
+	if x != nil {
+		return x.AtMs
+	}
+	return 0
+}
+
+func (x *ConflictCase) GetBaseBlob() string {
+	if x != nil && x.BaseBlob != nil {
+		return *x.BaseBlob
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetTargetBlob() string {
+	if x != nil && x.TargetBlob != nil {
+		return *x.TargetBlob
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetReplayedBlob() string {
+	if x != nil && x.ReplayedBlob != nil {
+		return *x.ReplayedBlob
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetBaseText() string {
+	if x != nil && x.BaseText != nil {
+		return *x.BaseText
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetTargetText() string {
+	if x != nil && x.TargetText != nil {
+		return *x.TargetText
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetReplayedText() string {
+	if x != nil && x.ReplayedText != nil {
+		return *x.ReplayedText
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetCandidate() string {
+	if x != nil && x.Candidate != nil {
+		return *x.Candidate
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetAgentResult() string {
+	if x != nil && x.AgentResult != nil {
+		return *x.AgentResult
+	}
+	return ""
+}
+
+func (x *ConflictCase) GetToolVersion() string {
+	if x != nil {
+		return x.ToolVersion
+	}
+	return ""
+}
+
+type ListConflictCasesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AfterId       uint64                 `protobuf:"varint,1,opt,name=after_id,json=afterId,proto3" json:"after_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListConflictCasesRequest) Reset() {
+	*x = ListConflictCasesRequest{}
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListConflictCasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListConflictCasesRequest) ProtoMessage() {}
+
+func (x *ListConflictCasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListConflictCasesRequest.ProtoReflect.Descriptor instead.
+func (*ListConflictCasesRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListConflictCasesRequest) GetAfterId() uint64 {
+	if x != nil {
+		return x.AfterId
+	}
+	return 0
+}
+
+type ListConflictCasesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cases         []*ConflictCase        `protobuf:"bytes,1,rep,name=cases,proto3" json:"cases,omitempty"`
+	NextId        uint64                 `protobuf:"varint,2,opt,name=next_id,json=nextId,proto3" json:"next_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListConflictCasesResponse) Reset() {
+	*x = ListConflictCasesResponse{}
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListConflictCasesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListConflictCasesResponse) ProtoMessage() {}
+
+func (x *ListConflictCasesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListConflictCasesResponse.ProtoReflect.Descriptor instead.
+func (*ListConflictCasesResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ListConflictCasesResponse) GetCases() []*ConflictCase {
+	if x != nil {
+		return x.Cases
+	}
+	return nil
+}
+
+func (x *ListConflictCasesResponse) GetNextId() uint64 {
+	if x != nil {
+		return x.NextId
+	}
+	return 0
+}
+
+type GetConflictCaseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConflictCaseRequest) Reset() {
+	*x = GetConflictCaseRequest{}
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConflictCaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConflictCaseRequest) ProtoMessage() {}
+
+func (x *GetConflictCaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConflictCaseRequest.ProtoReflect.Descriptor instead.
+func (*GetConflictCaseRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetConflictCaseRequest) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type GetConflictCaseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConflictCase  *ConflictCase          `protobuf:"bytes,1,opt,name=conflict_case,json=conflictCase,proto3" json:"conflict_case,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConflictCaseResponse) Reset() {
+	*x = GetConflictCaseResponse{}
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConflictCaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConflictCaseResponse) ProtoMessage() {}
+
+func (x *GetConflictCaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_repairs_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConflictCaseResponse.ProtoReflect.Descriptor instead.
+func (*GetConflictCaseResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_repairs_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetConflictCaseResponse) GetConflictCase() *ConflictCase {
+	if x != nil {
+		return x.ConflictCase
+	}
+	return nil
+}
+
 var File_octomanager_v1_repairs_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_repairs_proto_rawDesc = "" +
@@ -526,7 +953,7 @@ const file_octomanager_v1_repairs_proto_rawDesc = "" +
 	"\x05state\x18\x01 \x01(\x0e2\x1b.octomanager.v1.RepairStateR\x05state\x12\x12\n" +
 	"\x04step\x18\x02 \x01(\tR\x04step\x12\x16\n" +
 	"\x06detail\x18\x03 \x01(\tR\x06detail\x12\x13\n" +
-	"\x05at_ms\x18\x04 \x01(\x03R\x04atMs\"\x96\x05\n" +
+	"\x05at_ms\x18\x04 \x01(\x03R\x04atMs\"\xc5\x05\n" +
 	"\rRepairAttempt\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x13\n" +
 	"\x05pr_id\x18\x02 \x01(\tR\x04prId\x12\x15\n" +
@@ -550,7 +977,8 @@ const file_octomanager_v1_repairs_proto_rawDesc = "" +
 	"\x10conflicted_paths\x18\x10 \x03(\tR\x0fconflictedPaths\x12\x1d\n" +
 	"\n" +
 	"used_agent\x18\x11 \x01(\bR\tusedAgent\x126\n" +
-	"\ahistory\x18\x12 \x03(\v2\x1c.octomanager.v1.RepairUpdateR\ahistoryB\x10\n" +
+	"\ahistory\x18\x12 \x03(\v2\x1c.octomanager.v1.RepairUpdateR\ahistory\x12-\n" +
+	"\x12mechanical_repairs\x18\x13 \x01(\rR\x11mechanicalRepairsB\x10\n" +
 	"\x0e_original_headB\r\n" +
 	"\v_target_shaB\r\n" +
 	"\v_target_refB\x0e\n" +
@@ -564,7 +992,49 @@ const file_octomanager_v1_repairs_proto_rawDesc = "" +
 	"\x06repair\x18\x01 \x01(\v2\x1d.octomanager.v1.RepairAttemptR\x06repair\"\x14\n" +
 	"\x12ListRepairsRequest\"N\n" +
 	"\x13ListRepairsResponse\x127\n" +
-	"\arepairs\x18\x01 \x03(\v2\x1d.octomanager.v1.RepairAttemptR\arepairs*\xeb\x01\n" +
+	"\arepairs\x18\x01 \x03(\v2\x1d.octomanager.v1.RepairAttemptR\arepairs\"\xd0\x05\n" +
+	"\fConflictCase\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1b\n" +
+	"\trepair_id\x18\x02 \x01(\tR\brepairId\x12\x15\n" +
+	"\x06pr_url\x18\x03 \x01(\tR\x05prUrl\x12\x14\n" +
+	"\x05round\x18\x04 \x01(\rR\x05round\x12\x12\n" +
+	"\x04path\x18\x05 \x01(\tR\x04path\x12\x16\n" +
+	"\x06recipe\x18\x06 \x01(\tR\x06recipe\x12<\n" +
+	"\bdecision\x18\a \x01(\x0e2 .octomanager.v1.ConflictDecisionR\bdecision\x12\x16\n" +
+	"\x06reason\x18\b \x01(\tR\x06reason\x12\x13\n" +
+	"\x05at_ms\x18\t \x01(\x03R\x04atMs\x12 \n" +
+	"\tbase_blob\x18\n" +
+	" \x01(\tH\x00R\bbaseBlob\x88\x01\x01\x12$\n" +
+	"\vtarget_blob\x18\v \x01(\tH\x01R\n" +
+	"targetBlob\x88\x01\x01\x12(\n" +
+	"\rreplayed_blob\x18\f \x01(\tH\x02R\freplayedBlob\x88\x01\x01\x12 \n" +
+	"\tbase_text\x18\r \x01(\tH\x03R\bbaseText\x88\x01\x01\x12$\n" +
+	"\vtarget_text\x18\x0e \x01(\tH\x04R\n" +
+	"targetText\x88\x01\x01\x12(\n" +
+	"\rreplayed_text\x18\x0f \x01(\tH\x05R\freplayedText\x88\x01\x01\x12!\n" +
+	"\tcandidate\x18\x10 \x01(\tH\x06R\tcandidate\x88\x01\x01\x12&\n" +
+	"\fagent_result\x18\x11 \x01(\tH\aR\vagentResult\x88\x01\x01\x12!\n" +
+	"\ftool_version\x18\x12 \x01(\tR\vtoolVersionB\f\n" +
+	"\n" +
+	"_base_blobB\x0e\n" +
+	"\f_target_blobB\x10\n" +
+	"\x0e_replayed_blobB\f\n" +
+	"\n" +
+	"_base_textB\x0e\n" +
+	"\f_target_textB\x10\n" +
+	"\x0e_replayed_textB\f\n" +
+	"\n" +
+	"_candidateB\x0f\n" +
+	"\r_agent_result\"5\n" +
+	"\x18ListConflictCasesRequest\x12\x19\n" +
+	"\bafter_id\x18\x01 \x01(\x04R\aafterId\"h\n" +
+	"\x19ListConflictCasesResponse\x122\n" +
+	"\x05cases\x18\x01 \x03(\v2\x1c.octomanager.v1.ConflictCaseR\x05cases\x12\x17\n" +
+	"\anext_id\x18\x02 \x01(\x04R\x06nextId\"(\n" +
+	"\x16GetConflictCaseRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\"\\\n" +
+	"\x17GetConflictCaseResponse\x12A\n" +
+	"\rconflict_case\x18\x01 \x01(\v2\x1c.octomanager.v1.ConflictCaseR\fconflictCase*\xeb\x01\n" +
 	"\vRepairState\x12\x1c\n" +
 	"\x18REPAIR_STATE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13REPAIR_STATE_QUEUED\x10\x01\x12\x18\n" +
@@ -573,7 +1043,13 @@ const file_octomanager_v1_repairs_proto_rawDesc = "" +
 	"\x16REPAIR_STATE_SUCCEEDED\x10\x04\x12\x18\n" +
 	"\x14REPAIR_STATE_BLOCKED\x10\x05\x12\x17\n" +
 	"\x13REPAIR_STATE_FAILED\x10\x06\x12\x1a\n" +
-	"\x16REPAIR_STATE_UNCERTAIN\x10\aB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\x16REPAIR_STATE_UNCERTAIN\x10\a*\xb0\x01\n" +
+	"\x10ConflictDecision\x12!\n" +
+	"\x1dCONFLICT_DECISION_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19CONFLICT_DECISION_PENDING\x10\x01\x12\x1d\n" +
+	"\x19CONFLICT_DECISION_APPLIED\x10\x02\x12\x1e\n" +
+	"\x1aCONFLICT_DECISION_DECLINED\x10\x03\x12\x1b\n" +
+	"\x17CONFLICT_DECISION_ERROR\x10\x04B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_repairs_proto_rawDescOnce sync.Once
@@ -587,28 +1063,37 @@ func file_octomanager_v1_repairs_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_repairs_proto_rawDescData
 }
 
-var file_octomanager_v1_repairs_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_octomanager_v1_repairs_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_octomanager_v1_repairs_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_octomanager_v1_repairs_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_octomanager_v1_repairs_proto_goTypes = []any{
-	(RepairState)(0),              // 0: octomanager.v1.RepairState
-	(*RepairUpdate)(nil),          // 1: octomanager.v1.RepairUpdate
-	(*RepairAttempt)(nil),         // 2: octomanager.v1.RepairAttempt
-	(*RequestRebaseRequest)(nil),  // 3: octomanager.v1.RequestRebaseRequest
-	(*RequestRebaseResponse)(nil), // 4: octomanager.v1.RequestRebaseResponse
-	(*ListRepairsRequest)(nil),    // 5: octomanager.v1.ListRepairsRequest
-	(*ListRepairsResponse)(nil),   // 6: octomanager.v1.ListRepairsResponse
+	(RepairState)(0),                  // 0: octomanager.v1.RepairState
+	(ConflictDecision)(0),             // 1: octomanager.v1.ConflictDecision
+	(*RepairUpdate)(nil),              // 2: octomanager.v1.RepairUpdate
+	(*RepairAttempt)(nil),             // 3: octomanager.v1.RepairAttempt
+	(*RequestRebaseRequest)(nil),      // 4: octomanager.v1.RequestRebaseRequest
+	(*RequestRebaseResponse)(nil),     // 5: octomanager.v1.RequestRebaseResponse
+	(*ListRepairsRequest)(nil),        // 6: octomanager.v1.ListRepairsRequest
+	(*ListRepairsResponse)(nil),       // 7: octomanager.v1.ListRepairsResponse
+	(*ConflictCase)(nil),              // 8: octomanager.v1.ConflictCase
+	(*ListConflictCasesRequest)(nil),  // 9: octomanager.v1.ListConflictCasesRequest
+	(*ListConflictCasesResponse)(nil), // 10: octomanager.v1.ListConflictCasesResponse
+	(*GetConflictCaseRequest)(nil),    // 11: octomanager.v1.GetConflictCaseRequest
+	(*GetConflictCaseResponse)(nil),   // 12: octomanager.v1.GetConflictCaseResponse
 }
 var file_octomanager_v1_repairs_proto_depIdxs = []int32{
 	0, // 0: octomanager.v1.RepairUpdate.state:type_name -> octomanager.v1.RepairState
 	0, // 1: octomanager.v1.RepairAttempt.state:type_name -> octomanager.v1.RepairState
-	1, // 2: octomanager.v1.RepairAttempt.history:type_name -> octomanager.v1.RepairUpdate
-	2, // 3: octomanager.v1.RequestRebaseResponse.repair:type_name -> octomanager.v1.RepairAttempt
-	2, // 4: octomanager.v1.ListRepairsResponse.repairs:type_name -> octomanager.v1.RepairAttempt
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 2: octomanager.v1.RepairAttempt.history:type_name -> octomanager.v1.RepairUpdate
+	3, // 3: octomanager.v1.RequestRebaseResponse.repair:type_name -> octomanager.v1.RepairAttempt
+	3, // 4: octomanager.v1.ListRepairsResponse.repairs:type_name -> octomanager.v1.RepairAttempt
+	1, // 5: octomanager.v1.ConflictCase.decision:type_name -> octomanager.v1.ConflictDecision
+	8, // 6: octomanager.v1.ListConflictCasesResponse.cases:type_name -> octomanager.v1.ConflictCase
+	8, // 7: octomanager.v1.GetConflictCaseResponse.conflict_case:type_name -> octomanager.v1.ConflictCase
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_repairs_proto_init() }
@@ -617,13 +1102,14 @@ func file_octomanager_v1_repairs_proto_init() {
 		return
 	}
 	file_octomanager_v1_repairs_proto_msgTypes[1].OneofWrappers = []any{}
+	file_octomanager_v1_repairs_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_repairs_proto_rawDesc), len(file_octomanager_v1_repairs_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   6,
+			NumEnums:      2,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

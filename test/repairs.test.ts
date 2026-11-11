@@ -21,6 +21,9 @@ import {
   RepairStep,
   type RebaseSource,
 } from "../src/repairs/types.js";
+import { parse as parseYaml } from "yaml";
+import { expandInlineSequences } from "../src/repairs/yaml.js";
+import { RecipeDecision } from "../src/repairs/cases.js";
 import { RebaseWorkspace } from "../src/repairs/git.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 const exec = promisify(execFile);
@@ -105,8 +108,21 @@ async function fixture(conflicting = false) {
       reviews: { state: "complete", value: [] },
     };
   };
-  const workspace = (directory: string, s: RebaseSource, signal: AbortSignal) =>
-    new RebaseWorkspace(directory, s, signal, remote);
+  const workspace = (
+    directory: string,
+    s: RebaseSource,
+    signal: AbortSignal,
+  ) => {
+    const w = new RebaseWorkspace(directory, s, signal, remote);
+    const prepare = w.prepare.bind(w);
+    w.prepare = async () => {
+      await prepare();
+      await w.git(["config", "user.name", "Repair Test"]);
+      await w.git(["config", "user.email", "repair@localhost"]);
+      await w.git(["config", "commit.gpgsign", "false"]);
+    };
+    return w;
+  };
   return { root, remote, source, config, observe, workspace };
 }
 async function wait(coordinator: Coordinator, id: string, state?: RepairState) {
@@ -495,6 +511,238 @@ test("successful named commit statuses satisfy verification as well as completed
     });
     const done = await wait(c, a.id);
     assert.equal(done.state, RepairState.Succeeded, done.detail);
+  } finally {
+    await c.close();
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+async function yamlFixture(ambiguous = false) {
+  const f = await fixture();
+  const seed = join(f.root, "seed");
+  const base = await git(seed, ["merge-base", "main", "feature"]);
+  await git(seed, ["switch", "-c", "yaml-main", base]);
+  await writeFile(join(seed, "config.yaml"), "ports: [80, 443, 8080]\n");
+  await git(seed, ["add", "config.yaml"]);
+  await git(seed, ["commit", "-m", "base YAML"]);
+  await git(seed, ["branch", "yaml-feature"]);
+  await writeFile(join(seed, "config.yaml"), "ports: [81, 443, 8080]\n");
+  await git(seed, ["commit", "-am", "target first port"]);
+  await git(seed, ["push", f.remote, "yaml-main"]);
+  await git(seed, ["switch", "yaml-feature"]);
+  await writeFile(
+    join(seed, "config.yaml"),
+    ambiguous ? "ports: [82, 443, 8080]\n" : "ports: [80, 443, 9090]\n",
+  );
+  await git(seed, ["commit", "-am", "source port"]);
+  await git(seed, ["push", f.remote, "yaml-feature"]);
+  const source = async (): Promise<RebaseSource> => ({
+    repository: "owner/repo",
+    headRef: "yaml-feature",
+    headSha: await git(f.remote, ["rev-parse", "yaml-feature"]),
+    targetRef: "yaml-main",
+    targetSha: await git(f.remote, ["rev-parse", "yaml-main"]),
+  });
+  const observe = async (): Promise<ObservationInput> => {
+    const s = await source();
+    const o = await f.observe();
+    return {
+      ...o,
+      headSha: s.headSha,
+      targetBase: { ref: s.targetRef, sha: s.targetSha },
+      checks: {
+        state: "complete",
+        value:
+          o.checks.state === "complete"
+            ? o.checks.value.map((check) => ({ ...check, headSha: s.headSha }))
+            : [],
+      },
+    };
+  };
+  return { ...f, source, observe };
+}
+
+test("inline YAML conflicts resolve through expansion and Git without an agent; evidence survives workspace deletion", async () => {
+  const f = await yamlFixture();
+  const directory = join(f.root, "state");
+  let agents = 0;
+  let c = new Coordinator(directory, {
+    trackingConfig: f.config,
+    trackingOptions: { read: f.observe },
+    repairOptions: {
+      source: f.source,
+      workspace: f.workspace,
+      observe: f.observe,
+      resolve: () => {
+        agents++;
+        return Promise.reject(
+          new Error("Mechanical recipe must precede the agent"),
+        );
+      },
+    },
+  });
+  try {
+    enroll(c);
+    await c.start();
+    const attempt = c.repairs.request({
+      requestId: "yaml-mechanical",
+      prUrl: url,
+      profile: "rebase",
+    });
+    const done = await wait(c, attempt.id);
+    assert.equal(done.state, RepairState.Succeeded, done.detail);
+    assert.equal(agents, 0);
+    assert.equal(done.usedAgent, false);
+    assert.equal(done.mechanicalRepairs, 1);
+    const output = await git(f.remote, ["show", "yaml-feature:config.yaml"]);
+    const parsed: unknown = parseYaml(output);
+    assert.deepEqual(parsed, { ports: [81, 443, 9090] });
+    assert.match(output, /- 81/u);
+    const client = schedulerClient(directory);
+    const cases = await client.listConflictCases({});
+    assert.equal(cases.cases.length, 1);
+    const summary = cases.cases[0];
+    assert(summary !== undefined);
+    assert.equal(summary.baseText, undefined);
+    const detail = (await client.getConflictCase({ id: summary.id }))
+      .conflictCase;
+    assert(detail !== undefined);
+    assert.equal(detail.baseText, "ports: [80, 443, 8080]\n");
+    assert.equal(detail.targetText, "ports: [81, 443, 8080]\n");
+    assert.equal(detail.replayedText, "ports: [80, 443, 9090]\n");
+    assert(detail.candidate !== undefined);
+    assert.equal(detail.agentResult, undefined);
+    assert.match(detail.baseBlob ?? "", /^[0-9a-f]{40}$/u);
+    await c.close();
+    await rm(join(directory, "repairs"), { recursive: true, force: true });
+    c = new Coordinator(directory, {
+      trackingConfig: f.config,
+      trackingOptions: { read: f.observe },
+    });
+    assert.equal(
+      c.store.conflicts.get(Number(summary.id)).inputs?.base,
+      detail.baseText,
+    );
+    assert.equal(
+      c.store.conflicts.get(Number(summary.id)).candidate,
+      detail.candidate,
+    );
+  } finally {
+    await c.close();
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+test("ambiguous YAML is retained as a declined recipe and escalates with its original three versions", async () => {
+  const f = await yamlFixture(true);
+  let agents = 0;
+  const c = new Coordinator(join(f.root, "state"), {
+    trackingConfig: f.config,
+    trackingOptions: { read: f.observe },
+    repairOptions: {
+      source: f.source,
+      workspace: f.workspace,
+      observe: f.observe,
+      resolve: async (w, paths) => {
+        agents++;
+        assert.deepEqual(paths, ["config.yaml"]);
+        await w.git(["config", "user.name", "Repair Test"]);
+        await w.git(["config", "user.email", "repair@localhost"]);
+        await w.git(["config", "commit.gpgsign", "false"]);
+        await w.write("config.yaml", "ports: [82, 443, 8080]\n");
+      },
+    },
+  });
+  try {
+    enroll(c);
+    await c.start();
+    const a = c.repairs.request({
+      requestId: "yaml-ambiguous",
+      prUrl: url,
+      profile: "rebase",
+    });
+    const done = await wait(c, a.id);
+    assert.equal(done.state, RepairState.Succeeded, done.detail);
+    assert.equal(agents, 1);
+    const summary = c.store.conflicts.list()[0];
+    assert(summary !== undefined);
+    const detail = c.store.conflicts.get(summary.id);
+    assert.equal(detail.decision, RecipeDecision.Declined);
+    assert.match(detail.reason, /same sequence element/u);
+    assert.equal(detail.candidate, undefined);
+    assert.equal(detail.agentResult, "ports: [82, 443, 8080]\n");
+    assert(detail.inputs?.base !== undefined);
+  } finally {
+    await c.close();
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+test("sequence additions, reorders, duplicates, aliases and invalid YAML remain agent work", () => {
+  for (const versions of [
+    {
+      base: "a: [a, b]\n",
+      target: "a: [a, b, c]\n",
+      replayed: "a: [a, b, d]\n",
+    },
+    {
+      base: "a: [a, b, c]\n",
+      target: "a: [b, a, c]\n",
+      replayed: "a: [a, b, d]\n",
+    },
+    {
+      base: "a: [a, a, c]\n",
+      target: "a: [b, a, c]\n",
+      replayed: "a: [a, a, d]\n",
+    },
+    {
+      base: "a: &list [a, b, c]\n",
+      target: "a: &list [x, b, c]\n",
+      replayed: "a: &list [a, b, y]\n",
+    },
+    { base: "a: [a,b,c]\n", target: "a: [x,b,c\n", replayed: "a: [a,b,y]\n" },
+  ])
+    assert.throws(() => expandInlineSequences(versions));
+});
+
+test("large inline sequences decline within the explicit comparison budget", () => {
+  const base = Array.from({ length: 10000 }, (_, index) => String(index)).join(
+    ", ",
+  );
+  assert.throws(
+    () =>
+      expandInlineSequences({
+        base: `a: [${base}]\n`,
+        target: `a: [${base}, 10001]\n`,
+        replayed: `a: [${base}, 10002]\n`,
+      }),
+    /Sequence entry limit/u,
+  );
+});
+
+test("multiline execution failures remain readable through storage and RPC", async () => {
+  const f = await fixture();
+  const message = "Source unavailable\nRetry after the remote recovers";
+  const c = new Coordinator(join(f.root, "state"), {
+    trackingConfig: f.config,
+    trackingOptions: { read: f.observe },
+    repairOptions: { source: () => Promise.reject(new Error(message)) },
+  });
+  try {
+    enroll(c);
+    await c.start();
+    const a = c.repairs.request({
+      requestId: "multiline-error",
+      prUrl: url,
+      profile: "rebase",
+    });
+    const done = await wait(c, a.id);
+    assert.equal(done.state, RepairState.Blocked);
+    assert.equal(done.detail, message);
+    const response = await schedulerClient(join(f.root, "state")).listRepairs(
+      {},
+    );
+    assert.equal(response.repairs[0]?.detail, message);
   } finally {
     await c.close();
     await rm(f.root, { recursive: true, force: true });

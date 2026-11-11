@@ -2221,8 +2221,10 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"\x18WORKER_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKER_STATE_IDLE\x10\x01\x12\x15\n" +
 	"\x11WORKER_STATE_BUSY\x10\x02\x12\x1b\n" +
-	"\x17WORKER_STATE_RECOVERING\x10\x032\xc9\x12\n" +
-	"\x10SchedulerService\x12\\\n" +
+	"\x17WORKER_STATE_RECOVERING\x10\x032\x97\x14\n" +
+	"\x10SchedulerService\x12h\n" +
+	"\x11ListConflictCases\x12(.octomanager.v1.ListConflictCasesRequest\x1a).octomanager.v1.ListConflictCasesResponse\x12b\n" +
+	"\x0fGetConflictCase\x12&.octomanager.v1.GetConflictCaseRequest\x1a'.octomanager.v1.GetConflictCaseResponse\x12\\\n" +
 	"\rRequestRebase\x12$.octomanager.v1.RequestRebaseRequest\x1a%.octomanager.v1.RequestRebaseResponse\x12V\n" +
 	"\vListRepairs\x12\".octomanager.v1.ListRepairsRequest\x1a#.octomanager.v1.ListRepairsResponse\x12_\n" +
 	"\x0eRecordActivity\x12%.octomanager.v1.RecordActivityRequest\x1a&.octomanager.v1.RecordActivityResponse\x12Y\n" +
@@ -2302,37 +2304,41 @@ var file_octomanager_v1_scheduler_proto_goTypes = []any{
 	(*TrackingSnapshot)(nil),                  // 34: octomanager.v1.TrackingSnapshot
 	(*RepairAttempt)(nil),                     // 35: octomanager.v1.RepairAttempt
 	(*ActivityReport)(nil),                    // 36: octomanager.v1.ActivityReport
-	(*RequestRebaseRequest)(nil),              // 37: octomanager.v1.RequestRebaseRequest
-	(*ListRepairsRequest)(nil),                // 38: octomanager.v1.ListRepairsRequest
-	(*RecordActivityRequest)(nil),             // 39: octomanager.v1.RecordActivityRequest
-	(*ListActivityRequest)(nil),               // 40: octomanager.v1.ListActivityRequest
-	(*TrackPullRequestRequest)(nil),           // 41: octomanager.v1.TrackPullRequestRequest
-	(*ListTrackedPullRequestsRequest)(nil),    // 42: octomanager.v1.ListTrackedPullRequestsRequest
-	(*GetTrackedPullRequestRequest)(nil),      // 43: octomanager.v1.GetTrackedPullRequestRequest
-	(*RefreshTrackedPullRequestRequest)(nil),  // 44: octomanager.v1.RefreshTrackedPullRequestRequest
-	(*AssignPullRequestRequest)(nil),          // 45: octomanager.v1.AssignPullRequestRequest
-	(*UntrackPullRequestRequest)(nil),         // 46: octomanager.v1.UntrackPullRequestRequest
-	(*ListActionsRequest)(nil),                // 47: octomanager.v1.ListActionsRequest
-	(*GetActionRequest)(nil),                  // 48: octomanager.v1.GetActionRequest
-	(*AcknowledgeActionRequest)(nil),          // 49: octomanager.v1.AcknowledgeActionRequest
-	(*StartActionRequest)(nil),                // 50: octomanager.v1.StartActionRequest
-	(*RetryDeliveryRequest)(nil),              // 51: octomanager.v1.RetryDeliveryRequest
-	(*ReprofileActionRequest)(nil),            // 52: octomanager.v1.ReprofileActionRequest
-	(*RequestRebaseResponse)(nil),             // 53: octomanager.v1.RequestRebaseResponse
-	(*ListRepairsResponse)(nil),               // 54: octomanager.v1.ListRepairsResponse
-	(*RecordActivityResponse)(nil),            // 55: octomanager.v1.RecordActivityResponse
-	(*TrackPullRequestResponse)(nil),          // 56: octomanager.v1.TrackPullRequestResponse
-	(*ListTrackedPullRequestsResponse)(nil),   // 57: octomanager.v1.ListTrackedPullRequestsResponse
-	(*GetTrackedPullRequestResponse)(nil),     // 58: octomanager.v1.GetTrackedPullRequestResponse
-	(*RefreshTrackedPullRequestResponse)(nil), // 59: octomanager.v1.RefreshTrackedPullRequestResponse
-	(*AssignPullRequestResponse)(nil),         // 60: octomanager.v1.AssignPullRequestResponse
-	(*UntrackPullRequestResponse)(nil),        // 61: octomanager.v1.UntrackPullRequestResponse
-	(*ListActionsResponse)(nil),               // 62: octomanager.v1.ListActionsResponse
-	(*GetActionResponse)(nil),                 // 63: octomanager.v1.GetActionResponse
-	(*AcknowledgeActionResponse)(nil),         // 64: octomanager.v1.AcknowledgeActionResponse
-	(*StartActionResponse)(nil),               // 65: octomanager.v1.StartActionResponse
-	(*RetryDeliveryResponse)(nil),             // 66: octomanager.v1.RetryDeliveryResponse
-	(*ReprofileActionResponse)(nil),           // 67: octomanager.v1.ReprofileActionResponse
+	(*ListConflictCasesRequest)(nil),          // 37: octomanager.v1.ListConflictCasesRequest
+	(*GetConflictCaseRequest)(nil),            // 38: octomanager.v1.GetConflictCaseRequest
+	(*RequestRebaseRequest)(nil),              // 39: octomanager.v1.RequestRebaseRequest
+	(*ListRepairsRequest)(nil),                // 40: octomanager.v1.ListRepairsRequest
+	(*RecordActivityRequest)(nil),             // 41: octomanager.v1.RecordActivityRequest
+	(*ListActivityRequest)(nil),               // 42: octomanager.v1.ListActivityRequest
+	(*TrackPullRequestRequest)(nil),           // 43: octomanager.v1.TrackPullRequestRequest
+	(*ListTrackedPullRequestsRequest)(nil),    // 44: octomanager.v1.ListTrackedPullRequestsRequest
+	(*GetTrackedPullRequestRequest)(nil),      // 45: octomanager.v1.GetTrackedPullRequestRequest
+	(*RefreshTrackedPullRequestRequest)(nil),  // 46: octomanager.v1.RefreshTrackedPullRequestRequest
+	(*AssignPullRequestRequest)(nil),          // 47: octomanager.v1.AssignPullRequestRequest
+	(*UntrackPullRequestRequest)(nil),         // 48: octomanager.v1.UntrackPullRequestRequest
+	(*ListActionsRequest)(nil),                // 49: octomanager.v1.ListActionsRequest
+	(*GetActionRequest)(nil),                  // 50: octomanager.v1.GetActionRequest
+	(*AcknowledgeActionRequest)(nil),          // 51: octomanager.v1.AcknowledgeActionRequest
+	(*StartActionRequest)(nil),                // 52: octomanager.v1.StartActionRequest
+	(*RetryDeliveryRequest)(nil),              // 53: octomanager.v1.RetryDeliveryRequest
+	(*ReprofileActionRequest)(nil),            // 54: octomanager.v1.ReprofileActionRequest
+	(*ListConflictCasesResponse)(nil),         // 55: octomanager.v1.ListConflictCasesResponse
+	(*GetConflictCaseResponse)(nil),           // 56: octomanager.v1.GetConflictCaseResponse
+	(*RequestRebaseResponse)(nil),             // 57: octomanager.v1.RequestRebaseResponse
+	(*ListRepairsResponse)(nil),               // 58: octomanager.v1.ListRepairsResponse
+	(*RecordActivityResponse)(nil),            // 59: octomanager.v1.RecordActivityResponse
+	(*TrackPullRequestResponse)(nil),          // 60: octomanager.v1.TrackPullRequestResponse
+	(*ListTrackedPullRequestsResponse)(nil),   // 61: octomanager.v1.ListTrackedPullRequestsResponse
+	(*GetTrackedPullRequestResponse)(nil),     // 62: octomanager.v1.GetTrackedPullRequestResponse
+	(*RefreshTrackedPullRequestResponse)(nil), // 63: octomanager.v1.RefreshTrackedPullRequestResponse
+	(*AssignPullRequestResponse)(nil),         // 64: octomanager.v1.AssignPullRequestResponse
+	(*UntrackPullRequestResponse)(nil),        // 65: octomanager.v1.UntrackPullRequestResponse
+	(*ListActionsResponse)(nil),               // 66: octomanager.v1.ListActionsResponse
+	(*GetActionResponse)(nil),                 // 67: octomanager.v1.GetActionResponse
+	(*AcknowledgeActionResponse)(nil),         // 68: octomanager.v1.AcknowledgeActionResponse
+	(*StartActionResponse)(nil),               // 69: octomanager.v1.StartActionResponse
+	(*RetryDeliveryResponse)(nil),             // 70: octomanager.v1.RetryDeliveryResponse
+	(*ReprofileActionResponse)(nil),           // 71: octomanager.v1.ReprofileActionResponse
 }
 var file_octomanager_v1_scheduler_proto_depIdxs = []int32{
 	3,  // 0: octomanager.v1.Task.summarize_pull_request:type_name -> octomanager.v1.SummarizePullRequestTask
@@ -2364,58 +2370,62 @@ var file_octomanager_v1_scheduler_proto_depIdxs = []int32{
 	29, // 26: octomanager.v1.GetPullRequestResponse.pull_request:type_name -> octomanager.v1.PullRequestDetails
 	36, // 27: octomanager.v1.ListActivityResponse.activities:type_name -> octomanager.v1.ActivityReport
 	9,  // 28: octomanager.v1.ListActivityResponse.events:type_name -> octomanager.v1.JobEvent
-	37, // 29: octomanager.v1.SchedulerService.RequestRebase:input_type -> octomanager.v1.RequestRebaseRequest
-	38, // 30: octomanager.v1.SchedulerService.ListRepairs:input_type -> octomanager.v1.ListRepairsRequest
-	39, // 31: octomanager.v1.SchedulerService.RecordActivity:input_type -> octomanager.v1.RecordActivityRequest
-	40, // 32: octomanager.v1.SchedulerService.ListActivity:input_type -> octomanager.v1.ListActivityRequest
-	41, // 33: octomanager.v1.SchedulerService.TrackPullRequest:input_type -> octomanager.v1.TrackPullRequestRequest
-	42, // 34: octomanager.v1.SchedulerService.ListTrackedPullRequests:input_type -> octomanager.v1.ListTrackedPullRequestsRequest
-	43, // 35: octomanager.v1.SchedulerService.GetTrackedPullRequest:input_type -> octomanager.v1.GetTrackedPullRequestRequest
-	44, // 36: octomanager.v1.SchedulerService.RefreshTrackedPullRequest:input_type -> octomanager.v1.RefreshTrackedPullRequestRequest
-	45, // 37: octomanager.v1.SchedulerService.AssignPullRequest:input_type -> octomanager.v1.AssignPullRequestRequest
-	46, // 38: octomanager.v1.SchedulerService.UntrackPullRequest:input_type -> octomanager.v1.UntrackPullRequestRequest
-	47, // 39: octomanager.v1.SchedulerService.ListActions:input_type -> octomanager.v1.ListActionsRequest
-	48, // 40: octomanager.v1.SchedulerService.GetAction:input_type -> octomanager.v1.GetActionRequest
-	49, // 41: octomanager.v1.SchedulerService.AcknowledgeAction:input_type -> octomanager.v1.AcknowledgeActionRequest
-	50, // 42: octomanager.v1.SchedulerService.StartAction:input_type -> octomanager.v1.StartActionRequest
-	51, // 43: octomanager.v1.SchedulerService.RetryDelivery:input_type -> octomanager.v1.RetryDeliveryRequest
-	52, // 44: octomanager.v1.SchedulerService.ReprofileAction:input_type -> octomanager.v1.ReprofileActionRequest
-	11, // 45: octomanager.v1.SchedulerService.SubmitJob:input_type -> octomanager.v1.SubmitJobRequest
-	13, // 46: octomanager.v1.SchedulerService.GetJob:input_type -> octomanager.v1.GetJobRequest
-	30, // 47: octomanager.v1.SchedulerService.GetPullRequest:input_type -> octomanager.v1.GetPullRequestRequest
-	15, // 48: octomanager.v1.SchedulerService.GetSnapshot:input_type -> octomanager.v1.GetSnapshotRequest
-	25, // 49: octomanager.v1.SchedulerService.ListEvents:input_type -> octomanager.v1.ListEventsRequest
-	17, // 50: octomanager.v1.SchedulerService.Watch:input_type -> octomanager.v1.WatchRequest
-	19, // 51: octomanager.v1.SchedulerService.CancelJob:input_type -> octomanager.v1.CancelJobRequest
-	21, // 52: octomanager.v1.SchedulerService.RetryJob:input_type -> octomanager.v1.RetryJobRequest
-	23, // 53: octomanager.v1.SchedulerService.SetPaused:input_type -> octomanager.v1.SetPausedRequest
-	53, // 54: octomanager.v1.SchedulerService.RequestRebase:output_type -> octomanager.v1.RequestRebaseResponse
-	54, // 55: octomanager.v1.SchedulerService.ListRepairs:output_type -> octomanager.v1.ListRepairsResponse
-	55, // 56: octomanager.v1.SchedulerService.RecordActivity:output_type -> octomanager.v1.RecordActivityResponse
-	32, // 57: octomanager.v1.SchedulerService.ListActivity:output_type -> octomanager.v1.ListActivityResponse
-	56, // 58: octomanager.v1.SchedulerService.TrackPullRequest:output_type -> octomanager.v1.TrackPullRequestResponse
-	57, // 59: octomanager.v1.SchedulerService.ListTrackedPullRequests:output_type -> octomanager.v1.ListTrackedPullRequestsResponse
-	58, // 60: octomanager.v1.SchedulerService.GetTrackedPullRequest:output_type -> octomanager.v1.GetTrackedPullRequestResponse
-	59, // 61: octomanager.v1.SchedulerService.RefreshTrackedPullRequest:output_type -> octomanager.v1.RefreshTrackedPullRequestResponse
-	60, // 62: octomanager.v1.SchedulerService.AssignPullRequest:output_type -> octomanager.v1.AssignPullRequestResponse
-	61, // 63: octomanager.v1.SchedulerService.UntrackPullRequest:output_type -> octomanager.v1.UntrackPullRequestResponse
-	62, // 64: octomanager.v1.SchedulerService.ListActions:output_type -> octomanager.v1.ListActionsResponse
-	63, // 65: octomanager.v1.SchedulerService.GetAction:output_type -> octomanager.v1.GetActionResponse
-	64, // 66: octomanager.v1.SchedulerService.AcknowledgeAction:output_type -> octomanager.v1.AcknowledgeActionResponse
-	65, // 67: octomanager.v1.SchedulerService.StartAction:output_type -> octomanager.v1.StartActionResponse
-	66, // 68: octomanager.v1.SchedulerService.RetryDelivery:output_type -> octomanager.v1.RetryDeliveryResponse
-	67, // 69: octomanager.v1.SchedulerService.ReprofileAction:output_type -> octomanager.v1.ReprofileActionResponse
-	12, // 70: octomanager.v1.SchedulerService.SubmitJob:output_type -> octomanager.v1.SubmitJobResponse
-	14, // 71: octomanager.v1.SchedulerService.GetJob:output_type -> octomanager.v1.GetJobResponse
-	31, // 72: octomanager.v1.SchedulerService.GetPullRequest:output_type -> octomanager.v1.GetPullRequestResponse
-	16, // 73: octomanager.v1.SchedulerService.GetSnapshot:output_type -> octomanager.v1.GetSnapshotResponse
-	26, // 74: octomanager.v1.SchedulerService.ListEvents:output_type -> octomanager.v1.ListEventsResponse
-	18, // 75: octomanager.v1.SchedulerService.Watch:output_type -> octomanager.v1.WatchResponse
-	20, // 76: octomanager.v1.SchedulerService.CancelJob:output_type -> octomanager.v1.CancelJobResponse
-	22, // 77: octomanager.v1.SchedulerService.RetryJob:output_type -> octomanager.v1.RetryJobResponse
-	24, // 78: octomanager.v1.SchedulerService.SetPaused:output_type -> octomanager.v1.SetPausedResponse
-	54, // [54:79] is the sub-list for method output_type
-	29, // [29:54] is the sub-list for method input_type
+	37, // 29: octomanager.v1.SchedulerService.ListConflictCases:input_type -> octomanager.v1.ListConflictCasesRequest
+	38, // 30: octomanager.v1.SchedulerService.GetConflictCase:input_type -> octomanager.v1.GetConflictCaseRequest
+	39, // 31: octomanager.v1.SchedulerService.RequestRebase:input_type -> octomanager.v1.RequestRebaseRequest
+	40, // 32: octomanager.v1.SchedulerService.ListRepairs:input_type -> octomanager.v1.ListRepairsRequest
+	41, // 33: octomanager.v1.SchedulerService.RecordActivity:input_type -> octomanager.v1.RecordActivityRequest
+	42, // 34: octomanager.v1.SchedulerService.ListActivity:input_type -> octomanager.v1.ListActivityRequest
+	43, // 35: octomanager.v1.SchedulerService.TrackPullRequest:input_type -> octomanager.v1.TrackPullRequestRequest
+	44, // 36: octomanager.v1.SchedulerService.ListTrackedPullRequests:input_type -> octomanager.v1.ListTrackedPullRequestsRequest
+	45, // 37: octomanager.v1.SchedulerService.GetTrackedPullRequest:input_type -> octomanager.v1.GetTrackedPullRequestRequest
+	46, // 38: octomanager.v1.SchedulerService.RefreshTrackedPullRequest:input_type -> octomanager.v1.RefreshTrackedPullRequestRequest
+	47, // 39: octomanager.v1.SchedulerService.AssignPullRequest:input_type -> octomanager.v1.AssignPullRequestRequest
+	48, // 40: octomanager.v1.SchedulerService.UntrackPullRequest:input_type -> octomanager.v1.UntrackPullRequestRequest
+	49, // 41: octomanager.v1.SchedulerService.ListActions:input_type -> octomanager.v1.ListActionsRequest
+	50, // 42: octomanager.v1.SchedulerService.GetAction:input_type -> octomanager.v1.GetActionRequest
+	51, // 43: octomanager.v1.SchedulerService.AcknowledgeAction:input_type -> octomanager.v1.AcknowledgeActionRequest
+	52, // 44: octomanager.v1.SchedulerService.StartAction:input_type -> octomanager.v1.StartActionRequest
+	53, // 45: octomanager.v1.SchedulerService.RetryDelivery:input_type -> octomanager.v1.RetryDeliveryRequest
+	54, // 46: octomanager.v1.SchedulerService.ReprofileAction:input_type -> octomanager.v1.ReprofileActionRequest
+	11, // 47: octomanager.v1.SchedulerService.SubmitJob:input_type -> octomanager.v1.SubmitJobRequest
+	13, // 48: octomanager.v1.SchedulerService.GetJob:input_type -> octomanager.v1.GetJobRequest
+	30, // 49: octomanager.v1.SchedulerService.GetPullRequest:input_type -> octomanager.v1.GetPullRequestRequest
+	15, // 50: octomanager.v1.SchedulerService.GetSnapshot:input_type -> octomanager.v1.GetSnapshotRequest
+	25, // 51: octomanager.v1.SchedulerService.ListEvents:input_type -> octomanager.v1.ListEventsRequest
+	17, // 52: octomanager.v1.SchedulerService.Watch:input_type -> octomanager.v1.WatchRequest
+	19, // 53: octomanager.v1.SchedulerService.CancelJob:input_type -> octomanager.v1.CancelJobRequest
+	21, // 54: octomanager.v1.SchedulerService.RetryJob:input_type -> octomanager.v1.RetryJobRequest
+	23, // 55: octomanager.v1.SchedulerService.SetPaused:input_type -> octomanager.v1.SetPausedRequest
+	55, // 56: octomanager.v1.SchedulerService.ListConflictCases:output_type -> octomanager.v1.ListConflictCasesResponse
+	56, // 57: octomanager.v1.SchedulerService.GetConflictCase:output_type -> octomanager.v1.GetConflictCaseResponse
+	57, // 58: octomanager.v1.SchedulerService.RequestRebase:output_type -> octomanager.v1.RequestRebaseResponse
+	58, // 59: octomanager.v1.SchedulerService.ListRepairs:output_type -> octomanager.v1.ListRepairsResponse
+	59, // 60: octomanager.v1.SchedulerService.RecordActivity:output_type -> octomanager.v1.RecordActivityResponse
+	32, // 61: octomanager.v1.SchedulerService.ListActivity:output_type -> octomanager.v1.ListActivityResponse
+	60, // 62: octomanager.v1.SchedulerService.TrackPullRequest:output_type -> octomanager.v1.TrackPullRequestResponse
+	61, // 63: octomanager.v1.SchedulerService.ListTrackedPullRequests:output_type -> octomanager.v1.ListTrackedPullRequestsResponse
+	62, // 64: octomanager.v1.SchedulerService.GetTrackedPullRequest:output_type -> octomanager.v1.GetTrackedPullRequestResponse
+	63, // 65: octomanager.v1.SchedulerService.RefreshTrackedPullRequest:output_type -> octomanager.v1.RefreshTrackedPullRequestResponse
+	64, // 66: octomanager.v1.SchedulerService.AssignPullRequest:output_type -> octomanager.v1.AssignPullRequestResponse
+	65, // 67: octomanager.v1.SchedulerService.UntrackPullRequest:output_type -> octomanager.v1.UntrackPullRequestResponse
+	66, // 68: octomanager.v1.SchedulerService.ListActions:output_type -> octomanager.v1.ListActionsResponse
+	67, // 69: octomanager.v1.SchedulerService.GetAction:output_type -> octomanager.v1.GetActionResponse
+	68, // 70: octomanager.v1.SchedulerService.AcknowledgeAction:output_type -> octomanager.v1.AcknowledgeActionResponse
+	69, // 71: octomanager.v1.SchedulerService.StartAction:output_type -> octomanager.v1.StartActionResponse
+	70, // 72: octomanager.v1.SchedulerService.RetryDelivery:output_type -> octomanager.v1.RetryDeliveryResponse
+	71, // 73: octomanager.v1.SchedulerService.ReprofileAction:output_type -> octomanager.v1.ReprofileActionResponse
+	12, // 74: octomanager.v1.SchedulerService.SubmitJob:output_type -> octomanager.v1.SubmitJobResponse
+	14, // 75: octomanager.v1.SchedulerService.GetJob:output_type -> octomanager.v1.GetJobResponse
+	31, // 76: octomanager.v1.SchedulerService.GetPullRequest:output_type -> octomanager.v1.GetPullRequestResponse
+	16, // 77: octomanager.v1.SchedulerService.GetSnapshot:output_type -> octomanager.v1.GetSnapshotResponse
+	26, // 78: octomanager.v1.SchedulerService.ListEvents:output_type -> octomanager.v1.ListEventsResponse
+	18, // 79: octomanager.v1.SchedulerService.Watch:output_type -> octomanager.v1.WatchResponse
+	20, // 80: octomanager.v1.SchedulerService.CancelJob:output_type -> octomanager.v1.CancelJobResponse
+	22, // 81: octomanager.v1.SchedulerService.RetryJob:output_type -> octomanager.v1.RetryJobResponse
+	24, // 82: octomanager.v1.SchedulerService.SetPaused:output_type -> octomanager.v1.SetPausedResponse
+	56, // [56:83] is the sub-list for method output_type
+	29, // [29:56] is the sub-list for method input_type
 	29, // [29:29] is the sub-list for extension type_name
 	29, // [29:29] is the sub-list for extension extendee
 	0,  // [0:29] is the sub-list for field type_name

@@ -49,7 +49,7 @@ export class Coordinator extends EventEmitter {
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory });
-    this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions);
+    this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.socketPath = join(directory, "run.sock");
     for (const job of this.store.jobs()) {
       let observedExit = false;

@@ -94,3 +94,20 @@ Native PTY captures from the actual coordinator were inspected at 132×40 and 80
 ![Repair at 80 columns](images/rebase-conflict-narrow.png)
 
 The local acceptance coordinator and state remain under `/private/tmp/octo-acceptance-20261110/rebase-live`; workspaces are retained for inspection. Fork/merge-preserving rebases, regeneration recipes, per-attempt cancellation, and additional repair harness adapters remain outside this increment.
+
+
+## Tools-first YAML conflict and retained corpus (2026-11-11 UTC)
+
+[Fixture PR #4](https://github.com/lanej/octo-manager-acceptance-20261110/pull/4) deliberately changed separate elements of one inline sequence. Base was `ports: [80, 443, 8080]`, target changed `80` to `81`, and source changed `8080` to `9090`. Octo’s `yaml-flow-sequence-v1` expanded all three inputs into block sequences and used `git merge-file` to combine the independent edits. No agent was invoked: the attempt retained `usedAgent=false` and one mechanically resolved file.
+
+Local checks asserted the resulting sequence and validated the existing retry policy. The exact leased push produced [cd82e782](https://github.com/lanej/octo-manager-acceptance-20261110/commit/cd82e7823b3c94dcda4da730ffc897c16fa7bc9f). GitHub reported the PR mergeable and both `Retry policy` runs successful. Octo reached succeeded after retrying one temporarily inconsistent GitHub observation without another push. The fixture remains open and unmerged.
+
+Schema 5 retained case 1 with all three original blob IDs and texts, the expanded merged candidate, applied decision and reason, and Git/parser versions. `conflict-case 1 --json` recovered it through Connect. SQLite integrity returned `ok` and the foreign-key check found no violations. Separate regression cases prove recovery after deleting the isolated checkout and restarting the coordinator, and retain an ambiguous same-element conflict as declined with the fallback agent’s output separately. An applied recipe remains distinct from the linked repair’s final verification.
+
+The actual native terminal dashboard was captured through a PTY and replayed in a headless browser at 132×40 and 80×32. It shows the PR, resulting commit link, verified rebase, and YAML resolver count.
+
+![Tools-first YAML repair in the native dashboard](images/rebase-yaml.png)
+
+![Tools-first YAML repair at a narrow terminal width](images/rebase-yaml-narrow.png)
+
+This establishes one bounded recipe, not general semantic conflict resolution. Additions, deletions, reorders, duplicates, competing replacements, complex YAML, and oversized sequences fall back to the configured agent. The corpus supports future analysis; it does not automatically enable new recipes or rewrite repository formatting policy.
