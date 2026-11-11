@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
 	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -59,7 +60,7 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	parts := []string{text.Badge("PR tracking", m.theme), m.link(pr.GetUrl()), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
+	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
@@ -80,10 +81,8 @@ func (m *Model) trackingContent() string {
 			tone = text.Success
 		}
 
-		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")), m.commitField("Head commit", pr.GetUrl(), o.GetHeadSha()), m.commitField("PR-reported base", pr.GetUrl(), o.GetBaseSha()))
-		if target := o.GetTargetBase(); target != nil {
-			parts = append(parts, m.commitField("Target "+safe(target.GetRef()), pr.GetUrl(), target.GetSha()))
-		} else {
+		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")))
+		if o.GetTargetBase() == nil {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
 
@@ -143,6 +142,56 @@ func (m *Model) trackingContent() string {
 	parts = append(parts, "", text.KeyHint("u", "refresh", m.theme), m.muted("Delivery, acknowledgment, and verified resolution are separate."))
 
 	return strings.Join(parts, "\n")
+}
+
+func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
+	var (
+		links       []text.Link
+		unavailable []string
+	)
+
+	add := func(address, label string) {
+		link, err := webLink(address)
+		if err != nil {
+			unavailable = append(unavailable, m.muted("Link unavailable"))
+			return
+		}
+
+		if label != "" {
+			link.Label = text.Inline(safe(label))
+		}
+
+		links = append(links, link)
+	}
+	add(pr.GetUrl(), "")
+
+	if o := pr.GetObservation(); o != nil {
+		repository, _ := parsePRURL(pr.GetUrl())
+		revision := func(label, sha string) {
+			if !validCommit(sha) || repository == "" {
+				unavailable = append(unavailable, m.muted(label+": unavailable"))
+				return
+			}
+
+			add(strings.Split(repository, "/pull/")[0]+"/commit/"+sha, label+": "+sha[:8])
+		}
+		revision("Head", o.GetHeadSha())
+		revision("PR-reported base", o.GetBaseSha())
+
+		if target := o.GetTargetBase(); target != nil {
+			revision("Target "+target.GetRef(), target.GetSha())
+		}
+	}
+
+	g := m.geometry()
+	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+
+	view, err := (layout.LinkGroup{Links: links}).View(max(1, inner.Width-1), m.theme)
+	if err != nil {
+		return m.muted("Links unavailable")
+	}
+
+	return strings.Join(append([]string{view}, unavailable...), "\n")
 }
 
 func (m *Model) refreshTracked() tea.Cmd {

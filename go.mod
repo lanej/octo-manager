@@ -8,7 +8,7 @@ require (
 	charm.land/log/v2 v2.0.1
 	connectrpc.com/connect v1.21.1
 	github.com/charmbracelet/x/ansi v0.11.9
-	github.com/lanej/charmed v0.0.0-20261109171153-f502811ed4e8
+	github.com/lanej/charmed v0.0.0-20261111150310-a4599d750832
 	google.golang.org/protobuf v1.36.12
 )
 

@@ -111,3 +111,14 @@ The actual native terminal dashboard was captured through a PTY and replayed in 
 ![Tools-first YAML repair at a narrow terminal width](images/rebase-yaml-narrow.png)
 
 This establishes one bounded recipe, not general semantic conflict resolution. Additions, deletions, reorders, duplicates, competing replacements, complex YAML, and oversized sequences fall back to the configured agent. The corpus supports future analysis; it does not automatically enable new recipes or rewrite repository formatting policy.
+
+
+## Charmed link groups and Kitty shortcuts (2026-11-11)
+
+Charmed’s landed link/group API rendered the actual tracked YAML fixture in Octo at 132×40 and 80×32. The inspected PTY screenshots show the PR, head, PR-reported base, and current target as wrapping links with separate destinations. The complete group fits the allocated panel width; failed or missing revision evidence remains visibly unavailable.
+
+The captured native output was fed through Kitty 0.49.2’s real screen parser. The `⌘⇧O` handler passed the exact final visible GitHub destination to a controlled `open_url` callback. Kitty’s native hyperlink hints ran in an owned PTY over that same screen; selecting the compact PR label returned `https://github.com/lanej/octo-manager-acceptance-20261110/pull/4`. The dotfiles detector also resolves the configured `⌘⇧O` and `⌘⇧E` actions through Kitty’s configuration parser. This verifies target extraction and picker selection, without claiming a GUI keystroke or browser launch. Multiplexer and SSH paths were not exercised in this slice.
+
+![Tracking references grouped with Charmed OSC 8 links](images/charmed-links.png)
+
+![The same reference group at a narrow terminal width](images/charmed-links-narrow.png)
