@@ -1,3 +1,4 @@
+import { trackingPR } from "./evidence.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { ObservationInput, ObservationPart } from "./types.js";
@@ -72,17 +73,29 @@ export async function readObservation(
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
     "/",
   );
+  if (owner === undefined || repo === undefined || number === undefined)
+    throw new Error("Invalid GitHub PR URL");
   const root = `repos/${owner}/${repo}`;
-  const pr = await read(`${root}/pulls/${number}`, signal);
-  if (
-    typeof pr.head?.sha !== "string" ||
-    !pr.head.sha ||
-    typeof pr.base?.sha !== "string" ||
-    !pr.base.sha ||
-    !["open", "closed"].includes(pr.state) ||
-    typeof pr.base?.repo?.private !== "boolean"
-  )
-    throw new Error("Invalid GitHub PR observation");
+  const pr = trackingPR(await read(`${root}/pulls/${number}`, signal));
+  // rationale: The PR payload can retain an ancestor base SHA after the target branch advances.
+  const refPath = `${root}/git/ref/heads/${encodeURIComponent(pr.base.ref)}`;
+  const readTarget = async () => {
+    const raw: unknown = await read(refPath, signal);
+    if (
+      typeof raw !== "object" ||
+      raw === null ||
+      !("object" in raw) ||
+      typeof raw.object !== "object" ||
+      raw.object === null ||
+      !("sha" in raw.object) ||
+      typeof raw.object.sha !== "string" ||
+      raw.object.sha === ""
+    )
+      throw new Error("Invalid GitHub target branch observation");
+    return { ref: pr.base.ref, sha: raw.object.sha };
+  };
+  const target =
+    pr.state === "open" && !pr.merged ? await readTarget() : undefined;
   const observedAt = now();
   const [runs, statuses, reviews] = await Promise.all([
     collection(
@@ -108,7 +121,7 @@ export async function readObservation(
         id: `status:${c.id}`,
         key: `status:${c.context}`,
         name: String(c.context),
-        headSha: pr.head.sha as string,
+        headSha: pr.head.sha,
         status: String(c.state),
         conclusion: String(c.state),
         at: Date.parse(c.created_at ?? "") || 0,
@@ -145,11 +158,27 @@ export async function readObservation(
             ],
             reason: "Some check sources are incomplete",
           };
+  const [latestPR, latestTarget] = await Promise.all([
+    read(`${root}/pulls/${number}`, signal).then(trackingPR),
+    target === undefined ? undefined : readTarget(),
+  ]);
+  if (
+    latestPR.head.sha !== pr.head.sha ||
+    latestPR.base.ref !== pr.base.ref ||
+    latestTarget?.sha !== target?.sha ||
+    latestPR.state !== pr.state ||
+    latestPR.merged !== pr.merged ||
+    latestPR.mergeable !== pr.mergeable
+  )
+    throw new Error(
+      "GitHub PR revisions changed during observation; refresh again",
+    );
   return {
     observedAt,
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
-    lifecycle: pr.merged === true ? "merged" : pr.state,
+    ...(target === undefined ? {} : { targetBase: target }),
+    lifecycle: pr.merged ? "merged" : pr.state,
     mergeability:
       pr.mergeable === true
         ? "mergeable"

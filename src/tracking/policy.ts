@@ -54,10 +54,16 @@ export function currentReviews(o: PRObservation) {
 export function findings(o: PRObservation, url: string): Finding[] {
   if (o.lifecycle !== "open") return [];
   const found: Finding[] = [];
+  const baseSha = o.targetBase?.sha ?? o.baseSha;
   if (o.mergeability === "conflicting")
     found.push({
-      sourceKey: `${o.headSha}:${o.baseSha}`,
-      blocker: { kind: "conflict", headSha: o.headSha, baseSha: o.baseSha },
+      sourceKey: `${o.headSha}:${baseSha}`,
+      blocker: {
+        kind: "conflict",
+        headSha: o.headSha,
+        baseSha,
+        ...(o.targetBase !== undefined ? { baseRef: o.targetBase.ref } : {}),
+      },
       summary: "Merge conflict",
       evidenceUrl: url,
     });
@@ -111,7 +117,10 @@ export function closeProgress(
   if (b.kind !== "changes_requested" && b.headSha !== o.headSha)
     return supersede("PR head changed");
   if (b.kind === "conflict") {
-    if (b.baseSha !== o.baseSha) return supersede("Base head changed");
+    if (b.baseSha !== (o.targetBase?.sha ?? o.baseSha))
+      return supersede("Base head changed");
+    if (o.targetBase !== undefined && b.baseRef !== o.targetBase.ref)
+      return supersede("Target base evidence refreshed");
     if (o.mergeability === "mergeable")
       return resolve("GitHub confirms no merge conflict");
   }

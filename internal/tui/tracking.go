@@ -79,7 +79,13 @@ func (m *Model) trackingMarkdown() string {
 	}
 
 	if o := pr.GetObservation(); o != nil {
-		result += safe(o.GetLifecycle()) + " · mergeability " + safe(o.GetMergeability()) + " · observed " + time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC") + "\n\nHead `" + shortSHA(o.GetHeadSha()) + "` · base `" + shortSHA(o.GetBaseSha()) + "`\n\n"
+		result += safe(o.GetLifecycle()) + " · mergeability " + safe(o.GetMergeability()) + " · observed " + time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC") + "\n\nHead `" + shortSHA(o.GetHeadSha()) + "` · PR-reported base `" + shortSHA(o.GetBaseSha()) + "`\n\n"
+		if target := o.GetTargetBase(); target != nil {
+			result += "Target **" + safe(target.GetRef()) + "** `" + shortSHA(target.GetSha()) + "`\n\n"
+		} else {
+			result += "Current target revision unavailable (legacy or closed observation).\n\n"
+		}
+
 		result += "Checks " + observationStatus(o.GetChecksJson()) + " · reviews " + observationStatus(o.GetReviewsJson()) + "\n\n"
 	} else {
 		result += "Waiting for the first GitHub observation.\n\n"

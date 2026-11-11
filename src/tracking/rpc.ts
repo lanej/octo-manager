@@ -17,7 +17,7 @@ import {
   type TrackedPR,
 } from "./types.js";
 import type { TrackingService } from "./service.js";
-const actionStates: Record<ActionState, WireActionState> = {
+export const actionStates: Record<ActionState, WireActionState> = {
   open: WireActionState.OPEN,
   acknowledged: WireActionState.ACKNOWLEDGED,
   working: WireActionState.WORKING,
@@ -51,6 +51,7 @@ export function wirePR(p: TrackedPR) {
           observedAtMs: BigInt(p.observation.observedAt),
           headSha: p.observation.headSha,
           baseSha: p.observation.baseSha,
+          targetBase: p.observation.targetBase,
           lifecycle: p.observation.lifecycle,
           mergeability: p.observation.mergeability,
           checksJson: JSON.stringify(p.observation.checks),
@@ -72,7 +73,11 @@ export function wireAction(a: Action) {
       b.kind === "conflict"
         ? {
             case: "conflict",
-            value: { headSha: b.headSha, baseSha: b.baseSha },
+            value: {
+              headSha: b.headSha,
+              baseSha: b.baseSha,
+              baseRef: b.baseRef,
+            },
           }
         : b.kind === "check_failed"
           ? {

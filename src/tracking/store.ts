@@ -1,3 +1,5 @@
+import { actionContext, targetBase } from "./evidence.js";
+import type { ActionEventContext } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
@@ -30,6 +32,7 @@ export class TrackingStore {
       detail: string,
       prId: string,
       actionId?: string,
+      context?: ActionEventContext,
     ) => void,
   ) {
     migrateTracking(db);
@@ -100,12 +103,14 @@ export class TrackingStore {
       .run(version, this.now(), id);
   }
   private observation(r: Row): PRObservation {
+    const target = targetBase(r["target_base_json"]);
     return {
       id: r.id,
       prId: r.pr_id,
       observedAt: r.observed_at_ms,
       headSha: r.head_sha,
       baseSha: r.base_sha,
+      ...(target === undefined ? {} : { targetBase: target }),
       lifecycle: r.lifecycle,
       mergeability: r.mergeability,
       checks: parse(r.checks_json),
@@ -229,7 +234,23 @@ export class TrackingStore {
         a.createdAt,
         a.updatedAt,
       );
-    this.event(kind, a.summary, a.prId, a.id);
+    const actor =
+      kind === "action_progress" && "agentId" in a.progress
+        ? this.agent(a.progress.agentId)
+        : undefined;
+    const context = actionContext({
+      state: a.progress.state,
+      prUrl: this.pr(a.prId).url,
+      ...(actor === undefined
+        ? {}
+        : {
+            actorAgentId: actor.id,
+            actorHarness: actor.harness,
+            actorSessionId: actor.sessionId,
+            ...(actor.label === undefined ? {} : { actorLabel: actor.label }),
+          }),
+    });
+    this.event(kind, a.summary, a.prId, a.id, context);
   }
   deliveries(): Delivery[] {
     return this.db
@@ -377,7 +398,7 @@ export class TrackingStore {
       if (!p.enabled) return p;
       const result = this.db
         .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json) VALUES(?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
         )
         .run(
           p.id,
@@ -390,6 +411,9 @@ export class TrackingStore {
           JSON.stringify(input.checks),
           input.reviews.state,
           JSON.stringify(input.reviews),
+          input.targetBase === undefined
+            ? null
+            : JSON.stringify(input.targetBase),
         );
       const o: PRObservation = {
         ...input,

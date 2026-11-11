@@ -92,3 +92,11 @@ The additive SQLite migration preserves existing jobs, events, and instance iden
 All timestamps are integer Unix milliseconds. Event sequence numbers determine ordering. Observations and events are retained without automatic pruning in this increment. Connect snapshots expose tracking alongside jobs; event `pr_id` and `action_id` distinguish tracking from worker activity. `ListEvents` and `Watch` accept a PR filter or a job filter, never both.
 
 The app-server adapter uses request types generated with Codex 0.167.0. Regenerate using `bun scripts/generate-codex-types.ts` with that CLI version; review compatibility before changing the pin. The script retains only the required generated type dependency closure. Controlled transport tests exercise actual WebSocket framing, unchanged turn settings, and uncertain acceptance after disconnect.
+
+## Target revisions and delivery diagnostics
+
+Open-PR observations retain GitHub’s PR-reported `baseSha` separately from `targetBase: { ref, sha }`, read from the current target branch ref. GitHub can retain an older ancestor in the PR payload after the target branch advances. Conflict actions use the independently read target SHA and branch name. The reader brackets collection reads with target-ref and PR checks; a changed head, target, lifecycle, or mergeability rejects the refresh and retains the preceding observation. These bounded reads do not establish an atomic GitHub snapshot. Fetch and verify refs before executing a repair.
+
+The dashboard labels the PR-reported base and current target separately. Historical observations lack current-target evidence; closed PR observations do not require a surviving target branch. Legacy conflict notifications explicitly mark an unverified target rather than relabeling the old SHA as current.
+
+Codex RPC rejections retain the method, error code, bounded upstream message, and observed runtime version in the existing delivery and attempt reasons. Terminal controls are removed. Explicit rejection remains distinct from uncertain acceptance; this diagnostic change does not automatically resend an uncertain notification.

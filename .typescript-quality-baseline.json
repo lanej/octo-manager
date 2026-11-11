@@ -86,14 +86,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-explicit-any",
       "message": "Unexpected any. Specify a different type.",
-      "source": "let m: any;",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
       "source": "private call(method: string, params: unknown): Promise<any> {",
       "count": 1
     },
@@ -108,41 +100,9 @@
     {
       "file": "src/agents/codex.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "const p = this.pending.get(m.id)!;",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary optional chain on a non-nullish value.",
       "source": "const version = info.userAgent?.match(/\\/(\\d+\\.\\d+\\.\\d+[^ ]*)/)?.[1];",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `number`.",
-      "source": "const p = this.pending.get(m.id)!;",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `number`.",
-      "source": "if (typeof m.id === \"number\" && this.pending.has(m.id)) {",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `number`.",
-      "source": "this.pending.delete(m.id);",
       "count": 1
     },
     {
@@ -206,14 +166,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "m = JSON.parse(data.toString());",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
       "source": "return { found: true, turnId: turn.id };",
       "count": 1
     },
@@ -245,40 +197,8 @@
       "file": "src/agents/codex.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .error on an `any` value.",
-      "source": "if (m.error)",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "const p = this.pending.get(m.id)!;",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "if (typeof m.id === \"number\" && this.pending.has(m.id)) {",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
       "source": "return { found: true, turnId: turn.id };",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "this.pending.delete(m.id);",
       "count": 1
     },
     {
@@ -303,14 +223,6 @@
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .nextCursor on an `any` value.",
       "source": "if (!result.nextCursor) return { found: false };",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .result on an `any` value.",
-      "source": "else p.resolve(m.result);",
       "count": 1
     },
     {
@@ -351,14 +263,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
       "source": "if (!result.nextCursor) return { found: false };",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "if (m.error)",
       "count": 1
     },
     {
@@ -823,14 +727,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!value) throw new Error(\"Server returned no snapshot\");",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "source": "function event(value: WireEvent): JobEvent { return { seq: Number(value.sequence), jobId: value.jobId, at: Number(value.atMs), kind: value.kind, detail: value.detail, ...(value.prId?{prId:value.prId}:{}), ...(value.actionId?{actionId:value.actionId}:{}) }; }",
       "count": 1
     },
     {
@@ -2516,14 +2412,6 @@
     {
       "file": "src/store.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type 'string' is more narrow than the original type.",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!row) throw new Error(\"Job not found\");",
@@ -2555,35 +2443,11 @@
     },
     {
       "file": "src/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected value in conditional. A boolean expression is required.",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
       "tool": "format",
       "rule": "prettier",
       "message": "Formatting differs",
       "source": "",
       "count": 1
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'action_id' comes from an index signature, so it must be accessed with ['action_id'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'at' comes from an index signature, so it must be accessed with ['at'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
     },
     {
       "file": "src/store.ts",
@@ -2608,46 +2472,6 @@
       "message": "Property 'data' comes from an index signature, so it must be accessed with ['data'].",
       "source": "return JSON.parse(row.data as string) as Job;",
       "count": 1
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'detail' comes from an index signature, so it must be accessed with ['detail'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'job_id' comes from an index signature, so it must be accessed with ['job_id'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'pr_id' comes from an index signature, so it must be accessed with ['pr_id'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
-    },
-    {
-      "file": "src/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'seq' comes from an index signature, so it must be accessed with ['seq'].",
-      "source": "return rows.map(r => ({ seq: Number(r.seq), jobId: r.job_id as string, at: Number(r.at), kind: r.kind as string, detail: r.detail as string, ...(r.pr_id ? { prId: r.pr_id as string } : {}), ...(r.action_id ? { actionId: r.action_id as string } : {}) }));",
-      "count": 2
     },
     {
       "file": "src/store.ts",
@@ -3062,14 +2886,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "![\"open\", \"closed\"].includes(pr.state) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
       "source": "at: Date.parse(c.created_at ?? \"\") || 0,",
       "count": 1
     },
@@ -3094,22 +2910,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "baseSha: pr.base.sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "const pr = await read(`${root}/pulls/${number}`, signal);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
       "source": "const raw = await read(",
       "count": 1
     },
@@ -3124,57 +2924,9 @@
     {
       "file": "src/tracking/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "headSha: pr.head.sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "lifecycle: pr.merged === true ? \"merged\" : pr.state,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .app on an `any` value.",
       "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .base on an `any` value.",
-      "source": "!pr.base.sha ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .base on an `any` value.",
-      "source": "baseSha: pr.base.sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .base on an `any` value.",
-      "source": "typeof pr.base?.repo?.private !== \"boolean\"",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .base on an `any` value.",
-      "source": "typeof pr.base?.sha !== \"string\" ||",
       "count": 1
     },
     {
@@ -3229,54 +2981,6 @@
       "file": "src/tracking/github.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "!pr.head.sha ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "`${root}/commits/${pr.head.sha}/check-runs?filter=latest`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "`${root}/commits/${pr.head.sha}/statuses`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "headSha: pr.head.sha as string,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "headSha: pr.head.sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head on an `any` value.",
-      "source": "typeof pr.head?.sha !== \"string\" ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .head_sha on an `any` value.",
       "source": "headSha: String(c.head_sha),",
       "count": 1
@@ -3325,30 +3029,6 @@
       "file": "src/tracking/github.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .mergeable on an `any` value.",
-      "source": ": pr.mergeable === false",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .mergeable on an `any` value.",
-      "source": "pr.mergeable === true",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .merged on an `any` value.",
-      "source": "lifecycle: pr.merged === true ? \"merged\" : pr.state,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .name on an `any` value.",
       "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
       "count": 1
@@ -3374,23 +3054,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .state on an `any` value.",
-      "source": "![\"open\", \"closed\"].includes(pr.state) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .state on an `any` value.",
       "source": "conclusion: String(c.state),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .state on an `any` value.",
-      "source": "lifecycle: pr.merged === true ? \"merged\" : pr.state,",
       "count": 1
     },
     {
@@ -3452,30 +3116,6 @@
     {
       "file": "src/tracking/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "headSha: pr.head.sha as string,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"any\" of template literal expression.",
-      "source": "`${root}/commits/${pr.head.sha}/check-runs?filter=latest`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"any\" of template literal expression.",
-      "source": "`${root}/commits/${pr.head.sha}/statuses`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"any\" of template literal expression.",
       "source": "id: `run:${c.id}`,",
@@ -3518,47 +3158,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"string | undefined\" of template literal expression.",
-      "source": "`${root}/pulls/${number}/reviews`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"string | undefined\" of template literal expression.",
-      "source": "const pr = await read(`${root}/pulls/${number}`, signal);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"string | undefined\" of template literal expression.",
-      "source": "const root = `repos/${owner}/${repo}`;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"string | undefined\" of template literal expression.",
       "source": "return `https://github.com/${m[1]!.toLowerCase()}/${m[2]!.toLowerCase()}/pull/${m[3]}`;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "!pr.base.sha ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "!pr.head.sha ||",
       "count": 1
     },
     {
@@ -4948,14 +4548,6 @@
     {
       "file": "test/codex-transport.test.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-base-to-string",
-      "message": "'data' may use Object's default stringification format ('[object Object]') when stringified.",
-      "source": "const m = JSON.parse(data.toString());",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-confusing-void-expression",
       "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
       "source": "await new Promise<void>((resolve) => http.close(() => resolve()));",
@@ -4967,126 +4559,6 @@
       "rule": "@typescript-eslint/no-confusing-void-expression",
       "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
       "source": "await new Promise<void>((resolve) => ws.close(() => resolve()));",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `{}`.",
-      "source": "assert.deepEqual(Object.keys(m.params).sort(), [",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `number`.",
-      "source": "ids.push(m.id);",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "methods.push(m.method);",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "const m = JSON.parse(data.toString());",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "socket.send(JSON.stringify({ id: m.id, result }));",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "ids.push(m.id);",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "if (m.id === undefined) return;",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "socket.send(JSON.stringify({ id: m.id, result }));",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .method on an `any` value.",
-      "source": "if (m.method === \"initialize\")",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .method on an `any` value.",
-      "source": "if (m.method === \"thread/read\")",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .method on an `any` value.",
-      "source": "if (m.method === \"thread/turns/list\")",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .method on an `any` value.",
-      "source": "if (m.method === \"turn/start\") {",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .method on an `any` value.",
-      "source": "methods.push(m.method);",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .params on an `any` value.",
-      "source": "assert.deepEqual(Object.keys(m.params).sort(), [",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .params on an `any` value.",
-      "source": "assert.equal(m.params.clientUserMessageId, \"delivery\");",
       "count": 1
     },
     {

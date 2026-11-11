@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { ActionEventContext } from "./tracking/types.js";
 
 export type Status = "queued" | "running" | "conflicted" | "resolving" | "retry_wait" | "cancelling" | "cancelled" | "succeeded" | "failed" | "interrupted";
 export type Task = { kind: "summarize_pr"; url: string } | { kind: "resolve_conflict" };
@@ -8,7 +9,7 @@ export interface Job {
   createdAt: number; updatedAt: number; attempts: Attempt[]; retryCount: number;
   availableAt: number; result?: string; error?: string; fixture?: string;
 }
-export interface JobEvent { seq: number; jobId: string; at: number; kind: string; detail: string; prId?: string; actionId?: string }
+export interface JobEvent { seq: number; jobId: string; at: number; kind: string; detail: string; prId?: string; actionId?: string; actionContext?: ActionEventContext }
 export interface Snapshot { scheduler: "running" | "paused" | "stopping" | "stopped"; worker: "idle" | "busy" | "recovering"; jobs: Job[]; events: JobEvent[]; recoveryPid?: number }
 export const activeStates: Status[] = ["running", "conflicted", "resolving", "cancelling"];
 export const terminalStates: Status[] = ["succeeded", "failed", "cancelled", "interrupted"];

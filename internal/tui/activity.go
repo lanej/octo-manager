@@ -187,9 +187,27 @@ func (m *Model) activityMarkdown() string {
 	for _, item := range items[start:end] {
 		if item.event != nil {
 			event := item.event
-			parts = append(parts, "## Coordinator · "+strings.ReplaceAll(safe(event.GetKind()), "_", " ")+"\n\n")
+			context := event.GetActionContext()
+
+			title := "Coordinator · " + strings.ReplaceAll(safe(event.GetKind()), "_", " ")
+			if context != nil {
+				title = "Action · " + strings.ToLower(strings.TrimPrefix(context.GetState().String(), "ACTION_STATE_")) + " · " + strings.ReplaceAll(safe(event.GetKind()), "_", " ")
+			}
+
+			parts = append(parts, "## "+title+"\n\n")
 			parts = append(parts, fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(event.GetAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), event.GetSequence()))
 			parts = append(parts, safe(event.GetDetail())+"\n\n")
+
+			if context != nil {
+				parts = append(parts, safe(context.GetPrUrl())+"\n\n")
+				if context.GetActorAgentId() != "" {
+					parts = append(parts, "**"+safe(context.GetActorHarness())+"** · "+safe(context.GetActorLabel())+" · session `"+safe(context.GetActorSessionId())+"`\n\n")
+				} else {
+					parts = append(parts, "Coordinator-observed transition.\n\n")
+				}
+			} else if event.GetKind() == "action_progress" {
+				parts = append(parts, "Legacy event: transition state and actor were not recorded.\n\n")
+			}
 
 			for _, reference := range []string{event.GetPrId(), event.GetActionId(), event.GetJobId()} {
 				if reference != "" {

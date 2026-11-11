@@ -1,4 +1,5 @@
 import WebSocket from "ws";
+import { codexVersion, rpcRejection } from "./diagnostics.js";
 import { connect } from "node:net";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -38,12 +39,14 @@ export class CodexConnection implements AgentConnection {
   private pending = new Map<
     number,
     {
+      method: string;
       resolve: (value: any) => void;
       reject: (error: Error) => void;
       timer: ReturnType<typeof setTimeout>;
     }
   >();
   private ready: Promise<InitializeResponse>;
+  private runtimeVersion: string | undefined;
   constructor(socketPath?: string) {
     const path =
       socketPath ??
@@ -59,25 +62,31 @@ export class CodexConnection implements AgentConnection {
       perMessageDeflate: false,
     });
     this.socket.on("message", (data) => {
-      let m: any;
+      let m: unknown;
       try {
         m = JSON.parse(data.toString());
       } catch {
         return;
       }
-      if (typeof m.id === "number" && this.pending.has(m.id)) {
-        const p = this.pending.get(m.id)!;
+      if (
+        typeof m === "object" &&
+        m !== null &&
+        "id" in m &&
+        typeof m.id === "number"
+      ) {
+        const p = this.pending.get(m.id);
+        if (p === undefined) return;
         this.pending.delete(m.id);
         clearTimeout(p.timer);
-        if (m.error)
+        if ("error" in m && m.error !== null && m.error !== undefined)
           p.reject(
             new DeliveryError(
-              "Codex rejected request; check thread availability and app-server compatibility",
+              rpcRejection(p.method, m.error, this.runtimeVersion),
               false,
               true,
             ),
           );
-        else p.resolve(m.result);
+        else p.resolve("result" in m ? m.result : undefined);
       }
       // WHY: Notification clients do not answer approval requests. Existing interactive hosts remain responsible.
     });
@@ -103,6 +112,7 @@ export class CodexConnection implements AgentConnection {
       };
       const info = await this.call("initialize", initialize);
       this.socket.send(JSON.stringify({ method: "initialized" }));
+      this.runtimeVersion = codexVersion(info);
       return info as InitializeResponse;
     });
     void this.ready.catch(() => {});
@@ -123,7 +133,7 @@ export class CodexConnection implements AgentConnection {
         this.pending.delete(id);
         reject(new DeliveryError("Codex request timed out"));
       }, 10000);
-      this.pending.set(id, { resolve, reject, timer });
+      this.pending.set(id, { method, resolve, reject, timer });
       this.socket.send(JSON.stringify({ id, method, params }), (error) => {
         if (error) {
           clearTimeout(timer);

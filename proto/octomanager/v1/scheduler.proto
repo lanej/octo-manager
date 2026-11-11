@@ -84,6 +84,14 @@ message Job {
   optional string result_markdown = 10;
   optional string error = 11;
 }
+message ActionEventContext {
+  ActionState state = 1;
+  string pr_url = 2;
+  optional string actor_agent_id = 3;
+  optional string actor_harness = 4;
+  optional string actor_session_id = 5;
+  optional string actor_label = 6;
+}
 message JobEvent {
   uint64 sequence = 1;
   string job_id = 2;
@@ -92,6 +100,7 @@ message JobEvent {
   string detail = 5;
   optional string pr_id = 6;
   optional string action_id = 7;
+  ActionEventContext action_context = 8;
 }
 message Snapshot {
   string instance_id = 1;

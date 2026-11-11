@@ -84,3 +84,16 @@ CREATE INDEX activity_by_operation ON agent_activity(operation_id,sequence);
 `ListActivity(after_sequence)` scans at most 200 global event rows. It returns typed `activities`, coordinator `events`, `next_sequence`, and `has_more`. Agent reports and coordinator events share sequence order. Streamed model-progress text is omitted from this timeline; its rows still advance the cursor, so even an empty visible page may have more history. Continue using `next_sequence` while `has_more` is true. Existing `ListEvents` and `Watch` retain their contracts. The UI reloads on coordinator events and fences responses by database instance so reconnects cannot mix histories.
 
 Identifiers and actor metadata are nonempty single-line strings of at most 200 characters; detail is a single line of at most 4,000 characters. URLs are limited to 2,000 characters. PR URLs must identify a GitHub pull request and are canonicalized; evidence URLs must use HTTPS without embedded credentials. Terminal control characters are rejected before storage.
+
+## Historical action context
+
+Database version 3 adds nullable `events.action_context_json` and `pr_observations.target_base_json` columns. Existing events, reports, sequences, identities, and timestamps are preserved. Missing historical evidence remains null.
+
+New action events atomically snapshot their state and PR URL. Agent progress events also snapshot the acting agent ID, harness, session, and optional label. Coordinator changes do not borrow an earlier acknowledging agent’s identity. `JobEvent.action_context` carries this context through snapshots, event replay/watch, and activity pages. Activity renders the recorded state and actor without joining today’s mutable action or owner. Legacy progress events explicitly state that their transition state and actor were not recorded; those facts cannot be reconstructed.
+
+```sql
+ALTER TABLE pr_observations ADD COLUMN target_base_json TEXT
+  CHECK(target_base_json IS NULL OR json_valid(target_base_json));
+ALTER TABLE events ADD COLUMN action_context_json TEXT
+  CHECK(action_context_json IS NULL OR json_valid(action_context_json));
+```

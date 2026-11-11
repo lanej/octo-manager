@@ -26,6 +26,7 @@ message AgentReference {
   optional string harness_version = 3;
   optional int64 version_observed_at_ms = 4;
 }
+message TargetBase { string ref = 1; string sha = 2; }
 message TrackingObservation {
   uint64 id = 1;
   int64 observed_at_ms = 2;
@@ -35,6 +36,7 @@ message TrackingObservation {
   string mergeability = 6;
   string checks_json = 7;
   string reviews_json = 8;
+  TargetBase target_base = 9;
 }
 message TrackedPullRequest {
   string id = 1;
@@ -49,7 +51,7 @@ message TrackedPullRequest {
   TrackingObservation observation = 10;
 }
 message ExecutionProfile { string name = 1; string instructions = 2; optional string harness = 3; optional string model = 4; }
-message ConflictBlocker { string head_sha = 1; string base_sha = 2; }
+message ConflictBlocker { string head_sha = 1; string base_sha = 2; optional string base_ref = 3; }
 message CheckBlocker { string source_id = 1; string check_name = 2; string head_sha = 3; string check_key = 4; }
 message ReviewBlocker { string review_id = 1; string reviewer = 2; string reviewed_head_sha = 3; }
 message PendingAction {

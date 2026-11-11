@@ -213,3 +213,19 @@ func BenchmarkActivityRefresh(b *testing.B) {
 		m.resizeContent()
 	}
 }
+
+func TestActivityShowsHistoricalActionContextAndLegacyGaps(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.agentActivity.events = []*v1.JobEvent{
+		{Sequence: 1, Kind: "action_progress", Detail: "Merge conflict"},
+		{Sequence: 2, Kind: "action_progress", Detail: "Merge conflict", ActionContext: &v1.ActionEventContext{State: v1.ActionState_ACTION_STATE_ACKNOWLEDGED, PrUrl: "https://github.com/owner/repo/pull/1", ActorAgentId: new("original"), ActorHarness: new("codex"), ActorSessionId: new("first"), ActorLabel: new("Original owner")}},
+	}
+
+	source := m.activityMarkdown()
+	for _, expected := range []string{"Action · acknowledged", "https://github.com/owner/repo/pull/1", "codex", "Original owner", "session `first`", "Legacy event: transition state and actor were not recorded"} {
+		if !strings.Contains(source, expected) {
+			t.Fatalf("activity omitted %q", expected)
+		}
+	}
+}
