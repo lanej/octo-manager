@@ -163,9 +163,10 @@ export class TrackingService {
       action.ownerAgentId !== agent.id
     )
       return;
-    const connection =
+    const endpoint = this.config.endpoints[agent.endpoint];
+    const connection: AgentConnection =
       this.options.connect?.(agent) ??
-      new CodexConnection(this.config.endpoints[agent.endpoint]?.socket);
+      new CodexConnection(endpoint?.socket, endpoint?.delivery);
     this.connections.add(connection);
     let attempt: DeliveryAttempt | undefined;
     try {
@@ -182,7 +183,13 @@ export class TrackingService {
                 progress: {
                   state: DeliveryState.Delivered,
                   at: this.now(),
-                  turnId: found.turnId,
+                  ...(found.turnId === undefined
+                    ? {}
+                    : { turnId: found.turnId }),
+                  ...(found.queueId === undefined
+                    ? {}
+                    : { queueId: found.queueId }),
+                  ...(found.note === undefined ? {} : { note: found.note }),
                 },
                 updatedAt: this.now(),
               },
@@ -247,7 +254,14 @@ export class TrackingService {
       this.store.transaction(() => {
         this.store.saveAttempt({
           ...attempt!,
-          outcome: { state: "accepted", at: this.now(), turnId: result.turnId },
+          outcome: {
+            state: "accepted",
+            at: this.now(),
+            ...(result.turnId === undefined ? {} : { turnId: result.turnId }),
+            ...(result.queueId === undefined
+              ? {}
+              : { queueId: result.queueId }),
+          },
         });
         if (this.current(d))
           this.store.saveDelivery(
@@ -256,7 +270,13 @@ export class TrackingService {
               progress: {
                 state: DeliveryState.Delivered,
                 at: this.now(),
-                turnId: result.turnId,
+                ...(result.turnId === undefined
+                  ? {}
+                  : { turnId: result.turnId }),
+                ...(result.queueId === undefined
+                  ? {}
+                  : { queueId: result.queueId }),
+                ...(result.note === undefined ? {} : { note: result.note }),
               },
               updatedAt: this.now(),
             },

@@ -3,11 +3,39 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
+export interface CodexEndpoint {
+  socket?: string;
+  delivery?: "turn" | "queue";
+}
+function codexEndpoint(value: unknown): CodexEndpoint {
+  if (
+    !object(value) ||
+    Object.keys(value).some((key) => key !== "delivery" && key !== "socket")
+  )
+    throw new Error("Invalid endpoint");
+  const delivery = value["delivery"],
+    socket = value["socket"];
+  if (delivery !== undefined && delivery !== "turn" && delivery !== "queue")
+    throw new Error("Invalid endpoint delivery");
+  if (
+    socket !== undefined &&
+    (typeof socket !== "string" ||
+      !socket.startsWith("/") ||
+      Array.from(socket).some(
+        (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+      ))
+  )
+    throw new Error("Invalid endpoint socket");
+  return {
+    ...(delivery === undefined ? {} : { delivery }),
+    ...(socket === undefined ? {} : { socket }),
+  };
+}
 export interface TrackingConfig {
   repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
   rules: { kind: Blocker["kind"]; checkName?: string; profile: string }[];
-  endpoints: Record<string, { socket?: string }>;
+  endpoints: Record<string, CodexEndpoint>;
 }
 const kinds = ["conflict", "check_failed", "changes_requested"] as const;
 const defaults: TrackingConfig = {
@@ -92,15 +120,8 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   if (raw.endpoints !== undefined) {
     if (!object(raw.endpoints)) throw new Error("Invalid endpoints");
     for (const [name, e] of Object.entries(raw.endpoints)) {
-      if (
-        !name ||
-        !object(e) ||
-        Object.keys(e).some((k) => k !== "socket") ||
-        (e.socket !== undefined &&
-          (typeof e.socket !== "string" || !e.socket.startsWith("/")))
-      )
-        throw new Error("Invalid endpoint socket");
-      result.endpoints[name] = e as { socket?: string };
+      if (name === "") throw new Error("Invalid endpoint name");
+      result.endpoints[name] = codexEndpoint(e);
     }
   }
   if (raw.rules !== undefined) {

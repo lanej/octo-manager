@@ -40,7 +40,17 @@ Only a later GitHub observation resolves a blocker. New heads supersede obsolete
 
 The Codex adapter attaches to the existing daemon using WebSocket frames over its local Unix socket. It does not start/restart the daemon or change Codex configuration. The CLI's `app-server proxy` is a raw byte proxy, so newline JSON over that proxy is not an app-server connection.
 
-Delivery resumes the registered thread, checks that it is idle, and starts a triage turn without model, permissions, working-directory, or instruction overrides. Busy threads wait. Concurrent hosts can change thread activity between the idle check and turn admission; Octo does not claim exclusive ownership of Codex turn scheduling.
+The default `turn` delivery reads thread status, resumes only unloaded threads, waits for busy threads, and starts a triage turn. This requires an app-server that can own the thread. A standalone daemon cannot resume a thread already owned by the desktop app.
+
+For desktop-owned threads, opt into the installed Codex 0.167.1 experimental queue API:
+
+```json
+{"endpoints":{"local":{"delivery":"queue"}}}
+```
+
+Queue mode enables the experimental API capability and calls `thread/queue/add` with the stable delivery ID as `clientUserMessageId`. It retains the returned queue ID and reconciles uncertain admission through `thread/queue/list`, then thread history. Queue acceptance does not establish receipt, wake an idle desktop agent, or acknowledge the blocker. Octo does not call `thread/queue/start`, resume the desktop thread, or change its model, permissions, working directory, or instructions. Live consumption by the desktop host remains an acceptance requirement; keep queue mode opt-in until verified for that host.
+
+Neither mode claims exclusive ownership of Codex scheduling.
 
 Notifications contain a stable delivery marker, PR/head evidence, profile preferences, and acknowledgment/inspection argv using the coordinator's exact Bun executable, CLI path, and state directory. They request triage and reporting only, not repairs or pushes. A profile's model preference does not change the originating thread's model.
 
@@ -89,9 +99,11 @@ Agent references identify a harness, endpoint, and opaque session ID. Codex is t
 
 The additive SQLite migration preserves existing jobs, events, and instance identity. Six tracking tables separate destinations, tracked PRs, immutable observations, actions, deliveries, and attempts. Strict column types, enum checks, foreign keys, and a partial unique index enforce structural invariants. State changes and their events commit atomically. Existing jobs are not automatically enrolled because their owners are unknown.
 
+Delivery and attempt JSON can additionally retain `queueId`, the opaque Codex admission receipt. Delivered progress can include a presentation `note` describing queue acceptance; it is not agent acknowledgment. These optional fields require no SQLite migration, and older records remain readable.
+
 All timestamps are integer Unix milliseconds. Event sequence numbers determine ordering. Observations and events are retained without automatic pruning in this increment. Connect snapshots expose tracking alongside jobs; event `pr_id` and `action_id` distinguish tracking from worker activity. `ListEvents` and `Watch` accept a PR filter or a job filter, never both.
 
-The app-server adapter uses request types generated with Codex 0.167.0. Regenerate using `bun scripts/generate-codex-types.ts` with that CLI version; review compatibility before changing the pin. The script retains only the required generated type dependency closure. Controlled transport tests exercise actual WebSocket framing, unchanged turn settings, and uncertain acceptance after disconnect.
+The app-server adapter uses request types generated with Codex 0.167.1 and its experimental API surface. Regenerate using `bun scripts/generate-codex-types.ts` with that CLI version; review compatibility before changing the pin. The script retains only the required generated type dependency closure. Controlled transport tests exercise actual WebSocket framing, unchanged turn settings, and uncertain acceptance after disconnect.
 
 ## Target revisions and delivery diagnostics
 

@@ -14,6 +14,10 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
   const ws = new WebSocketServer({ server: http });
   let lose = false;
   let rejectMethod = "";
+  let readState = "idle";
+  let queue: { id: string; clientUserMessageId: string }[] = [];
+  let badReceipt = false;
+  let queueMode = false;
   const methods: string[] = [];
   const ids: number[] = [];
   ws.on("connection", (socket) =>
@@ -53,15 +57,42 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
         return;
       }
       let result: unknown = {};
-      if (m.method === "initialize")
+      if (m.method === "initialize") {
+        assert.deepEqual(
+          "capabilities" in m.params ? m.params.capabilities : undefined,
+          queueMode
+            ? { experimentalApi: true, requestAttestation: false }
+            : null,
+        );
         result = {
           userAgent: "codex-tui/0.167.0 (test)",
           codexHome: "/not-real",
           platformFamily: "unix",
           platformOs: "test",
         };
+      }
+      if (m.method === "thread/queue/list")
+        result = { data: queue, nextCursor: null };
+      if (m.method === "thread/queue/add") {
+        assert.deepEqual(m.params, {
+          threadId: "thread",
+          clientUserMessageId: "delivery",
+          input: [{ type: "text", text: "notification", text_elements: [] }],
+        });
+        queue = [{ id: "queued", clientUserMessageId: "delivery" }];
+        if (lose) {
+          socket.terminate();
+          return;
+        }
+        result = {
+          queuedSubmission: badReceipt
+            ? { id: "wrong", clientUserMessageId: "other" }
+            : queue[0],
+        };
+      }
       if (m.method === "thread/read")
-        result = { thread: { id: "thread", status: { type: "idle" } } };
+        result = { thread: { id: "thread", status: { type: readState } } };
+      if (m.method === "thread/resume") readState = "idle";
       if (m.method === "thread/turns/list")
         result = {
           data: [
@@ -120,8 +151,27 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       turnId: "turn",
     });
     connection.close();
+    methods.length = 0;
+    readState = "active";
+    connection = new CodexConnection(path);
+    assert.deepEqual(await connection.prepare(agent), {
+      busy: true,
+      version: "0.167.0",
+    });
+    assert(!methods.includes("thread/resume"));
+    assert(!methods.includes("turn/start"));
+    connection.close();
+    readState = "notLoaded";
+    connection = new CodexConnection(path);
+    assert.deepEqual(await connection.prepare(agent), {
+      busy: false,
+      version: "0.167.0",
+    });
+    assert(methods.includes("thread/resume"));
+    connection.close();
     for (const method of ["thread/resume", "turn/start"]) {
       rejectMethod = method;
+      readState = method === "thread/resume" ? "notLoaded" : "idle";
       connection = new CodexConnection(path);
       if (method === "turn/start") await connection.prepare(agent);
       await assert.rejects(
@@ -146,6 +196,62 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
     await assert.rejects(
       connection.send(agent, "delivery", "notification"),
       (e) => e instanceof DeliveryError && e.uncertain,
+    );
+    connection.close();
+    lose = false;
+    methods.length = 0;
+    queueMode = true;
+    connection = new CodexConnection(path, "queue");
+    await connection.prepare(agent);
+    const accepted = {
+      queueId: "queued",
+      note: "Accepted by the Codex queue; agent acknowledgment is pending.",
+    };
+    assert.deepEqual(
+      await connection.send(agent, "delivery", "notification"),
+      accepted,
+    );
+    assert.deepEqual(await connection.find(agent, "delivery"), {
+      found: true,
+      ...accepted,
+    });
+    assert(!methods.includes("thread/resume"));
+    assert(!methods.includes("turn/start"));
+    connection.close();
+    for (const invalid of [false, true]) {
+      lose = !invalid;
+      badReceipt = invalid;
+      queue = [];
+      connection = new CodexConnection(path, "queue");
+      await connection.prepare(agent);
+      await assert.rejects(
+        connection.send(agent, "delivery", "notification"),
+        (error) =>
+          error instanceof DeliveryError && error.uncertain && !error.permanent,
+      );
+      connection.close();
+      connection = new CodexConnection(path, "queue");
+      await connection.prepare(agent);
+      const adds = methods.filter(
+        (method) => method === "thread/queue/add",
+      ).length;
+      assert.deepEqual(await connection.find(agent, "delivery"), {
+        found: true,
+        ...accepted,
+      });
+      assert.equal(
+        methods.filter((method) => method === "thread/queue/add").length,
+        adds,
+      );
+      connection.close();
+    }
+    lose = false;
+    rejectMethod = "thread/queue/list";
+    connection = new CodexConnection(path, "queue");
+    await assert.rejects(
+      connection.prepare(agent),
+      (error) =>
+        error instanceof DeliveryError && error.permanent && !error.uncertain,
     );
     assert(methods.includes("initialized"));
     assert(ids.every(Number.isInteger));

@@ -49,7 +49,7 @@ func TestActivityPresentsPRsCommitsAndActionsInsteadOfDatabaseKeys(t *testing.T)
 	raw := m.activityContent()
 
 	visible := ansi.Strip(raw)
-	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Failed check: Retry policy", "acknowledgment and resolution are still separate"} {
+	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Failed check: Retry policy", "agent receipt and acknowledgment are unverified"} {
 		if !strings.Contains(visible, want) {
 			t.Errorf("missing readable context %q", want)
 		}

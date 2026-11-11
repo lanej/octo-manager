@@ -138,7 +138,13 @@ export enum DeliveryState {
 export type DeliveryProgress =
   | { state: DeliveryState.Pending; nextAttemptAt: number }
   | { state: DeliveryState.Sending; startedAt: number }
-  | { state: DeliveryState.Delivered; at: number; turnId?: string }
+  | {
+      state: DeliveryState.Delivered;
+      at: number;
+      turnId?: string;
+      queueId?: string;
+      note?: string;
+    }
   | {
       state:
         | DeliveryState.Uncertain
@@ -163,7 +169,7 @@ export interface DeliveryAttempt {
   harnessVersion?: string;
   outcome:
     | { state: "sending" }
-    | { state: "accepted"; at: number; turnId?: string }
+    | { state: "accepted"; at: number; turnId?: string; queueId?: string }
     | { state: "rejected" | "uncertain"; at: number; reason: string };
 }
 export interface TrackingSnapshot {

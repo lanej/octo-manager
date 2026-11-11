@@ -233,6 +233,7 @@ func observationStatus(raw string) string {
 func (m *Model) deliveryDetails(raw string) string {
 	var value struct {
 		Reason        string
+		Note          string
 		NextAttemptAt int64
 	}
 	if err := json.Unmarshal([]byte(raw), &value); err != nil {
@@ -241,6 +242,10 @@ func (m *Model) deliveryDetails(raw string) string {
 
 	if value.Reason != "" {
 		return safe(value.Reason) + "\n\n"
+	}
+
+	if value.Note != "" {
+		return safe(value.Note) + "\n\n"
 	}
 
 	if value.NextAttemptAt != 0 {
