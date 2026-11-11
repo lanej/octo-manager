@@ -318,9 +318,9 @@ func (m *Model) header() []string {
 		connection = feedback.Disconnected
 	}
 
-	identity := m.currentSubject().url
-	if identity == "" {
-		identity = m.currentSubject().label
+	identity := m.currentSubject().label
+	if m.currentSubject().url != "" {
+		identity = m.link(m.currentSubject().url)
 	}
 
 	if identity == "" {

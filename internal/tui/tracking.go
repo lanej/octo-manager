@@ -59,7 +59,7 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	parts := []string{text.Badge("PR tracking", m.theme), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
+	parts := []string{text.Badge("PR tracking", m.theme), m.link(pr.GetUrl()), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
@@ -80,9 +80,9 @@ func (m *Model) trackingContent() string {
 			tone = text.Success
 		}
 
-		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")), m.field("Head", o.GetHeadSha()), m.field("PR-reported base", o.GetBaseSha()))
+		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")), m.commitField("Head commit", pr.GetUrl(), o.GetHeadSha()), m.commitField("PR-reported base", pr.GetUrl(), o.GetBaseSha()))
 		if target := o.GetTargetBase(); target != nil {
-			parts = append(parts, m.field("Target "+safe(target.GetRef()), target.GetSha()))
+			parts = append(parts, m.commitField("Target "+safe(target.GetRef()), pr.GetUrl(), target.GetSha()))
 		} else {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
@@ -108,7 +108,7 @@ func (m *Model) trackingContent() string {
 				continue
 			}
 
-			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme), m.field("Action", action.GetId()))
+			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
 			if profile := action.GetProfile(); profile != nil {
 				parts = append(parts, m.field("Profile", profile.GetName()))
 				if profile.GetHarness() != "" {

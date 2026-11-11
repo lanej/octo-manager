@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
@@ -36,8 +37,8 @@ func TestPRNavigationGroupsRunsAndKeepsDemoDistinct(t *testing.T) {
 		t.Fatal("PR runs not grouped or demo presented as PR")
 	}
 
-	view := m.View()
-	if !strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "Run 2/2") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
+	view := ansi.Strip(m.View())
+	if strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "Run 2/2") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
 		t.Fatal("PR identity and run history not visible")
 	}
 

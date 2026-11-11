@@ -163,7 +163,7 @@ func activityOutcome(outcome v1.ActivityOutcome) string {
 func (m *Model) activityContent() string {
 	history := m.agentActivity
 
-	parts := []string{text.Badge("Agent activity", m.theme), m.muted("All sessions · newest first · UTC"), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
+	parts := []string{text.Badge("Agent activity", m.theme), m.muted("Newest first · unchanged PR checks grouped · UTC"), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
 	if history.err != nil {
 		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+text.Label(safe(history.err.Error()), m.theme), text.KeyHint("u", "retry", m.theme))
 	}
@@ -191,14 +191,21 @@ func (m *Model) activityContent() string {
 			event := item.event
 			context := event.GetActionContext()
 
-			title := text.Log("Coordinator", m.theme) + " · " + m.muted(strings.ReplaceAll(safe(event.GetKind()), "_", " "))
+			row := m.presentEvent(event)
+
+			title := text.Log(row.title, m.theme)
 			if context != nil {
-				title = text.Log("Action", m.theme) + " " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal) + " · " + m.muted(strings.ReplaceAll(safe(event.GetKind()), "_", " "))
+				title += " " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
 			}
 
-			parts = append(parts, title, m.activityTime(event.GetAtMs(), event.GetSequence()), text.Label(safe(event.GetDetail()), m.theme))
+			parts = append(parts, title, m.activityTime(event.GetAtMs()), row.detail)
+			if row.prURL != "" {
+				parts = append(parts, m.link(row.prURL))
+			} else if event.GetPrId() != "" {
+				parts = append(parts, m.muted("PR context unavailable"))
+			}
+
 			if context != nil {
-				parts = append(parts, m.link(context.GetPrUrl()))
 				if context.GetActorAgentId() != "" {
 					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(sessionContext(context.GetActorLabel(), "", context.GetActorSessionId()), m.theme))
 				} else {
@@ -206,12 +213,6 @@ func (m *Model) activityContent() string {
 				}
 			} else if event.GetKind() == "action_progress" {
 				parts = append(parts, text.Pill("transition unknown", text.Neutral, m.theme, text.Dim)+" Legacy event: transition state and actor were not recorded.")
-			}
-
-			for _, reference := range []struct{ label, value string }{{"PR", event.GetPrId()}, {"Action", event.GetActionId()}, {"Job", event.GetJobId()}} {
-				if reference.value != "" {
-					parts = append(parts, m.muted(reference.label+": "+reference.value))
-				}
 			}
 
 			parts = append(parts, "")
@@ -222,7 +223,7 @@ func (m *Model) activityContent() string {
 		entry := item.report
 		report := entry.GetReport()
 		actor := report.GetActor()
-		parts = append(parts, text.Log(activityTitle(report.GetName()), m.theme)+" "+text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.activityTime(entry.GetRecordedAtMs(), entry.GetSequence()), text.Label(safe(report.GetDetail()), m.theme))
+		parts = append(parts, text.Log(activityTitle(report.GetName()), m.theme)+" "+text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.activityTime(entry.GetRecordedAtMs()), text.Label(safe(report.GetDetail()), m.theme))
 
 		identity := safe(actor.GetHarness())
 		if actor.GetVersion() != "" {
@@ -239,18 +240,18 @@ func (m *Model) activityContent() string {
 		}
 
 		if report.GetEvidenceUrl() != "" {
-			parts = append(parts, m.field("Evidence", report.GetEvidenceUrl()))
+			parts = append(parts, m.muted("Evidence: ")+m.link(report.GetEvidenceUrl()))
 		}
 
-		parts = append(parts, m.muted("Operation: "+report.GetOperationId()), "")
+		parts = append(parts, "")
 	}
 
 	return strings.Join(parts, "\n")
 }
 
-func (m *Model) activityTime(at int64, sequence uint64) string {
+func (m *Model) activityTime(at int64) string {
 	stamp := time.UnixMilli(at).UTC()
-	return m.muted(stamp.Format("2006-01-02") + " " + text.TimeOfDay(stamp) + fmt.Sprintf(" UTC · #%d", sequence))
+	return m.muted(stamp.Format("Jan 2, 2006") + " · " + stamp.Format("15:04 UTC"))
 }
 
 type activityItem struct {
@@ -271,7 +272,16 @@ func activityItems(history activityHistory) []activityItem {
 
 	sort.Slice(items, func(i, j int) bool { return items[i].sequence > items[j].sequence })
 
-	return items
+	visible := items[:0]
+	for _, item := range items {
+		if len(visible) > 0 && repeatedObservation(visible[len(visible)-1], item) {
+			continue
+		}
+
+		visible = append(visible, item)
+	}
+
+	return visible
 }
 
 func (m *Model) activitySource() string {

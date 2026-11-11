@@ -109,3 +109,6 @@ Activity and Tracking render structured fields directly with Charmed labels, bad
 ![Activity at 80 columns](images/atoms-activity-narrow.png)
 
 ![Native Charmed tracking fields and delivery states](images/atoms-tracking.png)
+
+
+The presentation layer resolves internal references to linked `owner/repo#42` labels and commit links such as `owner/repo@abc12345`. Notification rows name the affected blocker and explain delivery outcomes; sequence numbers, operation IDs, delivery UUIDs, and other database keys are absent from the human timeline. Consecutive observations of the same PR head collapse into one visible check; a changed head or intervening event remains visible. Full events and identifiers remain available through `activity --json`. Historical event context wins over current ownership, and unavailable PR context is stated explicitly rather than guessed.

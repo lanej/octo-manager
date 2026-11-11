@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"encoding/hex"
+	"net/url"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -13,7 +15,54 @@ func (m *Model) field(label, value string) string {
 }
 func (m *Model) muted(value string) string { return m.theme.Subtle().Render(safe(value)) }
 func (m *Model) link(value string) string {
-	return text.Label(text.FormatURL(safe(value), text.FullURL), m.theme)
+	parsed, err := url.Parse(safe(value))
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
+		return m.muted("Link unavailable")
+	}
+
+	label := parsed.Host + parsed.EscapedPath()
+	if _, prLabel := parsePRURL(value); prLabel != "" {
+		label = prLabel
+	} else if parsed.Host == "github.com" {
+		parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+		if len(parts) == 4 && parts[2] == "commit" && validCommit(parts[3]) {
+			label = parts[0] + "/" + parts[1] + "@" + parts[3][:8]
+		}
+
+		if len(parts) >= 5 && parts[2] == "actions" && parts[3] == "runs" {
+			label = parts[0] + "/" + parts[1] + " · check run " + parts[4]
+		}
+	}
+
+	return ansi.SetHyperlink(parsed.String()) + text.Label(ansi.Truncate(text.Inline(safe(label)), 80, "…"), m.theme) + ansi.ResetHyperlink()
+}
+
+func validCommit(sha string) bool {
+	if len(sha) != 40 && len(sha) != 64 {
+		return false
+	}
+
+	_, err := hex.DecodeString(sha)
+
+	return err == nil
+}
+
+func (m *Model) commitLink(prURL, sha string) string {
+	address, _ := parsePRURL(prURL)
+
+	if !validCommit(sha) {
+		return m.muted("unavailable")
+	}
+
+	if address == "" {
+		return text.Label(sha[:8]+" (repository unavailable)", m.theme)
+	}
+
+	return m.link(strings.Split(address, "/pull/")[0] + "/commit/" + sha)
+}
+
+func (m *Model) commitField(label, prURL, sha string) string {
+	return m.muted(label+": ") + m.commitLink(prURL, sha)
 }
 
 func stateName(value, prefix string) string {

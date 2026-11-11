@@ -223,7 +223,7 @@ func TestActivityShowsHistoricalActionContextAndLegacyGaps(t *testing.T) {
 	}
 
 	source := ansi.Strip(m.activityContent())
-	for _, expected := range []string{"acknowledged", "https://github.com/owner/repo/pull/1", "codex", "Original owner", "Legacy event: transition state and actor were not recorded"} {
+	for _, expected := range []string{"acknowledged", "owner/repo#1", "codex", "Original owner", "Legacy event: transition state and actor were not recorded"} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("activity omitted %q", expected)
 		}

@@ -126,7 +126,7 @@ func TestReviewsAndWorkerStateStayDistinct(t *testing.T) {
 		}
 	}
 
-	if strings.Count(view, address) != 1 || strings.Contains(view, "A completed summary") {
+	if strings.Contains(view, address) || !strings.Contains(view, "owner/repo#1") || strings.Contains(view, "A completed summary") {
 		t.Fatal("duplicate PR identity or worker output mixed into reviews")
 	}
 
