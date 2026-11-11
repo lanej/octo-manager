@@ -140,6 +140,8 @@ type ActivityActor struct {
 	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Version       *string                `protobuf:"bytes,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	Model         *string                `protobuf:"bytes,4,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	Label         *string                `protobuf:"bytes,5,opt,name=label,proto3,oneof" json:"label,omitempty"`
+	Cwd           *string                `protobuf:"bytes,6,opt,name=cwd,proto3,oneof" json:"cwd,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,6 +200,20 @@ func (x *ActivityActor) GetVersion() string {
 func (x *ActivityActor) GetModel() string {
 	if x != nil && x.Model != nil {
 		return *x.Model
+	}
+	return ""
+}
+
+func (x *ActivityActor) GetLabel() string {
+	if x != nil && x.Label != nil {
+		return *x.Label
+	}
+	return ""
+}
+
+func (x *ActivityActor) GetCwd() string {
+	if x != nil && x.Cwd != nil {
+		return *x.Cwd
 	}
 	return ""
 }
@@ -498,16 +514,20 @@ var File_octomanager_v1_activity_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x1doctomanager/v1/activity.proto\x12\x0eoctomanager.v1\"\x98\x01\n" +
+	"\x1doctomanager/v1/activity.proto\x12\x0eoctomanager.v1\"\xdc\x01\n" +
 	"\rActivityActor\x12\x18\n" +
 	"\aharness\x18\x01 \x01(\tR\aharness\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x1d\n" +
 	"\aversion\x18\x03 \x01(\tH\x00R\aversion\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\x04 \x01(\tH\x01R\x05model\x88\x01\x01B\n" +
+	"\x05model\x18\x04 \x01(\tH\x01R\x05model\x88\x01\x01\x12\x19\n" +
+	"\x05label\x18\x05 \x01(\tH\x02R\x05label\x88\x01\x01\x12\x15\n" +
+	"\x03cwd\x18\x06 \x01(\tH\x03R\x03cwd\x88\x01\x01B\n" +
 	"\n" +
 	"\b_versionB\b\n" +
-	"\x06_model\"\xeb\x02\n" +
+	"\x06_modelB\b\n" +
+	"\x06_labelB\x06\n" +
+	"\x04_cwd\"\xeb\x02\n" +
 	"\rActivityInput\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12!\n" +

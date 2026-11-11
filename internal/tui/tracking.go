@@ -22,20 +22,12 @@ func (m *Model) agentLabel(id string) string {
 
 		target := agent.GetTarget()
 
-		label := target.GetLabel()
-		if label == "" {
-			label = target.GetSessionId()
-		}
-
-		result := safe(target.GetHarness()) + "/" + safe(target.GetEndpoint()) + " · " + safe(label)
-		if agent.GetHarnessVersion() != "" {
-			result += " · " + safe(agent.GetHarnessVersion())
-		}
+		result := safe(target.GetHarness()) + " · " + sessionContext(target.GetLabel(), "", target.GetSessionId())
 
 		return result
 	}
 
-	return safe(id)
+	return sessionContext("", "", id)
 }
 
 func actionClosed(state v1.ActionState) bool {

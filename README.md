@@ -8,7 +8,7 @@ See the [live acceptance record](docs/live-acceptance.md) for the actual conflic
 
 ## Run
 
-Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.10). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
+Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.11). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts

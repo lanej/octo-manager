@@ -18,6 +18,8 @@ export interface ActivityActor {
   sessionId: string;
   version?: string;
   model?: string;
+  label?: string;
+  cwd?: string;
 }
 export interface ActivityInput {
   requestId: string;
@@ -69,6 +71,11 @@ export function activityInput(value: unknown): ActivityInput {
   const rawActor = object(input["actor"]);
   const version = optionalText(rawActor["version"], "version");
   const model = optionalText(rawActor["model"], "model");
+  const label = optionalText(rawActor["label"], "label");
+  const cwd =
+    rawActor["cwd"] === undefined
+      ? undefined
+      : text(rawActor["cwd"], "working directory", 4000);
   const prUrl =
     input["prUrl"] === undefined
       ? undefined
@@ -90,6 +97,8 @@ export function activityInput(value: unknown): ActivityInput {
       sessionId: text(rawActor["sessionId"], "session ID"),
       ...(version === undefined ? {} : { version }),
       ...(model === undefined ? {} : { model }),
+      ...(label === undefined ? {} : { label }),
+      ...(cwd === undefined ? {} : { cwd }),
     },
     detail: text(input["detail"], "detail", 4000),
     ...(prUrl === undefined ? {} : { prUrl }),

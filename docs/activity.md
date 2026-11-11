@@ -1,6 +1,6 @@
 # Agent activity
 
-Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, session/harness, optional runtime version and model, PR link, evidence, and recorded time. The UI renders a cached window of 50 entries. Use **h/l** for older/newer pages, **j/k** or **[/]** to scroll within a page, and **u** to refresh. Loaded history remains available for page navigation; new reports can shift a page as the live timeline grows.
+Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, short session topic or directory and harness, optional runtime version and model, PR link, evidence, and recorded time. The UI renders a cached window of 50 entries. Use **h/l** for older/newer pages, **j/k** or **[/]** to scroll within a page, and **u** to refresh. Loaded history remains available for page navigation; new reports can shift a page as the live timeline grows.
 
 Coordinator events are recorded automatically by existing operations. Work performed outside Octo, such as a calling agent merging a PR or running checks, must be reported explicitly through the CLI or typed RPC. This does not instrument every agent session automatically. Actor metadata and outcomes are supplied by the caller; recording a success does not independently verify execution, authenticate an agent identity, acknowledge a blocker, or resolve it.
 
@@ -41,7 +41,9 @@ octo-manager record-activity \
 octo-manager activity --after 0 --json
 ```
 
-Use `failed` when failure is known and `uncertain` when the operation may have happened but confirmation is unavailable. Optional `--harness-version` and `--model` snapshot caller-supplied metadata without changing that session. Other harness names are accepted. Supply only metadata suitable for the local activity database; do not include credentials in detail or evidence URLs.
+Use `failed` when failure is known and `uncertain` when the operation may have happened but confirmation is unavailable. Use `--label TOPIC` for a recognizable session topic. The CLI captures its working directory by default; `--cwd DIR` overrides it. The UI prefers the topic, otherwise the final two directory components, and uses an eight-character session ID only for older reports without context. Topics and directories are capped at 48 display columns; full metadata stays in the stored record and JSON API. Keep `--cwd` fixed when retrying a report from another directory. Tracking enrollment similarly defaults its existing label to the caller’s directory.
+
+Optional `--harness-version` and `--model` snapshot caller-supplied metadata without changing that session. Other harness names are accepted. Supply only metadata suitable for the local activity database; do not include credentials in detail or evidence URLs.
 
 Replaying a request ID with an identical normalized report returns the original record and sequence. Reusing it with different content fails with `AlreadyExists`. A timeout during reporting can therefore be retried with the same ID. A retry of reporting must not re-execute the underlying operation. Reports cannot reconstruct missing earlier attempts; recording a historical result timestamps when the report was stored, not when the external action happened.
 
@@ -55,7 +57,7 @@ interface ActivityInput {
   operationId: string;     // Caller-owned correlation ID for one attempt.
   name: ActivityName;
   outcome: ActivityOutcome;
-  actor: { harness: string; sessionId: string; version?: string; model?: string };
+  actor: { harness: string; sessionId: string; version?: string; model?: string; label?: string; cwd?: string };
   detail: string;
   prUrl?: string;
   evidenceUrl?: string;
@@ -83,7 +85,7 @@ CREATE INDEX activity_by_operation ON agent_activity(operation_id,sequence);
 
 `ListActivity(after_sequence)` scans at most 200 global event rows. It returns typed `activities`, coordinator `events`, `next_sequence`, and `has_more`. Agent reports and coordinator events share sequence order. Streamed model-progress text is omitted from this timeline; its rows still advance the cursor, so even an empty visible page may have more history. Continue using `next_sequence` while `has_more` is true. Existing `ListEvents` and `Watch` retain their contracts. The UI reloads on coordinator events and fences responses by database instance so reconnects cannot mix histories.
 
-Identifiers and actor metadata are nonempty single-line strings of at most 200 characters; detail is a single line of at most 4,000 characters. URLs are limited to 2,000 characters. PR URLs must identify a GitHub pull request and are canonicalized; evidence URLs must use HTTPS without embedded credentials. Terminal control characters are rejected before storage.
+Identifiers and actor metadata are nonempty single-line strings of at most 200 characters; working directories and detail are single lines of at most 4,000 characters. URLs are limited to 2,000 characters. PR URLs must identify a GitHub pull request and are canonicalized; evidence URLs must use HTTPS without embedded credentials. Terminal control characters are rejected before storage.
 
 ## Historical action context
 

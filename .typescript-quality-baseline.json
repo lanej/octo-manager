@@ -548,14 +548,6 @@
     {
       "file": "src/cli.ts",
       "tool": "tsc",
-      "rule": "TS2379",
-      "message": "Argument of type '{ url: string | undefined; harness: string | undefined; endpoint: string | undefined; sessionId: string | undefined; agentId: string | undefined; label: string | undefined; }' is not assignable to parameter of type '{ url?: string; harness?: string; endpoint?: string; sessionId?: string; agentId?: string; label?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'url' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'.",
-      "source": "result=await trackingRequest(directory,command,id,{url:values.url,harness:values.harness,endpoint:values.endpoint,sessionId:values[\"thread-id\"],agentId:values[\"agent-id\"],label:values.label});",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "tsc",
       "rule": "TS4111",
       "message": "Property 'OCTO_MANAGER_STATE' comes from an index signature, so it must be accessed with ['OCTO_MANAGER_STATE'].",
       "source": "const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), \".local\", \"state\", \"octo-manager\"));",

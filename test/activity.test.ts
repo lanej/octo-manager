@@ -1,8 +1,8 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { Coordinator } from "../src/coordinator.js";
@@ -23,6 +23,8 @@ const input = {
     sessionId: "caller",
     version: "0.167.0",
     model: "reported-model",
+    label: "Review tracking UI",
+    cwd: process.cwd(),
   },
   detail: "Merged PR after checking the exact head",
   prUrl: "https://github.com/lanej/octo-manager/pull/2",
@@ -33,8 +35,9 @@ function hasCode(code: Code): (error: unknown) => boolean {
   return (error) => error instanceof ConnectError && error.code === code;
 }
 
-async function cli(args: string[]): Promise<string> {
-  const child = Bun.spawn([process.execPath, "src/cli.ts", ...args], {
+async function cli(args: string[], cwd?: string): Promise<string> {
+  const child = Bun.spawn([process.execPath, resolve("src/cli.ts"), ...args], {
+    ...(cwd === undefined ? {} : { cwd }),
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -69,6 +72,8 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
       input.actor.version,
       "--model",
       input.actor.model,
+      "--label",
+      input.actor.label,
       "--detail",
       input.detail,
       "--url",
@@ -101,6 +106,8 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
     assert.equal(entry.report?.actor?.sessionId, "caller");
     assert.equal(entry.report.actor.version, input.actor.version);
     assert.equal(entry.report.actor.model, input.actor.model);
+    assert.equal(entry.report.actor.label, input.actor.label);
+    assert.equal(entry.report.actor.cwd, input.actor.cwd);
     assert.equal(entry.report.evidenceUrl, input.evidenceUrl);
     assert.equal(entry.report.name, ActivityName.MERGE_PR);
     assert.equal(entry.report.outcome, ActivityOutcome.SUCCEEDED);
@@ -176,6 +183,11 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
       assert.equal(
         reopened.activity.list(0)[0]?.actor.version,
         input.actor.version,
+      );
+      assert.equal(reopened.activity.list(0)[0]?.actor.cwd, input.actor.cwd);
+      assert.equal(
+        reopened.activity.list(0)[0]?.actor.label,
+        input.actor.label,
       );
       assert.equal(reopened.sequence(), 203);
     } finally {
@@ -255,6 +267,33 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     }
   } finally {
     store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("tracking CLI enrolls from a deep directory with a bounded recognizable label", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-deep-session-"));
+  const cwd = join(directory, "a".repeat(100), "b".repeat(100), "octo-manager");
+  await mkdir(cwd, { recursive: true });
+  const coordinator = new Coordinator(directory);
+  try {
+    await coordinator.start();
+    await cli(
+      [
+        "track",
+        "--state",
+        directory,
+        "--url",
+        "https://github.com/owner/repo/pull/1",
+        "--thread-id",
+        "deep-session",
+        "--json",
+      ],
+      cwd,
+    );
+    assert.equal(coordinator.store.tracking.agents()[0]?.label, "octo-manager");
+  } finally {
+    await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

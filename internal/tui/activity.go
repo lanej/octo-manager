@@ -200,7 +200,7 @@ func (m *Model) activityContent() string {
 			if context != nil {
 				parts = append(parts, m.link(context.GetPrUrl()))
 				if context.GetActorAgentId() != "" {
-					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(safe(context.GetActorLabel()), m.theme), m.field("Session", context.GetActorSessionId()))
+					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(sessionContext(context.GetActorLabel(), "", context.GetActorSessionId()), m.theme))
 				} else {
 					parts = append(parts, m.muted("Coordinator-observed transition."))
 				}
@@ -229,7 +229,7 @@ func (m *Model) activityContent() string {
 			identity += " " + safe(actor.GetVersion())
 		}
 
-		parts = append(parts, text.Badge(identity, m.theme)+" "+m.field("Session", actor.GetSessionId()))
+		parts = append(parts, text.Badge(identity, m.theme)+" "+text.Label(sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId()), m.theme))
 		if actor.GetModel() != "" {
 			parts = append(parts, m.field("Model", actor.GetModel()))
 		}

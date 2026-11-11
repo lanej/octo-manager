@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -64,4 +65,37 @@ func outcomeTone(outcome v1.ActivityOutcome) text.Tone {
 	default:
 		return text.Neutral
 	}
+}
+
+func sessionContext(label, cwd, id string) string {
+	if value := strings.TrimSpace(safe(label)); value != "" {
+		if strings.HasPrefix(value, "/") {
+			return compactDirectory(value)
+		}
+
+		return ansi.Truncate(value, 48, "…")
+	}
+
+	if value := strings.TrimSpace(safe(cwd)); value != "" {
+		return compactDirectory(value)
+	}
+
+	if value := safe(id); value != "" {
+		return "session " + ansi.Truncate(value, 8, "")
+	}
+
+	return "Unknown session"
+}
+
+func compactDirectory(value string) string {
+	parts := strings.Split(strings.TrimRight(value, "/"), "/")
+	if len(parts) > 2 {
+		value = "…/" + strings.Join(parts[len(parts)-2:], "/")
+	}
+
+	if value == "" {
+		value = "/"
+	}
+
+	return ansi.Truncate(value, 48, "…")
 }

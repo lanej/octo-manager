@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { parseArgs } from "node:util";
 
 export function parseCommand(args: string[]) {
@@ -11,6 +12,7 @@ export function parseCommand(args: string[]) {
       "thread-id": { type: "string" },
       "agent-id": { type: "string" },
       label: { type: "string" },
+      cwd: { type: "string" },
       state: { type: "string" },
       theme: { type: "string" },
       model: { type: "string" },
@@ -28,4 +30,8 @@ export function parseCommand(args: string[]) {
       evidence: { type: "string" },
     },
   });
+}
+
+export function directoryLabel(cwd: string): string {
+  return cwd.length <= 200 ? cwd : basename(cwd).slice(0, 200);
 }
