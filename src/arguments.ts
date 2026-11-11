@@ -15,6 +15,7 @@ export function parseCommand(args: string[]) {
       cwd: { type: "string" },
       state: { type: "string" },
       theme: { type: "string" },
+      timezone: { type: "string" },
       model: { type: "string" },
       profile: { type: "string" },
       url: { type: "string" },

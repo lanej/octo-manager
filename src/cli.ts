@@ -22,7 +22,7 @@ async function main(): Promise<void> {
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
   if (!command || values.help) {
-    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
+    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --timezone IANA_ZONE --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
   }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
     if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
     const binary = fileURLToPath(new URL("../build/octo-manager-tui", import.meta.url));
     if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
-    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "dark"], { stdio: "inherit" });
+    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "dark", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone])], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });
     return;
   }

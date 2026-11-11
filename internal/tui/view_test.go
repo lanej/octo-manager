@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
@@ -27,7 +28,7 @@ func example() *v1.Snapshot {
 func model(t *testing.T, mode theme.Mode) *Model {
 	t.Helper()
 
-	m := New(context.Background(), client.New("/nonexistent/octo-manager.sock"), theme.New(mode))
+	m := New(context.Background(), client.New("/nonexistent/octo-manager.sock"), theme.New(mode), time.Local)
 	m.snapshot = example()
 	m.ensureSelection()
 	m.panel = outputPanel

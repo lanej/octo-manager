@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
@@ -194,7 +195,7 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 }
 
 func BenchmarkActivityRefresh(b *testing.B) {
-	m := New(context.Background(), nil, theme.New(theme.Dark))
+	m := New(context.Background(), nil, theme.New(theme.Dark), time.Local)
 	b.Cleanup(m.cancel)
 	m.snapshot = &v1.Snapshot{}
 

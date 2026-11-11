@@ -45,6 +45,7 @@ type Model struct {
 	snapshot        *v1.Snapshot
 	size            layout.Size
 	theme           theme.Theme
+	location        *time.Location
 	focus           interaction.Focus
 	result          viewport.Model
 	activity        collection.LogViewer
@@ -67,9 +68,14 @@ type Model struct {
 	activityRender  activityRenderCache
 }
 
-func New(ctx context.Context, api *client.Client, t theme.Theme) *Model {
+func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {
+	if location == nil {
+		location = time.Local
+	}
+
 	session, cancel := context.WithCancel(ctx)
-	return &Model{ctx: session, cancel: cancel, api: api, theme: t, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+
+	return &Model{ctx: session, cancel: cancel, api: api, theme: t, location: location, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd { return tea.Batch(m.refresh(), tick()) }

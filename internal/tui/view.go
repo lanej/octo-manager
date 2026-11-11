@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 	"unicode"
 
 	"charm.land/log/v2"
@@ -248,7 +247,7 @@ func (m *Model) resizeContent() {
 			continue
 		}
 
-		m.activity.Append(collection.LogEntry{Time: time.UnixMilli(event.GetAtMs()).UTC(), Level: log.InfoLevel, Message: strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
+		m.activity.Append(collection.LogEntry{Time: m.displayTime(event.GetAtMs()), Level: log.InfoLevel, Message: m.timestamp(event.GetAtMs(), "MST -0700") + " · " + strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
 	}
 
 	if follow {
@@ -369,7 +368,7 @@ func (m *Model) View() string {
 			worker += "\n" + m.activity.View()
 		}
 
-		right += "\n\n" + layout.Panel("WORKER · recent tools UTC", worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
+		right += "\n\n" + layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
 	}
 
 	body := right

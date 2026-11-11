@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
@@ -34,7 +33,7 @@ func (m *Model) repairContent(prID string) string {
 			continue
 		}
 
-		parts = append(parts, "", text.Log("Rebase", m.theme)+" "+text.Pill(strings.ReplaceAll(stateName(repair.GetState().String(), "REPAIR_STATE_"), "_", " "), repairTone(repair.GetState()), m.theme, text.Normal), text.Label(safe(repair.GetDetail()), m.theme), m.muted(time.UnixMilli(repair.GetUpdatedAtMs()).UTC().Format("Jan 2, 2006 · 15:04 UTC")), m.field("Repair method", repairMethod(repair)))
+		parts = append(parts, "", text.Log("Rebase", m.theme)+" "+text.Pill(strings.ReplaceAll(stateName(repair.GetState().String(), "REPAIR_STATE_"), "_", " "), repairTone(repair.GetState()), m.theme, text.Normal), text.Label(safe(repair.GetDetail()), m.theme), m.muted(m.timestamp(repair.GetUpdatedAtMs(), briefTimestamp)), m.field("Repair method", repairMethod(repair)))
 		if repair.GetResultHead() != "" {
 			parts = append(parts, m.commitField("Rebased commit", repair.GetPrUrl(), repair.GetResultHead()))
 		}

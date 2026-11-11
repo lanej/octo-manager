@@ -163,7 +163,7 @@ func activityOutcome(outcome v1.ActivityOutcome) string {
 func (m *Model) activityContent() string {
 	history := m.agentActivity
 
-	parts := []string{text.Badge("Agent activity", m.theme), m.muted("Newest first · unchanged PR checks grouped · UTC"), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
+	parts := []string{text.Badge("Agent activity", m.theme), m.muted("Newest first · unchanged PR checks grouped · " + m.zoneLabel()), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
 	if history.err != nil {
 		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+text.Label(safe(history.err.Error()), m.theme), text.KeyHint("u", "retry", m.theme))
 	}
@@ -250,8 +250,7 @@ func (m *Model) activityContent() string {
 }
 
 func (m *Model) activityTime(at int64) string {
-	stamp := time.UnixMilli(at).UTC()
-	return m.muted(stamp.Format("Jan 2, 2006") + " · " + stamp.Format("15:04 UTC"))
+	return m.muted(m.timestamp(at, briefTimestamp))
 }
 
 type activityItem struct {

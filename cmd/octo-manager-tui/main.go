@@ -34,7 +34,14 @@ func run() error {
 	state := flag.String("state", filepath.Join(home, ".local", "state", "octo-manager"), "coordinator state directory")
 	mode := flag.String("theme", "dark", "dark, light, contrast, or mono")
 
+	zone := flag.String("timezone", "local", "display timezone: local (TZ or OS default), UTC, or an IANA name")
+
 	flag.Parse()
+
+	location, err := tui.DisplayLocation(*zone)
+	if err != nil {
+		return err
+	}
 
 	selected := theme.Mode(*mode)
 	switch selected {
@@ -45,7 +52,7 @@ func run() error {
 
 	t := theme.New(selected)
 	api := client.New(filepath.Join(*state, "run.sock"))
-	scene := tui.New(context.Background(), api, t)
+	scene := tui.New(context.Background(), api, t, location)
 	root := &runtime.Root{Scene: scene, Background: t.Background, AltScreen: true, ASCII: t.ASCII}
 	_, runErr := tea.NewProgram(root).Run()
 
