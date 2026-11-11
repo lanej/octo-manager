@@ -148,6 +148,8 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 			return nil
 		}
 
+		contextChanged := m.instance != msg.snapshot.GetInstanceId() || m.snapshot.GetSequence() != msg.snapshot.GetSequence()
+
 		var closing tea.Cmd
 
 		if m.instance != msg.snapshot.GetInstanceId() {
@@ -161,6 +163,10 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		}
 
 		m.snapshot, m.connectionError = msg.snapshot, ""
+		if contextChanged {
+			m.activityRender.valid = false
+		}
+
 		m.ensureSelection()
 		m.resizeContent()
 

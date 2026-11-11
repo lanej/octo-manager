@@ -16,7 +16,7 @@ export async function activityCLI(
     return false;
   if (values.help === true) {
     console.log(
-      "record-activity --name merge_pr|run_checks|resolve_conflict|summarize_pr|notify_agent --outcome attempted|succeeded|failed|uncertain --request-id ID --operation-id ID --harness NAME --thread-id ID --detail TEXT [--url PR_URL] [--evidence HTTPS_URL] [--harness-version VERSION] [--model MODEL] [--state DIR]\nactivity [--after SEQUENCE] [--state DIR] [--json]\nActivity records caller reports; it does not execute or independently verify the action.",
+      "record-activity --name merge_pr|run_checks|resolve_conflict|summarize_pr|notify_agent --outcome attempted|succeeded|failed|uncertain --request-id ID --operation-id ID --harness NAME --thread-id ID --detail TEXT [--url PR_URL] [--evidence HTTPS_URL] [--harness-version VERSION] [--model MODEL] [--label TOPIC] [--cwd DIR] [--state DIR]\nactivity [--after SEQUENCE] [--state DIR] [--json]\nActivity records caller reports; it does not execute or independently verify the action.",
     );
     return true;
   }
@@ -39,6 +39,8 @@ export async function activityCLI(
         sessionId: values["thread-id"],
         version: values["harness-version"],
         model: values.model,
+        label: values.label,
+        cwd: values.cwd ?? process.cwd(),
       },
       detail: values.detail,
       prUrl: values.url,

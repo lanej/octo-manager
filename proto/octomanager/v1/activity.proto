@@ -22,6 +22,8 @@ message ActivityActor {
   string session_id = 2;
   optional string version = 3;
   optional string model = 4;
+  optional string label = 5;
+  optional string cwd = 6;
 }
 message ActivityInput {
   string request_id = 1;

@@ -109,7 +109,7 @@ test("private observations remain separate from public-only Pi tools; partial la
     merged: false,
     mergeable: true,
     head: { sha: "head" },
-    base: { sha: "base", repo: { private: true } },
+    base: { sha: "base", ref: "main", repo: { private: true } },
   };
   const o = await readObservation(
     url,
@@ -117,6 +117,7 @@ test("private observations remain separate from public-only Pi tools; partial la
     async (path) => {
       paths.push(path);
       if (path.endsWith("/pulls/1")) return raw;
+      if (path.includes("/git/ref/")) return { object: { sha: "base-tip" } };
       if (path.includes("/reviews?")) {
         if (path.includes("page=2")) throw new Error("offline");
         return Array.from({ length: 100 }, (_, i) => ({
@@ -134,7 +135,8 @@ test("private observations remain separate from public-only Pi tools; partial la
   );
   assert.equal(o.headSha, "head");
   assert.equal(o.reviews.state, "partial");
-  assert.equal(paths.length, 5);
+  assert.equal(paths.length, 8);
+  assert.deepEqual(o.targetBase, { ref: "main", sha: "base-tip" });
   assert.throws(() => publicPullRequest(raw), /Only confirmed public/);
 });
 test("routing selects exact-check profiles and rejects invalid configuration", async () => {

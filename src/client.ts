@@ -1,3 +1,4 @@
+import { actionContext } from "./tracking/evidence.js";
 import { ActionState as TrackingActionState, DeliveryState as TrackingDeliveryState } from "./gen/octomanager/v1/tracking_pb.js";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
@@ -16,7 +17,11 @@ function job(value?: WireJob): Job {
   if (!status || status === ("unspecified" as Status)) throw new Error("Unsupported job status");
   return { id: value.id, requestId: value.requestId, task, digest: digest(task), status, createdAt: Number(value.createdAtMs), updatedAt: Number(value.updatedAtMs), availableAt: Number(value.availableAtMs), retryCount: value.retryCount, attempts: value.attempts.map(a => ({ number: a.number, startedAt: Number(a.startedAtMs), ...(a.endedAtMs === undefined ? {} : { endedAt: Number(a.endedAtMs) }), ...(a.workerPid === undefined ? {} : { pid: Number(a.workerPid) }), ...(a.exitObservedAtMs === undefined ? {} : { exitObservedAt: Number(a.exitObservedAtMs) }), ...(a.error === undefined ? {} : { error: a.error }) })), ...(value.resultMarkdown === undefined ? {} : { result: value.resultMarkdown }), ...(value.error === undefined ? {} : { error: value.error }) };
 }
-function event(value: WireEvent): JobEvent { return { seq: Number(value.sequence), jobId: value.jobId, at: Number(value.atMs), kind: value.kind, detail: value.detail, ...(value.prId?{prId:value.prId}:{}), ...(value.actionId?{actionId:value.actionId}:{}) }; }
+function event(value: WireEvent): JobEvent {
+  const context = value.actionContext;
+  const mapped = context === undefined ? undefined : actionContext({ ...context, state: TrackingActionState[context.state].replace(/^ACTION_STATE_/, "").toLowerCase() });
+  return { seq: Number(value.sequence), jobId: value.jobId, at: Number(value.atMs), kind: value.kind, detail: value.detail, ...(value.prId === undefined ? {} : { prId: value.prId }), ...(value.actionId === undefined ? {} : { actionId: value.actionId }), ...(mapped === undefined ? {} : { actionContext: mapped }) };
+}
 function snapshot(value?: WireSnapshot): Snapshot {
   if (!value) throw new Error("Server returned no snapshot");
   return { scheduler: SchedulerState[value.scheduler]!.toLowerCase() as Snapshot["scheduler"], worker: WorkerState[value.worker]!.toLowerCase() as Snapshot["worker"], jobs: value.jobs.map(job), events: value.recentEvents.map(event), ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }) };

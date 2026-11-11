@@ -46,12 +46,25 @@ export interface ReviewObservation {
   at: number;
   url: string;
 }
+export interface TargetBase {
+  ref: string;
+  sha: string;
+}
+export interface ActionEventContext {
+  state: ActionState;
+  prUrl: string;
+  actorAgentId?: string;
+  actorHarness?: string;
+  actorSessionId?: string;
+  actorLabel?: string;
+}
 export interface PRObservation {
   id: number;
   prId: string;
   observedAt: UnixMillis;
   headSha: string;
   baseSha: string;
+  targetBase?: TargetBase;
   lifecycle: "open" | "closed" | "merged";
   mergeability: "mergeable" | "conflicting" | "unknown";
   checks: ObservationPart<CheckObservation[]>;
@@ -66,7 +79,7 @@ export enum ActionState {
   Superseded = "superseded",
 }
 export type Blocker =
-  | { kind: "conflict"; headSha: string; baseSha: string }
+  | { kind: "conflict"; headSha: string; baseSha: string; baseRef?: string }
   | {
       kind: "check_failed";
       sourceId: string;

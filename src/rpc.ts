@@ -1,5 +1,5 @@
 import { activityRoutes } from "./activity/rpc.js";
-import { wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
+import { actionStates, wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { setTimeout as delay } from "node:timers/promises";
@@ -21,7 +21,7 @@ export function wireJob(job: Job) {
     retryCount: job.retryCount, resultMarkdown: job.result, error: job.error,
   });
 }
-export function wireEvent(event: JobEvent) { return create(JobEventSchema, { sequence: BigInt(event.seq), jobId: event.jobId, atMs: BigInt(event.at), kind: event.kind, detail: event.detail, prId: event.prId, actionId: event.actionId }); }
+export function wireEvent(event: JobEvent) { return create(JobEventSchema, { sequence: BigInt(event.seq), jobId: event.jobId, atMs: BigInt(event.at), kind: event.kind, detail: event.detail, prId: event.prId, actionId: event.actionId, actionContext: event.actionContext !== undefined ? { ...event.actionContext, state: actionStates[event.actionContext.state] } : undefined }); }
 export function wireSnapshot(coordinator: Coordinator) {
   // WHY: A single owner executes these synchronous reads without yielding; the cursor covers exactly the state returned.
   const snapshot = coordinator.snapshot();

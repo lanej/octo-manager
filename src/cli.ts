@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { activityCLI } from "./activity/cli.js";
-import { parseCommand } from "./arguments.js";
+import { directoryLabel, parseCommand } from "./arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,7 +45,14 @@ async function main(): Promise<void> {
   const id = argument;
   let result: unknown;
   if (["track","tracked","pr","refresh","assign","untrack","actions","action","acknowledge","working","retry-delivery","reprofile","tracking"].includes(command)) {
-    result=await trackingRequest(directory,command,id,{url:values.url,harness:values.harness,endpoint:values.endpoint,sessionId:values["thread-id"],agentId:values["agent-id"],label:values.label});
+    result = await trackingRequest(directory, command, id, {
+      ...(values.url === undefined ? {} : { url: values.url }),
+      ...(values.harness === undefined ? {} : { harness: values.harness }),
+      ...(values.endpoint === undefined ? {} : { endpoint: values.endpoint }),
+      ...(values["thread-id"] === undefined ? {} : { sessionId: values["thread-id"] }),
+      ...(values["agent-id"] === undefined ? {} : { agentId: values["agent-id"] }),
+      label: values.label ?? directoryLabel(values.cwd ?? process.cwd()),
+    });
   } else if (command === "submit" && argument === "summarize-pr" && values.url) result = await request(directory, { op: "submit", requestId: values["request-id"] ?? randomUUID(), task: { kind: "summarize_pr", url: values.url } });
   else if (command === "demo") {
     const requestId = values["request-id"] ?? randomUUID();

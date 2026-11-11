@@ -9,6 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
+	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
 
@@ -20,20 +22,12 @@ func (m *Model) agentLabel(id string) string {
 
 		target := agent.GetTarget()
 
-		label := target.GetLabel()
-		if label == "" {
-			label = target.GetSessionId()
-		}
-
-		result := safe(target.GetHarness()) + "/" + safe(target.GetEndpoint()) + " · " + safe(label)
-		if agent.GetHarnessVersion() != "" {
-			result += " · " + safe(agent.GetHarnessVersion())
-		}
+		result := safe(target.GetHarness()) + " · " + sessionContext(target.GetLabel(), "", target.GetSessionId())
 
 		return result
 	}
 
-	return safe(id)
+	return sessionContext("", "", id)
 }
 
 func actionClosed(state v1.ActionState) bool {
@@ -59,71 +53,94 @@ func (m *Model) openActions(prID string) int {
 	return count
 }
 
-func (m *Model) trackingMarkdown() string {
+func (m *Model) trackingContent() string {
 	pr := m.currentSubject().tracked
 	if pr == nil {
-		return "This PR is not enrolled. Use `octo-manager track --url URL --thread-id ID` from its owning agent session."
+		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	result := "# PR tracking\n\n**Owner:** " + m.agentLabel(pr.GetOwnerAgentId()) + "\n\n"
+	parts := []string{text.Badge("PR tracking", m.theme), m.link(pr.GetUrl()), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
-		result += "**Origin:** " + m.agentLabel(pr.GetOriginAgentId()) + "\n\n"
+		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
 
 	if !pr.GetEnabled() {
-		result += "**Tracking disabled.** History is retained.\n\n"
+		parts = append(parts, feedback.Disabled.View(text.Dim, m.theme)+" History is retained.")
 	}
 
 	if pr.GetRefreshError() != "" {
-		result += "**Refresh failed:** " + safe(pr.GetRefreshError()) + "\n\nPrevious observation retained.\n\n"
+		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" Refresh failed: "+text.Label(safe(pr.GetRefreshError()), m.theme), m.muted("Previous observation retained."))
 	}
 
 	if o := pr.GetObservation(); o != nil {
-		result += safe(o.GetLifecycle()) + " · mergeability " + safe(o.GetMergeability()) + " · observed " + time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC") + "\n\nHead `" + shortSHA(o.GetHeadSha()) + "` · base `" + shortSHA(o.GetBaseSha()) + "`\n\n"
-		result += "Checks " + observationStatus(o.GetChecksJson()) + " · reviews " + observationStatus(o.GetReviewsJson()) + "\n\n"
+		tone := text.Neutral
+		if o.GetMergeability() == "conflicting" {
+			tone = text.Warning
+		} else if o.GetMergeability() == "mergeable" {
+			tone = text.Success
+		}
+
+		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")), m.commitField("Head commit", pr.GetUrl(), o.GetHeadSha()), m.commitField("PR-reported base", pr.GetUrl(), o.GetBaseSha()))
+		if target := o.GetTargetBase(); target != nil {
+			parts = append(parts, m.commitField("Target "+safe(target.GetRef()), pr.GetUrl(), target.GetSha()))
+		} else {
+			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
+		}
+
+		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson())))
 	} else {
-		result += "Waiting for the first GitHub observation.\n\n"
+		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
-	result += fmt.Sprintf("**%d outstanding actions**\n\n", m.openActions(pr.GetId()))
-	for _, action := range m.snapshot.GetTracking().GetActions() {
-		if action.GetPrId() != pr.GetId() {
-			continue
-		}
+	count := m.openActions(pr.GetId())
 
-		state := strings.ToLower(strings.TrimPrefix(action.GetState().String(), "ACTION_STATE_"))
+	tone := text.Success
+	if count > 0 {
+		tone = text.Warning
+	}
 
-		result += "## " + safe(action.GetSummary()) + "\n\n**" + state + "** · `" + safe(action.GetId()) + "`\n\n"
-		if profile := action.GetProfile(); profile != nil {
-			result += "Profile **" + safe(profile.GetName()) + "**"
-			if profile.GetHarness() != "" {
-				result += " · harness " + safe(profile.GetHarness())
-			}
+	parts = append(parts, "", text.Pill(fmt.Sprintf("%d outstanding actions", count), tone, m.theme, text.Normal))
 
-			if profile.GetModel() != "" {
-				result += " · model " + safe(profile.GetModel())
-			}
-
-			result += "\n\n" + safe(profile.GetInstructions()) + "\n\n"
-		}
-
-		for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
-			if delivery.GetActionId() != action.GetId() {
+	actions := m.snapshot.GetTracking().GetActions()
+	for _, closed := range []bool{false, true} {
+		for _, action := range actions {
+			if action.GetPrId() != pr.GetId() || actionClosed(action.GetState()) != closed {
 				continue
 			}
 
-			result += "Delivery **" + strings.ToLower(strings.TrimPrefix(delivery.GetState().String(), "DELIVERY_STATE_")) + "** to " + m.agentLabel(delivery.GetRecipientAgentId()) + "\n\n"
-			result += deliveryDetails(delivery.GetProgressJson())
-		}
+			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
+			if profile := action.GetProfile(); profile != nil {
+				parts = append(parts, m.field("Profile", profile.GetName()))
+				if profile.GetHarness() != "" {
+					parts = append(parts, m.field("Harness", profile.GetHarness()))
+				}
 
-		if action.GetCloseReason() != "" {
-			result += safe(action.GetCloseReason()) + "\n\n"
-		}
+				if profile.GetModel() != "" {
+					parts = append(parts, m.field("Model", profile.GetModel()))
+				}
 
-		result += safe(action.GetEvidenceUrl()) + "\n\n"
+				parts = append(parts, text.Label(safe(profile.GetInstructions()), m.theme))
+			}
+
+			for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
+				if delivery.GetActionId() != action.GetId() {
+					continue
+				}
+
+				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(deliveryDetails(delivery.GetProgressJson())))
+			}
+
+			if action.GetCloseReason() != "" {
+				parts = append(parts, m.muted(action.GetCloseReason()))
+			}
+
+			parts = append(parts, m.link(action.GetEvidenceUrl()))
+		}
 	}
 
-	return result + "Press **u** to refresh. A delivered notification is not an acknowledgment or a verified resolution."
+	parts = append(parts, "", text.KeyHint("u", "refresh", m.theme), m.muted("Delivery, acknowledgment, and verified resolution are separate."))
+
+	return strings.Join(parts, "\n")
 }
 
 func (m *Model) refreshTracked() tea.Cmd {

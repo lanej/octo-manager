@@ -57,3 +57,19 @@ Actual native Go PTY output at 132×40 and 80×32 was replayed in xterm.js with 
 ![Named merge activity from the actual reporting CLI](images/activity.png)
 
 ![Named activity at 80 columns](images/activity-narrow.png)
+
+## Acceptance evidence fixes (2026-11-10)
+
+The disposable public [acceptance repository](https://github.com/lanej/octo-manager-acceptance-20261110) and [PR #1](https://github.com/lanej/octo-manager-acceptance-20261110/pull/1) exercised actual failed GitHub checks, competing target edits, Codex app-server handoffs, and recipient-side acknowledgment. The version 2 acceptance database migrated to version 3 while preserving its identity, reports, event cursor, and existing unknown historical contexts.
+
+A fresh failure at head `8bf657d` and target edit `7dde627` produced new failed-check and conflict actions. GitHub’s PR payload still reported base `4346ff2`; the fixed reader separately stored current target `main` at `7dde627`, and the conflict action/notification used that target revision. A deliberately nonexistent Codex thread produced a real persisted diagnostic: `Codex thread/resume rejected (RPC -32600, runtime 0.167.1): no rollout found for thread id 00000000-0000-4000-8000-000000000000`. The installed CLI remained 0.167.0; the daemon’s observed version was retained independently.
+
+After ownership returned to the disposable recipient, both new actions reached `acknowledged` through the actual CLI callback and normal host approval flow. SQLite and event replay retained each state, acting session, harness, label, and PR URL. Earlier version 2 progress events remained explicitly unknown. Native PTY captures replayed in headless Chrome show the current target and the real acknowledgment entry; controlled tests alone were not used as evidence of the external handoff.
+
+![Tracking distinguishes PR-reported base from current target](images/evidence-tracking.png)
+
+![Activity retains the actual acknowledgment state and actor](images/evidence-activity.png)
+
+The independent review caught a moving-mergeability case during the bounded GitHub read. The reader now rejects changed mergeability as well as changed revisions/lifecycle, retaining preceding evidence. Regression coverage holds the target/head/ref/lifecycle stable while changing the final mergeability response. These checks do not establish an atomic GitHub snapshot or exclusive ownership of Codex scheduling.
+
+The recipient then separately received authorization to repair the fixture, marked both actions working, and pushed [merge commit `a21d606`](https://github.com/lanej/octo-manager-acceptance-20261110/commit/a21d60669348fd483f6e7fee3744856e4a17a58e) with `maxAttempts=5` and `timeoutSeconds=60`. Both real hosted checks succeeded. A later Octo refresh independently observed the repaired head, complete successful checks, and mergeability, leaving zero unfinished blockers. The preceding actions were retained as superseded; all four acknowledgment/working event contexts remained byte-for-byte unchanged. SQLite integrity and foreign-key checks passed. PR #1 remained open and unmerged.

@@ -13,14 +13,45 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
   const http = createServer();
   const ws = new WebSocketServer({ server: http });
   let lose = false;
+  let rejectMethod = "";
   const methods: string[] = [];
   const ids: number[] = [];
   ws.on("connection", (socket) =>
     socket.on("message", (data) => {
-      const m = JSON.parse(data.toString());
+      const content = Array.isArray(data)
+        ? Buffer.concat(data).toString()
+        : data instanceof ArrayBuffer
+          ? new TextDecoder().decode(data)
+          : data.toString();
+      const raw: unknown = JSON.parse(content);
+      assert(
+        typeof raw === "object" &&
+          raw !== null &&
+          "method" in raw &&
+          typeof raw.method === "string",
+      );
+      const m = {
+        method: raw.method,
+        id: "id" in raw && typeof raw.id === "number" ? raw.id : undefined,
+        params:
+          "params" in raw &&
+          typeof raw.params === "object" &&
+          raw.params !== null
+            ? raw.params
+            : {},
+      };
       methods.push(m.method);
       if (m.id === undefined) return;
       ids.push(m.id);
+      if (m.method === rejectMethod) {
+        socket.send(
+          JSON.stringify({
+            id: m.id,
+            error: { code: -32601, message: "list_turns is not supported yet" },
+          }),
+        );
+        return;
+      }
       let result: unknown = {};
       if (m.method === "initialize")
         result = {
@@ -52,7 +83,12 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
           "input",
           "threadId",
         ]);
-        assert.equal(m.params.clientUserMessageId, "delivery");
+        assert.equal(
+          "clientUserMessageId" in m.params
+            ? m.params.clientUserMessageId
+            : undefined,
+          "delivery",
+        );
         if (lose) {
           socket.terminate();
           return;
@@ -84,6 +120,26 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       turnId: "turn",
     });
     connection.close();
+    for (const method of ["thread/resume", "turn/start"]) {
+      rejectMethod = method;
+      connection = new CodexConnection(path);
+      if (method === "turn/start") await connection.prepare(agent);
+      await assert.rejects(
+        method === "thread/resume"
+          ? connection.prepare(agent)
+          : connection.send(agent, "delivery", "notification"),
+        (error) =>
+          error instanceof DeliveryError &&
+          error.permanent &&
+          !error.uncertain &&
+          error.message.includes(method) &&
+          error.message.includes("-32601") &&
+          error.message.includes("0.167.0") &&
+          error.message.includes("list_turns is not supported yet"),
+      );
+      connection.close();
+    }
+    rejectMethod = "";
     lose = true;
     connection = new CodexConnection(path);
     await connection.prepare(agent);
