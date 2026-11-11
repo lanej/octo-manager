@@ -122,3 +122,16 @@ The captured native output was fed through Kitty 0.49.2’s real screen parser. 
 ![Tracking references grouped with Charmed OSC 8 links](images/charmed-links.png)
 
 ![The same reference group at a narrow terminal width](images/charmed-links-narrow.png)
+
+
+## Presentation timezones (2026-11-11)
+
+The actual `dashboard` CLI ran against the same retained tracking state in four owned PTYs: OS-local default at 132×40 and 80×32, `TZ=Asia/Tokyo`, and `TZ=Asia/Tokyo` with `--timezone America/Los_Angeles`. The captured screens were replayed headlessly and inspected. OS-local and explicit Los Angeles showed `PST -0800`; inherited Tokyo showed `JST +0900` with the expected next-day date. The explicit flag took precedence over `TZ`. Invalid `--timezone Not/A_Timezone` exited before terminal startup.
+
+The same repair instant appeared as November 10 at 22:15 PST and November 11 at 15:15 JST. No coordinator, schema, or protocol change was involved. Focused tests cover spring-forward and repeated fall-back hours, date rollover, a fractional-hour offset, and all dashboard timestamp paths. Recent tool rows include their event-specific zone/offset next to Charmed’s compact clock time. Local rendering does not change event sequence order or stored milliseconds.
+
+![Dashboard using OS-local presentation time](images/timezone-local.png)
+
+![The same repair using the standard TZ environment variable](images/timezone-tokyo.png)
+
+![Local timestamps in the narrow dashboard](images/timezone-local-narrow.png)

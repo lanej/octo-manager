@@ -186,7 +186,7 @@ func (m *Model) reviewsMarkdown() string {
 		return notice
 	}
 
-	result := notice + "# " + safe(details.GetTitle()) + "\n\n" + safe(details.GetState()) + " · observed " + time.UnixMilli(details.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC") + " · head `" + shortSHA(details.GetHeadSha()) + "`\n\n"
+	result := notice + "# " + safe(details.GetTitle()) + "\n\n" + safe(details.GetState()) + " · observed " + m.timestamp(details.GetObservedAtMs(), fullTimestamp) + " · head `" + shortSHA(details.GetHeadSha()) + "`\n\n"
 	if details.GetMayHaveMoreMessages() {
 		result += "**Partial history:** first 100 items per message source. More may exist on GitHub.\n\n"
 	}
@@ -207,7 +207,7 @@ func (m *Model) reviewsMarkdown() string {
 
 		result += "**@" + safe(message.GetAuthor()) + " · " + label + "**"
 		if message.GetAtMs() != 0 {
-			result += " · " + time.UnixMilli(message.GetAtMs()).UTC().Format("2006-01-02 15:04 UTC")
+			result += " · " + m.timestamp(message.GetAtMs(), "2006-01-02 15:04 MST -0700")
 		}
 
 		result += "\n\n"

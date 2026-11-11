@@ -34,6 +34,9 @@ All processes use the same state directory. The default is `~/.local/state/octo-
 
 Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. Use `--theme dark`, `light`, `contrast`, or `mono` when launching the dashboard.
 
+Dashboard timestamps use local time, honoring `TZ` when set and otherwise the OS timezone. Use `--timezone` to override presentation for one dashboard. For example, `TZ=Asia/Tokyo bin/octo-manager dashboard` uses Tokyo time; `bin/octo-manager dashboard --timezone America/Los_Angeles` selects Los Angeles explicitly. `--timezone local` restores the `TZ`/OS default, and `--timezone UTC` selects UTC. An invalid explicit zone fails before the UI starts. Stored Unix milliseconds, API values, ordering, and elapsed durations remain unchanged.
+
+
 ## Existing authentication
 
 The worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.

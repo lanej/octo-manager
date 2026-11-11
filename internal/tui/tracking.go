@@ -81,7 +81,7 @@ func (m *Model) trackingContent() string {
 			tone = text.Success
 		}
 
-		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", time.UnixMilli(o.GetObservedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC")))
+		parts = append(parts, text.Pill(safe(o.GetLifecycle()), text.Neutral, m.theme, text.Dim)+" "+text.Pill(safe(o.GetMergeability()), tone, m.theme, text.Normal), m.field("Observed", m.timestamp(o.GetObservedAtMs(), fullTimestamp)))
 		if o.GetTargetBase() == nil {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
@@ -128,7 +128,7 @@ func (m *Model) trackingContent() string {
 					continue
 				}
 
-				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(deliveryDetails(delivery.GetProgressJson())))
+				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson())))
 			}
 
 			if action.GetCloseReason() != "" {
@@ -230,7 +230,7 @@ func observationStatus(raw string) string {
 	return result
 }
 
-func deliveryDetails(raw string) string {
+func (m *Model) deliveryDetails(raw string) string {
 	var value struct {
 		Reason        string
 		NextAttemptAt int64
@@ -244,7 +244,7 @@ func deliveryDetails(raw string) string {
 	}
 
 	if value.NextAttemptAt != 0 {
-		return "Next attempt " + time.UnixMilli(value.NextAttemptAt).UTC().Format("2006-01-02 15:04:05 UTC") + "\n\n"
+		return "Next attempt " + m.timestamp(value.NextAttemptAt, fullTimestamp) + "\n\n"
 	}
 
 	return ""

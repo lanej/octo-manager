@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/diagram"
@@ -45,7 +44,7 @@ func (m *Model) stateView(width int) string {
 		label := statusLabel(state)
 
 		path = append(path, label)
-		stamp := time.UnixMilli(event.GetAtMs()).UTC().Format("01-02 15:04:05")
+		stamp := m.timestamp(event.GetAtMs(), "01-02 15:04:05 MST -0700")
 		entry := fmt.Sprintf("#%d  %s  %s%s%s", event.GetSequence(), stamp, previous, arrow, label)
 
 		detail := strings.Join(strings.Fields(safe(event.GetDetail())), " ")
@@ -81,7 +80,7 @@ func (m *Model) stateView(width int) string {
 		rows = append(rows, "History incomplete: "+safe(record.err.Error()))
 	}
 
-	rows = append(rows, "", m.theme.Heading().Render("Transition history · UTC · sequence order"))
+	rows = append(rows, "", m.theme.Heading().Render("Transition history · "+m.zoneLabel()+" · sequence order"))
 	rows = append(rows, history...)
 
 	return strings.Join(rows, "\n")
@@ -118,7 +117,7 @@ func (m *Model) workerLines() []string {
 		}
 
 		if attempt.ExitObservedAtMs != nil {
-			slot += " · exit observed " + time.UnixMilli(attempt.GetExitObservedAtMs()).UTC().Format("15:04:05 UTC")
+			slot += " · exit observed " + m.timestamp(attempt.GetExitObservedAtMs(), "15:04:05 MST -0700")
 		} else if attempt.WorkerPid != nil {
 			slot += " · exit not observed"
 		}
