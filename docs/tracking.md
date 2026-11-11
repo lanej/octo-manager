@@ -48,7 +48,7 @@ For desktop-owned threads, opt into the installed Codex 0.167.1 experimental que
 {"endpoints":{"local":{"delivery":"queue"}}}
 ```
 
-Queue mode enables the experimental API capability and calls `thread/queue/add` with the stable delivery ID as `clientUserMessageId`. It retains the returned queue ID and reconciles uncertain admission through `thread/queue/list`, then thread history. Queue acceptance does not establish receipt, wake an idle desktop agent, or acknowledge the blocker. Octo does not call `thread/queue/start`, resume the desktop thread, or change its model, permissions, working directory, or instructions. Live consumption by the desktop host remains an acceptance requirement; keep queue mode opt-in until verified for that host.
+Queue mode enables the experimental API capability and calls `thread/queue/add` with the stable delivery ID as `clientUserMessageId`. It retains the returned queue ID and reconciles uncertain admission through `thread/queue/list`, then thread history. Queue acceptance does not establish receipt, wake an idle desktop agent, or acknowledge the blocker. Octo does not call `thread/queue/start`, resume the desktop thread, or change its model, permissions, working directory, or instructions. A live Codex 0.167.1 desktop trial consumed a queued probe as an incoming message after the active turn completed; see [the acceptance record](live-acceptance.md#desktop-queue-delivery). Queue mode remains opt-in. Unattended idle wakeup remains unverified.
 
 Neither mode claims exclusive ownership of Codex scheduling.
 
