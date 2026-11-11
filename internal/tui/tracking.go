@@ -92,6 +92,8 @@ func (m *Model) trackingContent() string {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
+	parts = append(parts, m.repairContent(pr.GetId()))
+
 	count := m.openActions(pr.GetId())
 
 	tone := text.Success

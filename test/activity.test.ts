@@ -207,7 +207,7 @@ test("activity preserves legacy events and identity, enforces named data, and pa
   original.close();
   const db = new DatabaseSync(join(directory, "jobs.sqlite"));
   db.exec(
-    "DROP TABLE agent_activity; ALTER TABLE events DROP COLUMN action_context_json; ALTER TABLE pr_observations DROP COLUMN target_base_json; PRAGMA user_version=1",
+    "DROP TABLE agent_activity; DROP TABLE conflict_cases; DROP TABLE repair_attempts; ALTER TABLE events DROP COLUMN action_context_json; ALTER TABLE pr_observations DROP COLUMN target_base_json; PRAGMA user_version=1",
   );
   db.close();
   const store = new Store(directory);
@@ -254,7 +254,7 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     try {
       assert.equal(
         reader.prepare("PRAGMA user_version").get()?.["user_version"],
-        3,
+        5,
       );
       assert.throws(() =>
         reader.prepare("UPDATE agent_activity SET outcome='invented'").run(),

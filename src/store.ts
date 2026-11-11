@@ -1,3 +1,5 @@
+import { ConflictStore } from "./repairs/cases.js";
+import { RepairStore } from "./repairs/store.js";
 import { storedEvent } from "./events.js";
 import { migrateEvidence } from "./schema.js";
 import { ActivityStore } from "./activity/store.js";
@@ -17,6 +19,8 @@ export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
   readonly activity: ActivityStore;
+  readonly repairs: RepairStore;
+  readonly conflicts: ConflictStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -37,6 +41,8 @@ export class Store {
       });
       this.activity = new ActivityStore(this.db, this.now);
       migrateEvidence(this.db);
+      this.repairs = new RepairStore(this.db, this.now);
+      this.conflicts = new ConflictStore(this.db, this.now);
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }

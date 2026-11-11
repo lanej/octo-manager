@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { repairsCLI } from "./repairs/cli.js";
 import { activityCLI } from "./activity/cli.js";
 import { directoryLabel, parseCommand } from "./arguments.js";
 import { homedir } from "node:os";
@@ -16,6 +17,7 @@ process.umask(0o077);
 async function main(): Promise<void> {
   const parsed = parseCommand(process.argv.slice(2));
   if (await activityCLI(parsed)) return;
+  if (await repairsCLI(parsed)) return;
   const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;

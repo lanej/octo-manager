@@ -73,3 +73,41 @@ After ownership returned to the disposable recipient, both new actions reached `
 The independent review caught a moving-mergeability case during the bounded GitHub read. The reader now rejects changed mergeability as well as changed revisions/lifecycle, retaining preceding evidence. Regression coverage holds the target/head/ref/lifecycle stable while changing the final mergeability response. These checks do not establish an atomic GitHub snapshot or exclusive ownership of Codex scheduling.
 
 The recipient then separately received authorization to repair the fixture, marked both actions working, and pushed [merge commit `a21d606`](https://github.com/lanej/octo-manager-acceptance-20261110/commit/a21d60669348fd483f6e7fee3744856e4a17a58e) with `maxAttempts=5` and `timeoutSeconds=60`. Both real hosted checks succeeded. A later Octo refresh independently observed the repaired head, complete successful checks, and mergeability, leaving zero unfinished blockers. The preceding actions were retained as superseded; all four acknowledgment/working event contexts remained byte-for-byte unchanged. SQLite integrity and foreign-key checks passed. PR #1 remained open and unmerged.
+
+
+## Tools-first rebase repairs
+
+The disposable acceptance repository exercised two additional open PRs against an advanced `rebase-target` branch. [PR #2](https://github.com/lanej/octo-manager-acceptance-20261110/pull/2) rebased its independent source notes entirely through Git; its persisted attempt records `usedAgent=false`. [PR #3](https://github.com/lanej/octo-manager-acceptance-20261110/pull/3) encountered a real text conflict and started the separate bounded Pi worker with the profile’s `gpt-6.1-terra` model. The worker resolved the current conflict through scoped file tools; Octo continued the rebase, checked the exact semantic result, and pushed with a lease. No calling-session model or permission settings changed.
+
+The conflict result retained source `maxAttempts=4` and target `timeoutSeconds=90`. The clean result is [commit 61b80022](https://github.com/lanej/octo-manager-acceptance-20261110/commit/61b800220a5f8918b472869291fb5b8b0a62331d); the conflict result is [commit 1d6d0f6f](https://github.com/lanej/octo-manager-acceptance-20261110/commit/1d6d0f6fa9091fa6a501f2137f74bb4dd0637db3). Both are based on target revision `6ac9694`. Actual hosted Retry policy checks passed for both heads, and later Octo observations independently marked both attempts succeeded with zero outstanding blockers. Both fixture PRs remain open and unmerged.
+
+The clean attempt remained awaiting verification through a real GitHub observation-consistency error and a coordinator restart; it resumed verification without repeating its push. The conflict attempt similarly retained a transient read error before succeeding. The original owner endpoint was deliberately offline: successful repair execution did not depend on notification delivery or acknowledgment by that session. The retained state distinguishes those delivery outcomes from the repair’s verification.
+
+SQLite integrity and foreign-key checks passed. The two durable attempts retain the original and resulting revisions, target revision, profile/model, actual agent-use flag, and timestamped step history. Controlled tests additionally exercise empty/pending/failing checks, successful commit-status contexts, interrupted push uncertainty, competing source updates, failed local validation, and file confinement; those cases are not claimed as additional hosted trials.
+
+Native PTY captures from the actual coordinator were inspected at 132×40 and 80×32 for both Git-only and agent-backed results, plus Activity. They retain readable PR and commit links and show repair progress ahead of closed blockers.
+
+![Git-only rebase verified](images/rebase-tracking.png)
+
+![Separate repair session verified](images/rebase-conflict.png)
+
+![Repair at 80 columns](images/rebase-conflict-narrow.png)
+
+The local acceptance coordinator and state remain under `/private/tmp/octo-acceptance-20261110/rebase-live`; workspaces are retained for inspection. Fork/merge-preserving rebases, regeneration recipes, per-attempt cancellation, and additional repair harness adapters remain outside this increment.
+
+
+## Tools-first YAML conflict and retained corpus (2026-11-11 UTC)
+
+[Fixture PR #4](https://github.com/lanej/octo-manager-acceptance-20261110/pull/4) deliberately changed separate elements of one inline sequence. Base was `ports: [80, 443, 8080]`, target changed `80` to `81`, and source changed `8080` to `9090`. Octo’s `yaml-flow-sequence-v1` expanded all three inputs into block sequences and used `git merge-file` to combine the independent edits. No agent was invoked: the attempt retained `usedAgent=false` and one mechanically resolved file.
+
+Local checks asserted the resulting sequence and validated the existing retry policy. The exact leased push produced [cd82e782](https://github.com/lanej/octo-manager-acceptance-20261110/commit/cd82e7823b3c94dcda4da730ffc897c16fa7bc9f). GitHub reported the PR mergeable and both `Retry policy` runs successful. Octo reached succeeded after retrying one temporarily inconsistent GitHub observation without another push. The fixture remains open and unmerged.
+
+Schema 5 retained case 1 with all three original blob IDs and texts, the expanded merged candidate, applied decision and reason, and Git/parser versions. `conflict-case 1 --json` recovered it through Connect. SQLite integrity returned `ok` and the foreign-key check found no violations. Separate regression cases prove recovery after deleting the isolated checkout and restarting the coordinator, and retain an ambiguous same-element conflict as declined with the fallback agent’s output separately. An applied recipe remains distinct from the linked repair’s final verification.
+
+The actual native terminal dashboard was captured through a PTY and replayed in a headless browser at 132×40 and 80×32. It shows the PR, resulting commit link, verified rebase, and YAML resolver count.
+
+![Tools-first YAML repair in the native dashboard](images/rebase-yaml.png)
+
+![Tools-first YAML repair at a narrow terminal width](images/rebase-yaml-narrow.png)
+
+This establishes one bounded recipe, not general semantic conflict resolution. Additions, deletions, reorders, duplicates, competing replacements, complex YAML, and oversized sequences fall back to the configured agent. The corpus supports future analysis; it does not automatically enable new recipes or rewrite repository formatting policy.

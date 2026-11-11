@@ -16,6 +16,7 @@ export function parseCommand(args: string[]) {
       state: { type: "string" },
       theme: { type: "string" },
       model: { type: "string" },
+      profile: { type: "string" },
       url: { type: "string" },
       "request-id": { type: "string" },
       json: { type: "boolean" },

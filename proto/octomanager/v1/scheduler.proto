@@ -2,9 +2,14 @@ syntax = "proto3";
 package octomanager.v1;
 import "octomanager/v1/tracking.proto";
 import "octomanager/v1/activity.proto";
+import "octomanager/v1/repairs.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc ListConflictCases(ListConflictCasesRequest) returns (ListConflictCasesResponse);
+  rpc GetConflictCase(GetConflictCaseRequest) returns (GetConflictCaseResponse);
+  rpc RequestRebase(RequestRebaseRequest) returns (RequestRebaseResponse);
+  rpc ListRepairs(ListRepairsRequest) returns (ListRepairsResponse);
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
   rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
@@ -112,6 +117,7 @@ message Snapshot {
   optional int64 recovery_pid = 7;
   repeated StateTransition allowed_transitions = 8;
   TrackingSnapshot tracking = 9;
+  repeated RepairAttempt repairs = 10;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
