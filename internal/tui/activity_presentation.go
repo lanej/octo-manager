@@ -32,6 +32,8 @@ func (m *Model) eventPR(event *v1.JobEvent) string {
 func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	row := activityPresentation{title: "Update", detail: safe(event.GetDetail()), prURL: m.eventPR(event)}
 	switch event.GetKind() {
+	case "repair_progress":
+		row.title = "Rebase repair"
 	case "pr_observed":
 		row.title = "PR checked"
 		sha := strings.TrimPrefix(event.GetDetail(), "Observed head ")

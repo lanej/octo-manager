@@ -1,3 +1,4 @@
+import { RepairService, type RepairOptions } from "./repairs/service.js";
 import { TrackingService, type TrackingOptions } from "./tracking/service.js";
 import { defaultTrackingConfig, type TrackingConfig } from "./tracking/config.js";
 import { EventEmitter } from "node:events";
@@ -15,7 +16,7 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions { repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -31,6 +32,7 @@ export function transient(error: string): boolean {
 export class Coordinator extends EventEmitter {
   readonly store: Store;
   readonly tracking: TrackingService;
+  readonly repairs: RepairService;
   readonly socketPath: string;
   private server?: Server;
   private sockets = new Set<Socket>();
@@ -47,6 +49,7 @@ export class Coordinator extends EventEmitter {
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory });
+    this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions);
     this.socketPath = join(directory, "run.sock");
     for (const job of this.store.jobs()) {
       let observedExit = false;
@@ -77,6 +80,7 @@ export class Coordinator extends EventEmitter {
       this.timer = setInterval(() => this.tick(), 100);
       this.tick();
       this.tracking.start();
+      this.repairs.start();
     } catch (error) { this.store.close(); throw error; }
   }
   async pullRequestDetails(url: string, signal?: AbortSignal) {
@@ -234,6 +238,7 @@ export class Coordinator extends EventEmitter {
     this.closePromise = (async () => {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
+      await this.repairs.close();
       await this.tracking.close();
       if (this.active) { await this.active.exited; }
       for (const socket of this.sockets) socket.destroy();

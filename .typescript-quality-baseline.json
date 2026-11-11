@@ -4236,30 +4236,6 @@
     {
       "file": "src/worker.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
-      "source": "const tools: ToolDefinition<any>[] = task.kind === \"resolve_conflict\" ? [",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
-      "source": "function tool(name: string, description: string, parameters = Type.Object({}, { additionalProperties: false })): ToolDefinition<any> {",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
-      "source": "process.on(\"message\", (value: any) => {",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-floating-promises",
       "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
       "source": "const flush = () => { if (output) { send({ type: \"progress\", text: cleanText(output, 2000) }); output = \"\"; } };",
@@ -4271,14 +4247,6 @@
       "rule": "@typescript-eslint/no-floating-promises",
       "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
       "source": "if (event.type === \"turn_start\" && ++turns > 12 || event.type === \"tool_execution_start\" && ++toolCalls > 40) { budgetExceeded = true; void session!.abort(); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-floating-promises",
-      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
       "count": 1
     },
     {
@@ -4319,142 +4287,6 @@
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, value is always falsy.",
       "source": "if (budgetExceeded) throw new Error(\"Budget exceeded\");",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string | undefined`.",
-      "source": "if (value.error) request?.reject(new Error(value.error)); else request?.resolve(value.result);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "const request = pending.get(value.id); pending.delete(value.id);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `Task`.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of type `ToolDefinition<any, unknown, any>[]` to a variable of type `ToolDefinition<TSchema, unknown, any>[]`.",
-      "source": "({ session } = await createAgentSession({ modelRuntime: runtime, model, thinkingLevel: \"low\", resourceLoader: resources, settingsManager: settings, sessionManager: SessionManager.inMemory(), tools: tools.map(t => t.name), customTools: tools }));",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .attempt on an `any` value.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .error on an `any` value.",
-      "source": "if (value.error) request?.reject(new Error(value.error)); else request?.resolve(value.result);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "const request = pending.get(value.id); pending.delete(value.id);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "if (value?.type === \"tool_result\" && typeof value.id === \"string\") {",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .model on an `any` value.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .result on an `any` value.",
-      "source": "if (value.error) request?.reject(new Error(value.error)); else request?.resolve(value.result);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .task on an `any` value.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .type on an `any` value.",
-      "source": "if (value?.type === \"abort\") { stop(); return; }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .type on an `any` value.",
-      "source": "if (value?.type === \"start\" && !started) { started = true; attempt = value.attempt; void run(value.task, value.model); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .type on an `any` value.",
-      "source": "if (value?.type === \"tool_result\" && typeof value.id === \"string\") {",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "if (value.error) request?.reject(new Error(value.error)); else request?.resolve(value.result);",
       "count": 1
     },
     {

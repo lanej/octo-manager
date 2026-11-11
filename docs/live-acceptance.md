@@ -73,3 +73,24 @@ After ownership returned to the disposable recipient, both new actions reached `
 The independent review caught a moving-mergeability case during the bounded GitHub read. The reader now rejects changed mergeability as well as changed revisions/lifecycle, retaining preceding evidence. Regression coverage holds the target/head/ref/lifecycle stable while changing the final mergeability response. These checks do not establish an atomic GitHub snapshot or exclusive ownership of Codex scheduling.
 
 The recipient then separately received authorization to repair the fixture, marked both actions working, and pushed [merge commit `a21d606`](https://github.com/lanej/octo-manager-acceptance-20261110/commit/a21d60669348fd483f6e7fee3744856e4a17a58e) with `maxAttempts=5` and `timeoutSeconds=60`. Both real hosted checks succeeded. A later Octo refresh independently observed the repaired head, complete successful checks, and mergeability, leaving zero unfinished blockers. The preceding actions were retained as superseded; all four acknowledgment/working event contexts remained byte-for-byte unchanged. SQLite integrity and foreign-key checks passed. PR #1 remained open and unmerged.
+
+
+## Tools-first rebase repairs
+
+The disposable acceptance repository exercised two additional open PRs against an advanced `rebase-target` branch. [PR #2](https://github.com/lanej/octo-manager-acceptance-20261110/pull/2) rebased its independent source notes entirely through Git; its persisted attempt records `usedAgent=false`. [PR #3](https://github.com/lanej/octo-manager-acceptance-20261110/pull/3) encountered a real text conflict and started the separate bounded Pi worker with the profile’s `gpt-6.1-terra` model. The worker resolved the current conflict through scoped file tools; Octo continued the rebase, checked the exact semantic result, and pushed with a lease. No calling-session model or permission settings changed.
+
+The conflict result retained source `maxAttempts=4` and target `timeoutSeconds=90`. The clean result is [commit 61b80022](https://github.com/lanej/octo-manager-acceptance-20261110/commit/61b800220a5f8918b472869291fb5b8b0a62331d); the conflict result is [commit 1d6d0f6f](https://github.com/lanej/octo-manager-acceptance-20261110/commit/1d6d0f6fa9091fa6a501f2137f74bb4dd0637db3). Both are based on target revision `6ac9694`. Actual hosted Retry policy checks passed for both heads, and later Octo observations independently marked both attempts succeeded with zero outstanding blockers. Both fixture PRs remain open and unmerged.
+
+The clean attempt remained awaiting verification through a real GitHub observation-consistency error and a coordinator restart; it resumed verification without repeating its push. The conflict attempt similarly retained a transient read error before succeeding. The original owner endpoint was deliberately offline: successful repair execution did not depend on notification delivery or acknowledgment by that session. The retained state distinguishes those delivery outcomes from the repair’s verification.
+
+SQLite integrity and foreign-key checks passed. The two durable attempts retain the original and resulting revisions, target revision, profile/model, actual agent-use flag, and timestamped step history. Controlled tests additionally exercise empty/pending/failing checks, successful commit-status contexts, interrupted push uncertainty, competing source updates, failed local validation, and file confinement; those cases are not claimed as additional hosted trials.
+
+Native PTY captures from the actual coordinator were inspected at 132×40 and 80×32 for both Git-only and agent-backed results, plus Activity. They retain readable PR and commit links and show repair progress ahead of closed blockers.
+
+![Git-only rebase verified](images/rebase-tracking.png)
+
+![Separate repair session verified](images/rebase-conflict.png)
+
+![Repair at 80 columns](images/rebase-conflict-narrow.png)
+
+The local acceptance coordinator and state remain under `/private/tmp/octo-acceptance-20261110/rebase-live`; workspaces are retained for inspection. Fork/merge-preserving rebases, regeneration recipes, per-attempt cancellation, and additional repair harness adapters remain outside this increment.

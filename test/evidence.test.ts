@@ -142,7 +142,7 @@ test("action events retain their state and actor after progress, reassignment an
     store.close();
     const db = new DatabaseSync(join(dir, "jobs.sqlite"));
     db.exec(
-      "ALTER TABLE events DROP COLUMN action_context_json; ALTER TABLE pr_observations DROP COLUMN target_base_json; PRAGMA user_version=2",
+      "DROP TABLE repair_attempts; ALTER TABLE events DROP COLUMN action_context_json; ALTER TABLE pr_observations DROP COLUMN target_base_json; PRAGMA user_version=2",
     );
     db.close();
     store = new Store(dir);

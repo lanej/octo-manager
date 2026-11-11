@@ -1,3 +1,4 @@
+import { repairRoutes, wireRepair } from "./repairs/rpc.js";
 import { activityRoutes } from "./activity/rpc.js";
 import { actionStates, wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
 import { create } from "@bufbuild/protobuf";
@@ -30,6 +31,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
     tracking: wireTracking(coordinator.tracking),
+    repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
   });
@@ -59,6 +61,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return value;
   };
   router.service(SchedulerService, {
+    ...repairRoutes(coordinator.repairs),
     ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},

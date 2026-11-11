@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 export function migrateEvidence(db: DatabaseSync): void {
   const row = db.prepare("PRAGMA user_version").get();
   if (row === undefined || row["user_version"] !== 2) {
-    if (row?.["user_version"] === 3) return;
+    if (row?.["user_version"] === 3 || row?.["user_version"] === 4) return;
     throw new Error("Unsupported evidence database version");
   }
   db.exec(`BEGIN IMMEDIATE;

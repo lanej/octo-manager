@@ -91,3 +91,38 @@ func TestTrackingAtomsKeepLiveWorkAheadOfHistory(t *testing.T) {
 		}
 	}
 }
+
+func TestRebaseRepairUsesReadableStateAndPreservesNarrowLayout(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}}}
+	m.snapshot.Repairs = []*v1.RepairAttempt{{Id: "internal-repair-id", PrId: "pr", PrUrl: "https://github.com/owner/repo/pull/42", State: v1.RepairState_REPAIR_STATE_AWAITING_CHECKS, Detail: "Rebased branch pushed; waiting for GitHub verification", ResultHead: new(strings.Repeat("a", 40)), Harness: "pi", Model: "repair-model"}}
+	m.ensureSelection()
+
+	content := ansi.Strip(m.trackingContent())
+	for _, want := range []string{"awaiting checks", "waiting for GitHub verification", "Git tools", "owner/repo@aaaaaaaa"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("missing repair information %q", want)
+		}
+	}
+
+	if strings.Contains(content, "internal-repair-id") || strings.Contains(content, "repair-model") {
+		t.Fatal("Git-only repair exposed internal identity or claimed an agent was used")
+	}
+
+	m.snapshot.Repairs[0].UsedAgent = true
+	if !strings.Contains(ansi.Strip(m.trackingContent()), "pi · repair-model") {
+		t.Fatal("separate repair profile is missing")
+	}
+
+	for _, size := range []layout.Size{{Width: 132, Height: 40}, {Width: 80, Height: 32}, {Width: 40, Height: 16}} {
+		m.Resize(size)
+
+		for _, line := range strings.Split(m.View(), "\n") {
+			if ansi.StringWidth(line) > size.Width {
+				t.Fatal("repair view exceeds terminal width")
+			}
+		}
+	}
+}

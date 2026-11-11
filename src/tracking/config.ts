@@ -1,14 +1,17 @@
+import { repairProfile, type RepairProfile } from "../repairs/types.js";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
 export interface TrackingConfig {
+  repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
   rules: { kind: Blocker["kind"]; checkName?: string; profile: string }[];
   endpoints: Record<string, { socket?: string }>;
 }
 const kinds = ["conflict", "check_failed", "changes_requested"] as const;
 const defaults: TrackingConfig = {
+  repairs: {},
   profiles: Object.fromEntries(
     kinds.map((kind) => [
       kind,
@@ -51,11 +54,16 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   if (
     !object(raw) ||
     Object.keys(raw).some(
-      (k) => !["profiles", "rules", "endpoints"].includes(k),
+      (k) => !["profiles", "rules", "endpoints", "repairs"].includes(k),
     )
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["repairs"] !== undefined) {
+    if (!object(raw["repairs"])) throw new Error("Invalid repair profiles");
+    for (const [name, profile] of Object.entries(raw["repairs"]))
+      result.repairs[name] = repairProfile(profile);
+  }
   if (raw.profiles !== undefined) {
     if (!object(raw.profiles)) throw new Error("Invalid profiles");
     for (const [name, p] of Object.entries(raw.profiles)) {

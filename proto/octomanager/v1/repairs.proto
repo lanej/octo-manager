@@ -1,0 +1,38 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+enum RepairState {
+ REPAIR_STATE_UNSPECIFIED = 0;
+ REPAIR_STATE_QUEUED = 1;
+ REPAIR_STATE_RUNNING = 2;
+ REPAIR_STATE_AWAITING_CHECKS = 3;
+ REPAIR_STATE_SUCCEEDED = 4;
+ REPAIR_STATE_BLOCKED = 5;
+ REPAIR_STATE_FAILED = 6;
+ REPAIR_STATE_UNCERTAIN = 7;
+}
+message RepairUpdate { RepairState state = 1; string step = 2; string detail = 3; int64 at_ms = 4; }
+message RepairAttempt {
+ string id = 1;
+ string pr_id = 2;
+ string pr_url = 3;
+ RepairState state = 4;
+ string step = 5;
+ string detail = 6;
+ int64 created_at_ms = 7;
+ int64 updated_at_ms = 8;
+ string profile = 9;
+ string harness = 10;
+ string model = 11;
+ optional string original_head = 12;
+ optional string target_sha = 13;
+ optional string target_ref = 14;
+ optional string result_head = 15;
+ repeated string conflicted_paths = 16;
+ bool used_agent = 17;
+ repeated RepairUpdate history = 18;
+}
+message RequestRebaseRequest { string request_id = 1; string url = 2; string profile = 3; }
+message RequestRebaseResponse { RepairAttempt repair = 1; }
+message ListRepairsRequest {}
+message ListRepairsResponse { repeated RepairAttempt repairs = 1; }
