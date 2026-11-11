@@ -118,7 +118,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	m.loadActivity()
 	m.Update(activityMsg{instance: m.instance, version: m.agentActivity.version, target: 1, err: errors.New("offline")})
 
-	if !strings.Contains(m.activityMarkdown(), "History incomplete") {
+	if !strings.Contains(ansi.Strip(m.activityContent()), "History incomplete") {
 		t.Fatal("failed activity reads appear as complete history")
 	}
 }
@@ -141,27 +141,27 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 
 	m.Resize(layout.Size{Width: 132, Height: 40})
 
-	latest := m.activitySource()
-	if strings.Count(latest, "## Run checks") != 50 || !strings.Contains(latest, "record-3000-end") || !strings.Contains(latest, "record-2951-end") || strings.Contains(latest, "record-2950-end") {
+	latest := ansi.Strip(m.activitySource())
+	if strings.Count(latest, "Run checks") != 50 || !strings.Contains(latest, "record-3000-end") || !strings.Contains(latest, "record-2951-end") || strings.Contains(latest, "record-2950-end") {
 		t.Fatal("latest activity window omitted records or rendered outside its bound")
 	}
 
 	m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
 
-	older := m.activitySource()
+	older := ansi.Strip(m.activitySource())
 	if !strings.Contains(older, "record-2950-end") || !strings.Contains(older, "record-2901-end") || strings.Contains(older, "record-2951-end") {
 		t.Fatal("older activity page overlaps or skips records")
 	}
 
 	m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 
-	if m.activitySource() != latest {
+	if ansi.Strip(m.activitySource()) != latest {
 		t.Fatal("newer activity navigation did not return to the latest page")
 	}
 
 	allocations := testing.AllocsPerRun(3, func() { m.resizeContent() })
 	if allocations > 100000 {
-		t.Fatalf("unchanged activity refresh rebuilt Markdown: %.0f allocations", allocations)
+		t.Fatalf("unchanged activity refresh rebuilt content: %.0f allocations", allocations)
 	}
 
 	m.result.GotoTop()
@@ -222,8 +222,8 @@ func TestActivityShowsHistoricalActionContextAndLegacyGaps(t *testing.T) {
 		{Sequence: 2, Kind: "action_progress", Detail: "Merge conflict", ActionContext: &v1.ActionEventContext{State: v1.ActionState_ACTION_STATE_ACKNOWLEDGED, PrUrl: "https://github.com/owner/repo/pull/1", ActorAgentId: new("original"), ActorHarness: new("codex"), ActorSessionId: new("first"), ActorLabel: new("Original owner")}},
 	}
 
-	source := m.activityMarkdown()
-	for _, expected := range []string{"Action · acknowledged", "https://github.com/owner/repo/pull/1", "codex", "Original owner", "session `first`", "Legacy event: transition state and actor were not recorded"} {
+	source := ansi.Strip(m.activityContent())
+	for _, expected := range []string{"acknowledged", "https://github.com/owner/repo/pull/1", "codex", "Original owner", "Session: first", "Legacy event: transition state and actor were not recorded"} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("activity omitted %q", expected)
 		}

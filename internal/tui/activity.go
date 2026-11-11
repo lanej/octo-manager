@@ -10,6 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -158,64 +160,61 @@ func activityOutcome(outcome v1.ActivityOutcome) string {
 	}
 }
 
-func (m *Model) activityMarkdown() string {
+func (m *Model) activityContent() string {
 	history := m.agentActivity
-	result := "# Agent activity\n\nAll sessions · newest first · UTC\n\nCoordinator events and agent reports. Agent-reported execution is not independently verified by this log.\n\n"
 
+	parts := []string{text.Badge("Agent activity", m.theme), m.muted("All sessions · newest first · UTC"), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
 	if history.err != nil {
-		result += "**History incomplete:** " + safe(history.err.Error()) + "\n\nPress **u** to retry.\n\n"
+		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+text.Label(safe(history.err.Error()), m.theme), text.KeyHint("u", "retry", m.theme))
 	}
 
 	if history.loading {
-		result += "Loading activity history…\n\n"
+		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Loading activity history…")
 	}
 
 	items := activityItems(history)
 	if len(items) == 0 {
-		return result + "No agent activity recorded yet. Use `record-activity --help` from an agent session to report a named operation."
+		return strings.Join(append(parts, "No agent activity recorded yet. Use record-activity --help from an agent session."), "\n")
 	}
 
 	start := min(history.page*activityPageSize, ((len(items)-1)/activityPageSize)*activityPageSize)
 
 	end := min(start+activityPageSize, len(items))
 	if len(items) > activityPageSize {
-		result += fmt.Sprintf("Showing %d–%d of %d · h older · l newer\n\n", start+1, end, len(items))
+		parts = append(parts, text.Pill(fmt.Sprintf("%d–%d of %d", start+1, end, len(items)), text.Neutral, m.theme, text.Dim)+" "+text.KeyHint("h", "older", m.theme)+" · "+text.KeyHint("l", "newer", m.theme))
 	}
 
-	parts := []string{result}
+	parts = append(parts, "")
 
 	for _, item := range items[start:end] {
 		if item.event != nil {
 			event := item.event
 			context := event.GetActionContext()
 
-			title := "Coordinator · " + strings.ReplaceAll(safe(event.GetKind()), "_", " ")
+			title := text.Log("Coordinator", m.theme) + " · " + m.muted(strings.ReplaceAll(safe(event.GetKind()), "_", " "))
 			if context != nil {
-				title = "Action · " + strings.ToLower(strings.TrimPrefix(context.GetState().String(), "ACTION_STATE_")) + " · " + strings.ReplaceAll(safe(event.GetKind()), "_", " ")
+				title = text.Log("Action", m.theme) + " " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal) + " · " + m.muted(strings.ReplaceAll(safe(event.GetKind()), "_", " "))
 			}
 
-			parts = append(parts, "## "+title+"\n\n")
-			parts = append(parts, fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(event.GetAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), event.GetSequence()))
-			parts = append(parts, safe(event.GetDetail())+"\n\n")
-
+			parts = append(parts, title, m.activityTime(event.GetAtMs(), event.GetSequence()), text.Label(safe(event.GetDetail()), m.theme))
 			if context != nil {
-				parts = append(parts, safe(context.GetPrUrl())+"\n\n")
+				parts = append(parts, m.link(context.GetPrUrl()))
 				if context.GetActorAgentId() != "" {
-					parts = append(parts, "**"+safe(context.GetActorHarness())+"** · "+safe(context.GetActorLabel())+" · session `"+safe(context.GetActorSessionId())+"`\n\n")
+					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(safe(context.GetActorLabel()), m.theme), m.field("Session", context.GetActorSessionId()))
 				} else {
-					parts = append(parts, "Coordinator-observed transition.\n\n")
+					parts = append(parts, m.muted("Coordinator-observed transition."))
 				}
 			} else if event.GetKind() == "action_progress" {
-				parts = append(parts, "Legacy event: transition state and actor were not recorded.\n\n")
+				parts = append(parts, text.Pill("transition unknown", text.Neutral, m.theme, text.Dim)+" Legacy event: transition state and actor were not recorded.")
 			}
 
-			for _, reference := range []string{event.GetPrId(), event.GetActionId(), event.GetJobId()} {
-				if reference != "" {
-					parts = append(parts, "`"+safe(reference)+"` ")
+			for _, reference := range []struct{ label, value string }{{"PR", event.GetPrId()}, {"Action", event.GetActionId()}, {"Job", event.GetJobId()}} {
+				if reference.value != "" {
+					parts = append(parts, m.muted(reference.label+": "+reference.value))
 				}
 			}
 
-			parts = append(parts, "\n\n---\n\n")
+			parts = append(parts, "")
 
 			continue
 		}
@@ -223,33 +222,35 @@ func (m *Model) activityMarkdown() string {
 		entry := item.report
 		report := entry.GetReport()
 		actor := report.GetActor()
-		parts = append(parts, "## "+activityTitle(report.GetName())+" · "+activityOutcome(report.GetOutcome())+"\n\n")
-		parts = append(parts, fmt.Sprintf("%s · #%d\n\n", time.UnixMilli(entry.GetRecordedAtMs()).UTC().Format("2006-01-02 15:04:05 UTC"), entry.GetSequence()))
-		identity := safe(actor.GetHarness())
+		parts = append(parts, text.Log(activityTitle(report.GetName()), m.theme)+" "+text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.activityTime(entry.GetRecordedAtMs(), entry.GetSequence()), text.Label(safe(report.GetDetail()), m.theme))
 
+		identity := safe(actor.GetHarness())
 		if actor.GetVersion() != "" {
 			identity += " " + safe(actor.GetVersion())
 		}
 
-		parts = append(parts, "**"+identity+"** · session `"+safe(actor.GetSessionId())+"`\n\n")
+		parts = append(parts, text.Badge(identity, m.theme)+" "+m.field("Session", actor.GetSessionId()))
 		if actor.GetModel() != "" {
-			parts = append(parts, "Model: `"+safe(actor.GetModel())+"`\n\n")
+			parts = append(parts, m.field("Model", actor.GetModel()))
 		}
 
-		parts = append(parts, safe(report.GetDetail())+"\n\n")
 		if report.GetPrUrl() != "" {
-			parts = append(parts, safe(report.GetPrUrl())+"\n\n")
+			parts = append(parts, m.link(report.GetPrUrl()))
 		}
 
 		if report.GetEvidenceUrl() != "" {
-			parts = append(parts, "Evidence: "+safe(report.GetEvidenceUrl())+"\n\n")
+			parts = append(parts, m.field("Evidence", report.GetEvidenceUrl()))
 		}
 
-		name := strings.ToLower(strings.TrimPrefix(report.GetName().String(), "ACTIVITY_NAME_"))
-		parts = append(parts, "`"+name+"` · operation `"+safe(report.GetOperationId())+"`\n\n---\n\n")
+		parts = append(parts, m.muted("Operation: "+report.GetOperationId()), "")
 	}
 
-	return strings.Join(parts, "")
+	return strings.Join(parts, "\n")
+}
+
+func (m *Model) activityTime(at int64, sequence uint64) string {
+	stamp := time.UnixMilli(at).UTC()
+	return m.muted(stamp.Format("2006-01-02") + " " + text.TimeOfDay(stamp) + fmt.Sprintf(" UTC · #%d", sequence))
 }
 
 type activityItem struct {
@@ -275,7 +276,7 @@ func activityItems(history activityHistory) []activityItem {
 
 func (m *Model) activitySource() string {
 	if !m.activityRender.valid {
-		m.activityRender.source = m.activityMarkdown()
+		m.activityRender.source = m.activityContent()
 		m.activityRender.width = -1
 		m.activityRender.valid = true
 	}
@@ -286,12 +287,7 @@ func (m *Model) activitySource() string {
 func (m *Model) renderedActivity(width int) string {
 	source := m.activitySource()
 	if m.activityRender.width != width {
-		rendered, err := text.Markdown(source, width, m.theme)
-		if err != nil {
-			rendered = safe(source)
-		}
-
-		m.activityRender.rendered = rendered
+		m.activityRender.rendered = ansi.Wrap(source, width, " ")
 		m.activityRender.width = width
 	}
 

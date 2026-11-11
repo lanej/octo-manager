@@ -196,7 +196,7 @@ func (m *Model) resizeContent() {
 		case statePanel:
 			content = m.stateView(inner.Width)
 		case trackingPanel:
-			content = m.trackingMarkdown()
+			content = m.trackingContent()
 		case activityPanel:
 			content = m.activitySource()
 		default:
@@ -205,7 +205,7 @@ func (m *Model) resizeContent() {
 	}
 
 	if m.panel == trackingPanel {
-		content = m.trackingMarkdown()
+		content = m.trackingContent()
 	} else if m.job() == nil {
 		if m.panel == reviewsPanel && m.currentSubject().url != "" {
 			content = m.reviewsMarkdown()
@@ -221,6 +221,8 @@ func (m *Model) resizeContent() {
 	rendered := content
 	if m.panel == activityPanel {
 		rendered = m.renderedActivity(max(1, inner.Width))
+	} else if m.panel == trackingPanel {
+		rendered = ansi.Wrap(content, max(1, inner.Width), " ")
 	} else if m.panel != statePanel {
 		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
 			rendered = value

@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
+	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -56,5 +57,37 @@ func TestTrackedPRWithoutWorkerAndNavigation(t *testing.T) {
 
 	if m.currentSubject().tracked == nil {
 		t.Fatal("could not return to tracked PR")
+	}
+}
+
+func TestTrackingAtomsKeepLiveWorkAheadOfHistory(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []theme.Mode{theme.Dark, theme.Light, theme.Contrast, theme.Mono} {
+		m := model(t, mode)
+		m.snapshot.Jobs = nil
+		m.snapshot.Tracking = &v1.TrackingSnapshot{
+			Prs:        []*v1.TrackedPullRequest{{Id: "tracked", Url: "https://github.com/owner/repo/pull/1", Enabled: true}},
+			Actions:    []*v1.PendingAction{{Id: "old", PrId: "tracked", Summary: "Historical conflict", State: v1.ActionState_ACTION_STATE_SUPERSEDED}, {Id: "current", PrId: "tracked", Summary: "Current conflict", State: v1.ActionState_ACTION_STATE_OPEN}},
+			Deliveries: []*v1.ActionDelivery{{ActionId: "current", State: v1.DeliveryState_DELIVERY_STATE_DELIVERED}},
+		}
+		m.ensureSelection()
+
+		source := ansi.Strip(m.trackingContent())
+		if strings.Index(source, "Current conflict") > strings.Index(source, "Historical conflict") || !strings.Contains(source, "delivered") || !strings.Contains(source, "verified resolution are separate") {
+			t.Fatal("atom presentation obscured current work or delivery semantics")
+		}
+
+		if deliveryTone(v1.DeliveryState_DELIVERY_STATE_DELIVERED) == text.Success {
+			t.Fatal("delivery acceptance was styled as verified success")
+		}
+
+		m.Resize(layout.Size{Width: 40, Height: 20})
+
+		for _, line := range strings.Split(m.View(), "\n") {
+			if ansi.StringWidth(line) > 40 {
+				t.Fatal("atom view exceeds narrow terminal")
+			}
+		}
 	}
 }

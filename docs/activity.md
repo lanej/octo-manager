@@ -97,3 +97,13 @@ ALTER TABLE pr_observations ADD COLUMN target_base_json TEXT
 ALTER TABLE events ADD COLUMN action_context_json TEXT
   CHECK(action_context_json IS NULL OR json_valid(action_context_json));
 ```
+
+## Native presentation
+
+Activity and Tracking render structured fields directly with Charmed labels, badges, semantic pills, log glyphs, time atoms, pending indicators, and key hints. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. The native views retain ANSI-aware wrapping, the 50-entry activity window, cached rendering, paging, and keyboard scrolling; worker output and review prose retain Markdown rendering.
+
+![Native Charmed activity rows](images/atoms-activity.png)
+
+![Activity at 80 columns](images/atoms-activity-narrow.png)
+
+![Native Charmed tracking fields and delivery states](images/atoms-tracking.png)
