@@ -39,12 +39,25 @@ export interface CheckObservation {
   url: string;
 }
 export interface ReviewObservation {
+  body?: string;
   id: string;
   author: string;
   headSha: string;
   state: string;
   at: number;
   url: string;
+}
+export interface ReviewFeedback {
+  source: "review" | "inline" | "conversation";
+  id: string;
+  revision: string;
+  author: string;
+  body: string;
+  url: string;
+  headSha?: string;
+  path?: string;
+  line?: number;
+  reviewId?: string;
 }
 export interface TargetBase {
   ref: string;
@@ -69,6 +82,7 @@ export interface PRObservation {
   mergeability: "mergeable" | "conflicting" | "unknown";
   checks: ObservationPart<CheckObservation[]>;
   reviews: ObservationPart<ReviewObservation[]>;
+  feedback?: ObservationPart<ReviewFeedback[]>;
 }
 export type ObservationInput = Omit<PRObservation, "id" | "prId">;
 export enum ActionState {
@@ -79,6 +93,7 @@ export enum ActionState {
   Superseded = "superseded",
 }
 export type Blocker =
+  | { kind: "review_feedback"; feedback: ReviewFeedback }
   | { kind: "conflict"; headSha: string; baseSha: string; baseRef?: string }
   | {
       kind: "check_failed";

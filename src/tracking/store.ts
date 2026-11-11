@@ -1,3 +1,4 @@
+import { storedFeedback } from "./feedback.js";
 import { actionContext, targetBase } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
@@ -104,6 +105,7 @@ export class TrackingStore {
   }
   private observation(r: Row): PRObservation {
     const target = targetBase(r["target_base_json"]);
+    const feedback = storedFeedback(r["feedback_json"]);
     return {
       id: r.id,
       prId: r.pr_id,
@@ -115,6 +117,7 @@ export class TrackingStore {
       mergeability: r.mergeability,
       checks: parse(r.checks_json),
       reviews: parse(r.reviews_json),
+      ...(feedback === undefined ? {} : { feedback }),
     };
   }
   prs(): TrackedPR[] {
@@ -398,7 +401,7 @@ export class TrackingStore {
       if (!p.enabled) return p;
       const result = this.db
         .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
         )
         .run(
           p.id,
@@ -414,6 +417,7 @@ export class TrackingStore {
           input.targetBase === undefined
             ? null
             : JSON.stringify(input.targetBase),
+          input.feedback === undefined ? null : JSON.stringify(input.feedback),
         );
       const o: PRObservation = {
         ...input,
@@ -445,7 +449,7 @@ export class TrackingStore {
               a.prId === p.id &&
               a.blocker.kind === f.blocker.kind &&
               a.sourceKey === f.sourceKey &&
-              unfinished(a),
+              (f.blocker.kind === "review_feedback" || unfinished(a)),
           )
         )
           continue;

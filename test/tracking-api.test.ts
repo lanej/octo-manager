@@ -135,7 +135,7 @@ test("private observations remain separate from public-only Pi tools; partial la
   );
   assert.equal(o.headSha, "head");
   assert.equal(o.reviews.state, "partial");
-  assert.equal(paths.length, 8);
+  assert.equal(paths.length, 10);
   assert.deepEqual(o.targetBase, { ref: "main", sha: "base-tip" });
   assert.throws(() => publicPullRequest(raw), /Only confirmed public/);
 });

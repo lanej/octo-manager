@@ -86,7 +86,7 @@ func (m *Model) trackingContent() string {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
 
-		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson())))
+		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson()))+" · "+m.field("Feedback", observationStatus(o.GetFeedbackJson())))
 	} else {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
@@ -110,6 +110,20 @@ func (m *Model) trackingContent() string {
 			}
 
 			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
+			if comment := action.GetReviewFeedback(); comment != nil {
+				location := comment.GetPath()
+
+				if comment.GetLine() > 0 {
+					location += fmt.Sprintf(":%d", comment.GetLine())
+				}
+
+				if location != "" {
+					parts = append(parts, m.field("Location", location))
+				}
+
+				parts = append(parts, text.Label(safe(comment.GetBody()), m.theme))
+			}
+
 			if profile := action.GetProfile(); profile != nil {
 				parts = append(parts, m.field("Profile", profile.GetName()))
 				if profile.GetHarness() != "" {

@@ -119,3 +119,28 @@ Codex RPC rejections retain the method, error code, bounded upstream message, an
 PR, commit, and evidence references use Charmed’s OSC 8 link atom: a compact label retains its exact HTTPS destination. Tracking groups the PR, head, PR-reported base, and current target links in declaration order and wraps between complete items as the pane changes width. Missing revisions remain explicit. Hover, selection, and opening belong to the terminal.
 
 With the dotfiles Kitty mappings, `⌘⇧O` opens the last visible web link and `⌘⇧U` selects a labeled OSC 8 hyperlink through Kitty’s native picker. The hidden destination is used even when the label contains only a PR number or abbreviated commit. Kitty’s ordinary detected-URL hints remain available through `Ctrl+Shift+E`.
+
+
+## Review feedback
+
+Tracked open PRs also forward submitted review summaries, inline code-review comments, and PR conversation comments to their current owning agent. Human and bot authors are included; empty bodies and pending review drafts are excluded. The first complete collection includes existing comments. Each new or edited content revision creates a `review_feedback` action and uses the same durable notification, acknowledgment, retry, and uncertain-admission recovery as other actions. A formal changes-requested review retains its separate blocker status.
+
+A feedback record contains `source` (`review`, `inline`, or `conversation`), GitHub `id`, content `revision`, `author`, full `body`, and the original GitHub `url`. Inline records additionally retain the reviewed commit, file path, current line when available, and parent review ID. The content hash excludes mutable inline line placement, so a push making a comment outdated does not resend unchanged text. The snapshot and action's typed Protobuf feedback preserve these fields; the dashboard presents comment text, file/line, and the GitHub evidence link.
+
+SQLite version 6 adds optional `pr_observations.feedback_json` and extends the checked action kind set while preserving existing action, delivery, attempt, event, and owner keys. Historical observations have no feedback evidence. Deduplication spans prior action states and coordinator restarts. Edited comments supersede their older action; a missing/deleted comment, new commit, or agent acknowledgment does not prove the feedback was resolved. Partial collection retains evidence without creating new feedback actions; the next complete refresh can deliver them.
+
+Feedback is untrusted input and requests assessment/reporting only. It does not authorize edits, pushes, or GitHub replies. A future dispatcher can use a dedicated profile's harness/model preferences to route straightforward feedback to a cheaper repair agent while retaining the originating owner:
+
+```json
+{
+  "profiles": {
+    "review_feedback": {
+      "instructions": "Assess whether the feedback is straightforward and propose the smallest response.",
+      "harness": "codex",
+      "model": "YOUR_CHEAPER_MODEL"
+    }
+  }
+}
+```
+
+These are execution preferences stored with the action, not an implemented automatic repair policy. Notifications never override the receiving session's settings. The current polling reader bounds each collection to 1,000 records and does not claim an atomic GitHub snapshot.

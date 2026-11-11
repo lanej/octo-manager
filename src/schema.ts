@@ -6,7 +6,8 @@ export function migrateEvidence(db: DatabaseSync): void {
     if (
       row?.["user_version"] === 3 ||
       row?.["user_version"] === 4 ||
-      row?.["user_version"] === 5
+      row?.["user_version"] === 5 ||
+      row?.["user_version"] === 6
     )
       return;
     throw new Error("Unsupported evidence database version");

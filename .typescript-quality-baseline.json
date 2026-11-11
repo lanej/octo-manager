@@ -2381,22 +2381,6 @@
       "file": "src/tracking/config.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type '{ kind: \"conflict\" | \"check_failed\" | \"changes_requested\"; checkName?: string; profile: string; }' is more narrow than the original type.",
-      "source": "return r as TrackingConfig[\"rules\"][number];",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type '\"conflict\" | \"check_failed\" | \"changes_requested\"' is more narrow than the original type.",
-      "source": "!kinds.includes(r.kind as (typeof kinds)[number]) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'ErrnoException' is more narrow than the original type.",
       "source": "if (!path && (error as NodeJS.ErrnoException).code === \"ENOENT\")",
       "count": 1
@@ -2438,14 +2422,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
-      "source": "!r.checkName))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "(p.model !== undefined && (typeof p.model !== \"string\" || !p.model))",
       "count": 1
     },
@@ -2455,30 +2431,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "(typeof p.harness !== \"string\" || !p.harness)) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'checkName' comes from an index signature, so it must be accessed with ['checkName'].",
-      "source": "!r.checkName))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'checkName' comes from an index signature, so it must be accessed with ['checkName'].",
-      "source": "(r.checkName !== undefined &&",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'checkName' comes from an index signature, so it must be accessed with ['checkName'].",
-      "source": "typeof r.checkName !== \"string\" ||",
       "count": 1
     },
     {
@@ -2565,22 +2517,6 @@
       "file": "src/tracking/config.ts",
       "tool": "tsc",
       "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "!kinds.includes(r.kind as (typeof kinds)[number]) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "(r.kind !== \"check_failed\" ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
       "message": "Property 'model' comes from an index signature, so it must be accessed with ['model'].",
       "source": "...(p.model === undefined ? {} : { model: p.model as string }),",
       "count": 1
@@ -2591,22 +2527,6 @@
       "rule": "TS4111",
       "message": "Property 'model' comes from an index signature, so it must be accessed with ['model'].",
       "source": "(p.model !== undefined && (typeof p.model !== \"string\" || !p.model))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profile' comes from an index signature, so it must be accessed with ['profile'].",
-      "source": "!Object.hasOwn(result.profiles, r.profile) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profile' comes from an index signature, so it must be accessed with ['profile'].",
-      "source": "typeof r.profile !== \"string\" ||",
       "count": 1
     },
     {
@@ -2678,14 +2598,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-explicit-any",
       "message": "Unexpected any. Specify a different type.",
-      "source": "(r: any) => ({",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
       "source": "export async function ghRead(path: string, signal?: AbortSignal): Promise<any> {",
       "count": 1
     },
@@ -2740,14 +2652,6 @@
     {
       "file": "src/tracking/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "at: Date.parse(r.submitted_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "const raw = await read(",
@@ -2767,14 +2671,6 @@
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .app on an `any` value.",
       "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .commit_id on an `any` value.",
-      "source": "headSha: String(r.commit_id ?? \"\"),",
       "count": 1
     },
     {
@@ -2837,14 +2733,6 @@
       "file": "src/tracking/github.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .html_url on an `any` value.",
-      "source": "url: String(r.html_url ?? url),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
       "source": "id: `run:${c.id}`,",
       "count": 1
@@ -2855,14 +2743,6 @@
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
       "source": "id: `status:${c.id}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "id: String(r.id),",
       "count": 1
     },
     {
@@ -2902,14 +2782,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .state on an `any` value.",
-      "source": "state: String(r.state),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .state on an `any` value.",
       "source": "status: String(c.state),",
       "count": 1
     },
@@ -2925,24 +2797,8 @@
       "file": "src/tracking/github.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .submitted_at on an `any` value.",
-      "source": "at: Date.parse(r.submitted_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .target_url on an `any` value.",
       "source": "url: String(c.target_url ?? url),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .user on an `any` value.",
-      "source": "author: String(r.user?.login ?? \"unknown\"),",
       "count": 1
     },
     {
@@ -3039,14 +2895,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected number value in conditional. An explicit zero/NaN check is required.",
       "source": "at: Date.parse(c.started_at ?? c.completed_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected number value in conditional. An explicit zero/NaN check is required.",
-      "source": "at: Date.parse(r.submitted_at ?? \"\") || 0,",
       "count": 1
     },
     {

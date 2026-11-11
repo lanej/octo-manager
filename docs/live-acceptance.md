@@ -144,3 +144,8 @@ On 2026-11-11, a standalone Codex 0.167.1 daemon rejected resuming the active de
 After the active turn completed, the probe arrived as an actual incoming message in the original desktop session. The receiving agent reported receipt through Octo's `record-activity` API client, using the same operation ID and a distinct request ID. The local activity timeline retains both the earlier uncertain delivery report and the later recipient-confirmed success. No second queue submission, thread resume, queue start, or model/settings override was issued.
 
 This confirms API admission, queue reconciliation, desktop consumption after an active turn, and recipient-side activity reporting for that host/runtime. It does not establish unattended wakeup of an already idle desktop session, automatic PR enrollment, blocker acknowledgment, or repair/resolution.
+
+
+## Local feedback monitoring
+
+On 2026-11-11, the local coordinator was updated to the feedback implementation and explicitly configured for the proven Codex queue transport. An online backup preceded migration to SQLite version 6. The restarted coordinator preserved both tracked PR identities, passed SQLite foreign-key verification, and refreshed PR #12 through the real GitHub reader. Its Connect snapshot reported complete feedback collection with no comments. No test comment was posted, so live GitHub-comment-to-agent delivery remains unobserved. The controlled feedback journey covers collection, durable actions, owner delivery, edits, and restart; the preceding desktop probe separately established the actual Codex delivery boundary.

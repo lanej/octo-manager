@@ -1,3 +1,8 @@
+import {
+  commentFeedback,
+  feedbackRevision,
+  reviewObservation,
+} from "./feedback.js";
 import { trackingPR } from "./evidence.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -97,7 +102,7 @@ export async function readObservation(
   const target =
     pr.state === "open" && !pr.merged ? await readTarget() : undefined;
   const observedAt = now();
-  const [runs, statuses, reviews] = await Promise.all([
+  const [runs, statuses, reviews, inline, conversation] = await Promise.all([
     collection(
       `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
       "check_runs",
@@ -133,18 +138,68 @@ export async function readObservation(
     collection(
       `${root}/pulls/${number}/reviews`,
       undefined,
-      (r: any) => ({
-        id: String(r.id),
-        author: String(r.user?.login ?? "unknown"),
-        headSha: String(r.commit_id ?? ""),
-        state: String(r.state),
-        at: Date.parse(r.submitted_at ?? "") || 0,
-        url: String(r.html_url ?? url),
-      }),
+      (r: unknown) => reviewObservation(r, url),
+      read,
+      signal,
+    ),
+    collection(
+      `${root}/pulls/${number}/comments`,
+      undefined,
+      (value: unknown) => commentFeedback(value, "inline", url),
+      read,
+      signal,
+    ),
+    collection(
+      `${root}/issues/${number}/comments`,
+      undefined,
+      (value: unknown) => commentFeedback(value, "conversation", url),
       read,
       signal,
     ),
   ]);
+  const feedbackItems = [
+    ...(reviews.state === "unavailable"
+      ? []
+      : reviews.value
+          .filter(
+            (r) =>
+              r.state !== "PENDING" &&
+              r.body !== undefined &&
+              r.body.trim() !== "",
+          )
+          .map((r) =>
+            feedbackRevision({
+              source: "review",
+              id: r.id,
+              author: r.author,
+              body: r.body ?? "",
+              url: r.url,
+              headSha: r.headSha,
+            }),
+          )),
+    ...(inline.state === "unavailable"
+      ? []
+      : inline.value.filter(
+          (c) =>
+            reviews.state !== "unavailable" &&
+            reviews.value.some(
+              (r) => r.id === c.reviewId && r.state !== "PENDING",
+            ),
+        )),
+    ...(conversation.state === "unavailable" ? [] : conversation.value),
+  ].filter((f) => f.body.trim() !== "");
+  const completeFeedback = [
+    reviews.state,
+    inline.state,
+    conversation.state,
+  ].every((state) => state === "complete");
+  const feedback: NonNullable<ObservationInput["feedback"]> = completeFeedback
+    ? { state: "complete", value: feedbackItems }
+    : {
+        state: "partial",
+        value: feedbackItems,
+        reason: "Some review or comment sources are incomplete",
+      };
   const checks: ObservationInput["checks"] =
     runs.state === "complete" && statuses.state === "complete"
       ? { state: "complete", value: [...runs.value, ...statuses.value] }
@@ -187,5 +242,6 @@ export async function readObservation(
           : "unknown",
     checks,
     reviews,
+    feedback,
   };
 }

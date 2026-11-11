@@ -37,6 +37,7 @@ message TrackingObservation {
   string checks_json = 7;
   string reviews_json = 8;
   TargetBase target_base = 9;
+  optional string feedback_json = 10;
 }
 message TrackedPullRequest {
   string id = 1;
@@ -54,6 +55,18 @@ message ExecutionProfile { string name = 1; string instructions = 2; optional st
 message ConflictBlocker { string head_sha = 1; string base_sha = 2; optional string base_ref = 3; }
 message CheckBlocker { string source_id = 1; string check_name = 2; string head_sha = 3; string check_key = 4; }
 message ReviewBlocker { string review_id = 1; string reviewer = 2; string reviewed_head_sha = 3; }
+message ReviewFeedback {
+  string source = 1;
+  string id = 2;
+  string revision = 3;
+  string author = 4;
+  string body = 5;
+  string url = 6;
+  optional string head_sha = 7;
+  optional string path = 8;
+  optional uint32 line = 9;
+  optional string review_id = 10;
+}
 message PendingAction {
   string id = 1;
   string pr_id = 2;
@@ -64,6 +77,7 @@ message PendingAction {
     ConflictBlocker conflict = 6;
     CheckBlocker check_failed = 7;
     ReviewBlocker changes_requested = 8;
+    ReviewFeedback review_feedback = 20;
   }
   string summary = 9;
   string evidence_url = 10;

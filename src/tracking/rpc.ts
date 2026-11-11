@@ -56,6 +56,9 @@ export function wirePR(p: TrackedPR) {
           mergeability: p.observation.mergeability,
           checksJson: JSON.stringify(p.observation.checks),
           reviewsJson: JSON.stringify(p.observation.reviews),
+          ...(p.observation.feedback === undefined
+            ? {}
+            : { feedbackJson: JSON.stringify(p.observation.feedback) }),
         }
       : undefined,
   });
@@ -89,14 +92,16 @@ export function wireAction(a: Action) {
                 checkKey: b.checkKey,
               },
             }
-          : {
-              case: "changesRequested",
-              value: {
-                reviewId: b.reviewId,
-                reviewer: b.reviewer,
-                reviewedHeadSha: b.reviewedHeadSha,
+          : b.kind === "review_feedback"
+            ? { case: "reviewFeedback", value: b.feedback }
+            : {
+                case: "changesRequested",
+                value: {
+                  reviewId: b.reviewId,
+                  reviewer: b.reviewer,
+                  reviewedHeadSha: b.reviewedHeadSha,
+                },
               },
-            },
     summary: a.summary,
     evidenceUrl: a.evidenceUrl,
     profile: a.profile,

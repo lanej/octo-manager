@@ -165,3 +165,26 @@ func TestCharmedTrackingLinksKeepTargetsAcrossResize(t *testing.T) {
 		}
 	}
 }
+
+func TestTrackingPresentsReviewFeedbackAndLocation(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	pr := &v1.TrackedPullRequest{Id: "feedback-pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true, Observation: &v1.TrackingObservation{FeedbackJson: new(`{"state":"partial","reason":"Comments unavailable"}`)}}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs: []*v1.TrackedPullRequest{pr},
+		Actions: []*v1.PendingAction{{
+			Id: "feedback-action", PrId: pr.GetId(), Summary: "Code review from reviewer", State: v1.ActionState_ACTION_STATE_OPEN,
+			Blocker:     &v1.PendingAction_ReviewFeedback{ReviewFeedback: &v1.ReviewFeedback{Source: "inline", Author: "reviewer", Body: "Please reuse the existing parser.", Path: new("src/parser.ts"), Line: new(uint32(42)), Url: "https://github.com/owner/repo/pull/42#discussion_r1"}},
+			EvidenceUrl: "https://github.com/owner/repo/pull/42#discussion_r1",
+		}},
+	}
+	m.selected = ""
+	m.ensureSelection()
+	view := ansi.Strip(m.trackingContent())
+
+	for _, want := range []string{"Code review from reviewer", "src/parser.ts:42", "Please reuse the existing parser.", "Feedback:", "Comments unavailable"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("feedback missing %q", want)
+		}
+	}
+}
