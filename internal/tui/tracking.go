@@ -143,6 +143,16 @@ func (m *Model) trackingContent() string {
 				}
 
 				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson())))
+				if delivery.MessageSequence != nil {
+					receipt := "Awaiting agent receipt"
+					if delivery.AcknowledgedAtMs != nil {
+						receipt = "Agent received " + m.timestamp(delivery.GetAcknowledgedAtMs(), fullTimestamp)
+					}
+
+					parts = append(parts, m.field("Receipt", receipt))
+				} else {
+					parts = append(parts, m.muted("Receipt unavailable for this legacy delivery."))
+				}
 			}
 
 			if action.GetCloseReason() != "" {

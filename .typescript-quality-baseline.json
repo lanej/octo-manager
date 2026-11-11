@@ -3052,30 +3052,6 @@
     {
       "file": "src/tracking/service.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-condition",
-      "message": "Unnecessary conditional, value is always falsy.",
-      "source": "if (this.stopped) return;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-condition",
-      "message": "Unnecessary conditional, value is always truthy.",
-      "source": "if (!this.stopped && found.found && this.current(d))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unused-vars",
-      "message": "'unfinished' is defined but never used.",
-      "source": "unfinished,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "!!value &&",
@@ -3151,14 +3127,6 @@
       "rule": "TS2375",
       "message": "Type '{ deliveryId: string; number: number; startedAt: number; harnessVersion: string | undefined; outcome: { state: \"sending\"; }; }' is not assignable to type 'DeliveryAttempt' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'harnessVersion' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'.",
       "source": "attempt = {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "tsc",
-      "rule": "TS6133",
-      "message": "'unfinished' is declared but its value is never read.",
-      "source": "unfinished,",
       "count": 1
     },
     {
@@ -4951,7 +4919,7 @@
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
       "source": "store.tracking.deliveries()[0]!.progress.state,",
-      "count": 3
+      "count": 2
     },
     {
       "file": "test/tracking-delivery.test.ts",

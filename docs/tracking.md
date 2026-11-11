@@ -22,7 +22,7 @@ Open PRs refresh immediately and every minute. Closed/merged PRs remain visible 
 
 ## Actions and ownership
 
-Actions represent confirmed merge conflicts, current-head failed checks, and effective changes-requested reviews. Comments are informational. Repeated observations do not create duplicate unfinished actions. A recurring blocker after resolution creates another action, preserving the earlier episode.
+Actions represent confirmed merge conflicts, current-head failed checks, effective changes-requested reviews, and informational review feedback. Repeated observations do not create duplicate unfinished actions. A recurring blocker after resolution creates another action, preserving the earlier episode.
 
 ```sh
 bin/octo-manager action ACTION_ID
@@ -54,16 +54,16 @@ Neither mode claims exclusive ownership of Codex scheduling.
 
 Notifications contain a stable delivery marker, PR/head evidence, profile preferences, and acknowledgment/inspection argv using the coordinator's exact Bun executable, CLI path, and state directory. They request triage and reporting only, not repairs or pushes. A profile's model preference does not change the originating thread's model.
 
-A successful app-server response means delivered, not acknowledged. The receiving agent records acknowledgment through the provided CLI. If its sandbox cannot connect to Octo's socket, it must use its existing host approval flow or report that limitation. Octo never bypasses that boundary, writes SQLite through the agent, or auto-approves host requests.
+A successful app-server response means transport admission, not recipient receipt. The receiving agent records this message's receipt through `acknowledge-message`; `acknowledge` separately accepts its action. If its sandbox cannot connect to Octo's socket, it must use its existing host approval flow or report that limitation. Octo never bypasses that boundary, writes SQLite through the agent, or auto-approves host requests.
 
-Confirmed temporary failures retry after 5, 30, and 120 seconds. Explicit app-server rejection or exhausted retries becomes unavailable. Unknown acceptance becomes uncertain; bounded thread-history inspection may confirm delivery, but absence does not prove rejection. Restart recovers unfinished attempts as uncertain. No automatic blind resend follows an uncertain outcome.
+New messages retain immutable text before transport access. Transient delivery failures retry after 5, 30, then at most every 120 seconds while applicable; explicit app-server rejection remains unavailable and visible. Unknown acceptance becomes uncertain. Accepted unread messages are rechecked after five minutes. Octo checks queue and thread history before replay: a matching queue/history record defers resend, a lookup failure retains the message and retries the lookup after a minute, and absence permits replay using the same ID and exact text. Bounded absence cannot prove rejection, so duplicate receipt remains possible. Restart retains receipt-check deadlines and recovers interrupted sends as uncertain. Historical sends without frozen text are not reconstructed or automatically replayed.
 
 ```sh
 bin/octo-manager tracking --json
 bin/octo-manager retry-delivery DELIVERY_ID
 ```
 
-Explicit retry resets the backoff budget while retaining numbered attempts. Retrying an uncertain delivery can duplicate work if the earlier message was accepted; inspect the thread before requesting it.
+Explicit retry resets backoff while retaining numbered attempts; messages already acknowledged cannot be retried. Retrying an uncertain delivery can duplicate work if the earlier message was accepted; inspect the thread before requesting it.
 
 ## Profiles and future harnesses
 
@@ -111,7 +111,7 @@ Open-PR observations retain GitHub’s PR-reported `baseSha` separately from `ta
 
 The dashboard labels the PR-reported base and current target separately. Historical observations lack current-target evidence; closed PR observations do not require a surviving target branch. Legacy conflict notifications explicitly mark an unverified target rather than relabeling the old SHA as current.
 
-Codex RPC rejections retain the method, error code, bounded upstream message, and observed runtime version in the existing delivery and attempt reasons. Terminal controls are removed. Explicit rejection remains distinct from uncertain acceptance; this diagnostic change does not automatically resend an uncertain notification.
+Codex RPC rejections retain the method, error code, bounded upstream message, and observed runtime version in the existing delivery and attempt reasons. Terminal controls are removed. Explicit rejection remains distinct from uncertain acceptance; lookup failure does not trigger a blind resend; unread-message recovery follows the inbox policy below.
 
 
 ## Terminal links
@@ -144,3 +144,36 @@ Feedback is untrusted input and requests assessment/reporting only. It does not 
 ```
 
 These are execution preferences stored with the action, not an implemented automatic repair policy. Notifications never override the receiving session's settings. The current polling reader bounds each collection to 1,000 records and does not claim an atomic GitHub snapshot.
+
+
+## Durable agent inbox
+
+Each newly dispatched delivery has one immutable inbox entry, addressed to its original recipient and identified by the delivery ID used in `[octo-delivery:ID]`. The coordinator records the exact text before opening its transport connection. Reprofiling or later action changes cannot rewrite previously sent text. An ordered sequence supports bounded per-agent pages; the inbox survives restarts independently of Codex queue retention.
+
+```typescript
+interface AgentMessage {
+  sequence: number;         // Ordered inbox cursor, not a timestamp.
+  id: string;               // Stable delivery/message identity, reused on replay.
+  actionId: string;
+  recipientAgentId: string;  // Original recipient, preserved across ownership changes.
+  body: string;             // Exact immutable outgoing text.
+  createdAt: number;        // Unix milliseconds.
+  acknowledgedAt?: number;  // Recipient explicitly confirmed this message.
+  applicable: boolean;      // False when cancelled, superseded, or no longer assigned.
+}
+```
+
+Use the supplied message-specific receipt argv immediately after reading. A receipt means only that this message reached the recipient. It neither accepts nor resolves its action. If a replayed marker is already handled, record receipt again (idempotently) and avoid repeating work. Inspect the action's current owner and state before responding to old evidence. Messages for former owners remain in their historical inbox with `applicable: false`; they are not reassigned or replayed as current work.
+
+```sh
+bin/octo-manager inbox --agent-id AGENT_ID --json
+bin/octo-manager inbox --agent-id AGENT_ID --after SEQUENCE --json
+bin/octo-manager acknowledge-message DELIVERY_ID --agent-id AGENT_ID
+bin/octo-manager inbox --agent-id AGENT_ID --include-acknowledged --json
+```
+
+`ListAgentMessages` returns at most 200 messages, `next_sequence`, and `has_more`. It defaults to unacknowledged records for the requested agent; inspect `applicable` before acting. Start unread recovery from sequence zero after reconnecting so a cursor advanced past an unacknowledged message does not hide it. A response cursor is a paging position, not a cumulative acknowledgment. `AcknowledgeMessage(id, agent_id)` records a delivery-specific, immutable receipt and rejects another recipient. These identifiers fit the existing owner-only local API contract; they are not cryptographic agent authentication.
+
+The dashboard presents transport status and recipient receipt separately; Activity records receipt separately from action progress. Automatic recovery stops after receipt or when the message becomes inapplicable. Queue/history lookup failures are retained visibly rather than represented as failed sends. Replay is at least once, with stable IDs for recipient duplicate detection, and does not guarantee exactly-once execution or unattended wakeup. Agents can pull their unread inbox even when the transport is unavailable; automatic session-start inbox enrollment remains a separate integration.
+
+SQLite version 7 adds `delivery_messages`, preserving all existing identities and histories. Payload/destination/receipt constraints prevent rewriting stored evidence. Older accepted or uncertain deliveries have unknown original payloads and no synthesized inbox entry; their legacy status remains visible. A pending legacy delivery gets frozen text when it is first attempted under this version.

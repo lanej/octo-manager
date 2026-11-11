@@ -205,7 +205,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
     await connection.prepare(agent);
     const accepted = {
       queueId: "queued",
-      note: "Accepted by the Codex queue; agent acknowledgment is pending.",
+      note: "Accepted by the Codex queue; agent receipt is pending.",
     };
     assert.deepEqual(
       await connection.send(agent, "delivery", "notification"),

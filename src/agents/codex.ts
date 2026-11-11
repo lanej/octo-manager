@@ -38,8 +38,7 @@ export interface AgentAcceptance {
   queueId?: string;
   note?: string;
 }
-const queueNote =
-  "Accepted by the Codex queue; agent acknowledgment is pending.";
+const queueNote = "Accepted by the Codex queue; agent receipt is pending.";
 export interface AgentConnection {
   prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }>;
   send(

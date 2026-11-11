@@ -142,12 +142,13 @@ test("reassignment during an ambiguous send preserves attempt evidence and does 
 });
 test("uncertain sends are reconciled after restart without blindly resending", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-unknown-"));
-  let store = new Store(dir);
+  let at = 1000;
+  let store = new Store(dir, () => at);
   const config = defaultTrackingConfig();
   const p = store.tracking.track(url, target);
   store.tracking.observe(p.id, input, config);
   let sends = 0;
-  let service = new TrackingService(store.tracking, config, Date.now, {
+  let service = new TrackingService(store.tracking, config, () => at, {
     read: async () => input,
     connect: () =>
       connection({
@@ -166,8 +167,8 @@ test("uncertain sends are reconciled after restart without blindly resending", a
     );
     await service.close();
     store.close();
-    store = new Store(dir);
-    service = new TrackingService(store.tracking, config, Date.now, {
+    store = new Store(dir, () => at);
+    service = new TrackingService(store.tracking, config, () => at, {
       read: async () => input,
       connect: () =>
         connection({
@@ -182,6 +183,7 @@ test("uncertain sends are reconciled after restart without blindly resending", a
           },
         }),
     });
+    at += 60000;
     service.tick();
     await until(
       () =>
@@ -200,8 +202,9 @@ test("uncertain sends are reconciled after restart without blindly resending", a
     await rm(dir, { recursive: true, force: true });
   }
 });
-test("bounded retries restart their budget after an explicit retry", async () => {
+test("durable messages keep retrying transient failures and explicit retry resets rejected delivery backoff", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-retry-"));
+  let permanent = false;
   let at = 1000;
   const store = new Store(dir, () => at);
   const config = defaultTrackingConfig();
@@ -212,7 +215,7 @@ test("bounded retries restart their budget after an explicit retry", async () =>
     connect: () =>
       connection({
         prepare: async () => {
-          throw new DeliveryError("Offline");
+          throw new DeliveryError("Offline", false, permanent);
         },
       }),
   });
@@ -224,12 +227,20 @@ test("bounded retries restart their budget after an explicit retry", async () =>
       at += 200000;
     }
     assert.equal(
-      store.tracking.deliveries()[0]!.progress.state,
-      DeliveryState.Unavailable,
+      store.tracking.deliveries()[0]?.progress.state,
+      DeliveryState.Pending,
     );
-    store.tracking.retryDelivery(store.tracking.deliveries()[0]!.id);
+    permanent = true;
     service.tick();
     await until(() => store.tracking.attempts().length === 5);
+    assert.equal(
+      store.tracking.deliveries()[0]?.progress.state,
+      DeliveryState.Unavailable,
+    );
+    permanent = false;
+    store.tracking.retryDelivery(store.tracking.deliveries()[0]!.id);
+    service.tick();
+    await until(() => store.tracking.attempts().length === 6);
     assert.equal(
       store.tracking.deliveries()[0]!.progress.state,
       DeliveryState.Pending,

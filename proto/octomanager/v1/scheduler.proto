@@ -23,6 +23,8 @@ service SchedulerService {
   rpc AcknowledgeAction(AcknowledgeActionRequest) returns (AcknowledgeActionResponse);
   rpc StartAction(StartActionRequest) returns (StartActionResponse);
   rpc RetryDelivery(RetryDeliveryRequest) returns (RetryDeliveryResponse);
+  rpc ListAgentMessages(ListAgentMessagesRequest) returns (ListAgentMessagesResponse);
+  rpc AcknowledgeMessage(AcknowledgeMessageRequest) returns (AcknowledgeMessageResponse);
   rpc ReprofileAction(ReprofileActionRequest) returns (ReprofileActionResponse);
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
   rpc GetJob(GetJobRequest) returns (GetJobResponse);

@@ -1,3 +1,4 @@
+import { AgentInbox } from "./inbox.js";
 import { storedFeedback } from "./feedback.js";
 import { actionContext, targetBase } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
@@ -25,6 +26,7 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  readonly inbox: AgentInbox;
   constructor(
     private db: DatabaseSync,
     private now: () => number,
@@ -37,6 +39,7 @@ export class TrackingStore {
     ) => void,
   ) {
     migrateTracking(db);
+    this.inbox = new AgentInbox(db, now);
   }
   transaction<T>(fn: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -505,8 +508,19 @@ export class TrackingStore {
         updatedAt: this.now(),
       };
       this.saveAction(next, "action_progress");
-      this.cancelDeliveries(a.id, "Action acknowledged");
+
       return next;
+    });
+  }
+  acknowledgeMessage(id: string, agentId: string) {
+    return this.transaction(() => {
+      const before = this.inbox.get(id);
+      const message = this.inbox.acknowledge(id, agentId);
+      if (before?.acknowledgedAt === undefined) {
+        const action = this.action(message.actionId);
+        this.event("message_acknowledged", id, action.prId, action.id);
+      }
+      return message;
     });
   }
   retryDelivery(id: string): Delivery {
@@ -514,6 +528,8 @@ export class TrackingStore {
       const d = this.deliveries().find((d) => d.id === id);
       if (!d) throw new Error("Delivery not found");
       const a = this.action(d.actionId);
+      if (this.inbox.get(id)?.acknowledgedAt !== undefined)
+        throw new Error("Message already acknowledged");
       if (
         !this.pr(a.prId).enabled ||
         !unfinished(a) ||

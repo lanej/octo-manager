@@ -149,3 +149,10 @@ This confirms API admission, queue reconciliation, desktop consumption after an 
 ## Local feedback monitoring
 
 On 2026-11-11, the local coordinator was updated to the feedback implementation and explicitly configured for the proven Codex queue transport. An online backup preceded migration to SQLite version 6. The restarted coordinator preserved both tracked PR identities, passed SQLite foreign-key verification, and refreshed PR #12 through the real GitHub reader. Its Connect snapshot reported complete feedback collection with no comments. No test comment was posted, so live GitHub-comment-to-agent delivery remains unobserved. The controlled feedback journey covers collection, durable actions, owner delivery, edits, and restart; the preceding desktop probe separately established the actual Codex delivery boundary.
+
+
+## Local durable inbox
+
+On 2026-11-11, the local coordinator was backed up and migrated from SQLite version 6 to 7. The restarted inbox-enabled coordinator preserved tracked PR, agent, action, and delivery identities and passed SQLite foreign-key verification. The actual CLI/Connect inbox endpoint returned a valid empty unread page for this Codex session. This validates activation and the live inbox API, not receipt or replay of a newly stored notification.
+
+Controlled regression journeys exercise exact payload persistence before transport access, lost responses, restart deadlines, same-ID replay after missing queue/history evidence, lookup failures, per-recipient pagination, immutable receipt/destination constraints, and receipt races during send and reconciliation. Separate message receipts leave action acceptance and resolution unchanged. The earlier live Codex probe establishes the external queue-consumption boundary; live end-to-end replay through the new inbox remains an acceptance gap.

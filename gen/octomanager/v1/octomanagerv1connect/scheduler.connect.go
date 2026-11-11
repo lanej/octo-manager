@@ -84,6 +84,12 @@ const (
 	// SchedulerServiceRetryDeliveryProcedure is the fully-qualified name of the SchedulerService's
 	// RetryDelivery RPC.
 	SchedulerServiceRetryDeliveryProcedure = "/octomanager.v1.SchedulerService/RetryDelivery"
+	// SchedulerServiceListAgentMessagesProcedure is the fully-qualified name of the SchedulerService's
+	// ListAgentMessages RPC.
+	SchedulerServiceListAgentMessagesProcedure = "/octomanager.v1.SchedulerService/ListAgentMessages"
+	// SchedulerServiceAcknowledgeMessageProcedure is the fully-qualified name of the SchedulerService's
+	// AcknowledgeMessage RPC.
+	SchedulerServiceAcknowledgeMessageProcedure = "/octomanager.v1.SchedulerService/AcknowledgeMessage"
 	// SchedulerServiceReprofileActionProcedure is the fully-qualified name of the SchedulerService's
 	// ReprofileAction RPC.
 	SchedulerServiceReprofileActionProcedure = "/octomanager.v1.SchedulerService/ReprofileAction"
@@ -133,6 +139,8 @@ type SchedulerServiceClient interface {
 	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
 	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
 	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
+	ListAgentMessages(context.Context, *connect.Request[v1.ListAgentMessagesRequest]) (*connect.Response[v1.ListAgentMessagesResponse], error)
+	AcknowledgeMessage(context.Context, *connect.Request[v1.AcknowledgeMessageRequest]) (*connect.Response[v1.AcknowledgeMessageResponse], error)
 	ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error)
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
@@ -258,6 +266,18 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(schedulerServiceMethods.ByName("RetryDelivery")),
 			connect.WithClientOptions(opts...),
 		),
+		listAgentMessages: connect.NewClient[v1.ListAgentMessagesRequest, v1.ListAgentMessagesResponse](
+			httpClient,
+			baseURL+SchedulerServiceListAgentMessagesProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListAgentMessages")),
+			connect.WithClientOptions(opts...),
+		),
+		acknowledgeMessage: connect.NewClient[v1.AcknowledgeMessageRequest, v1.AcknowledgeMessageResponse](
+			httpClient,
+			baseURL+SchedulerServiceAcknowledgeMessageProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeMessage")),
+			connect.WithClientOptions(opts...),
+		),
 		reprofileAction: connect.NewClient[v1.ReprofileActionRequest, v1.ReprofileActionResponse](
 			httpClient,
 			baseURL+SchedulerServiceReprofileActionProcedure,
@@ -340,6 +360,8 @@ type schedulerServiceClient struct {
 	acknowledgeAction         *connect.Client[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse]
 	startAction               *connect.Client[v1.StartActionRequest, v1.StartActionResponse]
 	retryDelivery             *connect.Client[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse]
+	listAgentMessages         *connect.Client[v1.ListAgentMessagesRequest, v1.ListAgentMessagesResponse]
+	acknowledgeMessage        *connect.Client[v1.AcknowledgeMessageRequest, v1.AcknowledgeMessageResponse]
 	reprofileAction           *connect.Client[v1.ReprofileActionRequest, v1.ReprofileActionResponse]
 	submitJob                 *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
 	getJob                    *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
@@ -437,6 +459,16 @@ func (c *schedulerServiceClient) RetryDelivery(ctx context.Context, req *connect
 	return c.retryDelivery.CallUnary(ctx, req)
 }
 
+// ListAgentMessages calls octomanager.v1.SchedulerService.ListAgentMessages.
+func (c *schedulerServiceClient) ListAgentMessages(ctx context.Context, req *connect.Request[v1.ListAgentMessagesRequest]) (*connect.Response[v1.ListAgentMessagesResponse], error) {
+	return c.listAgentMessages.CallUnary(ctx, req)
+}
+
+// AcknowledgeMessage calls octomanager.v1.SchedulerService.AcknowledgeMessage.
+func (c *schedulerServiceClient) AcknowledgeMessage(ctx context.Context, req *connect.Request[v1.AcknowledgeMessageRequest]) (*connect.Response[v1.AcknowledgeMessageResponse], error) {
+	return c.acknowledgeMessage.CallUnary(ctx, req)
+}
+
 // ReprofileAction calls octomanager.v1.SchedulerService.ReprofileAction.
 func (c *schedulerServiceClient) ReprofileAction(ctx context.Context, req *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error) {
 	return c.reprofileAction.CallUnary(ctx, req)
@@ -506,6 +538,8 @@ type SchedulerServiceHandler interface {
 	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
 	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
 	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
+	ListAgentMessages(context.Context, *connect.Request[v1.ListAgentMessagesRequest]) (*connect.Response[v1.ListAgentMessagesResponse], error)
+	AcknowledgeMessage(context.Context, *connect.Request[v1.AcknowledgeMessageRequest]) (*connect.Response[v1.AcknowledgeMessageResponse], error)
 	ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error)
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
@@ -627,6 +661,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		connect.WithSchema(schedulerServiceMethods.ByName("RetryDelivery")),
 		connect.WithHandlerOptions(opts...),
 	)
+	schedulerServiceListAgentMessagesHandler := connect.NewUnaryHandler(
+		SchedulerServiceListAgentMessagesProcedure,
+		svc.ListAgentMessages,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListAgentMessages")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceAcknowledgeMessageHandler := connect.NewUnaryHandler(
+		SchedulerServiceAcknowledgeMessageProcedure,
+		svc.AcknowledgeMessage,
+		connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceReprofileActionHandler := connect.NewUnaryHandler(
 		SchedulerServiceReprofileActionProcedure,
 		svc.ReprofileAction,
@@ -723,6 +769,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceStartActionHandler.ServeHTTP(w, r)
 		case SchedulerServiceRetryDeliveryProcedure:
 			schedulerServiceRetryDeliveryHandler.ServeHTTP(w, r)
+		case SchedulerServiceListAgentMessagesProcedure:
+			schedulerServiceListAgentMessagesHandler.ServeHTTP(w, r)
+		case SchedulerServiceAcknowledgeMessageProcedure:
+			schedulerServiceAcknowledgeMessageHandler.ServeHTTP(w, r)
 		case SchedulerServiceReprofileActionProcedure:
 			schedulerServiceReprofileActionHandler.ServeHTTP(w, r)
 		case SchedulerServiceSubmitJobProcedure:
@@ -818,6 +868,14 @@ func (UnimplementedSchedulerServiceHandler) StartAction(context.Context, *connec
 
 func (UnimplementedSchedulerServiceHandler) RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RetryDelivery is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListAgentMessages(context.Context, *connect.Request[v1.ListAgentMessagesRequest]) (*connect.Response[v1.ListAgentMessagesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListAgentMessages is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) AcknowledgeMessage(context.Context, *connect.Request[v1.AcknowledgeMessageRequest]) (*connect.Response[v1.AcknowledgeMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.AcknowledgeMessage is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) ReprofileAction(context.Context, *connect.Request[v1.ReprofileActionRequest]) (*connect.Response[v1.ReprofileActionResponse], error) {

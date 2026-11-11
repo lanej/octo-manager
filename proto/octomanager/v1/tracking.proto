@@ -98,6 +98,8 @@ message ActionDelivery {
   string progress_json = 5;
   int64 created_at_ms = 6;
   int64 updated_at_ms = 7;
+  optional uint64 message_sequence = 8;
+  optional int64 acknowledged_at_ms = 9;
 }
 message DeliveryAttempt {
   string delivery_id = 1;
@@ -138,3 +140,18 @@ message StartActionRequest { string id = 1; string agent_id = 2; }
 message StartActionResponse { PendingAction action = 1; }
 message ReprofileActionRequest { string id = 1; }
 message ReprofileActionResponse { PendingAction action = 1; }
+
+message AgentMessage {
+  uint64 sequence = 1;
+  string id = 2;
+  string action_id = 3;
+  string recipient_agent_id = 4;
+  string body = 5;
+  int64 created_at_ms = 6;
+  optional int64 acknowledged_at_ms = 7;
+  bool applicable = 8;
+}
+message ListAgentMessagesRequest { string agent_id = 1; uint64 after_sequence = 2; bool include_acknowledged = 3; }
+message ListAgentMessagesResponse { repeated AgentMessage messages = 1; uint64 next_sequence = 2; bool has_more = 3; }
+message AcknowledgeMessageRequest { string id = 1; string agent_id = 2; }
+message AcknowledgeMessageResponse { AgentMessage message = 1; }

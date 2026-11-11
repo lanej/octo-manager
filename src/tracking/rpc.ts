@@ -1,3 +1,4 @@
+import type { AgentMessage } from "./inbox.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import {
@@ -115,12 +116,18 @@ export function wireAction(a: Action) {
     updatedAtMs: BigInt(a.updatedAt),
   });
 }
-export function wireDelivery(d: Delivery) {
+export function wireDelivery(d: Delivery, message?: AgentMessage) {
   return create(ActionDeliverySchema, {
     id: d.id,
     actionId: d.actionId,
     recipientAgentId: d.recipientAgentId,
     state: deliveryStates[d.progress.state],
+    ...(message === undefined
+      ? {}
+      : { messageSequence: BigInt(message.sequence) }),
+    ...(message?.acknowledgedAt === undefined
+      ? {}
+      : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
     progressJson: JSON.stringify(d.progress),
     createdAtMs: BigInt(d.createdAt),
     updatedAtMs: BigInt(d.updatedAt),
@@ -146,7 +153,9 @@ export function wireTracking(service: TrackingService) {
       }),
     ),
     actions: s.actions.map(wireAction),
-    deliveries: s.deliveries.map(wireDelivery),
+    deliveries: s.deliveries.map((delivery) =>
+      wireDelivery(delivery, service.store.inbox.get(delivery.id)),
+    ),
     attempts: s.attempts.map((a) => ({
       deliveryId: a.deliveryId,
       number: a.number,

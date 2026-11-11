@@ -188,3 +188,27 @@ func TestTrackingPresentsReviewFeedbackAndLocation(t *testing.T) {
 		}
 	}
 }
+
+func TestTrackingDistinguishesMessageReceiptFromTransportAdmission(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	delivery := &v1.ActionDelivery{Id: "message", ActionId: "action", State: v1.DeliveryState_DELIVERY_STATE_DELIVERED, MessageSequence: new(uint64(1))}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs:        []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}},
+		Actions:    []*v1.PendingAction{{Id: "action", PrId: "pr", Summary: "Review feedback", State: v1.ActionState_ACTION_STATE_OPEN}},
+		Deliveries: []*v1.ActionDelivery{delivery},
+	}
+	m.selected = ""
+	m.ensureSelection()
+
+	if !strings.Contains(ansi.Strip(m.trackingContent()), "Awaiting agent receipt") {
+		t.Fatal("queue admission was presented as recipient receipt")
+	}
+
+	delivery.AcknowledgedAtMs = new(int64(1000))
+	view := ansi.Strip(m.trackingContent())
+
+	if !strings.Contains(view, "Agent received") || strings.Contains(view, "Awaiting agent receipt") {
+		t.Fatal("message-specific receipt was not presented")
+	}
+}

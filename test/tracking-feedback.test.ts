@@ -182,7 +182,7 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     // Simulate an existing v5 database, including durable actions, receipts and acknowledgment.
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
     db.exec(
-      "ALTER TABLE pr_observations DROP COLUMN feedback_json; PRAGMA user_version=5",
+      "DROP TRIGGER immutable_message_recipient; DROP TABLE delivery_messages; ALTER TABLE pr_observations DROP COLUMN feedback_json; PRAGMA user_version=5",
     );
     db.close();
     store = new Store(directory);

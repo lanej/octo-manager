@@ -1175,6 +1175,8 @@ type ActionDelivery struct {
 	ProgressJson     string                 `protobuf:"bytes,5,opt,name=progress_json,json=progressJson,proto3" json:"progress_json,omitempty"`
 	CreatedAtMs      int64                  `protobuf:"varint,6,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
 	UpdatedAtMs      int64                  `protobuf:"varint,7,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	MessageSequence  *uint64                `protobuf:"varint,8,opt,name=message_sequence,json=messageSequence,proto3,oneof" json:"message_sequence,omitempty"`
+	AcknowledgedAtMs *int64                 `protobuf:"varint,9,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1254,6 +1256,20 @@ func (x *ActionDelivery) GetCreatedAtMs() int64 {
 func (x *ActionDelivery) GetUpdatedAtMs() int64 {
 	if x != nil {
 		return x.UpdatedAtMs
+	}
+	return 0
+}
+
+func (x *ActionDelivery) GetMessageSequence() uint64 {
+	if x != nil && x.MessageSequence != nil {
+		return *x.MessageSequence
+	}
+	return 0
+}
+
+func (x *ActionDelivery) GetAcknowledgedAtMs() int64 {
+	if x != nil && x.AcknowledgedAtMs != nil {
+		return *x.AcknowledgedAtMs
 	}
 	return 0
 }
@@ -2490,6 +2506,322 @@ func (x *ReprofileActionResponse) GetAction() *PendingAction {
 	return nil
 }
 
+type AgentMessage struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Sequence         uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Id               string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	ActionId         string                 `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	RecipientAgentId string                 `protobuf:"bytes,4,opt,name=recipient_agent_id,json=recipientAgentId,proto3" json:"recipient_agent_id,omitempty"`
+	Body             string                 `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	CreatedAtMs      int64                  `protobuf:"varint,6,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	AcknowledgedAtMs *int64                 `protobuf:"varint,7,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
+	Applicable       bool                   `protobuf:"varint,8,opt,name=applicable,proto3" json:"applicable,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AgentMessage) Reset() {
+	*x = AgentMessage{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentMessage) ProtoMessage() {}
+
+func (x *AgentMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
+func (*AgentMessage) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *AgentMessage) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *AgentMessage) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetRecipientAgentId() string {
+	if x != nil {
+		return x.RecipientAgentId
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *AgentMessage) GetAcknowledgedAtMs() int64 {
+	if x != nil && x.AcknowledgedAtMs != nil {
+		return *x.AcknowledgedAtMs
+	}
+	return 0
+}
+
+func (x *AgentMessage) GetApplicable() bool {
+	if x != nil {
+		return x.Applicable
+	}
+	return false
+}
+
+type ListAgentMessagesRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	AgentId             string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AfterSequence       uint64                 `protobuf:"varint,2,opt,name=after_sequence,json=afterSequence,proto3" json:"after_sequence,omitempty"`
+	IncludeAcknowledged bool                   `protobuf:"varint,3,opt,name=include_acknowledged,json=includeAcknowledged,proto3" json:"include_acknowledged,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ListAgentMessagesRequest) Reset() {
+	*x = ListAgentMessagesRequest{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAgentMessagesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAgentMessagesRequest) ProtoMessage() {}
+
+func (x *ListAgentMessagesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAgentMessagesRequest.ProtoReflect.Descriptor instead.
+func (*ListAgentMessagesRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *ListAgentMessagesRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *ListAgentMessagesRequest) GetAfterSequence() uint64 {
+	if x != nil {
+		return x.AfterSequence
+	}
+	return 0
+}
+
+func (x *ListAgentMessagesRequest) GetIncludeAcknowledged() bool {
+	if x != nil {
+		return x.IncludeAcknowledged
+	}
+	return false
+}
+
+type ListAgentMessagesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Messages      []*AgentMessage        `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	NextSequence  uint64                 `protobuf:"varint,2,opt,name=next_sequence,json=nextSequence,proto3" json:"next_sequence,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAgentMessagesResponse) Reset() {
+	*x = ListAgentMessagesResponse{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAgentMessagesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAgentMessagesResponse) ProtoMessage() {}
+
+func (x *ListAgentMessagesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAgentMessagesResponse.ProtoReflect.Descriptor instead.
+func (*ListAgentMessagesResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *ListAgentMessagesResponse) GetMessages() []*AgentMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+func (x *ListAgentMessagesResponse) GetNextSequence() uint64 {
+	if x != nil {
+		return x.NextSequence
+	}
+	return 0
+}
+
+func (x *ListAgentMessagesResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+type AcknowledgeMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcknowledgeMessageRequest) Reset() {
+	*x = AcknowledgeMessageRequest{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcknowledgeMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcknowledgeMessageRequest) ProtoMessage() {}
+
+func (x *AcknowledgeMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcknowledgeMessageRequest.ProtoReflect.Descriptor instead.
+func (*AcknowledgeMessageRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *AcknowledgeMessageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AcknowledgeMessageRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type AcknowledgeMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *AgentMessage          `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcknowledgeMessageResponse) Reset() {
+	*x = AcknowledgeMessageResponse{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcknowledgeMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcknowledgeMessageResponse) ProtoMessage() {}
+
+func (x *AcknowledgeMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcknowledgeMessageResponse.ProtoReflect.Descriptor instead.
+func (*AcknowledgeMessageResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *AcknowledgeMessageResponse) GetMessage() *AgentMessage {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
 var File_octomanager_v1_tracking_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_tracking_proto_rawDesc = "" +
@@ -2608,7 +2940,7 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x0f_progress_at_msB\x14\n" +
 	"\x12_progress_agent_idB\x1a\n" +
 	"\x18_resolved_observation_idB\x0f\n" +
-	"\r_close_reason\"\x8d\x02\n" +
+	"\r_close_reason\"\x9c\x03\n" +
 	"\x0eActionDelivery\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12,\n" +
@@ -2616,7 +2948,11 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x05state\x18\x04 \x01(\x0e2\x1d.octomanager.v1.DeliveryStateR\x05state\x12#\n" +
 	"\rprogress_json\x18\x05 \x01(\tR\fprogressJson\x12\"\n" +
 	"\rcreated_at_ms\x18\x06 \x01(\x03R\vcreatedAtMs\x12\"\n" +
-	"\rupdated_at_ms\x18\a \x01(\x03R\vupdatedAtMs\"\xd3\x01\n" +
+	"\rupdated_at_ms\x18\a \x01(\x03R\vupdatedAtMs\x12.\n" +
+	"\x10message_sequence\x18\b \x01(\x04H\x00R\x0fmessageSequence\x88\x01\x01\x121\n" +
+	"\x12acknowledged_at_ms\x18\t \x01(\x03H\x01R\x10acknowledgedAtMs\x88\x01\x01B\x13\n" +
+	"\x11_message_sequenceB\x15\n" +
+	"\x13_acknowledged_at_ms\"\xd3\x01\n" +
 	"\x0fDeliveryAttempt\x12\x1f\n" +
 	"\vdelivery_id\x18\x01 \x01(\tR\n" +
 	"deliveryId\x12\x16\n" +
@@ -2684,7 +3020,32 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x16ReprofileActionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"P\n" +
 	"\x17ReprofileActionResponse\x125\n" +
-	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v1.PendingActionR\x06action*\xb3\x01\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v1.PendingActionR\x06action\"\xa7\x02\n" +
+	"\fAgentMessage\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x1b\n" +
+	"\taction_id\x18\x03 \x01(\tR\bactionId\x12,\n" +
+	"\x12recipient_agent_id\x18\x04 \x01(\tR\x10recipientAgentId\x12\x12\n" +
+	"\x04body\x18\x05 \x01(\tR\x04body\x12\"\n" +
+	"\rcreated_at_ms\x18\x06 \x01(\x03R\vcreatedAtMs\x121\n" +
+	"\x12acknowledged_at_ms\x18\a \x01(\x03H\x00R\x10acknowledgedAtMs\x88\x01\x01\x12\x1e\n" +
+	"\n" +
+	"applicable\x18\b \x01(\bR\n" +
+	"applicableB\x15\n" +
+	"\x13_acknowledged_at_ms\"\x8f\x01\n" +
+	"\x18ListAgentMessagesRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12%\n" +
+	"\x0eafter_sequence\x18\x02 \x01(\x04R\rafterSequence\x121\n" +
+	"\x14include_acknowledged\x18\x03 \x01(\bR\x13includeAcknowledged\"\x95\x01\n" +
+	"\x19ListAgentMessagesResponse\x128\n" +
+	"\bmessages\x18\x01 \x03(\v2\x1c.octomanager.v1.AgentMessageR\bmessages\x12#\n" +
+	"\rnext_sequence\x18\x02 \x01(\x04R\fnextSequence\x12\x19\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore\"F\n" +
+	"\x19AcknowledgeMessageRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"T\n" +
+	"\x1aAcknowledgeMessageResponse\x126\n" +
+	"\amessage\x18\x01 \x01(\v2\x1c.octomanager.v1.AgentMessageR\amessage*\xb3\x01\n" +
 	"\vActionState\x12\x1c\n" +
 	"\x18ACTION_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ACTION_STATE_OPEN\x10\x01\x12\x1d\n" +
@@ -2714,7 +3075,7 @@ func file_octomanager_v1_tracking_proto_rawDescGZIP() []byte {
 }
 
 var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(ActionState)(0),                          // 0: octomanager.v1.ActionState
 	(DeliveryState)(0),                        // 1: octomanager.v1.DeliveryState
@@ -2756,6 +3117,11 @@ var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(*StartActionResponse)(nil),               // 37: octomanager.v1.StartActionResponse
 	(*ReprofileActionRequest)(nil),            // 38: octomanager.v1.ReprofileActionRequest
 	(*ReprofileActionResponse)(nil),           // 39: octomanager.v1.ReprofileActionResponse
+	(*AgentMessage)(nil),                      // 40: octomanager.v1.AgentMessage
+	(*ListAgentMessagesRequest)(nil),          // 41: octomanager.v1.ListAgentMessagesRequest
+	(*ListAgentMessagesResponse)(nil),         // 42: octomanager.v1.ListAgentMessagesResponse
+	(*AcknowledgeMessageRequest)(nil),         // 43: octomanager.v1.AcknowledgeMessageRequest
+	(*AcknowledgeMessageResponse)(nil),        // 44: octomanager.v1.AcknowledgeMessageResponse
 }
 var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	2,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
@@ -2787,11 +3153,13 @@ var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	12, // 26: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
 	12, // 27: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
 	12, // 28: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	40, // 29: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
+	40, // 30: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
+	31, // [31:31] is the sub-list for method output_type
+	31, // [31:31] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_tracking_proto_init() }
@@ -2812,15 +3180,17 @@ func file_octomanager_v1_tracking_proto_init() {
 		(*PendingAction_ChangesRequested)(nil),
 		(*PendingAction_ReviewFeedback)(nil),
 	}
+	file_octomanager_v1_tracking_proto_msgTypes[11].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[12].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[18].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_tracking_proto_rawDesc), len(file_octomanager_v1_tracking_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   38,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -66,6 +66,10 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 		row.title, row.detail = "Notifying agent", "Sending the blocker to the responsible session."
 	case "delivery_delivered", "delivery_reconciled":
 		row.title, row.detail = "Notification accepted", "Codex accepted the notification for delivery; agent receipt and acknowledgment are unverified."
+	case "message_acknowledged":
+		row.title, row.detail = "Agent received notification", "The recipient recorded receipt; action acceptance and resolution remain separate."
+	case "delivery_receipt_unavailable":
+		row.title, row.detail = "Receipt check unavailable", "The inbox message is retained; recipient receipt remains unverified."
 	case "delivery_uncertain":
 		row.title, row.detail = "Notification unconfirmed", "The send may have reached the agent. Confirmation is unavailable."
 	case "delivery_unavailable":

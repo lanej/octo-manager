@@ -48,7 +48,7 @@ export class ConflictStore {
  inputs_json TEXT CHECK(inputs_json IS NULL OR json_valid(inputs_json)),candidate TEXT,agent_result TEXT,created_at_ms INTEGER NOT NULL,
  UNIQUE(repair_id,round,path,recipe)) STRICT;
  CREATE INDEX cases_by_recipe ON conflict_cases(recipe,decision,id); PRAGMA user_version=5; COMMIT;`);
-    else if (version !== 5 && version !== 6)
+    else if (version !== 5 && version !== 6 && version !== 7)
       throw new Error("Unsupported conflict database version");
   }
   private decode(row: Record<string, unknown>): ConflictCase {
