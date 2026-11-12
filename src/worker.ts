@@ -1,3 +1,5 @@
+import { workerResultText } from "./worker-result.js";
+import type { StageTask } from "./submissions/contracts.js";
 import { repairWorkerTask, record, single, type RepairWorkerTask } from "./repairs/types.js";
 import { createAgentSession, DefaultResourceLoader, getAgentDir, SessionManager, SettingsManager, type AgentSession, type ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
@@ -37,7 +39,7 @@ process.on("message", (value: unknown) => {
       started = true;
       const number = message["attempt"]; if(typeof number !== "number")throw new Error("Invalid worker attempt"); attempt = number;
       const raw = record(message["task"]);
-      const task = raw["kind"] === "repair_conflicts" ? repairWorkerTask(raw) : parseTask(raw);
+      const task = raw["kind"] === "pr_stage" ? prStage(raw) : raw["kind"] === "repair_conflicts" ? repairWorkerTask(raw) : parseTask(raw);
       run(task, single(message["model"], "model")).catch(() => { stop(); });
     }
   } catch { stop(); }
@@ -60,7 +62,21 @@ function diagnosis(error: unknown): string {
   if (/budget/i.test(message)) return "Attempt exceeded the model turn or tool budget";
   return "Pi worker failed; check provider access and model configuration";
 }
-async function run(task: Task | RepairWorkerTask, modelId: string): Promise<void> {
+function prStage(raw: Record<string, unknown>): StageTask {
+  const role = raw["role"];
+  if (role !== "policy" && role !== "change" && role !== "writer")
+    throw new Error("Invalid PR worker role");
+  const instructions = raw["instructions"];
+  if (
+    typeof instructions !== "string" ||
+    instructions.length === 0 ||
+    instructions.length > 160000
+  )
+    throw new Error("Invalid PR instructions");
+  const schema = record(raw["schema"]);
+  return { kind: "pr_stage", role, instructions, schema, input: raw["input"] };
+}
+async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): Promise<void> {
   let flushTimer: NodeJS.Timeout | undefined;
   let budgetExceeded = false;
   try {
@@ -69,7 +85,7 @@ async function run(task: Task | RepairWorkerTask, modelId: string): Promise<void
     await send({ type: "progress", text: `Using existing ${source === "codex" ? "Codex" : "Pi"} ChatGPT authentication` });
     const model = runtime.getModel("openai-codex", modelId);
     if (!model) throw new Error("Unknown model");
-    const tools: ToolDefinition[] = task.kind === "repair_conflicts" ? [
+    const tools: ToolDefinition[] = task.kind === "pr_stage" ? [] : task.kind === "repair_conflicts" ? [
       tool("read_file", "Read a tracked text file in the isolated repair checkout.", Type.Object({ path: Type.String() }, { additionalProperties: false })),
       tool("write_file", "Write a resolved text file from the current conflict set. Octo alone stages, rebases, validates, and pushes.", Type.Object({ path: Type.String(), content: Type.String() }, { additionalProperties: false })),
     ] : task.kind === "resolve_conflict" ? [
@@ -86,16 +102,16 @@ async function run(task: Task | RepairWorkerTask, modelId: string): Promise<void
     const flush = () => { if (output) { send({ type: "progress", text: cleanText(output, 2000) }); output = ""; } };
     flushTimer = setInterval(flush, 250);
     session.subscribe(event => {
-      if (event.type === "turn_start" && ++turns > 12 || event.type === "tool_execution_start" && ++toolCalls > 40) { budgetExceeded = true; void session!.abort(); }
+      if (event.type === "turn_start" && ++turns > (task.kind === "pr_stage" ? 1 : 12) || event.type === "tool_execution_start" && ++toolCalls > 40) { budgetExceeded = true; const current = session; if (current !== undefined) current.abort().catch(() => { process.exit(1); }); }
       if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") output = (output + event.assistantMessageEvent.delta).slice(-2000);
     });
-    await session.prompt(task.kind === "repair_conflicts" ? `Resolve only these conflicted files: ${JSON.stringify(task.paths)}. Read the files before writing. Preserve intended changes from both sides. If intent is unclear, report why you cannot safely resolve it. Instructions: ${task.instructions}` : task.kind === "resolve_conflict" ? conflictBrief : `Read and summarize this public PR: ${task.url}. Describe its purpose and current state. Do not inspect or change other objects.`);
+    await session.prompt(task.kind === "pr_stage" ? `${task.instructions}\nSchema: ${JSON.stringify(task.schema)}\nInput data: ${JSON.stringify(task.input)}` : task.kind === "repair_conflicts" ? `Resolve only these conflicted files: ${JSON.stringify(task.paths)}. Read the files before writing. Preserve intended changes from both sides. If intent is unclear, report why you cannot safely resolve it. Instructions: ${task.instructions}` : task.kind === "resolve_conflict" ? conflictBrief : `Read and summarize this public PR: ${task.url}. Describe its purpose and current state. Do not inspect or change other objects.`);
     flush();
     if (budgetExceeded) throw new Error("Budget exceeded");
     if (aborted) return;
     const last = [...session.messages].reverse().find(message => message.role === "assistant");
     if (last?.role === "assistant" && (last.stopReason === "error" || last.stopReason === "aborted" || last.stopReason === "length")) throw new Error(last.errorMessage ?? `Provider response ${last.stopReason}`);
-    await send({ type: "done", text: cleanText(session.getLastAssistantText() ?? "") });
+    await send({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
   } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error) }); }
   finally {
     if (flushTimer) clearInterval(flushTimer);

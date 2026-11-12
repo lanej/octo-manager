@@ -1,0 +1,418 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "version",
+    "sourceDigest",
+    "analystVersion",
+    "stockVersion",
+    "createdAtMs",
+    "sources",
+    "analysis"
+  ],
+  "properties": {
+    "complexityProfiles": {
+      "type": "object",
+      "required": [
+        "routine",
+        "standard",
+        "complex"
+      ],
+      "properties": {
+        "routine": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        },
+        "standard": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        },
+        "complex": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        }
+      },
+      "additionalProperties": false
+    },
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sourceDigest": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "analystVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "stockVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "createdAtMs": {
+      "type": "integer"
+    },
+    "citationCorrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ruleId",
+          "reportedLine",
+          "verifiedLine"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "reportedLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "verifiedLine": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha",
+          "text"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "sha": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 131072
+          }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 100
+    },
+    "analysis": {
+      "type": "object",
+      "required": [
+        "requirements",
+        "template",
+        "blockers"
+      ],
+      "properties": {
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "strength",
+              "category",
+              "description",
+              "sourcePath",
+              "sourceSha",
+              "line",
+              "quote",
+              "scope",
+              "check"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "strength": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "required"
+                  },
+                  {
+                    "type": "string",
+                    "const": "recommended"
+                  }
+                ]
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "title"
+                  },
+                  {
+                    "type": "string",
+                    "const": "content"
+                  },
+                  {
+                    "type": "string",
+                    "const": "evidence"
+                  },
+                  {
+                    "type": "string",
+                    "const": "format"
+                  },
+                  {
+                    "type": "string",
+                    "const": "workflow"
+                  }
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "sourcePath": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "sourceSha": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "check": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "body_contains"
+                      },
+                      "value": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "prefixes"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "title_prefix"
+                      },
+                      "prefixes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "minItems": 1,
+                        "maxItems": 30
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "maximum"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "title_max_length"
+                      },
+                      "maximum": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "evidence_required"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "semantic"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        },
+        "template": {
+          "type": "string",
+          "maxLength": 32000
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "maxItems": 30
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

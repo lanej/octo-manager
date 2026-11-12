@@ -1,3 +1,5 @@
+import { migrateSubmissions } from "./submissions/schema.js";
+import { SubmissionStore } from "./submissions/store.js";
 import { migrateChecks } from "./tracking/checks-schema.js";
 import { migrateInbox } from "./tracking/inbox.js";
 import { migrateFeedback } from "./tracking/feedback-schema.js";
@@ -24,6 +26,7 @@ export class Store {
   readonly activity: ActivityStore;
   readonly repairs: RepairStore;
   readonly conflicts: ConflictStore;
+  readonly submissions: SubmissionStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -49,6 +52,8 @@ export class Store {
       migrateFeedback(this.db);
       migrateInbox(this.db);
       migrateChecks(this.db);
+      migrateSubmissions(this.db);
+      this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }

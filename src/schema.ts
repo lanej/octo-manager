@@ -9,7 +9,8 @@ export function migrateEvidence(db: DatabaseSync): void {
       row?.["user_version"] === 5 ||
       row?.["user_version"] === 6 ||
       row?.["user_version"] === 7 ||
-      row?.["user_version"] === 8
+      row?.["user_version"] === 8 ||
+      row?.["user_version"] === 9
     )
       return;
     throw new Error("Unsupported evidence database version");

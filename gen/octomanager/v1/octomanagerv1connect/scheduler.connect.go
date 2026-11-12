@@ -33,6 +33,24 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceSubmitPullRequestProcedure is the fully-qualified name of the SchedulerService's
+	// SubmitPullRequest RPC.
+	SchedulerServiceSubmitPullRequestProcedure = "/octomanager.v1.SchedulerService/SubmitPullRequest"
+	// SchedulerServiceGetSubmissionProcedure is the fully-qualified name of the SchedulerService's
+	// GetSubmission RPC.
+	SchedulerServiceGetSubmissionProcedure = "/octomanager.v1.SchedulerService/GetSubmission"
+	// SchedulerServiceListSubmissionsProcedure is the fully-qualified name of the SchedulerService's
+	// ListSubmissions RPC.
+	SchedulerServiceListSubmissionsProcedure = "/octomanager.v1.SchedulerService/ListSubmissions"
+	// SchedulerServiceRetrySubmissionProcedure is the fully-qualified name of the SchedulerService's
+	// RetrySubmission RPC.
+	SchedulerServiceRetrySubmissionProcedure = "/octomanager.v1.SchedulerService/RetrySubmission"
+	// SchedulerServiceCancelSubmissionProcedure is the fully-qualified name of the SchedulerService's
+	// CancelSubmission RPC.
+	SchedulerServiceCancelSubmissionProcedure = "/octomanager.v1.SchedulerService/CancelSubmission"
+	// SchedulerServiceGetRepositoryPolicyProcedure is the fully-qualified name of the
+	// SchedulerService's GetRepositoryPolicy RPC.
+	SchedulerServiceGetRepositoryPolicyProcedure = "/octomanager.v1.SchedulerService/GetRepositoryPolicy"
 	// SchedulerServiceListConflictCasesProcedure is the fully-qualified name of the SchedulerService's
 	// ListConflictCases RPC.
 	SchedulerServiceListConflictCasesProcedure = "/octomanager.v1.SchedulerService/ListConflictCases"
@@ -125,6 +143,12 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v1.SchedulerService service.
 type SchedulerServiceClient interface {
+	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
+	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
+	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
+	RetrySubmission(context.Context, *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error)
+	CancelSubmission(context.Context, *connect.Request[v1.CancelSubmissionRequest]) (*connect.Response[v1.CancelSubmissionResponse], error)
+	GetRepositoryPolicy(context.Context, *connect.Request[v1.GetRepositoryPolicyRequest]) (*connect.Response[v1.GetRepositoryPolicyResponse], error)
 	ListConflictCases(context.Context, *connect.Request[v1.ListConflictCasesRequest]) (*connect.Response[v1.ListConflictCasesResponse], error)
 	GetConflictCase(context.Context, *connect.Request[v1.GetConflictCaseRequest]) (*connect.Response[v1.GetConflictCaseResponse], error)
 	RequestRebase(context.Context, *connect.Request[v1.RequestRebaseRequest]) (*connect.Response[v1.RequestRebaseResponse], error)
@@ -168,6 +192,42 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		submitPullRequest: connect.NewClient[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceSubmitPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("SubmitPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		getSubmission: connect.NewClient[v1.GetSubmissionRequest, v1.GetSubmissionResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetSubmissionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetSubmission")),
+			connect.WithClientOptions(opts...),
+		),
+		listSubmissions: connect.NewClient[v1.ListSubmissionsRequest, v1.ListSubmissionsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListSubmissionsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListSubmissions")),
+			connect.WithClientOptions(opts...),
+		),
+		retrySubmission: connect.NewClient[v1.RetrySubmissionRequest, v1.RetrySubmissionResponse](
+			httpClient,
+			baseURL+SchedulerServiceRetrySubmissionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RetrySubmission")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelSubmission: connect.NewClient[v1.CancelSubmissionRequest, v1.CancelSubmissionResponse](
+			httpClient,
+			baseURL+SchedulerServiceCancelSubmissionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("CancelSubmission")),
+			connect.WithClientOptions(opts...),
+		),
+		getRepositoryPolicy: connect.NewClient[v1.GetRepositoryPolicyRequest, v1.GetRepositoryPolicyResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetRepositoryPolicyProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetRepositoryPolicy")),
+			connect.WithClientOptions(opts...),
+		),
 		listConflictCases: connect.NewClient[v1.ListConflictCasesRequest, v1.ListConflictCasesResponse](
 			httpClient,
 			baseURL+SchedulerServiceListConflictCasesProcedure,
@@ -353,6 +413,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	submitPullRequest         *connect.Client[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse]
+	getSubmission             *connect.Client[v1.GetSubmissionRequest, v1.GetSubmissionResponse]
+	listSubmissions           *connect.Client[v1.ListSubmissionsRequest, v1.ListSubmissionsResponse]
+	retrySubmission           *connect.Client[v1.RetrySubmissionRequest, v1.RetrySubmissionResponse]
+	cancelSubmission          *connect.Client[v1.CancelSubmissionRequest, v1.CancelSubmissionResponse]
+	getRepositoryPolicy       *connect.Client[v1.GetRepositoryPolicyRequest, v1.GetRepositoryPolicyResponse]
 	listConflictCases         *connect.Client[v1.ListConflictCasesRequest, v1.ListConflictCasesResponse]
 	getConflictCase           *connect.Client[v1.GetConflictCaseRequest, v1.GetConflictCaseResponse]
 	requestRebase             *connect.Client[v1.RequestRebaseRequest, v1.RequestRebaseResponse]
@@ -383,6 +449,36 @@ type schedulerServiceClient struct {
 	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
 	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
 	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+}
+
+// SubmitPullRequest calls octomanager.v1.SchedulerService.SubmitPullRequest.
+func (c *schedulerServiceClient) SubmitPullRequest(ctx context.Context, req *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error) {
+	return c.submitPullRequest.CallUnary(ctx, req)
+}
+
+// GetSubmission calls octomanager.v1.SchedulerService.GetSubmission.
+func (c *schedulerServiceClient) GetSubmission(ctx context.Context, req *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error) {
+	return c.getSubmission.CallUnary(ctx, req)
+}
+
+// ListSubmissions calls octomanager.v1.SchedulerService.ListSubmissions.
+func (c *schedulerServiceClient) ListSubmissions(ctx context.Context, req *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error) {
+	return c.listSubmissions.CallUnary(ctx, req)
+}
+
+// RetrySubmission calls octomanager.v1.SchedulerService.RetrySubmission.
+func (c *schedulerServiceClient) RetrySubmission(ctx context.Context, req *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error) {
+	return c.retrySubmission.CallUnary(ctx, req)
+}
+
+// CancelSubmission calls octomanager.v1.SchedulerService.CancelSubmission.
+func (c *schedulerServiceClient) CancelSubmission(ctx context.Context, req *connect.Request[v1.CancelSubmissionRequest]) (*connect.Response[v1.CancelSubmissionResponse], error) {
+	return c.cancelSubmission.CallUnary(ctx, req)
+}
+
+// GetRepositoryPolicy calls octomanager.v1.SchedulerService.GetRepositoryPolicy.
+func (c *schedulerServiceClient) GetRepositoryPolicy(ctx context.Context, req *connect.Request[v1.GetRepositoryPolicyRequest]) (*connect.Response[v1.GetRepositoryPolicyResponse], error) {
+	return c.getRepositoryPolicy.CallUnary(ctx, req)
 }
 
 // ListConflictCases calls octomanager.v1.SchedulerService.ListConflictCases.
@@ -537,6 +633,12 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v1.SchedulerService service.
 type SchedulerServiceHandler interface {
+	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
+	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
+	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
+	RetrySubmission(context.Context, *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error)
+	CancelSubmission(context.Context, *connect.Request[v1.CancelSubmissionRequest]) (*connect.Response[v1.CancelSubmissionResponse], error)
+	GetRepositoryPolicy(context.Context, *connect.Request[v1.GetRepositoryPolicyRequest]) (*connect.Response[v1.GetRepositoryPolicyResponse], error)
 	ListConflictCases(context.Context, *connect.Request[v1.ListConflictCasesRequest]) (*connect.Response[v1.ListConflictCasesResponse], error)
 	GetConflictCase(context.Context, *connect.Request[v1.GetConflictCaseRequest]) (*connect.Response[v1.GetConflictCaseResponse], error)
 	RequestRebase(context.Context, *connect.Request[v1.RequestRebaseRequest]) (*connect.Response[v1.RequestRebaseResponse], error)
@@ -576,6 +678,42 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceSubmitPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceSubmitPullRequestProcedure,
+		svc.SubmitPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("SubmitPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetSubmissionHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetSubmissionProcedure,
+		svc.GetSubmission,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetSubmission")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListSubmissionsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListSubmissionsProcedure,
+		svc.ListSubmissions,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListSubmissions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceRetrySubmissionHandler := connect.NewUnaryHandler(
+		SchedulerServiceRetrySubmissionProcedure,
+		svc.RetrySubmission,
+		connect.WithSchema(schedulerServiceMethods.ByName("RetrySubmission")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceCancelSubmissionHandler := connect.NewUnaryHandler(
+		SchedulerServiceCancelSubmissionProcedure,
+		svc.CancelSubmission,
+		connect.WithSchema(schedulerServiceMethods.ByName("CancelSubmission")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetRepositoryPolicyHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetRepositoryPolicyProcedure,
+		svc.GetRepositoryPolicy,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetRepositoryPolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceListConflictCasesHandler := connect.NewUnaryHandler(
 		SchedulerServiceListConflictCasesProcedure,
 		svc.ListConflictCases,
@@ -758,6 +896,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v1.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceSubmitPullRequestProcedure:
+			schedulerServiceSubmitPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetSubmissionProcedure:
+			schedulerServiceGetSubmissionHandler.ServeHTTP(w, r)
+		case SchedulerServiceListSubmissionsProcedure:
+			schedulerServiceListSubmissionsHandler.ServeHTTP(w, r)
+		case SchedulerServiceRetrySubmissionProcedure:
+			schedulerServiceRetrySubmissionHandler.ServeHTTP(w, r)
+		case SchedulerServiceCancelSubmissionProcedure:
+			schedulerServiceCancelSubmissionHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetRepositoryPolicyProcedure:
+			schedulerServiceGetRepositoryPolicyHandler.ServeHTTP(w, r)
 		case SchedulerServiceListConflictCasesProcedure:
 			schedulerServiceListConflictCasesHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetConflictCaseProcedure:
@@ -826,6 +976,30 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.SubmitPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetSubmission is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListSubmissions is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) RetrySubmission(context.Context, *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RetrySubmission is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) CancelSubmission(context.Context, *connect.Request[v1.CancelSubmissionRequest]) (*connect.Response[v1.CancelSubmissionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.CancelSubmission is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetRepositoryPolicy(context.Context, *connect.Request[v1.GetRepositoryPolicyRequest]) (*connect.Response[v1.GetRepositoryPolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetRepositoryPolicy is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) ListConflictCases(context.Context, *connect.Request[v1.ListConflictCasesRequest]) (*connect.Response[v1.ListConflictCasesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListConflictCases is not implemented"))

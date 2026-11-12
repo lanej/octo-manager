@@ -640,8 +640,15 @@ export class TrackingStore {
       const before = this.inbox.get(id);
       const message = this.inbox.acknowledge(id, agentId);
       if (before?.acknowledgedAt === undefined) {
-        const action = this.action(message.actionId);
-        this.event("message_acknowledged", message.id, action.prId, action.id);
+        if (message.submissionId === undefined) {
+          const action = this.action(message.actionId);
+          this.event(
+            "message_acknowledged",
+            message.id,
+            action.prId,
+            action.id,
+          );
+        } else this.event("message_acknowledged", message.id, "");
       }
       return message;
     });

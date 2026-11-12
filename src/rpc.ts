@@ -1,3 +1,4 @@
+import { complexity, renderTemplate } from "./submissions/contracts.js";
 import { inboxRoutes } from "./tracking/inbox-rpc.js";
 import { repairRoutes, wireRepair } from "./repairs/rpc.js";
 import { activityRoutes } from "./activity/rpc.js";
@@ -62,6 +63,48 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    submitPullRequest(r){return trackingOperation(()=>({
+        submissionJson: JSON.stringify(
+          coordinator.submissions.submit(JSON.parse(r.inputJson)),
+        ),
+      }));
+    },
+    getSubmission(r){return trackingOperation(()=>({
+        submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),
+      }));
+    },
+    listSubmissions() {
+      return {
+        submissionsJson: coordinator.store.submissions
+          .list()
+          .map((value) => JSON.stringify(value)),
+      };
+    },
+    retrySubmission(r){return trackingOperation(()=>({
+        submissionJson: JSON.stringify(coordinator.submissions.retry(r.id)),
+      }));
+    },
+    cancelSubmission(r){return trackingOperation(()=>({
+        submissionJson: JSON.stringify(coordinator.submissions.cancel(r.id)),
+      }));
+    },
+    getRepositoryPolicy(r){return trackingOperation(()=> {
+        const policy = coordinator.store.submissions.policy(
+          r.repository.toLowerCase(),
+          r.version,
+        );
+        if (policy === undefined)
+          throw new ConnectError(
+            "Policy not found; submit a PR to analyze repository guidelines",
+            Code.NotFound,
+          );
+        const tier = complexity(r.tier === "" ? "standard" : r.tier);
+        return {
+          policyJson: JSON.stringify(policy),
+          template: renderTemplate(policy, tier),
+        };
+      });
+    },
     registerAgent(r){return trackingOperation(()=>({agent:wireAgent(tracking.registerAgent(owner(r.target)))}));},
     ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),

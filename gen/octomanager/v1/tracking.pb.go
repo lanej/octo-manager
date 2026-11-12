@@ -2787,6 +2787,7 @@ type AgentMessage struct {
 	CreatedAtMs      int64                  `protobuf:"varint,6,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
 	AcknowledgedAtMs *int64                 `protobuf:"varint,7,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
 	Applicable       bool                   `protobuf:"varint,8,opt,name=applicable,proto3" json:"applicable,omitempty"`
+	SubmissionId     *string                `protobuf:"bytes,9,opt,name=submission_id,json=submissionId,proto3,oneof" json:"submission_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2875,6 +2876,13 @@ func (x *AgentMessage) GetApplicable() bool {
 		return x.Applicable
 	}
 	return false
+}
+
+func (x *AgentMessage) GetSubmissionId() string {
+	if x != nil && x.SubmissionId != nil {
+		return *x.SubmissionId
+	}
+	return ""
 }
 
 type ListAgentMessagesRequest struct {
@@ -3421,7 +3429,7 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x16ReprofileActionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"P\n" +
 	"\x17ReprofileActionResponse\x125\n" +
-	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v1.PendingActionR\x06action\"\xa7\x02\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v1.PendingActionR\x06action\"\xe3\x02\n" +
 	"\fAgentMessage\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x1b\n" +
@@ -3432,8 +3440,10 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x12acknowledged_at_ms\x18\a \x01(\x03H\x00R\x10acknowledgedAtMs\x88\x01\x01\x12\x1e\n" +
 	"\n" +
 	"applicable\x18\b \x01(\bR\n" +
-	"applicableB\x15\n" +
-	"\x13_acknowledged_at_ms\"\xb8\x01\n" +
+	"applicable\x12(\n" +
+	"\rsubmission_id\x18\t \x01(\tH\x01R\fsubmissionId\x88\x01\x01B\x15\n" +
+	"\x13_acknowledged_at_msB\x10\n" +
+	"\x0e_submission_id\"\xb8\x01\n" +
 	"\x18ListAgentMessagesRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12%\n" +
 	"\x0eafter_sequence\x18\x02 \x01(\x04R\rafterSequence\x121\n" +
