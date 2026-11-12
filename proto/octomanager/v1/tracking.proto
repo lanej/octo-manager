@@ -40,6 +40,7 @@ message TrackingObservation {
   optional string feedback_json = 10;
   optional string workflows_json = 11;
 }
+enum TrackingState { TRACKING_STATE_UNSPECIFIED=0; TRACKING_STATE_WATCHING=1; TRACKING_STATE_DRAINING=2; TRACKING_STATE_ARCHIVED=3; TRACKING_STATE_DISABLED=4; }
 message TrackedPullRequest {
   string id = 1;
   string url = 2;
@@ -51,6 +52,10 @@ message TrackedPullRequest {
   optional string refresh_error = 8;
   optional int64 refresh_error_at_ms = 9;
   TrackingObservation observation = 10;
+  TrackingState tracking_state=11;
+  optional int64 drain_deadline_at_ms=12;
+  optional int64 archived_at_ms=13;
+  optional string archive_reason=14;
 }
 message ExecutionProfile { string name = 1; string instructions = 2; optional string harness = 3; optional string model = 4; }
 message ConflictBlocker { string head_sha = 1; string base_sha = 2; optional string base_ref = 3; }
@@ -74,6 +79,7 @@ enum CheckWatchState {
   CHECK_WATCH_STATE_COMPLETED = 2;
   CHECK_WATCH_STATE_SUPERSEDED = 3;
   CHECK_WATCH_STATE_CANCELLED = 4;
+  CHECK_WATCH_STATE_EXPIRED = 5;
 }
 message CheckWatch {
   string id = 1;

@@ -1,3 +1,5 @@
+import { GitHubRateLimitError } from "../github-api.js";
+import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
 import { agentMessage, readFailureExcerpt } from "./messages.js";
 import {
@@ -12,7 +14,6 @@ import {
 import { TrackingStore } from "./store.js";
 import type { TrackingConfig } from "./config.js";
 import { readObservation } from "./github.js";
-import { GitHubRateLimitError } from "../github-api.js";
 import {
   CodexConnection,
   DeliveryError,
@@ -31,6 +32,7 @@ export class TrackingService {
   private handoffs: Handoffs | undefined;
   private timer?: ReturnType<typeof setInterval>;
   private refreshes = new Map<string, Promise<unknown>>();
+  private refreshEpochs = new Map<string, number>();
   private nextRefresh = new Map<string, number>();
   private githubRetryAt = 0;
   private deliveryBusy = false;
@@ -109,7 +111,10 @@ export class TrackingService {
     const p = this.store.pr(id);
     if (!p.enabled) return Promise.reject(new Error("PR tracking is disabled"));
     const existing = this.refreshes.get(p.id);
-    if (existing) return existing;
+    if (existing !== undefined)
+      return this.refreshEpochs.get(p.id) === p.trackingEpoch
+        ? existing
+        : existing.then(() => this.refresh(id));
     if (this.now() < this.githubRetryAt)
       return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
     const controller = new AbortController();
@@ -119,11 +124,15 @@ export class TrackingService {
         const input: ObservationInput = await (
           this.options.read ?? readObservation
         )(p.url, controller.signal, undefined, this.now);
-        if (!this.stopped) this.store.observe(p.id, input, this.config);
+        if (!this.stopped)
+          this.store.observe(p.id, input, this.config, p.trackingEpoch);
       } catch (error) {
         if (error instanceof GitHubRateLimitError)
           this.githubRetryAt = Math.max(this.githubRetryAt, error.retryAtMs);
-        if (!this.stopped)
+        if (
+          !this.stopped &&
+          this.store.pr(p.id).trackingEpoch === p.trackingEpoch
+        )
           this.store.refreshError(
             p.id,
             error instanceof Error ? error.message : "GitHub refresh failed",
@@ -137,10 +146,12 @@ export class TrackingService {
           ),
         );
         this.refreshes.delete(p.id);
+        this.refreshEpochs.delete(p.id);
         this.refreshControllers.delete(p.id);
       }
       return this.store.pr(p.id);
     })();
+    this.refreshEpochs.set(p.id, p.trackingEpoch);
     this.refreshes.set(p.id, work);
     return work;
   }
@@ -173,13 +184,14 @@ export class TrackingService {
           this.handoffWork = undefined;
         });
     }
+    for (const id of this.store.retirement.expire())
+      this.refreshControllers.get(id)?.abort();
     for (const p of this.store.prs())
       if (
         p.enabled &&
         this.now() >= this.githubRetryAt &&
-        (p.observation === undefined ||
-          p.observation.lifecycle === "open" ||
-          this.store.checks.hasWaiting(p.id)) &&
+        (p.state === TrackingState.Watching ||
+          p.state === TrackingState.Draining) &&
         (this.nextRefresh.get(p.id) ?? 0) <= this.now()
       )
         void this.refresh(p.id).catch(() => {});

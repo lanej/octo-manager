@@ -1,3 +1,5 @@
+import {NotificationService} from "./tracking/notifications.js";
+import type {NotificationReader} from "./tracking/notification-reader.js";
 import {DigestService,type DigestOptions} from "./notifications/service.js";
 import { SubmissionNotifications } from "./submissions/notifications.js";
 import { SubmissionService, type SubmissionOptions } from "./submissions/service.js";
@@ -19,7 +21,7 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions { notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -38,6 +40,7 @@ export class Coordinator extends EventEmitter {
   readonly repairs: RepairService;
   readonly submissions: SubmissionService;
   readonly digests: DigestService;
+  readonly notifications:NotificationService;
   private submissionNotifications: SubmissionNotifications;
   readonly socketPath: string;
   private server?: Server;
@@ -59,6 +62,7 @@ export class Coordinator extends EventEmitter {
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
+    this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
     this.socketPath = join(directory, "run.sock");
     for (const job of this.store.jobs()) {
       let observedExit = false;
@@ -93,6 +97,7 @@ export class Coordinator extends EventEmitter {
       this.submissions.start();
       this.submissionNotifications.start();
       this.digests.start();
+      this.notifications.start();
     } catch (error) { this.store.close(); throw error; }
   }
   async pullRequestDetails(url: string, signal?: AbortSignal) {
@@ -250,11 +255,12 @@ export class Coordinator extends EventEmitter {
     this.closePromise = (async () => {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
-      await this.digests.close();
+      this.notifications.stop();
+    await this.digests.close();
       await this.submissions.close();
       await this.submissionNotifications.close();
       await this.repairs.close();
-      await this.tracking.close();
+      await Promise.all([this.notifications.close(),this.tracking.close()]);
       if (this.active) { await this.active.exited; }
       for (const socket of this.sockets) socket.destroy();
       if (this.server?.listening) await new Promise<void>(resolve => this.server!.close(() => resolve()));

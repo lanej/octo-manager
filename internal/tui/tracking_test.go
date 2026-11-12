@@ -202,3 +202,18 @@ func TestPRSidebarMentionsJobsOnlyWhenLocalJobsExist(t *testing.T) {
 		t.Fatal("a local fixture was mislabeled as a pull request")
 	}
 }
+
+func TestArchivedMonitoringRetainsDeadlineWarning(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "archived", Url: "https://github.com/owner/repo/pull/1", Enabled: true, TrackingState: v1.TrackingState_TRACKING_STATE_ARCHIVED, ArchiveReason: new("deadline")}}}
+	m.ensureSelection()
+	view := ansi.Strip(m.trackingContent())
+
+	for _, want := range []string{"Monitoring:", "archived", "check results remain incomplete"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("missing retirement presentation %q", want)
+		}
+	}
+}

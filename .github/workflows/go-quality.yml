@@ -39,3 +39,16 @@ jobs:
       - run: bun run generate
       - run: git diff --exit-code -- gen src/gen
       - run: bun run check
+      - name: Exercise native installation and manual startup
+        run: bun scripts/test-install-acceptance.ts
+      - name: Start an isolated Linux user service
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export XDG_RUNTIME_DIR
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user show-environment >/dev/null
+          bun scripts/test-install-acceptance.ts --start

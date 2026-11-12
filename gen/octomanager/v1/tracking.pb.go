@@ -140,6 +140,61 @@ func (DeliveryState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{1}
 }
 
+type TrackingState int32
+
+const (
+	TrackingState_TRACKING_STATE_UNSPECIFIED TrackingState = 0
+	TrackingState_TRACKING_STATE_WATCHING    TrackingState = 1
+	TrackingState_TRACKING_STATE_DRAINING    TrackingState = 2
+	TrackingState_TRACKING_STATE_ARCHIVED    TrackingState = 3
+	TrackingState_TRACKING_STATE_DISABLED    TrackingState = 4
+)
+
+// Enum value maps for TrackingState.
+var (
+	TrackingState_name = map[int32]string{
+		0: "TRACKING_STATE_UNSPECIFIED",
+		1: "TRACKING_STATE_WATCHING",
+		2: "TRACKING_STATE_DRAINING",
+		3: "TRACKING_STATE_ARCHIVED",
+		4: "TRACKING_STATE_DISABLED",
+	}
+	TrackingState_value = map[string]int32{
+		"TRACKING_STATE_UNSPECIFIED": 0,
+		"TRACKING_STATE_WATCHING":    1,
+		"TRACKING_STATE_DRAINING":    2,
+		"TRACKING_STATE_ARCHIVED":    3,
+		"TRACKING_STATE_DISABLED":    4,
+	}
+)
+
+func (x TrackingState) Enum() *TrackingState {
+	p := new(TrackingState)
+	*p = x
+	return p
+}
+
+func (x TrackingState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TrackingState) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v1_tracking_proto_enumTypes[2].Descriptor()
+}
+
+func (TrackingState) Type() protoreflect.EnumType {
+	return &file_octomanager_v1_tracking_proto_enumTypes[2]
+}
+
+func (x TrackingState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TrackingState.Descriptor instead.
+func (TrackingState) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{2}
+}
+
 type CheckWatchState int32
 
 const (
@@ -148,6 +203,7 @@ const (
 	CheckWatchState_CHECK_WATCH_STATE_COMPLETED   CheckWatchState = 2
 	CheckWatchState_CHECK_WATCH_STATE_SUPERSEDED  CheckWatchState = 3
 	CheckWatchState_CHECK_WATCH_STATE_CANCELLED   CheckWatchState = 4
+	CheckWatchState_CHECK_WATCH_STATE_EXPIRED     CheckWatchState = 5
 )
 
 // Enum value maps for CheckWatchState.
@@ -158,6 +214,7 @@ var (
 		2: "CHECK_WATCH_STATE_COMPLETED",
 		3: "CHECK_WATCH_STATE_SUPERSEDED",
 		4: "CHECK_WATCH_STATE_CANCELLED",
+		5: "CHECK_WATCH_STATE_EXPIRED",
 	}
 	CheckWatchState_value = map[string]int32{
 		"CHECK_WATCH_STATE_UNSPECIFIED": 0,
@@ -165,6 +222,7 @@ var (
 		"CHECK_WATCH_STATE_COMPLETED":   2,
 		"CHECK_WATCH_STATE_SUPERSEDED":  3,
 		"CHECK_WATCH_STATE_CANCELLED":   4,
+		"CHECK_WATCH_STATE_EXPIRED":     5,
 	}
 )
 
@@ -179,11 +237,11 @@ func (x CheckWatchState) String() string {
 }
 
 func (CheckWatchState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v1_tracking_proto_enumTypes[2].Descriptor()
+	return file_octomanager_v1_tracking_proto_enumTypes[3].Descriptor()
 }
 
 func (CheckWatchState) Type() protoreflect.EnumType {
-	return &file_octomanager_v1_tracking_proto_enumTypes[2]
+	return &file_octomanager_v1_tracking_proto_enumTypes[3]
 }
 
 func (x CheckWatchState) Number() protoreflect.EnumNumber {
@@ -192,7 +250,7 @@ func (x CheckWatchState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CheckWatchState.Descriptor instead.
 func (CheckWatchState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{2}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{3}
 }
 
 type AgentTarget struct {
@@ -508,19 +566,23 @@ func (x *TrackingObservation) GetWorkflowsJson() string {
 }
 
 type TrackedPullRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Url              string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	OriginAgentId    string                 `protobuf:"bytes,3,opt,name=origin_agent_id,json=originAgentId,proto3" json:"origin_agent_id,omitempty"`
-	OwnerAgentId     string                 `protobuf:"bytes,4,opt,name=owner_agent_id,json=ownerAgentId,proto3" json:"owner_agent_id,omitempty"`
-	Enabled          bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	CreatedAtMs      int64                  `protobuf:"varint,6,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
-	UpdatedAtMs      int64                  `protobuf:"varint,7,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
-	RefreshError     *string                `protobuf:"bytes,8,opt,name=refresh_error,json=refreshError,proto3,oneof" json:"refresh_error,omitempty"`
-	RefreshErrorAtMs *int64                 `protobuf:"varint,9,opt,name=refresh_error_at_ms,json=refreshErrorAtMs,proto3,oneof" json:"refresh_error_at_ms,omitempty"`
-	Observation      *TrackingObservation   `protobuf:"bytes,10,opt,name=observation,proto3" json:"observation,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Url               string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	OriginAgentId     string                 `protobuf:"bytes,3,opt,name=origin_agent_id,json=originAgentId,proto3" json:"origin_agent_id,omitempty"`
+	OwnerAgentId      string                 `protobuf:"bytes,4,opt,name=owner_agent_id,json=ownerAgentId,proto3" json:"owner_agent_id,omitempty"`
+	Enabled           bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	CreatedAtMs       int64                  `protobuf:"varint,6,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	UpdatedAtMs       int64                  `protobuf:"varint,7,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	RefreshError      *string                `protobuf:"bytes,8,opt,name=refresh_error,json=refreshError,proto3,oneof" json:"refresh_error,omitempty"`
+	RefreshErrorAtMs  *int64                 `protobuf:"varint,9,opt,name=refresh_error_at_ms,json=refreshErrorAtMs,proto3,oneof" json:"refresh_error_at_ms,omitempty"`
+	Observation       *TrackingObservation   `protobuf:"bytes,10,opt,name=observation,proto3" json:"observation,omitempty"`
+	TrackingState     TrackingState          `protobuf:"varint,11,opt,name=tracking_state,json=trackingState,proto3,enum=octomanager.v1.TrackingState" json:"tracking_state,omitempty"`
+	DrainDeadlineAtMs *int64                 `protobuf:"varint,12,opt,name=drain_deadline_at_ms,json=drainDeadlineAtMs,proto3,oneof" json:"drain_deadline_at_ms,omitempty"`
+	ArchivedAtMs      *int64                 `protobuf:"varint,13,opt,name=archived_at_ms,json=archivedAtMs,proto3,oneof" json:"archived_at_ms,omitempty"`
+	ArchiveReason     *string                `protobuf:"bytes,14,opt,name=archive_reason,json=archiveReason,proto3,oneof" json:"archive_reason,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TrackedPullRequest) Reset() {
@@ -621,6 +683,34 @@ func (x *TrackedPullRequest) GetObservation() *TrackingObservation {
 		return x.Observation
 	}
 	return nil
+}
+
+func (x *TrackedPullRequest) GetTrackingState() TrackingState {
+	if x != nil {
+		return x.TrackingState
+	}
+	return TrackingState_TRACKING_STATE_UNSPECIFIED
+}
+
+func (x *TrackedPullRequest) GetDrainDeadlineAtMs() int64 {
+	if x != nil && x.DrainDeadlineAtMs != nil {
+		return *x.DrainDeadlineAtMs
+	}
+	return 0
+}
+
+func (x *TrackedPullRequest) GetArchivedAtMs() int64 {
+	if x != nil && x.ArchivedAtMs != nil {
+		return *x.ArchivedAtMs
+	}
+	return 0
+}
+
+func (x *TrackedPullRequest) GetArchiveReason() string {
+	if x != nil && x.ArchiveReason != nil {
+		return *x.ArchiveReason
+	}
+	return ""
 }
 
 type ExecutionProfile struct {
@@ -3244,7 +3334,7 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	" \x01(\tH\x00R\ffeedbackJson\x88\x01\x01\x12*\n" +
 	"\x0eworkflows_json\x18\v \x01(\tH\x01R\rworkflowsJson\x88\x01\x01B\x10\n" +
 	"\x0e_feedback_jsonB\x11\n" +
-	"\x0f_workflows_json\"\xb5\x03\n" +
+	"\x0f_workflows_json\"\xc7\x05\n" +
 	"\x12TrackedPullRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12&\n" +
@@ -3256,9 +3346,16 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\rrefresh_error\x18\b \x01(\tH\x00R\frefreshError\x88\x01\x01\x122\n" +
 	"\x13refresh_error_at_ms\x18\t \x01(\x03H\x01R\x10refreshErrorAtMs\x88\x01\x01\x12E\n" +
 	"\vobservation\x18\n" +
-	" \x01(\v2#.octomanager.v1.TrackingObservationR\vobservationB\x10\n" +
+	" \x01(\v2#.octomanager.v1.TrackingObservationR\vobservation\x12D\n" +
+	"\x0etracking_state\x18\v \x01(\x0e2\x1d.octomanager.v1.TrackingStateR\rtrackingState\x124\n" +
+	"\x14drain_deadline_at_ms\x18\f \x01(\x03H\x02R\x11drainDeadlineAtMs\x88\x01\x01\x12)\n" +
+	"\x0earchived_at_ms\x18\r \x01(\x03H\x03R\farchivedAtMs\x88\x01\x01\x12*\n" +
+	"\x0earchive_reason\x18\x0e \x01(\tH\x04R\rarchiveReason\x88\x01\x01B\x10\n" +
 	"\x0e_refresh_errorB\x16\n" +
-	"\x14_refresh_error_at_ms\"\x9a\x01\n" +
+	"\x14_refresh_error_at_msB\x17\n" +
+	"\x15_drain_deadline_at_msB\x11\n" +
+	"\x0f_archived_at_msB\x11\n" +
+	"\x0f_archive_reason\"\x9a\x01\n" +
 	"\x10ExecutionProfile\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\"\n" +
 	"\finstructions\x18\x02 \x01(\tR\finstructions\x12\x1d\n" +
@@ -3478,13 +3575,20 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x18DELIVERY_STATE_DELIVERED\x10\x03\x12\x1c\n" +
 	"\x18DELIVERY_STATE_UNCERTAIN\x10\x04\x12\x1e\n" +
 	"\x1aDELIVERY_STATE_UNAVAILABLE\x10\x05\x12\x1c\n" +
-	"\x18DELIVERY_STATE_CANCELLED\x10\x06*\xb7\x01\n" +
+	"\x18DELIVERY_STATE_CANCELLED\x10\x06*\xa3\x01\n" +
+	"\rTrackingState\x12\x1e\n" +
+	"\x1aTRACKING_STATE_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17TRACKING_STATE_WATCHING\x10\x01\x12\x1b\n" +
+	"\x17TRACKING_STATE_DRAINING\x10\x02\x12\x1b\n" +
+	"\x17TRACKING_STATE_ARCHIVED\x10\x03\x12\x1b\n" +
+	"\x17TRACKING_STATE_DISABLED\x10\x04*\xd6\x01\n" +
 	"\x0fCheckWatchState\x12!\n" +
 	"\x1dCHECK_WATCH_STATE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19CHECK_WATCH_STATE_WAITING\x10\x01\x12\x1f\n" +
 	"\x1bCHECK_WATCH_STATE_COMPLETED\x10\x02\x12 \n" +
 	"\x1cCHECK_WATCH_STATE_SUPERSEDED\x10\x03\x12\x1f\n" +
-	"\x1bCHECK_WATCH_STATE_CANCELLED\x10\x04B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\x1bCHECK_WATCH_STATE_CANCELLED\x10\x04\x12\x1d\n" +
+	"\x19CHECK_WATCH_STATE_EXPIRED\x10\x05B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_tracking_proto_rawDescOnce sync.Once
@@ -3498,103 +3602,105 @@ func file_octomanager_v1_tracking_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_tracking_proto_rawDescData
 }
 
-var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(ActionState)(0),                          // 0: octomanager.v1.ActionState
 	(DeliveryState)(0),                        // 1: octomanager.v1.DeliveryState
-	(CheckWatchState)(0),                      // 2: octomanager.v1.CheckWatchState
-	(*AgentTarget)(nil),                       // 3: octomanager.v1.AgentTarget
-	(*AgentReference)(nil),                    // 4: octomanager.v1.AgentReference
-	(*TargetBase)(nil),                        // 5: octomanager.v1.TargetBase
-	(*TrackingObservation)(nil),               // 6: octomanager.v1.TrackingObservation
-	(*TrackedPullRequest)(nil),                // 7: octomanager.v1.TrackedPullRequest
-	(*ExecutionProfile)(nil),                  // 8: octomanager.v1.ExecutionProfile
-	(*ConflictBlocker)(nil),                   // 9: octomanager.v1.ConflictBlocker
-	(*CheckBlocker)(nil),                      // 10: octomanager.v1.CheckBlocker
-	(*ReviewBlocker)(nil),                     // 11: octomanager.v1.ReviewBlocker
-	(*ReviewFeedback)(nil),                    // 12: octomanager.v1.ReviewFeedback
-	(*CheckWatch)(nil),                        // 13: octomanager.v1.CheckWatch
-	(*CheckResults)(nil),                      // 14: octomanager.v1.CheckResults
-	(*PendingAction)(nil),                     // 15: octomanager.v1.PendingAction
-	(*ActionDelivery)(nil),                    // 16: octomanager.v1.ActionDelivery
-	(*DeliveryAttempt)(nil),                   // 17: octomanager.v1.DeliveryAttempt
-	(*TrackingSnapshot)(nil),                  // 18: octomanager.v1.TrackingSnapshot
-	(*TrackPullRequestRequest)(nil),           // 19: octomanager.v1.TrackPullRequestRequest
-	(*ListTrackedPullRequestsRequest)(nil),    // 20: octomanager.v1.ListTrackedPullRequestsRequest
-	(*ListTrackedPullRequestsResponse)(nil),   // 21: octomanager.v1.ListTrackedPullRequestsResponse
-	(*AssignPullRequestRequest)(nil),          // 22: octomanager.v1.AssignPullRequestRequest
-	(*ListActionsRequest)(nil),                // 23: octomanager.v1.ListActionsRequest
-	(*ListActionsResponse)(nil),               // 24: octomanager.v1.ListActionsResponse
-	(*RetryDeliveryRequest)(nil),              // 25: octomanager.v1.RetryDeliveryRequest
-	(*RetryDeliveryResponse)(nil),             // 26: octomanager.v1.RetryDeliveryResponse
-	(*TrackPullRequestResponse)(nil),          // 27: octomanager.v1.TrackPullRequestResponse
-	(*GetTrackedPullRequestRequest)(nil),      // 28: octomanager.v1.GetTrackedPullRequestRequest
-	(*GetTrackedPullRequestResponse)(nil),     // 29: octomanager.v1.GetTrackedPullRequestResponse
-	(*RefreshTrackedPullRequestRequest)(nil),  // 30: octomanager.v1.RefreshTrackedPullRequestRequest
-	(*RefreshTrackedPullRequestResponse)(nil), // 31: octomanager.v1.RefreshTrackedPullRequestResponse
-	(*AssignPullRequestResponse)(nil),         // 32: octomanager.v1.AssignPullRequestResponse
-	(*UntrackPullRequestRequest)(nil),         // 33: octomanager.v1.UntrackPullRequestRequest
-	(*UntrackPullRequestResponse)(nil),        // 34: octomanager.v1.UntrackPullRequestResponse
-	(*GetActionRequest)(nil),                  // 35: octomanager.v1.GetActionRequest
-	(*GetActionResponse)(nil),                 // 36: octomanager.v1.GetActionResponse
-	(*AcknowledgeActionRequest)(nil),          // 37: octomanager.v1.AcknowledgeActionRequest
-	(*AcknowledgeActionResponse)(nil),         // 38: octomanager.v1.AcknowledgeActionResponse
-	(*StartActionRequest)(nil),                // 39: octomanager.v1.StartActionRequest
-	(*StartActionResponse)(nil),               // 40: octomanager.v1.StartActionResponse
-	(*ReprofileActionRequest)(nil),            // 41: octomanager.v1.ReprofileActionRequest
-	(*ReprofileActionResponse)(nil),           // 42: octomanager.v1.ReprofileActionResponse
-	(*AgentMessage)(nil),                      // 43: octomanager.v1.AgentMessage
-	(*ListAgentMessagesRequest)(nil),          // 44: octomanager.v1.ListAgentMessagesRequest
-	(*ListAgentMessagesResponse)(nil),         // 45: octomanager.v1.ListAgentMessagesResponse
-	(*AcknowledgeMessageRequest)(nil),         // 46: octomanager.v1.AcknowledgeMessageRequest
-	(*AcknowledgeMessageResponse)(nil),        // 47: octomanager.v1.AcknowledgeMessageResponse
-	(*RegisterAgentRequest)(nil),              // 48: octomanager.v1.RegisterAgentRequest
-	(*RegisterAgentResponse)(nil),             // 49: octomanager.v1.RegisterAgentResponse
+	(TrackingState)(0),                        // 2: octomanager.v1.TrackingState
+	(CheckWatchState)(0),                      // 3: octomanager.v1.CheckWatchState
+	(*AgentTarget)(nil),                       // 4: octomanager.v1.AgentTarget
+	(*AgentReference)(nil),                    // 5: octomanager.v1.AgentReference
+	(*TargetBase)(nil),                        // 6: octomanager.v1.TargetBase
+	(*TrackingObservation)(nil),               // 7: octomanager.v1.TrackingObservation
+	(*TrackedPullRequest)(nil),                // 8: octomanager.v1.TrackedPullRequest
+	(*ExecutionProfile)(nil),                  // 9: octomanager.v1.ExecutionProfile
+	(*ConflictBlocker)(nil),                   // 10: octomanager.v1.ConflictBlocker
+	(*CheckBlocker)(nil),                      // 11: octomanager.v1.CheckBlocker
+	(*ReviewBlocker)(nil),                     // 12: octomanager.v1.ReviewBlocker
+	(*ReviewFeedback)(nil),                    // 13: octomanager.v1.ReviewFeedback
+	(*CheckWatch)(nil),                        // 14: octomanager.v1.CheckWatch
+	(*CheckResults)(nil),                      // 15: octomanager.v1.CheckResults
+	(*PendingAction)(nil),                     // 16: octomanager.v1.PendingAction
+	(*ActionDelivery)(nil),                    // 17: octomanager.v1.ActionDelivery
+	(*DeliveryAttempt)(nil),                   // 18: octomanager.v1.DeliveryAttempt
+	(*TrackingSnapshot)(nil),                  // 19: octomanager.v1.TrackingSnapshot
+	(*TrackPullRequestRequest)(nil),           // 20: octomanager.v1.TrackPullRequestRequest
+	(*ListTrackedPullRequestsRequest)(nil),    // 21: octomanager.v1.ListTrackedPullRequestsRequest
+	(*ListTrackedPullRequestsResponse)(nil),   // 22: octomanager.v1.ListTrackedPullRequestsResponse
+	(*AssignPullRequestRequest)(nil),          // 23: octomanager.v1.AssignPullRequestRequest
+	(*ListActionsRequest)(nil),                // 24: octomanager.v1.ListActionsRequest
+	(*ListActionsResponse)(nil),               // 25: octomanager.v1.ListActionsResponse
+	(*RetryDeliveryRequest)(nil),              // 26: octomanager.v1.RetryDeliveryRequest
+	(*RetryDeliveryResponse)(nil),             // 27: octomanager.v1.RetryDeliveryResponse
+	(*TrackPullRequestResponse)(nil),          // 28: octomanager.v1.TrackPullRequestResponse
+	(*GetTrackedPullRequestRequest)(nil),      // 29: octomanager.v1.GetTrackedPullRequestRequest
+	(*GetTrackedPullRequestResponse)(nil),     // 30: octomanager.v1.GetTrackedPullRequestResponse
+	(*RefreshTrackedPullRequestRequest)(nil),  // 31: octomanager.v1.RefreshTrackedPullRequestRequest
+	(*RefreshTrackedPullRequestResponse)(nil), // 32: octomanager.v1.RefreshTrackedPullRequestResponse
+	(*AssignPullRequestResponse)(nil),         // 33: octomanager.v1.AssignPullRequestResponse
+	(*UntrackPullRequestRequest)(nil),         // 34: octomanager.v1.UntrackPullRequestRequest
+	(*UntrackPullRequestResponse)(nil),        // 35: octomanager.v1.UntrackPullRequestResponse
+	(*GetActionRequest)(nil),                  // 36: octomanager.v1.GetActionRequest
+	(*GetActionResponse)(nil),                 // 37: octomanager.v1.GetActionResponse
+	(*AcknowledgeActionRequest)(nil),          // 38: octomanager.v1.AcknowledgeActionRequest
+	(*AcknowledgeActionResponse)(nil),         // 39: octomanager.v1.AcknowledgeActionResponse
+	(*StartActionRequest)(nil),                // 40: octomanager.v1.StartActionRequest
+	(*StartActionResponse)(nil),               // 41: octomanager.v1.StartActionResponse
+	(*ReprofileActionRequest)(nil),            // 42: octomanager.v1.ReprofileActionRequest
+	(*ReprofileActionResponse)(nil),           // 43: octomanager.v1.ReprofileActionResponse
+	(*AgentMessage)(nil),                      // 44: octomanager.v1.AgentMessage
+	(*ListAgentMessagesRequest)(nil),          // 45: octomanager.v1.ListAgentMessagesRequest
+	(*ListAgentMessagesResponse)(nil),         // 46: octomanager.v1.ListAgentMessagesResponse
+	(*AcknowledgeMessageRequest)(nil),         // 47: octomanager.v1.AcknowledgeMessageRequest
+	(*AcknowledgeMessageResponse)(nil),        // 48: octomanager.v1.AcknowledgeMessageResponse
+	(*RegisterAgentRequest)(nil),              // 49: octomanager.v1.RegisterAgentRequest
+	(*RegisterAgentResponse)(nil),             // 50: octomanager.v1.RegisterAgentResponse
 }
 var file_octomanager_v1_tracking_proto_depIdxs = []int32{
-	3,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
-	5,  // 1: octomanager.v1.TrackingObservation.target_base:type_name -> octomanager.v1.TargetBase
-	6,  // 2: octomanager.v1.TrackedPullRequest.observation:type_name -> octomanager.v1.TrackingObservation
-	2,  // 3: octomanager.v1.CheckWatch.state:type_name -> octomanager.v1.CheckWatchState
-	2,  // 4: octomanager.v1.CheckResults.state:type_name -> octomanager.v1.CheckWatchState
-	9,  // 5: octomanager.v1.PendingAction.conflict:type_name -> octomanager.v1.ConflictBlocker
-	10, // 6: octomanager.v1.PendingAction.check_failed:type_name -> octomanager.v1.CheckBlocker
-	11, // 7: octomanager.v1.PendingAction.changes_requested:type_name -> octomanager.v1.ReviewBlocker
-	12, // 8: octomanager.v1.PendingAction.review_feedback:type_name -> octomanager.v1.ReviewFeedback
-	14, // 9: octomanager.v1.PendingAction.check_results:type_name -> octomanager.v1.CheckResults
-	8,  // 10: octomanager.v1.PendingAction.profile:type_name -> octomanager.v1.ExecutionProfile
-	0,  // 11: octomanager.v1.PendingAction.state:type_name -> octomanager.v1.ActionState
-	1,  // 12: octomanager.v1.ActionDelivery.state:type_name -> octomanager.v1.DeliveryState
-	7,  // 13: octomanager.v1.TrackingSnapshot.prs:type_name -> octomanager.v1.TrackedPullRequest
-	4,  // 14: octomanager.v1.TrackingSnapshot.agents:type_name -> octomanager.v1.AgentReference
-	15, // 15: octomanager.v1.TrackingSnapshot.actions:type_name -> octomanager.v1.PendingAction
-	16, // 16: octomanager.v1.TrackingSnapshot.deliveries:type_name -> octomanager.v1.ActionDelivery
-	17, // 17: octomanager.v1.TrackingSnapshot.attempts:type_name -> octomanager.v1.DeliveryAttempt
-	13, // 18: octomanager.v1.TrackingSnapshot.check_watches:type_name -> octomanager.v1.CheckWatch
-	3,  // 19: octomanager.v1.TrackPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
-	7,  // 20: octomanager.v1.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v1.TrackedPullRequest
-	3,  // 21: octomanager.v1.AssignPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
-	15, // 22: octomanager.v1.ListActionsResponse.actions:type_name -> octomanager.v1.PendingAction
-	16, // 23: octomanager.v1.RetryDeliveryResponse.delivery:type_name -> octomanager.v1.ActionDelivery
-	7,  // 24: octomanager.v1.TrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	7,  // 25: octomanager.v1.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	7,  // 26: octomanager.v1.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	7,  // 27: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	7,  // 28: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	15, // 29: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
-	15, // 30: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
-	15, // 31: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
-	15, // 32: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
-	43, // 33: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
-	43, // 34: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
-	3,  // 35: octomanager.v1.RegisterAgentRequest.target:type_name -> octomanager.v1.AgentTarget
-	4,  // 36: octomanager.v1.RegisterAgentResponse.agent:type_name -> octomanager.v1.AgentReference
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	4,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
+	6,  // 1: octomanager.v1.TrackingObservation.target_base:type_name -> octomanager.v1.TargetBase
+	7,  // 2: octomanager.v1.TrackedPullRequest.observation:type_name -> octomanager.v1.TrackingObservation
+	2,  // 3: octomanager.v1.TrackedPullRequest.tracking_state:type_name -> octomanager.v1.TrackingState
+	3,  // 4: octomanager.v1.CheckWatch.state:type_name -> octomanager.v1.CheckWatchState
+	3,  // 5: octomanager.v1.CheckResults.state:type_name -> octomanager.v1.CheckWatchState
+	10, // 6: octomanager.v1.PendingAction.conflict:type_name -> octomanager.v1.ConflictBlocker
+	11, // 7: octomanager.v1.PendingAction.check_failed:type_name -> octomanager.v1.CheckBlocker
+	12, // 8: octomanager.v1.PendingAction.changes_requested:type_name -> octomanager.v1.ReviewBlocker
+	13, // 9: octomanager.v1.PendingAction.review_feedback:type_name -> octomanager.v1.ReviewFeedback
+	15, // 10: octomanager.v1.PendingAction.check_results:type_name -> octomanager.v1.CheckResults
+	9,  // 11: octomanager.v1.PendingAction.profile:type_name -> octomanager.v1.ExecutionProfile
+	0,  // 12: octomanager.v1.PendingAction.state:type_name -> octomanager.v1.ActionState
+	1,  // 13: octomanager.v1.ActionDelivery.state:type_name -> octomanager.v1.DeliveryState
+	8,  // 14: octomanager.v1.TrackingSnapshot.prs:type_name -> octomanager.v1.TrackedPullRequest
+	5,  // 15: octomanager.v1.TrackingSnapshot.agents:type_name -> octomanager.v1.AgentReference
+	16, // 16: octomanager.v1.TrackingSnapshot.actions:type_name -> octomanager.v1.PendingAction
+	17, // 17: octomanager.v1.TrackingSnapshot.deliveries:type_name -> octomanager.v1.ActionDelivery
+	18, // 18: octomanager.v1.TrackingSnapshot.attempts:type_name -> octomanager.v1.DeliveryAttempt
+	14, // 19: octomanager.v1.TrackingSnapshot.check_watches:type_name -> octomanager.v1.CheckWatch
+	4,  // 20: octomanager.v1.TrackPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
+	8,  // 21: octomanager.v1.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v1.TrackedPullRequest
+	4,  // 22: octomanager.v1.AssignPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
+	16, // 23: octomanager.v1.ListActionsResponse.actions:type_name -> octomanager.v1.PendingAction
+	17, // 24: octomanager.v1.RetryDeliveryResponse.delivery:type_name -> octomanager.v1.ActionDelivery
+	8,  // 25: octomanager.v1.TrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	8,  // 26: octomanager.v1.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	8,  // 27: octomanager.v1.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	8,  // 28: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	8,  // 29: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	16, // 30: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 31: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 32: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 33: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
+	44, // 34: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
+	44, // 35: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
+	4,  // 36: octomanager.v1.RegisterAgentRequest.target:type_name -> octomanager.v1.AgentTarget
+	5,  // 37: octomanager.v1.RegisterAgentResponse.agent:type_name -> octomanager.v1.AgentReference
+	38, // [38:38] is the sub-list for method output_type
+	38, // [38:38] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_tracking_proto_init() }
@@ -3628,7 +3734,7 @@ func file_octomanager_v1_tracking_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_tracking_proto_rawDesc), len(file_octomanager_v1_tracking_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   47,
 			NumExtensions: 0,
 			NumServices:   0,

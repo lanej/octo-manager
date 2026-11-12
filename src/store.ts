@@ -1,3 +1,5 @@
+import {NotificationStore} from "./tracking/notifications.js";
+import {migrateRetirement} from "./tracking/retirement.js";
 import {migrateDigests} from "./notifications/schema.js";
 import {DigestStore} from "./notifications/store.js";
 import { migrateSubmissions } from "./submissions/schema.js";
@@ -30,6 +32,7 @@ export class Store {
   readonly conflicts: ConflictStore;
   readonly submissions: SubmissionStore;
   readonly digests: DigestStore;
+  readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -57,6 +60,8 @@ export class Store {
       migrateChecks(this.db);
       migrateSubmissions(this.db);
       migrateDigests(this.db);
+      migrateRetirement(this.db,this.now());
+      this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());

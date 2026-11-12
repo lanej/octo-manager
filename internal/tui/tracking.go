@@ -81,6 +81,14 @@ func (m *Model) trackingContent() string {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
 
+	if pr.GetTrackingState() != v1.TrackingState_TRACKING_STATE_UNSPECIFIED {
+		parts = append(parts, m.field("Monitoring", stateName(pr.GetTrackingState().String(), "TRACKING_STATE_")))
+	}
+
+	if pr.GetArchiveReason() == "deadline" {
+		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" Drain deadline reached; check results remain incomplete.")
+	}
+
 	if !pr.GetEnabled() {
 		parts = append(parts, feedback.Disabled.View(text.Dim, m.theme)+" History is retained.")
 	}

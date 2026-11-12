@@ -34,6 +34,16 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	switch event.GetKind() {
 	case "repair_progress":
 		row.title = "Rebase repair"
+	case "pr_draining":
+		row.title = "Finishing PR checks"
+	case "pr_archived":
+		row.title = "PR monitoring archived"
+	case "pr_reactivated":
+		row.title = "Reopened PR monitoring"
+	case "notification_monitor_unavailable":
+		row.title = "GitHub notifications unavailable"
+	case "notification_monitor_recovered":
+		row.title = "GitHub notifications restored"
 	case "pr_observed":
 		row.title = "PR checked"
 		sha := strings.TrimPrefix(event.GetDetail(), "Observed head ")
