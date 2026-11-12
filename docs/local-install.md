@@ -45,3 +45,5 @@ The existing coordinator owns GitHub polling, check watches, durable notificatio
 Session setup supplies standing evidence-handling rules once. Recovery retains the original action and immutable evidence identifiers without repeating those rules in every message. Full-body matching prevents a delivery marker copied into an altered prompt from acknowledging the original notification. Hooks are advisory and do not block ordinary agent work if the coordinator is unavailable.
 
 Useful recovery commands are in the [tracking guide](tracking.md). Existing inbox and action records remain compatible; the API adds optional registration, full-body receipt validation, and applicable-only listing without a database migration.
+
+Queue endpoints now use [agent digests](agent-digests.md): superseded pending revisions are withdrawn before replacement, with uncertain effects retained for reconciliation. The existing hook also recognizes exact digest bodies; installation does not enable hooks or require PR submissions.

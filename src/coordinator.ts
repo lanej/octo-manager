@@ -1,3 +1,4 @@
+import {DigestService,type DigestOptions} from "./notifications/service.js";
 import { SubmissionNotifications } from "./submissions/notifications.js";
 import { SubmissionService, type SubmissionOptions } from "./submissions/service.js";
 import { RepairService, type RepairOptions } from "./repairs/service.js";
@@ -18,7 +19,7 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions { digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -36,6 +37,7 @@ export class Coordinator extends EventEmitter {
   readonly tracking: TrackingService;
   readonly repairs: RepairService;
   readonly submissions: SubmissionService;
+  readonly digests: DigestService;
   private submissionNotifications: SubmissionNotifications;
   readonly socketPath: string;
   private server?: Server;
@@ -52,10 +54,11 @@ export class Coordinator extends EventEmitter {
     super(); this.now = options.now ?? Date.now;
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect);
+    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
+    this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.socketPath = join(directory, "run.sock");
     for (const job of this.store.jobs()) {
       let observedExit = false;
@@ -89,6 +92,7 @@ export class Coordinator extends EventEmitter {
       this.repairs.start();
       this.submissions.start();
       this.submissionNotifications.start();
+      this.digests.start();
     } catch (error) { this.store.close(); throw error; }
   }
   async pullRequestDetails(url: string, signal?: AbortSignal) {
@@ -246,6 +250,7 @@ export class Coordinator extends EventEmitter {
     this.closePromise = (async () => {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
+      await this.digests.close();
       await this.submissions.close();
       await this.submissionNotifications.close();
       await this.repairs.close();

@@ -16,6 +16,7 @@ export function parseCommand(args: string[]) {
       base: { type: "string" },
       tier: { type: "string" },
       version: { type: "string" },
+      revision: { type: "string" },
       draft: { type: "boolean" },
       config: { type: "string" },
       harness: { type: "string" },

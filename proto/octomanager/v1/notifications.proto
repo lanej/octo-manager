@@ -1,0 +1,18 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+// JSON record schemas are validated by the notification capability.
+message GetAgentDigestRequest { string id = 1; optional uint32 revision = 2; }
+message GetAgentDigestResponse { string record_json = 1; }
+message ListAgentDigestsRequest { optional string agent_id = 1; }
+message ListAgentDigestsResponse { repeated string digests_json = 1; }
+message AcknowledgeAgentDigestRequest { string id = 1; uint32 revision = 2; string agent_id = 3; optional string expected_body = 4; }
+message AgentDigestMember {
+  string message_id = 1;
+  string action_id = 2;
+  optional string submission_id = 3;
+  bool applicable = 4;
+  optional int64 acknowledged_at_ms = 5;
+}
+message AcknowledgeAgentDigestResponse { string record_json = 1; repeated AgentDigestMember messages = 2; }

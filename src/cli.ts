@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { notificationsCLI } from "./notifications/cli.js";
 import { submissionsCLI } from "./submissions/cli.js";
 import { codexHookCLI } from "./integrations/codex.js";
 import { repairsCLI } from "./repairs/cli.js";
@@ -18,6 +19,7 @@ import { terminalStates, type JobEvent } from "./domain.js";
 process.umask(0o077);
 async function main(): Promise<void> {
   const parsed = parseCommand(process.argv.slice(2));
+  if (await notificationsCLI(parsed)) return;
   if (await submissionsCLI(parsed)) return;
   if (await activityCLI(parsed)) return;
   if (await repairsCLI(parsed)) return;

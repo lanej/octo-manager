@@ -1,3 +1,4 @@
+import type { ThreadQueueDeleteParams } from "./protocol/v2/ThreadQueueDeleteParams.js";
 import WebSocket from "ws";
 import { codexVersion, rpcRejection } from "./diagnostics.js";
 import { connect } from "node:net";
@@ -23,6 +24,62 @@ function threadState(value: unknown): unknown {
   )
     return undefined;
   return value["thread"]["status"]["type"];
+}
+export interface QueuedMessage {
+  queueId: string;
+  clientId: string;
+  body?: string;
+}
+export interface QueueConnection {
+  prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }>;
+  queued(agent: AgentRef): Promise<QueuedMessage[]>;
+  enqueueQueued(
+    agent: AgentRef,
+    clientId: string,
+    body: string,
+  ): Promise<QueuedMessage>;
+  cancelQueued(agent: AgentRef, queueId: string): Promise<boolean>;
+  received(
+    agent: AgentRef,
+    bodies: string[],
+  ): Promise<{ bodies: string[]; complete: boolean }>;
+  close(): void;
+}
+function queuedMessage(value: unknown): QueuedMessage {
+  if (
+    !object(value) ||
+    typeof value["id"] !== "string" ||
+    value["id"] === "" ||
+    typeof value["clientUserMessageId"] !== "string" ||
+    !Array.isArray(value["input"])
+  )
+    throw new DeliveryError("Invalid queued submission");
+  const input: unknown[] = value["input"];
+  const body =
+    input.length > 0 &&
+    input.every(
+      (part) =>
+        object(part) &&
+        part["type"] === "text" &&
+        typeof part["text"] === "string",
+    )
+      ? input.map((part) => (object(part) ? String(part["text"]) : "")).join("")
+      : undefined;
+  return {
+    queueId: value["id"],
+    clientId: value["clientUserMessageId"],
+    ...(body === undefined ? {} : { body }),
+  };
+}
+export function codexSocketPath(socket?: string): string {
+  return (
+    socket ??
+    join(
+      process.env["CODEX_HOME"] ?? join(homedir(), ".codex"),
+      "app-server-control",
+      "app-server-control.sock",
+    )
+  );
 }
 export class DeliveryError extends Error {
   constructor(
@@ -73,13 +130,7 @@ export class CodexConnection implements AgentConnection {
     socketPath?: string,
     private delivery: "turn" | "queue" = "turn",
   ) {
-    const path =
-      socketPath ??
-      join(
-        process.env.CODEX_HOME ?? join(homedir(), ".codex"),
-        "app-server-control",
-        "app-server-control.sock",
-      );
+    const path = codexSocketPath(socketPath);
     this.socket = new WebSocket("ws://localhost", {
       createConnection: () => connect({ path }),
       maxPayload: 4 * 1024 * 1024,
@@ -368,6 +419,128 @@ export class CodexConnection implements AgentConnection {
       cursor = next;
     }
     return queued === undefined ? { found: false } : { found: true, ...queued };
+  }
+  async queued(agent: AgentRef): Promise<QueuedMessage[]> {
+    await this.ready;
+    const values: QueuedMessage[] = [],
+      cursors = new Set<string>();
+    let cursor: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const params: ThreadQueueListParams = {
+        threadId: agent.sessionId,
+        limit: 100,
+        ...(cursor === undefined ? {} : { cursor }),
+      };
+      const result: unknown = await this.call("thread/queue/list", params);
+      if (!object(result) || !Array.isArray(result["data"]))
+        throw new DeliveryError("Codex queue coverage unavailable");
+      const items: unknown[] = result["data"];
+      for (const value of items) {
+        values.push(queuedMessage(value));
+      }
+      const next = result["nextCursor"];
+      if (next === undefined || next === null || next === "") return values;
+      if (typeof next !== "string" || cursors.has(next))
+        throw new DeliveryError("Invalid queue coverage cursor");
+      cursors.add(next);
+      cursor = next;
+    }
+    throw new DeliveryError(
+      "Queue inspection bound reached; coverage is incomplete",
+    );
+  }
+  async enqueueQueued(
+    agent: AgentRef,
+    clientId: string,
+    body: string,
+  ): Promise<QueuedMessage> {
+    await this.ready;
+    const params: ThreadQueueAddParams = {
+      threadId: agent.sessionId,
+      clientUserMessageId: clientId,
+      input: [{ type: "text", text: body, text_elements: [] }],
+    };
+    const result: unknown = await this.call("thread/queue/add", params);
+    if (!object(result))
+      throw new DeliveryError("Invalid queue admission response", true);
+    const item = queuedMessage(result["queuedSubmission"]);
+    if (item.clientId !== clientId || item.body !== body)
+      throw new DeliveryError(
+        "Queue admission does not confirm the intended digest revision",
+        true,
+      );
+    return item;
+  }
+  async cancelQueued(agent: AgentRef, queueId: string): Promise<boolean> {
+    await this.ready;
+    const params: ThreadQueueDeleteParams = {
+      threadId: agent.sessionId,
+      queuedSubmissionId: queueId,
+    };
+    const result: unknown = await this.call("thread/queue/delete", params);
+    if (!object(result) || typeof result["deleted"] !== "boolean")
+      throw new DeliveryError("Invalid queue cancellation response", true);
+    return result["deleted"];
+  }
+  async received(
+    agent: AgentRef,
+    bodies: string[],
+  ): Promise<{ bodies: string[]; complete: boolean }> {
+    await this.ready;
+    const expected = new Set(bodies),
+      found = new Set<string>(),
+      cursors = new Set<string>();
+    let cursor: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const params: ThreadTurnsListParams = {
+        threadId: agent.sessionId,
+        limit: 20,
+        sortDirection: "desc",
+        itemsView: "summary",
+        ...(cursor === undefined ? {} : { cursor }),
+      };
+      const result: unknown = await this.call("thread/turns/list", params);
+      if (!object(result) || !Array.isArray(result["data"]))
+        throw new DeliveryError("Codex receipt history unavailable");
+      const turns: unknown[] = result["data"];
+      for (const turn of turns) {
+        if (!object(turn) || !Array.isArray(turn["items"])) continue;
+        const items: unknown[] = turn["items"];
+        for (const item of items) {
+          if (
+            !object(item) ||
+            item["type"] !== "userMessage" ||
+            !Array.isArray(item["content"])
+          )
+            continue;
+          const content: unknown[] = item["content"];
+          if (
+            content.length === 0 ||
+            !content.every(
+              (part) =>
+                object(part) &&
+                part["type"] === "text" &&
+                typeof part["text"] === "string",
+            )
+          )
+            continue;
+          const body = content
+            .map((part) => (object(part) ? String(part["text"]) : ""))
+            .join("");
+          if (expected.has(body)) found.add(body);
+        }
+      }
+      const next = result["nextCursor"];
+      if (next === undefined || next === null || next === "")
+        return { bodies: [...found], complete: true };
+      if (typeof next !== "string" || cursors.has(next))
+        throw new DeliveryError("Invalid receipt coverage cursor");
+      if (found.size === expected.size)
+        return { bodies: [...found], complete: false };
+      cursors.add(next);
+      cursor = next;
+    }
+    return { bodies: [...found], complete: false };
   }
   close(): void {
     this.fail(new DeliveryError("Codex client closed"));

@@ -1,3 +1,5 @@
+import {migrateDigests} from "./notifications/schema.js";
+import {DigestStore} from "./notifications/store.js";
 import { migrateSubmissions } from "./submissions/schema.js";
 import { SubmissionStore } from "./submissions/store.js";
 import { migrateChecks } from "./tracking/checks-schema.js";
@@ -27,6 +29,7 @@ export class Store {
   readonly repairs: RepairStore;
   readonly conflicts: ConflictStore;
   readonly submissions: SubmissionStore;
+  readonly digests: DigestStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -53,6 +56,8 @@ export class Store {
       migrateInbox(this.db);
       migrateChecks(this.db);
       migrateSubmissions(this.db);
+      migrateDigests(this.db);
+      this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);

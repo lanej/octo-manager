@@ -45,6 +45,7 @@ try {
     "v2/ThreadTurnsListParams.ts",
     "v2/ThreadQueueAddParams.ts",
     "v2/ThreadQueueListParams.ts",
+    "v2/ThreadQueueDeleteParams.ts",
   ])
     copy(join(scratch, file));
 } finally {

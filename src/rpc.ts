@@ -63,6 +63,12 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    getAgentDigest(r) {return trackingOperation(()=>({recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision))}));},
+    listAgentDigests(r) {return {digestsJson:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>JSON.stringify(value))};},
+    acknowledgeAgentDigest(r) {return trackingOperation(()=>{
+      const messages=coordinator.digests.acknowledge(r.id,r.revision,r.agentId,r.expectedBody);
+      return {recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision)),messages:messages.map(message=>({messageId:message.id,actionId:message.actionId,submissionId:message.submissionId,applicable:message.applicable,acknowledgedAtMs:message.acknowledgedAt===undefined?undefined:BigInt(message.acknowledgedAt)}))};
+    });},
     submitPullRequest(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(
           coordinator.submissions.submit(JSON.parse(r.inputJson)),

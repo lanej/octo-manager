@@ -79,3 +79,7 @@ Tracking observations may read private metadata through existing GitHub authenti
 ## PR submission operations
 
 `SubmitPullRequest`, `GetSubmission`, `ListSubmissions`, `RetrySubmission`, `CancelSubmission` and `GetRepositoryPolicy` use the same local Connect service. Their JSON payload fields are validated by the exported [versioned intent, policy, brief and submission schemas](../schemas/). JSON keeps this evolving document contract identical across worker output, persistence and external tooling; protobuf provides the typed transport envelope. `AgentMessage.submission_id` identifies pre-PR operation callbacks while `action_id` continues to identify PR blocker messages. Both share the existing inbox cursor and acknowledgment RPC.
+
+## Agent digest operations
+
+`GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` expose [queued digest revisions](agent-digests.md). Inspection uses validated JSON records; receipt returns typed member identities, current applicability and receipt timestamps. Receipt is atomic across the exact revision members and is separate from action progress.

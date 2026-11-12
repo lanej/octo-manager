@@ -19,6 +19,7 @@ import {
 } from "../agents/codex.js";
 export interface TrackingOptions {
   stateDirectory?: string;
+  managedQueue?: (agentId: string) => boolean;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
   connect?: (agent: AgentRef) => AgentConnection;
@@ -184,7 +185,12 @@ export class TrackingService {
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveries().find((d) => {
       const message = this.store.inbox.get(d.id);
-      if (message?.acknowledgedAt !== undefined) return false;
+      if (
+        message?.acknowledgedAt !== undefined ||
+        (message !== undefined &&
+          this.options.managedQueue?.(d.recipientAgentId) === true)
+      )
+        return false;
       return (
         (d.progress.state === DeliveryState.Pending &&
           d.progress.nextAttemptAt <= this.now()) ||
@@ -239,11 +245,27 @@ export class TrackingService {
       });
       return;
     }
+    if (this.options.managedQueue?.(agent.id) === true) return;
     const message = this.store.inbox.get(d.id);
     const endpoint = this.config.endpoints[agent.endpoint];
+    if (endpoint === undefined) {
+      this.store.saveDelivery(
+        {
+          ...d,
+          progress: {
+            state: DeliveryState.Unavailable,
+            at: this.now(),
+            reason: "Recipient endpoint is not configured",
+          },
+          updatedAt: this.now(),
+        },
+        "delivery_unavailable",
+      );
+      return;
+    }
     const connection: AgentConnection =
       this.options.connect?.(agent) ??
-      new CodexConnection(endpoint?.socket, endpoint?.delivery);
+      new CodexConnection(endpoint.socket, endpoint.delivery);
     this.connections.add(connection);
     let attempt: DeliveryAttempt | undefined;
     const reconciling =
