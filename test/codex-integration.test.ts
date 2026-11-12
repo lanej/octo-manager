@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { test } from "bun:test";
+import { test, spyOn } from "bun:test";
+import * as filesystem from "node:fs/promises";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -326,5 +327,55 @@ test("automatic recovery skips a full historical page before selecting current u
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("handoff status tolerates files removed after listing but preserves read and parse failures", async () => {
+  for (const folder of ["pending", "failed"] as const) {
+    const directory = await mkdtemp(join(tmpdir(), "octo-status-"));
+    try {
+      const handoffs = new Handoffs(directory);
+      const request = await handoffs.enqueue(
+        url,
+        {
+          harness: "codex",
+          endpoint: "local",
+          sessionId: "owner",
+        },
+        "/work/feature",
+      );
+      if (folder === "failed")
+        await handoffs.drain(() => ({
+          accepted: false,
+          reason: "Different owner",
+        }));
+      const missing = spyOn(filesystem, "readFile").mockRejectedValueOnce(
+        Object.assign(new Error("Removed after listing"), { code: "ENOENT" }),
+      );
+      try {
+        assert.deepEqual(await handoffs.status("owner"), {
+          pending: [],
+          failed: [],
+        });
+      } finally {
+        missing.mockRestore();
+      }
+      assert.equal((await handoffs.status("owner"))[folder].length, 1);
+      const denied = spyOn(filesystem, "readFile").mockRejectedValueOnce(
+        Object.assign(new Error("Access denied"), { code: "EACCES" }),
+      );
+      try {
+        await assert.rejects(handoffs.status("owner"), { code: "EACCES" });
+      } finally {
+        denied.mockRestore();
+      }
+      await writeFile(
+        join(directory, "handoffs", folder, `${request.id}.json`),
+        "invalid JSON",
+      );
+      await assert.rejects(handoffs.status("owner"), SyntaxError);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   }
 });

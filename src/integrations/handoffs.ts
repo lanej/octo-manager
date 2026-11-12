@@ -84,6 +84,14 @@ async function privateDirectory(path: string): Promise<void> {
     throw new Error("Handoff directory must be private and not a symlink");
   await chmod(path, 0o700);
 }
+async function statusFile(path: string): Promise<string | undefined> {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (object(error) && error["code"] === "ENOENT") return undefined;
+    throw error;
+  }
+}
 export class Handoffs {
   private root: string;
   constructor(
@@ -193,15 +201,15 @@ export class Handoffs {
     const pending: Handoff[] = [],
       failed: FailedHandoff[] = [];
     for (const file of await this.entries("pending")) {
-      const value = parseHandoff(
-        JSON.parse(await readFile(join(this.root, "pending", file), "utf8")),
-      );
+      const content = await statusFile(join(this.root, "pending", file));
+      if (content === undefined) continue;
+      const value = parseHandoff(JSON.parse(content));
       if (value.owner.sessionId === sessionId) pending.push(value);
     }
     for (const file of await this.entries("failed")) {
-      const raw: unknown = JSON.parse(
-        await readFile(join(this.root, "failed", file), "utf8"),
-      );
+      const content = await statusFile(join(this.root, "failed", file));
+      if (content === undefined) continue;
+      const raw: unknown = JSON.parse(content);
       if (
         !object(raw) ||
         typeof raw["reason"] !== "string" ||
