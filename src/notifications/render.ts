@@ -45,8 +45,17 @@ export function renderDigest(
   agentId: string,
   messages: AgentMessage[],
   directory: string,
+  agentIds: string[] = [],
 ): { body: string; messageIds: string[] } {
-  const footer = `Receipt: octo-manager acknowledge-digest ${shortId(id)} --revision ${String(number)} --agent-id ${agentId}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}\nUse current returned items for triage.`;
+  const command = `octo-manager acknowledge-digest ${shortId(id)} --revision ${String(number)} --agent-id ${shortId(agentId, agentIds)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+  const fence = "`".repeat(
+    1 +
+      Math.max(
+        0,
+        ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
+      ),
+  );
+  const footer = `Receipt: ${fence}${command}${fence}\nUse current returned items for triage.`;
   const selected: AgentMessage[] = [];
   function body(rows: AgentMessage[]): string {
     const groups = new Map<string, string[]>();

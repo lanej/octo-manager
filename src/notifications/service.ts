@@ -1,3 +1,4 @@
+import { resolveId } from "../tracking/identifiers.js";
 import {
   CodexConnection,
   codexSocketPath,
@@ -146,7 +147,14 @@ export class DigestService {
     const messages = this.pending(agent.id);
     if (messages.length === 0) return undefined;
     const render = (id: string, number: number) =>
-      renderDigest(id, number, agent.id, messages, this.directory);
+      renderDigest(
+        id,
+        number,
+        agent.id,
+        messages,
+        this.directory,
+        this.tracking.store.agents().map((value) => value.id),
+      );
     const active = this.store.active(agent.id);
     return active === undefined
       ? this.store.create(agent.id, transport, render)
@@ -406,7 +414,14 @@ export class DigestService {
         return;
       }
       active = this.store.revise(active, (id, number) =>
-        renderDigest(id, number, agent.id, messages, this.directory),
+        renderDigest(
+          id,
+          number,
+          agent.id,
+          messages,
+          this.directory,
+          this.tracking.store.agents().map((value) => value.id),
+        ),
       );
       let version = this.store.version(active.id, active.revision);
       if (keep !== undefined && keep.version.revision === version.revision) {
@@ -463,7 +478,14 @@ export class DigestService {
         return;
       }
       active = this.store.revise(active, (id, number) =>
-        renderDigest(id, number, agent.id, latest, this.directory),
+        renderDigest(
+          id,
+          number,
+          agent.id,
+          latest,
+          this.directory,
+          this.tracking.store.agents().map((value) => value.id),
+        ),
       );
       version = this.store.version(active.id, active.revision);
       const operation = "queue_enqueue";
@@ -665,7 +687,11 @@ export class DigestService {
     expectedBody?: string,
   ): AgentMessage[] {
     const value = this.store.get(id);
-    if (value.agentId !== agentId)
+    const resolvedAgentId = resolveId(
+      agentId,
+      this.tracking.store.agents().map((agent) => agent.id),
+    );
+    if (value.agentId !== resolvedAgentId)
       throw new Error("Digest belongs to another agent");
     const version = this.store.version(value.id, number);
     if (expectedBody !== undefined && expectedBody !== version.body)
@@ -674,12 +700,12 @@ export class DigestService {
       );
     const messages = this.store.transaction(() => {
       const items = version.messageIds.map((messageId) =>
-        this.tracking.store.acknowledgeMessageInside(messageId, agentId),
+        this.tracking.store.acknowledgeMessageInside(messageId, value.agentId),
       );
       this.store.receiveInside(value, number);
       return items;
     });
-    this.checks.delete(agentId);
+    this.checks.delete(value.agentId);
     return messages;
   }
   inspect(id: string, number?: number) {

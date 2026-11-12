@@ -1,3 +1,4 @@
+import { shortId } from "../src/tracking/identifiers.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Coordinator } from "../src/coordinator.js";
@@ -99,6 +100,10 @@ test("coordinator combines both producers and atomically receipts exact members 
       digest.revision,
     );
     expect(version.messageIds).toHaveLength(2);
+    expect(version.body).toContain(
+      `Receipt: \`octo-manager acknowledge-digest ${shortId(digest.id)} --revision ${String(digest.revision)} --agent-id ${shortId(actor.id)}`,
+    );
+    expect(version.body).not.toContain(actor.id);
     expect(slot?.body).toBe(version.body);
     expect(directCalls).toBe(0);
     const client = schedulerClient(directory),
@@ -134,7 +139,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     const receipt = await client.acknowledgeAgentDigest({
       id: digest.id,
       revision: digest.revision,
-      agentId: actor.id,
+      agentId: shortId(actor.id),
       expectedBody: version.body,
     });
     expect(receipt.messages).toHaveLength(2);
