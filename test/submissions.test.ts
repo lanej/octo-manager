@@ -557,3 +557,133 @@ test("ambiguous exact quotes cannot repair an invalid citation anchor", async ()
     "Unverified requirement citation: behavior",
   );
 });
+
+test("retry reruns invalid worker results without discarding failed output or repeating valid stages", async () => {
+  for (const invalid of [null, { title: "Missing required draft fields" }]) {
+    const roles: Role[] = [],
+      good = runner(roles);
+    let fail = true;
+    const run: RunStage = async (
+      role,
+      input,
+      schema,
+      instructions,
+      model,
+      signal,
+      pid,
+    ) => {
+      const value = await good(
+        role,
+        input,
+        schema,
+        instructions,
+        model,
+        signal,
+        pid,
+      );
+      if (role === "writer" && fail) {
+        fail = false;
+        return {
+          ...value,
+          raw: invalid === null ? "{malformed" : JSON.stringify(invalid),
+          result: invalid,
+        };
+      }
+      return value;
+    };
+    const h = await harness(run);
+    try {
+      const value = h.service.submit(request("invalid-writer"));
+      await until(
+        () => h.store.submissions.get(value.id).state === State.Failed,
+      );
+      h.service.retry(value.id);
+      await until(
+        () => h.store.submissions.get(value.id).state === State.Succeeded,
+      );
+      expect(roles.filter((role) => role === "policy")).toHaveLength(1);
+      expect(roles.filter((role) => role === "change")).toHaveLength(1);
+      expect(roles.filter((role) => role === "writer")).toHaveLength(2);
+      const attempts = h.store.submissions
+        .get(value.id)
+        .stages.filter((stage) => stage.role === "writer");
+      expect(attempts).toHaveLength(2);
+      expect(attempts[0]?.result).toEqual(invalid);
+      expect(h.github.writes).toBe(1);
+    } finally {
+      await h.close();
+    }
+  }
+});
+
+test("removed endpoint does not block recovery of a terminal callback", async () => {
+  const h = await harness(runner([]));
+  try {
+    h.tracking.config.endpoints["retired"] = {};
+    const value = h.service.submit({
+      ...request("removed-endpoint"),
+      owner: { ...owner, endpoint: "retired" },
+    });
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    h.store.submissions.invalidateNotices(value.id);
+    h.store.submissions.save({
+      ...h.store.submissions.get(value.id),
+      notificationRevision: 0,
+    });
+    await h.reopen();
+    const agent = h.store.tracking
+      .agents()
+      .find((agent) => agent.endpoint === "retired");
+    if (agent === undefined) throw new Error("Missing historical recipient");
+    const page = h.store.tracking.inbox.list(agent.id, 0, false, true);
+    expect(page.messages).toHaveLength(1);
+    expect(page.messages[0]?.submissionId).toBe(value.id);
+  } finally {
+    await h.close();
+  }
+});
+
+test("a removed endpoint cannot starve healthy submission recipients", async () => {
+  const h = await harness(runner([]));
+  let delivery: SubmissionNotifications | undefined;
+  try {
+    h.tracking.config.endpoints["retired"] = {};
+    const first = h.service.submit({
+      ...request("old-endpoint"),
+      owner: { ...owner, endpoint: "retired" },
+    });
+    const second = h.service.submit(request("healthy-endpoint"));
+    await until(
+      () =>
+        h.store.submissions.get(first.id).state === State.Succeeded &&
+        h.store.submissions.get(second.id).state === State.Succeeded,
+    );
+    delete h.tracking.config.endpoints["retired"];
+    const sent: string[] = [];
+    const connection: AgentConnection = {
+      prepare: () => Promise.resolve({ busy: false }),
+      find: () => Promise.resolve({ found: false }),
+      send: (agent) => {
+        sent.push(agent.endpoint);
+        return Promise.resolve({ received: true });
+      },
+      close() {},
+    };
+    delivery = new SubmissionNotifications(
+      h.store.submissions,
+      h.tracking,
+      () => connection,
+    );
+    delivery.start();
+    await until(() => sent.length === 1);
+    expect(sent).toEqual(["local"]);
+    const unavailable = h.store.submissions.notices()[0];
+    expect(unavailable?.state).toBe("unavailable");
+    expect(unavailable?.nextCheckAt).toBeGreaterThan(Date.now());
+  } finally {
+    await delivery?.close();
+    await h.close();
+  }
+});

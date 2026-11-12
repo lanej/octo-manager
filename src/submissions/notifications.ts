@@ -68,7 +68,15 @@ export class SubmissionNotifications {
     if (notice === undefined) return;
     const agent = this.tracking.store.agent(notice.recipient),
       endpoint = this.tracking.config.endpoints[agent.endpoint];
-    if (endpoint === undefined) return;
+    if (endpoint === undefined) {
+      this.store.saveNotice(
+        notice,
+        "unavailable",
+        "Recipient endpoint is not configured",
+        Date.now() + 30000,
+      );
+      return;
+    }
     const connection =
       this.connect?.(agent) ??
       new CodexConnection(endpoint.socket, endpoint.delivery);

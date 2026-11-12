@@ -1,3 +1,4 @@
+import { Check } from "typebox/value";
 import { shortId } from "../tracking/identifiers.js";
 import {
   SubmissionState as State,
@@ -183,7 +184,9 @@ export class SubmissionService {
   ): Promise<StageResult> {
     const existing = this.store
       .get(id)
-      .stages.find((stage) => stage.role === role);
+      .stages.findLast(
+        (stage) => stage.role === role && Check(schema, stage.result),
+      );
     if (existing !== undefined) return existing;
     const instructions = await (this.options.instructions ?? stageInstructions)(
       role,
@@ -417,9 +420,9 @@ export class SubmissionService {
     this.notice(id);
   }
   private notice(id: string): void {
-    const value = this.store.get(id),
-      owner = this.tracking.registerAgent(value.request.owner);
+    const value = this.store.get(id);
     if (value.notificationRevision > 0) return;
+    const owner = this.tracking.store.registerAgent(value.request.owner);
     this.store.notify(
       value,
       owner.id,

@@ -1,3 +1,4 @@
+import { workerResultText } from "./worker-result.js";
 import type { StageTask } from "./submissions/contracts.js";
 import { repairWorkerTask, record, single, type RepairWorkerTask } from "./repairs/types.js";
 import { createAgentSession, DefaultResourceLoader, getAgentDir, SessionManager, SettingsManager, type AgentSession, type ToolDefinition } from "@earendil-works/pi-coding-agent";
@@ -110,7 +111,7 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
     if (aborted) return;
     const last = [...session.messages].reverse().find(message => message.role === "assistant");
     if (last?.role === "assistant" && (last.stopReason === "error" || last.stopReason === "aborted" || last.stopReason === "length")) throw new Error(last.errorMessage ?? `Provider response ${last.stopReason}`);
-    await send({ type: "done", text: cleanText(session.getLastAssistantText() ?? "") });
+    await send({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
   } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error) }); }
   finally {
     if (flushTimer) clearInterval(flushTimer);
