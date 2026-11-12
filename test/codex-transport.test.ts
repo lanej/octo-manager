@@ -18,6 +18,8 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
   let queue: { id: string; clientUserMessageId: string }[] = [];
   let badReceipt = false;
   let queueMode = false;
+  let historyType = "userMessage";
+  let historyText = "[octo-delivery:delivery]";
   const methods: string[] = [];
   const ids: number[] = [];
   ws.on("connection", (socket) =>
@@ -93,21 +95,26 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       if (m.method === "thread/read")
         result = { thread: { id: "thread", status: { type: readState } } };
       if (m.method === "thread/resume") readState = "idle";
-      if (m.method === "thread/turns/list")
+      if (m.method === "thread/turns/list") {
+        assert.equal(
+          "itemsView" in m.params ? m.params.itemsView : undefined,
+          "summary",
+        );
         result = {
           data: [
             {
               id: "turn",
               items: [
                 {
-                  type: "userMessage",
-                  content: [{ type: "text", text: "[octo-delivery:delivery]" }],
+                  type: historyType,
+                  content: [{ type: "text", text: historyText }],
                 },
               ],
             },
           ],
           nextCursor: null,
         };
+      }
       if (m.method === "turn/start") {
         assert.deepEqual(Object.keys(m.params).sort(), [
           "clientUserMessageId",
@@ -150,6 +157,22 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       found: true,
       turnId: "turn",
     });
+    assert.deepEqual(await connection.find(agent, "delivery", historyText), {
+      found: true,
+      turnId: "turn",
+      received: true,
+    });
+    historyType = "agentMessage";
+    assert.deepEqual(await connection.find(agent, "delivery", historyText), {
+      found: false,
+    });
+    historyType = "userMessage";
+    historyText += " altered";
+    assert.deepEqual(
+      await connection.find(agent, "delivery", "[octo-delivery:delivery]"),
+      { found: false },
+    );
+    historyText = "[octo-delivery:delivery]";
     connection.close();
     methods.length = 0;
     readState = "active";

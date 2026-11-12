@@ -121,7 +121,10 @@ export function closeProgress(
     observationId: o.id,
     reason,
   });
-  if (a.blocker.kind === "check_results") return undefined;
+  if (a.blocker.kind === "check_results") {
+    if (a.blocker.headSha !== o.headSha) return supersede("PR head changed");
+    return undefined;
+  }
   if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
   const b = a.blocker;
   if (b.kind === "review_feedback") {

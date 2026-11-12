@@ -1,6 +1,6 @@
 # Local installation and Codex integration
 
-Octo takes over GitHub check and review monitoring after a PR is enrolled. Agents can finish their local work and move on; completed checks and new or edited review summaries, inline comments, and conversation comments return through the durable inbox. A notification requests triage and reporting; it does not grant repair or merge authority.
+Octo takes over GitHub check and review monitoring after a PR is enrolled. Agents can finish their local work and move on; failed checks and new or edited review summaries, inline comments, and conversation comments return through the durable inbox. A notification requests triage and reporting; it does not grant repair or merge authority.
 
 ## Install on macOS
 
@@ -42,6 +42,6 @@ PR attachment writes a bounded, private file intake before contacting GitHub. Th
 
 The existing coordinator owns GitHub polling, check watches, durable notifications, and native app-server queue delivery. Hooks only enroll sessions, queue PR intake, and acknowledge receipt. Recovery filters applicability before pagination, returns at most three notifications within a bounded context, and records their receipts only after writing the hook output successfully. A receipt means the host accepted notification context, not that the model processed it or accepted or resolved the associated action. If output or receipt fails, the notification can be replayed. Large notifications remain unread and include a retrieval hint rather than being silently truncated and acknowledged.
 
-Every recovery message labels GitHub evidence as untrusted and retains the original action and immutable evidence identifiers. Full-body matching prevents a delivery marker copied into an altered prompt from acknowledging the original notification. Hooks are advisory and do not block ordinary agent work if the coordinator is unavailable.
+Session setup supplies standing evidence-handling rules once. Recovery retains the original action and immutable evidence identifiers without repeating those rules in every message. Full-body matching prevents a delivery marker copied into an altered prompt from acknowledging the original notification. Hooks are advisory and do not block ordinary agent work if the coordinator is unavailable.
 
 Useful recovery commands are in the [tracking guide](tracking.md). Existing inbox and action records remain compatible; the API adds optional registration, full-body receipt validation, and applicable-only listing without a database migration.

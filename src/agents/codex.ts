@@ -37,6 +37,7 @@ export interface AgentAcceptance {
   turnId?: string;
   queueId?: string;
   note?: string;
+  received?: boolean;
 }
 const queueNote = "Accepted by the Codex queue; agent receipt is pending.";
 export interface AgentConnection {
@@ -49,6 +50,7 @@ export interface AgentConnection {
   find(
     agent: AgentRef,
     deliveryId: string,
+    expectedBody?: string,
   ): Promise<AgentAcceptance & { found: boolean }>;
   close(): void;
 }
@@ -270,8 +272,10 @@ export class CodexConnection implements AgentConnection {
   async find(
     agent: AgentRef,
     deliveryId: string,
+    expectedBody?: string,
   ): Promise<AgentAcceptance & { found: boolean }> {
     await this.ready;
+    let queued: AgentAcceptance | undefined;
     if (this.delivery === "queue") {
       let cursor: string | undefined;
       for (let page = 0; page < 10; page++) {
@@ -288,7 +292,9 @@ export class CodexConnection implements AgentConnection {
           if (object(item) && item["clientUserMessageId"] === deliveryId) {
             if (typeof item["id"] !== "string" || item["id"] === "")
               throw new DeliveryError("Codex queue receipt is incomplete");
-            return { found: true, queueId: item["id"], note: queueNote };
+            queued = { queueId: item["id"], note: queueNote };
+            if (expectedBody === undefined) return { found: true, ...queued };
+            break;
           }
         }
         const next = result["nextCursor"];
@@ -302,9 +308,9 @@ export class CodexConnection implements AgentConnection {
     for (let page = 0; page < 10; page++) {
       const params: ThreadTurnsListParams = {
         threadId: agent.sessionId,
-        limit: 100,
+        limit: 20,
         sortDirection: "desc",
-        itemsView: "full",
+        itemsView: "summary",
         ...(cursor === undefined ? {} : { cursor }),
       };
       const result: unknown = await this.call("thread/turns/list", params);
@@ -318,17 +324,49 @@ export class CodexConnection implements AgentConnection {
           JSON.stringify(turn["items"] ?? []).includes(
             `[octo-delivery:${deliveryId}]`,
           )
-        )
-          return { found: true, turnId: turn["id"] };
+        ) {
+          const items: unknown[] = Array.isArray(turn["items"])
+            ? turn["items"]
+            : [];
+          const received =
+            expectedBody !== undefined &&
+            items.some((item) => {
+              if (
+                !object(item) ||
+                item["type"] !== "userMessage" ||
+                !Array.isArray(item["content"])
+              )
+                return false;
+              const content: unknown[] = item["content"];
+              return (
+                content.length > 0 &&
+                content.every(
+                  (part) =>
+                    object(part) &&
+                    part["type"] === "text" &&
+                    typeof part["text"] === "string",
+                ) &&
+                content
+                  .map((part) => (object(part) ? part["text"] : ""))
+                  .join("") === expectedBody
+              );
+            });
+          if (received)
+            return { found: true, turnId: turn["id"], received: true };
+          if (expectedBody === undefined)
+            return { found: true, turnId: turn["id"] };
+        }
       }
       const next = result["nextCursor"];
       if (next === undefined || next === null || next === "")
-        return { found: false };
+        return queued === undefined
+          ? { found: false }
+          : { found: true, ...queued };
       if (typeof next !== "string")
         throw new DeliveryError("Codex history cursor invalid");
       cursor = next;
     }
-    return { found: false };
+    return queued === undefined ? { found: false } : { found: true, ...queued };
   }
   close(): void {
     this.fail(new DeliveryError("Codex client closed"));

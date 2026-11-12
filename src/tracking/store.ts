@@ -48,6 +48,30 @@ export class TrackingStore {
     migrateTracking(db);
     this.inbox = new AgentInbox(db, now);
     this.checks = new CheckWatches(db, now);
+    this.transaction(() => {
+      for (const action of this.actions()) {
+        if (
+          unfinished(action) &&
+          action.blocker.kind === "check_results" &&
+          (action.blocker.state === CheckWatchState.Superseded ||
+            action.blocker.checks.every(successfulCheck))
+        ) {
+          this.saveAction(
+            {
+              ...action,
+              progress: {
+                state: ActionState.Superseded,
+                at: this.now(),
+                reason: "Informational check result retained in watch history",
+              },
+              updatedAt: this.now(),
+            },
+            "action_superseded",
+          );
+          this.cancelDeliveries(action.id, "Informational check result");
+        }
+      }
+    });
   }
   transaction<T>(fn: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -462,14 +486,54 @@ export class TrackingStore {
           this.cancelDeliveries(a.id, "Action no longer outstanding");
         }
       }
+      const observedFindings = findings(o, p.url);
       const checkResults = this.checks.observe(o).flatMap((watch) => {
-        if (
-          watch.state !== CheckWatchState.Completed &&
-          watch.state !== CheckWatchState.Superseded
-        )
-          return [];
         const checks =
           watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
+        const failures = checks.filter((check) => !successfulCheck(check));
+        const reported = [
+          ...this.actions().filter((action) => action.prId === p.id),
+          ...observedFindings,
+        ];
+        const unreported = failures.filter(
+          (check) =>
+            !reported.some((finding) => {
+              const blocker = finding.blocker;
+              if (blocker.kind === "check_results")
+                return (
+                  blocker.headSha === watch.headSha &&
+                  blocker.checks.some(
+                    (previous) =>
+                      previous.id === check.id &&
+                      previous.conclusion === check.conclusion,
+                  )
+                );
+              if (
+                blocker.kind !== "check_failed" ||
+                blocker.headSha !== watch.headSha
+              )
+                return false;
+              if (blocker.sourceId === check.id) return true;
+              const job = checks.find(
+                (candidate) => candidate.id === blocker.sourceId,
+              );
+              const run = (url: string) =>
+                /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
+                  url,
+                )?.[0];
+              return (
+                job !== undefined &&
+                job.at >= check.at &&
+                run(job.url) !== undefined &&
+                run(job.url) === run(check.url)
+              );
+            }),
+        );
+        if (
+          watch.state !== CheckWatchState.Completed ||
+          unreported.length === 0
+        )
+          return [];
         return [
           {
             sourceKey: watch.id,
@@ -478,19 +542,15 @@ export class TrackingStore {
               watchId: watch.id,
               headSha: watch.headSha,
               state: watch.state,
-              checks,
+              checks: unreported,
               ...(watch.replacementHeadSha === undefined
                 ? {}
                 : { replacementHeadSha: watch.replacementHeadSha }),
             },
             summary:
-              watch.state === CheckWatchState.Superseded
-                ? "Check watch superseded by a new PR head"
-                : checks.every((check) => check.conclusion === "success")
-                  ? "Checks passed"
-                  : checks.every(successfulCheck)
-                    ? "Checks finished with neutral or skipped results"
-                    : "Checks finished with issues",
+              unreported.length === 1
+                ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
+                : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
             evidenceUrl: p.url,
           },
         ];

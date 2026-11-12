@@ -151,8 +151,7 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     assert(
       sent.every(
         (message) =>
-          message.includes("cheap-model") &&
-          message.includes("triage and reporting only"),
+          !message.includes("cheap-model") && message.includes("PR #1"),
       ),
     );
     assert(

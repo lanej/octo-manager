@@ -83,7 +83,7 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
     assert.equal(sent.length, 1);
     const message = store.tracking.inbox.get(delivery.id);
     assert(message !== undefined);
-    assert(message.body.includes("acknowledgeMessage"));
+    assert(message.body.includes("Merge conflict"));
     assert.equal(message.acknowledgedAt, undefined);
     await service.close();
     store.close();
@@ -546,6 +546,78 @@ test("receipt during reconciliation retains the newly confirmed transport receip
       store.tracking.action(message.actionId).progress.state,
       ActionState.Open,
     );
+  } finally {
+    await service.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("service confirms exact host receipt once without accepting the action", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-host-receipt-"));
+  let at = 1000;
+  const store = new Store(directory, () => at);
+  const config = defaultTrackingConfig();
+  const pr = store.tracking.track("https://github.com/owner/repo/pull/1", {
+    harness: "codex",
+    endpoint: "local",
+    sessionId: "owner",
+  });
+  store.tracking.observe(pr.id, input, config);
+  let body = "";
+  let received = false;
+  const service = new TrackingService(store.tracking, config, () => at, {
+    read: () => Promise.resolve(input),
+    connect: () => ({
+      prepare: () => Promise.resolve({ busy: false }),
+      send: (_agent, _id, message) => {
+        body = message;
+        return Promise.resolve({ queueId: "queued" });
+      },
+      find: (_agent, _id, expected) => {
+        assert.equal(expected, body);
+        return Promise.resolve({ found: true, received, turnId: "host-turn" });
+      },
+      close: () => {},
+    }),
+  });
+  try {
+    service.tick();
+    await until(
+      () =>
+        store.tracking.deliveries()[0]?.progress.state ===
+        DeliveryState.Delivered,
+    );
+    const delivery = store.tracking.deliveries()[0];
+    assert(delivery !== undefined);
+    at += 300001;
+    service.tick();
+    await until(
+      () => (store.tracking.inbox.get(delivery.id)?.nextCheckAt ?? 0) > at,
+    );
+    assert.equal(
+      store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
+      undefined,
+    );
+    received = true;
+    at += 300001;
+    service.tick();
+    await until(
+      () => store.tracking.inbox.get(delivery.id)?.acknowledgedAt !== undefined,
+    );
+    assert.equal(
+      store.tracking.action(delivery.actionId).progress.state,
+      ActionState.Open,
+    );
+    const receipts = () =>
+      store
+        .eventsSince(0)
+        .filter((event) => event.kind === "message_acknowledged").length;
+    assert.equal(receipts(), 1);
+    at += 300001;
+    service.tick();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(receipts(), 1);
   } finally {
     await service.close();
     store.close();

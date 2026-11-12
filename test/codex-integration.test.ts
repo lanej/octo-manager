@@ -168,7 +168,7 @@ test("native PR attachment survives offline intake, preserves ownership and reco
       hook_event_name: "UserPromptSubmit",
       prompt: incoming.body,
     });
-    assert(received.includes("exact incoming notification"));
+    assert.equal(received, "");
     assert(store.inbox.get(incoming.id)?.acknowledgedAt !== undefined);
     assert.equal(
       store.action(incoming.actionId).progress.state,
