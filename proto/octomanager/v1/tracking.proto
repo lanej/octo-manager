@@ -178,6 +178,7 @@ message AgentMessage {
   int64 created_at_ms = 6;
   optional int64 acknowledged_at_ms = 7;
   bool applicable = 8;
+  optional string submission_id = 9;
 }
 message ListAgentMessagesRequest { string agent_id = 1; uint64 after_sequence = 2; bool include_acknowledged = 3; bool applicable_only = 4; }
 message ListAgentMessagesResponse { repeated AgentMessage messages = 1; uint64 next_sequence = 2; bool has_more = 3; }

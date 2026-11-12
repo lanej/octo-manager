@@ -32,6 +32,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
+  submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
   repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
   rules: { kind: Blocker["kind"]; checkName?: string; profile: string }[];
@@ -92,11 +93,41 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   if (
     !object(raw) ||
     Object.keys(raw).some(
-      (k) => !["profiles", "rules", "endpoints", "repairs"].includes(k),
+      (k) =>
+        ![
+          "profiles",
+          "rules",
+          "endpoints",
+          "repairs",
+          "submissionModels",
+        ].includes(k),
     )
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["submissionModels"] !== undefined) {
+    const models = raw["submissionModels"];
+    if (
+      !object(models) ||
+      Object.keys(models).some(
+        (key) => !["policy", "change", "writer"].includes(key),
+      )
+    )
+      throw new Error("Invalid submission models");
+    result.submissionModels = {};
+    for (const role of ["policy", "change", "writer"] as const) {
+      const model = models[role];
+      if (model !== undefined) {
+        if (
+          typeof model !== "string" ||
+          model.trim() === "" ||
+          model.length > 200
+        )
+          throw new Error("Invalid submission model");
+        result.submissionModels[role] = model;
+      }
+    }
+  }
   if (raw["repairs"] !== undefined) {
     if (!object(raw["repairs"])) throw new Error("Invalid repair profiles");
     for (const [name, profile] of Object.entries(raw["repairs"]))

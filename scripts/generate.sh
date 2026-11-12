@@ -6,3 +6,5 @@ GOBIN="$PWD/.tools/bin" go install google.golang.org/protobuf/cmd/protoc-gen-go@
 GOBIN="$PWD/.tools/bin" go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.21.1
 bun node_modules/@bufbuild/buf/bin/buf lint
 bun node_modules/@bufbuild/buf/bin/buf generate
+
+bun scripts/export-pr-schemas.ts

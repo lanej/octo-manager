@@ -3,9 +3,16 @@ package octomanager.v1;
 import "octomanager/v1/tracking.proto";
 import "octomanager/v1/activity.proto";
 import "octomanager/v1/repairs.proto";
+import "octomanager/v1/submissions.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc SubmitPullRequest(SubmitPullRequestRequest) returns (SubmitPullRequestResponse);
+  rpc GetSubmission(GetSubmissionRequest) returns (GetSubmissionResponse);
+  rpc ListSubmissions(ListSubmissionsRequest) returns (ListSubmissionsResponse);
+  rpc RetrySubmission(RetrySubmissionRequest) returns (RetrySubmissionResponse);
+  rpc CancelSubmission(CancelSubmissionRequest) returns (CancelSubmissionResponse);
+  rpc GetRepositoryPolicy(GetRepositoryPolicyRequest) returns (GetRepositoryPolicyResponse);
   rpc ListConflictCases(ListConflictCasesRequest) returns (ListConflictCasesResponse);
   rpc GetConflictCase(GetConflictCaseRequest) returns (GetConflictCaseResponse);
   rpc RequestRebase(RequestRebaseRequest) returns (RequestRebaseResponse);

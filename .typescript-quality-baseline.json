@@ -3862,14 +3862,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-floating-promises",
       "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "if (event.type === \"turn_start\" && ++turns > 12 || event.type === \"tool_execution_start\" && ++toolCalls > 40) { budgetExceeded = true; void session!.abort(); }",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-floating-promises",
-      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
       "source": "return new Promise((resolve, reject) => { pending.set(id, { resolve, reject }); send({ type: \"tool\", id, name, args }); });",
       "count": 1
     },
@@ -3879,14 +3871,6 @@
       "rule": "@typescript-eslint/no-floating-promises",
       "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
       "source": "void session?.abort();",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "if (event.type === \"turn_start\" && ++turns > 12 || event.type === \"tool_execution_start\" && ++toolCalls > 40) { budgetExceeded = true; void session!.abort(); }",
       "count": 1
     },
     {

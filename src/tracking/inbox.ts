@@ -1,3 +1,4 @@
+import { nextInboxSequence } from "../submissions/schema.js";
 import { compactId } from "./identifiers.js";
 import type { DatabaseSync } from "node:sqlite";
 
@@ -5,6 +6,7 @@ export interface AgentMessage {
   sequence: number;
   id: string;
   actionId: string;
+  submissionId?: string;
   recipientAgentId: string;
   body: string;
   createdAt: number;
@@ -25,14 +27,18 @@ function text(value: unknown): string {
 const applicable =
   "(p.enabled=1 AND a.owner_agent_id=d.recipient_agent_id AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
 const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
-  ${applicable} AS applicable
+  NULL AS submission_id, ${applicable} AS applicable
   FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
   JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
+const messagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,applicable FROM operation_notifications)`;
 function decode(row: Record<string, unknown>): AgentMessage {
   return {
     sequence: integer(row["sequence"]),
     id: text(row["delivery_id"]),
-    actionId: text(row["action_id"]),
+    actionId: typeof row["action_id"] === "string" ? row["action_id"] : "",
+    ...(typeof row["submission_id"] === "string"
+      ? { submissionId: row["submission_id"] }
+      : {}),
     recipientAgentId: text(row["recipient_agent_id"]),
     body: text(row["body"]),
     createdAt: integer(row["created_at_ms"]),
@@ -49,12 +55,14 @@ export class AgentInbox {
     private now: () => number,
   ) {}
   get(id: string): AgentMessage | undefined {
-    const row = this.db.prepare(`${query} WHERE m.delivery_id=?`).get(id);
+    const row = this.db.prepare(`${messagesQuery} WHERE delivery_id=?`).get(id);
     if (row !== undefined) return decode(row);
     const prefix = compactId(id);
     if (!/^[a-f0-9]{8,32}$/.test(prefix)) return undefined;
     const matches = this.db
-      .prepare(`${query} WHERE replace(m.delivery_id,'-','') LIKE ? LIMIT 2`)
+      .prepare(
+        `${messagesQuery} WHERE replace(delivery_id,'-','') LIKE ? LIMIT 2`,
+      )
       .all(prefix + "%");
     if (matches.length > 1)
       throw new Error("Invalid ambiguous ID prefix; use a longer ID");
@@ -67,9 +75,9 @@ export class AgentInbox {
       throw new Error("Invalid inbox message size");
     this.db
       .prepare(
-        "INSERT INTO delivery_messages(delivery_id,body,created_at_ms,next_check_at_ms) VALUES(?,?,?,?)",
+        "INSERT INTO delivery_messages(sequence,delivery_id,body,created_at_ms,next_check_at_ms) VALUES(?,?,?,?,?)",
       )
-      .run(id, body, this.now(), this.now());
+      .run(nextInboxSequence(this.db), id, body, this.now(), this.now());
     const result = this.get(id);
     if (result === undefined) throw new Error("Message was not recorded");
     return result;
@@ -83,7 +91,7 @@ export class AgentInbox {
     integer(after);
     const rows = this.db
       .prepare(
-        `${query} WHERE d.recipient_agent_id=? AND m.sequence>? AND (?=1 OR m.acknowledged_at_ms IS NULL) AND (?=0 OR ${applicable}) ORDER BY m.sequence LIMIT 201`,
+        `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
       )
       .all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
     const messages = rows.slice(0, 200).map(decode);
@@ -101,7 +109,9 @@ export class AgentInbox {
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL",
+        message.submissionId === undefined
+          ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
+          : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);
@@ -119,7 +129,7 @@ export class AgentInbox {
 }
 export function migrateInbox(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 7 || version === 8) return;
+  if (version === 7 || version === 8 || version === 9) return;
   if (version !== 6) throw new Error("Unsupported inbox database version");
   db.exec(`BEGIN IMMEDIATE;
     CREATE TABLE delivery_messages (

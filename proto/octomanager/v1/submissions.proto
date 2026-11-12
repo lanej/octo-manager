@@ -1,0 +1,17 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+// Structured JSON is validated with the exported versioned JSON Schemas.
+message SubmitPullRequestRequest { string input_json = 1; }
+message SubmitPullRequestResponse { string submission_json = 1; }
+message GetSubmissionResponse { string submission_json = 1; }
+message RetrySubmissionResponse { string submission_json = 1; }
+message CancelSubmissionResponse { string submission_json = 1; }
+message GetSubmissionRequest { string id = 1; }
+message ListSubmissionsRequest {}
+message ListSubmissionsResponse { repeated string submissions_json = 1; }
+message RetrySubmissionRequest { string id = 1; }
+message CancelSubmissionRequest { string id = 1; }
+message GetRepositoryPolicyRequest { string repository = 1; optional uint32 version = 2; string tier = 3; }
+message GetRepositoryPolicyResponse { string policy_json = 1; string template = 2; }

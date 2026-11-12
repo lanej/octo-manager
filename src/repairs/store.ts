@@ -20,7 +20,8 @@ export class RepairStore {
       version !== 5 &&
       version !== 6 &&
       version !== 7 &&
-      version !== 8
+      version !== 8 &&
+      version !== 9
     )
       throw new Error("Unsupported repair database version");
     if (version === 3)
