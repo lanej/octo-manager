@@ -1,3 +1,4 @@
+import { shortId } from "../src/tracking/identifiers.js";
 import { randomUUID } from "node:crypto";
 import { test, spyOn } from "bun:test";
 import * as filesystem from "node:fs/promises";
@@ -106,7 +107,7 @@ test("native PR attachment survives offline intake, preserves ownership and reco
       hook_event_name: "SessionStart",
       source: "resume",
     });
-    assert(recovery.includes(notice.id));
+    assert(recovery.includes(shortId(notice.id)));
     assert(store.inbox.get(notice.id)?.acknowledgedAt !== undefined);
     assert.equal(
       store.action(notice.actionId).progress.state,

@@ -1,3 +1,4 @@
+import { trackingOperation } from "./rpc.js";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type {
   AcknowledgeMessageRequest,
@@ -36,25 +37,27 @@ export function inboxRoutes(store: TrackingStore) {
       };
     },
     acknowledgeMessage(request: AcknowledgeMessageRequest) {
-      const message = store.inbox.get(request.id);
-      if (message === undefined)
-        throw new ConnectError("Message not found", Code.NotFound);
-      if (message.recipientAgentId !== request.agentId)
-        throw new ConnectError(
-          "Message belongs to another agent",
-          Code.PermissionDenied,
-        );
-      if (
-        request.expectedBody !== undefined &&
-        request.expectedBody !== message.body
-      )
-        throw new ConnectError(
-          "Message text does not match the stored notification",
-          Code.InvalidArgument,
-        );
-      return {
-        message: wire(store.acknowledgeMessage(request.id, request.agentId)),
-      };
+      return trackingOperation(() => {
+        const message = store.inbox.get(request.id);
+        if (message === undefined)
+          throw new ConnectError("Message not found", Code.NotFound);
+        if (message.recipientAgentId !== request.agentId)
+          throw new ConnectError(
+            "Message belongs to another agent",
+            Code.PermissionDenied,
+          );
+        if (
+          request.expectedBody !== undefined &&
+          request.expectedBody !== message.body
+        )
+          throw new ConnectError(
+            "Message text does not match the stored notification",
+            Code.InvalidArgument,
+          );
+        return {
+          message: wire(store.acknowledgeMessage(request.id, request.agentId)),
+        };
+      });
     },
   };
 }

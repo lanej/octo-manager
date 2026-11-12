@@ -209,6 +209,7 @@ export async function trackingOperation<T>(
   try {
     return await work();
   } catch (error) {
+    if (error instanceof ConnectError) throw error;
     const message =
       error instanceof Error ? error.message : "Tracking operation failed";
     if (message.includes("not found"))

@@ -162,6 +162,15 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       turnId: "turn",
       received: true,
     });
+    historyText = "[octo-delivery:12345678]\nCompact notice";
+    assert.deepEqual(
+      await connection.find(
+        agent,
+        "12345678-abcd-4abc-9abc-123456789abc",
+        historyText,
+      ),
+      { found: true, turnId: "turn", received: true },
+    );
     historyType = "agentMessage";
     assert.deepEqual(await connection.find(agent, "delivery", historyText), {
       found: false,

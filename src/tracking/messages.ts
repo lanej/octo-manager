@@ -1,3 +1,4 @@
+import { shortId } from "./identifiers.js";
 import { execFile } from "node:child_process";
 import { promisify, stripVTControlCharacters } from "node:util";
 import type { Action } from "./types.js";
@@ -109,6 +110,10 @@ export function agentMessage(
   prUrl: string,
   deliveryId: string,
   excerpt?: string,
+  identities: { actions: string[]; messages: string[] } = {
+    actions: [],
+    messages: [],
+  },
 ): string {
   const blocker = action.blocker;
   const head =
@@ -136,5 +141,5 @@ export function agentMessage(
       : "";
   const evidence = failed?.url ?? action.evidenceUrl;
   const completion = blocker.kind === "check_results" && failed === undefined;
-  return `[octo-delivery:${deliveryId}]\n${link(`PR #${new URL(prUrl).pathname.split("/").at(-1) ?? ""}`, prUrl)} · ${compact(action.summary.replace(/\s+/g, " "), 120)}${head === undefined ? "" : ` at ${compact(head.replace(/\s+/g, " "), 200).slice(0, 8)}`}${location}\n${detail}${completion ? "" : link(blocker.kind === "check_failed" || blocker.kind === "check_results" ? "Failed run" : "Evidence", evidence) + "\n"}Action: ${action.id}`;
+  return `[octo-delivery:${shortId(deliveryId, identities.messages)}]\n${link(`PR #${new URL(prUrl).pathname.split("/").at(-1) ?? ""}`, prUrl)} · ${compact(action.summary.replace(/\s+/g, " "), 120)}${head === undefined ? "" : ` at ${compact(head.replace(/\s+/g, " "), 200).slice(0, 8)}`}${location}\n${detail}${completion ? "" : link(blocker.kind === "check_failed" || blocker.kind === "check_results" ? "Failed run" : "Evidence", evidence) + "\n"}Action: ${shortId(action.id, identities.actions)}`;
 }

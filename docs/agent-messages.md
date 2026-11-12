@@ -13,7 +13,7 @@ Successful completion is actionable as a merge-assessment signal. Report the exa
 
 ## Initial message
 
-Show the PR, short revision, failed check or other issue, a short evidence excerpt when available, and a direct evidence link. Include a file and line for inline feedback. A grouped result names its first failure and reports the total failure count; the referenced action retains every unreported failure. The transport retains a delivery marker and action ID for correlation; omit profile/model preferences, JSON evidence dumps, command arrays, acknowledgments, defensive paragraphs, and requested-response boilerplate.
+Show the PR, short revision, failed check or other issue, a short evidence excerpt when available, and a direct evidence link. Include a file and line for inline feedback. A grouped result names its first failure and reports the total failure count; the referenced action retains every unreported failure. The message retains short delivery and action IDs for correlation; omit profile/model preferences, JSON evidence dumps, command arrays, acknowledgments, defensive paragraphs, and requested-response boilerplate.
 
 ```text
 PR #13 · macOS check failed at ad8968bf
@@ -34,3 +34,8 @@ Freeze the rendered message before sending and reuse the exact body and delivery
 Do not spend recipient context on acknowledgment commands or repeated recovery instructions. Manual inbox and receipt APIs remain available when automatic reconciliation cannot establish delivery. Optional hook recovery returns the stored body without repeating policy around it. Existing immutable messages are retained as sent; installing the new format does not rewrite history or remove text already queued in Codex.
 
 Keep conversational reports to the decision: outcome and necessary next step, usually one to three sentences. A notification should not create a new reporting ceremony.
+
+
+## Short identifiers
+
+Display action and message UUIDs as eight hexadecimal characters, omitting hyphens. Extend a prefix only when needed to distinguish IDs already stored in the corresponding action/message namespace. Frozen notices keep their chosen spelling; a later collision can make an older short lookup ambiguous, so lookup rejects ambiguity and asks for a longer ID. `octo-manager action SHORT_ID` and message receipt commands accept unique prefixes of at least eight hexadecimal characters. Full UUIDs remain unchanged in database keys, API responses, queue idempotency metadata, and receipt/activity records. Exact-body history matching works with short markers and retains compatibility with older full markers; a short marker alone is never a receipt.

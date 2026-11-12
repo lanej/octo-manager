@@ -1,3 +1,4 @@
+import { resolveId } from "./identifiers.js";
 import {
   CheckWatches,
   CheckWatchState,
@@ -248,7 +249,12 @@ export class TrackingStore {
       }));
   }
   action(id: string): Action {
-    const a = this.actions().find((a) => a.id === id);
+    const actions = this.actions();
+    const resolved = resolveId(
+      id,
+      actions.map((action) => action.id),
+    );
+    const a = actions.find((action) => action.id === resolved);
     if (!a) throw new Error("Action not found");
     return a;
   }
@@ -632,7 +638,7 @@ export class TrackingStore {
       const message = this.inbox.acknowledge(id, agentId);
       if (before?.acknowledgedAt === undefined) {
         const action = this.action(message.actionId);
-        this.event("message_acknowledged", id, action.prId, action.id);
+        this.event("message_acknowledged", message.id, action.prId, action.id);
       }
       return message;
     });
