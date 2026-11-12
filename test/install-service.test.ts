@@ -23,6 +23,7 @@ test("Linux service activation is explicit, native and reports unavailable-manag
     calls.push([command, ...args]);
     return "";
   };
+  expect(definition.text).toContain("WorkingDirectory=/fixture/release\n");
   expect(definition.text).toContain(
     'ExecStart="/fixture/bun" "/fixture/release/dist/cli.js" "serve"',
   );

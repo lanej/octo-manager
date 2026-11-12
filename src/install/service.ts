@@ -69,7 +69,7 @@ export function serviceDefinition(
     kind: "systemd",
     file: join(input.configHome, "systemd/user/octo-manager.service"),
     target: "octo-manager.service",
-    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${quote(input.release)}\nExecStart=${[input.bun, join(input.release, "dist/cli.js"), "serve"].map(execQuote).join(" ")}\n${Object.entries(
+    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${input.release.replaceAll("%", "%%")}\nExecStart=${[input.bun, join(input.release, "dist/cli.js"), "serve"].map(execQuote).join(" ")}\n${Object.entries(
       environment,
     )
       .map(([key, value]) => `Environment=${quote(key + "=" + value)}`)

@@ -51,9 +51,11 @@ const env: NodeJS.ProcessEnv = {
   XDG_CONFIG_HOME: config,
 };
 const start = values.start === true;
-if (!start && process.platform === "linux")
+if (!start && process.platform === "linux") {
+  env["XDG_RUNTIME_DIR"] = join(home, "absent-runtime");
   env["DBUS_SESSION_BUS_ADDRESS"] =
     "unix:path=" + join(home, "absent-user-bus");
+}
 let foreground: ReturnType<typeof Bun.spawn> | undefined,
   installed: Result | undefined,
   stopped = false,
@@ -88,6 +90,16 @@ async function ready(): Promise<void> {
   throw new Error("Installed coordinator API did not become ready");
 }
 try {
+  if (!start && process.platform === "linux") {
+    const probe = await command(
+      ["systemctl", "--user", "show-environment"],
+      env,
+    );
+    assert(
+      probe.code !== 0,
+      "Unavailable-manager fixture unexpectedly reached a user manager",
+    );
+  }
   if (start) {
     const preflight =
       process.platform === "linux"
