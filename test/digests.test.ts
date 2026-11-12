@@ -592,3 +592,63 @@ test("receipt during a legacy withdrawal cannot orphan the previously observed d
     await f.close();
   }
 });
+test("consumed legacy notification reconciles before the first digest admission after restart", async () => {
+  const f = await fixture();
+  try {
+    const a = f.notice("Legacy A"),
+      b = f.notice("New B"),
+      message = f.store.tracking.inbox.get(a.id);
+    if (message === undefined) throw new Error("Missing notice");
+    f.queue.slots.push({
+      queueId: "legacy",
+      clientId: a.id,
+      body: message.body,
+    });
+    f.queue.cancelMode = "consume";
+    await f.flush();
+    expect(f.queue.operations).toEqual(["cancel"]);
+    await f.reopen();
+    await f.flush();
+    const value = f.store.digests.active(f.actor.id);
+    if (value === undefined) throw new Error("No digest");
+    expect(f.store.tracking.inbox.get(a.id)?.acknowledgedAt).toBeDefined();
+    expect(f.store.tracking.inbox.get(b.id)?.acknowledgedAt).toBeUndefined();
+    expect(
+      f.store.digests.version(value.id, value.revision).messageIds,
+    ).toEqual([b.id]);
+    expect(f.queue.operations).toEqual(["cancel", "add"]);
+    expect(
+      f.store.digests
+        .events(value.id)
+        .some((event) => event.kind === "queue_cancel_reconciled"),
+    ).toBe(true);
+  } finally {
+    await f.close();
+  }
+});
+test("legacy withdrawal stays uncertain without positive receipt and recovers from explicit canonical receipt", async () => {
+  const f = await fixture();
+  try {
+    const a = f.notice("Legacy A");
+    f.notice("New B");
+    const message = f.store.tracking.inbox.get(a.id);
+    if (message === undefined) throw new Error("Missing notice");
+    f.queue.slots.push({
+      queueId: "legacy",
+      clientId: a.id,
+      body: message.body,
+    });
+    f.queue.cancelMode = "lose_after";
+    await f.flush();
+    f.queue.coverage = false;
+    await f.flush();
+    expect(f.queue.operations).toEqual(["cancel"]);
+    expect(f.store.tracking.inbox.get(a.id)?.acknowledgedAt).toBeUndefined();
+    f.store.tracking.acknowledgeMessage(a.id, f.actor.id);
+    await f.reopen();
+    await f.flush();
+    expect(f.queue.operations).toEqual(["cancel", "add"]);
+  } finally {
+    await f.close();
+  }
+});

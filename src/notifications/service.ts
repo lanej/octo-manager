@@ -232,6 +232,15 @@ export class DigestService {
               : "collapse legacy notification",
         );
       }
+      for (const digest of this.store
+        .list(agent.id)
+        .filter((value) => value.transport.socket === route.socket))
+        await this.reconcileLegacyWithdrawals(
+          connection,
+          agent,
+          digest.id,
+          queued,
+        );
       for (const previous of this.store
         .list(agent.id)
         .filter(
@@ -498,6 +507,47 @@ export class DigestService {
     } finally {
       connection.close();
       this.connections.delete(connection);
+    }
+  }
+  private async reconcileLegacyWithdrawals(
+    connection: QueueConnection,
+    agent: AgentRef,
+    digestId: string,
+    queued: QueuedMessage[],
+  ): Promise<void> {
+    const legacy = this.withdrawals(digestId).flatMap((withdrawal) => {
+      const message = this.tracking.store.inbox.get(withdrawal.clientId);
+      return message !== undefined &&
+        message.id === withdrawal.clientId &&
+        message.recipientAgentId === agent.id &&
+        !queued.some((item) => item.queueId === withdrawal.queueId)
+        ? [{ withdrawal, message }]
+        : [];
+    });
+    if (legacy.length === 0) return;
+    const unread = legacy.filter(
+      (value) => value.message.acknowledgedAt === undefined,
+    );
+    const history: { bodies: string[] } =
+      unread.length === 0
+        ? { bodies: [] }
+        : await connection.received(
+            agent,
+            unread.map((value) => value.message.body),
+          );
+    for (const { withdrawal, message } of legacy) {
+      if (
+        message.acknowledgedAt === undefined &&
+        !history.bodies.includes(message.body)
+      )
+        continue;
+      this.tracking.store.transaction(() => {
+        this.tracking.store.acknowledgeMessageInside(message.id, agent.id);
+        this.store.event(agent.id, digestId, "queue_cancel_reconciled", {
+          queueId: withdrawal.queueId,
+          clientId: message.id,
+        });
+      });
     }
   }
   private pendingWithdrawal(id: string): boolean {
