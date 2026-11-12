@@ -42,6 +42,33 @@
     "createdAtMs": {
       "type": "integer"
     },
+    "citationCorrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ruleId",
+          "reportedLine",
+          "verifiedLine"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "reportedLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "verifiedLine": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "sources": {
       "type": "array",
       "items": {

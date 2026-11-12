@@ -104,6 +104,15 @@ export const PolicySchema = object({
   analystVersion: Type.Literal(1),
   stockVersion: Type.Literal(1),
   createdAtMs: Type.Integer(),
+  citationCorrections: Type.Optional(
+    Type.Array(
+      object({
+        ruleId: text(100),
+        reportedLine: Type.Integer({ minimum: 1 }),
+        verifiedLine: Type.Integer({ minimum: 1 }),
+      }),
+    ),
+  ),
   sources: Type.Array(SourceSchema, { maxItems: 100 }),
   analysis: PolicyAnalysisSchema,
 });
@@ -427,4 +436,34 @@ export function complexity(value: string): Complexity {
     default:
       throw new Error("Invalid complexity tier");
   }
+}
+
+export function anchorPolicy(
+  analysis: PolicyAnalysis,
+  sources: Source[],
+): {
+  analysis: PolicyAnalysis;
+  corrections: NonNullable<RepositoryPolicy["citationCorrections"]>;
+} {
+  const corrections: NonNullable<RepositoryPolicy["citationCorrections"]> = [];
+  const requirements = analysis.requirements.map((requirement) => {
+    const source = sources.find(
+      (source) =>
+        source.path === requirement.sourcePath &&
+        source.sha === requirement.sourceSha,
+    );
+    if (source === undefined) return requirement;
+    const index = source.text.indexOf(requirement.quote);
+    if (index < 0 || source.text.indexOf(requirement.quote, index + 1) >= 0)
+      return requirement;
+    const line = source.text.slice(0, index).split("\n").length;
+    if (line === requirement.line) return requirement;
+    corrections.push({
+      ruleId: requirement.id,
+      reportedLine: requirement.line,
+      verifiedLine: line,
+    });
+    return { ...requirement, line };
+  });
+  return { analysis: { ...analysis, requirements }, corrections };
 }

@@ -1,3 +1,9 @@
+import {
+  anchorPolicy,
+  policyBlockers,
+  parse,
+  PolicyAnalysisSchema,
+} from "../src/submissions/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -459,4 +465,95 @@ test("cancelling parallel analysis prevents writer and publication", async () =>
   } finally {
     await h.close();
   }
+});
+
+test("unique exact quotations repair model line numbers with retained correction evidence", async () => {
+  const roles: Role[] = [],
+    base = runner(roles);
+  const wrongLine: RunStage = async (
+    role,
+    input,
+    schema,
+    instructions,
+    model,
+    signal,
+    pid,
+  ) => {
+    const stage = await base(
+      role,
+      input,
+      schema,
+      instructions,
+      model,
+      signal,
+      pid,
+    );
+    if (role !== "policy") return stage;
+    const result = {
+      requirements: [
+        {
+          id: "behavior",
+          strength: "required",
+          category: "content",
+          description: "Include behavior",
+          sourcePath: "CONTRIBUTING.md",
+          sourceSha: "policy-v1",
+          line: 42,
+          quote: "Include behavior.",
+          scope: "*",
+          check: { kind: "body_contains", value: "behavior" },
+        },
+      ],
+      template: "",
+      blockers: [],
+    };
+    return { ...stage, result, raw: JSON.stringify(result) };
+  };
+  const h = await harness(wrongLine);
+  try {
+    const value = h.service.submit(request("anchor"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    const policy = h.store.submissions.policy("owner/repo");
+    expect(policy?.analysis.requirements[0]?.line).toBe(1);
+    expect(policy?.citationCorrections).toEqual([
+      { ruleId: "behavior", reportedLine: 42, verifiedLine: 1 },
+    ]);
+    const raw = h.store.submissions
+      .get(value.id)
+      .stages.find((stage) => stage.role === "policy")?.raw;
+    expect(raw).toContain('"line":42');
+  } finally {
+    await h.close();
+  }
+});
+
+test("ambiguous exact quotes cannot repair an invalid citation anchor", async () => {
+  const stage = await runner([])(
+    "policy",
+    {},
+    PolicyAnalysisSchema,
+    "Policy",
+    "test-model",
+    new AbortController().signal,
+    () => {},
+  );
+  const analysis = parse(PolicyAnalysisSchema, stage.result);
+  const invalid = {
+    ...analysis,
+    requirements: analysis.requirements.map((rule) => ({ ...rule, line: 42 })),
+  };
+  const sources = [
+    {
+      path: "CONTRIBUTING.md",
+      sha: "policy-v1",
+      text: "Include behavior.\nInclude behavior.",
+    },
+  ];
+  const anchored = anchorPolicy(invalid, sources);
+  expect(anchored.corrections).toEqual([]);
+  expect(policyBlockers(anchored.analysis, sources)).toContain(
+    "Unverified requirement citation: behavior",
+  );
 });

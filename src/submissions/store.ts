@@ -113,6 +113,9 @@ export class SubmissionStore {
   savePolicy(
     snapshot: RepositorySnapshot,
     analysis: PolicyAnalysis,
+    citationCorrections: NonNullable<
+      RepositoryPolicy["citationCorrections"]
+    > = [],
   ): RepositoryPolicy {
     const value: RepositoryPolicy = {
       schemaVersion: 1,
@@ -121,6 +124,7 @@ export class SubmissionStore {
       sourceDigest: snapshot.sourceDigest,
       analystVersion: 1,
       stockVersion: 1,
+      citationCorrections,
       createdAtMs: this.now(),
       sources: snapshot.sources,
       analysis,

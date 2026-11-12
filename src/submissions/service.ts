@@ -7,6 +7,7 @@ import {
   WriterSchema,
   parse,
   policyBlockers,
+  anchorPolicy,
   publicationBlockers,
   renderTemplate,
   stockProfiles,
@@ -236,14 +237,25 @@ export class SubmissionService {
     const stage = await this.stage(
       id,
       "policy",
-      { sources: snapshot.sources },
+      {
+        sources: snapshot.sources.map((source) => ({
+          path: source.path,
+          sha: source.sha,
+          numberedLines: source.text
+            .split("\n")
+            .map((text, index) => `${String(index + 1)}: ${text}`),
+        })),
+      },
       PolicyAnalysisSchema,
       signal,
     );
-    const analysis = parse(PolicyAnalysisSchema, stage.result);
+    const { analysis, corrections } = anchorPolicy(
+      parse(PolicyAnalysisSchema, stage.result),
+      snapshot.sources,
+    );
     const blockers = policyBlockers(analysis, snapshot.sources);
     if (blockers.length > 0) throw new InputNeeded(blockers.join("; "));
-    const policy = this.store.savePolicy(snapshot, analysis);
+    const policy = this.store.savePolicy(snapshot, analysis, corrections);
     this.update(id, {
       policyVersion: policy.version,
       policyDigest: policy.sourceDigest,
