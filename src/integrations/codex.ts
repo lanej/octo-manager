@@ -112,6 +112,21 @@ export async function codexHook(
       deadline,
     );
   }
+  const digestMarker =
+    event === "UserPromptSubmit" && typeof prompt === "string"
+      ? /^\[octo-digest:([a-f0-9-]{8,36}):(\d+)\]\n/u.exec(prompt)
+      : null;
+  if (digestMarker !== null && typeof prompt === "string") {
+    await client.acknowledgeAgentDigest(
+      {
+        id: digestMarker[1] ?? "",
+        revision: Number(digestMarker[2]),
+        agentId,
+        expectedBody: prompt,
+      },
+      deadline,
+    );
+  }
   const page = await client.listAgentMessages(
     { agentId, applicableOnly: true },
     deadline,

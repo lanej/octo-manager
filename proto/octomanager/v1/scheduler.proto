@@ -4,9 +4,13 @@ import "octomanager/v1/tracking.proto";
 import "octomanager/v1/activity.proto";
 import "octomanager/v1/repairs.proto";
 import "octomanager/v1/submissions.proto";
+import "octomanager/v1/notifications.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
+  rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);
+  rpc AcknowledgeAgentDigest(AcknowledgeAgentDigestRequest) returns (AcknowledgeAgentDigestResponse);
   rpc SubmitPullRequest(SubmitPullRequestRequest) returns (SubmitPullRequestResponse);
   rpc GetSubmission(GetSubmissionRequest) returns (GetSubmissionResponse);
   rpc ListSubmissions(ListSubmissionsRequest) returns (ListSubmissionsResponse);

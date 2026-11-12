@@ -254,7 +254,7 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     try {
       assert.equal(
         reader.prepare("PRAGMA user_version").get()?.["user_version"],
-        9,
+        10,
       );
       assert.throws(() =>
         reader.prepare("UPDATE agent_activity SET outcome='invented'").run(),

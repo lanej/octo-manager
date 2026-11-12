@@ -33,6 +33,15 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceGetAgentDigestProcedure is the fully-qualified name of the SchedulerService's
+	// GetAgentDigest RPC.
+	SchedulerServiceGetAgentDigestProcedure = "/octomanager.v1.SchedulerService/GetAgentDigest"
+	// SchedulerServiceListAgentDigestsProcedure is the fully-qualified name of the SchedulerService's
+	// ListAgentDigests RPC.
+	SchedulerServiceListAgentDigestsProcedure = "/octomanager.v1.SchedulerService/ListAgentDigests"
+	// SchedulerServiceAcknowledgeAgentDigestProcedure is the fully-qualified name of the
+	// SchedulerService's AcknowledgeAgentDigest RPC.
+	SchedulerServiceAcknowledgeAgentDigestProcedure = "/octomanager.v1.SchedulerService/AcknowledgeAgentDigest"
 	// SchedulerServiceSubmitPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// SubmitPullRequest RPC.
 	SchedulerServiceSubmitPullRequestProcedure = "/octomanager.v1.SchedulerService/SubmitPullRequest"
@@ -143,6 +152,9 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v1.SchedulerService service.
 type SchedulerServiceClient interface {
+	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
+	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
+	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
 	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
 	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
 	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
@@ -192,6 +204,24 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		getAgentDigest: connect.NewClient[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetAgentDigestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetAgentDigest")),
+			connect.WithClientOptions(opts...),
+		),
+		listAgentDigests: connect.NewClient[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListAgentDigestsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListAgentDigests")),
+			connect.WithClientOptions(opts...),
+		),
+		acknowledgeAgentDigest: connect.NewClient[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse](
+			httpClient,
+			baseURL+SchedulerServiceAcknowledgeAgentDigestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeAgentDigest")),
+			connect.WithClientOptions(opts...),
+		),
 		submitPullRequest: connect.NewClient[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse](
 			httpClient,
 			baseURL+SchedulerServiceSubmitPullRequestProcedure,
@@ -413,6 +443,9 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	getAgentDigest            *connect.Client[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse]
+	listAgentDigests          *connect.Client[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse]
+	acknowledgeAgentDigest    *connect.Client[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse]
 	submitPullRequest         *connect.Client[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse]
 	getSubmission             *connect.Client[v1.GetSubmissionRequest, v1.GetSubmissionResponse]
 	listSubmissions           *connect.Client[v1.ListSubmissionsRequest, v1.ListSubmissionsResponse]
@@ -449,6 +482,21 @@ type schedulerServiceClient struct {
 	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
 	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
 	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+}
+
+// GetAgentDigest calls octomanager.v1.SchedulerService.GetAgentDigest.
+func (c *schedulerServiceClient) GetAgentDigest(ctx context.Context, req *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error) {
+	return c.getAgentDigest.CallUnary(ctx, req)
+}
+
+// ListAgentDigests calls octomanager.v1.SchedulerService.ListAgentDigests.
+func (c *schedulerServiceClient) ListAgentDigests(ctx context.Context, req *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error) {
+	return c.listAgentDigests.CallUnary(ctx, req)
+}
+
+// AcknowledgeAgentDigest calls octomanager.v1.SchedulerService.AcknowledgeAgentDigest.
+func (c *schedulerServiceClient) AcknowledgeAgentDigest(ctx context.Context, req *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error) {
+	return c.acknowledgeAgentDigest.CallUnary(ctx, req)
 }
 
 // SubmitPullRequest calls octomanager.v1.SchedulerService.SubmitPullRequest.
@@ -633,6 +681,9 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v1.SchedulerService service.
 type SchedulerServiceHandler interface {
+	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
+	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
+	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
 	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
 	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
 	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
@@ -678,6 +729,24 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceGetAgentDigestHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetAgentDigestProcedure,
+		svc.GetAgentDigest,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetAgentDigest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListAgentDigestsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListAgentDigestsProcedure,
+		svc.ListAgentDigests,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListAgentDigests")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceAcknowledgeAgentDigestHandler := connect.NewUnaryHandler(
+		SchedulerServiceAcknowledgeAgentDigestProcedure,
+		svc.AcknowledgeAgentDigest,
+		connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeAgentDigest")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceSubmitPullRequestHandler := connect.NewUnaryHandler(
 		SchedulerServiceSubmitPullRequestProcedure,
 		svc.SubmitPullRequest,
@@ -896,6 +965,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v1.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceGetAgentDigestProcedure:
+			schedulerServiceGetAgentDigestHandler.ServeHTTP(w, r)
+		case SchedulerServiceListAgentDigestsProcedure:
+			schedulerServiceListAgentDigestsHandler.ServeHTTP(w, r)
+		case SchedulerServiceAcknowledgeAgentDigestProcedure:
+			schedulerServiceAcknowledgeAgentDigestHandler.ServeHTTP(w, r)
 		case SchedulerServiceSubmitPullRequestProcedure:
 			schedulerServiceSubmitPullRequestHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetSubmissionProcedure:
@@ -976,6 +1051,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAgentDigest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListAgentDigests is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.AcknowledgeAgentDigest is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.SubmitPullRequest is not implemented"))

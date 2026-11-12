@@ -636,22 +636,20 @@ export class TrackingStore {
     });
   }
   acknowledgeMessage(id: string, agentId: string) {
-    return this.transaction(() => {
-      const before = this.inbox.get(id);
-      const message = this.inbox.acknowledge(id, agentId);
-      if (before?.acknowledgedAt === undefined) {
-        if (message.submissionId === undefined) {
-          const action = this.action(message.actionId);
-          this.event(
-            "message_acknowledged",
-            message.id,
-            action.prId,
-            action.id,
-          );
-        } else this.event("message_acknowledged", message.id, "");
-      }
-      return message;
-    });
+    return this.transaction(() => this.acknowledgeMessageInside(id, agentId));
+  }
+  acknowledgeMessageInside(id: string, agentId: string) {
+    if (!this.db.isTransaction)
+      throw new Error("Receipt requires a coordinator transaction");
+    const before = this.inbox.get(id),
+      message = this.inbox.acknowledge(id, agentId);
+    if (before?.acknowledgedAt === undefined) {
+      if (message.submissionId === undefined) {
+        const action = this.action(message.actionId);
+        this.event("message_acknowledged", message.id, action.prId, action.id);
+      } else this.event("message_acknowledged", message.id, "");
+    }
+    return message;
   }
   retryDelivery(id: string): Delivery {
     return this.transaction(() => {

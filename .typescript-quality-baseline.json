@@ -154,14 +154,6 @@
       "count": 1
     },
     {
-      "file": "src/agents/codex.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'CODEX_HOME' comes from an index signature, so it must be accessed with ['CODEX_HOME'].",
-      "source": "process.env.CODEX_HOME ?? join(homedir(), \".codex\"),",
-      "count": 1
-    },
-    {
       "file": "src/auth.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",

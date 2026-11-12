@@ -44,6 +44,7 @@ export class SubmissionNotifications {
     private store: SubmissionStore,
     private tracking: TrackingService,
     private connect?: (agent: AgentRef) => AgentConnection,
+    private managedQueue?: (agentId: string) => boolean,
   ) {
     store.recoverNotices();
   }
@@ -64,7 +65,11 @@ export class SubmissionNotifications {
   private async deliver(): Promise<void> {
     const notice = this.store
       .notices()
-      .find((value) => value.nextCheckAt <= Date.now());
+      .find(
+        (value) =>
+          value.nextCheckAt <= Date.now() &&
+          this.managedQueue?.(value.recipient) !== true,
+      );
     if (notice === undefined) return;
     const agent = this.tracking.store.agent(notice.recipient),
       endpoint = this.tracking.config.endpoints[agent.endpoint];
