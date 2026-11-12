@@ -252,7 +252,18 @@ async function main(): Promise<void> {
       } catch {
         /* No registered service on first install. */
       }
-      run("/bin/launchctl", ["bootstrap", domain, plist]);
+      for (let attempt = 0; ; attempt++) {
+        try {
+          run("/bin/launchctl", ["bootstrap", domain, plist]);
+          break;
+        } catch (error) {
+          if (!object(error) || error["status"] !== 5 || attempt >= 5)
+            throw error;
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(200 * 2 ** attempt, 1000)),
+          );
+        }
+      }
       run("/bin/launchctl", ["enable", target]);
       run("/bin/launchctl", ["kickstart", target]);
     }
