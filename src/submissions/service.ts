@@ -336,7 +336,7 @@ export class SubmissionService {
           snapshot,
           policy,
           change,
-          profile: stockProfiles[change.tier],
+          profile: (policy.complexityProfiles ?? stockProfiles)[change.tier],
           template: renderTemplate(policy, change.tier),
         },
         WriterSchema,

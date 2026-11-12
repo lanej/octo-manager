@@ -13,6 +13,113 @@
     "analysis"
   ],
   "properties": {
+    "complexityProfiles": {
+      "type": "object",
+      "required": [
+        "routine",
+        "standard",
+        "complex"
+      ],
+      "properties": {
+        "routine": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        },
+        "standard": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        },
+        "complex": {
+          "type": "object",
+          "required": [
+            "minWords",
+            "maxWords",
+            "guidance",
+            "advisory"
+          ],
+          "properties": {
+            "minWords": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Advisory minimum description length; never pad a PR to meet it."
+            },
+            "maxWords": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Advisory upper range; preserve required and material context."
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative."
+        }
+      },
+      "additionalProperties": false
+    },
     "schemaVersion": {
       "type": "number",
       "const": 1

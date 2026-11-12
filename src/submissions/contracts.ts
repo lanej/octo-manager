@@ -96,7 +96,35 @@ export const PolicyAnalysisSchema = object({
   template: Type.String({ maxLength: 32000 }),
   blockers: strings(30),
 });
+const ProfileSchema = Type.Object(
+  {
+    minWords: Type.Integer({
+      minimum: 0,
+      description:
+        "Advisory minimum description length; never pad a PR to meet it.",
+    }),
+    maxWords: Type.Integer({
+      minimum: 1,
+      description:
+        "Advisory upper range; preserve required and material context.",
+    }),
+    guidance: text(),
+    advisory: Type.Literal(true),
+  },
+  {
+    additionalProperties: false,
+    description:
+      "Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative.",
+  },
+);
 export const PolicySchema = object({
+  complexityProfiles: Type.Optional(
+    object({
+      routine: ProfileSchema,
+      standard: ProfileSchema,
+      complex: ProfileSchema,
+    }),
+  ),
   schemaVersion: Type.Literal(1),
   repository: text(200),
   version: Type.Integer({ minimum: 1 }),
@@ -276,19 +304,22 @@ export function hash(value: unknown): string {
 }
 export const stockProfiles: Record<
   Complexity,
-  { minWords: number; maxWords: number; guidance: string }
+  { minWords: number; maxWords: number; guidance: string; advisory: true }
 > = {
   routine: {
+    advisory: true,
     minWords: 20,
     maxWords: 100,
     guidance: "Localized, low risk, one clear outcome",
   },
   standard: {
+    advisory: true,
     minWords: 100,
     maxWords: 250,
     guidance: "Related behaviors or decisions needing explanation",
   },
   complex: {
+    advisory: true,
     minWords: 250,
     maxWords: 600,
     guidance:
@@ -299,9 +330,10 @@ export function renderTemplate(
   policy: RepositoryPolicy,
   tier: Complexity,
 ): string {
+  const profiles = policy.complexityProfiles ?? stockProfiles;
   return policy.analysis.template !== ""
     ? policy.analysis.template
-    : `<What changes and why>\n\n<Concrete example when useful>\n\n<Material compatibility, limitations, or rollout details when applicable>\n\n<!-- Advisory ${String(stockProfiles[tier].minWords)}–${String(stockProfiles[tier].maxWords)} words; omit unused sections. -->`;
+    : `<What changes and why>\n\n<Concrete example when useful>\n\n<Material compatibility, limitations, or rollout details when applicable>\n\n<!-- Advisory ${String(profiles[tier].minWords)}–${String(profiles[tier].maxWords)} words; omit unused sections. -->`;
 }
 export function applicable(requirement: Requirement, files: string[]): boolean {
   return (

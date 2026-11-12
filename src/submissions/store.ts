@@ -6,6 +6,7 @@ import {
   hash,
   parse,
   PolicySchema,
+  stockProfiles,
   SubmissionSchema,
   type RepositoryPolicy,
   type PolicyAnalysis,
@@ -97,7 +98,13 @@ export class SubmissionStore {
         "SELECT data FROM repository_policies WHERE repository=? ORDER BY version",
       )
       .all(repository.toLowerCase())
-      .map((row) => parse(PolicySchema, JSON.parse(String(row["data"]))));
+      .map((row) => {
+        const policy = parse(PolicySchema, JSON.parse(String(row["data"])));
+        return {
+          ...policy,
+          complexityProfiles: policy.complexityProfiles ?? stockProfiles,
+        };
+      });
   }
   policy(repository: string, version?: number): RepositoryPolicy | undefined {
     const all = this.policies(repository);
@@ -125,6 +132,7 @@ export class SubmissionStore {
       analystVersion: 1,
       stockVersion: 1,
       citationCorrections,
+      complexityProfiles: stockProfiles,
       createdAtMs: this.now(),
       sources: snapshot.sources,
       analysis,
