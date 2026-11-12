@@ -1,3 +1,5 @@
+import { Code, ConnectError } from "@connectrpc/connect";
+import { shortId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -219,7 +221,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
     const page = await client.listAgentMessages({ agentId: pr.ownerAgentId });
     const message = page.messages[0];
     assert(message !== undefined);
-    assert(message.body.includes(`[octo-delivery:${message.id}]`));
+    assert(message.body.includes(`[octo-delivery:${shortId(message.id)}]`));
+    assert.equal(
+      (await client.getAction({ id: shortId(message.actionId) })).action?.id,
+      message.actionId,
+    );
     assert.equal(message.applicable, true);
     assert.equal(page.hasMore, false);
     assert.equal(
@@ -232,15 +238,16 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       0,
     );
     await assert.rejects(
-      client.acknowledgeMessage({ id: message.id, agentId: "wrong" }),
-      /another agent/,
+      client.acknowledgeMessage({ id: shortId(message.id), agentId: "wrong" }),
+      (error) =>
+        error instanceof ConnectError && error.code === Code.PermissionDenied,
     );
     const child = Bun.spawn(
       [
         process.execPath,
         "src/cli.ts",
         "acknowledge-message",
-        message.id,
+        shortId(message.id),
         "--agent-id",
         pr.ownerAgentId,
         "--state",
@@ -620,6 +627,60 @@ test("service confirms exact host receipt once without accepting the action", as
     assert.equal(receipts(), 1);
   } finally {
     await service.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("message prefix receipts update canonical identities and reject ambiguous prefixes", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-prefix-"));
+  const store = new Store(directory);
+  try {
+    const config = defaultTrackingConfig();
+    const pr = store.tracking.track("https://github.com/owner/repo/pull/1", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "owner",
+    });
+    store.tracking.observe(pr.id, input, config);
+    const action = store.tracking.actions()[0];
+    assert(action !== undefined);
+    const first = "deadbeef-1234-4567-89ab-0123456789ab",
+      second = "deadbeef-2234-4567-89ab-0123456789ab";
+    for (const id of [first, second]) {
+      store.tracking.saveDelivery(
+        {
+          id,
+          actionId: action.id,
+          recipientAgentId: pr.ownerAgentId,
+          progress: { state: DeliveryState.Pending, nextAttemptAt: 1 },
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        "delivery_pending",
+      );
+      store.tracking.inbox.record(id, `Message ${id}`);
+    }
+    assert.throws(
+      () => store.tracking.acknowledgeMessage("deadbeef", pr.ownerAgentId),
+      /ambiguous/,
+    );
+    assert.equal(store.tracking.inbox.get(first)?.acknowledgedAt, undefined);
+    const receipt = store.tracking.acknowledgeMessage(
+      "deadbeef1",
+      pr.ownerAgentId,
+    );
+    assert.equal(receipt.id, first);
+    assert(receipt.acknowledgedAt !== undefined);
+    assert.equal(store.tracking.inbox.get(second)?.acknowledgedAt, undefined);
+    assert.equal(
+      store
+        .eventsSince(0)
+        .filter((event) => event.kind === "message_acknowledged")
+        .at(-1)?.detail,
+      first,
+    );
+  } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
   }

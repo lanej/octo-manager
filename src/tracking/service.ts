@@ -212,7 +212,10 @@ export class TrackingService {
           this.options.failureExcerpt ?? readFailureExcerpt
         )(action, pr.url, AbortSignal.timeout(5000));
         if (!this.current(d)) return;
-        const message = agentMessage(action, pr.url, d.id, excerpt);
+        const message = agentMessage(action, pr.url, d.id, excerpt, {
+          actions: this.store.actions().map((action) => action.id),
+          messages: this.store.deliveries().map((delivery) => delivery.id),
+        });
         this.store.transaction(() => {
           this.store.inbox.record(d.id, message);
         });

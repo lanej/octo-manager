@@ -104,7 +104,7 @@ export async function codexHook(
   const prompt = value["prompt"];
   const marker =
     event === "UserPromptSubmit" && typeof prompt === "string"
-      ? /^\[octo-delivery:([a-f0-9-]{36})\]\n/.exec(prompt)?.[1]
+      ? /^\[octo-delivery:([a-f0-9-]{8,36})\]\n/.exec(prompt)?.[1]
       : undefined;
   if (marker !== undefined && typeof prompt === "string") {
     await client.acknowledgeMessage(

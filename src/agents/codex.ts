@@ -321,9 +321,10 @@ export class CodexConnection implements AgentConnection {
         if (
           object(turn) &&
           typeof turn["id"] === "string" &&
-          JSON.stringify(turn["items"] ?? []).includes(
-            `[octo-delivery:${deliveryId}]`,
-          )
+          (expectedBody !== undefined ||
+            JSON.stringify(turn["items"] ?? []).includes(
+              `[octo-delivery:${deliveryId}]`,
+            ))
         ) {
           const items: unknown[] = Array.isArray(turn["items"])
             ? turn["items"]

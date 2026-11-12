@@ -1,3 +1,4 @@
+import { shortId, resolveId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import {
@@ -113,4 +114,24 @@ test("success completion is a compact readiness signal rather than a failed-run 
   assert(body.includes(pr));
   assert(!body.includes("Failed run"));
   assert(Buffer.byteLength(body) < 512);
+});
+
+test("short UUIDs expand on collisions and resolve only unambiguous prefixes", () => {
+  const first = "deadbeef-1234-4567-89ab-0123456789ab";
+  const second = "deadbeef-2234-4567-89ab-0123456789ab";
+  assert.equal(shortId(first), "deadbeef");
+  assert.equal(shortId(first, [first, second]), "deadbeef1");
+  assert.equal(shortId(second, [first, second]), "deadbeef2");
+  assert.equal(resolveId("deadbeef1", [first, second]), first);
+  assert.equal(resolveId(first, [first, second]), first);
+  assert.equal(resolveId("deadbee", [first]), undefined);
+  assert.throws(() => resolveId("deadbeef", [first, second]), /ambiguous/);
+  const body = agentMessage({ ...action, id: first }, pr, second, undefined, {
+    actions: [first, second],
+    messages: [first, second],
+  });
+  assert(body.startsWith("[octo-delivery:deadbeef2]\n"));
+  assert(body.endsWith("Action: deadbeef1"));
+  assert(!body.includes(first));
+  assert(!body.includes(second));
 });

@@ -1,3 +1,5 @@
+import { actionableFeedback } from "./review-signals.js";
+import { resolveId } from "./identifiers.js";
 import {
   CheckWatches,
   CheckWatchState,
@@ -52,8 +54,10 @@ export class TrackingStore {
       for (const action of this.actions()) {
         if (
           unfinished(action) &&
-          action.blocker.kind === "check_results" &&
-          action.blocker.state === CheckWatchState.Superseded
+          ((action.blocker.kind === "check_results" &&
+            action.blocker.state === CheckWatchState.Superseded) ||
+            (action.blocker.kind === "review_feedback" &&
+              !actionableFeedback(action.blocker.feedback)))
         ) {
           this.saveAction(
             {
@@ -61,13 +65,13 @@ export class TrackingStore {
               progress: {
                 state: ActionState.Superseded,
                 at: this.now(),
-                reason: "Informational check result retained in watch history",
+                reason: "Informational update retained in observation history",
               },
               updatedAt: this.now(),
             },
             "action_superseded",
           );
-          this.cancelDeliveries(action.id, "Informational check result");
+          this.cancelDeliveries(action.id, "Informational update");
         }
       }
     });
@@ -248,7 +252,12 @@ export class TrackingStore {
       }));
   }
   action(id: string): Action {
-    const a = this.actions().find((a) => a.id === id);
+    const actions = this.actions();
+    const resolved = resolveId(
+      id,
+      actions.map((action) => action.id),
+    );
+    const a = actions.find((action) => action.id === resolved);
     if (!a) throw new Error("Action not found");
     return a;
   }
@@ -632,7 +641,7 @@ export class TrackingStore {
       const message = this.inbox.acknowledge(id, agentId);
       if (before?.acknowledgedAt === undefined) {
         const action = this.action(message.actionId);
-        this.event("message_acknowledged", id, action.prId, action.id);
+        this.event("message_acknowledged", message.id, action.prId, action.id);
       }
       return message;
     });

@@ -1,3 +1,4 @@
+import { actionableFeedback } from "./review-signals.js";
 import { checkEvidence, checksFinished, successfulCheck } from "./checks.js";
 import {
   ActionState,
@@ -97,13 +98,15 @@ export function findings(o: PRObservation, url: string): Finding[] {
       });
   for (const feedback of o.feedback?.state === "complete"
     ? o.feedback.value
-    : [])
+    : []) {
+    if (!actionableFeedback(feedback)) continue;
     found.push({
       sourceKey: `${feedback.source}:${feedback.id}:${feedback.revision}`,
       blocker: { kind: "review_feedback", feedback },
       summary: `${feedback.source === "inline" ? "Code review" : feedback.source === "review" ? "Review" : "PR comment"} from ${feedback.author}`,
       evidenceUrl: feedback.url,
     });
+  }
   return found;
 }
 export function closeProgress(
@@ -142,6 +145,8 @@ export function closeProgress(
   if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
   const b = a.blocker;
   if (b.kind === "review_feedback") {
+    if (!actionableFeedback(b.feedback))
+      return supersede("Review lifecycle update has no findings");
     if (o.feedback?.state === "complete") {
       const newer = o.feedback.value.find(
         (f) => f.source === b.feedback.source && f.id === b.feedback.id,

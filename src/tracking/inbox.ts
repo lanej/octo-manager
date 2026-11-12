@@ -1,3 +1,4 @@
+import { compactId } from "./identifiers.js";
 import type { DatabaseSync } from "node:sqlite";
 
 export interface AgentMessage {
@@ -49,7 +50,15 @@ export class AgentInbox {
   ) {}
   get(id: string): AgentMessage | undefined {
     const row = this.db.prepare(`${query} WHERE m.delivery_id=?`).get(id);
-    return row === undefined ? undefined : decode(row);
+    if (row !== undefined) return decode(row);
+    const prefix = compactId(id);
+    if (!/^[a-f0-9]{8,32}$/.test(prefix)) return undefined;
+    const matches = this.db
+      .prepare(`${query} WHERE replace(m.delivery_id,'-','') LIKE ? LIMIT 2`)
+      .all(prefix + "%");
+    if (matches.length > 1)
+      throw new Error("Invalid ambiguous ID prefix; use a longer ID");
+    return matches[0] === undefined ? undefined : decode(matches[0]);
   }
   record(id: string, body: string): AgentMessage {
     const previous = this.get(id);
@@ -94,8 +103,8 @@ export class AgentInbox {
       .prepare(
         "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL",
       )
-      .run(this.now(), id);
-    const result = this.get(id);
+      .run(this.now(), message.id);
+    const result = this.get(message.id);
     if (result === undefined)
       throw new Error("Message not found after acknowledgment");
     return result;

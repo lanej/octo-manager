@@ -1,3 +1,4 @@
+import { shortId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -57,7 +58,7 @@ test("busy threads wait, delivery acceptance is not acknowledgment, and origin s
           sends++;
           assert.equal(agent.sessionId, "owner");
           assert(message.includes("Merge conflict"));
-          assert(message.includes(`[octo-delivery:${id}]`));
+          assert(message.includes(`[octo-delivery:${shortId(id)}]`));
           return { turnId: "turn" };
         },
       }),
