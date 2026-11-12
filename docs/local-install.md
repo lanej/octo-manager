@@ -1,6 +1,6 @@
 # Local installation and Codex integration
 
-Octo takes over GitHub check and review monitoring after a PR is enrolled. Agents can finish their local work and move on; failed checks and new or edited review summaries, inline comments, and conversation comments return through the durable inbox. A notification requests triage and reporting; it does not grant repair or merge authority.
+Octo takes over GitHub check and review monitoring after a PR is enrolled. Agents can finish their local work and move on; completed checks and new or edited review summaries, inline comments, and conversation comments return through the durable inbox. A notification requests triage and reporting; it does not grant repair or merge authority.
 
 ## Install on macOS
 

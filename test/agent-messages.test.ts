@@ -5,6 +5,7 @@ import {
   logExcerpt,
   readFailureExcerpt,
 } from "../src/tracking/messages.js";
+import { CheckWatchState } from "../src/tracking/checks.js";
 import { ActionState, type Action } from "../src/tracking/types.js";
 const pr = "https://github.com/owner/repo/pull/13";
 const action: Action = {
@@ -89,4 +90,27 @@ test("failure excerpts use bounded job logs and preserve a run link when diagnos
     ),
     undefined,
   );
+});
+
+test("success completion is a compact readiness signal rather than a failed-run report", () => {
+  const body = agentMessage(
+    {
+      ...action,
+      blocker: {
+        kind: "check_results",
+        watchId: "watch",
+        headSha: "ad8968bf1234",
+        state: CheckWatchState.Completed,
+        checks: [],
+      },
+      summary: "Checks passed; no merge conflicts",
+      evidenceUrl: pr,
+    },
+    pr,
+    "delivery",
+  );
+  assert(body.includes("Checks passed; no merge conflicts"));
+  assert(body.includes(pr));
+  assert(!body.includes("Failed run"));
+  assert(Buffer.byteLength(body) < 512);
 });

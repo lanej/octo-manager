@@ -56,7 +56,7 @@ async function until(check: () => boolean): Promise<void> {
   assert.fail("Check handoff did not finish");
 }
 
-test("check watches persist success silently and report each failure once", async () => {
+test("check watches notify completed success once and report each failure once", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-checks-"));
   let store = new Store(directory);
   const config = defaultTrackingConfig();
@@ -96,12 +96,50 @@ test("check watches persist success silently and report each failure once", asyn
       CheckWatchState.Completed,
     );
     assert.equal(store.tracking.checks.list()[0]?.id, watch.id);
-    assert.equal(store.tracking.actions().length, 0);
-    assert.equal(store.tracking.deliveries().length, 0);
+    assert.equal(store.tracking.actions().length, 1);
+    assert.equal(
+      store.tracking.actions()[0]?.summary,
+      "Checks passed; no merge conflicts",
+    );
+    assert.equal(store.tracking.deliveries().length, 1);
+    for (const checks of [
+      { state: "unavailable" as const, reason: "offline" },
+      { state: "partial" as const, value: [], reason: "offline page" },
+      { state: "complete" as const, value: [] },
+    ]) {
+      store.tracking.observe(pr.id, observation({ checks }), config);
+      assert.equal(
+        store.tracking.actions()[0]?.progress.state,
+        ActionState.Open,
+      );
+    }
     store.close();
     store = new Store(directory);
     store.tracking.observe(pr.id, complete, config);
-    assert.equal(store.tracking.actions().length, 0);
+    assert.equal(store.tracking.actions().length, 1);
+    const sent: string[] = [];
+    const service = new TrackingService(store.tracking, config, Date.now, {
+      read: () => Promise.resolve(complete),
+      connect: () => ({
+        prepare: () => Promise.resolve({ busy: false }),
+        send: (_agent, _id, body) => {
+          sent.push(body);
+          return Promise.resolve({ queueId: "ready" });
+        },
+        find: () => Promise.resolve({ found: true }),
+        close: () => {},
+      }),
+    });
+    try {
+      service.tick();
+      await until(() => sent.length === 1);
+      const body = sent[0];
+      assert(body !== undefined);
+      assert(body.includes("Checks passed; no merge conflicts"));
+      assert(!body.includes("Failed run"));
+    } finally {
+      await service.close();
+    }
     const failure = observation({
       checks: {
         state: "complete",
@@ -111,9 +149,13 @@ test("check watches persist success silently and report each failure once", asyn
     store.tracking.observe(pr.id, failure, config);
     store.tracking.observe(pr.id, failure, config);
     assert.equal(store.tracking.checks.list().length, 2);
-    assert.equal(store.tracking.actions().length, 1);
-    assert.equal(store.tracking.actions()[0]?.blocker.kind, "check_failed");
-    assert.equal(store.tracking.deliveries().length, 1);
+    assert.equal(store.tracking.actions().length, 2);
+    assert.equal(store.tracking.actions()[1]?.blocker.kind, "check_failed");
+    assert.equal(
+      store.tracking.actions()[0]?.progress.state,
+      ActionState.Superseded,
+    );
+    assert.equal(store.tracking.deliveries().length, 2);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -561,7 +603,7 @@ test("retained workflow failure is not reported again in a later same-head gener
   }
 });
 
-test("startup retires legacy informational actions without rewriting messages or watch history", async () => {
+test("startup preserves queued successful completions without rewriting history", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-check-legacy-"));
   let store = new Store(directory);
   const config = defaultTrackingConfig();
@@ -605,17 +647,17 @@ test("startup retires legacy informational actions without rewriting messages or
     store = new Store(directory);
     assert.equal(
       store.tracking.action(action.id).progress.state,
-      ActionState.Superseded,
+      ActionState.Open,
     );
     assert.equal(
       store.tracking.deliveries()[0]?.progress.state,
-      DeliveryState.Cancelled,
+      DeliveryState.Pending,
     );
     assert.equal(
       store.tracking.inbox.get(delivery.id)?.body,
       "Historical success body",
     );
-    assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
+    assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, true);
     assert.equal(
       store.tracking.checks.list()[0]?.state,
       CheckWatchState.Completed,
@@ -623,5 +665,58 @@ test("startup retires legacy informational actions without rewriting messages or
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("readiness distinguishes conflicts and neutral checks and expires when the PR closes", async () => {
+  for (const mergeability of ["mergeable", "conflicting", "unknown"] as const) {
+    const directory = await mkdtemp(join(tmpdir(), "octo-readiness-"));
+    const store = new Store(directory),
+      config = defaultTrackingConfig();
+    const pr = store.tracking.track(url, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "owner",
+    });
+    try {
+      const complete = observation({
+        mergeability,
+        checks: {
+          state: "complete",
+          value: [check("run:1", "completed", "neutral")],
+        },
+      });
+      store.tracking.observe(pr.id, complete, config);
+      const readiness = store.tracking
+        .actions()
+        .find((action) => action.blocker.kind === "check_results");
+      assert(readiness !== undefined);
+      assert(readiness.summary.includes("includes neutral/skipped"));
+      assert(
+        readiness.summary.includes(
+          mergeability === "mergeable"
+            ? "no merge conflicts"
+            : mergeability === "conflicting"
+              ? "merge conflict remains"
+              : "conflict status unknown",
+        ),
+      );
+      store.tracking.observe(
+        pr.id,
+        { ...complete, lifecycle: "merged" },
+        config,
+      );
+      assert.equal(
+        store.tracking.action(readiness.id).progress.state,
+        ActionState.Superseded,
+      );
+      const delivery = store.tracking
+        .deliveries()
+        .find((delivery) => delivery.actionId === readiness.id);
+      assert.equal(delivery?.progress.state, DeliveryState.Cancelled);
+    } finally {
+      store.close();
+      await rm(directory, { recursive: true, force: true });
+    }
   }
 });

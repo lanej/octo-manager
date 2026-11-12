@@ -5,11 +5,11 @@ An unsolicited message must give the receiving agent a decision to make or work 
 ## What merits delivery
 
 - Deliver failed checks, conflicts, and new or edited review feedback that needs assessment.
-- Record successful, neutral, skipped, and superseded check results without notifying the agent or opening an action.
+- Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Keep superseded watches silent.
 - Do not send a second completion summary for a job failure already reported. Suppress its corresponding failed workflow summary, while retaining unrelated failures.
 - Do not infer new authority from a notification. Standing task authority and evidence-handling rules belong in session/integration setup, once.
 
-An explicitly registered dependent next step could make success actionable in a future workflow. No such subscription is implemented yet; current success results remain silent.
+Successful completion is actionable as a merge-assessment signal. Report the exact revision and distinguish check conclusions from GitHub conflict status. “Checks passed; no merge conflicts” does not establish required approvals or every branch-protection rule. Repeated observations and restarts do not repeat a completion; newly observed executions can create another watch generation. Completion for an already closed or merged PR stays in history without a readiness notice.
 
 ## Initial message
 
@@ -20,6 +20,8 @@ PR #13 · macOS check failed at ad8968bf
 > ENOENT: handoff file disappeared during status read
 Failed run: https://github.com/lanej/octo-manager/actions/runs/43135409074/job/130909441931
 ```
+
+A successful completion is shorter: “PR #13 · Checks passed; no merge conflicts at ad8968bf,” with the PR link. Neutral/skipped conclusions are labeled explicitly, and unknown/conflicting GitHub merge status is preserved. Temporary coverage loss does not erase a confirmed completion; positively observed pending/failing executions, a changed revision, or PR closure retire an outdated readiness action.
 
 The renderer budgets 120 UTF-8 bytes for the heading, 480 for the excerpt, 120 for an inline location, and 512 per rendered HTTPS link. Excerpts end with an ellipsis when truncated and are presented as quoted data. Control sequences are removed. These component limits keep the message below 4 KiB; typical messages are substantially smaller. Truncation changes presentation, not the stored action or watch evidence.
 

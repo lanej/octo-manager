@@ -53,8 +53,7 @@ export class TrackingStore {
         if (
           unfinished(action) &&
           action.blocker.kind === "check_results" &&
-          (action.blocker.state === CheckWatchState.Superseded ||
-            action.blocker.checks.every(successfulCheck))
+          action.blocker.state === CheckWatchState.Superseded
         ) {
           this.saveAction(
             {
@@ -531,7 +530,8 @@ export class TrackingStore {
         );
         if (
           watch.state !== CheckWatchState.Completed ||
-          unreported.length === 0
+          (unreported.length === 0 &&
+            (failures.length > 0 || o.lifecycle !== "open"))
         )
           return [];
         return [
@@ -542,15 +542,17 @@ export class TrackingStore {
               watchId: watch.id,
               headSha: watch.headSha,
               state: watch.state,
-              checks: unreported,
+              checks: failures.length === 0 ? checks : unreported,
               ...(watch.replacementHeadSha === undefined
                 ? {}
                 : { replacementHeadSha: watch.replacementHeadSha }),
             },
             summary:
-              unreported.length === 1
-                ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
-                : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
+              failures.length === 0
+                ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
+                : unreported.length === 1
+                  ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
+                  : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
             evidenceUrl: p.url,
           },
         ];

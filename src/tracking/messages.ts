@@ -135,5 +135,6 @@ export function agentMessage(
       ? ` · ${compact(blocker.feedback.path.replace(/\s+/g, " "), 120)}${blocker.feedback.line === undefined ? "" : `:${String(blocker.feedback.line)}`}`
       : "";
   const evidence = failed?.url ?? action.evidenceUrl;
-  return `[octo-delivery:${deliveryId}]\n${link(`PR #${new URL(prUrl).pathname.split("/").at(-1) ?? ""}`, prUrl)} · ${compact(action.summary.replace(/\s+/g, " "), 120)}${head === undefined ? "" : ` at ${compact(head.replace(/\s+/g, " "), 200).slice(0, 8)}`}${location}\n${detail}${link(blocker.kind === "check_failed" || blocker.kind === "check_results" ? "Failed run" : "Evidence", evidence)}\nAction: ${action.id}`;
+  const completion = blocker.kind === "check_results" && failed === undefined;
+  return `[octo-delivery:${deliveryId}]\n${link(`PR #${new URL(prUrl).pathname.split("/").at(-1) ?? ""}`, prUrl)} · ${compact(action.summary.replace(/\s+/g, " "), 120)}${head === undefined ? "" : ` at ${compact(head.replace(/\s+/g, " "), 200).slice(0, 8)}`}${location}\n${detail}${completion ? "" : link(blocker.kind === "check_failed" || blocker.kind === "check_results" ? "Failed run" : "Evidence", evidence) + "\n"}Action: ${action.id}`;
 }

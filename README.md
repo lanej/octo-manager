@@ -45,7 +45,7 @@ If no usable session exists, `bin/octo-manager login` opens Pi with tools and di
 
 ## PR tracking
 
-Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
+Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
 
 ## Dashboard and commands
 
