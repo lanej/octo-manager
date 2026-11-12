@@ -1,3 +1,4 @@
+import { actionableFeedback } from "./review-signals.js";
 import { resolveId } from "./identifiers.js";
 import {
   CheckWatches,
@@ -53,8 +54,10 @@ export class TrackingStore {
       for (const action of this.actions()) {
         if (
           unfinished(action) &&
-          action.blocker.kind === "check_results" &&
-          action.blocker.state === CheckWatchState.Superseded
+          ((action.blocker.kind === "check_results" &&
+            action.blocker.state === CheckWatchState.Superseded) ||
+            (action.blocker.kind === "review_feedback" &&
+              !actionableFeedback(action.blocker.feedback)))
         ) {
           this.saveAction(
             {
@@ -62,13 +65,13 @@ export class TrackingStore {
               progress: {
                 state: ActionState.Superseded,
                 at: this.now(),
-                reason: "Informational check result retained in watch history",
+                reason: "Informational update retained in observation history",
               },
               updatedAt: this.now(),
             },
             "action_superseded",
           );
-          this.cancelDeliveries(action.id, "Informational check result");
+          this.cancelDeliveries(action.id, "Informational update");
         }
       }
     });

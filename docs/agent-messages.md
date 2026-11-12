@@ -4,7 +4,7 @@ An unsolicited message must give the receiving agent a decision to make or work 
 
 ## What merits delivery
 
-- Deliver failed checks, conflicts, and new or edited review feedback that needs assessment.
+- Deliver failed checks, conflicts, and new or edited review feedback that needs assessment. Filter known bot lifecycle summaries (queued, running, inconclusive) and completed reviews without findings.
 - Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Keep superseded watches silent.
 - Do not send a second completion summary for a job failure already reported. Suppress its corresponding failed workflow summary, while retaining unrelated failures.
 - Do not infer new authority from a notification. Standing task authority and evidence-handling rules belong in session/integration setup, once.
@@ -39,3 +39,10 @@ Keep conversational reports to the decision: outcome and necessary next step, us
 ## Short identifiers
 
 Display action and message UUIDs as eight hexadecimal characters, omitting hyphens. Extend a prefix only when needed to distinguish IDs already stored in the corresponding action/message namespace. Frozen notices keep their chosen spelling; a later collision can make an older short lookup ambiguous, so lookup rejects ambiguity and asks for a longer ID. `octo-manager action SHORT_ID` and message receipt commands accept unique prefixes of at least eight hexadecimal characters. Full UUIDs remain unchanged in database keys, API responses, queue idempotency metadata, and receipt/activity records. Exact-body history matching works with short markers and retains compatibility with older full markers; a short marker alone is never a receipt.
+
+
+## Review lifecycle filtering
+
+Classify known provider summaries before creating actions or deliveries, while retaining their raw bodies and revisions in observations. Codex connector summaries use their versioned review-state metadata: running/inconclusive/no-findings states stay quiet when neither code nor security review reports findings. Mixed states with findings remain actionable. Copilot clean-review filtering recognizes the observed `ccr-overview-v2` “No open issues” overview and the explicit zero-generated-comments template, plus narrowly recognized lifecycle messages. Human messages, inline review comments, malformed metadata, unknown provider formats, and mixed/contradictory text are retained for assessment; a keyword such as “running” in ordinary feedback is not a filter.
+
+Later edits that contain findings create normal durable feedback actions. A later no-findings edit supersedes the old revision without a new notification. Installation retires previously queued known status-only actions without rewriting message history. Known Codex metadata comments are omitted from actionable excerpts so the preview starts with visible review content. Check completion and merge-assessment notices follow their separate rules above; a review bot's clean summary is not another check-completion callback.

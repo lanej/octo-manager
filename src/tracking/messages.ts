@@ -1,3 +1,4 @@
+import { feedbackExcerpt } from "./review-signals.js";
 import { shortId } from "./identifiers.js";
 import { execFile } from "node:child_process";
 import { promisify, stripVTControlCharacters } from "node:util";
@@ -127,7 +128,9 @@ export function agentMessage(
       ? blocker.checks.find((check) => !successfulCheck(check))
       : undefined;
   const body =
-    blocker.kind === "review_feedback" ? blocker.feedback.body : excerpt;
+    blocker.kind === "review_feedback"
+      ? feedbackExcerpt(blocker.feedback)
+      : excerpt;
   const detail =
     body === undefined
       ? ""
