@@ -85,6 +85,9 @@ export class TrackingStore {
     if (!a) throw new Error("Agent not found");
     return a;
   }
+  registerAgent(t: AgentTarget): AgentRef {
+    return this.transaction(() => this.register(t));
+  }
   private register(t: AgentTarget): AgentRef {
     if (
       t.harness !== "codex" ||

@@ -51,6 +51,9 @@ const (
 	// SchedulerServiceListActivityProcedure is the fully-qualified name of the SchedulerService's
 	// ListActivity RPC.
 	SchedulerServiceListActivityProcedure = "/octomanager.v1.SchedulerService/ListActivity"
+	// SchedulerServiceRegisterAgentProcedure is the fully-qualified name of the SchedulerService's
+	// RegisterAgent RPC.
+	SchedulerServiceRegisterAgentProcedure = "/octomanager.v1.SchedulerService/RegisterAgent"
 	// SchedulerServiceTrackPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// TrackPullRequest RPC.
 	SchedulerServiceTrackPullRequestProcedure = "/octomanager.v1.SchedulerService/TrackPullRequest"
@@ -128,6 +131,7 @@ type SchedulerServiceClient interface {
 	ListRepairs(context.Context, *connect.Request[v1.ListRepairsRequest]) (*connect.Response[v1.ListRepairsResponse], error)
 	RecordActivity(context.Context, *connect.Request[v1.RecordActivityRequest]) (*connect.Response[v1.RecordActivityResponse], error)
 	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
+	RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error)
 	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
 	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
 	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
@@ -198,6 +202,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceListActivityProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("ListActivity")),
+			connect.WithClientOptions(opts...),
+		),
+		registerAgent: connect.NewClient[v1.RegisterAgentRequest, v1.RegisterAgentResponse](
+			httpClient,
+			baseURL+SchedulerServiceRegisterAgentProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RegisterAgent")),
 			connect.WithClientOptions(opts...),
 		),
 		trackPullRequest: connect.NewClient[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse](
@@ -349,6 +359,7 @@ type schedulerServiceClient struct {
 	listRepairs               *connect.Client[v1.ListRepairsRequest, v1.ListRepairsResponse]
 	recordActivity            *connect.Client[v1.RecordActivityRequest, v1.RecordActivityResponse]
 	listActivity              *connect.Client[v1.ListActivityRequest, v1.ListActivityResponse]
+	registerAgent             *connect.Client[v1.RegisterAgentRequest, v1.RegisterAgentResponse]
 	trackPullRequest          *connect.Client[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse]
 	listTrackedPullRequests   *connect.Client[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse]
 	getTrackedPullRequest     *connect.Client[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse]
@@ -402,6 +413,11 @@ func (c *schedulerServiceClient) RecordActivity(ctx context.Context, req *connec
 // ListActivity calls octomanager.v1.SchedulerService.ListActivity.
 func (c *schedulerServiceClient) ListActivity(ctx context.Context, req *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
 	return c.listActivity.CallUnary(ctx, req)
+}
+
+// RegisterAgent calls octomanager.v1.SchedulerService.RegisterAgent.
+func (c *schedulerServiceClient) RegisterAgent(ctx context.Context, req *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error) {
+	return c.registerAgent.CallUnary(ctx, req)
 }
 
 // TrackPullRequest calls octomanager.v1.SchedulerService.TrackPullRequest.
@@ -527,6 +543,7 @@ type SchedulerServiceHandler interface {
 	ListRepairs(context.Context, *connect.Request[v1.ListRepairsRequest]) (*connect.Response[v1.ListRepairsResponse], error)
 	RecordActivity(context.Context, *connect.Request[v1.RecordActivityRequest]) (*connect.Response[v1.RecordActivityResponse], error)
 	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
+	RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error)
 	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
 	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
 	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
@@ -593,6 +610,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceListActivityProcedure,
 		svc.ListActivity,
 		connect.WithSchema(schedulerServiceMethods.ByName("ListActivity")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceRegisterAgentHandler := connect.NewUnaryHandler(
+		SchedulerServiceRegisterAgentProcedure,
+		svc.RegisterAgent,
+		connect.WithSchema(schedulerServiceMethods.ByName("RegisterAgent")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceTrackPullRequestHandler := connect.NewUnaryHandler(
@@ -747,6 +770,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceRecordActivityHandler.ServeHTTP(w, r)
 		case SchedulerServiceListActivityProcedure:
 			schedulerServiceListActivityHandler.ServeHTTP(w, r)
+		case SchedulerServiceRegisterAgentProcedure:
+			schedulerServiceRegisterAgentHandler.ServeHTTP(w, r)
 		case SchedulerServiceTrackPullRequestProcedure:
 			schedulerServiceTrackPullRequestHandler.ServeHTTP(w, r)
 		case SchedulerServiceListTrackedPullRequestsProcedure:
@@ -824,6 +849,10 @@ func (UnimplementedSchedulerServiceHandler) RecordActivity(context.Context, *con
 
 func (UnimplementedSchedulerServiceHandler) ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListActivity is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RegisterAgent is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error) {

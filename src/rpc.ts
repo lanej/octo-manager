@@ -1,7 +1,7 @@
 import { inboxRoutes } from "./tracking/inbox-rpc.js";
 import { repairRoutes, wireRepair } from "./repairs/rpc.js";
 import { activityRoutes } from "./activity/rpc.js";
-import { actionStates, wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
+import { actionStates, wirePR, wireAction,wireAgent, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { setTimeout as delay } from "node:timers/promises";
@@ -57,11 +57,12 @@ function command(coordinator: Coordinator, value: object): unknown {
 }
 export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter): void {
   const tracking=coordinator.tracking;
-  const owner=(value?:{harness:string;endpoint:string;sessionId:string;label?:string})=>{
+  const owner=(value?:{harness:string;endpoint:string;sessionId:string;label?:string|undefined})=>{
     if(!value)throw new ConnectError("Owner is required",Code.InvalidArgument);
-    return value;
+    return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    registerAgent(r){return trackingOperation(()=>({agent:wireAgent(tracking.registerAgent(owner(r.target)))}));},
     ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),
     ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),

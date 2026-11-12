@@ -22,6 +22,7 @@ export function parseCommand(args: string[]) {
       "request-id": { type: "string" },
       json: { type: "boolean" },
       "include-acknowledged": { type: "boolean" },
+      "applicable-only": { type: "boolean" },
       after: { type: "string" },
       watch: { type: "boolean" },
       help: { type: "boolean", short: "h" },

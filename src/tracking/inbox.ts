@@ -21,8 +21,10 @@ function text(value: unknown): string {
     throw new Error("Invalid inbox text");
   return value;
 }
+const applicable =
+  "(p.enabled=1 AND a.owner_agent_id=d.recipient_agent_id AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
 const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
-  (p.enabled=1 AND a.owner_agent_id=d.recipient_agent_id AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled') AS applicable
+  ${applicable} AS applicable
   FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
   JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
 function decode(row: Record<string, unknown>): AgentMessage {
@@ -67,13 +69,14 @@ export class AgentInbox {
     agentId: string,
     after = 0,
     includeAcknowledged = false,
+    applicableOnly = false,
   ): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
     integer(after);
     const rows = this.db
       .prepare(
-        `${query} WHERE d.recipient_agent_id=? AND m.sequence>? AND (?=1 OR m.acknowledged_at_ms IS NULL) ORDER BY m.sequence LIMIT 201`,
+        `${query} WHERE d.recipient_agent_id=? AND m.sequence>? AND (?=1 OR m.acknowledged_at_ms IS NULL) AND (?=0 OR ${applicable}) ORDER BY m.sequence LIMIT 201`,
       )
-      .all(agentId, after, includeAcknowledged ? 1 : 0);
+      .all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
     const messages = rows.slice(0, 200).map(decode);
     return {
       messages,

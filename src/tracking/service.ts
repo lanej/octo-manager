@@ -1,3 +1,4 @@
+import { Handoffs } from "../integrations/handoffs.js";
 import { checkResultPreview } from "./checks.js";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -26,6 +27,8 @@ export interface TrackingOptions {
   intervalMs?: number;
 }
 export class TrackingService {
+  private handoffWork: Promise<void> | undefined;
+  private handoffs: Handoffs | undefined;
   private timer?: ReturnType<typeof setInterval>;
   private refreshes = new Map<string, Promise<unknown>>();
   private nextRefresh = new Map<string, number>();
@@ -40,6 +43,10 @@ export class TrackingService {
     private now: () => number = Date.now,
     private options: TrackingOptions = {},
   ) {
+    this.handoffs =
+      options.stateDirectory === undefined
+        ? undefined
+        : new Handoffs(options.stateDirectory, now);
     store.transaction(() => {
       const at = this.now();
       for (const a of store
@@ -80,6 +87,10 @@ export class TrackingService {
       !Object.hasOwn(this.config.endpoints, target.endpoint)
     )
       throw new Error("Unsupported harness or endpoint");
+  }
+  registerAgent(target: AgentTarget) {
+    this.validateTarget(target);
+    return this.store.registerAgent(target);
   }
   track(url: string, target: AgentTarget) {
     this.validateTarget(target);
@@ -127,6 +138,33 @@ export class TrackingService {
   }
   tick(): void {
     if (this.stopped) return;
+    if (this.handoffs !== undefined && this.handoffWork === undefined) {
+      this.handoffWork = this.handoffs
+        .drain((request) => {
+          const existing = this.store
+            .prs()
+            .find((pr) => pr.url === request.url);
+          if (existing !== undefined) {
+            const owner = this.store.agent(existing.ownerAgentId);
+            if (
+              owner.harness !== request.owner.harness ||
+              owner.endpoint !== request.owner.endpoint ||
+              owner.sessionId !== request.owner.sessionId
+            )
+              return {
+                accepted: false,
+                reason:
+                  "PR already belongs to another agent; explicit reassignment is required",
+              };
+          }
+          this.track(request.url, request.owner);
+          return { accepted: true };
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.handoffWork = undefined;
+        });
+    }
     for (const p of this.store.prs())
       if (
         p.enabled &&
@@ -447,6 +485,7 @@ export class TrackingService {
     for (const c of this.connections) c.close();
     await Promise.allSettled([
       ...this.refreshes.values(),
+      ...(this.handoffWork === undefined ? [] : [this.handoffWork]),
       ...(this.deliveryWork ? [this.deliveryWork] : []),
     ]);
   }

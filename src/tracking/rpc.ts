@@ -15,6 +15,7 @@ import {
 import {
   ActionState,
   DeliveryState,
+  type AgentRef,
   type Action,
   type Delivery,
   type TrackedPR,
@@ -166,25 +167,28 @@ export function wireDelivery(d: Delivery, message?: AgentMessage) {
     updatedAtMs: BigInt(d.updatedAt),
   });
 }
+export function wireAgent(agent: AgentRef) {
+  return create(AgentReferenceSchema, {
+    id: agent.id,
+    target: {
+      harness: agent.harness,
+      endpoint: agent.endpoint,
+      sessionId: agent.sessionId,
+      ...(agent.label === undefined ? {} : { label: agent.label }),
+    },
+    ...(agent.lastObservedRuntime === undefined
+      ? {}
+      : {
+          harnessVersion: agent.lastObservedRuntime.version,
+          versionObservedAtMs: BigInt(agent.lastObservedRuntime.observedAt),
+        }),
+  });
+}
 export function wireTracking(service: TrackingService) {
   const s = service.store.snapshot();
   return create(TrackingSnapshotSchema, {
     prs: s.prs.map(wirePR),
-    agents: s.agents.map((a) =>
-      create(AgentReferenceSchema, {
-        id: a.id,
-        target: {
-          harness: a.harness,
-          endpoint: a.endpoint,
-          sessionId: a.sessionId,
-          label: a.label,
-        },
-        harnessVersion: a.lastObservedRuntime?.version,
-        versionObservedAtMs: a.lastObservedRuntime
-          ? BigInt(a.lastObservedRuntime.observedAt)
-          : undefined,
-      }),
-    ),
+    agents: s.agents.map(wireAgent),
     actions: s.actions.map(wireAction),
     deliveries: s.deliveries.map((delivery) =>
       wireDelivery(delivery, service.store.inbox.get(delivery.id)),

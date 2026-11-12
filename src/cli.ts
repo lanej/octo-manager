@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { codexHookCLI } from "./integrations/codex.js";
 import { repairsCLI } from "./repairs/cli.js";
 import { activityCLI } from "./activity/cli.js";
 import { directoryLabel, parseCommand } from "./arguments.js";
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
   const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const [command, argument] = positionals;
+  if (command === "codex-hook") { await codexHookCLI(directory); return; }
   if (!command || values.help) {
     console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme dark|light|contrast|mono --timezone IANA_ZONE --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking | inbox --agent-id ID [--after N] [--include-acknowledged] | acknowledge-message ID --agent-id ID. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
   }
@@ -54,6 +56,7 @@ async function main(): Promise<void> {
       ...(values["thread-id"] === undefined ? {} : { sessionId: values["thread-id"] }),
       ...(values["agent-id"] === undefined ? {} : { agentId: values["agent-id"] }),
       ...(values.after === undefined ? {} : { after: values.after }),
+      ...(values["applicable-only"] === undefined ? {} : { applicableOnly: values["applicable-only"] }),
       ...(values["include-acknowledged"] === undefined ? {} : { includeAcknowledged: values["include-acknowledged"] }),
       label: values.label ?? directoryLabel(values.cwd ?? process.cwd()),
     });
