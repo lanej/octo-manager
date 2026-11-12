@@ -94,6 +94,15 @@ export function findings(o: PRObservation, url: string): Finding[] {
         summary: `Changes requested by ${r.author}`,
         evidenceUrl: r.url || url,
       });
+  for (const feedback of o.feedback?.state === "complete"
+    ? o.feedback.value
+    : [])
+    found.push({
+      sourceKey: `${feedback.source}:${feedback.id}:${feedback.revision}`,
+      blocker: { kind: "review_feedback", feedback },
+      summary: `${feedback.source === "inline" ? "Code review" : feedback.source === "review" ? "Review" : "PR comment"} from ${feedback.author}`,
+      evidenceUrl: feedback.url,
+    });
   return found;
 }
 export function closeProgress(
@@ -112,8 +121,21 @@ export function closeProgress(
     observationId: o.id,
     reason,
   });
+  if (a.blocker.kind === "check_results") return undefined;
   if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
   const b = a.blocker;
+  if (b.kind === "review_feedback") {
+    if (o.feedback?.state === "complete") {
+      const newer = o.feedback.value.find(
+        (f) => f.source === b.feedback.source && f.id === b.feedback.id,
+      );
+      if (newer !== undefined && newer.revision !== b.feedback.revision)
+        return supersede(
+          "Comment edited; newer feedback replaces this revision",
+        );
+    }
+    return undefined;
+  }
   if (b.kind !== "changes_requested" && b.headSha !== o.headSha)
     return supersede("PR head changed");
   if (b.kind === "conflict") {

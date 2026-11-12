@@ -42,7 +42,7 @@ export async function request(directory: string, command: object): Promise<any> 
   throw new Error("Unsupported command");
 }
 
-export async function trackingRequest(directory:string,command:string,id?:string,options:{url?:string;harness?:string;endpoint?:string;sessionId?:string;agentId?:string;label?:string}={}):Promise<unknown>{
+export async function trackingRequest(directory:string,command:string,id?:string,options:{url?:string;harness?:string;endpoint?:string;sessionId?:string;agentId?:string;label?:string;after?:string;includeAcknowledged?:boolean}={}):Promise<unknown>{
  const client=schedulerClient(directory);
  const owner={harness:options.harness??'codex',endpoint:options.endpoint??'local',sessionId:options.sessionId??'',label:options.label};
  switch(command){
@@ -55,6 +55,8 @@ export async function trackingRequest(directory:string,command:string,id?:string
   case 'actions':return client.listActions({prId:id});
   case 'action':return client.getAction({id:id??''});
   case 'acknowledge':return client.acknowledgeAction({id:id??'',agentId:options.agentId??''});
+  case 'inbox':return client.listAgentMessages({agentId:options.agentId??'',afterSequence:BigInt(options.after??'0'),includeAcknowledged:options.includeAcknowledged??false});
+  case 'acknowledge-message':return client.acknowledgeMessage({id:id??'',agentId:options.agentId??''});
   case 'working':return client.startAction({id:id??'',agentId:options.agentId??''});
   case 'retry-delivery':return client.retryDelivery({id:id??''});
   case 'reprofile':return client.reprofileAction({id:id??''});

@@ -14,7 +14,14 @@ export class RepairStore {
     private now: () => number,
   ) {
     const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-    if (version !== 3 && version !== 4 && version !== 5)
+    if (
+      version !== 3 &&
+      version !== 4 &&
+      version !== 5 &&
+      version !== 6 &&
+      version !== 7 &&
+      version !== 8
+    )
       throw new Error("Unsupported repair database version");
     if (version === 3)
       db.exec(`BEGIN IMMEDIATE;

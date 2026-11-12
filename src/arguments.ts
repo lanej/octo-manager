@@ -21,6 +21,7 @@ export function parseCommand(args: string[]) {
       url: { type: "string" },
       "request-id": { type: "string" },
       json: { type: "boolean" },
+      "include-acknowledged": { type: "boolean" },
       after: { type: "string" },
       watch: { type: "boolean" },
       help: { type: "boolean", short: "h" },

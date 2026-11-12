@@ -1,3 +1,4 @@
+import { inboxRoutes } from "./tracking/inbox-rpc.js";
 import { repairRoutes, wireRepair } from "./repairs/rpc.js";
 import { activityRoutes } from "./activity/rpc.js";
 import { actionStates, wirePR, wireAction, wireDelivery, wireTracking, trackingOperation } from "./tracking/rpc.js";
@@ -61,6 +62,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return value;
   };
   router.service(SchedulerService, {
+    ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),
     ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},

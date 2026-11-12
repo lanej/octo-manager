@@ -1,3 +1,11 @@
+import {
+  CheckWatches,
+  CheckWatchState,
+  storedCheckEvidence,
+  successfulCheck,
+} from "./checks.js";
+import { AgentInbox } from "./inbox.js";
+import { storedFeedback } from "./feedback.js";
 import { actionContext, targetBase } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
@@ -24,6 +32,8 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  readonly inbox: AgentInbox;
+  readonly checks: CheckWatches;
   constructor(
     private db: DatabaseSync,
     private now: () => number,
@@ -36,6 +46,8 @@ export class TrackingStore {
     ) => void,
   ) {
     migrateTracking(db);
+    this.inbox = new AgentInbox(db, now);
+    this.checks = new CheckWatches(db, now);
   }
   transaction<T>(fn: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -104,6 +116,8 @@ export class TrackingStore {
   }
   private observation(r: Row): PRObservation {
     const target = targetBase(r["target_base_json"]);
+    const feedback = storedFeedback(r["feedback_json"]);
+    const workflows = storedCheckEvidence(r["workflow_runs_json"]);
     return {
       id: r.id,
       prId: r.pr_id,
@@ -115,6 +129,8 @@ export class TrackingStore {
       mergeability: r.mergeability,
       checks: parse(r.checks_json),
       reviews: parse(r.reviews_json),
+      ...(feedback === undefined ? {} : { feedback }),
+      ...(workflows === undefined ? {} : { workflows }),
     };
   }
   prs(): TrackedPR[] {
@@ -384,6 +400,7 @@ export class TrackingStore {
         .run(this.now(), p.id);
       for (const a of this.actions().filter((a) => a.prId === p.id))
         this.cancelDeliveries(a.id, "PR untracked");
+      this.checks.cancel(p.id);
       this.event("pr_untracked", "Tracking disabled", p.id);
       return this.pr(p.id);
     });
@@ -398,7 +415,7 @@ export class TrackingStore {
       if (!p.enabled) return p;
       const result = this.db
         .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
         )
         .run(
           p.id,
@@ -414,6 +431,10 @@ export class TrackingStore {
           input.targetBase === undefined
             ? null
             : JSON.stringify(input.targetBase),
+          input.feedback === undefined ? null : JSON.stringify(input.feedback),
+          input.workflows === undefined
+            ? null
+            : JSON.stringify(input.workflows),
         );
       const o: PRObservation = {
         ...input,
@@ -438,14 +459,49 @@ export class TrackingStore {
           this.cancelDeliveries(a.id, "Action no longer outstanding");
         }
       }
-      for (const f of findings(o, p.url)) {
+      const checkResults = this.checks.observe(o).flatMap((watch) => {
+        if (
+          watch.state !== CheckWatchState.Completed &&
+          watch.state !== CheckWatchState.Superseded
+        )
+          return [];
+        const checks =
+          watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
+        return [
+          {
+            sourceKey: watch.id,
+            blocker: {
+              kind: "check_results" as const,
+              watchId: watch.id,
+              headSha: watch.headSha,
+              state: watch.state,
+              checks,
+              ...(watch.replacementHeadSha === undefined
+                ? {}
+                : { replacementHeadSha: watch.replacementHeadSha }),
+            },
+            summary:
+              watch.state === CheckWatchState.Superseded
+                ? "Check watch superseded by a new PR head"
+                : checks.every((check) => check.conclusion === "success")
+                  ? "Checks passed"
+                  : checks.every(successfulCheck)
+                    ? "Checks finished with neutral or skipped results"
+                    : "Checks finished with issues",
+            evidenceUrl: p.url,
+          },
+        ];
+      });
+      for (const f of [...findings(o, p.url), ...checkResults]) {
         if (
           this.actions().some(
             (a) =>
               a.prId === p.id &&
               a.blocker.kind === f.blocker.kind &&
               a.sourceKey === f.sourceKey &&
-              unfinished(a),
+              (f.blocker.kind === "review_feedback" ||
+                f.blocker.kind === "check_results" ||
+                unfinished(a)),
           )
         )
           continue;
@@ -501,8 +557,19 @@ export class TrackingStore {
         updatedAt: this.now(),
       };
       this.saveAction(next, "action_progress");
-      this.cancelDeliveries(a.id, "Action acknowledged");
+
       return next;
+    });
+  }
+  acknowledgeMessage(id: string, agentId: string) {
+    return this.transaction(() => {
+      const before = this.inbox.get(id);
+      const message = this.inbox.acknowledge(id, agentId);
+      if (before?.acknowledgedAt === undefined) {
+        const action = this.action(message.actionId);
+        this.event("message_acknowledged", id, action.prId, action.id);
+      }
+      return message;
     });
   }
   retryDelivery(id: string): Delivery {
@@ -510,6 +577,8 @@ export class TrackingStore {
       const d = this.deliveries().find((d) => d.id === id);
       if (!d) throw new Error("Delivery not found");
       const a = this.action(d.actionId);
+      if (this.inbox.get(id)?.acknowledgedAt !== undefined)
+        throw new Error("Message already acknowledged");
       if (
         !this.pr(a.prId).enabled ||
         !unfinished(a) ||
@@ -557,6 +626,7 @@ export class TrackingStore {
       actions: this.actions(),
       deliveries: this.deliveries(),
       attempts: this.attempts(),
+      checkWatches: this.checks.list(),
     };
   }
 }

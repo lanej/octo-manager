@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/tracking.proto.
  */
 export const file_octomanager_v1_tracking: GenFile = /*@__PURE__*/
-  fileDesc("Ch1vY3RvbWFuYWdlci92MS90cmFja2luZy5wcm90bxIOb2N0b21hbmFnZXIudjEiYgoLQWdlbnRUYXJnZXQSDwoHaGFybmVzcxgBIAEoCRIQCghlbmRwb2ludBgCIAEoCRISCgpzZXNzaW9uX2lkGAMgASgJEhIKBWxhYmVsGAQgASgJSACIAQFCCAoGX2xhYmVsIrsBCg5BZ2VudFJlZmVyZW5jZRIKCgJpZBgBIAEoCRIrCgZ0YXJnZXQYAiABKAsyGy5vY3RvbWFuYWdlci52MS5BZ2VudFRhcmdldBIcCg9oYXJuZXNzX3ZlcnNpb24YAyABKAlIAIgBARIjChZ2ZXJzaW9uX29ic2VydmVkX2F0X21zGAQgASgDSAGIAQFCEgoQX2hhcm5lc3NfdmVyc2lvbkIZChdfdmVyc2lvbl9vYnNlcnZlZF9hdF9tcyImCgpUYXJnZXRCYXNlEgsKA3JlZhgBIAEoCRILCgNzaGEYAiABKAki4gEKE1RyYWNraW5nT2JzZXJ2YXRpb24SCgoCaWQYASABKAQSFgoOb2JzZXJ2ZWRfYXRfbXMYAiABKAMSEAoIaGVhZF9zaGEYAyABKAkSEAoIYmFzZV9zaGEYBCABKAkSEQoJbGlmZWN5Y2xlGAUgASgJEhQKDG1lcmdlYWJpbGl0eRgGIAEoCRITCgtjaGVja3NfanNvbhgHIAEoCRIUCgxyZXZpZXdzX2pzb24YCCABKAkSLwoLdGFyZ2V0X2Jhc2UYCSABKAsyGi5vY3RvbWFuYWdlci52MS5UYXJnZXRCYXNlIr8CChJUcmFja2VkUHVsbFJlcXVlc3QSCgoCaWQYASABKAkSCwoDdXJsGAIgASgJEhcKD29yaWdpbl9hZ2VudF9pZBgDIAEoCRIWCg5vd25lcl9hZ2VudF9pZBgEIAEoCRIPCgdlbmFibGVkGAUgASgIEhUKDWNyZWF0ZWRfYXRfbXMYBiABKAMSFQoNdXBkYXRlZF9hdF9tcxgHIAEoAxIaCg1yZWZyZXNoX2Vycm9yGAggASgJSACIAQESIAoTcmVmcmVzaF9lcnJvcl9hdF9tcxgJIAEoA0gBiAEBEjgKC29ic2VydmF0aW9uGAogASgLMiMub2N0b21hbmFnZXIudjEuVHJhY2tpbmdPYnNlcnZhdGlvbkIQCg5fcmVmcmVzaF9lcnJvckIWChRfcmVmcmVzaF9lcnJvcl9hdF9tcyJ2ChBFeGVjdXRpb25Qcm9maWxlEgwKBG5hbWUYASABKAkSFAoMaW5zdHJ1Y3Rpb25zGAIgASgJEhQKB2hhcm5lc3MYAyABKAlIAIgBARISCgVtb2RlbBgEIAEoCUgBiAEBQgoKCF9oYXJuZXNzQggKBl9tb2RlbCJZCg9Db25mbGljdEJsb2NrZXISEAoIaGVhZF9zaGEYASABKAkSEAoIYmFzZV9zaGEYAiABKAkSFQoIYmFzZV9yZWYYAyABKAlIAIgBAUILCglfYmFzZV9yZWYiWgoMQ2hlY2tCbG9ja2VyEhEKCXNvdXJjZV9pZBgBIAEoCRISCgpjaGVja19uYW1lGAIgASgJEhAKCGhlYWRfc2hhGAMgASgJEhEKCWNoZWNrX2tleRgEIAEoCSJPCg1SZXZpZXdCbG9ja2VyEhEKCXJldmlld19pZBgBIAEoCRIQCghyZXZpZXdlchgCIAEoCRIZChFyZXZpZXdlZF9oZWFkX3NoYRgDIAEoCSKvBQoNUGVuZGluZ0FjdGlvbhIKCgJpZBgBIAEoCRINCgVwcl9pZBgCIAEoCRIdChVvcGVuZWRfb2JzZXJ2YXRpb25faWQYAyABKAQSEgoKc291cmNlX2tleRgEIAEoCRIWCg5vd25lcl9hZ2VudF9pZBgFIAEoCRIzCghjb25mbGljdBgGIAEoCzIfLm9jdG9tYW5hZ2VyLnYxLkNvbmZsaWN0QmxvY2tlckgAEjQKDGNoZWNrX2ZhaWxlZBgHIAEoCzIcLm9jdG9tYW5hZ2VyLnYxLkNoZWNrQmxvY2tlckgAEjoKEWNoYW5nZXNfcmVxdWVzdGVkGAggASgLMh0ub2N0b21hbmFnZXIudjEuUmV2aWV3QmxvY2tlckgAEg8KB3N1bW1hcnkYCSABKAkSFAoMZXZpZGVuY2VfdXJsGAogASgJEjEKB3Byb2ZpbGUYCyABKAsyIC5vY3RvbWFuYWdlci52MS5FeGVjdXRpb25Qcm9maWxlEioKBXN0YXRlGAwgASgOMhsub2N0b21hbmFnZXIudjEuQWN0aW9uU3RhdGUSGwoOcHJvZ3Jlc3NfYXRfbXMYDSABKANIAYgBARIeChFwcm9ncmVzc19hZ2VudF9pZBgOIAEoCUgCiAEBEiQKF3Jlc29sdmVkX29ic2VydmF0aW9uX2lkGA8gASgESAOIAQESGQoMY2xvc2VfcmVhc29uGBAgASgJSASIAQESFQoNY3JlYXRlZF9hdF9tcxgRIAEoAxIVCg11cGRhdGVkX2F0X21zGBIgASgDQgkKB2Jsb2NrZXJCEQoPX3Byb2dyZXNzX2F0X21zQhQKEl9wcm9ncmVzc19hZ2VudF9pZEIaChhfcmVzb2x2ZWRfb2JzZXJ2YXRpb25faWRCDwoNX2Nsb3NlX3JlYXNvbiK+AQoOQWN0aW9uRGVsaXZlcnkSCgoCaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhoKEnJlY2lwaWVudF9hZ2VudF9pZBgDIAEoCRIsCgVzdGF0ZRgEIAEoDjIdLm9jdG9tYW5hZ2VyLnYxLkRlbGl2ZXJ5U3RhdGUSFQoNcHJvZ3Jlc3NfanNvbhgFIAEoCRIVCg1jcmVhdGVkX2F0X21zGAYgASgDEhUKDXVwZGF0ZWRfYXRfbXMYByABKAMilQEKD0RlbGl2ZXJ5QXR0ZW1wdBITCgtkZWxpdmVyeV9pZBgBIAEoCRIOCgZudW1iZXIYAiABKA0SFQoNc3RhcnRlZF9hdF9tcxgDIAEoAxIcCg9oYXJuZXNzX3ZlcnNpb24YBCABKAlIAIgBARIUCgxvdXRjb21lX2pzb24YBSABKAlCEgoQX2hhcm5lc3NfdmVyc2lvbiKKAgoQVHJhY2tpbmdTbmFwc2hvdBIvCgNwcnMYASADKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QSLgoGYWdlbnRzGAIgAygLMh4ub2N0b21hbmFnZXIudjEuQWdlbnRSZWZlcmVuY2USLgoHYWN0aW9ucxgDIAMoCzIdLm9jdG9tYW5hZ2VyLnYxLlBlbmRpbmdBY3Rpb24SMgoKZGVsaXZlcmllcxgEIAMoCzIeLm9jdG9tYW5hZ2VyLnYxLkFjdGlvbkRlbGl2ZXJ5EjEKCGF0dGVtcHRzGAUgAygLMh8ub2N0b21hbmFnZXIudjEuRGVsaXZlcnlBdHRlbXB0IlIKF1RyYWNrUHVsbFJlcXVlc3RSZXF1ZXN0EgsKA3VybBgBIAEoCRIqCgVvd25lchgCIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0IiAKHkxpc3RUcmFja2VkUHVsbFJlcXVlc3RzUmVxdWVzdCJSCh9MaXN0VHJhY2tlZFB1bGxSZXF1ZXN0c1Jlc3BvbnNlEi8KA3BycxgBIAMoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCJSChhBc3NpZ25QdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkSKgoFb3duZXIYAiABKAsyGy5vY3RvbWFuYWdlci52MS5BZ2VudFRhcmdldCIyChJMaXN0QWN0aW9uc1JlcXVlc3QSEgoFcHJfaWQYASABKAlIAIgBAUIICgZfcHJfaWQiRQoTTGlzdEFjdGlvbnNSZXNwb25zZRIuCgdhY3Rpb25zGAEgAygLMh0ub2N0b21hbmFnZXIudjEuUGVuZGluZ0FjdGlvbiIiChRSZXRyeURlbGl2ZXJ5UmVxdWVzdBIKCgJpZBgBIAEoCSJJChVSZXRyeURlbGl2ZXJ5UmVzcG9uc2USMAoIZGVsaXZlcnkYASABKAsyHi5vY3RvbWFuYWdlci52MS5BY3Rpb25EZWxpdmVyeSJKChhUcmFja1B1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QiKgocR2V0VHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSJPCh1HZXRUcmFja2VkUHVsbFJlcXVlc3RSZXNwb25zZRIuCgJwchgBIAEoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCIuCiBSZWZyZXNoVHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSJTCiFSZWZyZXNoVHJhY2tlZFB1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QiSwoZQXNzaWduUHVsbFJlcXVlc3RSZXNwb25zZRIuCgJwchgBIAEoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCInChlVbnRyYWNrUHVsbFJlcXVlc3RSZXF1ZXN0EgoKAmlkGAEgASgJIkwKGlVudHJhY2tQdWxsUmVxdWVzdFJlc3BvbnNlEi4KAnByGAEgASgLMiIub2N0b21hbmFnZXIudjEuVHJhY2tlZFB1bGxSZXF1ZXN0Ih4KEEdldEFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkiQgoRR2V0QWN0aW9uUmVzcG9uc2USLQoGYWN0aW9uGAEgASgLMh0ub2N0b21hbmFnZXIudjEuUGVuZGluZ0FjdGlvbiI4ChhBY2tub3dsZWRnZUFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkSEAoIYWdlbnRfaWQYAiABKAkiSgoZQWNrbm93bGVkZ2VBY3Rpb25SZXNwb25zZRItCgZhY3Rpb24YASABKAsyHS5vY3RvbWFuYWdlci52MS5QZW5kaW5nQWN0aW9uIjIKElN0YXJ0QWN0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCSJEChNTdGFydEFjdGlvblJlc3BvbnNlEi0KBmFjdGlvbhgBIAEoCzIdLm9jdG9tYW5hZ2VyLnYxLlBlbmRpbmdBY3Rpb24iJAoWUmVwcm9maWxlQWN0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJIChdSZXByb2ZpbGVBY3Rpb25SZXNwb25zZRItCgZhY3Rpb24YASABKAsyHS5vY3RvbWFuYWdlci52MS5QZW5kaW5nQWN0aW9uKrMBCgtBY3Rpb25TdGF0ZRIcChhBQ1RJT05fU1RBVEVfVU5TUEVDSUZJRUQQABIVChFBQ1RJT05fU1RBVEVfT1BFThABEh0KGUFDVElPTl9TVEFURV9BQ0tOT1dMRURHRUQQAhIYChRBQ1RJT05fU1RBVEVfV09SS0lORxADEhkKFUFDVElPTl9TVEFURV9SRVNPTFZFRBAEEhsKF0FDVElPTl9TVEFURV9TVVBFUlNFREVEEAUq4QEKDURlbGl2ZXJ5U3RhdGUSHgoaREVMSVZFUllfU1RBVEVfVU5TUEVDSUZJRUQQABIaChZERUxJVkVSWV9TVEFURV9QRU5ESU5HEAESGgoWREVMSVZFUllfU1RBVEVfU0VORElORxACEhwKGERFTElWRVJZX1NUQVRFX0RFTElWRVJFRBADEhwKGERFTElWRVJZX1NUQVRFX1VOQ0VSVEFJThAEEh4KGkRFTElWRVJZX1NUQVRFX1VOQVZBSUxBQkxFEAUSHAoYREVMSVZFUllfU1RBVEVfQ0FOQ0VMTEVEEAZCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw");
+  fileDesc("Ch1vY3RvbWFuYWdlci92MS90cmFja2luZy5wcm90bxIOb2N0b21hbmFnZXIudjEiYgoLQWdlbnRUYXJnZXQSDwoHaGFybmVzcxgBIAEoCRIQCghlbmRwb2ludBgCIAEoCRISCgpzZXNzaW9uX2lkGAMgASgJEhIKBWxhYmVsGAQgASgJSACIAQFCCAoGX2xhYmVsIrsBCg5BZ2VudFJlZmVyZW5jZRIKCgJpZBgBIAEoCRIrCgZ0YXJnZXQYAiABKAsyGy5vY3RvbWFuYWdlci52MS5BZ2VudFRhcmdldBIcCg9oYXJuZXNzX3ZlcnNpb24YAyABKAlIAIgBARIjChZ2ZXJzaW9uX29ic2VydmVkX2F0X21zGAQgASgDSAGIAQFCEgoQX2hhcm5lc3NfdmVyc2lvbkIZChdfdmVyc2lvbl9vYnNlcnZlZF9hdF9tcyImCgpUYXJnZXRCYXNlEgsKA3JlZhgBIAEoCRILCgNzaGEYAiABKAkiwAIKE1RyYWNraW5nT2JzZXJ2YXRpb24SCgoCaWQYASABKAQSFgoOb2JzZXJ2ZWRfYXRfbXMYAiABKAMSEAoIaGVhZF9zaGEYAyABKAkSEAoIYmFzZV9zaGEYBCABKAkSEQoJbGlmZWN5Y2xlGAUgASgJEhQKDG1lcmdlYWJpbGl0eRgGIAEoCRITCgtjaGVja3NfanNvbhgHIAEoCRIUCgxyZXZpZXdzX2pzb24YCCABKAkSLwoLdGFyZ2V0X2Jhc2UYCSABKAsyGi5vY3RvbWFuYWdlci52MS5UYXJnZXRCYXNlEhoKDWZlZWRiYWNrX2pzb24YCiABKAlIAIgBARIbCg53b3JrZmxvd3NfanNvbhgLIAEoCUgBiAEBQhAKDl9mZWVkYmFja19qc29uQhEKD193b3JrZmxvd3NfanNvbiK/AgoSVHJhY2tlZFB1bGxSZXF1ZXN0EgoKAmlkGAEgASgJEgsKA3VybBgCIAEoCRIXCg9vcmlnaW5fYWdlbnRfaWQYAyABKAkSFgoOb3duZXJfYWdlbnRfaWQYBCABKAkSDwoHZW5hYmxlZBgFIAEoCBIVCg1jcmVhdGVkX2F0X21zGAYgASgDEhUKDXVwZGF0ZWRfYXRfbXMYByABKAMSGgoNcmVmcmVzaF9lcnJvchgIIAEoCUgAiAEBEiAKE3JlZnJlc2hfZXJyb3JfYXRfbXMYCSABKANIAYgBARI4CgtvYnNlcnZhdGlvbhgKIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLlRyYWNraW5nT2JzZXJ2YXRpb25CEAoOX3JlZnJlc2hfZXJyb3JCFgoUX3JlZnJlc2hfZXJyb3JfYXRfbXMidgoQRXhlY3V0aW9uUHJvZmlsZRIMCgRuYW1lGAEgASgJEhQKDGluc3RydWN0aW9ucxgCIAEoCRIUCgdoYXJuZXNzGAMgASgJSACIAQESEgoFbW9kZWwYBCABKAlIAYgBAUIKCghfaGFybmVzc0IICgZfbW9kZWwiWQoPQ29uZmxpY3RCbG9ja2VyEhAKCGhlYWRfc2hhGAEgASgJEhAKCGJhc2Vfc2hhGAIgASgJEhUKCGJhc2VfcmVmGAMgASgJSACIAQFCCwoJX2Jhc2VfcmVmIloKDENoZWNrQmxvY2tlchIRCglzb3VyY2VfaWQYASABKAkSEgoKY2hlY2tfbmFtZRgCIAEoCRIQCghoZWFkX3NoYRgDIAEoCRIRCgljaGVja19rZXkYBCABKAkiTwoNUmV2aWV3QmxvY2tlchIRCglyZXZpZXdfaWQYASABKAkSEAoIcmV2aWV3ZXIYAiABKAkSGQoRcmV2aWV3ZWRfaGVhZF9zaGEYAyABKAki6wEKDlJldmlld0ZlZWRiYWNrEg4KBnNvdXJjZRgBIAEoCRIKCgJpZBgCIAEoCRIQCghyZXZpc2lvbhgDIAEoCRIOCgZhdXRob3IYBCABKAkSDAoEYm9keRgFIAEoCRILCgN1cmwYBiABKAkSFQoIaGVhZF9zaGEYByABKAlIAIgBARIRCgRwYXRoGAggASgJSAGIAQESEQoEbGluZRgJIAEoDUgCiAEBEhYKCXJldmlld19pZBgKIAEoCUgDiAEBQgsKCV9oZWFkX3NoYUIHCgVfcGF0aEIHCgVfbGluZUIMCgpfcmV2aWV3X2lkIv4BCgpDaGVja1dhdGNoEgoKAmlkGAEgASgJEg0KBXByX2lkGAIgASgJEhAKCGhlYWRfc2hhGAMgASgJEhIKCmdlbmVyYXRpb24YBCABKA0SLgoFc3RhdGUYBSABKA4yHy5vY3RvbWFuYWdlci52MS5DaGVja1dhdGNoU3RhdGUSFQoNZXZpZGVuY2VfanNvbhgGIAEoCRIVCg1jcmVhdGVkX2F0X21zGAcgASgDEhUKDXVwZGF0ZWRfYXRfbXMYCCABKAMSIQoUcmVwbGFjZW1lbnRfaGVhZF9zaGEYCSABKAlIAIgBAUIXChVfcmVwbGFjZW1lbnRfaGVhZF9zaGEiswEKDENoZWNrUmVzdWx0cxIQCgh3YXRjaF9pZBgBIAEoCRIQCghoZWFkX3NoYRgCIAEoCRIuCgVzdGF0ZRgDIAEoDjIfLm9jdG9tYW5hZ2VyLnYxLkNoZWNrV2F0Y2hTdGF0ZRITCgtjaGVja3NfanNvbhgEIAEoCRIhChRyZXBsYWNlbWVudF9oZWFkX3NoYRgFIAEoCUgAiAEBQhcKFV9yZXBsYWNlbWVudF9oZWFkX3NoYSKhBgoNUGVuZGluZ0FjdGlvbhIKCgJpZBgBIAEoCRINCgVwcl9pZBgCIAEoCRIdChVvcGVuZWRfb2JzZXJ2YXRpb25faWQYAyABKAQSEgoKc291cmNlX2tleRgEIAEoCRIWCg5vd25lcl9hZ2VudF9pZBgFIAEoCRIzCghjb25mbGljdBgGIAEoCzIfLm9jdG9tYW5hZ2VyLnYxLkNvbmZsaWN0QmxvY2tlckgAEjQKDGNoZWNrX2ZhaWxlZBgHIAEoCzIcLm9jdG9tYW5hZ2VyLnYxLkNoZWNrQmxvY2tlckgAEjoKEWNoYW5nZXNfcmVxdWVzdGVkGAggASgLMh0ub2N0b21hbmFnZXIudjEuUmV2aWV3QmxvY2tlckgAEjkKD3Jldmlld19mZWVkYmFjaxgUIAEoCzIeLm9jdG9tYW5hZ2VyLnYxLlJldmlld0ZlZWRiYWNrSAASNQoNY2hlY2tfcmVzdWx0cxgVIAEoCzIcLm9jdG9tYW5hZ2VyLnYxLkNoZWNrUmVzdWx0c0gAEg8KB3N1bW1hcnkYCSABKAkSFAoMZXZpZGVuY2VfdXJsGAogASgJEjEKB3Byb2ZpbGUYCyABKAsyIC5vY3RvbWFuYWdlci52MS5FeGVjdXRpb25Qcm9maWxlEioKBXN0YXRlGAwgASgOMhsub2N0b21hbmFnZXIudjEuQWN0aW9uU3RhdGUSGwoOcHJvZ3Jlc3NfYXRfbXMYDSABKANIAYgBARIeChFwcm9ncmVzc19hZ2VudF9pZBgOIAEoCUgCiAEBEiQKF3Jlc29sdmVkX29ic2VydmF0aW9uX2lkGA8gASgESAOIAQESGQoMY2xvc2VfcmVhc29uGBAgASgJSASIAQESFQoNY3JlYXRlZF9hdF9tcxgRIAEoAxIVCg11cGRhdGVkX2F0X21zGBIgASgDQgkKB2Jsb2NrZXJCEQoPX3Byb2dyZXNzX2F0X21zQhQKEl9wcm9ncmVzc19hZ2VudF9pZEIaChhfcmVzb2x2ZWRfb2JzZXJ2YXRpb25faWRCDwoNX2Nsb3NlX3JlYXNvbiKqAgoOQWN0aW9uRGVsaXZlcnkSCgoCaWQYASABKAkSEQoJYWN0aW9uX2lkGAIgASgJEhoKEnJlY2lwaWVudF9hZ2VudF9pZBgDIAEoCRIsCgVzdGF0ZRgEIAEoDjIdLm9jdG9tYW5hZ2VyLnYxLkRlbGl2ZXJ5U3RhdGUSFQoNcHJvZ3Jlc3NfanNvbhgFIAEoCRIVCg1jcmVhdGVkX2F0X21zGAYgASgDEhUKDXVwZGF0ZWRfYXRfbXMYByABKAMSHQoQbWVzc2FnZV9zZXF1ZW5jZRgIIAEoBEgAiAEBEh8KEmFja25vd2xlZGdlZF9hdF9tcxgJIAEoA0gBiAEBQhMKEV9tZXNzYWdlX3NlcXVlbmNlQhUKE19hY2tub3dsZWRnZWRfYXRfbXMilQEKD0RlbGl2ZXJ5QXR0ZW1wdBITCgtkZWxpdmVyeV9pZBgBIAEoCRIOCgZudW1iZXIYAiABKA0SFQoNc3RhcnRlZF9hdF9tcxgDIAEoAxIcCg9oYXJuZXNzX3ZlcnNpb24YBCABKAlIAIgBARIUCgxvdXRjb21lX2pzb24YBSABKAlCEgoQX2hhcm5lc3NfdmVyc2lvbiK9AgoQVHJhY2tpbmdTbmFwc2hvdBIvCgNwcnMYASADKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QSLgoGYWdlbnRzGAIgAygLMh4ub2N0b21hbmFnZXIudjEuQWdlbnRSZWZlcmVuY2USLgoHYWN0aW9ucxgDIAMoCzIdLm9jdG9tYW5hZ2VyLnYxLlBlbmRpbmdBY3Rpb24SMgoKZGVsaXZlcmllcxgEIAMoCzIeLm9jdG9tYW5hZ2VyLnYxLkFjdGlvbkRlbGl2ZXJ5EjEKCGF0dGVtcHRzGAUgAygLMh8ub2N0b21hbmFnZXIudjEuRGVsaXZlcnlBdHRlbXB0EjEKDWNoZWNrX3dhdGNoZXMYBiADKAsyGi5vY3RvbWFuYWdlci52MS5DaGVja1dhdGNoIlIKF1RyYWNrUHVsbFJlcXVlc3RSZXF1ZXN0EgsKA3VybBgBIAEoCRIqCgVvd25lchgCIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0IiAKHkxpc3RUcmFja2VkUHVsbFJlcXVlc3RzUmVxdWVzdCJSCh9MaXN0VHJhY2tlZFB1bGxSZXF1ZXN0c1Jlc3BvbnNlEi8KA3BycxgBIAMoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCJSChhBc3NpZ25QdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkSKgoFb3duZXIYAiABKAsyGy5vY3RvbWFuYWdlci52MS5BZ2VudFRhcmdldCIyChJMaXN0QWN0aW9uc1JlcXVlc3QSEgoFcHJfaWQYASABKAlIAIgBAUIICgZfcHJfaWQiRQoTTGlzdEFjdGlvbnNSZXNwb25zZRIuCgdhY3Rpb25zGAEgAygLMh0ub2N0b21hbmFnZXIudjEuUGVuZGluZ0FjdGlvbiIiChRSZXRyeURlbGl2ZXJ5UmVxdWVzdBIKCgJpZBgBIAEoCSJJChVSZXRyeURlbGl2ZXJ5UmVzcG9uc2USMAoIZGVsaXZlcnkYASABKAsyHi5vY3RvbWFuYWdlci52MS5BY3Rpb25EZWxpdmVyeSJKChhUcmFja1B1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QiKgocR2V0VHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSJPCh1HZXRUcmFja2VkUHVsbFJlcXVlc3RSZXNwb25zZRIuCgJwchgBIAEoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCIuCiBSZWZyZXNoVHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSJTCiFSZWZyZXNoVHJhY2tlZFB1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52MS5UcmFja2VkUHVsbFJlcXVlc3QiSwoZQXNzaWduUHVsbFJlcXVlc3RSZXNwb25zZRIuCgJwchgBIAEoCzIiLm9jdG9tYW5hZ2VyLnYxLlRyYWNrZWRQdWxsUmVxdWVzdCInChlVbnRyYWNrUHVsbFJlcXVlc3RSZXF1ZXN0EgoKAmlkGAEgASgJIkwKGlVudHJhY2tQdWxsUmVxdWVzdFJlc3BvbnNlEi4KAnByGAEgASgLMiIub2N0b21hbmFnZXIudjEuVHJhY2tlZFB1bGxSZXF1ZXN0Ih4KEEdldEFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkiQgoRR2V0QWN0aW9uUmVzcG9uc2USLQoGYWN0aW9uGAEgASgLMh0ub2N0b21hbmFnZXIudjEuUGVuZGluZ0FjdGlvbiI4ChhBY2tub3dsZWRnZUFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkSEAoIYWdlbnRfaWQYAiABKAkiSgoZQWNrbm93bGVkZ2VBY3Rpb25SZXNwb25zZRItCgZhY3Rpb24YASABKAsyHS5vY3RvbWFuYWdlci52MS5QZW5kaW5nQWN0aW9uIjIKElN0YXJ0QWN0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCSJEChNTdGFydEFjdGlvblJlc3BvbnNlEi0KBmFjdGlvbhgBIAEoCzIdLm9jdG9tYW5hZ2VyLnYxLlBlbmRpbmdBY3Rpb24iJAoWUmVwcm9maWxlQWN0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJIChdSZXByb2ZpbGVBY3Rpb25SZXNwb25zZRItCgZhY3Rpb24YASABKAsyHS5vY3RvbWFuYWdlci52MS5QZW5kaW5nQWN0aW9uIswBCgxBZ2VudE1lc3NhZ2USEAoIc2VxdWVuY2UYASABKAQSCgoCaWQYAiABKAkSEQoJYWN0aW9uX2lkGAMgASgJEhoKEnJlY2lwaWVudF9hZ2VudF9pZBgEIAEoCRIMCgRib2R5GAUgASgJEhUKDWNyZWF0ZWRfYXRfbXMYBiABKAMSHwoSYWNrbm93bGVkZ2VkX2F0X21zGAcgASgDSACIAQESEgoKYXBwbGljYWJsZRgIIAEoCEIVChNfYWNrbm93bGVkZ2VkX2F0X21zImIKGExpc3RBZ2VudE1lc3NhZ2VzUmVxdWVzdBIQCghhZ2VudF9pZBgBIAEoCRIWCg5hZnRlcl9zZXF1ZW5jZRgCIAEoBBIcChRpbmNsdWRlX2Fja25vd2xlZGdlZBgDIAEoCCJ0ChlMaXN0QWdlbnRNZXNzYWdlc1Jlc3BvbnNlEi4KCG1lc3NhZ2VzGAEgAygLMhwub2N0b21hbmFnZXIudjEuQWdlbnRNZXNzYWdlEhUKDW5leHRfc2VxdWVuY2UYAiABKAQSEAoIaGFzX21vcmUYAyABKAgiOQoZQWNrbm93bGVkZ2VNZXNzYWdlUmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCSJLChpBY2tub3dsZWRnZU1lc3NhZ2VSZXNwb25zZRItCgdtZXNzYWdlGAEgASgLMhwub2N0b21hbmFnZXIudjEuQWdlbnRNZXNzYWdlKrMBCgtBY3Rpb25TdGF0ZRIcChhBQ1RJT05fU1RBVEVfVU5TUEVDSUZJRUQQABIVChFBQ1RJT05fU1RBVEVfT1BFThABEh0KGUFDVElPTl9TVEFURV9BQ0tOT1dMRURHRUQQAhIYChRBQ1RJT05fU1RBVEVfV09SS0lORxADEhkKFUFDVElPTl9TVEFURV9SRVNPTFZFRBAEEhsKF0FDVElPTl9TVEFURV9TVVBFUlNFREVEEAUq4QEKDURlbGl2ZXJ5U3RhdGUSHgoaREVMSVZFUllfU1RBVEVfVU5TUEVDSUZJRUQQABIaChZERUxJVkVSWV9TVEFURV9QRU5ESU5HEAESGgoWREVMSVZFUllfU1RBVEVfU0VORElORxACEhwKGERFTElWRVJZX1NUQVRFX0RFTElWRVJFRBADEhwKGERFTElWRVJZX1NUQVRFX1VOQ0VSVEFJThAEEh4KGkRFTElWRVJZX1NUQVRFX1VOQVZBSUxBQkxFEAUSHAoYREVMSVZFUllfU1RBVEVfQ0FOQ0VMTEVEEAYqtwEKD0NoZWNrV2F0Y2hTdGF0ZRIhCh1DSEVDS19XQVRDSF9TVEFURV9VTlNQRUNJRklFRBAAEh0KGUNIRUNLX1dBVENIX1NUQVRFX1dBSVRJTkcQARIfChtDSEVDS19XQVRDSF9TVEFURV9DT01QTEVURUQQAhIgChxDSEVDS19XQVRDSF9TVEFURV9TVVBFUlNFREVEEAMSHwobQ0hFQ0tfV0FUQ0hfU1RBVEVfQ0FOQ0VMTEVEEARCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw");
 
 /**
  * @generated from message octomanager.v1.AgentTarget
@@ -146,6 +146,16 @@ export type TrackingObservation = Message<"octomanager.v1.TrackingObservation"> 
    * @generated from field: octomanager.v1.TargetBase target_base = 9;
    */
   targetBase?: TargetBase | undefined;
+
+  /**
+   * @generated from field: optional string feedback_json = 10;
+   */
+  feedbackJson?: string | undefined;
+
+  /**
+   * @generated from field: optional string workflows_json = 11;
+   */
+  workflowsJson?: string | undefined;
 };
 
 /**
@@ -336,6 +346,162 @@ export const ReviewBlockerSchema: GenMessage<ReviewBlocker> = /*@__PURE__*/
   messageDesc(file_octomanager_v1_tracking, 8);
 
 /**
+ * @generated from message octomanager.v1.ReviewFeedback
+ */
+export type ReviewFeedback = Message<"octomanager.v1.ReviewFeedback"> & {
+  /**
+   * @generated from field: string source = 1;
+   */
+  source: string;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string revision = 3;
+   */
+  revision: string;
+
+  /**
+   * @generated from field: string author = 4;
+   */
+  author: string;
+
+  /**
+   * @generated from field: string body = 5;
+   */
+  body: string;
+
+  /**
+   * @generated from field: string url = 6;
+   */
+  url: string;
+
+  /**
+   * @generated from field: optional string head_sha = 7;
+   */
+  headSha?: string | undefined;
+
+  /**
+   * @generated from field: optional string path = 8;
+   */
+  path?: string | undefined;
+
+  /**
+   * @generated from field: optional uint32 line = 9;
+   */
+  line?: number | undefined;
+
+  /**
+   * @generated from field: optional string review_id = 10;
+   */
+  reviewId?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.ReviewFeedback.
+ * Use `create(ReviewFeedbackSchema)` to create a new message.
+ */
+export const ReviewFeedbackSchema: GenMessage<ReviewFeedback> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 9);
+
+/**
+ * @generated from message octomanager.v1.CheckWatch
+ */
+export type CheckWatch = Message<"octomanager.v1.CheckWatch"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string pr_id = 2;
+   */
+  prId: string;
+
+  /**
+   * @generated from field: string head_sha = 3;
+   */
+  headSha: string;
+
+  /**
+   * @generated from field: uint32 generation = 4;
+   */
+  generation: number;
+
+  /**
+   * @generated from field: octomanager.v1.CheckWatchState state = 5;
+   */
+  state: CheckWatchState;
+
+  /**
+   * @generated from field: string evidence_json = 6;
+   */
+  evidenceJson: string;
+
+  /**
+   * @generated from field: int64 created_at_ms = 7;
+   */
+  createdAtMs: bigint;
+
+  /**
+   * @generated from field: int64 updated_at_ms = 8;
+   */
+  updatedAtMs: bigint;
+
+  /**
+   * @generated from field: optional string replacement_head_sha = 9;
+   */
+  replacementHeadSha?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.CheckWatch.
+ * Use `create(CheckWatchSchema)` to create a new message.
+ */
+export const CheckWatchSchema: GenMessage<CheckWatch> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 10);
+
+/**
+ * @generated from message octomanager.v1.CheckResults
+ */
+export type CheckResults = Message<"octomanager.v1.CheckResults"> & {
+  /**
+   * @generated from field: string watch_id = 1;
+   */
+  watchId: string;
+
+  /**
+   * @generated from field: string head_sha = 2;
+   */
+  headSha: string;
+
+  /**
+   * @generated from field: octomanager.v1.CheckWatchState state = 3;
+   */
+  state: CheckWatchState;
+
+  /**
+   * @generated from field: string checks_json = 4;
+   */
+  checksJson: string;
+
+  /**
+   * @generated from field: optional string replacement_head_sha = 5;
+   */
+  replacementHeadSha?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.CheckResults.
+ * Use `create(CheckResultsSchema)` to create a new message.
+ */
+export const CheckResultsSchema: GenMessage<CheckResults> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 11);
+
+/**
  * @generated from message octomanager.v1.PendingAction
  */
 export type PendingAction = Message<"octomanager.v1.PendingAction"> & {
@@ -385,6 +551,18 @@ export type PendingAction = Message<"octomanager.v1.PendingAction"> & {
      */
     value: ReviewBlocker;
     case: "changesRequested";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.ReviewFeedback review_feedback = 20;
+     */
+    value: ReviewFeedback;
+    case: "reviewFeedback";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.CheckResults check_results = 21;
+     */
+    value: CheckResults;
+    case: "checkResults";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -443,7 +621,7 @@ export type PendingAction = Message<"octomanager.v1.PendingAction"> & {
  * Use `create(PendingActionSchema)` to create a new message.
  */
 export const PendingActionSchema: GenMessage<PendingAction> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 9);
+  messageDesc(file_octomanager_v1_tracking, 12);
 
 /**
  * @generated from message octomanager.v1.ActionDelivery
@@ -483,6 +661,16 @@ export type ActionDelivery = Message<"octomanager.v1.ActionDelivery"> & {
    * @generated from field: int64 updated_at_ms = 7;
    */
   updatedAtMs: bigint;
+
+  /**
+   * @generated from field: optional uint64 message_sequence = 8;
+   */
+  messageSequence?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 acknowledged_at_ms = 9;
+   */
+  acknowledgedAtMs?: bigint | undefined;
 };
 
 /**
@@ -490,7 +678,7 @@ export type ActionDelivery = Message<"octomanager.v1.ActionDelivery"> & {
  * Use `create(ActionDeliverySchema)` to create a new message.
  */
 export const ActionDeliverySchema: GenMessage<ActionDelivery> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 10);
+  messageDesc(file_octomanager_v1_tracking, 13);
 
 /**
  * @generated from message octomanager.v1.DeliveryAttempt
@@ -527,7 +715,7 @@ export type DeliveryAttempt = Message<"octomanager.v1.DeliveryAttempt"> & {
  * Use `create(DeliveryAttemptSchema)` to create a new message.
  */
 export const DeliveryAttemptSchema: GenMessage<DeliveryAttempt> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 11);
+  messageDesc(file_octomanager_v1_tracking, 14);
 
 /**
  * @generated from message octomanager.v1.TrackingSnapshot
@@ -557,6 +745,11 @@ export type TrackingSnapshot = Message<"octomanager.v1.TrackingSnapshot"> & {
    * @generated from field: repeated octomanager.v1.DeliveryAttempt attempts = 5;
    */
   attempts: DeliveryAttempt[];
+
+  /**
+   * @generated from field: repeated octomanager.v1.CheckWatch check_watches = 6;
+   */
+  checkWatches: CheckWatch[];
 };
 
 /**
@@ -564,7 +757,7 @@ export type TrackingSnapshot = Message<"octomanager.v1.TrackingSnapshot"> & {
  * Use `create(TrackingSnapshotSchema)` to create a new message.
  */
 export const TrackingSnapshotSchema: GenMessage<TrackingSnapshot> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 12);
+  messageDesc(file_octomanager_v1_tracking, 15);
 
 /**
  * @generated from message octomanager.v1.TrackPullRequestRequest
@@ -586,7 +779,7 @@ export type TrackPullRequestRequest = Message<"octomanager.v1.TrackPullRequestRe
  * Use `create(TrackPullRequestRequestSchema)` to create a new message.
  */
 export const TrackPullRequestRequestSchema: GenMessage<TrackPullRequestRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 13);
+  messageDesc(file_octomanager_v1_tracking, 16);
 
 /**
  * @generated from message octomanager.v1.ListTrackedPullRequestsRequest
@@ -599,7 +792,7 @@ export type ListTrackedPullRequestsRequest = Message<"octomanager.v1.ListTracked
  * Use `create(ListTrackedPullRequestsRequestSchema)` to create a new message.
  */
 export const ListTrackedPullRequestsRequestSchema: GenMessage<ListTrackedPullRequestsRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 14);
+  messageDesc(file_octomanager_v1_tracking, 17);
 
 /**
  * @generated from message octomanager.v1.ListTrackedPullRequestsResponse
@@ -616,7 +809,7 @@ export type ListTrackedPullRequestsResponse = Message<"octomanager.v1.ListTracke
  * Use `create(ListTrackedPullRequestsResponseSchema)` to create a new message.
  */
 export const ListTrackedPullRequestsResponseSchema: GenMessage<ListTrackedPullRequestsResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 15);
+  messageDesc(file_octomanager_v1_tracking, 18);
 
 /**
  * @generated from message octomanager.v1.AssignPullRequestRequest
@@ -638,7 +831,7 @@ export type AssignPullRequestRequest = Message<"octomanager.v1.AssignPullRequest
  * Use `create(AssignPullRequestRequestSchema)` to create a new message.
  */
 export const AssignPullRequestRequestSchema: GenMessage<AssignPullRequestRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 16);
+  messageDesc(file_octomanager_v1_tracking, 19);
 
 /**
  * @generated from message octomanager.v1.ListActionsRequest
@@ -655,7 +848,7 @@ export type ListActionsRequest = Message<"octomanager.v1.ListActionsRequest"> & 
  * Use `create(ListActionsRequestSchema)` to create a new message.
  */
 export const ListActionsRequestSchema: GenMessage<ListActionsRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 17);
+  messageDesc(file_octomanager_v1_tracking, 20);
 
 /**
  * @generated from message octomanager.v1.ListActionsResponse
@@ -672,7 +865,7 @@ export type ListActionsResponse = Message<"octomanager.v1.ListActionsResponse"> 
  * Use `create(ListActionsResponseSchema)` to create a new message.
  */
 export const ListActionsResponseSchema: GenMessage<ListActionsResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 18);
+  messageDesc(file_octomanager_v1_tracking, 21);
 
 /**
  * @generated from message octomanager.v1.RetryDeliveryRequest
@@ -689,7 +882,7 @@ export type RetryDeliveryRequest = Message<"octomanager.v1.RetryDeliveryRequest"
  * Use `create(RetryDeliveryRequestSchema)` to create a new message.
  */
 export const RetryDeliveryRequestSchema: GenMessage<RetryDeliveryRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 19);
+  messageDesc(file_octomanager_v1_tracking, 22);
 
 /**
  * @generated from message octomanager.v1.RetryDeliveryResponse
@@ -706,7 +899,7 @@ export type RetryDeliveryResponse = Message<"octomanager.v1.RetryDeliveryRespons
  * Use `create(RetryDeliveryResponseSchema)` to create a new message.
  */
 export const RetryDeliveryResponseSchema: GenMessage<RetryDeliveryResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 20);
+  messageDesc(file_octomanager_v1_tracking, 23);
 
 /**
  * @generated from message octomanager.v1.TrackPullRequestResponse
@@ -723,7 +916,7 @@ export type TrackPullRequestResponse = Message<"octomanager.v1.TrackPullRequestR
  * Use `create(TrackPullRequestResponseSchema)` to create a new message.
  */
 export const TrackPullRequestResponseSchema: GenMessage<TrackPullRequestResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 21);
+  messageDesc(file_octomanager_v1_tracking, 24);
 
 /**
  * @generated from message octomanager.v1.GetTrackedPullRequestRequest
@@ -740,7 +933,7 @@ export type GetTrackedPullRequestRequest = Message<"octomanager.v1.GetTrackedPul
  * Use `create(GetTrackedPullRequestRequestSchema)` to create a new message.
  */
 export const GetTrackedPullRequestRequestSchema: GenMessage<GetTrackedPullRequestRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 22);
+  messageDesc(file_octomanager_v1_tracking, 25);
 
 /**
  * @generated from message octomanager.v1.GetTrackedPullRequestResponse
@@ -757,7 +950,7 @@ export type GetTrackedPullRequestResponse = Message<"octomanager.v1.GetTrackedPu
  * Use `create(GetTrackedPullRequestResponseSchema)` to create a new message.
  */
 export const GetTrackedPullRequestResponseSchema: GenMessage<GetTrackedPullRequestResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 23);
+  messageDesc(file_octomanager_v1_tracking, 26);
 
 /**
  * @generated from message octomanager.v1.RefreshTrackedPullRequestRequest
@@ -774,7 +967,7 @@ export type RefreshTrackedPullRequestRequest = Message<"octomanager.v1.RefreshTr
  * Use `create(RefreshTrackedPullRequestRequestSchema)` to create a new message.
  */
 export const RefreshTrackedPullRequestRequestSchema: GenMessage<RefreshTrackedPullRequestRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 24);
+  messageDesc(file_octomanager_v1_tracking, 27);
 
 /**
  * @generated from message octomanager.v1.RefreshTrackedPullRequestResponse
@@ -791,7 +984,7 @@ export type RefreshTrackedPullRequestResponse = Message<"octomanager.v1.RefreshT
  * Use `create(RefreshTrackedPullRequestResponseSchema)` to create a new message.
  */
 export const RefreshTrackedPullRequestResponseSchema: GenMessage<RefreshTrackedPullRequestResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 25);
+  messageDesc(file_octomanager_v1_tracking, 28);
 
 /**
  * @generated from message octomanager.v1.AssignPullRequestResponse
@@ -808,7 +1001,7 @@ export type AssignPullRequestResponse = Message<"octomanager.v1.AssignPullReques
  * Use `create(AssignPullRequestResponseSchema)` to create a new message.
  */
 export const AssignPullRequestResponseSchema: GenMessage<AssignPullRequestResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 26);
+  messageDesc(file_octomanager_v1_tracking, 29);
 
 /**
  * @generated from message octomanager.v1.UntrackPullRequestRequest
@@ -825,7 +1018,7 @@ export type UntrackPullRequestRequest = Message<"octomanager.v1.UntrackPullReque
  * Use `create(UntrackPullRequestRequestSchema)` to create a new message.
  */
 export const UntrackPullRequestRequestSchema: GenMessage<UntrackPullRequestRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 27);
+  messageDesc(file_octomanager_v1_tracking, 30);
 
 /**
  * @generated from message octomanager.v1.UntrackPullRequestResponse
@@ -842,7 +1035,7 @@ export type UntrackPullRequestResponse = Message<"octomanager.v1.UntrackPullRequ
  * Use `create(UntrackPullRequestResponseSchema)` to create a new message.
  */
 export const UntrackPullRequestResponseSchema: GenMessage<UntrackPullRequestResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 28);
+  messageDesc(file_octomanager_v1_tracking, 31);
 
 /**
  * @generated from message octomanager.v1.GetActionRequest
@@ -859,7 +1052,7 @@ export type GetActionRequest = Message<"octomanager.v1.GetActionRequest"> & {
  * Use `create(GetActionRequestSchema)` to create a new message.
  */
 export const GetActionRequestSchema: GenMessage<GetActionRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 29);
+  messageDesc(file_octomanager_v1_tracking, 32);
 
 /**
  * @generated from message octomanager.v1.GetActionResponse
@@ -876,7 +1069,7 @@ export type GetActionResponse = Message<"octomanager.v1.GetActionResponse"> & {
  * Use `create(GetActionResponseSchema)` to create a new message.
  */
 export const GetActionResponseSchema: GenMessage<GetActionResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 30);
+  messageDesc(file_octomanager_v1_tracking, 33);
 
 /**
  * @generated from message octomanager.v1.AcknowledgeActionRequest
@@ -898,7 +1091,7 @@ export type AcknowledgeActionRequest = Message<"octomanager.v1.AcknowledgeAction
  * Use `create(AcknowledgeActionRequestSchema)` to create a new message.
  */
 export const AcknowledgeActionRequestSchema: GenMessage<AcknowledgeActionRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 31);
+  messageDesc(file_octomanager_v1_tracking, 34);
 
 /**
  * @generated from message octomanager.v1.AcknowledgeActionResponse
@@ -915,7 +1108,7 @@ export type AcknowledgeActionResponse = Message<"octomanager.v1.AcknowledgeActio
  * Use `create(AcknowledgeActionResponseSchema)` to create a new message.
  */
 export const AcknowledgeActionResponseSchema: GenMessage<AcknowledgeActionResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 32);
+  messageDesc(file_octomanager_v1_tracking, 35);
 
 /**
  * @generated from message octomanager.v1.StartActionRequest
@@ -937,7 +1130,7 @@ export type StartActionRequest = Message<"octomanager.v1.StartActionRequest"> & 
  * Use `create(StartActionRequestSchema)` to create a new message.
  */
 export const StartActionRequestSchema: GenMessage<StartActionRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 33);
+  messageDesc(file_octomanager_v1_tracking, 36);
 
 /**
  * @generated from message octomanager.v1.StartActionResponse
@@ -954,7 +1147,7 @@ export type StartActionResponse = Message<"octomanager.v1.StartActionResponse"> 
  * Use `create(StartActionResponseSchema)` to create a new message.
  */
 export const StartActionResponseSchema: GenMessage<StartActionResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 34);
+  messageDesc(file_octomanager_v1_tracking, 37);
 
 /**
  * @generated from message octomanager.v1.ReprofileActionRequest
@@ -971,7 +1164,7 @@ export type ReprofileActionRequest = Message<"octomanager.v1.ReprofileActionRequ
  * Use `create(ReprofileActionRequestSchema)` to create a new message.
  */
 export const ReprofileActionRequestSchema: GenMessage<ReprofileActionRequest> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 35);
+  messageDesc(file_octomanager_v1_tracking, 38);
 
 /**
  * @generated from message octomanager.v1.ReprofileActionResponse
@@ -988,7 +1181,152 @@ export type ReprofileActionResponse = Message<"octomanager.v1.ReprofileActionRes
  * Use `create(ReprofileActionResponseSchema)` to create a new message.
  */
 export const ReprofileActionResponseSchema: GenMessage<ReprofileActionResponse> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_tracking, 36);
+  messageDesc(file_octomanager_v1_tracking, 39);
+
+/**
+ * @generated from message octomanager.v1.AgentMessage
+ */
+export type AgentMessage = Message<"octomanager.v1.AgentMessage"> & {
+  /**
+   * @generated from field: uint64 sequence = 1;
+   */
+  sequence: bigint;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string action_id = 3;
+   */
+  actionId: string;
+
+  /**
+   * @generated from field: string recipient_agent_id = 4;
+   */
+  recipientAgentId: string;
+
+  /**
+   * @generated from field: string body = 5;
+   */
+  body: string;
+
+  /**
+   * @generated from field: int64 created_at_ms = 6;
+   */
+  createdAtMs: bigint;
+
+  /**
+   * @generated from field: optional int64 acknowledged_at_ms = 7;
+   */
+  acknowledgedAtMs?: bigint | undefined;
+
+  /**
+   * @generated from field: bool applicable = 8;
+   */
+  applicable: boolean;
+};
+
+/**
+ * Describes the message octomanager.v1.AgentMessage.
+ * Use `create(AgentMessageSchema)` to create a new message.
+ */
+export const AgentMessageSchema: GenMessage<AgentMessage> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 40);
+
+/**
+ * @generated from message octomanager.v1.ListAgentMessagesRequest
+ */
+export type ListAgentMessagesRequest = Message<"octomanager.v1.ListAgentMessagesRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: uint64 after_sequence = 2;
+   */
+  afterSequence: bigint;
+
+  /**
+   * @generated from field: bool include_acknowledged = 3;
+   */
+  includeAcknowledged: boolean;
+};
+
+/**
+ * Describes the message octomanager.v1.ListAgentMessagesRequest.
+ * Use `create(ListAgentMessagesRequestSchema)` to create a new message.
+ */
+export const ListAgentMessagesRequestSchema: GenMessage<ListAgentMessagesRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 41);
+
+/**
+ * @generated from message octomanager.v1.ListAgentMessagesResponse
+ */
+export type ListAgentMessagesResponse = Message<"octomanager.v1.ListAgentMessagesResponse"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.AgentMessage messages = 1;
+   */
+  messages: AgentMessage[];
+
+  /**
+   * @generated from field: uint64 next_sequence = 2;
+   */
+  nextSequence: bigint;
+
+  /**
+   * @generated from field: bool has_more = 3;
+   */
+  hasMore: boolean;
+};
+
+/**
+ * Describes the message octomanager.v1.ListAgentMessagesResponse.
+ * Use `create(ListAgentMessagesResponseSchema)` to create a new message.
+ */
+export const ListAgentMessagesResponseSchema: GenMessage<ListAgentMessagesResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 42);
+
+/**
+ * @generated from message octomanager.v1.AcknowledgeMessageRequest
+ */
+export type AcknowledgeMessageRequest = Message<"octomanager.v1.AcknowledgeMessageRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+};
+
+/**
+ * Describes the message octomanager.v1.AcknowledgeMessageRequest.
+ * Use `create(AcknowledgeMessageRequestSchema)` to create a new message.
+ */
+export const AcknowledgeMessageRequestSchema: GenMessage<AcknowledgeMessageRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 43);
+
+/**
+ * @generated from message octomanager.v1.AcknowledgeMessageResponse
+ */
+export type AcknowledgeMessageResponse = Message<"octomanager.v1.AcknowledgeMessageResponse"> & {
+  /**
+   * @generated from field: octomanager.v1.AgentMessage message = 1;
+   */
+  message?: AgentMessage | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.AcknowledgeMessageResponse.
+ * Use `create(AcknowledgeMessageResponseSchema)` to create a new message.
+ */
+export const AcknowledgeMessageResponseSchema: GenMessage<AcknowledgeMessageResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_tracking, 44);
 
 /**
  * @generated from enum octomanager.v1.ActionState
@@ -1076,4 +1414,40 @@ export enum DeliveryState {
  */
 export const DeliveryStateSchema: GenEnum<DeliveryState> = /*@__PURE__*/
   enumDesc(file_octomanager_v1_tracking, 1);
+
+/**
+ * @generated from enum octomanager.v1.CheckWatchState
+ */
+export enum CheckWatchState {
+  /**
+   * @generated from enum value: CHECK_WATCH_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CHECK_WATCH_STATE_WAITING = 1;
+   */
+  WAITING = 1,
+
+  /**
+   * @generated from enum value: CHECK_WATCH_STATE_COMPLETED = 2;
+   */
+  COMPLETED = 2,
+
+  /**
+   * @generated from enum value: CHECK_WATCH_STATE_SUPERSEDED = 3;
+   */
+  SUPERSEDED = 3,
+
+  /**
+   * @generated from enum value: CHECK_WATCH_STATE_CANCELLED = 4;
+   */
+  CANCELLED = 4,
+}
+
+/**
+ * Describes the enum octomanager.v1.CheckWatchState.
+ */
+export const CheckWatchStateSchema: GenEnum<CheckWatchState> = /*@__PURE__*/
+  enumDesc(file_octomanager_v1_tracking, 2);
 

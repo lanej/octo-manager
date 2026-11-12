@@ -49,7 +49,7 @@ func TestActivityPresentsPRsCommitsAndActionsInsteadOfDatabaseKeys(t *testing.T)
 	raw := m.activityContent()
 
 	visible := ansi.Strip(raw)
-	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Failed check: Retry policy", "acknowledgment and resolution are still separate"} {
+	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Failed check: Retry policy", "agent receipt and acknowledgment are unverified"} {
 		if !strings.Contains(visible, want) {
 			t.Errorf("missing readable context %q", want)
 		}
@@ -163,5 +163,74 @@ func TestCharmedTrackingLinksKeepTargetsAcrossResize(t *testing.T) {
 		if strings.Contains(m.link(address), "\x1b]8;") {
 			t.Errorf("unsafe destination was linked: %q", address)
 		}
+	}
+}
+
+func TestTrackingPresentsReviewFeedbackAndLocation(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	pr := &v1.TrackedPullRequest{Id: "feedback-pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true, Observation: &v1.TrackingObservation{FeedbackJson: new(`{"state":"partial","reason":"Comments unavailable"}`)}}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs: []*v1.TrackedPullRequest{pr},
+		Actions: []*v1.PendingAction{{
+			Id: "feedback-action", PrId: pr.GetId(), Summary: "Code review from reviewer", State: v1.ActionState_ACTION_STATE_OPEN,
+			Blocker:     &v1.PendingAction_ReviewFeedback{ReviewFeedback: &v1.ReviewFeedback{Source: "inline", Author: "reviewer", Body: "Please reuse the existing parser.", Path: new("src/parser.ts"), Line: new(uint32(42)), Url: "https://github.com/owner/repo/pull/42#discussion_r1"}},
+			EvidenceUrl: "https://github.com/owner/repo/pull/42#discussion_r1",
+		}},
+	}
+	m.selected = ""
+	m.ensureSelection()
+	view := ansi.Strip(m.trackingContent())
+
+	for _, want := range []string{"Code review from reviewer", "src/parser.ts:42", "Please reuse the existing parser.", "Feedback:", "Comments unavailable"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("feedback missing %q", want)
+		}
+	}
+}
+
+func TestTrackingDistinguishesMessageReceiptFromTransportAdmission(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	delivery := &v1.ActionDelivery{Id: "message", ActionId: "action", State: v1.DeliveryState_DELIVERY_STATE_DELIVERED, MessageSequence: new(uint64(1))}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs:        []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}},
+		Actions:    []*v1.PendingAction{{Id: "action", PrId: "pr", Summary: "Review feedback", State: v1.ActionState_ACTION_STATE_OPEN}},
+		Deliveries: []*v1.ActionDelivery{delivery},
+	}
+	m.selected = ""
+	m.ensureSelection()
+
+	if !strings.Contains(ansi.Strip(m.trackingContent()), "Awaiting agent receipt") {
+		t.Fatal("queue admission was presented as recipient receipt")
+	}
+
+	delivery.AcknowledgedAtMs = new(int64(1000))
+	view := ansi.Strip(m.trackingContent())
+
+	if !strings.Contains(view, "Agent received") || strings.Contains(view, "Awaiting agent receipt") {
+		t.Fatal("message-specific receipt was not presented")
+	}
+}
+
+func TestCheckWatchPresentsPendingCoverageAndLinkedResults(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	pr := &v1.TrackedPullRequest{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}
+	sha := strings.Repeat("a", 40)
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}, CheckWatches: []*v1.CheckWatch{{Id: "opaque-watch-id", PrId: "pr", HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, EvidenceJson: `{"state":"partial","reason":"Workflow still queued"}`}}}
+	pending := ansi.Strip(m.checkWatchContent(pr))
+
+	if !strings.Contains(pending, "waiting") || !strings.Contains(pending, "Workflow still queued") || strings.Contains(pending, "opaque-watch-id") {
+		t.Fatal("check watch did not present human-readable pending state")
+	}
+
+	result := m.checkResultsContent(&v1.CheckResults{HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_COMPLETED, ChecksJson: `[{"name":"Linux checks","conclusion":"success","url":"https://github.com/owner/repo/actions/runs/123"}]`}, pr)
+	if !strings.Contains(ansi.Strip(result), "Linux checks") || !strings.Contains(ansi.Strip(result), "success") {
+		t.Fatal("check completion lost its individual conclusions")
+	}
+
+	if !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/commit/"+sha)) || !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/actions/runs/123")) {
+		t.Fatal("check completion lost its commit or run link")
 	}
 }

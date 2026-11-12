@@ -135,7 +135,7 @@ test("private observations remain separate from public-only Pi tools; partial la
   );
   assert.equal(o.headSha, "head");
   assert.equal(o.reviews.state, "partial");
-  assert.equal(paths.length, 8);
+  assert.equal(paths.length, 11);
   assert.deepEqual(o.targetBase, { ref: "main", sha: "base-tip" });
   assert.throws(() => publicPullRequest(raw), /Only confirmed public/);
 });
@@ -146,6 +146,7 @@ test("routing selects exact-check profiles and rejects invalid configuration", a
     await writeFile(
       path,
       JSON.stringify({
+        endpoints: { local: { delivery: "queue", socket: "/tmp/codex.sock" } },
         profiles: {
           lint: {
             instructions: "Read lint output only",
@@ -164,6 +165,18 @@ test("routing selects exact-check profiles and rejects invalid configuration", a
         headSha: "head",
         checkKey: "run:lint",
       };
+    assert.deepEqual(config.endpoints["local"], {
+      delivery: "queue",
+      socket: "/tmp/codex.sock",
+    });
+    for (const endpoint of [
+      { delivery: "shell" },
+      { command: "codex" },
+      { socket: "relative" },
+    ]) {
+      await writeFile(path, JSON.stringify({ endpoints: { local: endpoint } }));
+      assert.throws(() => loadTrackingConfig(path), /Invalid endpoint/);
+    }
     assert.equal(selectProfile(blocker, config).model, "cheap-model");
     assert.equal(
       selectProfile({ ...blocker, checkName: "build" }, config).name,

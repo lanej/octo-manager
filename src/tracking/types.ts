@@ -1,3 +1,4 @@
+import type { CheckWatch, CheckWatchState } from "./checks.js";
 export type UnixMillis = number;
 export interface AgentRef {
   id: string;
@@ -39,12 +40,25 @@ export interface CheckObservation {
   url: string;
 }
 export interface ReviewObservation {
+  body?: string;
   id: string;
   author: string;
   headSha: string;
   state: string;
   at: number;
   url: string;
+}
+export interface ReviewFeedback {
+  source: "review" | "inline" | "conversation";
+  id: string;
+  revision: string;
+  author: string;
+  body: string;
+  url: string;
+  headSha?: string;
+  path?: string;
+  line?: number;
+  reviewId?: string;
 }
 export interface TargetBase {
   ref: string;
@@ -69,6 +83,8 @@ export interface PRObservation {
   mergeability: "mergeable" | "conflicting" | "unknown";
   checks: ObservationPart<CheckObservation[]>;
   reviews: ObservationPart<ReviewObservation[]>;
+  feedback?: ObservationPart<ReviewFeedback[]>;
+  workflows?: ObservationPart<CheckObservation[]>;
 }
 export type ObservationInput = Omit<PRObservation, "id" | "prId">;
 export enum ActionState {
@@ -79,6 +95,15 @@ export enum ActionState {
   Superseded = "superseded",
 }
 export type Blocker =
+  | {
+      kind: "check_results";
+      watchId: string;
+      headSha: string;
+      state: CheckWatchState.Completed | CheckWatchState.Superseded;
+      checks: CheckObservation[];
+      replacementHeadSha?: string;
+    }
+  | { kind: "review_feedback"; feedback: ReviewFeedback }
   | { kind: "conflict"; headSha: string; baseSha: string; baseRef?: string }
   | {
       kind: "check_failed";
@@ -138,7 +163,13 @@ export enum DeliveryState {
 export type DeliveryProgress =
   | { state: DeliveryState.Pending; nextAttemptAt: number }
   | { state: DeliveryState.Sending; startedAt: number }
-  | { state: DeliveryState.Delivered; at: number; turnId?: string }
+  | {
+      state: DeliveryState.Delivered;
+      at: number;
+      turnId?: string;
+      queueId?: string;
+      note?: string;
+    }
   | {
       state:
         | DeliveryState.Uncertain
@@ -163,7 +194,7 @@ export interface DeliveryAttempt {
   harnessVersion?: string;
   outcome:
     | { state: "sending" }
-    | { state: "accepted"; at: number; turnId?: string }
+    | { state: "accepted"; at: number; turnId?: string; queueId?: string }
     | { state: "rejected" | "uncertain"; at: number; reason: string };
 }
 export interface TrackingSnapshot {
@@ -172,6 +203,7 @@ export interface TrackingSnapshot {
   actions: Action[];
   deliveries: Delivery[];
   attempts: DeliveryAttempt[];
+  checkWatches: CheckWatch[];
 }
 export const unfinished = (a: Action): boolean =>
   [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(

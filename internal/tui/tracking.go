@@ -86,12 +86,12 @@ func (m *Model) trackingContent() string {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
 
-		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson())))
+		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson()))+" · "+m.field("Feedback", observationStatus(o.GetFeedbackJson())))
 	} else {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
-	parts = append(parts, m.repairContent(pr.GetId()))
+	parts = append(parts, m.checkWatchContent(pr), m.repairContent(pr.GetId()))
 
 	count := m.openActions(pr.GetId())
 
@@ -110,6 +110,24 @@ func (m *Model) trackingContent() string {
 			}
 
 			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
+			if result := action.GetCheckResults(); result != nil {
+				parts = append(parts, m.checkResultsContent(result, pr))
+			}
+
+			if comment := action.GetReviewFeedback(); comment != nil {
+				location := comment.GetPath()
+
+				if comment.GetLine() > 0 {
+					location += fmt.Sprintf(":%d", comment.GetLine())
+				}
+
+				if location != "" {
+					parts = append(parts, m.field("Location", location))
+				}
+
+				parts = append(parts, text.Label(safe(comment.GetBody()), m.theme))
+			}
+
 			if profile := action.GetProfile(); profile != nil {
 				parts = append(parts, m.field("Profile", profile.GetName()))
 				if profile.GetHarness() != "" {
@@ -129,6 +147,16 @@ func (m *Model) trackingContent() string {
 				}
 
 				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson())))
+				if delivery.MessageSequence != nil {
+					receipt := "Awaiting agent receipt"
+					if delivery.AcknowledgedAtMs != nil {
+						receipt = "Agent received " + m.timestamp(delivery.GetAcknowledgedAtMs(), fullTimestamp)
+					}
+
+					parts = append(parts, m.field("Receipt", receipt))
+				} else {
+					parts = append(parts, m.muted("Receipt unavailable for this legacy delivery."))
+				}
 			}
 
 			if action.GetCloseReason() != "" {
@@ -233,6 +261,7 @@ func observationStatus(raw string) string {
 func (m *Model) deliveryDetails(raw string) string {
 	var value struct {
 		Reason        string
+		Note          string
 		NextAttemptAt int64
 	}
 	if err := json.Unmarshal([]byte(raw), &value); err != nil {
@@ -241,6 +270,10 @@ func (m *Model) deliveryDetails(raw string) string {
 
 	if value.Reason != "" {
 		return safe(value.Reason) + "\n\n"
+	}
+
+	if value.Note != "" {
+		return safe(value.Note) + "\n\n"
 	}
 
 	if value.NextAttemptAt != 0 {

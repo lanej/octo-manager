@@ -135,3 +135,24 @@ The same repair instant appeared as November 10 at 22:15 PST and November 11 at 
 ![The same repair using the standard TZ environment variable](images/timezone-tokyo.png)
 
 ![Local timestamps in the narrow dashboard](images/timezone-local-narrow.png)
+
+
+## Desktop queue delivery
+
+On 2026-11-11, a standalone Codex 0.167.1 daemon rejected resuming the active desktop-owned thread because another host already held its writer. Octo's opt-in experimental queue RPC admitted one informational probe using `thread/queue/add`. `thread/queue/list` recovered the matching client delivery ID `octo-api-probe-20261111-01` and queue receipt `01a1cbae-2669-7fa0-befc-29d79ac6eb1c`.
+
+After the active turn completed, the probe arrived as an actual incoming message in the original desktop session. The receiving agent reported receipt through Octo's `record-activity` API client, using the same operation ID and a distinct request ID. The local activity timeline retains both the earlier uncertain delivery report and the later recipient-confirmed success. No second queue submission, thread resume, queue start, or model/settings override was issued.
+
+This confirms API admission, queue reconciliation, desktop consumption after an active turn, and recipient-side activity reporting for that host/runtime. It does not establish unattended wakeup of an already idle desktop session, automatic PR enrollment, blocker acknowledgment, or repair/resolution.
+
+
+## Local feedback monitoring
+
+On 2026-11-11, the local coordinator was updated to the feedback implementation and explicitly configured for the proven Codex queue transport. An online backup preceded migration to SQLite version 6. The restarted coordinator preserved both tracked PR identities, passed SQLite foreign-key verification, and refreshed PR #12 through the real GitHub reader. Its Connect snapshot reported complete feedback collection with no comments. No test comment was posted, so live GitHub-comment-to-agent delivery remains unobserved. The controlled feedback journey covers collection, durable actions, owner delivery, edits, and restart; the preceding desktop probe separately established the actual Codex delivery boundary.
+
+
+## Local durable inbox
+
+On 2026-11-11, the local coordinator was backed up and migrated from SQLite version 6 to 7. The restarted inbox-enabled coordinator preserved tracked PR, agent, action, and delivery identities and passed SQLite foreign-key verification. The actual CLI/Connect inbox endpoint returned a valid empty unread page for this Codex session. This validates activation and the live inbox API, not receipt or replay of a newly stored notification.
+
+Controlled regression journeys exercise exact payload persistence before transport access, lost responses, restart deadlines, same-ID replay after missing queue/history evidence, lookup failures, per-recipient pagination, immutable receipt/destination constraints, and receipt races during send and reconciliation. Separate message receipts leave action acceptance and resolution unchanged. The earlier live Codex probe establishes the external queue-consumption boundary; live end-to-end replay through the new inbox remains an acceptance gap.

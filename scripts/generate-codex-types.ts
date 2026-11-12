@@ -11,15 +11,19 @@ import { execFileSync } from "node:child_process";
 const version = execFileSync("codex", ["--version"], {
   encoding: "utf8",
 }).trim();
-if (!version.endsWith("0.167.0"))
+if (!version.endsWith("0.167.1"))
   throw new Error(
-    "Generate with Codex 0.167.0; review protocol compatibility before upgrading",
+    "Generate with Codex 0.167.1; review protocol compatibility before upgrading",
   );
 const scratch = mkdtempSync(join(tmpdir(), "octo-protocol-"));
 try {
-  execFileSync("codex", ["app-server", "generate-ts", "--out", scratch], {
-    stdio: "pipe",
-  });
+  execFileSync(
+    "codex",
+    ["app-server", "generate-ts", "--experimental", "--out", scratch],
+    {
+      stdio: "pipe",
+    },
+  );
   const visited = new Set<string>();
   function copy(path: string): void {
     path = resolve(path);
@@ -39,6 +43,8 @@ try {
     "v2/ThreadResumeParams.ts",
     "v2/TurnStartParams.ts",
     "v2/ThreadTurnsListParams.ts",
+    "v2/ThreadQueueAddParams.ts",
+    "v2/ThreadQueueListParams.ts",
   ])
     copy(join(scratch, file));
 } finally {
