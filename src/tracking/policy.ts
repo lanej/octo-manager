@@ -1,3 +1,4 @@
+import { checkEvidence, checksFinished, successfulCheck } from "./checks.js";
 import {
   ActionState,
   type Action,
@@ -121,7 +122,23 @@ export function closeProgress(
     observationId: o.id,
     reason,
   });
-  if (a.blocker.kind === "check_results") return undefined;
+  if (a.blocker.kind === "check_results") {
+    if (a.blocker.headSha !== o.headSha) return supersede("PR head changed");
+    if (a.blocker.checks.every(successfulCheck)) {
+      if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
+      const evidence = checkEvidence(o);
+      if (
+        evidence.state !== "unavailable" &&
+        evidence.value.some(
+          (check) =>
+            !successfulCheck(check) ||
+            !checksFinished({ state: "complete", value: [check] }),
+        )
+      )
+        return supersede("New check evidence changed completion state");
+    }
+    return undefined;
+  }
   if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
   const b = a.blocker;
   if (b.kind === "review_feedback") {

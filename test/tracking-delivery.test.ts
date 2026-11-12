@@ -56,7 +56,7 @@ test("busy threads wait, delivery acceptance is not acknowledgment, and origin s
         send: async (agent, id, message) => {
           sends++;
           assert.equal(agent.sessionId, "owner");
-          assert(message.includes("triage and reporting only"));
+          assert(message.includes("Merge conflict"));
           assert(message.includes(`[octo-delivery:${id}]`));
           return { turnId: "turn" };
         },

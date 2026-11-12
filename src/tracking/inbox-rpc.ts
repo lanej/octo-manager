@@ -27,6 +27,7 @@ export function inboxRoutes(store: TrackingStore) {
         request.agentId,
         after,
         request.includeAcknowledged,
+        request.applicableOnly,
       );
       return {
         messages: page.messages.map(wire),
@@ -42,6 +43,14 @@ export function inboxRoutes(store: TrackingStore) {
         throw new ConnectError(
           "Message belongs to another agent",
           Code.PermissionDenied,
+        );
+      if (
+        request.expectedBody !== undefined &&
+        request.expectedBody !== message.body
+      )
+        throw new ConnectError(
+          "Message text does not match the stored notification",
+          Code.InvalidArgument,
         );
       return {
         message: wire(store.acknowledgeMessage(request.id, request.agentId)),

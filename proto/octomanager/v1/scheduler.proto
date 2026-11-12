@@ -12,6 +12,7 @@ service SchedulerService {
   rpc ListRepairs(ListRepairsRequest) returns (ListRepairsResponse);
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
   rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
+  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
   rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
   rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);
