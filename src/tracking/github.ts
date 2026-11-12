@@ -3,6 +3,7 @@ import {
   feedbackRevision,
   reviewObservation,
 } from "./feedback.js";
+import { workflowObservation } from "./checks.js";
 import { trackingPR } from "./evidence.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -102,61 +103,69 @@ export async function readObservation(
   const target =
     pr.state === "open" && !pr.merged ? await readTarget() : undefined;
   const observedAt = now();
-  const [runs, statuses, reviews, inline, conversation] = await Promise.all([
-    collection(
-      `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
-      "check_runs",
-      (c: any) => ({
-        id: `run:${c.id}`,
-        key: `run:${c.app?.id ?? ""}:${c.name}`,
-        name: String(c.name),
-        headSha: String(c.head_sha),
-        status: String(c.status),
-        conclusion: String(c.conclusion ?? ""),
-        at: Date.parse(c.started_at ?? c.completed_at ?? "") || 0,
-        url: String(c.html_url ?? url),
-      }),
-      read,
-      signal,
-    ),
-    collection(
-      `${root}/commits/${pr.head.sha}/statuses`,
-      undefined,
-      (c: any) => ({
-        id: `status:${c.id}`,
-        key: `status:${c.context}`,
-        name: String(c.context),
-        headSha: pr.head.sha,
-        status: String(c.state),
-        conclusion: String(c.state),
-        at: Date.parse(c.created_at ?? "") || 0,
-        url: String(c.target_url ?? url),
-      }),
-      read,
-      signal,
-    ),
-    collection(
-      `${root}/pulls/${number}/reviews`,
-      undefined,
-      (r: unknown) => reviewObservation(r, url),
-      read,
-      signal,
-    ),
-    collection(
-      `${root}/pulls/${number}/comments`,
-      undefined,
-      (value: unknown) => commentFeedback(value, "inline", url),
-      read,
-      signal,
-    ),
-    collection(
-      `${root}/issues/${number}/comments`,
-      undefined,
-      (value: unknown) => commentFeedback(value, "conversation", url),
-      read,
-      signal,
-    ),
-  ]);
+  const [runs, statuses, reviews, inline, conversation, workflows] =
+    await Promise.all([
+      collection(
+        `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
+        "check_runs",
+        (c: any) => ({
+          id: `run:${c.id}`,
+          key: `run:${c.app?.id ?? ""}:${c.name}`,
+          name: String(c.name),
+          headSha: String(c.head_sha),
+          status: String(c.status),
+          conclusion: String(c.conclusion ?? ""),
+          at: Date.parse(c.started_at ?? c.completed_at ?? "") || 0,
+          url: String(c.html_url ?? url),
+        }),
+        read,
+        signal,
+      ),
+      collection(
+        `${root}/commits/${pr.head.sha}/statuses`,
+        undefined,
+        (c: any) => ({
+          id: `status:${c.id}`,
+          key: `status:${c.context}`,
+          name: String(c.context),
+          headSha: pr.head.sha,
+          status: String(c.state),
+          conclusion: String(c.state),
+          at: Date.parse(c.created_at ?? "") || 0,
+          url: String(c.target_url ?? url),
+        }),
+        read,
+        signal,
+      ),
+      collection(
+        `${root}/pulls/${number}/reviews`,
+        undefined,
+        (r: unknown) => reviewObservation(r, url),
+        read,
+        signal,
+      ),
+      collection(
+        `${root}/pulls/${number}/comments`,
+        undefined,
+        (value: unknown) => commentFeedback(value, "inline", url),
+        read,
+        signal,
+      ),
+      collection(
+        `${root}/issues/${number}/comments`,
+        undefined,
+        (value: unknown) => commentFeedback(value, "conversation", url),
+        read,
+        signal,
+      ),
+      collection(
+        `${root}/actions/runs?head_sha=${encodeURIComponent(pr.head.sha)}`,
+        "workflow_runs",
+        workflowObservation,
+        read,
+        signal,
+      ),
+    ]);
   const feedbackItems = [
     ...(reviews.state === "unavailable"
       ? []
@@ -243,5 +252,6 @@ export async function readObservation(
     checks,
     reviews,
     feedback,
+    workflows,
   };
 }

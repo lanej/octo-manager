@@ -1,8 +1,10 @@
+import { CheckWatchState, type CheckWatch } from "./checks.js";
 import type { AgentMessage } from "./inbox.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import {
   AgentReferenceSchema,
+  CheckWatchState as WireCheckWatchState,
   TrackedPullRequestSchema,
   PendingActionSchema,
   ActionDeliverySchema,
@@ -25,6 +27,21 @@ export const actionStates: Record<ActionState, WireActionState> = {
   resolved: WireActionState.RESOLVED,
   superseded: WireActionState.SUPERSEDED,
 };
+const checkWatchStates: Record<CheckWatchState, WireCheckWatchState> = {
+  waiting: WireCheckWatchState.WAITING,
+  completed: WireCheckWatchState.COMPLETED,
+  superseded: WireCheckWatchState.SUPERSEDED,
+  cancelled: WireCheckWatchState.CANCELLED,
+};
+export function wireCheckWatch(watch: CheckWatch) {
+  return {
+    ...watch,
+    state: checkWatchStates[watch.state],
+    evidenceJson: JSON.stringify(watch.evidence),
+    createdAtMs: BigInt(watch.createdAt),
+    updatedAtMs: BigInt(watch.updatedAt),
+  };
+}
 const deliveryStates: Record<DeliveryState, WireDeliveryState> = {
   pending: WireDeliveryState.PENDING,
   sending: WireDeliveryState.SENDING,
@@ -57,6 +74,9 @@ export function wirePR(p: TrackedPR) {
           mergeability: p.observation.mergeability,
           checksJson: JSON.stringify(p.observation.checks),
           reviewsJson: JSON.stringify(p.observation.reviews),
+          ...(p.observation.workflows === undefined
+            ? {}
+            : { workflowsJson: JSON.stringify(p.observation.workflows) }),
           ...(p.observation.feedback === undefined
             ? {}
             : { feedbackJson: JSON.stringify(p.observation.feedback) }),
@@ -93,16 +113,29 @@ export function wireAction(a: Action) {
                 checkKey: b.checkKey,
               },
             }
-          : b.kind === "review_feedback"
-            ? { case: "reviewFeedback", value: b.feedback }
-            : {
-                case: "changesRequested",
+          : b.kind === "check_results"
+            ? {
+                case: "checkResults",
                 value: {
-                  reviewId: b.reviewId,
-                  reviewer: b.reviewer,
-                  reviewedHeadSha: b.reviewedHeadSha,
+                  watchId: b.watchId,
+                  headSha: b.headSha,
+                  state: checkWatchStates[b.state],
+                  checksJson: JSON.stringify(b.checks),
+                  ...(b.replacementHeadSha === undefined
+                    ? {}
+                    : { replacementHeadSha: b.replacementHeadSha }),
                 },
-              },
+              }
+            : b.kind === "review_feedback"
+              ? { case: "reviewFeedback", value: b.feedback }
+              : {
+                  case: "changesRequested",
+                  value: {
+                    reviewId: b.reviewId,
+                    reviewer: b.reviewer,
+                    reviewedHeadSha: b.reviewedHeadSha,
+                  },
+                },
     summary: a.summary,
     evidenceUrl: a.evidenceUrl,
     profile: a.profile,
@@ -156,6 +189,7 @@ export function wireTracking(service: TrackingService) {
     deliveries: s.deliveries.map((delivery) =>
       wireDelivery(delivery, service.store.inbox.get(delivery.id)),
     ),
+    checkWatches: s.checkWatches.map(wireCheckWatch),
     attempts: s.attempts.map((a) => ({
       deliveryId: a.deliveryId,
       number: a.number,

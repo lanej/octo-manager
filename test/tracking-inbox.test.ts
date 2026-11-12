@@ -473,7 +473,7 @@ test("inbox pagination never treats its cursor as receipt and migration retains 
     store.close();
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
     db.exec(
-      "DROP TRIGGER immutable_message_recipient; DROP TABLE delivery_messages; PRAGMA user_version=6",
+      "DROP TABLE check_watches; ALTER TABLE pr_observations DROP COLUMN workflow_runs_json; DROP TRIGGER immutable_message_recipient; DROP TABLE delivery_messages; PRAGMA user_version=6",
     );
     db.close();
     store = new Store(directory);

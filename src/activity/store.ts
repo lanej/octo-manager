@@ -24,7 +24,7 @@ export class ActivityStore {
     const version = db.prepare("PRAGMA user_version").get();
     if (version === undefined) throw new Error("Missing database version");
     const current = integer(version["user_version"]);
-    if (current > 7)
+    if (current > 8)
       throw new Error("Activity database is newer than this application");
     if (current >= 2) return;
     db.exec(`BEGIN IMMEDIATE;

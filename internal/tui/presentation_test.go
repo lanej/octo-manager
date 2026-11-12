@@ -212,3 +212,25 @@ func TestTrackingDistinguishesMessageReceiptFromTransportAdmission(t *testing.T)
 		t.Fatal("message-specific receipt was not presented")
 	}
 }
+
+func TestCheckWatchPresentsPendingCoverageAndLinkedResults(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	pr := &v1.TrackedPullRequest{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}
+	sha := strings.Repeat("a", 40)
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}, CheckWatches: []*v1.CheckWatch{{Id: "opaque-watch-id", PrId: "pr", HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, EvidenceJson: `{"state":"partial","reason":"Workflow still queued"}`}}}
+	pending := ansi.Strip(m.checkWatchContent(pr))
+
+	if !strings.Contains(pending, "waiting") || !strings.Contains(pending, "Workflow still queued") || strings.Contains(pending, "opaque-watch-id") {
+		t.Fatal("check watch did not present human-readable pending state")
+	}
+
+	result := m.checkResultsContent(&v1.CheckResults{HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_COMPLETED, ChecksJson: `[{"name":"Linux checks","conclusion":"success","url":"https://github.com/owner/repo/actions/runs/123"}]`}, pr)
+	if !strings.Contains(ansi.Strip(result), "Linux checks") || !strings.Contains(ansi.Strip(result), "success") {
+		t.Fatal("check completion lost its individual conclusions")
+	}
+
+	if !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/commit/"+sha)) || !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/actions/runs/123")) {
+		t.Fatal("check completion lost its commit or run link")
+	}
+}

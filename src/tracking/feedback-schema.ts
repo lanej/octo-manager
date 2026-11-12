@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 
 export function migrateFeedback(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 6 || version === 7) return;
+  if (version === 6 || version === 7 || version === 8) return;
   if (version !== 5) throw new Error("Unsupported feedback database version");
   // rationale: SQLite requires rebuilding the table to extend its checked action kinds; dependent rows retain their original keys.
   db.exec("PRAGMA foreign_keys=OFF");

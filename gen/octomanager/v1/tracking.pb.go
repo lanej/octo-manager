@@ -140,6 +140,61 @@ func (DeliveryState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{1}
 }
 
+type CheckWatchState int32
+
+const (
+	CheckWatchState_CHECK_WATCH_STATE_UNSPECIFIED CheckWatchState = 0
+	CheckWatchState_CHECK_WATCH_STATE_WAITING     CheckWatchState = 1
+	CheckWatchState_CHECK_WATCH_STATE_COMPLETED   CheckWatchState = 2
+	CheckWatchState_CHECK_WATCH_STATE_SUPERSEDED  CheckWatchState = 3
+	CheckWatchState_CHECK_WATCH_STATE_CANCELLED   CheckWatchState = 4
+)
+
+// Enum value maps for CheckWatchState.
+var (
+	CheckWatchState_name = map[int32]string{
+		0: "CHECK_WATCH_STATE_UNSPECIFIED",
+		1: "CHECK_WATCH_STATE_WAITING",
+		2: "CHECK_WATCH_STATE_COMPLETED",
+		3: "CHECK_WATCH_STATE_SUPERSEDED",
+		4: "CHECK_WATCH_STATE_CANCELLED",
+	}
+	CheckWatchState_value = map[string]int32{
+		"CHECK_WATCH_STATE_UNSPECIFIED": 0,
+		"CHECK_WATCH_STATE_WAITING":     1,
+		"CHECK_WATCH_STATE_COMPLETED":   2,
+		"CHECK_WATCH_STATE_SUPERSEDED":  3,
+		"CHECK_WATCH_STATE_CANCELLED":   4,
+	}
+)
+
+func (x CheckWatchState) Enum() *CheckWatchState {
+	p := new(CheckWatchState)
+	*p = x
+	return p
+}
+
+func (x CheckWatchState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CheckWatchState) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v1_tracking_proto_enumTypes[2].Descriptor()
+}
+
+func (CheckWatchState) Type() protoreflect.EnumType {
+	return &file_octomanager_v1_tracking_proto_enumTypes[2]
+}
+
+func (x CheckWatchState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CheckWatchState.Descriptor instead.
+func (CheckWatchState) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{2}
+}
+
 type AgentTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Harness       string                 `protobuf:"bytes,1,opt,name=harness,proto3" json:"harness,omitempty"`
@@ -340,6 +395,7 @@ type TrackingObservation struct {
 	ReviewsJson   string                 `protobuf:"bytes,8,opt,name=reviews_json,json=reviewsJson,proto3" json:"reviews_json,omitempty"`
 	TargetBase    *TargetBase            `protobuf:"bytes,9,opt,name=target_base,json=targetBase,proto3" json:"target_base,omitempty"`
 	FeedbackJson  *string                `protobuf:"bytes,10,opt,name=feedback_json,json=feedbackJson,proto3,oneof" json:"feedback_json,omitempty"`
+	WorkflowsJson *string                `protobuf:"bytes,11,opt,name=workflows_json,json=workflowsJson,proto3,oneof" json:"workflows_json,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -440,6 +496,13 @@ func (x *TrackingObservation) GetTargetBase() *TargetBase {
 func (x *TrackingObservation) GetFeedbackJson() string {
 	if x != nil && x.FeedbackJson != nil {
 		return *x.FeedbackJson
+	}
+	return ""
+}
+
+func (x *TrackingObservation) GetWorkflowsJson() string {
+	if x != nil && x.WorkflowsJson != nil {
+		return *x.WorkflowsJson
 	}
 	return ""
 }
@@ -932,6 +995,190 @@ func (x *ReviewFeedback) GetReviewId() string {
 	return ""
 }
 
+type CheckWatch struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PrId               string                 `protobuf:"bytes,2,opt,name=pr_id,json=prId,proto3" json:"pr_id,omitempty"`
+	HeadSha            string                 `protobuf:"bytes,3,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
+	Generation         uint32                 `protobuf:"varint,4,opt,name=generation,proto3" json:"generation,omitempty"`
+	State              CheckWatchState        `protobuf:"varint,5,opt,name=state,proto3,enum=octomanager.v1.CheckWatchState" json:"state,omitempty"`
+	EvidenceJson       string                 `protobuf:"bytes,6,opt,name=evidence_json,json=evidenceJson,proto3" json:"evidence_json,omitempty"`
+	CreatedAtMs        int64                  `protobuf:"varint,7,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	UpdatedAtMs        int64                  `protobuf:"varint,8,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	ReplacementHeadSha *string                `protobuf:"bytes,9,opt,name=replacement_head_sha,json=replacementHeadSha,proto3,oneof" json:"replacement_head_sha,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CheckWatch) Reset() {
+	*x = CheckWatch{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckWatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckWatch) ProtoMessage() {}
+
+func (x *CheckWatch) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckWatch.ProtoReflect.Descriptor instead.
+func (*CheckWatch) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CheckWatch) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CheckWatch) GetPrId() string {
+	if x != nil {
+		return x.PrId
+	}
+	return ""
+}
+
+func (x *CheckWatch) GetHeadSha() string {
+	if x != nil {
+		return x.HeadSha
+	}
+	return ""
+}
+
+func (x *CheckWatch) GetGeneration() uint32 {
+	if x != nil {
+		return x.Generation
+	}
+	return 0
+}
+
+func (x *CheckWatch) GetState() CheckWatchState {
+	if x != nil {
+		return x.State
+	}
+	return CheckWatchState_CHECK_WATCH_STATE_UNSPECIFIED
+}
+
+func (x *CheckWatch) GetEvidenceJson() string {
+	if x != nil {
+		return x.EvidenceJson
+	}
+	return ""
+}
+
+func (x *CheckWatch) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *CheckWatch) GetUpdatedAtMs() int64 {
+	if x != nil {
+		return x.UpdatedAtMs
+	}
+	return 0
+}
+
+func (x *CheckWatch) GetReplacementHeadSha() string {
+	if x != nil && x.ReplacementHeadSha != nil {
+		return *x.ReplacementHeadSha
+	}
+	return ""
+}
+
+type CheckResults struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	WatchId            string                 `protobuf:"bytes,1,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
+	HeadSha            string                 `protobuf:"bytes,2,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
+	State              CheckWatchState        `protobuf:"varint,3,opt,name=state,proto3,enum=octomanager.v1.CheckWatchState" json:"state,omitempty"`
+	ChecksJson         string                 `protobuf:"bytes,4,opt,name=checks_json,json=checksJson,proto3" json:"checks_json,omitempty"`
+	ReplacementHeadSha *string                `protobuf:"bytes,5,opt,name=replacement_head_sha,json=replacementHeadSha,proto3,oneof" json:"replacement_head_sha,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CheckResults) Reset() {
+	*x = CheckResults{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckResults) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckResults) ProtoMessage() {}
+
+func (x *CheckResults) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckResults.ProtoReflect.Descriptor instead.
+func (*CheckResults) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CheckResults) GetWatchId() string {
+	if x != nil {
+		return x.WatchId
+	}
+	return ""
+}
+
+func (x *CheckResults) GetHeadSha() string {
+	if x != nil {
+		return x.HeadSha
+	}
+	return ""
+}
+
+func (x *CheckResults) GetState() CheckWatchState {
+	if x != nil {
+		return x.State
+	}
+	return CheckWatchState_CHECK_WATCH_STATE_UNSPECIFIED
+}
+
+func (x *CheckResults) GetChecksJson() string {
+	if x != nil {
+		return x.ChecksJson
+	}
+	return ""
+}
+
+func (x *CheckResults) GetReplacementHeadSha() string {
+	if x != nil && x.ReplacementHeadSha != nil {
+		return *x.ReplacementHeadSha
+	}
+	return ""
+}
+
 type PendingAction struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -945,6 +1192,7 @@ type PendingAction struct {
 	//	*PendingAction_CheckFailed
 	//	*PendingAction_ChangesRequested
 	//	*PendingAction_ReviewFeedback
+	//	*PendingAction_CheckResults
 	Blocker               isPendingAction_Blocker `protobuf_oneof:"blocker"`
 	Summary               string                  `protobuf:"bytes,9,opt,name=summary,proto3" json:"summary,omitempty"`
 	EvidenceUrl           string                  `protobuf:"bytes,10,opt,name=evidence_url,json=evidenceUrl,proto3" json:"evidence_url,omitempty"`
@@ -962,7 +1210,7 @@ type PendingAction struct {
 
 func (x *PendingAction) Reset() {
 	*x = PendingAction{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[10]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -974,7 +1222,7 @@ func (x *PendingAction) String() string {
 func (*PendingAction) ProtoMessage() {}
 
 func (x *PendingAction) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[10]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -987,7 +1235,7 @@ func (x *PendingAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingAction.ProtoReflect.Descriptor instead.
 func (*PendingAction) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{10}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PendingAction) GetId() string {
@@ -1063,6 +1311,15 @@ func (x *PendingAction) GetReviewFeedback() *ReviewFeedback {
 	if x != nil {
 		if x, ok := x.Blocker.(*PendingAction_ReviewFeedback); ok {
 			return x.ReviewFeedback
+		}
+	}
+	return nil
+}
+
+func (x *PendingAction) GetCheckResults() *CheckResults {
+	if x != nil {
+		if x, ok := x.Blocker.(*PendingAction_CheckResults); ok {
+			return x.CheckResults
 		}
 	}
 	return nil
@@ -1158,6 +1415,10 @@ type PendingAction_ReviewFeedback struct {
 	ReviewFeedback *ReviewFeedback `protobuf:"bytes,20,opt,name=review_feedback,json=reviewFeedback,proto3,oneof"`
 }
 
+type PendingAction_CheckResults struct {
+	CheckResults *CheckResults `protobuf:"bytes,21,opt,name=check_results,json=checkResults,proto3,oneof"`
+}
+
 func (*PendingAction_Conflict) isPendingAction_Blocker() {}
 
 func (*PendingAction_CheckFailed) isPendingAction_Blocker() {}
@@ -1165,6 +1426,8 @@ func (*PendingAction_CheckFailed) isPendingAction_Blocker() {}
 func (*PendingAction_ChangesRequested) isPendingAction_Blocker() {}
 
 func (*PendingAction_ReviewFeedback) isPendingAction_Blocker() {}
+
+func (*PendingAction_CheckResults) isPendingAction_Blocker() {}
 
 type ActionDelivery struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
@@ -1183,7 +1446,7 @@ type ActionDelivery struct {
 
 func (x *ActionDelivery) Reset() {
 	*x = ActionDelivery{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[11]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1195,7 +1458,7 @@ func (x *ActionDelivery) String() string {
 func (*ActionDelivery) ProtoMessage() {}
 
 func (x *ActionDelivery) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[11]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1208,7 +1471,7 @@ func (x *ActionDelivery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionDelivery.ProtoReflect.Descriptor instead.
 func (*ActionDelivery) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{11}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ActionDelivery) GetId() string {
@@ -1287,7 +1550,7 @@ type DeliveryAttempt struct {
 
 func (x *DeliveryAttempt) Reset() {
 	*x = DeliveryAttempt{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[12]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1299,7 +1562,7 @@ func (x *DeliveryAttempt) String() string {
 func (*DeliveryAttempt) ProtoMessage() {}
 
 func (x *DeliveryAttempt) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[12]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1312,7 +1575,7 @@ func (x *DeliveryAttempt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeliveryAttempt.ProtoReflect.Descriptor instead.
 func (*DeliveryAttempt) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{12}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DeliveryAttempt) GetDeliveryId() string {
@@ -1357,13 +1620,14 @@ type TrackingSnapshot struct {
 	Actions       []*PendingAction       `protobuf:"bytes,3,rep,name=actions,proto3" json:"actions,omitempty"`
 	Deliveries    []*ActionDelivery      `protobuf:"bytes,4,rep,name=deliveries,proto3" json:"deliveries,omitempty"`
 	Attempts      []*DeliveryAttempt     `protobuf:"bytes,5,rep,name=attempts,proto3" json:"attempts,omitempty"`
+	CheckWatches  []*CheckWatch          `protobuf:"bytes,6,rep,name=check_watches,json=checkWatches,proto3" json:"check_watches,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TrackingSnapshot) Reset() {
 	*x = TrackingSnapshot{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[13]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1375,7 +1639,7 @@ func (x *TrackingSnapshot) String() string {
 func (*TrackingSnapshot) ProtoMessage() {}
 
 func (x *TrackingSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[13]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1388,7 +1652,7 @@ func (x *TrackingSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrackingSnapshot.ProtoReflect.Descriptor instead.
 func (*TrackingSnapshot) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{13}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *TrackingSnapshot) GetPrs() []*TrackedPullRequest {
@@ -1426,6 +1690,13 @@ func (x *TrackingSnapshot) GetAttempts() []*DeliveryAttempt {
 	return nil
 }
 
+func (x *TrackingSnapshot) GetCheckWatches() []*CheckWatch {
+	if x != nil {
+		return x.CheckWatches
+	}
+	return nil
+}
+
 type TrackPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -1436,7 +1707,7 @@ type TrackPullRequestRequest struct {
 
 func (x *TrackPullRequestRequest) Reset() {
 	*x = TrackPullRequestRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[14]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1448,7 +1719,7 @@ func (x *TrackPullRequestRequest) String() string {
 func (*TrackPullRequestRequest) ProtoMessage() {}
 
 func (x *TrackPullRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[14]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1732,7 @@ func (x *TrackPullRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrackPullRequestRequest.ProtoReflect.Descriptor instead.
 func (*TrackPullRequestRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{14}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *TrackPullRequestRequest) GetUrl() string {
@@ -1486,7 +1757,7 @@ type ListTrackedPullRequestsRequest struct {
 
 func (x *ListTrackedPullRequestsRequest) Reset() {
 	*x = ListTrackedPullRequestsRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[15]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1498,7 +1769,7 @@ func (x *ListTrackedPullRequestsRequest) String() string {
 func (*ListTrackedPullRequestsRequest) ProtoMessage() {}
 
 func (x *ListTrackedPullRequestsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[15]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1511,7 +1782,7 @@ func (x *ListTrackedPullRequestsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrackedPullRequestsRequest.ProtoReflect.Descriptor instead.
 func (*ListTrackedPullRequestsRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{15}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{17}
 }
 
 type ListTrackedPullRequestsResponse struct {
@@ -1523,7 +1794,7 @@ type ListTrackedPullRequestsResponse struct {
 
 func (x *ListTrackedPullRequestsResponse) Reset() {
 	*x = ListTrackedPullRequestsResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[16]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1535,7 +1806,7 @@ func (x *ListTrackedPullRequestsResponse) String() string {
 func (*ListTrackedPullRequestsResponse) ProtoMessage() {}
 
 func (x *ListTrackedPullRequestsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[16]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1548,7 +1819,7 @@ func (x *ListTrackedPullRequestsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrackedPullRequestsResponse.ProtoReflect.Descriptor instead.
 func (*ListTrackedPullRequestsResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{16}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListTrackedPullRequestsResponse) GetPrs() []*TrackedPullRequest {
@@ -1568,7 +1839,7 @@ type AssignPullRequestRequest struct {
 
 func (x *AssignPullRequestRequest) Reset() {
 	*x = AssignPullRequestRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[17]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1580,7 +1851,7 @@ func (x *AssignPullRequestRequest) String() string {
 func (*AssignPullRequestRequest) ProtoMessage() {}
 
 func (x *AssignPullRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[17]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1593,7 +1864,7 @@ func (x *AssignPullRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignPullRequestRequest.ProtoReflect.Descriptor instead.
 func (*AssignPullRequestRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{17}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AssignPullRequestRequest) GetId() string {
@@ -1619,7 +1890,7 @@ type ListActionsRequest struct {
 
 func (x *ListActionsRequest) Reset() {
 	*x = ListActionsRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[18]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1631,7 +1902,7 @@ func (x *ListActionsRequest) String() string {
 func (*ListActionsRequest) ProtoMessage() {}
 
 func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[18]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1644,7 +1915,7 @@ func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionsRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{18}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListActionsRequest) GetPrId() string {
@@ -1663,7 +1934,7 @@ type ListActionsResponse struct {
 
 func (x *ListActionsResponse) Reset() {
 	*x = ListActionsResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[19]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1675,7 +1946,7 @@ func (x *ListActionsResponse) String() string {
 func (*ListActionsResponse) ProtoMessage() {}
 
 func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[19]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1688,7 +1959,7 @@ func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionsResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{19}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListActionsResponse) GetActions() []*PendingAction {
@@ -1707,7 +1978,7 @@ type RetryDeliveryRequest struct {
 
 func (x *RetryDeliveryRequest) Reset() {
 	*x = RetryDeliveryRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[20]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1719,7 +1990,7 @@ func (x *RetryDeliveryRequest) String() string {
 func (*RetryDeliveryRequest) ProtoMessage() {}
 
 func (x *RetryDeliveryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[20]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1732,7 +2003,7 @@ func (x *RetryDeliveryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryDeliveryRequest.ProtoReflect.Descriptor instead.
 func (*RetryDeliveryRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{20}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *RetryDeliveryRequest) GetId() string {
@@ -1751,7 +2022,7 @@ type RetryDeliveryResponse struct {
 
 func (x *RetryDeliveryResponse) Reset() {
 	*x = RetryDeliveryResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[21]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1763,7 +2034,7 @@ func (x *RetryDeliveryResponse) String() string {
 func (*RetryDeliveryResponse) ProtoMessage() {}
 
 func (x *RetryDeliveryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[21]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1776,7 +2047,7 @@ func (x *RetryDeliveryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryDeliveryResponse.ProtoReflect.Descriptor instead.
 func (*RetryDeliveryResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{21}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *RetryDeliveryResponse) GetDelivery() *ActionDelivery {
@@ -1795,7 +2066,7 @@ type TrackPullRequestResponse struct {
 
 func (x *TrackPullRequestResponse) Reset() {
 	*x = TrackPullRequestResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[22]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1807,7 +2078,7 @@ func (x *TrackPullRequestResponse) String() string {
 func (*TrackPullRequestResponse) ProtoMessage() {}
 
 func (x *TrackPullRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[22]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1820,7 +2091,7 @@ func (x *TrackPullRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrackPullRequestResponse.ProtoReflect.Descriptor instead.
 func (*TrackPullRequestResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{22}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *TrackPullRequestResponse) GetPr() *TrackedPullRequest {
@@ -1839,7 +2110,7 @@ type GetTrackedPullRequestRequest struct {
 
 func (x *GetTrackedPullRequestRequest) Reset() {
 	*x = GetTrackedPullRequestRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[23]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1851,7 +2122,7 @@ func (x *GetTrackedPullRequestRequest) String() string {
 func (*GetTrackedPullRequestRequest) ProtoMessage() {}
 
 func (x *GetTrackedPullRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[23]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1864,7 +2135,7 @@ func (x *GetTrackedPullRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrackedPullRequestRequest.ProtoReflect.Descriptor instead.
 func (*GetTrackedPullRequestRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{23}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetTrackedPullRequestRequest) GetId() string {
@@ -1883,7 +2154,7 @@ type GetTrackedPullRequestResponse struct {
 
 func (x *GetTrackedPullRequestResponse) Reset() {
 	*x = GetTrackedPullRequestResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[24]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1895,7 +2166,7 @@ func (x *GetTrackedPullRequestResponse) String() string {
 func (*GetTrackedPullRequestResponse) ProtoMessage() {}
 
 func (x *GetTrackedPullRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[24]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1908,7 +2179,7 @@ func (x *GetTrackedPullRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrackedPullRequestResponse.ProtoReflect.Descriptor instead.
 func (*GetTrackedPullRequestResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{24}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetTrackedPullRequestResponse) GetPr() *TrackedPullRequest {
@@ -1927,7 +2198,7 @@ type RefreshTrackedPullRequestRequest struct {
 
 func (x *RefreshTrackedPullRequestRequest) Reset() {
 	*x = RefreshTrackedPullRequestRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[25]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1939,7 +2210,7 @@ func (x *RefreshTrackedPullRequestRequest) String() string {
 func (*RefreshTrackedPullRequestRequest) ProtoMessage() {}
 
 func (x *RefreshTrackedPullRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[25]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1952,7 +2223,7 @@ func (x *RefreshTrackedPullRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTrackedPullRequestRequest.ProtoReflect.Descriptor instead.
 func (*RefreshTrackedPullRequestRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{25}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *RefreshTrackedPullRequestRequest) GetId() string {
@@ -1971,7 +2242,7 @@ type RefreshTrackedPullRequestResponse struct {
 
 func (x *RefreshTrackedPullRequestResponse) Reset() {
 	*x = RefreshTrackedPullRequestResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[26]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1983,7 +2254,7 @@ func (x *RefreshTrackedPullRequestResponse) String() string {
 func (*RefreshTrackedPullRequestResponse) ProtoMessage() {}
 
 func (x *RefreshTrackedPullRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[26]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1996,7 +2267,7 @@ func (x *RefreshTrackedPullRequestResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RefreshTrackedPullRequestResponse.ProtoReflect.Descriptor instead.
 func (*RefreshTrackedPullRequestResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{26}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RefreshTrackedPullRequestResponse) GetPr() *TrackedPullRequest {
@@ -2015,7 +2286,7 @@ type AssignPullRequestResponse struct {
 
 func (x *AssignPullRequestResponse) Reset() {
 	*x = AssignPullRequestResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[27]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2027,7 +2298,7 @@ func (x *AssignPullRequestResponse) String() string {
 func (*AssignPullRequestResponse) ProtoMessage() {}
 
 func (x *AssignPullRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[27]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2040,7 +2311,7 @@ func (x *AssignPullRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignPullRequestResponse.ProtoReflect.Descriptor instead.
 func (*AssignPullRequestResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{27}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *AssignPullRequestResponse) GetPr() *TrackedPullRequest {
@@ -2059,7 +2330,7 @@ type UntrackPullRequestRequest struct {
 
 func (x *UntrackPullRequestRequest) Reset() {
 	*x = UntrackPullRequestRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[28]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2071,7 +2342,7 @@ func (x *UntrackPullRequestRequest) String() string {
 func (*UntrackPullRequestRequest) ProtoMessage() {}
 
 func (x *UntrackPullRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[28]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2084,7 +2355,7 @@ func (x *UntrackPullRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntrackPullRequestRequest.ProtoReflect.Descriptor instead.
 func (*UntrackPullRequestRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{28}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *UntrackPullRequestRequest) GetId() string {
@@ -2103,7 +2374,7 @@ type UntrackPullRequestResponse struct {
 
 func (x *UntrackPullRequestResponse) Reset() {
 	*x = UntrackPullRequestResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[29]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2115,7 +2386,7 @@ func (x *UntrackPullRequestResponse) String() string {
 func (*UntrackPullRequestResponse) ProtoMessage() {}
 
 func (x *UntrackPullRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[29]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2128,7 +2399,7 @@ func (x *UntrackPullRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntrackPullRequestResponse.ProtoReflect.Descriptor instead.
 func (*UntrackPullRequestResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{29}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *UntrackPullRequestResponse) GetPr() *TrackedPullRequest {
@@ -2147,7 +2418,7 @@ type GetActionRequest struct {
 
 func (x *GetActionRequest) Reset() {
 	*x = GetActionRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[30]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2159,7 +2430,7 @@ func (x *GetActionRequest) String() string {
 func (*GetActionRequest) ProtoMessage() {}
 
 func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[30]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2172,7 +2443,7 @@ func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionRequest.ProtoReflect.Descriptor instead.
 func (*GetActionRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{30}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetActionRequest) GetId() string {
@@ -2191,7 +2462,7 @@ type GetActionResponse struct {
 
 func (x *GetActionResponse) Reset() {
 	*x = GetActionResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[31]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2203,7 +2474,7 @@ func (x *GetActionResponse) String() string {
 func (*GetActionResponse) ProtoMessage() {}
 
 func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[31]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2216,7 +2487,7 @@ func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionResponse.ProtoReflect.Descriptor instead.
 func (*GetActionResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{31}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetActionResponse) GetAction() *PendingAction {
@@ -2236,7 +2507,7 @@ type AcknowledgeActionRequest struct {
 
 func (x *AcknowledgeActionRequest) Reset() {
 	*x = AcknowledgeActionRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[32]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2248,7 +2519,7 @@ func (x *AcknowledgeActionRequest) String() string {
 func (*AcknowledgeActionRequest) ProtoMessage() {}
 
 func (x *AcknowledgeActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[32]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2261,7 +2532,7 @@ func (x *AcknowledgeActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcknowledgeActionRequest.ProtoReflect.Descriptor instead.
 func (*AcknowledgeActionRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{32}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *AcknowledgeActionRequest) GetId() string {
@@ -2287,7 +2558,7 @@ type AcknowledgeActionResponse struct {
 
 func (x *AcknowledgeActionResponse) Reset() {
 	*x = AcknowledgeActionResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[33]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2299,7 +2570,7 @@ func (x *AcknowledgeActionResponse) String() string {
 func (*AcknowledgeActionResponse) ProtoMessage() {}
 
 func (x *AcknowledgeActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[33]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2312,7 +2583,7 @@ func (x *AcknowledgeActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcknowledgeActionResponse.ProtoReflect.Descriptor instead.
 func (*AcknowledgeActionResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{33}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *AcknowledgeActionResponse) GetAction() *PendingAction {
@@ -2332,7 +2603,7 @@ type StartActionRequest struct {
 
 func (x *StartActionRequest) Reset() {
 	*x = StartActionRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[34]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2344,7 +2615,7 @@ func (x *StartActionRequest) String() string {
 func (*StartActionRequest) ProtoMessage() {}
 
 func (x *StartActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[34]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2357,7 +2628,7 @@ func (x *StartActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartActionRequest.ProtoReflect.Descriptor instead.
 func (*StartActionRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{34}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *StartActionRequest) GetId() string {
@@ -2383,7 +2654,7 @@ type StartActionResponse struct {
 
 func (x *StartActionResponse) Reset() {
 	*x = StartActionResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[35]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2395,7 +2666,7 @@ func (x *StartActionResponse) String() string {
 func (*StartActionResponse) ProtoMessage() {}
 
 func (x *StartActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[35]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2408,7 +2679,7 @@ func (x *StartActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartActionResponse.ProtoReflect.Descriptor instead.
 func (*StartActionResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{35}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *StartActionResponse) GetAction() *PendingAction {
@@ -2427,7 +2698,7 @@ type ReprofileActionRequest struct {
 
 func (x *ReprofileActionRequest) Reset() {
 	*x = ReprofileActionRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[36]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2439,7 +2710,7 @@ func (x *ReprofileActionRequest) String() string {
 func (*ReprofileActionRequest) ProtoMessage() {}
 
 func (x *ReprofileActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[36]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2452,7 +2723,7 @@ func (x *ReprofileActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReprofileActionRequest.ProtoReflect.Descriptor instead.
 func (*ReprofileActionRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{36}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ReprofileActionRequest) GetId() string {
@@ -2471,7 +2742,7 @@ type ReprofileActionResponse struct {
 
 func (x *ReprofileActionResponse) Reset() {
 	*x = ReprofileActionResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[37]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2483,7 +2754,7 @@ func (x *ReprofileActionResponse) String() string {
 func (*ReprofileActionResponse) ProtoMessage() {}
 
 func (x *ReprofileActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[37]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2496,7 +2767,7 @@ func (x *ReprofileActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReprofileActionResponse.ProtoReflect.Descriptor instead.
 func (*ReprofileActionResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{37}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ReprofileActionResponse) GetAction() *PendingAction {
@@ -2522,7 +2793,7 @@ type AgentMessage struct {
 
 func (x *AgentMessage) Reset() {
 	*x = AgentMessage{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2534,7 +2805,7 @@ func (x *AgentMessage) String() string {
 func (*AgentMessage) ProtoMessage() {}
 
 func (x *AgentMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[38]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2547,7 +2818,7 @@ func (x *AgentMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
 func (*AgentMessage) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{38}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *AgentMessage) GetSequence() uint64 {
@@ -2617,7 +2888,7 @@ type ListAgentMessagesRequest struct {
 
 func (x *ListAgentMessagesRequest) Reset() {
 	*x = ListAgentMessagesRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2629,7 +2900,7 @@ func (x *ListAgentMessagesRequest) String() string {
 func (*ListAgentMessagesRequest) ProtoMessage() {}
 
 func (x *ListAgentMessagesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[39]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2642,7 +2913,7 @@ func (x *ListAgentMessagesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentMessagesRequest.ProtoReflect.Descriptor instead.
 func (*ListAgentMessagesRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{39}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *ListAgentMessagesRequest) GetAgentId() string {
@@ -2677,7 +2948,7 @@ type ListAgentMessagesResponse struct {
 
 func (x *ListAgentMessagesResponse) Reset() {
 	*x = ListAgentMessagesResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2689,7 +2960,7 @@ func (x *ListAgentMessagesResponse) String() string {
 func (*ListAgentMessagesResponse) ProtoMessage() {}
 
 func (x *ListAgentMessagesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[40]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2702,7 +2973,7 @@ func (x *ListAgentMessagesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentMessagesResponse.ProtoReflect.Descriptor instead.
 func (*ListAgentMessagesResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{40}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ListAgentMessagesResponse) GetMessages() []*AgentMessage {
@@ -2736,7 +3007,7 @@ type AcknowledgeMessageRequest struct {
 
 func (x *AcknowledgeMessageRequest) Reset() {
 	*x = AcknowledgeMessageRequest{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2748,7 +3019,7 @@ func (x *AcknowledgeMessageRequest) String() string {
 func (*AcknowledgeMessageRequest) ProtoMessage() {}
 
 func (x *AcknowledgeMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[41]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2761,7 +3032,7 @@ func (x *AcknowledgeMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcknowledgeMessageRequest.ProtoReflect.Descriptor instead.
 func (*AcknowledgeMessageRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{41}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *AcknowledgeMessageRequest) GetId() string {
@@ -2787,7 +3058,7 @@ type AcknowledgeMessageResponse struct {
 
 func (x *AcknowledgeMessageResponse) Reset() {
 	*x = AcknowledgeMessageResponse{}
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2799,7 +3070,7 @@ func (x *AcknowledgeMessageResponse) String() string {
 func (*AcknowledgeMessageResponse) ProtoMessage() {}
 
 func (x *AcknowledgeMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v1_tracking_proto_msgTypes[42]
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2812,7 +3083,7 @@ func (x *AcknowledgeMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcknowledgeMessageResponse.ProtoReflect.Descriptor instead.
 func (*AcknowledgeMessageResponse) Descriptor() ([]byte, []int) {
-	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{42}
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *AcknowledgeMessageResponse) GetMessage() *AgentMessage {
@@ -2844,7 +3115,7 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\n" +
 	"TargetBase\x12\x10\n" +
 	"\x03ref\x18\x01 \x01(\tR\x03ref\x12\x10\n" +
-	"\x03sha\x18\x02 \x01(\tR\x03sha\"\x80\x03\n" +
+	"\x03sha\x18\x02 \x01(\tR\x03sha\"\xbf\x03\n" +
 	"\x13TrackingObservation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12$\n" +
 	"\x0eobserved_at_ms\x18\x02 \x01(\x03R\fobservedAtMs\x12\x19\n" +
@@ -2858,8 +3129,10 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\vtarget_base\x18\t \x01(\v2\x1a.octomanager.v1.TargetBaseR\n" +
 	"targetBase\x12(\n" +
 	"\rfeedback_json\x18\n" +
-	" \x01(\tH\x00R\ffeedbackJson\x88\x01\x01B\x10\n" +
-	"\x0e_feedback_json\"\xb5\x03\n" +
+	" \x01(\tH\x00R\ffeedbackJson\x88\x01\x01\x12*\n" +
+	"\x0eworkflows_json\x18\v \x01(\tH\x01R\rworkflowsJson\x88\x01\x01B\x10\n" +
+	"\x0e_feedback_jsonB\x11\n" +
+	"\x0f_workflows_json\"\xb5\x03\n" +
 	"\x12TrackedPullRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12&\n" +
@@ -2913,7 +3186,29 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x05_pathB\a\n" +
 	"\x05_lineB\f\n" +
 	"\n" +
-	"_review_id\"\xde\a\n" +
+	"_review_id\"\xe0\x02\n" +
+	"\n" +
+	"CheckWatch\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x13\n" +
+	"\x05pr_id\x18\x02 \x01(\tR\x04prId\x12\x19\n" +
+	"\bhead_sha\x18\x03 \x01(\tR\aheadSha\x12\x1e\n" +
+	"\n" +
+	"generation\x18\x04 \x01(\rR\n" +
+	"generation\x125\n" +
+	"\x05state\x18\x05 \x01(\x0e2\x1f.octomanager.v1.CheckWatchStateR\x05state\x12#\n" +
+	"\revidence_json\x18\x06 \x01(\tR\fevidenceJson\x12\"\n" +
+	"\rcreated_at_ms\x18\a \x01(\x03R\vcreatedAtMs\x12\"\n" +
+	"\rupdated_at_ms\x18\b \x01(\x03R\vupdatedAtMs\x125\n" +
+	"\x14replacement_head_sha\x18\t \x01(\tH\x00R\x12replacementHeadSha\x88\x01\x01B\x17\n" +
+	"\x15_replacement_head_sha\"\xec\x01\n" +
+	"\fCheckResults\x12\x19\n" +
+	"\bwatch_id\x18\x01 \x01(\tR\awatchId\x12\x19\n" +
+	"\bhead_sha\x18\x02 \x01(\tR\aheadSha\x125\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x1f.octomanager.v1.CheckWatchStateR\x05state\x12\x1f\n" +
+	"\vchecks_json\x18\x04 \x01(\tR\n" +
+	"checksJson\x125\n" +
+	"\x14replacement_head_sha\x18\x05 \x01(\tH\x00R\x12replacementHeadSha\x88\x01\x01B\x17\n" +
+	"\x15_replacement_head_sha\"\xa3\b\n" +
 	"\rPendingAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x13\n" +
 	"\x05pr_id\x18\x02 \x01(\tR\x04prId\x122\n" +
@@ -2924,7 +3219,8 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\bconflict\x18\x06 \x01(\v2\x1f.octomanager.v1.ConflictBlockerH\x00R\bconflict\x12A\n" +
 	"\fcheck_failed\x18\a \x01(\v2\x1c.octomanager.v1.CheckBlockerH\x00R\vcheckFailed\x12L\n" +
 	"\x11changes_requested\x18\b \x01(\v2\x1d.octomanager.v1.ReviewBlockerH\x00R\x10changesRequested\x12I\n" +
-	"\x0freview_feedback\x18\x14 \x01(\v2\x1e.octomanager.v1.ReviewFeedbackH\x00R\x0ereviewFeedback\x12\x18\n" +
+	"\x0freview_feedback\x18\x14 \x01(\v2\x1e.octomanager.v1.ReviewFeedbackH\x00R\x0ereviewFeedback\x12C\n" +
+	"\rcheck_results\x18\x15 \x01(\v2\x1c.octomanager.v1.CheckResultsH\x00R\fcheckResults\x12\x18\n" +
 	"\asummary\x18\t \x01(\tR\asummary\x12!\n" +
 	"\fevidence_url\x18\n" +
 	" \x01(\tR\vevidenceUrl\x12:\n" +
@@ -2960,7 +3256,7 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\rstarted_at_ms\x18\x03 \x01(\x03R\vstartedAtMs\x12,\n" +
 	"\x0fharness_version\x18\x04 \x01(\tH\x00R\x0eharnessVersion\x88\x01\x01\x12!\n" +
 	"\foutcome_json\x18\x05 \x01(\tR\voutcomeJsonB\x12\n" +
-	"\x10_harness_version\"\xb6\x02\n" +
+	"\x10_harness_version\"\xf7\x02\n" +
 	"\x10TrackingSnapshot\x124\n" +
 	"\x03prs\x18\x01 \x03(\v2\".octomanager.v1.TrackedPullRequestR\x03prs\x126\n" +
 	"\x06agents\x18\x02 \x03(\v2\x1e.octomanager.v1.AgentReferenceR\x06agents\x127\n" +
@@ -2968,7 +3264,8 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\n" +
 	"deliveries\x18\x04 \x03(\v2\x1e.octomanager.v1.ActionDeliveryR\n" +
 	"deliveries\x12;\n" +
-	"\battempts\x18\x05 \x03(\v2\x1f.octomanager.v1.DeliveryAttemptR\battempts\"^\n" +
+	"\battempts\x18\x05 \x03(\v2\x1f.octomanager.v1.DeliveryAttemptR\battempts\x12?\n" +
+	"\rcheck_watches\x18\x06 \x03(\v2\x1a.octomanager.v1.CheckWatchR\fcheckWatches\"^\n" +
 	"\x17TrackPullRequestRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x121\n" +
 	"\x05owner\x18\x02 \x01(\v2\x1b.octomanager.v1.AgentTargetR\x05owner\" \n" +
@@ -3060,7 +3357,13 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x18DELIVERY_STATE_DELIVERED\x10\x03\x12\x1c\n" +
 	"\x18DELIVERY_STATE_UNCERTAIN\x10\x04\x12\x1e\n" +
 	"\x1aDELIVERY_STATE_UNAVAILABLE\x10\x05\x12\x1c\n" +
-	"\x18DELIVERY_STATE_CANCELLED\x10\x06B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\x18DELIVERY_STATE_CANCELLED\x10\x06*\xb7\x01\n" +
+	"\x0fCheckWatchState\x12!\n" +
+	"\x1dCHECK_WATCH_STATE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19CHECK_WATCH_STATE_WAITING\x10\x01\x12\x1f\n" +
+	"\x1bCHECK_WATCH_STATE_COMPLETED\x10\x02\x12 \n" +
+	"\x1cCHECK_WATCH_STATE_SUPERSEDED\x10\x03\x12\x1f\n" +
+	"\x1bCHECK_WATCH_STATE_CANCELLED\x10\x04B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_tracking_proto_rawDescOnce sync.Once
@@ -3074,92 +3377,99 @@ func file_octomanager_v1_tracking_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_tracking_proto_rawDescData
 }
 
-var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
+var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
 var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(ActionState)(0),                          // 0: octomanager.v1.ActionState
 	(DeliveryState)(0),                        // 1: octomanager.v1.DeliveryState
-	(*AgentTarget)(nil),                       // 2: octomanager.v1.AgentTarget
-	(*AgentReference)(nil),                    // 3: octomanager.v1.AgentReference
-	(*TargetBase)(nil),                        // 4: octomanager.v1.TargetBase
-	(*TrackingObservation)(nil),               // 5: octomanager.v1.TrackingObservation
-	(*TrackedPullRequest)(nil),                // 6: octomanager.v1.TrackedPullRequest
-	(*ExecutionProfile)(nil),                  // 7: octomanager.v1.ExecutionProfile
-	(*ConflictBlocker)(nil),                   // 8: octomanager.v1.ConflictBlocker
-	(*CheckBlocker)(nil),                      // 9: octomanager.v1.CheckBlocker
-	(*ReviewBlocker)(nil),                     // 10: octomanager.v1.ReviewBlocker
-	(*ReviewFeedback)(nil),                    // 11: octomanager.v1.ReviewFeedback
-	(*PendingAction)(nil),                     // 12: octomanager.v1.PendingAction
-	(*ActionDelivery)(nil),                    // 13: octomanager.v1.ActionDelivery
-	(*DeliveryAttempt)(nil),                   // 14: octomanager.v1.DeliveryAttempt
-	(*TrackingSnapshot)(nil),                  // 15: octomanager.v1.TrackingSnapshot
-	(*TrackPullRequestRequest)(nil),           // 16: octomanager.v1.TrackPullRequestRequest
-	(*ListTrackedPullRequestsRequest)(nil),    // 17: octomanager.v1.ListTrackedPullRequestsRequest
-	(*ListTrackedPullRequestsResponse)(nil),   // 18: octomanager.v1.ListTrackedPullRequestsResponse
-	(*AssignPullRequestRequest)(nil),          // 19: octomanager.v1.AssignPullRequestRequest
-	(*ListActionsRequest)(nil),                // 20: octomanager.v1.ListActionsRequest
-	(*ListActionsResponse)(nil),               // 21: octomanager.v1.ListActionsResponse
-	(*RetryDeliveryRequest)(nil),              // 22: octomanager.v1.RetryDeliveryRequest
-	(*RetryDeliveryResponse)(nil),             // 23: octomanager.v1.RetryDeliveryResponse
-	(*TrackPullRequestResponse)(nil),          // 24: octomanager.v1.TrackPullRequestResponse
-	(*GetTrackedPullRequestRequest)(nil),      // 25: octomanager.v1.GetTrackedPullRequestRequest
-	(*GetTrackedPullRequestResponse)(nil),     // 26: octomanager.v1.GetTrackedPullRequestResponse
-	(*RefreshTrackedPullRequestRequest)(nil),  // 27: octomanager.v1.RefreshTrackedPullRequestRequest
-	(*RefreshTrackedPullRequestResponse)(nil), // 28: octomanager.v1.RefreshTrackedPullRequestResponse
-	(*AssignPullRequestResponse)(nil),         // 29: octomanager.v1.AssignPullRequestResponse
-	(*UntrackPullRequestRequest)(nil),         // 30: octomanager.v1.UntrackPullRequestRequest
-	(*UntrackPullRequestResponse)(nil),        // 31: octomanager.v1.UntrackPullRequestResponse
-	(*GetActionRequest)(nil),                  // 32: octomanager.v1.GetActionRequest
-	(*GetActionResponse)(nil),                 // 33: octomanager.v1.GetActionResponse
-	(*AcknowledgeActionRequest)(nil),          // 34: octomanager.v1.AcknowledgeActionRequest
-	(*AcknowledgeActionResponse)(nil),         // 35: octomanager.v1.AcknowledgeActionResponse
-	(*StartActionRequest)(nil),                // 36: octomanager.v1.StartActionRequest
-	(*StartActionResponse)(nil),               // 37: octomanager.v1.StartActionResponse
-	(*ReprofileActionRequest)(nil),            // 38: octomanager.v1.ReprofileActionRequest
-	(*ReprofileActionResponse)(nil),           // 39: octomanager.v1.ReprofileActionResponse
-	(*AgentMessage)(nil),                      // 40: octomanager.v1.AgentMessage
-	(*ListAgentMessagesRequest)(nil),          // 41: octomanager.v1.ListAgentMessagesRequest
-	(*ListAgentMessagesResponse)(nil),         // 42: octomanager.v1.ListAgentMessagesResponse
-	(*AcknowledgeMessageRequest)(nil),         // 43: octomanager.v1.AcknowledgeMessageRequest
-	(*AcknowledgeMessageResponse)(nil),        // 44: octomanager.v1.AcknowledgeMessageResponse
+	(CheckWatchState)(0),                      // 2: octomanager.v1.CheckWatchState
+	(*AgentTarget)(nil),                       // 3: octomanager.v1.AgentTarget
+	(*AgentReference)(nil),                    // 4: octomanager.v1.AgentReference
+	(*TargetBase)(nil),                        // 5: octomanager.v1.TargetBase
+	(*TrackingObservation)(nil),               // 6: octomanager.v1.TrackingObservation
+	(*TrackedPullRequest)(nil),                // 7: octomanager.v1.TrackedPullRequest
+	(*ExecutionProfile)(nil),                  // 8: octomanager.v1.ExecutionProfile
+	(*ConflictBlocker)(nil),                   // 9: octomanager.v1.ConflictBlocker
+	(*CheckBlocker)(nil),                      // 10: octomanager.v1.CheckBlocker
+	(*ReviewBlocker)(nil),                     // 11: octomanager.v1.ReviewBlocker
+	(*ReviewFeedback)(nil),                    // 12: octomanager.v1.ReviewFeedback
+	(*CheckWatch)(nil),                        // 13: octomanager.v1.CheckWatch
+	(*CheckResults)(nil),                      // 14: octomanager.v1.CheckResults
+	(*PendingAction)(nil),                     // 15: octomanager.v1.PendingAction
+	(*ActionDelivery)(nil),                    // 16: octomanager.v1.ActionDelivery
+	(*DeliveryAttempt)(nil),                   // 17: octomanager.v1.DeliveryAttempt
+	(*TrackingSnapshot)(nil),                  // 18: octomanager.v1.TrackingSnapshot
+	(*TrackPullRequestRequest)(nil),           // 19: octomanager.v1.TrackPullRequestRequest
+	(*ListTrackedPullRequestsRequest)(nil),    // 20: octomanager.v1.ListTrackedPullRequestsRequest
+	(*ListTrackedPullRequestsResponse)(nil),   // 21: octomanager.v1.ListTrackedPullRequestsResponse
+	(*AssignPullRequestRequest)(nil),          // 22: octomanager.v1.AssignPullRequestRequest
+	(*ListActionsRequest)(nil),                // 23: octomanager.v1.ListActionsRequest
+	(*ListActionsResponse)(nil),               // 24: octomanager.v1.ListActionsResponse
+	(*RetryDeliveryRequest)(nil),              // 25: octomanager.v1.RetryDeliveryRequest
+	(*RetryDeliveryResponse)(nil),             // 26: octomanager.v1.RetryDeliveryResponse
+	(*TrackPullRequestResponse)(nil),          // 27: octomanager.v1.TrackPullRequestResponse
+	(*GetTrackedPullRequestRequest)(nil),      // 28: octomanager.v1.GetTrackedPullRequestRequest
+	(*GetTrackedPullRequestResponse)(nil),     // 29: octomanager.v1.GetTrackedPullRequestResponse
+	(*RefreshTrackedPullRequestRequest)(nil),  // 30: octomanager.v1.RefreshTrackedPullRequestRequest
+	(*RefreshTrackedPullRequestResponse)(nil), // 31: octomanager.v1.RefreshTrackedPullRequestResponse
+	(*AssignPullRequestResponse)(nil),         // 32: octomanager.v1.AssignPullRequestResponse
+	(*UntrackPullRequestRequest)(nil),         // 33: octomanager.v1.UntrackPullRequestRequest
+	(*UntrackPullRequestResponse)(nil),        // 34: octomanager.v1.UntrackPullRequestResponse
+	(*GetActionRequest)(nil),                  // 35: octomanager.v1.GetActionRequest
+	(*GetActionResponse)(nil),                 // 36: octomanager.v1.GetActionResponse
+	(*AcknowledgeActionRequest)(nil),          // 37: octomanager.v1.AcknowledgeActionRequest
+	(*AcknowledgeActionResponse)(nil),         // 38: octomanager.v1.AcknowledgeActionResponse
+	(*StartActionRequest)(nil),                // 39: octomanager.v1.StartActionRequest
+	(*StartActionResponse)(nil),               // 40: octomanager.v1.StartActionResponse
+	(*ReprofileActionRequest)(nil),            // 41: octomanager.v1.ReprofileActionRequest
+	(*ReprofileActionResponse)(nil),           // 42: octomanager.v1.ReprofileActionResponse
+	(*AgentMessage)(nil),                      // 43: octomanager.v1.AgentMessage
+	(*ListAgentMessagesRequest)(nil),          // 44: octomanager.v1.ListAgentMessagesRequest
+	(*ListAgentMessagesResponse)(nil),         // 45: octomanager.v1.ListAgentMessagesResponse
+	(*AcknowledgeMessageRequest)(nil),         // 46: octomanager.v1.AcknowledgeMessageRequest
+	(*AcknowledgeMessageResponse)(nil),        // 47: octomanager.v1.AcknowledgeMessageResponse
 }
 var file_octomanager_v1_tracking_proto_depIdxs = []int32{
-	2,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
-	4,  // 1: octomanager.v1.TrackingObservation.target_base:type_name -> octomanager.v1.TargetBase
-	5,  // 2: octomanager.v1.TrackedPullRequest.observation:type_name -> octomanager.v1.TrackingObservation
-	8,  // 3: octomanager.v1.PendingAction.conflict:type_name -> octomanager.v1.ConflictBlocker
-	9,  // 4: octomanager.v1.PendingAction.check_failed:type_name -> octomanager.v1.CheckBlocker
-	10, // 5: octomanager.v1.PendingAction.changes_requested:type_name -> octomanager.v1.ReviewBlocker
-	11, // 6: octomanager.v1.PendingAction.review_feedback:type_name -> octomanager.v1.ReviewFeedback
-	7,  // 7: octomanager.v1.PendingAction.profile:type_name -> octomanager.v1.ExecutionProfile
-	0,  // 8: octomanager.v1.PendingAction.state:type_name -> octomanager.v1.ActionState
-	1,  // 9: octomanager.v1.ActionDelivery.state:type_name -> octomanager.v1.DeliveryState
-	6,  // 10: octomanager.v1.TrackingSnapshot.prs:type_name -> octomanager.v1.TrackedPullRequest
-	3,  // 11: octomanager.v1.TrackingSnapshot.agents:type_name -> octomanager.v1.AgentReference
-	12, // 12: octomanager.v1.TrackingSnapshot.actions:type_name -> octomanager.v1.PendingAction
-	13, // 13: octomanager.v1.TrackingSnapshot.deliveries:type_name -> octomanager.v1.ActionDelivery
-	14, // 14: octomanager.v1.TrackingSnapshot.attempts:type_name -> octomanager.v1.DeliveryAttempt
-	2,  // 15: octomanager.v1.TrackPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
-	6,  // 16: octomanager.v1.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v1.TrackedPullRequest
-	2,  // 17: octomanager.v1.AssignPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
-	12, // 18: octomanager.v1.ListActionsResponse.actions:type_name -> octomanager.v1.PendingAction
-	13, // 19: octomanager.v1.RetryDeliveryResponse.delivery:type_name -> octomanager.v1.ActionDelivery
-	6,  // 20: octomanager.v1.TrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	6,  // 21: octomanager.v1.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	6,  // 22: octomanager.v1.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	6,  // 23: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	6,  // 24: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	12, // 25: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
-	12, // 26: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
-	12, // 27: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
-	12, // 28: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
-	40, // 29: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
-	40, // 30: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
-	31, // [31:31] is the sub-list for method output_type
-	31, // [31:31] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	3,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
+	5,  // 1: octomanager.v1.TrackingObservation.target_base:type_name -> octomanager.v1.TargetBase
+	6,  // 2: octomanager.v1.TrackedPullRequest.observation:type_name -> octomanager.v1.TrackingObservation
+	2,  // 3: octomanager.v1.CheckWatch.state:type_name -> octomanager.v1.CheckWatchState
+	2,  // 4: octomanager.v1.CheckResults.state:type_name -> octomanager.v1.CheckWatchState
+	9,  // 5: octomanager.v1.PendingAction.conflict:type_name -> octomanager.v1.ConflictBlocker
+	10, // 6: octomanager.v1.PendingAction.check_failed:type_name -> octomanager.v1.CheckBlocker
+	11, // 7: octomanager.v1.PendingAction.changes_requested:type_name -> octomanager.v1.ReviewBlocker
+	12, // 8: octomanager.v1.PendingAction.review_feedback:type_name -> octomanager.v1.ReviewFeedback
+	14, // 9: octomanager.v1.PendingAction.check_results:type_name -> octomanager.v1.CheckResults
+	8,  // 10: octomanager.v1.PendingAction.profile:type_name -> octomanager.v1.ExecutionProfile
+	0,  // 11: octomanager.v1.PendingAction.state:type_name -> octomanager.v1.ActionState
+	1,  // 12: octomanager.v1.ActionDelivery.state:type_name -> octomanager.v1.DeliveryState
+	7,  // 13: octomanager.v1.TrackingSnapshot.prs:type_name -> octomanager.v1.TrackedPullRequest
+	4,  // 14: octomanager.v1.TrackingSnapshot.agents:type_name -> octomanager.v1.AgentReference
+	15, // 15: octomanager.v1.TrackingSnapshot.actions:type_name -> octomanager.v1.PendingAction
+	16, // 16: octomanager.v1.TrackingSnapshot.deliveries:type_name -> octomanager.v1.ActionDelivery
+	17, // 17: octomanager.v1.TrackingSnapshot.attempts:type_name -> octomanager.v1.DeliveryAttempt
+	13, // 18: octomanager.v1.TrackingSnapshot.check_watches:type_name -> octomanager.v1.CheckWatch
+	3,  // 19: octomanager.v1.TrackPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
+	7,  // 20: octomanager.v1.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v1.TrackedPullRequest
+	3,  // 21: octomanager.v1.AssignPullRequestRequest.owner:type_name -> octomanager.v1.AgentTarget
+	15, // 22: octomanager.v1.ListActionsResponse.actions:type_name -> octomanager.v1.PendingAction
+	16, // 23: octomanager.v1.RetryDeliveryResponse.delivery:type_name -> octomanager.v1.ActionDelivery
+	7,  // 24: octomanager.v1.TrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	7,  // 25: octomanager.v1.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	7,  // 26: octomanager.v1.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	7,  // 27: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	7,  // 28: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	15, // 29: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
+	15, // 30: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
+	15, // 31: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
+	15, // 32: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
+	43, // 33: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
+	43, // 34: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
+	35, // [35:35] is the sub-list for method output_type
+	35, // [35:35] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_tracking_proto_init() }
@@ -3174,23 +3484,26 @@ func file_octomanager_v1_tracking_proto_init() {
 	file_octomanager_v1_tracking_proto_msgTypes[5].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[6].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[9].OneofWrappers = []any{}
-	file_octomanager_v1_tracking_proto_msgTypes[10].OneofWrappers = []any{
+	file_octomanager_v1_tracking_proto_msgTypes[10].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[11].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[12].OneofWrappers = []any{
 		(*PendingAction_Conflict)(nil),
 		(*PendingAction_CheckFailed)(nil),
 		(*PendingAction_ChangesRequested)(nil),
 		(*PendingAction_ReviewFeedback)(nil),
+		(*PendingAction_CheckResults)(nil),
 	}
-	file_octomanager_v1_tracking_proto_msgTypes[11].OneofWrappers = []any{}
-	file_octomanager_v1_tracking_proto_msgTypes[12].OneofWrappers = []any{}
-	file_octomanager_v1_tracking_proto_msgTypes[18].OneofWrappers = []any{}
-	file_octomanager_v1_tracking_proto_msgTypes[38].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[13].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[14].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[20].OneofWrappers = []any{}
+	file_octomanager_v1_tracking_proto_msgTypes[40].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_tracking_proto_rawDesc), len(file_octomanager_v1_tracking_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   43,
+			NumEnums:      3,
+			NumMessages:   45,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

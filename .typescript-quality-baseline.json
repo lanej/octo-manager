@@ -3070,14 +3070,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "(!p.observation || p.observation.lifecycle === \"open\") &&",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!attempt && !applicable) return;",
       "count": 1
     },

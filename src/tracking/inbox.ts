@@ -107,7 +107,7 @@ export class AgentInbox {
 }
 export function migrateInbox(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 7) return;
+  if (version === 7 || version === 8) return;
   if (version !== 6) throw new Error("Unsupported inbox database version");
   db.exec(`BEGIN IMMEDIATE;
     CREATE TABLE delivery_messages (

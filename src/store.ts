@@ -1,3 +1,4 @@
+import { migrateChecks } from "./tracking/checks-schema.js";
 import { migrateInbox } from "./tracking/inbox.js";
 import { migrateFeedback } from "./tracking/feedback-schema.js";
 import { ConflictStore } from "./repairs/cases.js";
@@ -47,6 +48,7 @@ export class Store {
       this.conflicts = new ConflictStore(this.db, this.now);
       migrateFeedback(this.db);
       migrateInbox(this.db);
+      migrateChecks(this.db);
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }

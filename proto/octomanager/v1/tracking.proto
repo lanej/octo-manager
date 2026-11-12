@@ -38,6 +38,7 @@ message TrackingObservation {
   string reviews_json = 8;
   TargetBase target_base = 9;
   optional string feedback_json = 10;
+  optional string workflows_json = 11;
 }
 message TrackedPullRequest {
   string id = 1;
@@ -67,6 +68,31 @@ message ReviewFeedback {
   optional uint32 line = 9;
   optional string review_id = 10;
 }
+enum CheckWatchState {
+  CHECK_WATCH_STATE_UNSPECIFIED = 0;
+  CHECK_WATCH_STATE_WAITING = 1;
+  CHECK_WATCH_STATE_COMPLETED = 2;
+  CHECK_WATCH_STATE_SUPERSEDED = 3;
+  CHECK_WATCH_STATE_CANCELLED = 4;
+}
+message CheckWatch {
+  string id = 1;
+  string pr_id = 2;
+  string head_sha = 3;
+  uint32 generation = 4;
+  CheckWatchState state = 5;
+  string evidence_json = 6;
+  int64 created_at_ms = 7;
+  int64 updated_at_ms = 8;
+  optional string replacement_head_sha = 9;
+}
+message CheckResults {
+  string watch_id = 1;
+  string head_sha = 2;
+  CheckWatchState state = 3;
+  string checks_json = 4;
+  optional string replacement_head_sha = 5;
+}
 message PendingAction {
   string id = 1;
   string pr_id = 2;
@@ -78,6 +104,7 @@ message PendingAction {
     CheckBlocker check_failed = 7;
     ReviewBlocker changes_requested = 8;
     ReviewFeedback review_feedback = 20;
+    CheckResults check_results = 21;
   }
   string summary = 9;
   string evidence_url = 10;
@@ -114,6 +141,7 @@ message TrackingSnapshot {
   repeated PendingAction actions = 3;
   repeated ActionDelivery deliveries = 4;
   repeated DeliveryAttempt attempts = 5;
+  repeated CheckWatch check_watches = 6;
 }
 message TrackPullRequestRequest { string url = 1; AgentTarget owner = 2; }
 message ListTrackedPullRequestsRequest {}

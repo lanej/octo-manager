@@ -1,3 +1,4 @@
+import type { CheckWatch, CheckWatchState } from "./checks.js";
 export type UnixMillis = number;
 export interface AgentRef {
   id: string;
@@ -83,6 +84,7 @@ export interface PRObservation {
   checks: ObservationPart<CheckObservation[]>;
   reviews: ObservationPart<ReviewObservation[]>;
   feedback?: ObservationPart<ReviewFeedback[]>;
+  workflows?: ObservationPart<CheckObservation[]>;
 }
 export type ObservationInput = Omit<PRObservation, "id" | "prId">;
 export enum ActionState {
@@ -93,6 +95,14 @@ export enum ActionState {
   Superseded = "superseded",
 }
 export type Blocker =
+  | {
+      kind: "check_results";
+      watchId: string;
+      headSha: string;
+      state: CheckWatchState.Completed | CheckWatchState.Superseded;
+      checks: CheckObservation[];
+      replacementHeadSha?: string;
+    }
   | { kind: "review_feedback"; feedback: ReviewFeedback }
   | { kind: "conflict"; headSha: string; baseSha: string; baseRef?: string }
   | {
@@ -193,6 +203,7 @@ export interface TrackingSnapshot {
   actions: Action[];
   deliveries: Delivery[];
   attempts: DeliveryAttempt[];
+  checkWatches: CheckWatch[];
 }
 export const unfinished = (a: Action): boolean =>
   [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(

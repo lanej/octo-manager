@@ -18,11 +18,11 @@ Use the same `--state DIR` on every command when selecting a nondefault state di
 
 Tracking accepts private PRs through your existing `gh` access. It does not send private PR bodies or review messages to Pi. Summary jobs remain public-only. GitHub metadata and local state may still be sensitive; the coordinator's state directory and socket retain owner-only access.
 
-Open PRs refresh immediately and every minute. Closed/merged PRs remain visible and stop automatic refresh; explicitly refresh or reenroll to inspect a later reopening. Refresh failures retain the last successful observation and its original timestamp. Check/review collections are capped at 1,000 records per source; incomplete collections cannot establish new effective blockers or resolve existing ones. Unknown mergeability is never interpreted as conflict-free.
+Open PRs refresh immediately and every minute. Closed/merged PRs remain visible and stop automatic refresh after any existing check watch finishes or is cancelled; explicitly refresh or reenroll to inspect a later reopening. Refresh failures retain the last successful observation and its original timestamp. Check/review collections are capped at 1,000 records per source; incomplete collections cannot establish new effective blockers or resolve existing ones. Unknown mergeability is never interpreted as conflict-free.
 
 ## Actions and ownership
 
-Actions represent confirmed merge conflicts, current-head failed checks, effective changes-requested reviews, and informational review feedback. Repeated observations do not create duplicate unfinished actions. A recurring blocker after resolution creates another action, preserving the earlier episode.
+Actions represent confirmed merge conflicts, current-head failed checks, effective changes-requested reviews, informational review feedback, and completed/superseded check-watch reports. Repeated observations do not create duplicate unfinished actions. A recurring blocker after resolution creates another action, preserving the earlier episode.
 
 ```sh
 bin/octo-manager action ACTION_ID
@@ -177,3 +177,22 @@ bin/octo-manager inbox --agent-id AGENT_ID --include-acknowledged --json
 The dashboard presents transport status and recipient receipt separately; Activity records receipt separately from action progress. Automatic recovery stops after receipt or when the message becomes inapplicable. Queue/history lookup failures are retained visibly rather than represented as failed sends. Replay is at least once, with stable IDs for recipient duplicate detection, and does not guarantee exactly-once execution or unattended wakeup. Agents can pull their unread inbox even when the transport is unavailable; automatic session-start inbox enrollment remains a separate integration.
 
 SQLite version 7 adds `delivery_messages`, preserving all existing identities and histories. Payload/destination/receipt constraints prevent rewriting stored evidence. Older accepted or uncertain deliveries have unknown original payloads and no synthesized inbox entry; their legacy status remains visible. A pending legacy delivery gets frozen text when it is first attempted under this version.
+
+
+## Background check completion
+
+Enroll the PR once, then continue working. Octo owns polling and returns the result through the owning agent's durable inbox; the caller does not run a blocking `gh pr checks --watch` loop.
+
+```sh
+bin/octo-manager track --url https://github.com/OWNER/REPO/pull/NUMBER --thread-id "$CODEX_THREAD_ID"
+```
+
+Every observed head of an enrolled open PR gets a persistent check watch. Each watch has a PR, exact `headSha`, generation number, `state` (`waiting`, `completed`, `superseded`, or `cancelled`), collected check evidence, and millisecond timestamps. Workflow runs are read independently by head SHA so queued workflows without materialized jobs prevent premature completion. The first complete observation can report already-finished checks. Empty check lists, unknown conclusions, pending/running executions, and partial/unavailable source reads remain waiting. Both commit statuses/check runs and workflow coverage must be complete.
+
+When all known executions reach terminal states, Octo atomically records one `check_results` action with the watch's exact head, execution IDs, names, conclusions, and GitHub links, then uses the existing immutable inbox delivery and receipt protocol. Successful checks produce a callback too; this is not limited to failures. Neutral, skipped, cancelled, and failed conclusions remain visible individually. Outgoing result previews are bounded; omitted counts and an inspection command lead to the full stored result, so large results do not block other messages. This completion report does not accept an action, authorize merging, or establish a branch-protection decision.
+
+Previously observed executions are retained even if a later response omits them. A missing unresolved execution keeps the watch waiting; missing terminal outcomes remain in the result. A positively newer status in the same context or a newer attempt of the same workflow can replace prior evidence. Other missing check-run IDs are retained conservatively. This avoids silently turning disappearing failures into success. New generations require positively observed new, restarted, or changed executions, rather than removal alone. A result is a snapshot of observed executions and cannot predict future runs.
+
+A changed PR head produces an explicit superseded-watch callback identifying both revisions and starts a watch for the new head. Existing waiting watches continue after the PR closes or merges, so merging does not silently discard their completion. Historical result callbacks remain deliverable for their tagged revision. Untracking cancels waiting watches and notification delivery while retaining history. A PR with no executions stays waiting until checks appear or tracking is stopped; Octo does not guess that an empty list passed.
+
+The Tracking view shows watches and linked completion details; `tracking --json` exposes typed `checkWatches` alongside actions, deliveries, and receipts. Watches, results, and callback creation commit with observations in SQLite version 8. Restart resumes waiting watches and does not duplicate completed reports. The `check_results` execution profile can retain future harness/model preferences; it does not launch a repair agent or change the recipient's settings. Automatic enrollment of every agent-created PR remains separate from this enrolled-PR watch.

@@ -91,7 +91,7 @@ func (m *Model) trackingContent() string {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
-	parts = append(parts, m.repairContent(pr.GetId()))
+	parts = append(parts, m.checkWatchContent(pr), m.repairContent(pr.GetId()))
 
 	count := m.openActions(pr.GetId())
 
@@ -110,6 +110,10 @@ func (m *Model) trackingContent() string {
 			}
 
 			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
+			if result := action.GetCheckResults(); result != nil {
+				parts = append(parts, m.checkResultsContent(result, pr))
+			}
+
 			if comment := action.GetReviewFeedback(); comment != nil {
 				location := comment.GetPath()
 
