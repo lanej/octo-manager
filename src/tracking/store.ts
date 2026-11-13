@@ -58,7 +58,23 @@ export class TrackingStore {
     this.checks = new CheckWatches(db, now);
     this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
+      const observations = new Map(
+        this.prs().map((pr) => [pr.id, pr.observation]),
+      );
       for (const action of this.actions()) {
+        if (!unfinished(action)) continue;
+        const observation = observations.get(action.prId);
+        if (observation?.lifecycle === "merged") {
+          const progress = closeProgress(action, observation, this.now());
+          if (progress !== undefined) {
+            this.saveAction(
+              { ...action, progress, updatedAt: this.now() },
+              `action_${progress.state}`,
+            );
+            this.cancelDeliveries(action.id, "PR merged");
+          }
+          continue;
+        }
         if (
           unfinished(action) &&
           ((action.blocker.kind === "check_results" &&
@@ -640,6 +656,7 @@ export class TrackingStore {
               }),
           );
           if (
+            o.lifecycle === "merged" ||
             watch.state !== CheckWatchState.Completed ||
             (unreported.length === 0 &&
               (failures.length > 0 || o.lifecycle !== "open"))
