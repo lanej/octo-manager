@@ -55,7 +55,8 @@ export class ConflictStore {
       version !== 8 &&
       version !== 9 &&
       version !== 10 &&
-      version !== 11
+      version !== 11 &&
+      version !== 12
     )
       throw new Error("Unsupported conflict database version");
   }

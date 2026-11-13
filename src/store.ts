@@ -1,3 +1,4 @@
+import {migrateSubscriptions} from "./tracking/subscriptions.js";
 import {NotificationStore} from "./tracking/notifications.js";
 import {migrateRetirement} from "./tracking/retirement.js";
 import {migrateDigests} from "./notifications/schema.js";
@@ -61,6 +62,7 @@ export class Store {
       migrateSubmissions(this.db);
       migrateDigests(this.db);
       migrateRetirement(this.db,this.now());
+      migrateSubscriptions(this.db);
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });

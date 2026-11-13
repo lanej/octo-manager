@@ -1,4 +1,6 @@
 import { GitHubRateLimitError } from "../github-api.js";
+import { compact } from "./messages.js";
+import { shortId } from "./identifiers.js";
 import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
 import { agentMessage, readFailureExcerpt } from "./messages.js";
@@ -100,6 +102,10 @@ export class TrackingService {
     const p = this.store.track(url, target);
     void this.refresh(p.id).catch(() => {});
     return p;
+  }
+  subscribe(id: string, target: AgentTarget) {
+    this.validateTarget(target);
+    return this.store.subscribe(id, target);
   }
   assign(id: string, target: AgentTarget) {
     this.validateTarget(target);
@@ -229,7 +235,11 @@ export class TrackingService {
     const action = this.store.action(d.actionId),
       pr = this.store.pr(action.prId),
       agent = this.store.agent(d.recipientAgentId);
-    if (!pr.enabled || !unfinished(action) || action.ownerAgentId !== agent.id)
+    if (
+      !pr.enabled ||
+      !unfinished(action) ||
+      !this.store.subscriptions.includes(action.prId, agent.id)
+    )
       return;
     try {
       if (
@@ -244,8 +254,14 @@ export class TrackingService {
           actions: this.store.actions().map((action) => action.id),
           messages: this.store.deliveries().map((delivery) => delivery.id),
         });
+        const role = agent.id === action.ownerAgentId ? "owner" : "observer";
+        const owner = this.store.agent(action.ownerAgentId);
+        const context =
+          role === "observer"
+            ? `\nRole: observer · Owner: ${compact(owner.label ?? owner.harness, 120).replaceAll("\n", " ")} (${shortId(owner.id)})`
+            : "";
         this.store.transaction(() => {
-          this.store.inbox.record(d.id, message);
+          this.store.inbox.record(d.id, message + context);
         });
       }
     } catch (error) {
@@ -515,7 +531,7 @@ export class TrackingService {
       value.progress.state !== DeliveryState.Cancelled &&
       this.store.pr(action.prId).enabled &&
       unfinished(action) &&
-      action.ownerAgentId === d.recipientAgentId &&
+      this.store.subscriptions.includes(action.prId, d.recipientAgentId) &&
       (includeReceived ||
         this.store.inbox.get(d.id)?.acknowledgedAt === undefined)
     );

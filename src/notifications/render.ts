@@ -14,6 +14,7 @@ function entry(message: AgentMessage): { group: string; lines: string[] } {
     heading = first.match(
       /^(\[[^\]]+\]\(https:\/\/github\.com\/[^)]+\/pull\/\d+\)) · (.*)$/u,
     );
+  const role = lines.find((line) => line.startsWith("Role:"));
   const excerpt = lines
     .filter((line) => line.startsWith("> "))
     .map((line) => line.slice(2))
@@ -33,8 +34,15 @@ function entry(message: AgentMessage): { group: string; lines: string[] } {
   return {
     group: heading?.[1] ?? "Submissions",
     lines: [
-      `- ${cleanText(heading?.[2] ?? first, 240)}${reference === undefined ? "" : ` · ${reference.toLowerCase()}`}`,
-      ...(excerpt === "" ? [] : [`  > ${cleanText(excerpt, 180)}`]),
+      `- ${cleanText(heading?.[2] ?? first, 240)}${reference === undefined ? "" : ` · ${reference.toLowerCase()}`}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
+      ...(message.participantPRId !== undefined
+        ? lines
+            .filter((line) => line.startsWith("> "))
+            .slice(0, 9)
+            .map((line) => `  ${cleanText(line, 180)}`)
+        : excerpt === ""
+          ? []
+          : [`  > ${cleanText(excerpt, 180)}`]),
       ...(evidence === undefined ? [] : [`  ${evidence}`]),
     ],
   };

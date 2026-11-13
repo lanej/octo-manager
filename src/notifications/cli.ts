@@ -1,3 +1,5 @@
+import { shortId } from "../tracking/identifiers.js";
+import { receiptOutput } from "./receipt-output.js";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import type { parseCommand } from "../arguments.js";
@@ -10,7 +12,8 @@ export async function notificationsCLI(
   if (
     command !== "digest" &&
     command !== "digests" &&
-    command !== "acknowledge-digest"
+    command !== "acknowledge-digest" &&
+    command !== "acknowledge-message"
   )
     return false;
   const directory = resolve(
@@ -19,6 +22,25 @@ export async function notificationsCLI(
         join(homedir(), ".local/state/octo-manager"),
     ),
     client = schedulerClient(directory);
+  if (command === "acknowledge-message") {
+    const response = await client.acknowledgeMessage({
+      id: id ?? "",
+      agentId: values["agent-id"] ?? "",
+    });
+    const message = response.message;
+    if (message === undefined) throw new Error("Missing message receipt");
+    console.log(
+      JSON.stringify({
+        message: shortId(message.id),
+        applicable: message.applicable,
+        receivedAtMs:
+          message.acknowledgedAtMs === undefined
+            ? undefined
+            : Number(message.acknowledgedAtMs),
+      }),
+    );
+    return true;
+  }
   const revision =
     values.revision === undefined ? undefined : Number(values.revision);
   if (
@@ -43,10 +65,8 @@ export async function notificationsCLI(
       revision,
       agentId: values["agent-id"] ?? "",
     });
-    result = {
-      record: JSON.parse(response.recordJson) as unknown,
-      messages: response.messages,
-    };
+    console.log(JSON.stringify(receiptOutput(response, directory)));
+    return true;
   }
   console.log(
     JSON.stringify(result, cliJSON, values.json === true ? undefined : 2),

@@ -200,6 +200,19 @@ export class DigestStore {
         at: Number(row["at_ms"]),
       }));
   }
+  receipt(
+    id: string,
+    number: number,
+  ): { agentId: string; at: number } | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT agent_id,at_ms FROM agent_digest_receipts WHERE digest_id=? AND revision=?",
+      )
+      .get(id, number);
+    return row === undefined
+      ? undefined
+      : { agentId: String(row["agent_id"]), at: Number(row["at_ms"]) };
+  }
   receiveInside(value: Digest, number: number): void {
     if (!this.db.isTransaction)
       throw new Error("Digest receipt requires a coordinator transaction");

@@ -279,6 +279,10 @@ type AgentDigestMember struct {
 	MessageId        string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	ActionId         string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
 	SubmissionId     *string                `protobuf:"bytes,3,opt,name=submission_id,json=submissionId,proto3,oneof" json:"submission_id,omitempty"`
+	Summary          string                 `protobuf:"bytes,6,opt,name=summary,proto3" json:"summary,omitempty"`
+	PrUrl            string                 `protobuf:"bytes,7,opt,name=pr_url,json=prUrl,proto3" json:"pr_url,omitempty"`
+	RecipientRole    string                 `protobuf:"bytes,8,opt,name=recipient_role,json=recipientRole,proto3" json:"recipient_role,omitempty"`
+	OwnerAgentId     string                 `protobuf:"bytes,9,opt,name=owner_agent_id,json=ownerAgentId,proto3" json:"owner_agent_id,omitempty"`
 	Applicable       bool                   `protobuf:"varint,4,opt,name=applicable,proto3" json:"applicable,omitempty"`
 	AcknowledgedAtMs *int64                 `protobuf:"varint,5,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -332,6 +336,34 @@ func (x *AgentDigestMember) GetActionId() string {
 func (x *AgentDigestMember) GetSubmissionId() string {
 	if x != nil && x.SubmissionId != nil {
 		return *x.SubmissionId
+	}
+	return ""
+}
+
+func (x *AgentDigestMember) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *AgentDigestMember) GetPrUrl() string {
+	if x != nil {
+		return x.PrUrl
+	}
+	return ""
+}
+
+func (x *AgentDigestMember) GetRecipientRole() string {
+	if x != nil {
+		return x.RecipientRole
+	}
+	return ""
+}
+
+func (x *AgentDigestMember) GetOwnerAgentId() string {
+	if x != nil {
+		return x.OwnerAgentId
 	}
 	return ""
 }
@@ -424,12 +456,16 @@ const file_octomanager_v1_notifications_proto_rawDesc = "" +
 	"\brevision\x18\x02 \x01(\rR\brevision\x12\x19\n" +
 	"\bagent_id\x18\x03 \x01(\tR\aagentId\x12(\n" +
 	"\rexpected_body\x18\x04 \x01(\tH\x00R\fexpectedBody\x88\x01\x01B\x10\n" +
-	"\x0e_expected_body\"\xf5\x01\n" +
+	"\x0e_expected_body\"\xf3\x02\n" +
 	"\x11AgentDigestMember\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12(\n" +
-	"\rsubmission_id\x18\x03 \x01(\tH\x00R\fsubmissionId\x88\x01\x01\x12\x1e\n" +
+	"\rsubmission_id\x18\x03 \x01(\tH\x00R\fsubmissionId\x88\x01\x01\x12\x18\n" +
+	"\asummary\x18\x06 \x01(\tR\asummary\x12\x15\n" +
+	"\x06pr_url\x18\a \x01(\tR\x05prUrl\x12%\n" +
+	"\x0erecipient_role\x18\b \x01(\tR\rrecipientRole\x12$\n" +
+	"\x0eowner_agent_id\x18\t \x01(\tR\fownerAgentId\x12\x1e\n" +
 	"\n" +
 	"applicable\x18\x04 \x01(\bR\n" +
 	"applicable\x121\n" +

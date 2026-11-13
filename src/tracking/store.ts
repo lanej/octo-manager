@@ -1,3 +1,5 @@
+import { compact } from "./messages.js";
+import { Subscriptions } from "./subscriptions.js";
 import { RetirementStore, lifecycle, TrackingState } from "./retirement.js";
 import { actionableFeedback } from "./review-signals.js";
 import { resolveId } from "./identifiers.js";
@@ -35,6 +37,7 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  readonly subscriptions: Subscriptions;
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
   readonly checks: CheckWatches;
@@ -50,6 +53,7 @@ export class TrackingStore {
     ) => void,
   ) {
     migrateTracking(db);
+    this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id));
     this.inbox = new AgentInbox(db, now);
     this.checks = new CheckWatches(db, now);
     this.retirement = new RetirementStore(db, now, this.checks, event);
@@ -367,12 +371,25 @@ export class TrackingStore {
       );
   }
   private enqueue(a: Action): void {
+    for (const participant of this.subscriptions.list(this.pr(a.prId)))
+      this.enqueueFor(a, participant.agentId);
+  }
+  private enqueueFor(a: Action, recipientAgentId: string): void {
+    if (
+      this.deliveries().some(
+        (d) =>
+          d.actionId === a.id &&
+          d.recipientAgentId === recipientAgentId &&
+          d.progress.state !== DeliveryState.Cancelled,
+      )
+    )
+      return;
     const at = this.now();
     this.saveDelivery(
       {
         id: randomUUID(),
         actionId: a.id,
-        recipientAgentId: a.ownerAgentId,
+        recipientAgentId,
         progress: { state: DeliveryState.Pending, nextAttemptAt: at },
         createdAt: at,
         updatedAt: at,
@@ -380,11 +397,75 @@ export class TrackingStore {
       "delivery_pending",
     );
   }
-  private cancelDeliveries(actionId: string, reason: string): void {
+  participants(id: string) {
+    return this.subscriptions.list(this.pr(id));
+  }
+  subscribe(id: string, target: AgentTarget) {
+    return this.transaction(() => {
+      const pr = this.pr(id),
+        agent = this.register(target);
+      if (this.subscriptions.addInside(pr, agent.id)) {
+        for (const action of this.actions().filter(
+          (a) => a.prId === pr.id && unfinished(a),
+        ))
+          this.enqueueFor(action, agent.id);
+        this.subscriptions.publishInside(pr);
+        this.event(
+          "pr_subscribed",
+          `${compact(agent.label ?? agent.harness, 120)} joined as observer`,
+          pr.id,
+        );
+      }
+      return this.participants(pr.id);
+    });
+  }
+  unsubscribe(id: string, agentId: string) {
+    return this.transaction(() => {
+      const pr = this.pr(id),
+        full = resolveId(
+          agentId,
+          this.agents().map((a) => a.id),
+        );
+      if (full === undefined) throw new Error("Agent not found");
+      if (this.subscriptions.removeInside(pr, full)) {
+        for (const delivery of this.deliveries().filter(
+          (d) =>
+            d.recipientAgentId === full &&
+            this.action(d.actionId).prId === pr.id &&
+            d.progress.state !== DeliveryState.Cancelled,
+        ))
+          this.saveDelivery(
+            {
+              ...delivery,
+              progress: {
+                state: DeliveryState.Cancelled,
+                at: this.now(),
+                reason: "Agent unsubscribed",
+              },
+              updatedAt: this.now(),
+            },
+            "delivery_cancelled",
+          );
+        this.subscriptions.publishInside(pr);
+        this.event(
+          "pr_unsubscribed",
+          `${compact(this.agent(full).label ?? this.agent(full).harness, 120)} stopped listening`,
+          pr.id,
+        );
+      }
+      return this.participants(pr.id);
+    });
+  }
+  private cancelDeliveries(
+    actionId: string,
+    reason: string,
+    includeDelivered = false,
+  ): void {
     for (const d of this.deliveries().filter(
       (d) =>
         d.actionId === actionId &&
         [
+          ...(includeDelivered ? [DeliveryState.Delivered] : []),
           DeliveryState.Pending,
           DeliveryState.Sending,
           DeliveryState.Uncertain,
@@ -413,7 +494,7 @@ export class TrackingStore {
       for (const a of this.actions().filter(
         (a) => a.prId === p.id && unfinished(a),
       )) {
-        this.cancelDeliveries(a.id, "Ownership reassigned");
+        this.cancelDeliveries(a.id, "Ownership reassigned", true);
         const next = {
           ...a,
           ownerAgentId: agent.id,
@@ -423,6 +504,7 @@ export class TrackingStore {
         this.saveAction(next, "action_reassigned");
         if (p.enabled) this.enqueue(next);
       }
+      this.subscriptions.publishInside(this.pr(p.id));
       this.event("pr_assigned", "Ownership reassigned", p.id);
       return this.pr(p.id);
     });
@@ -654,7 +736,9 @@ export class TrackingStore {
     const before = this.inbox.get(id),
       message = this.inbox.acknowledge(id, agentId);
     if (before?.acknowledgedAt === undefined) {
-      if (message.submissionId === undefined) {
+      if (message.participantPRId !== undefined) {
+        this.event("message_acknowledged", message.id, message.participantPRId);
+      } else if (message.submissionId === undefined) {
         const action = this.action(message.actionId);
         this.event("message_acknowledged", message.id, action.prId, action.id);
       } else this.event("message_acknowledged", message.id, "");
@@ -671,7 +755,7 @@ export class TrackingStore {
       if (
         !this.pr(a.prId).enabled ||
         !unfinished(a) ||
-        a.ownerAgentId !== d.recipientAgentId
+        !this.subscriptions.includes(a.prId, d.recipientAgentId)
       )
         throw new Error("Delivery no longer applicable");
       if (

@@ -25,6 +25,9 @@ service SchedulerService {
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
   rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
   rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+  rpc SubscribePullRequest(SubscribePullRequestRequest) returns (SubscribePullRequestResponse);
+  rpc UnsubscribePullRequest(UnsubscribePullRequestRequest) returns (UnsubscribePullRequestResponse);
+  rpc ListPRParticipants(ListPRParticipantsRequest) returns (ListPRParticipantsResponse);
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
   rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
   rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);

@@ -262,7 +262,9 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       0,
       await new Response(child.stderr).text(),
     );
-    assert(body.includes(message.id));
+    assert(body.includes(shortId(message.id)));
+    assert(!body.includes(message.body));
+    assert(Buffer.byteLength(body) < 250);
     assert.equal(
       (await client.listAgentMessages({ agentId: pr.ownerAgentId })).messages
         .length,

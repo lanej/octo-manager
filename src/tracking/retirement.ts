@@ -46,7 +46,7 @@ export function lifecycle(row: Record<string, unknown>): Lifecycle {
 }
 export function migrateRetirement(db: DatabaseSync, now: number): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 11) return;
+  if (version === 12 || version === 11) return;
   if (version !== 10)
     throw new Error("Unsupported retirement database version");
   db.exec("BEGIN IMMEDIATE");
