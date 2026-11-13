@@ -1,3 +1,6 @@
+import { GitHubScheduler } from "../src/scheduling/service.js";
+import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
+import { readFailureExcerpt } from "../src/tracking/messages.js";
 import { shortId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
@@ -317,3 +320,104 @@ test("queue admission preserves its receipt across restart without acknowledging
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("optional log enrichment expires during cooldown without starving cached notifications", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-enrichment-"));
+  const store = new Store(dir, () => 1000);
+  const scheduler = new GitHubScheduler(
+    store.schedules,
+    defaultSchedulerPolicy,
+    () => 1000,
+    () => Promise.reject(new Error("No review reads expected")),
+    () => {},
+  );
+  scheduler.defer("core", 3601000);
+  const config = defaultTrackingConfig();
+  const failed: ObservationInput = {
+    ...input,
+    mergeability: "mergeable",
+    checks: {
+      state: "complete",
+      value: [
+        {
+          id: "ci",
+          key: "CI",
+          name: "CI",
+          headSha: "head",
+          status: "completed",
+          conclusion: "failure",
+          at: 1000,
+          url: "https://github.com/owner/repo/actions/runs/1/job/2",
+        },
+      ],
+    },
+  };
+  const first = store.tracking.track(url, target);
+  store.tracking.observe(first.id, failed, config);
+  const second = store.tracking.track(
+    "https://github.com/owner/repo/pull/2",
+    target,
+  );
+  store.tracking.observe(second.id, input, config);
+  const action = store.tracking
+    .actions()
+    .find(
+      (value) =>
+        value.prId === first.id && value.blocker.kind === "check_failed",
+    );
+  assert.ok(action !== undefined);
+  const firstDelivery = store.tracking
+    .deliveries()
+    .find((value) => value.actionId === action.id);
+  assert.ok(firstDelivery !== undefined);
+  const other = store.tracking
+    .deliveries()
+    .find((value) => store.tracking.action(value.actionId).prId === second.id);
+  assert.ok(other !== undefined);
+  for (const delivery of store.tracking.deliveries())
+    if (delivery.id !== firstDelivery.id)
+      store.tracking.inbox.record(delivery.id, "Cached notification");
+  const completed = Promise.withResolvers<undefined>();
+  let dispatched = 0;
+  const sent: string[] = [];
+  const service = new TrackingService(store.tracking, config, () => 1000, {
+    read: (pr) => Promise.resolve(pr === url ? failed : input),
+    failureExcerpt: (value, pr, signal) =>
+      readFailureExcerpt(value, pr, signal, (_repository, _run, _job, abort) =>
+        scheduler.dispatch(
+          "core",
+          () => {
+            dispatched++;
+            return Promise.resolve("Error: should not dispatch");
+          },
+          abort,
+        ),
+      ).finally(() => {
+        completed.resolve(undefined);
+      }),
+    connect: () =>
+      connection({
+        send: (_agent, id) => {
+          sent.push(id);
+          return Promise.resolve({ turnId: "delivered" });
+        },
+      }),
+  });
+  try {
+    service.tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(scheduler.status().queuedRequests, 1);
+    await completed.promise;
+    await until(() => sent.includes(firstDelivery.id));
+    service.tick();
+    await until(() => sent.includes(other.id));
+    assert.equal(dispatched, 0);
+    assert.equal(scheduler.status().queuedRequests, 0);
+    assert.equal(scheduler.deadline("core"), 3601000);
+  } finally {
+    await service.close();
+    await scheduler.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+}, 10000);

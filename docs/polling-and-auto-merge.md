@@ -24,6 +24,8 @@ Independent check-run IDs remain independent. Only cancelled workflow suites wit
 
 The coordinator owns one GitHub scheduling tick. Its default cadence is one second. Tracking, notifications and merge reconciliation run from that clock; each retains its existing eligibility and freshness rules. Every GitHub API request, including pagination, logs, GraphQL and merge operations, passes through the shared dispatch gate.
 
+Optional failure-log enrichment has a five-second total budget, including queue wait. If it expires, the notification proceeds with its evidence link and no excerpt.
+
 Requests are serialized, with a default minimum two-second gap after completion before another starts. This conservative gap also covers slow authentication before an HTTP send. Long requests can slow throughput; delayed ticks never cause catch-up bursts. Interactive requests alternate with waiting background requests, oldest first within each class. GitHub cooldowns take precedence, independently for REST and GraphQL unless a secondary limit pauses both.
 
 Unchanged PR observations back off from **1 → 2 → 4 → 8 → 15 minutes**. Pending check evidence retains a two-minute ceiling. Head, target, lifecycle, checks, reviews, feedback or description changes reset the interval. Refresh actions and notification hints request earlier work without bypassing dispatch spacing or cooldowns.

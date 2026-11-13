@@ -378,7 +378,14 @@ export class TrackingService {
       ) {
         const excerpt = await (
           this.options.failureExcerpt ?? readFailureExcerpt
-        )(action, pr.url, this.deliveryAbort.signal);
+        )(
+          action,
+          pr.url,
+          AbortSignal.any([
+            this.deliveryAbort.signal,
+            AbortSignal.timeout(5000),
+          ]),
+        );
         if (!this.current(d)) return;
         const message = agentMessage(action, pr.url, d.id, excerpt, {
           actions: this.store.actions().map((action) => action.id),
