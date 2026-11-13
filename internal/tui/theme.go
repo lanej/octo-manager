@@ -30,5 +30,6 @@ func (m *Model) terminalBackground(msg tea.BackgroundColorMsg) {
 	t.SelectionForeground = t.Foreground
 	m.theme = t
 	m.activityRender.valid = false
+	m.contentRender.valid = false
 	m.resizeContent()
 }

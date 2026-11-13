@@ -229,13 +229,9 @@ func (m *Model) resizeContent() {
 	if m.panel == activityPanel {
 		rendered = m.renderedActivity(max(1, inner.Width))
 	} else if m.panel == trackingPanel || m.panel == githubPanel {
-		rendered = ansi.Wrap(content, max(1, inner.Width), " ")
+		rendered = m.renderedContent(content, inner.Width, false)
 	} else if m.panel != statePanel {
-		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
-			rendered = value
-		} else {
-			rendered = safe(content)
-		}
+		rendered = m.renderedContent(content, inner.Width, true)
 	}
 
 	m.result.SetWidth(max(1, inner.Width))
@@ -308,7 +304,17 @@ func (m *Model) queue(g geometry) string {
 		rows = []string{"No pull requests yet.", "", "Track or submit a PR URL", "with the CLI."}
 	}
 
-	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+	title := "PULL REQUESTS"
+
+	for _, item := range items {
+		if item.url == "" {
+			title = "PULL REQUESTS / JOBS"
+
+			break
+		}
+	}
+
+	return layout.Panel(title, strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
 }
 
 func counted(count int, noun string) string {

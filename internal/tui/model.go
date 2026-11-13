@@ -69,6 +69,7 @@ type Model struct {
 	history            historyState
 	agentActivity      activityHistory
 	activityRender     activityRenderCache
+	contentRender      contentRenderCache
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {
@@ -155,6 +156,7 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 			m.theme.Foreground = msg.Color
 			m.theme.SelectionForeground = msg.Color
 			m.activityRender.valid = false
+			m.contentRender.valid = false
 			m.resizeContent()
 		}
 

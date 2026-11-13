@@ -126,3 +126,79 @@ func TestRebaseRepairUsesReadableStateAndPreservesNarrowLayout(t *testing.T) {
 		}
 	}
 }
+
+func TestClosedPRKeepsAcknowledgedFailureInHistoryWithoutPendingWork(t *testing.T) {
+	t.Parallel()
+
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	pr := &v1.TrackedPullRequest{Id: "pr", Url: "https://github.com/owner/repo/pull/292", Enabled: true, Observation: &v1.TrackingObservation{Lifecycle: "open"}}
+	action := &v1.PendingAction{Id: "report", PrId: "pr", Summary: "Failed check: macOS", State: v1.ActionState_ACTION_STATE_ACKNOWLEDGED}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs:     []*v1.TrackedPullRequest{pr},
+		Actions: []*v1.PendingAction{action},
+		Deliveries: []*v1.ActionDelivery{{
+			ActionId: "report", State: v1.DeliveryState_DELIVERY_STATE_DELIVERED,
+			ProgressJson:    `{"note":"Included in one queued digest; receipt pending."}`,
+			MessageSequence: new(uint64(1)), AcknowledgedAtMs: new(int64(1000)),
+		}},
+	}
+	m.ensureSelection()
+	m.Resize(layout.Size{Width: 132, Height: 40})
+
+	if m.openActions("pr") != 1 || !strings.Contains(ansi.Strip(m.View()), "1 outstanding action") {
+		t.Fatal("open PR lost its acknowledged action")
+	}
+
+	for _, lifecycle := range []string{"merged", "closed"} {
+		pr.Observation.Lifecycle = lifecycle
+
+		m.Update(snapshotMsg{snapshot: m.snapshot})
+
+		content := ansi.Strip(m.trackingContent())
+		for _, expected := range []string{"0 outstanding actions", "Action history", "acknowledged", "Failed check: macOS", "Agent received", "retained as history"} {
+			if !strings.Contains(content, expected) {
+				t.Fatalf("closed PR omitted %q", expected)
+			}
+		}
+
+		if m.openActions("pr") != 0 || strings.Contains(content, "receipt pending") || action.GetState() != v1.ActionState_ACTION_STATE_ACKNOWLEDGED {
+			t.Fatal("historical report looks pending or changed its recorded state")
+		}
+
+		if !strings.Contains(ansi.Strip(m.View()), "0 runs · 0 actions") {
+			t.Fatal("sidebar still counts historical reports as active work")
+		}
+	}
+
+	for _, lifecycle := range []string{"", "unknown", "open"} {
+		pr.Observation.Lifecycle = lifecycle
+
+		if m.openActions("pr") != 1 {
+			t.Fatal("missing lifecycle evidence silently hid an unfinished action")
+		}
+	}
+}
+
+func TestPRSidebarMentionsJobsOnlyWhenLocalJobsExist(t *testing.T) {
+	t.Parallel()
+
+	m := model(t, theme.Dark)
+	job := m.snapshot.Jobs[0]
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/1"}}}
+	m.ensureSelection()
+	m.Resize(layout.Size{Width: 132, Height: 40})
+
+	view := ansi.Strip(m.View())
+	if !strings.Contains(view, "PULL REQUESTS") || strings.Contains(view, "DEMOS") || strings.Contains(view, "/ JOBS") {
+		t.Fatal("PR-only sidebar advertises unrelated tasks")
+	}
+
+	m.snapshot.Jobs = append(m.snapshot.Jobs, job)
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	if !strings.Contains(ansi.Strip(m.View()), "PULL REQUESTS / JOBS") {
+		t.Fatal("a local fixture was mislabeled as a pull request")
+	}
+}
