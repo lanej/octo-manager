@@ -55,7 +55,11 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	case "pr_untracked":
 		row.title, row.detail = "PR tracking stopped", "History is retained."
 	case "pr_assigned":
-		row.title, row.detail = "PR owner changed", "Future notifications go to the assigned session."
+		row.title, row.detail = "PR owner changed", "The assigned session owns actions; observers keep listening."
+	case "pr_subscribed":
+		row.title = "PR listener added"
+	case "pr_unsubscribed":
+		row.title = "PR listener removed"
 	case "pr_refresh_failed":
 		row.title = "PR check failed"
 	case "action_opened":

@@ -193,3 +193,12 @@ message AcknowledgeMessageResponse { AgentMessage message = 1; }
 
 message RegisterAgentRequest { AgentTarget target = 1; }
 message RegisterAgentResponse { AgentReference agent = 1; }
+
+message PRParticipant { string agent_id=1; string role=2; string label=3; string harness=4; }
+message SubscribePullRequestRequest { string id=1; AgentTarget agent=2; }
+message UnsubscribePullRequestRequest { string id=1; string agent_id=2; }
+message ListPRParticipantsRequest { string id=1; uint32 offset=2; }
+message ListPRParticipantsResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
+
+message SubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
+message UnsubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }

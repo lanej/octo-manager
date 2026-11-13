@@ -38,6 +38,7 @@ function hasCode(code: Code): (error: unknown) => boolean {
 async function cli(args: string[], cwd?: string): Promise<string> {
   const child = Bun.spawn([process.execPath, resolve("src/cli.ts"), ...args], {
     ...(cwd === undefined ? {} : { cwd }),
+    env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -254,7 +255,7 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     try {
       assert.equal(
         reader.prepare("PRAGMA user_version").get()?.["user_version"],
-        11,
+        12,
       );
       assert.throws(() =>
         reader.prepare("UPDATE agent_activity SET outcome='invented'").run(),

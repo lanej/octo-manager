@@ -1,3 +1,4 @@
+import { printResult } from "../cli-output.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
@@ -65,7 +66,8 @@ export async function submissionsCLI(
       tier: values.tier ?? "standard",
     });
     if (argument === "template") {
-      console.log(response.template);
+      if (values.json) printResult(parsed, { template: response.template });
+      else console.log(response.template);
       return true;
     }
     result = parse(PolicySchema, JSON.parse(response.policyJson));
@@ -159,8 +161,6 @@ export async function submissionsCLI(
     throw new Error(
       "Use repo-policy get|template --repo owner/repo or refresh from a pushed branch",
     );
-  console.log(
-    JSON.stringify(result, null, values.json === true ? undefined : 2),
-  );
+  printResult(parsed, result);
   return true;
 }

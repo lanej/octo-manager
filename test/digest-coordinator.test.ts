@@ -136,6 +136,13 @@ test("coordinator combines both producers and atomically receipts exact members 
       directory,
     );
     expect(hookResult.output).toBeUndefined();
+    for (let index = 0; index < 200; index++)
+      coordinator.store.digests.event(
+        actor.id,
+        digest.id,
+        "synthetic_history",
+        { detail: "historical event ".repeat(100) },
+      );
     const receipt = await client.acknowledgeAgentDigest({
       id: digest.id,
       revision: digest.revision,
@@ -143,6 +150,10 @@ test("coordinator combines both producers and atomically receipts exact members 
       expectedBody: version.body,
     });
     expect(receipt.messages).toHaveLength(2);
+    expect(Buffer.byteLength(receipt.recordJson)).toBeLessThan(300);
+    expect(receipt.recordJson).not.toContain("synthetic_history");
+    expect(receipt.recordJson).not.toContain("messageIds");
+    expect(receipt.recordJson).not.toContain("events");
     expect(
       receipt.messages.every(
         (message) => message.acknowledgedAtMs !== undefined,

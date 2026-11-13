@@ -254,7 +254,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
         directory,
         "--json",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const body = await new Response(child.stdout).text();
     assert.equal(
@@ -262,7 +266,9 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       0,
       await new Response(child.stderr).text(),
     );
-    assert(body.includes(message.id));
+    assert(body.includes(shortId(message.id)));
+    assert(!body.includes(message.body));
+    assert(Buffer.byteLength(body) < 250);
     assert.equal(
       (await client.listAgentMessages({ agentId: pr.ownerAgentId })).messages
         .length,
@@ -297,7 +303,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
         directory,
         "--json",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const listed = await new Response(cli.stdout).text();
     assert.equal(await cli.exited, 0, await new Response(cli.stderr).text());

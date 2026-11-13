@@ -2,7 +2,13 @@ import type { DatabaseSync } from "node:sqlite";
 
 export function migrateChecks(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 8 || version === 9 || version === 11 || version === 10)
+  if (
+    version === 8 ||
+    version === 9 ||
+    version === 12 ||
+    version === 11 ||
+    version === 10
+  )
     return;
   if (version !== 7)
     throw new Error("Unsupported check-watch database version");

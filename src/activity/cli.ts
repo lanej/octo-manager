@@ -1,3 +1,4 @@
+import { printResult } from "../cli-output.js";
 import { toJson } from "@bufbuild/protobuf";
 import { RecordActivityResponseSchema } from "../gen/octomanager/v1/activity_pb.js";
 import { ListActivityResponseSchema } from "../gen/octomanager/v1/scheduler_pb.js";
@@ -46,27 +47,21 @@ export async function activityCLI(
       prUrl: values.url,
       evidenceUrl: values.evidence,
     });
-    console.log(
-      JSON.stringify(
-        toJson(
-          RecordActivityResponseSchema,
-          await client.recordActivity({ report: wireActivityInput(input) }),
-        ),
-        null,
-        values.json === true ? undefined : 2,
+    printResult(
+      parsed,
+      toJson(
+        RecordActivityResponseSchema,
+        await client.recordActivity({ report: wireActivityInput(input) }),
       ),
     );
   } else {
     const after = values.after ?? "0";
     if (!/^\d+$/u.test(after)) throw new Error("Invalid activity cursor");
-    console.log(
-      JSON.stringify(
-        toJson(
-          ListActivityResponseSchema,
-          await client.listActivity({ afterSequence: BigInt(after) }),
-        ),
-        null,
-        values.json === true ? undefined : 2,
+    printResult(
+      parsed,
+      toJson(
+        ListActivityResponseSchema,
+        await client.listActivity({ afterSequence: BigInt(after) }),
       ),
     );
   }

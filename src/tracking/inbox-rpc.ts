@@ -1,3 +1,4 @@
+import { resolveId } from "./identifiers.js";
 import { trackingOperation } from "./rpc.js";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type {
@@ -38,10 +39,14 @@ export function inboxRoutes(store: TrackingStore) {
     },
     acknowledgeMessage(request: AcknowledgeMessageRequest) {
       return trackingOperation(() => {
+        const agentId = resolveId(
+          request.agentId,
+          store.agents().map((agent) => agent.id),
+        );
         const message = store.inbox.get(request.id);
         if (message === undefined)
           throw new ConnectError("Message not found", Code.NotFound);
-        if (message.recipientAgentId !== request.agentId)
+        if (message.recipientAgentId !== agentId)
           throw new ConnectError(
             "Message belongs to another agent",
             Code.PermissionDenied,
@@ -55,7 +60,7 @@ export function inboxRoutes(store: TrackingStore) {
             Code.InvalidArgument,
           );
         return {
-          message: wire(store.acknowledgeMessage(request.id, request.agentId)),
+          message: wire(store.acknowledgeMessage(request.id, agentId)),
         };
       });
     },

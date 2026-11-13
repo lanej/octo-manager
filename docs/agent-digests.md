@@ -49,3 +49,8 @@ octo-manager acknowledge-digest DIGEST_ID --revision 2 --agent-id AGENT_ID
 Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and receipt-agent prefixes are accepted; ambiguous prefixes fail. Receipt commands render as inline code, using collision-aware short agent IDs. Inspection returns the selected immutable revision, revision numbers, receipts and the latest 100 journal events. The complete journal remains stored. `GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` are generated Connect RPCs; receipt can require `expected_body` and returns each member's current applicability. Treat obsolete members as historical evidence, not new work.
 
 The optional Codex hook acknowledges an exact incoming digest body before unread recovery. Automatic native history reconciliation also works without hooks. Neither path accepts or resolves the underlying actions. There is no model call, new agent session, setting change or mandatory PR submission in this path.
+
+
+Acknowledgment output is deliberately smaller than inspection: `record_json` now contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
+
+PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.

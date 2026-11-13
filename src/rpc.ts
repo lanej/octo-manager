@@ -1,3 +1,4 @@
+import {digestReceipt} from "./notifications/receipt.js";
 import { complexity, renderTemplate } from "./submissions/contracts.js";
 import { inboxRoutes } from "./tracking/inbox-rpc.js";
 import { repairRoutes, wireRepair } from "./repairs/rpc.js";
@@ -66,11 +67,14 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
+    unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
+    listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},
     getAgentDigest(r) {return trackingOperation(()=>({recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision))}));},
     listAgentDigests(r) {return {digestsJson:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>JSON.stringify(value))};},
     acknowledgeAgentDigest(r) {return trackingOperation(()=>{
       const messages=coordinator.digests.acknowledge(r.id,r.revision,r.agentId,r.expectedBody);
-      return {recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision)),messages:messages.map(message=>({messageId:message.id,actionId:message.actionId,submissionId:message.submissionId,applicable:message.applicable,acknowledgedAtMs:message.acknowledgedAt===undefined?undefined:BigInt(message.acknowledgedAt)}))};
+      return digestReceipt(coordinator.digests,tracking.store,r.id,r.revision,messages);
     });},
     submitPullRequest(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(

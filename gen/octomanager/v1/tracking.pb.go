@@ -3295,6 +3295,410 @@ func (x *RegisterAgentResponse) GetAgent() *AgentReference {
 	return nil
 }
 
+type PRParticipant struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	Label         string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
+	Harness       string                 `protobuf:"bytes,4,opt,name=harness,proto3" json:"harness,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PRParticipant) Reset() {
+	*x = PRParticipant{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PRParticipant) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PRParticipant) ProtoMessage() {}
+
+func (x *PRParticipant) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PRParticipant.ProtoReflect.Descriptor instead.
+func (*PRParticipant) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *PRParticipant) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *PRParticipant) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *PRParticipant) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *PRParticipant) GetHarness() string {
+	if x != nil {
+		return x.Harness
+	}
+	return ""
+}
+
+type SubscribePullRequestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Agent         *AgentTarget           `protobuf:"bytes,2,opt,name=agent,proto3" json:"agent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscribePullRequestRequest) Reset() {
+	*x = SubscribePullRequestRequest{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribePullRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribePullRequestRequest) ProtoMessage() {}
+
+func (x *SubscribePullRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribePullRequestRequest.ProtoReflect.Descriptor instead.
+func (*SubscribePullRequestRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *SubscribePullRequestRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SubscribePullRequestRequest) GetAgent() *AgentTarget {
+	if x != nil {
+		return x.Agent
+	}
+	return nil
+}
+
+type UnsubscribePullRequestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnsubscribePullRequestRequest) Reset() {
+	*x = UnsubscribePullRequestRequest{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnsubscribePullRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribePullRequestRequest) ProtoMessage() {}
+
+func (x *UnsubscribePullRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribePullRequestRequest.ProtoReflect.Descriptor instead.
+func (*UnsubscribePullRequestRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *UnsubscribePullRequestRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UnsubscribePullRequestRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type ListPRParticipantsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Offset        uint32                 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPRParticipantsRequest) Reset() {
+	*x = ListPRParticipantsRequest{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPRParticipantsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPRParticipantsRequest) ProtoMessage() {}
+
+func (x *ListPRParticipantsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPRParticipantsRequest.ProtoReflect.Descriptor instead.
+func (*ListPRParticipantsRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *ListPRParticipantsRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ListPRParticipantsRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type ListPRParticipantsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	Total         uint32                 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPRParticipantsResponse) Reset() {
+	*x = ListPRParticipantsResponse{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPRParticipantsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPRParticipantsResponse) ProtoMessage() {}
+
+func (x *ListPRParticipantsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPRParticipantsResponse.ProtoReflect.Descriptor instead.
+func (*ListPRParticipantsResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *ListPRParticipantsResponse) GetParticipants() []*PRParticipant {
+	if x != nil {
+		return x.Participants
+	}
+	return nil
+}
+
+func (x *ListPRParticipantsResponse) GetTotal() uint32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListPRParticipantsResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+type SubscribePullRequestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	Total         uint32                 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscribePullRequestResponse) Reset() {
+	*x = SubscribePullRequestResponse{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribePullRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribePullRequestResponse) ProtoMessage() {}
+
+func (x *SubscribePullRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribePullRequestResponse.ProtoReflect.Descriptor instead.
+func (*SubscribePullRequestResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *SubscribePullRequestResponse) GetParticipants() []*PRParticipant {
+	if x != nil {
+		return x.Participants
+	}
+	return nil
+}
+
+func (x *SubscribePullRequestResponse) GetTotal() uint32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *SubscribePullRequestResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+type UnsubscribePullRequestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	Total         uint32                 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnsubscribePullRequestResponse) Reset() {
+	*x = UnsubscribePullRequestResponse{}
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnsubscribePullRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribePullRequestResponse) ProtoMessage() {}
+
+func (x *UnsubscribePullRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_tracking_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribePullRequestResponse.ProtoReflect.Descriptor instead.
+func (*UnsubscribePullRequestResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_tracking_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *UnsubscribePullRequestResponse) GetParticipants() []*PRParticipant {
+	if x != nil {
+		return x.Participants
+	}
+	return nil
+}
+
+func (x *UnsubscribePullRequestResponse) GetTotal() uint32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *UnsubscribePullRequestResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
 var File_octomanager_v1_tracking_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_tracking_proto_rawDesc = "" +
@@ -3560,7 +3964,33 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x14RegisterAgentRequest\x123\n" +
 	"\x06target\x18\x01 \x01(\v2\x1b.octomanager.v1.AgentTargetR\x06target\"M\n" +
 	"\x15RegisterAgentResponse\x124\n" +
-	"\x05agent\x18\x01 \x01(\v2\x1e.octomanager.v1.AgentReferenceR\x05agent*\xb3\x01\n" +
+	"\x05agent\x18\x01 \x01(\v2\x1e.octomanager.v1.AgentReferenceR\x05agent\"n\n" +
+	"\rPRParticipant\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12\x14\n" +
+	"\x05label\x18\x03 \x01(\tR\x05label\x12\x18\n" +
+	"\aharness\x18\x04 \x01(\tR\aharness\"`\n" +
+	"\x1bSubscribePullRequestRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
+	"\x05agent\x18\x02 \x01(\v2\x1b.octomanager.v1.AgentTargetR\x05agent\"J\n" +
+	"\x1dUnsubscribePullRequestRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"C\n" +
+	"\x19ListPRParticipantsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\rR\x06offset\"\x90\x01\n" +
+	"\x1aListPRParticipantsResponse\x12A\n" +
+	"\fparticipants\x18\x01 \x03(\v2\x1d.octomanager.v1.PRParticipantR\fparticipants\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\rR\x05total\x12\x19\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore\"\x92\x01\n" +
+	"\x1cSubscribePullRequestResponse\x12A\n" +
+	"\fparticipants\x18\x01 \x03(\v2\x1d.octomanager.v1.PRParticipantR\fparticipants\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\rR\x05total\x12\x19\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore\"\x94\x01\n" +
+	"\x1eUnsubscribePullRequestResponse\x12A\n" +
+	"\fparticipants\x18\x01 \x03(\v2\x1d.octomanager.v1.PRParticipantR\fparticipants\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\rR\x05total\x12\x19\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore*\xb3\x01\n" +
 	"\vActionState\x12\x1c\n" +
 	"\x18ACTION_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ACTION_STATE_OPEN\x10\x01\x12\x1d\n" +
@@ -3603,7 +4033,7 @@ func file_octomanager_v1_tracking_proto_rawDescGZIP() []byte {
 }
 
 var file_octomanager_v1_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
+var file_octomanager_v1_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 54)
 var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(ActionState)(0),                          // 0: octomanager.v1.ActionState
 	(DeliveryState)(0),                        // 1: octomanager.v1.DeliveryState
@@ -3656,6 +4086,13 @@ var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(*AcknowledgeMessageResponse)(nil),        // 48: octomanager.v1.AcknowledgeMessageResponse
 	(*RegisterAgentRequest)(nil),              // 49: octomanager.v1.RegisterAgentRequest
 	(*RegisterAgentResponse)(nil),             // 50: octomanager.v1.RegisterAgentResponse
+	(*PRParticipant)(nil),                     // 51: octomanager.v1.PRParticipant
+	(*SubscribePullRequestRequest)(nil),       // 52: octomanager.v1.SubscribePullRequestRequest
+	(*UnsubscribePullRequestRequest)(nil),     // 53: octomanager.v1.UnsubscribePullRequestRequest
+	(*ListPRParticipantsRequest)(nil),         // 54: octomanager.v1.ListPRParticipantsRequest
+	(*ListPRParticipantsResponse)(nil),        // 55: octomanager.v1.ListPRParticipantsResponse
+	(*SubscribePullRequestResponse)(nil),      // 56: octomanager.v1.SubscribePullRequestResponse
+	(*UnsubscribePullRequestResponse)(nil),    // 57: octomanager.v1.UnsubscribePullRequestResponse
 }
 var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	4,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
@@ -3696,11 +4133,15 @@ var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	44, // 35: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
 	4,  // 36: octomanager.v1.RegisterAgentRequest.target:type_name -> octomanager.v1.AgentTarget
 	5,  // 37: octomanager.v1.RegisterAgentResponse.agent:type_name -> octomanager.v1.AgentReference
-	38, // [38:38] is the sub-list for method output_type
-	38, // [38:38] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	4,  // 38: octomanager.v1.SubscribePullRequestRequest.agent:type_name -> octomanager.v1.AgentTarget
+	51, // 39: octomanager.v1.ListPRParticipantsResponse.participants:type_name -> octomanager.v1.PRParticipant
+	51, // 40: octomanager.v1.SubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
+	51, // 41: octomanager.v1.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
+	42, // [42:42] is the sub-list for method output_type
+	42, // [42:42] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_tracking_proto_init() }
@@ -3735,7 +4176,7 @@ func file_octomanager_v1_tracking_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_tracking_proto_rawDesc), len(file_octomanager_v1_tracking_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   47,
+			NumMessages:   54,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
