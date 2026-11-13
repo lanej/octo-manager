@@ -77,6 +77,10 @@ func TestGeneratedGoClientTalksToBunOverUnixSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if usage := initial.Msg.GetSnapshot().GetGithubUsage(); usage == nil || usage.GetSampledAtMs() < usage.GetStartedAtMs() || len(usage.GetMinutes()) == 0 {
+		t.Fatal("GitHub usage did not cross the generated Go boundary")
+	}
+
 	reviews, err := api.RPC.GetPullRequest(ctx, connect.NewRequest(&v1.GetPullRequestRequest{Url: "https://github.com/owner/repo/pull/12"}))
 	if err != nil {
 		t.Fatal(err)

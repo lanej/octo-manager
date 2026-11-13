@@ -9,6 +9,8 @@ import { setTimeout as delay } from "node:timers/promises";
 import { SchedulerService, JobSchema, AttemptSchema, JobEventSchema, SnapshotSchema, JobStatus, SchedulerState, WorkerState, type Task as WireTask } from "./gen/octomanager/v1/scheduler_pb.js";
 import { jobTransitions, parseTask, type Job, type JobEvent, type Status } from "./domain.js";
 import type { Coordinator } from "./coordinator.js";
+import { githubReads } from "./github-api.js";
+import { wireGitHubUsage } from "./github-usage-rpc.js";
 
 const statuses: Record<Status, JobStatus> = {
   queued: JobStatus.QUEUED, running: JobStatus.RUNNING, conflicted: JobStatus.CONFLICTED,
@@ -33,6 +35,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
     tracking: wireTracking(coordinator.tracking),
+    githubUsage: wireGitHubUsage(githubReads.usage()),
     repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),

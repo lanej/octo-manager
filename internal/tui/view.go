@@ -25,7 +25,7 @@ type geometry struct {
 
 func (m *Model) geometry() geometry {
 	body := max(1, m.size.Height-len(m.header())-2)
-	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded && m.panel != activityPanel
+	split := m.size.Width >= 96 && m.size.Height >= 18 && !m.expanded && !m.globalPanel()
 
 	left := 0
 	if split {
@@ -38,7 +38,7 @@ func (m *Model) geometry() geometry {
 	}
 
 	activity := 0
-	if m.size.Height >= 18 && m.size.Width >= 32 && m.panel != activityPanel {
+	if m.size.Height >= 18 && m.size.Width >= 32 && !m.globalPanel() {
 		activity = min(8, max(5, body/4))
 	}
 
@@ -198,6 +198,8 @@ func (m *Model) resizeContent() {
 			content = m.trackingContent()
 		case activityPanel:
 			content = m.activitySource()
+		case githubPanel:
+			content = m.githubContent(inner.Width)
 		default:
 			content = "Unknown view"
 		}
@@ -213,14 +215,20 @@ func (m *Model) resizeContent() {
 		}
 	}
 
-	if m.panel == activityPanel {
+	switch m.panel {
+	case activityPanel:
 		content = m.activitySource()
+	case githubPanel:
+		content = m.githubContent(inner.Width)
+	case reviewsPanel, outputPanel, statePanel, trackingPanel:
+	default:
+		content = "Unknown view"
 	}
 
 	rendered := content
 	if m.panel == activityPanel {
 		rendered = m.renderedActivity(max(1, inner.Width))
-	} else if m.panel == trackingPanel {
+	} else if m.panel == trackingPanel || m.panel == githubPanel {
 		rendered = ansi.Wrap(content, max(1, inner.Width), " ")
 	} else if m.panel != statePanel {
 		if value, err := text.Markdown(content, max(1, inner.Width), m.theme); err == nil {
@@ -234,7 +242,7 @@ func (m *Model) resizeContent() {
 	m.result.SetHeight(max(1, inner.Height))
 	m.result.SetContent(rendered)
 
-	if m.panel == activityPanel {
+	if m.globalPanel() {
 		return
 	}
 
@@ -326,8 +334,14 @@ func (m *Model) header() []string {
 		identity = "Track or submit a PR URL"
 	}
 
-	if m.panel == activityPanel {
+	switch m.panel {
+	case activityPanel:
 		identity = "All agent sessions"
+	case githubPanel:
+		identity = "GitHub traffic and rate limits"
+	case reviewsPanel, outputPanel, statePanel, trackingPanel:
+	default:
+		identity = "Unknown view"
 	}
 
 	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
@@ -351,7 +365,7 @@ func (m *Model) View() string {
 
 	g := m.geometry()
 
-	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "tracking", Label: "4 Tracking"}, {ID: "agent-activity", Label: "5 Activity"}}, m.theme)
+	tabs := navigation.NewTabs([]navigation.Tab{{ID: "reviews", Label: "1 Reviews"}, {ID: "output", Label: "2 Output"}, {ID: "state", Label: "3 State"}, {ID: "tracking", Label: "4 Tracking"}, {ID: "agent-activity", Label: "5 Activity"}, {ID: "github", Label: "6 GitHub"}}, m.theme)
 	tabs.Select(m.panelID())
 	tabs.SetWidth(g.right)
 
@@ -383,9 +397,16 @@ func (m *Model) View() string {
 
 	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
 
-	if m.panel == activityPanel {
+	switch m.panel {
+	case activityPanel:
 		help = "[/] scroll · q quit"
 		notice = "h/l older/newer · j/k scroll · u refresh"
+	case githubPanel:
+		help = "[/] scroll · q quit"
+		notice = "j/k scroll · u refresh local metrics"
+	case reviewsPanel, outputPanel, statePanel, trackingPanel:
+	default:
+		notice = "Unknown view · q quit"
 	}
 
 	if m.connectionError != "" {
@@ -397,7 +418,13 @@ func (m *Model) View() string {
 	}
 
 	dispatch := strings.ToLower(strings.TrimPrefix(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_"))
-	footer := layout.Footer{Help: help, Status: "dispatch " + dispatch}
+
+	status := "dispatch " + dispatch
+	if m.size.Width >= 96 && m.panel != githubPanel {
+		status += " · " + m.githubSummary()
+	}
+
+	footer := layout.Footer{Help: help, Status: status}
 
 	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+footer.View(m.size.Width, m.theme)+"\n"+m.theme.Subtle().Render(notice), m.size)
 }

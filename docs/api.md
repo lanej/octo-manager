@@ -24,6 +24,8 @@ The state directory is owner-only (0700), and the socket is owner-only (0600). T
 
 `Task` is a Protobuf `oneof`: summarize a public GitHub pull request or run the disposable conflict fixture. State, attempt timestamps, worker exit observations, errors, and Markdown results are typed fields. Job state is a stable enum; event `kind` remains a string so additional observations can be displayed without inventing a parallel domain model. Clients must tolerate unknown event kinds and display unknown enum values safely.
 
+`Snapshot.github_usage` is an additive, optional message defined in [`github.proto`](../proto/octomanager/v1/github.proto). It carries this process's read-attempt totals, confirmed cache reuses, rate-limit responses, at most 60 chronological minute buckets, optional REST/GraphQL quota observations, and per-resource retry deadlines. An absent budget means it has not been observed; remaining zero means an observed exhausted budget. Each quota observation retains its own timestamp and reset time, and expired observations are not replenished locally. Quota reflects shared authentication usage; minute counts describe only executed Octo read commands, including transport failures, and exclude locally cancelled or cooldown-blocked work, Git pushes, and writes. These metrics are in memory, reset on coordinator restart, and require no database migration or additional GitHub reads. Older coordinators omit the message, and older clients ignore it.
+
 ## Snapshot, watch, and reconnect
 
 1. Obtain `GetSnapshot`, including `instance_id` and `sequence`.

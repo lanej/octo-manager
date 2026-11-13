@@ -5,6 +5,7 @@ import "octomanager/v1/activity.proto";
 import "octomanager/v1/repairs.proto";
 import "octomanager/v1/submissions.proto";
 import "octomanager/v1/notifications.proto";
+import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
@@ -132,6 +133,7 @@ message Snapshot {
   repeated StateTransition allowed_transitions = 8;
   TrackingSnapshot tracking = 9;
   repeated RepairAttempt repairs = 10;
+  GitHubReadUsage github_usage = 11;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
