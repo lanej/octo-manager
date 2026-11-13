@@ -125,8 +125,11 @@ export class Coordinator extends EventEmitter {
     return { scheduler: this.stopped ? "stopped" : this.stopping ? "stopping" : this.store.paused() ? "paused" : "running", worker: recoveryPid ? "recovering" : this.active ? "busy" : "idle", jobs: this.store.jobs(), events: this.store.events(), ...(recoveryPid ? { recoveryPid } : {}) };
   }
   private notify(): void { this.emit("change"); }
-  private change(id: string, status: Status, detail = "", patch: Partial<Job> = {}): Job {
+  private change(id: string, status: Status, detail = "", patch: Partial<Job> = {}, clear: readonly ("error" | "result" | "fixture")[] = []): Job {
     const job = { ...transition(this.store.get(id), status, this.now()), ...patch };
+    if (clear.includes("error")) delete job.error;
+    if (clear.includes("result")) delete job.result;
+    if (clear.includes("fixture")) delete job.fixture;
     this.store.save(job, status, detail); this.notify(); return job;
   }
   command(value: unknown): unknown {
@@ -150,7 +153,7 @@ export class Coordinator extends EventEmitter {
       if (this.recoveryPids.size || this.active?.jobId === v.id) throw new Error("Wait for the previous worker to exit before retrying");
       const job = this.store.get(v.id);
       if (job.status !== "failed" && job.status !== "interrupted") throw new Error("Only failed or interrupted jobs can be retried");
-      return this.change(job.id, "queued", "Manual retry", { error: undefined, result: undefined, retryCount: 0, availableAt: this.now(), fixture: undefined });
+      return this.change(job.id, "queued", "Manual retry", { retryCount: 0, availableAt: this.now() }, ["error", "result", "fixture"]);
     }
     throw new Error("Unsupported command or arguments");
   }
@@ -170,7 +173,7 @@ export class Coordinator extends EventEmitter {
     for (const job of this.store.jobs()) if (job.status === "retry_wait" && job.availableAt <= now) this.change(job.id, "queued", "Retry delay elapsed");
     const job = nextReady(this.store.jobs(), now);
     if (!job) return;
-    const claimed = this.change(job.id, "running", "Worker claimed", { error: undefined, result: undefined, attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] });
+    const claimed = this.change(job.id, "running", "Worker claimed", { attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] }, ["error", "result"]);
     const active: Active = { jobId: job.id, attempt: claimed.attempts.length, abort: new AbortController(), exited: Promise.resolve() };
     this.active = active;
     active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, "worker_idle", "Worker slot released"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });
@@ -261,7 +264,7 @@ export class Coordinator extends EventEmitter {
         const delay = transient(error) ? retryDelay(job.retryCount) : undefined;
         if (delay !== undefined) this.change(job.id, "retry_wait", error, { attempts, error, retryCount: job.retryCount + 1, availableAt: this.now() + delay });
         else this.change(job.id, "failed", error, { attempts, error });
-      } else this.change(job.id, "succeeded", "Job completed", { attempts, result });
+      } else this.change(job.id, "succeeded", "Job completed", { attempts, ...(result === undefined ? {} : { result }) });
       if (fixture) await removeFixture(this.directory, fixture).catch(() => {});
     }
   }

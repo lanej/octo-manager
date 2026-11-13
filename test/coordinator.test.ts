@@ -72,7 +72,12 @@ test('transient retry waits for injected clock; auth failure does not auto-retry
     const job = submit(c, 'auth'); await waitFor(() => c.store.get(job.id), j => j.status === 'failed');
     assert.equal(c.store.get(job.id).attempts.length, 1);
     await waitFor(() => c.snapshot().worker, worker => worker === 'idle');
-    c.command({ op: 'pause' }); c.command({ op: 'retry', id: job.id }); assert.equal(c.store.get(job.id).status, 'queued');
+    c.command({ op: 'pause' });
+    c.store.save({...c.store.get(job.id),result:'obsolete result',fixture:'/tmp/obsolete-fixture',retryCount:3},'fixture','Retry reset fixture');
+    c.command({ op: 'retry', id: job.id });
+    const queued=c.store.get(job.id);
+    assert.equal(queued.status,'queued'); assert.equal(queued.retryCount,0);assert.equal(queued.attempts.length,1);
+    for(const key of ['error','result','fixture']) assert.equal(Object.hasOwn(queued,key),false);
   });
 });
 test('shutdown preserves queued jobs and marks active work interrupted', async () => {
