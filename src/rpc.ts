@@ -37,6 +37,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
     tracking: wireTracking(coordinator.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
+    mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
     repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
@@ -67,6 +68,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    mergeCommand(r){return trackingOperation(()=>({resultJson:JSON.stringify(coordinator.merging.command(JSON.parse(r.inputJson)))}));},
     subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},

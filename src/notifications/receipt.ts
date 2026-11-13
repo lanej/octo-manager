@@ -25,9 +25,11 @@ export function digestReceipt(
         message.actionId === "" ? undefined : tracking.action(message.actionId);
       const pr =
         action === undefined
-          ? message.participantPRId === undefined
-            ? undefined
-            : tracking.pr(message.participantPRId)
+          ? message.workflowPRId !== undefined
+            ? tracking.pr(message.workflowPRId)
+            : message.participantPRId === undefined
+              ? undefined
+              : tracking.pr(message.participantPRId)
           : tracking.pr(action.prId);
       return {
         messageId: message.id,

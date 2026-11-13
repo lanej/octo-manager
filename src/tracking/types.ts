@@ -74,6 +74,7 @@ export interface ActionEventContext {
   actorLabel?: string;
 }
 export interface PRObservation {
+  description?: string;
   id: number;
   prId: string;
   observedAt: UnixMillis;

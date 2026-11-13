@@ -29,7 +29,10 @@ function entry(message: AgentMessage): { group: string; lines: string[] } {
       line.startsWith("[Evidence](") || line.startsWith("[Failed run]("),
   );
   const reference = lines.find(
-    (line) => line.startsWith("Action:") || line.startsWith("Submission:"),
+    (line) =>
+      line.startsWith("Action:") ||
+      line.startsWith("Submission:") ||
+      line.startsWith("Merge chain:"),
   );
   return {
     group: heading?.[1] ?? "Submissions",

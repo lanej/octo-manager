@@ -91,6 +91,11 @@ export class GitHubRateLimitError extends Error {
     this.name = "GitHubRateLimitError";
   }
 }
+export class GitHubHTTPError extends Error {
+  constructor(readonly status: number) {
+    super(`GitHub read failed (HTTP ${String(status)})`);
+  }
+}
 export class GitHubReads {
   private queue: Promise<void> = Promise.resolve();
   private cache = new Map<string, CachedResponse>();
@@ -144,6 +149,28 @@ export class GitHubReads {
         errors:
           "errors" in value && Array.isArray(value.errors) ? value.errors : [],
       };
+    });
+  }
+  write(
+    path: string,
+    fields: Record<string, string>,
+    signal?: AbortSignal,
+    beforeSend?: () => void,
+  ): Promise<unknown> {
+    return this.enqueue(async () => {
+      const args = [
+        "api",
+        "--hostname",
+        "github.com",
+        "--include",
+        "--method",
+        "PUT",
+        path,
+      ];
+      for (const [key, value] of Object.entries(fields))
+        args.push("-f", `${key}=${value}`);
+      beforeSend?.();
+      return json((await this.exchange(args, "core", signal)).body);
     });
   }
   private enqueue<T>(workItem: () => Promise<T>): Promise<T> {
@@ -274,7 +301,7 @@ export class GitHubReads {
         );
       if (result.status >= 500)
         throw new Error("GitHub temporarily unavailable");
-      throw new Error(`GitHub read failed (HTTP ${String(result.status)})`);
+      throw new GitHubHTTPError(result.status);
     }
     this.rateLimitAttempts[resource] = 0;
     return result;

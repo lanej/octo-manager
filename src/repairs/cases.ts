@@ -38,6 +38,7 @@ export class ConflictStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
+    private table: "conflict_cases" | "merge_conflict_cases" = "conflict_cases",
   ) {
     const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
     if (version === 4)
@@ -56,6 +57,7 @@ export class ConflictStore {
       version !== 9 &&
       version !== 10 &&
       version !== 11 &&
+      version !== 13 &&
       version !== 12
     )
       throw new Error("Unsupported conflict database version");
@@ -100,14 +102,14 @@ export class ConflictStore {
   list(after = 0): ConflictCase[] {
     return this.db
       .prepare(
-        "SELECT id,repair_id,round,path,recipe,tool_version,decision,reason,refs_json,created_at_ms FROM conflict_cases WHERE id>? ORDER BY id LIMIT 100",
+        `SELECT id,repair_id,round,path,recipe,tool_version,decision,reason,refs_json,created_at_ms FROM ${this.table} WHERE id>? ORDER BY id LIMIT 100`,
       )
       .all(after)
       .map((row) => this.decode(row));
   }
   get(id: number): ConflictCase {
     const row = this.db
-      .prepare("SELECT * FROM conflict_cases WHERE id=?")
+      .prepare(`SELECT * FROM ${this.table} WHERE id=?`)
       .get(id);
     if (row === undefined) throw new Error("Conflict case not found");
     return this.decode(row);
@@ -123,7 +125,7 @@ export class ConflictStore {
   ): number {
     const result = this.db
       .prepare(
-        "INSERT INTO conflict_cases(repair_id,round,path,recipe,tool_version,decision,reason,refs_json,inputs_json,created_at_ms) VALUES(?,?,?,?,?,'pending','Recipe not yet attempted',?,?,?)",
+        `INSERT INTO ${this.table}(repair_id,round,path,recipe,tool_version,decision,reason,refs_json,inputs_json,created_at_ms) VALUES(?,?,?,?,?,'pending','Recipe not yet attempted',?,?,?)`,
       )
       .run(
         repairId,
@@ -145,13 +147,13 @@ export class ConflictStore {
   ): void {
     this.db
       .prepare(
-        "UPDATE conflict_cases SET decision=?,reason=?,candidate=COALESCE(?,candidate) WHERE id=?",
+        `UPDATE ${this.table} SET decision=?,reason=?,candidate=COALESCE(?,candidate) WHERE id=?`,
       )
       .run(decision, reason.slice(0, 2000), candidate ?? null, id);
   }
   agentResult(id: number, content: string): void {
     this.db
-      .prepare("UPDATE conflict_cases SET agent_result=? WHERE id=?")
+      .prepare(`UPDATE ${this.table} SET agent_result=? WHERE id=?`)
       .run(content, id);
   }
 }

@@ -3,6 +3,16 @@ import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
+  "chainId",
+  "entryId",
+  "dependentId",
+  "prerequisiteId",
+  "targetUrl",
+  "hint",
+  "active",
+  "mergeCommit",
+  "preparedHead",
+  "nextAt",
   "id",
   "url",
   "prUrl",
@@ -72,6 +82,11 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "chains",
+  "entries",
+  "operations",
+  "dependencies",
+  "references",
   "pr",
   "prs",
   "action",
@@ -220,6 +235,19 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (
+    [
+      "queue-chain",
+      "merge-command",
+      "merge-ready",
+      "dependency-remove",
+      "pause-chain",
+      "resume-chain",
+      "cancel-chain",
+      "reconcile-operation",
+    ].includes(command)
+  )
+    return ["chains"];
   if (readOnlyCommand(positionals)) {
     const args = [...positionals];
     for (const [flag, value] of [

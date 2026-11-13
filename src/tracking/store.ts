@@ -162,6 +162,9 @@ export class TrackingStore {
       headSha: r.head_sha,
       baseSha: r.base_sha,
       ...(target === undefined ? {} : { targetBase: target }),
+      ...(typeof r["description"] === "string"
+        ? { description: r["description"] }
+        : {}),
       lifecycle: r.lifecycle,
       mergeability: r.mergeability,
       checks: parse(r.checks_json),
@@ -535,7 +538,7 @@ export class TrackingStore {
         return p;
       const result = this.db
         .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json,description) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         )
         .run(
           p.id,
@@ -555,6 +558,7 @@ export class TrackingStore {
           input.workflows === undefined
             ? null
             : JSON.stringify(input.workflows),
+          input.description ?? null,
         );
       const o: PRObservation = {
         ...input,
@@ -736,7 +740,9 @@ export class TrackingStore {
     const before = this.inbox.get(id),
       message = this.inbox.acknowledge(id, agentId);
     if (before?.acknowledgedAt === undefined) {
-      if (message.participantPRId !== undefined) {
+      if (message.workflowPRId !== undefined) {
+        this.event("message_acknowledged", message.id, message.workflowPRId);
+      } else if (message.participantPRId !== undefined) {
         this.event("message_acknowledged", message.id, message.participantPRId);
       } else if (message.submissionId === undefined) {
         const action = this.action(message.actionId);
