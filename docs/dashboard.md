@@ -20,6 +20,6 @@ These images use the actual dashboard renderer with synthetic repository and age
 
 ![Tracking at 160 columns with explicit auto-merge status, ownership and actions](images/dashboard-tracking.png)
 
-![GitHub budgets and traffic at 132 columns](images/dashboard-github.png)
+![Scheduler cadence, GitHub budgets and traffic at 160 columns](images/dashboard-github.png)
 
 ![Cached review feedback remains visible while a scheduler refresh is queued](images/dashboard-cached-reviews.png)
