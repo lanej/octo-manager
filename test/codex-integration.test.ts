@@ -59,10 +59,14 @@ function artifact(sessionId = "owner", address = url) {
 async function hookProcess(
   directory: string,
   input: string,
+  logLevel?: string,
 ): Promise<{ output: string; error: string }> {
+  const env = { ...process.env };
+  if (logLevel === undefined) delete env["OCTO_MANAGER_HOOK_LOG_LEVEL"];
+  else env["OCTO_MANAGER_HOOK_LOG_LEVEL"] = logLevel;
   const child = Bun.spawn(
     [process.execPath, "src/cli.ts", "codex-hook", "--state", directory],
-    { cwd: process.cwd(), stdin: "pipe", stdout: "pipe", stderr: "pipe" },
+    { cwd: process.cwd(), env, stdin: "pipe", stdout: "pipe", stderr: "pipe" },
   );
   await child.stdin.write(input);
   await child.stdin.end();
@@ -100,6 +104,7 @@ test("hook failures append private diagnostics with the underlying connection er
     assert(log.includes('"event":"UserPromptSubmit"'));
     assert(log.includes('"sessionId":"owner"'));
     assert(log.includes('"phase":"recovery"'));
+    assert(log.includes('"level":"error"'));
     assert(log.includes('"name":"ConnectError"'));
     assert(log.includes('"message":'));
     assert(log.includes('"stack":'));
@@ -113,6 +118,75 @@ test("hook failures append private diagnostics with the underlying connection er
     const second = await hookProcess(directory, JSON.stringify(event));
     assert.equal(await readFile(path, "utf8"), log + second.error);
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("hook diagnostics can be disabled without suppressing the advisory warning", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-logging-off-"));
+  try {
+    const result = await hookProcess(
+      directory,
+      JSON.stringify({
+        session_id: "owner",
+        cwd: "/work/feature",
+        hook_event_name: "UserPromptSubmit",
+      }),
+      "off",
+    );
+    assert(result.output.includes("could not complete this hook"));
+    assert.equal(result.error, "");
+    await assert.rejects(stat(join(directory, "codex-hook-errors.jsonl")), {
+      code: "ENOENT",
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("invalid hook log levels report a fixed configuration error without logging the setting", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-log-level-"));
+  try {
+    const result = await hookProcess(
+      directory,
+      "{}",
+      "private-invalid-setting",
+    );
+    assert(result.output.includes("could not complete this hook"));
+    assert(result.error.includes("expected error or off"));
+    assert(!result.error.includes("private-invalid-setting"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("successful hooks produce no diagnostics with default or disabled logging", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-success-"));
+  const coordinator = new Coordinator(directory);
+  try {
+    await coordinator.start();
+    for (const logLevel of [undefined, "off"]) {
+      const result = await hookProcess(
+        directory,
+        JSON.stringify({
+          session_id: "quiet-owner",
+          cwd: "/work/feature",
+          hook_event_name: "SessionStart",
+          source: "resume",
+        }),
+        logLevel,
+      );
+      assert.equal(result.error, "");
+      assert.equal(
+        JSON.parse(result.output).hookSpecificOutput.hookEventName,
+        "SessionStart",
+      );
+    }
+    await assert.rejects(stat(join(directory, "codex-hook-errors.jsonl")), {
+      code: "ENOENT",
+    });
+  } finally {
+    await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
 });
@@ -141,7 +215,11 @@ test("a closed stderr pipe preserves both the diagnostic file and advisory stdou
     const child = spawn(
       process.execPath,
       ["src/cli.ts", "codex-hook", "--state", directory],
-      { cwd: process.cwd(), stdio: ["pipe", "pipe", "pipe"] },
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, OCTO_MANAGER_HOOK_LOG_LEVEL: "error" },
+        stdio: ["pipe", "pipe", "pipe"],
+      },
     );
     child.stderr.destroy();
     let output = "";

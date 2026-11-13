@@ -87,6 +87,7 @@ async function logHookError(
   const line =
     JSON.stringify({
       at: new Date().toISOString(),
+      level: "error",
       phase,
       ...(object(value) && typeof value["hook_event_name"] === "string"
         ? { event: value["hook_event_name"].slice(0, 200) }
@@ -269,10 +270,15 @@ export async function codexHook(
   };
 }
 export async function codexHookCLI(directory: string): Promise<void> {
+  const logLevel = process.env["OCTO_MANAGER_HOOK_LOG_LEVEL"] ?? "error";
   let emitted = false;
   let value: unknown;
   let phase: "input" | "recovery" | "output" | "receipt" = "input";
   try {
+    if (logLevel !== "error" && logLevel !== "off")
+      throw new Error(
+        "Invalid OCTO_MANAGER_HOOK_LOG_LEVEL; expected error or off",
+      );
     const reader = Bun.stdin.stream().getReader();
     const chunks: Uint8Array[] = [];
     let size = 0;
@@ -307,7 +313,7 @@ export async function codexHookCLI(directory: string): Promise<void> {
     phase = "receipt";
     await result.acknowledge?.();
   } catch (error) {
-    await logHookError(directory, error, value, phase);
+    if (logLevel !== "off") await logHookError(directory, error, value, phase);
     const warning =
       "Octo integration could not complete this hook. Do not assume a new PR is monitored; existing handoffs and unread messages are retained.";
     if (emitted) await writeHookDiagnostic(warning + "\n");
