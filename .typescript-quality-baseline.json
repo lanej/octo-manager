@@ -3006,14 +3006,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (existing) return existing;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (this.timer) clearInterval(this.timer);",
       "count": 1
     },

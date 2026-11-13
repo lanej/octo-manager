@@ -1,3 +1,4 @@
+import { RetirementStore, lifecycle, TrackingState } from "./retirement.js";
 import { actionableFeedback } from "./review-signals.js";
 import { resolveId } from "./identifiers.js";
 import {
@@ -34,6 +35,7 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
   readonly checks: CheckWatches;
   constructor(
@@ -50,6 +52,7 @@ export class TrackingStore {
     migrateTracking(db);
     this.inbox = new AgentInbox(db, now);
     this.checks = new CheckWatches(db, now);
+    this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
       for (const action of this.actions()) {
         if (
@@ -179,6 +182,7 @@ export class TrackingStore {
           originAgentId: r.origin_agent_id,
           ownerAgentId: r.owner_agent_id,
           enabled: !!r.enabled,
+          ...lifecycle(r),
           createdAt: r.created_at_ms,
           updatedAt: r.updated_at_ms,
           ...(r.last_refresh_error === null
@@ -206,12 +210,8 @@ export class TrackingStore {
       if (existing) {
         if (existing.ownerAgentId !== agent.id)
           throw new Error("PR already has another owner; use assign");
-        if (!existing.enabled) {
-          this.db
-            .prepare(
-              "UPDATE tracked_prs SET enabled=1,updated_at_ms=? WHERE id=?",
-            )
-            .run(this.now(), existing.id);
+        if (!existing.enabled || existing.state === TrackingState.Archived) {
+          this.retirement.resumeInside(existing.id);
           this.event("pr_retracked", "Tracking resumed", existing.id);
           for (const a of this.actions().filter(
             (a) =>
@@ -430,9 +430,7 @@ export class TrackingStore {
   untrack(id: string): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
-      this.db
-        .prepare("UPDATE tracked_prs SET enabled=0,updated_at_ms=? WHERE id=?")
-        .run(this.now(), p.id);
+      this.retirement.disableInside(p.id);
       for (const a of this.actions().filter((a) => a.prId === p.id))
         this.cancelDeliveries(a.id, "PR untracked");
       this.checks.cancel(p.id);
@@ -444,10 +442,15 @@ export class TrackingStore {
     id: string,
     input: ObservationInput,
     config: TrackingConfig,
+    expectedEpoch?: number,
   ): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
-      if (!p.enabled) return p;
+      if (
+        !p.enabled ||
+        (expectedEpoch !== undefined && p.trackingEpoch !== expectedEpoch)
+      )
+        return p;
       const result = this.db
         .prepare(
           "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -495,77 +498,83 @@ export class TrackingStore {
         }
       }
       const observedFindings = findings(o, p.url);
-      const checkResults = this.checks.observe(o).flatMap((watch) => {
-        const checks =
-          watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
-        const failures = checks.filter((check) => !successfulCheck(check));
-        const reported = [
-          ...this.actions().filter((action) => action.prId === p.id),
-          ...observedFindings,
-        ];
-        const unreported = failures.filter(
-          (check) =>
-            !reported.some((finding) => {
-              const blocker = finding.blocker;
-              if (blocker.kind === "check_results")
-                return (
-                  blocker.headSha === watch.headSha &&
-                  blocker.checks.some(
-                    (previous) =>
-                      previous.id === check.id &&
-                      previous.conclusion === check.conclusion,
-                  )
-                );
-              if (
-                blocker.kind !== "check_failed" ||
-                blocker.headSha !== watch.headSha
-              )
-                return false;
-              if (blocker.sourceId === check.id) return true;
-              const job = checks.find(
-                (candidate) => candidate.id === blocker.sourceId,
-              );
-              const run = (url: string) =>
-                /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
-                  url,
-                )?.[0];
-              return (
-                job !== undefined &&
-                job.at >= check.at &&
-                run(job.url) !== undefined &&
-                run(job.url) === run(check.url)
-              );
-            }),
-        );
-        if (
-          watch.state !== CheckWatchState.Completed ||
-          (unreported.length === 0 &&
-            (failures.length > 0 || o.lifecycle !== "open"))
+      const checkResults = this.checks
+        .observe(
+          o,
+          p.state === TrackingState.Archived ||
+            (p.state === TrackingState.Draining && o.lifecycle === "open"),
         )
-          return [];
-        return [
-          {
-            sourceKey: watch.id,
-            blocker: {
-              kind: "check_results" as const,
-              watchId: watch.id,
-              headSha: watch.headSha,
-              state: watch.state,
-              checks: failures.length === 0 ? checks : unreported,
-              ...(watch.replacementHeadSha === undefined
-                ? {}
-                : { replacementHeadSha: watch.replacementHeadSha }),
+        .flatMap((watch) => {
+          const checks =
+            watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
+          const failures = checks.filter((check) => !successfulCheck(check));
+          const reported = [
+            ...this.actions().filter((action) => action.prId === p.id),
+            ...observedFindings,
+          ];
+          const unreported = failures.filter(
+            (check) =>
+              !reported.some((finding) => {
+                const blocker = finding.blocker;
+                if (blocker.kind === "check_results")
+                  return (
+                    blocker.headSha === watch.headSha &&
+                    blocker.checks.some(
+                      (previous) =>
+                        previous.id === check.id &&
+                        previous.conclusion === check.conclusion,
+                    )
+                  );
+                if (
+                  blocker.kind !== "check_failed" ||
+                  blocker.headSha !== watch.headSha
+                )
+                  return false;
+                if (blocker.sourceId === check.id) return true;
+                const job = checks.find(
+                  (candidate) => candidate.id === blocker.sourceId,
+                );
+                const run = (url: string) =>
+                  /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
+                    url,
+                  )?.[0];
+                return (
+                  job !== undefined &&
+                  job.at >= check.at &&
+                  run(job.url) !== undefined &&
+                  run(job.url) === run(check.url)
+                );
+              }),
+          );
+          if (
+            watch.state !== CheckWatchState.Completed ||
+            (unreported.length === 0 &&
+              (failures.length > 0 || o.lifecycle !== "open"))
+          )
+            return [];
+          return [
+            {
+              sourceKey: watch.id,
+              blocker: {
+                kind: "check_results" as const,
+                watchId: watch.id,
+                headSha: watch.headSha,
+                state: watch.state,
+                checks: failures.length === 0 ? checks : unreported,
+                ...(watch.replacementHeadSha === undefined
+                  ? {}
+                  : { replacementHeadSha: watch.replacementHeadSha }),
+              },
+              summary:
+                failures.length === 0
+                  ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
+                  : unreported.length === 1
+                    ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
+                    : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
+              evidenceUrl: p.url,
             },
-            summary:
-              failures.length === 0
-                ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
-                : unreported.length === 1
-                  ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
-                  : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
-            evidenceUrl: p.url,
-          },
-        ];
-      });
+          ];
+        });
       for (const f of [...findings(o, p.url), ...checkResults]) {
         if (
           this.actions().some(
@@ -594,6 +603,7 @@ export class TrackingStore {
         this.saveAction(a, "action_opened");
         this.enqueue(a);
       }
+      this.retirement.observeInside(p.id, o);
       return this.pr(p.id);
     });
   }

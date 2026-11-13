@@ -12,6 +12,7 @@ export enum CheckWatchState {
   Completed = "completed",
   Superseded = "superseded",
   Cancelled = "cancelled",
+  Expired = "expired",
 }
 export interface CheckWatch {
   id: string;
@@ -272,7 +273,7 @@ export class CheckWatches {
         watch.replacementHeadSha ?? null,
       );
   }
-  observe(observation: PRObservation): CheckWatch[] {
+  observe(observation: PRObservation, forceNew = false): CheckWatch[] {
     const watches = this.list(observation.prId),
       results: CheckWatch[] = [];
     for (const watch of watches.filter(
@@ -317,8 +318,10 @@ export class CheckWatches {
     if (
       watch === undefined &&
       observation.lifecycle === "open" &&
-      (previous === undefined ||
+      (forceNew ||
+        previous === undefined ||
         previous.state === CheckWatchState.Cancelled ||
+        previous.state === CheckWatchState.Expired ||
         previous.state === CheckWatchState.Superseded ||
         changed)
     ) {
@@ -351,13 +354,18 @@ export class CheckWatches {
     }
     return results;
   }
-  cancel(prId: string): void {
+  cancel(
+    prId: string,
+    state:
+      | CheckWatchState.Cancelled
+      | CheckWatchState.Expired = CheckWatchState.Cancelled,
+  ): void {
     for (const watch of this.list(prId).filter(
       (watch) => watch.state === CheckWatchState.Waiting,
     ))
       this.save({
         ...watch,
-        state: CheckWatchState.Cancelled,
+        state,
         updatedAt: this.now(),
       });
   }

@@ -1,3 +1,5 @@
+import { TrackingState } from "./retirement.js";
+import { TrackingState as WireTrackingState } from "../gen/octomanager/v1/tracking_pb.js";
 import { CheckWatchState, type CheckWatch } from "./checks.js";
 import type { AgentMessage } from "./inbox.js";
 import { create } from "@bufbuild/protobuf";
@@ -28,11 +30,18 @@ export const actionStates: Record<ActionState, WireActionState> = {
   resolved: WireActionState.RESOLVED,
   superseded: WireActionState.SUPERSEDED,
 };
+const trackingStates: Record<TrackingState, WireTrackingState> = {
+  watching: WireTrackingState.WATCHING,
+  draining: WireTrackingState.DRAINING,
+  archived: WireTrackingState.ARCHIVED,
+  disabled: WireTrackingState.DISABLED,
+};
 const checkWatchStates: Record<CheckWatchState, WireCheckWatchState> = {
   waiting: WireCheckWatchState.WAITING,
   completed: WireCheckWatchState.COMPLETED,
   superseded: WireCheckWatchState.SUPERSEDED,
   cancelled: WireCheckWatchState.CANCELLED,
+  expired: WireCheckWatchState.EXPIRED,
 };
 export function wireCheckWatch(watch: CheckWatch) {
   return {
@@ -58,6 +67,11 @@ export function wirePR(p: TrackedPR) {
     originAgentId: p.originAgentId,
     ownerAgentId: p.ownerAgentId,
     enabled: p.enabled,
+    trackingState: trackingStates[p.state],
+    drainDeadlineAtMs:
+      p.drainDeadlineAt === undefined ? undefined : BigInt(p.drainDeadlineAt),
+    archivedAtMs: p.archivedAt === undefined ? undefined : BigInt(p.archivedAt),
+    archiveReason: p.archiveReason,
     createdAtMs: BigInt(p.createdAt),
     updatedAtMs: BigInt(p.updatedAt),
     refreshError: p.lastRefreshError?.message,
