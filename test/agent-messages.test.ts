@@ -1,3 +1,4 @@
+import { failedStepLogs } from "../src/tracking/job-logs.js";
 import { shortId, resolveId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
@@ -134,4 +135,132 @@ test("short UUIDs expand on collisions and resolve only unambiguous prefixes", (
   assert(body.endsWith("Action: deadbeef1"));
   assert(!body.includes(first));
   assert(!body.includes(second));
+});
+
+test("failure excerpts select failed steps before bounded output and long cleanup", async () => {
+  const log = [
+    "2026-11-13T00:00:00.100Z Error: expected setup diagnostic",
+    "2026-11-13T00:01:00.100Z Error: expected test diagnostic",
+    "2026-11-13T00:01:00.200Z FATAL ERROR: Allocation failed - JavaScript heap out of memory",
+    ...Array.from(
+      { length: 180 },
+      (_, i) => `2026-11-13T00:01:01.100Z stack frame ${String(i)}`,
+    ),
+    ...Array.from(
+      { length: 180 },
+      (_, i) => `2026-11-13T00:02:00.100Z cleanup ${String(i)}`,
+    ),
+    "2026-11-13T00:02:00.200Z Error: unrelated cleanup message",
+  ].join("\n");
+  const metadata = {
+    id: 10,
+    run_id: 20,
+    steps: [
+      {
+        conclusion: "success",
+        started_at: "2026-11-13T00:00:00Z",
+        completed_at: "2026-11-13T00:00:01Z",
+      },
+      {
+        conclusion: "failure",
+        started_at: "2026-11-13T00:01:00Z",
+        completed_at: "2026-11-13T00:01:02Z",
+      },
+      {
+        conclusion: "success",
+        started_at: "2026-11-13T00:02:00Z",
+        completed_at: "2026-11-13T00:02:01Z",
+      },
+    ],
+  };
+  const excerpt = await readFailureExcerpt(
+    action,
+    pr,
+    AbortSignal.timeout(1000),
+    () =>
+      Promise.resolve(failedStepLogs(log, metadata, { job: "10", run: "20" })),
+  );
+  assert(excerpt !== undefined);
+  assert(
+    excerpt.startsWith(
+      "FATAL ERROR: Allocation failed - JavaScript heap out of memory",
+    ),
+  );
+  assert(!excerpt.includes("cleanup"));
+  assert(!excerpt.includes("2026-11-13"));
+  assert(Buffer.byteLength(excerpt) <= 480);
+  assert.throws(
+    () =>
+      failedStepLogs(
+        log,
+        {
+          id: 10,
+          run_id: 20,
+          steps: [
+            { conclusion: "failure", started_at: null, completed_at: null },
+          ],
+        },
+        { job: "10", run: "20" },
+      ),
+    /timing unavailable/,
+  );
+  assert.throws(
+    () => failedStepLogs(log, metadata, { job: "10", run: "999" }),
+    /does not match/,
+  );
+  assert.equal(
+    await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), () =>
+      Promise.resolve(
+        failedStepLogs(
+          log,
+          {
+            id: 10,
+            run_id: 20,
+            steps: [
+              { conclusion: "failure", started_at: null, completed_at: null },
+            ],
+          },
+          { job: "10", run: "20" },
+        ),
+      ),
+    ),
+    undefined,
+  );
+});
+
+test("adjacent cleanup cannot replace the failed-step diagnostic", () => {
+  const metadata = {
+    id: 10,
+    run_id: 20,
+    steps: [
+      {
+        conclusion: "failure",
+        started_at: "2026-11-13T00:01:00Z",
+        completed_at: "2026-11-13T00:01:02Z",
+      },
+      {
+        conclusion: "success",
+        started_at: "2026-11-13T00:01:02Z",
+        completed_at: "2026-11-13T00:01:03Z",
+      },
+    ],
+  };
+  const log =
+    "2026-11-13T00:01:01.900Z Error: actual failed step\n2026-11-13T00:01:02.400Z FATAL ERROR: expected cleanup fixture";
+  assert.equal(
+    logExcerpt(failedStepLogs(log, metadata, { job: "10", run: "20" })),
+    "Error: actual failed step",
+  );
+  const sameSecond = {
+    ...metadata,
+    steps: metadata.steps.map((step) => ({
+      ...step,
+      started_at: "2026-11-13T00:01:02Z",
+      completed_at: "2026-11-13T00:01:02Z",
+    })),
+  };
+  assert.equal(
+    logExcerpt(failedStepLogs(log, sameSecond, { job: "10", run: "20" })),
+    undefined,
+  );
 });

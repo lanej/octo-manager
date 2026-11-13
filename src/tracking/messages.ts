@@ -4,6 +4,7 @@ import { stripVTControlCharacters } from "node:util";
 import type { Action } from "./types.js";
 import { successfulCheck } from "./checks.js";
 import { canonicalPR } from "./github.js";
+import { failedStepLogs } from "./job-logs.js";
 import { githubReads } from "../github-api.js";
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
@@ -26,18 +27,26 @@ export function compact(value: string, limit: number): string {
 export function logExcerpt(log: string): string | undefined {
   const lines = log
     .split("\n")
-    .slice(-100)
     .map((line) =>
       compact(
-        line.replace(/^.*?\t[^\t]*\t(?:\uFEFF)?\d{4}-\d\d-\d\dT\S+\s*/, ""),
+        line.replace(
+          /^(?:.*?\t[^\t]*\t)?(?:\uFEFF)?\d{4}-\d\d-\d\dT\S+\s*/,
+          "",
+        ),
         480,
       ),
     );
-  const at = lines.findIndex((line) =>
-    /(?:\bError:|\bENOENT:|AssertionError|\(fail\)|\bFAIL\b|error TS\d)/i.test(
-      line,
-    ),
+  const fatal = lines.findIndex((line) =>
+    /FATAL ERROR:|heap out of memory/iu.test(line),
   );
+  const at =
+    fatal >= 0
+      ? fatal
+      : lines.findIndex((line) =>
+          /(?:\bError:|\bENOENT:|AssertionError|\(fail\)|\bFAIL\b|error TS\d)/i.test(
+            line,
+          ),
+        );
   if (at < 0) return undefined;
   return compact(lines.slice(at, at + 4).join("\n"), 480);
 }
@@ -47,13 +56,18 @@ export type ReadFailedLog = (
   job: string,
   signal: AbortSignal,
 ) => Promise<string>;
-const failedLog: ReadFailedLog = async (repository, _run, job, signal) => {
+const failedLog: ReadFailedLog = async (repository, run, job, signal) => {
+  const bounded = AbortSignal.any([signal, AbortSignal.timeout(4500)]);
+  const metadata = await githubReads.read(
+    `repos/${repository}/actions/jobs/${job}`,
+    bounded,
+  );
   const result = await githubReads.raw(
     `repos/${repository}/actions/jobs/${job}/logs`,
     {},
-    AbortSignal.any([signal, AbortSignal.timeout(4500)]),
+    bounded,
   );
-  return result.body;
+  return failedStepLogs(result.body, metadata, { job, run });
 };
 export async function readFailureExcerpt(
   action: Action,

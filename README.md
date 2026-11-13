@@ -112,3 +112,5 @@ Agent notifications follow the [agent message standard](docs/agent-messages.md):
 ## PR submission
 
 Octo can run a dedicated PR writer, publish, and enroll a pushed branch for its calling Codex session, including private repositories. Use `submit-pr --intent-file FILE`; inspect operations with `submission ID`. Contribution analysis is cached as immutable source-cited policy versions, and structured briefs retain falsifiable claims and validation facts. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
+
+`bun run check` gives the typed TypeScript analyzer an explicit 4 GiB Node heap budget on both local machines and CI; Octokit declarations exceed the default roughly 2 GiB heap on hosted macOS. Individual lint runs use `node --max-old-space-size=4096 scripts/check-typescript.mjs lint`. This changes analysis memory limits, without disabling rules or growing the retrofit baseline.

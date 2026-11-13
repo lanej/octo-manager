@@ -60,3 +60,5 @@ Membership changes produce one current roster notification per remaining partici
 Agent CLI calls automatically select the tighter [agent output contract](cli-output.md); `--json` stays available explicitly, and full evidence requires an explicit read-only inspection.
 
 Known Codex status summaries and boilerplate review receipts are informational even when summary metadata says findings exist. Actual finding comments remain eligible for delivery; unfamiliar substantive feedback and inline comments are preserved. On restart, existing informational actions become superseded and pending deliveries are cancelled while raw evidence and receipts remain in history.
+
+Failed-run excerpts use validated job step timings to select failed-step log lines before finding a diagnostic. Fatal runtime diagnostics take precedence over generic error lines, and timestamp prefixes are removed. The final excerpt remains bounded to 480 bytes; missing step timing, ambiguous second-level boundaries or inaccessible logs yield the failed-run link without a guessed excerpt.
