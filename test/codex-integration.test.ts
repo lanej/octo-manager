@@ -380,3 +380,50 @@ test("handoff status tolerates files removed after listing but preserves read an
     }
   }
 });
+
+test("failed handoff publication never exposes a partially written status file", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "om-atomic-handoff-"));
+  const handoffs = new Handoffs(directory);
+  const request = await handoffs.enqueue(
+    "https://github.com/owner/repo/pull/1",
+    { harness: "codex", endpoint: "local", sessionId: "atomic" },
+    directory,
+  );
+  const partial = Promise.withResolvers<undefined>(),
+    resume = Promise.withResolvers<undefined>();
+  const original = filesystem.writeFile;
+  let capture = true;
+  const write = spyOn(filesystem, "writeFile").mockImplementation(
+    async (path, data, options) => {
+      if (capture && typeof path === "string" && path.startsWith(directory)) {
+        capture = false;
+        await original(path, "{", options);
+        partial.resolve(undefined);
+        await resume.promise;
+        await original(path, data, { mode: 0o600, flag: "w" });
+        return;
+      }
+      await original(path, data, options);
+    },
+  );
+  const draining = handoffs.drain(() => ({
+    accepted: false,
+    reason: "Conflicting owner",
+  }));
+  try {
+    await partial.promise;
+    const during = await handoffs.status("atomic");
+    assert.equal(during.failed.length, 0);
+    assert.equal(during.pending[0]?.id, request.id);
+    resume.resolve(undefined);
+    await draining;
+    const after = await handoffs.status("atomic");
+    assert.equal(after.pending.length, 0);
+    assert.equal(after.failed[0]?.reason, "Conflicting owner");
+  } finally {
+    resume.resolve(undefined);
+    await draining.catch(() => {});
+    write.mockRestore();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
