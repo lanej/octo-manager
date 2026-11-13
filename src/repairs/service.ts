@@ -3,6 +3,7 @@ import type { ConflictStore } from "./cases.js";
 import { join } from "node:path";
 import type { TrackingService } from "../tracking/service.js";
 import { readObservation } from "../tracking/github.js";
+import { GitHubRateLimitError } from "../github-api.js";
 import { currentChecks } from "../tracking/policy.js";
 import type { ObservationInput, PRObservation } from "../tracking/types.js";
 import { cleanText } from "../domain.js";
@@ -275,6 +276,11 @@ export class RepairService {
         signal,
       );
     } catch (error) {
+      if (error instanceof GitHubRateLimitError)
+        this.nextVerify.set(
+          a.id,
+          Math.max(this.now() + 15000, error.retryAtMs),
+        );
       this.update(
         a,
         RepairState.AwaitingChecks,

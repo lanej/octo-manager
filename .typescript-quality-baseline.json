@@ -1684,25 +1684,9 @@
     {
       "file": "src/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-conversion",
-      "message": "Passing a string to String() does not change the type or value of the string.",
-      "source": "const stderr = String((error as { stderr?: string }).stderr ?? \"\");",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `Record<string, any>`.",
       "source": "publicPullRequest(pr);",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `Record<string, any>`.",
-      "source": "return publicPullRequest(JSON.parse(stdout));",
       "count": 1
     },
     {
@@ -1940,14 +1924,6 @@
     {
       "file": "src/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type '{ stderr?: string; }' is more narrow than the original type.",
-      "source": "const stderr = String((error as { stderr?: string }).stderr ?? \"\");",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"string | undefined\" of template literal expression.",
       "source": "const pull = `${root}/pulls/${parts[4]}`;",
@@ -1975,30 +1951,6 @@
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"string | undefined\" of template literal expression.",
       "source": "return { id: `${kinds[index]}:${String(item.id)}`, url: cleanText(String(item.html_url ?? task.url), 2000), author: cleanText(String(item.user?.login ?? \"unknown\"), 200), kind: kinds[index]!, state: cleanText(String(item.state ?? \"\"), 100), bodyMarkdown: cleanText(body, 4000), atMs: Number.isFinite(time) ? time : 0, path: cleanText(String(item.path ?? \"\"), 1000), line: Number.isSafeInteger(item.line) && item.line > 0 ? item.line : undefined, commitSha: cleanText(String(item.commit_id ?? \"\"), 100), bodyTruncated: body.length > 4000 };",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"string | undefined\" of template literal expression.",
-      "source": "try { ({ stdout } = await exec(\"gh\", [\"api\", \"--hostname\", \"github.com\", \"--method\", \"GET\", `repos/${parts[1]}/${parts[2]}/pulls/${parts[4]}`], { signal, timeout: 30000, maxBuffer: 1024 * 1024 })); }",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "throw new Error(signal?.aborted ? \"GitHub read cancelled\" : \"GitHub review read failed; check gh authentication, repository access, and connectivity\");",
-      "count": 1
-    },
-    {
-      "file": "src/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "throw new Error(signal?.aborted ? \"Operation aborted\" : \"GitHub PR read failed; check repository access and connectivity\");",
       "count": 1
     },
     {
@@ -2831,14 +2783,6 @@
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"string | undefined\" of template literal expression.",
       "source": "return `https://github.com/${m[1]!.toLowerCase()}/${m[2]!.toLowerCase()}/pull/${m[3]}`;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "signal?.aborted",
       "count": 1
     },
     {
