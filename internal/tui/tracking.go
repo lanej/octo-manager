@@ -45,13 +45,29 @@ func actionClosed(state v1.ActionState) bool {
 func (m *Model) openActions(prID string) int {
 	count := 0
 
+	var pr *v1.TrackedPullRequest
+
+	for _, tracked := range m.snapshot.GetTracking().GetPrs() {
+		if tracked.GetId() == prID {
+			pr = tracked
+
+			break
+		}
+	}
+
 	for _, action := range m.snapshot.GetTracking().GetActions() {
-		if action.GetPrId() == prID && !actionClosed(action.GetState()) {
+		if action.GetPrId() == prID && !actionHistorical(action, pr) {
 			count++
 		}
 	}
 
 	return count
+}
+
+func actionHistorical(action *v1.PendingAction, pr *v1.TrackedPullRequest) bool {
+	lifecycle := pr.GetObservation().GetLifecycle()
+
+	return actionClosed(action.GetState()) || lifecycle == "closed" || lifecycle == "merged"
 }
 
 func (m *Model) trackingContent() string {
@@ -100,13 +116,24 @@ func (m *Model) trackingContent() string {
 		tone = text.Warning
 	}
 
-	parts = append(parts, "", text.Pill(fmt.Sprintf("%d outstanding actions", count), tone, m.theme, text.Normal))
+	parts = append(parts, "", text.Pill(counted(count, "outstanding action"), tone, m.theme, text.Normal))
+	if lifecycle := pr.GetObservation().GetLifecycle(); lifecycle == "closed" || lifecycle == "merged" {
+		parts = append(parts, m.muted("Pull request is "+lifecycle+"; action records are retained as history."))
+	}
 
 	actions := m.snapshot.GetTracking().GetActions()
+
 	for _, closed := range []bool{false, true} {
+		heading := false
+
 		for _, action := range actions {
-			if action.GetPrId() != pr.GetId() || actionClosed(action.GetState()) != closed {
+			if action.GetPrId() != pr.GetId() || actionHistorical(action, pr) != closed {
 				continue
+			}
+
+			if closed && !heading {
+				parts = append(parts, "", text.Badge("Action history", m.theme))
+				heading = true
 			}
 
 			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
@@ -146,7 +173,12 @@ func (m *Model) trackingContent() string {
 					continue
 				}
 
-				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson())))
+				details := strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson()))
+				if delivery.AcknowledgedAtMs != nil && strings.HasSuffix(details, "; receipt pending.") {
+					details = strings.TrimSuffix(details, "; receipt pending.") + "."
+				}
+
+				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), details)
 				if delivery.MessageSequence != nil {
 					receipt := "Awaiting agent receipt"
 					if delivery.AcknowledgedAtMs != nil {
