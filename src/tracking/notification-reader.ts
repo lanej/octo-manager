@@ -1,7 +1,9 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import {
+  githubReads,
+  GitHubRateLimitError,
+  type GitHubReads,
+} from "../github-api.js";
 import { canonicalPR } from "./github.js";
-const exec = promisify(execFile);
 export interface NotificationUpdate {
   id: string;
   updatedAt: number;
@@ -66,21 +68,24 @@ export function notificationAccessError(
     candidates.length === 0 ? undefined : Math.max(...candidates),
   );
 }
-async function request(args: string[], signal: AbortSignal): Promise<string> {
+async function request(
+  reads: Pick<GitHubReads, "raw">,
+  path: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<string> {
   try {
-    return (
-      await exec("gh", args, {
-        signal,
-        timeout: 20000,
-        maxBuffer: 2 * 1024 * 1024,
-      })
-    ).stdout;
+    const result = await reads.raw(path, headers, signal);
+    return [
+      `HTTP/2 ${String(result.status)}`,
+      ...Array.from(result.headers, ([key, value]) => `${key}: ${value}`),
+      "",
+      result.body,
+    ].join("\r\n");
   } catch (error) {
-    throw notificationAccessError(
-      record(error) && typeof error["stdout"] === "string"
-        ? error["stdout"]
-        : "",
-    );
+    if (error instanceof GitHubRateLimitError)
+      throw new NotificationAccessError(error.retryAtMs);
+    throw new NotificationAccessError(undefined);
   }
 }
 export function parseNotification(value: unknown): NotificationUpdate {
@@ -146,52 +151,44 @@ export function parseNotificationResponse(stdout: string): NotificationPage {
   result.more = field("link")?.includes('rel="next"') === true;
   return result;
 }
-export const githubNotifications: NotificationReader = {
-  async identity(signal) {
-    const stdout = await request(
-      [
-        "api",
-        "--hostname",
-        "github.com",
-        "--include",
-        "--method",
-        "GET",
-        "user",
-      ],
-      signal,
-    );
-    if (!/^HTTP\/\S+ 200\b/u.test(stdout))
-      throw notificationAccessError(stdout);
-    const value: unknown = JSON.parse(
-      stdout.slice(stdout.search(/\r?\n\r?\n/u)).trim(),
-    );
-    if (
-      !record(value) ||
-      typeof value["login"] !== "string" ||
-      !/^[A-Za-z0-9-]+$/u.test(value["login"])
-    )
-      throw new Error("Cannot identify GitHub notification account");
-    return "github.com/" + value["login"].toLowerCase();
-  },
-  async page(query, signal) {
-    const params = new URLSearchParams({
-      all: "true",
-      per_page: "50",
-      since: new Date(query.since).toISOString(),
-      page: String(query.page),
-    });
-    const args = [
-      "api",
-      "--hostname",
-      "github.com",
-      "--include",
-      "--method",
-      "GET",
-      "/notifications?" + params.toString(),
-    ];
-    if (query.lastModified !== undefined)
-      args.push("-H", "If-Modified-Since: " + query.lastModified);
-    const stdout = await request(args, signal);
-    return parseNotificationResponse(stdout);
-  },
-};
+export function githubNotificationReader(
+  reads: Pick<GitHubReads, "raw"> = githubReads,
+): NotificationReader {
+  return {
+    async identity(signal) {
+      const stdout = await request(reads, "user", {}, signal);
+      if (!/^HTTP\/\S+ 200\b/u.test(stdout))
+        throw notificationAccessError(stdout);
+      const value: unknown = JSON.parse(
+        stdout.slice(stdout.search(/\r?\n\r?\n/u)).trim(),
+      );
+      if (
+        !record(value) ||
+        typeof value["login"] !== "string" ||
+        !/^[A-Za-z0-9-]+$/u.test(value["login"])
+      )
+        throw new Error("Cannot identify GitHub notification account");
+      return "github.com/" + value["login"].toLowerCase();
+    },
+    async page(query, signal) {
+      const params = new URLSearchParams({
+        all: "true",
+        per_page: "50",
+        since: new Date(query.since).toISOString(),
+        page: String(query.page),
+      });
+      const headers: Record<string, string> = {};
+      if (query.lastModified !== undefined)
+        headers["if-modified-since"] = query.lastModified;
+      return parseNotificationResponse(
+        await request(
+          reads,
+          "notifications?" + params.toString(),
+          headers,
+          signal,
+        ),
+      );
+    },
+  };
+}
+export const githubNotifications = githubNotificationReader();

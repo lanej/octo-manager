@@ -51,6 +51,7 @@ export class CategorizationEngine {
 }
 const notify = {
   [MessageCategory.Findings]: true,
+  [MessageCategory.Informational]: false,
   [MessageCategory.Progress]: false,
   [MessageCategory.Inconclusive]: false,
   [MessageCategory.NoFindings]: false,

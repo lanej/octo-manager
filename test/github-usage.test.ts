@@ -91,10 +91,18 @@ test("only executed reads count; cache reuse and rate-limit responses remain sep
       calls++;
       const body =
         calls === 1
-          ? 'HTTP/2.0 200 OK\r\netag: "one"\r\n\r\n{"ok":true}'
+          ? {
+              status: 200,
+              headers: new Map([["etag", '"one"']]),
+              body: '{"ok":true}',
+            }
           : calls === 2
-            ? "HTTP/2.0 304 Not Modified\r\n\r\n"
-            : "HTTP/2.0 429 Limited\r\nretry-after: 90\r\n\r\n{}";
+            ? { status: 304, headers: new Map<string, string>(), body: "" }
+            : {
+                status: 429,
+                headers: new Map([["retry-after", "90"]]),
+                body: "{}",
+              };
       return Promise.resolve(body);
     },
     () => at,
