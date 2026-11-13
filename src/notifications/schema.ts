@@ -1,7 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 export function migrateDigests(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 12 || version === 11 || version === 10) return;
+  if (version === 13 || version === 12 || version === 11 || version === 10)
+    return;
   if (version !== 9) throw new Error("Unsupported digest database version");
   try {
     db.exec(`BEGIN IMMEDIATE;

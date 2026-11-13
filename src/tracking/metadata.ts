@@ -4,6 +4,7 @@ import type { TargetBase } from "./types.js";
 
 export interface PRMetadata {
   pr: ReturnType<typeof trackingPR>;
+  description?: string;
   target?: TargetBase;
 }
 type Query = (
@@ -42,11 +43,19 @@ function metadata(value: unknown): PRMetadata {
     mergeable:
       raw["mergeable"] === "UNKNOWN" ? null : raw["mergeable"] === "MERGEABLE",
   });
-  if (pr.state !== "open" || pr.merged) return { pr };
+  if (pr.state !== "open" || pr.merged)
+    return {
+      pr,
+      ...(typeof raw["body"] === "string" ? { description: raw["body"] } : {}),
+    };
   const target = record(record(raw["baseRef"])["target"]);
   if (typeof target["oid"] !== "string" || target["oid"] === "")
     throw new Error("GitHub target branch unavailable");
-  return { pr, target: { ref: pr.base.ref, sha: target["oid"] } };
+  return {
+    pr,
+    ...(typeof raw["body"] === "string" ? { description: raw["body"] } : {}),
+    target: { ref: pr.base.ref, sha: target["oid"] },
+  };
 }
 export class GitHubMetadata {
   private pending: Pending[] = [];
@@ -90,7 +99,7 @@ export class GitHubMetadata {
         return `pr${String(index)}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(repo)}) {
           isPrivate
           pullRequest(number: ${number}) {
-            state merged mergeable headRefOid baseRefOid baseRefName
+            body state merged mergeable headRefOid baseRefOid baseRefName
             baseRef { target { oid } }
           }
         }`;

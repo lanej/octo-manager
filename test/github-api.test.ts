@@ -247,3 +247,33 @@ test("the REST cache evicts older objects within its bounded entry count", async
   await reader.read("object/0");
   assert.equal(calls.at(-1)?.includes("--header"), false);
 });
+test("merge writes share cooldown and validate authority only when their queue slot executes", async () => {
+  let release: ((value: string) => void) | undefined;
+  let writes = 0;
+  let allowed = true;
+  const reader = new GitHubReads((args) => {
+    if (args.includes("hold"))
+      return new Promise<string>((resolve) => {
+        release = resolve;
+      });
+    writes++;
+    return Promise.resolve(http(200, { merged: true, sha: "a".repeat(40) }));
+  });
+  const blocked = reader.read("hold");
+  const effect = reader.write(
+    "repos/o/r/pulls/1/merge",
+    { sha: "a".repeat(40), merge_method: "squash" },
+    undefined,
+    () => {
+      if (!allowed) throw new Error("Authority withdrawn");
+    },
+  );
+  const rejected = assert.rejects(effect, /withdrawn/);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  allowed = false;
+  assert(release !== undefined);
+  release(http(200, {}));
+  await blocked;
+  await rejected;
+  assert.equal(writes, 0);
+});

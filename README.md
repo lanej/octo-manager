@@ -77,6 +77,10 @@ The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and C
 
 Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
 
+## Dependency-aware merge chains
+
+[Merge chains](docs/merge-chains.md) connect confirmed dependencies across repositories. References suggest relationships; explicit queues authorize selected PRs; owner assessments authorize the current reviewed head. Deterministic preparation runs before another owner assessment and a head-pinned merge.
+
 ## Agent activity
 
 Press **5 Activity** for named operations across all sessions. Existing coordinator events appear automatically; calling agents report external work with `record-activity`, including outcome, session, optional harness version/model, PR link, and evidence. Reports are durable and safe to retry; reported success remains distinct from independent verification. See the [activity guide](docs/activity.md) for the CLI, typed API, and SQL schema.

@@ -8,6 +8,7 @@ export interface AgentMessage {
   actionId: string;
   submissionId?: string;
   participantPRId?: string;
+  workflowPRId?: string;
   recipientAgentId: string;
   body: string;
   createdAt: number;
@@ -28,10 +29,10 @@ function text(value: unknown): string {
 const applicable =
   "(p.enabled=1 AND (p.owner_agent_id=d.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=d.recipient_agent_id)) AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
 const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
-  NULL AS submission_id,NULL AS participant_pr_id, ${applicable} AS applicable
+  NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id, ${applicable} AS applicable
   FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
   JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
-const messagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id)`;
+const messagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
 function decode(row: Record<string, unknown>): AgentMessage {
   return {
     sequence: integer(row["sequence"]),
@@ -42,6 +43,9 @@ function decode(row: Record<string, unknown>): AgentMessage {
       : {}),
     ...(typeof row["participant_pr_id"] === "string"
       ? { participantPRId: row["participant_pr_id"] }
+      : {}),
+    ...(typeof row["workflow_pr_id"] === "string"
+      ? { workflowPRId: row["workflow_pr_id"] }
       : {}),
     recipientAgentId: text(row["recipient_agent_id"]),
     body: text(row["body"]),
@@ -113,11 +117,13 @@ export class AgentInbox {
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        message.participantPRId !== undefined
-          ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
-          : message.submissionId === undefined
-            ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
-            : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
+        message.workflowPRId !== undefined
+          ? "UPDATE merge_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+          : message.participantPRId !== undefined
+            ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+            : message.submissionId === undefined
+              ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
+              : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);
@@ -139,6 +145,7 @@ export function migrateInbox(db: DatabaseSync): void {
     version === 7 ||
     version === 8 ||
     version === 9 ||
+    version === 13 ||
     version === 12 ||
     version === 11 ||
     version === 10

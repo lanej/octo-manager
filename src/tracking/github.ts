@@ -248,6 +248,9 @@ export async function readObservation(
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
     ...(target === undefined ? {} : { targetBase: target }),
+    ...(initial?.description === undefined
+      ? {}
+      : { description: initial.description }),
     lifecycle: pr.merged ? "merged" : pr.state,
     mergeability:
       pr.mergeable === true

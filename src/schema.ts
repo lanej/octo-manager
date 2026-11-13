@@ -12,6 +12,8 @@ export function migrateEvidence(db: DatabaseSync): void {
       row?.["user_version"] === 8 ||
       row?.["user_version"] === 9 ||
       row?.["user_version"] === 10 ||
+      row?.["user_version"] === 13 ||
+      row?.["user_version"] === 13 ||
       row?.["user_version"] === 12 ||
       row?.["user_version"] === 11
     )

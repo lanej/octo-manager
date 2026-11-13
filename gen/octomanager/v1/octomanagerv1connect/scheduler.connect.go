@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceMergeCommandProcedure is the fully-qualified name of the SchedulerService's
+	// MergeCommand RPC.
+	SchedulerServiceMergeCommandProcedure = "/octomanager.v1.SchedulerService/MergeCommand"
 	// SchedulerServiceGetAgentDigestProcedure is the fully-qualified name of the SchedulerService's
 	// GetAgentDigest RPC.
 	SchedulerServiceGetAgentDigestProcedure = "/octomanager.v1.SchedulerService/GetAgentDigest"
@@ -161,6 +164,7 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v1.SchedulerService service.
 type SchedulerServiceClient interface {
+	MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error)
 	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
@@ -216,6 +220,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		mergeCommand: connect.NewClient[v1.MergeCommandRequest, v1.MergeCommandResponse](
+			httpClient,
+			baseURL+SchedulerServiceMergeCommandProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("MergeCommand")),
+			connect.WithClientOptions(opts...),
+		),
 		getAgentDigest: connect.NewClient[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse](
 			httpClient,
 			baseURL+SchedulerServiceGetAgentDigestProcedure,
@@ -473,6 +483,7 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	mergeCommand              *connect.Client[v1.MergeCommandRequest, v1.MergeCommandResponse]
 	getAgentDigest            *connect.Client[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse]
 	listAgentDigests          *connect.Client[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse]
 	acknowledgeAgentDigest    *connect.Client[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse]
@@ -515,6 +526,11 @@ type schedulerServiceClient struct {
 	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
 	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
 	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+}
+
+// MergeCommand calls octomanager.v1.SchedulerService.MergeCommand.
+func (c *schedulerServiceClient) MergeCommand(ctx context.Context, req *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error) {
+	return c.mergeCommand.CallUnary(ctx, req)
 }
 
 // GetAgentDigest calls octomanager.v1.SchedulerService.GetAgentDigest.
@@ -729,6 +745,7 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v1.SchedulerService service.
 type SchedulerServiceHandler interface {
+	MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error)
 	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
@@ -780,6 +797,12 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceMergeCommandHandler := connect.NewUnaryHandler(
+		SchedulerServiceMergeCommandProcedure,
+		svc.MergeCommand,
+		connect.WithSchema(schedulerServiceMethods.ByName("MergeCommand")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceGetAgentDigestHandler := connect.NewUnaryHandler(
 		SchedulerServiceGetAgentDigestProcedure,
 		svc.GetAgentDigest,
@@ -1034,6 +1057,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v1.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceMergeCommandProcedure:
+			schedulerServiceMergeCommandHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetAgentDigestProcedure:
 			schedulerServiceGetAgentDigestHandler.ServeHTTP(w, r)
 		case SchedulerServiceListAgentDigestsProcedure:
@@ -1126,6 +1151,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.MergeCommand is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAgentDigest is not implemented"))

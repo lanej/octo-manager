@@ -3,7 +3,13 @@ export function migrateSubmissions(db: DatabaseSync): void {
   const version = Number(
     db.prepare("PRAGMA user_version").get()?.["user_version"],
   );
-  if (version === 9 || version === 12 || version === 11 || version === 10)
+  if (
+    version === 9 ||
+    version === 13 ||
+    version === 12 ||
+    version === 11 ||
+    version === 10
+  )
     return;
   if (version !== 8) throw new Error("Unsupported submission database version");
   db.exec(`BEGIN IMMEDIATE;

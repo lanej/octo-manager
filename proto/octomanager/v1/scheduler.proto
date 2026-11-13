@@ -9,6 +9,7 @@ import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc MergeCommand(MergeCommandRequest) returns (MergeCommandResponse);
   rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
   rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);
   rpc AcknowledgeAgentDigest(AcknowledgeAgentDigestRequest) returns (AcknowledgeAgentDigestResponse);
@@ -137,6 +138,7 @@ message Snapshot {
   TrackingSnapshot tracking = 9;
   repeated RepairAttempt repairs = 10;
   GitHubReadUsage github_usage = 11;
+  repeated MergeStatus merge_statuses = 12;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
@@ -193,3 +195,7 @@ message ListActivityResponse {
   uint64 next_sequence = 3;
   bool has_more = 4;
 }
+
+message MergeCommandRequest { string input_json = 1; }
+message MergeCommandResponse { string result_json = 1; }
+message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; }

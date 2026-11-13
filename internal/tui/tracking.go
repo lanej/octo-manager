@@ -116,6 +116,16 @@ func (m *Model) trackingContent() string {
 	}
 
 	parts = append(parts, m.checkWatchContent(pr), m.repairContent(pr.GetId()))
+	for _, merge := range m.snapshot.GetMergeStatuses() {
+		if merge.GetPrId() != pr.GetId() {
+			continue
+		}
+
+		parts = append(parts, m.field("Merge chain", strings.ReplaceAll(merge.GetState(), "_", " ")), m.field("Next step", merge.GetDetail()))
+		for _, prerequisite := range merge.GetPrerequisiteUrls() {
+			parts = append(parts, m.field("Requires merge", m.trackingLinks(&v1.TrackedPullRequest{Url: prerequisite})))
+		}
+	}
 
 	count := m.openActions(pr.GetId())
 

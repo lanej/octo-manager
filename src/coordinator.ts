@@ -1,3 +1,4 @@
+import {MergeService,type MergeOptions} from "./merging/service.js";
 import {NotificationService} from "./tracking/notifications.js";
 import type {NotificationReader} from "./tracking/notification-reader.js";
 import {DigestService,type DigestOptions} from "./notifications/service.js";
@@ -21,7 +22,7 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions { mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -37,6 +38,7 @@ export function transient(error: string): boolean {
 export class Coordinator extends EventEmitter {
   readonly store: Store;
   readonly tracking: TrackingService;
+  readonly merging:MergeService;
   readonly repairs: RepairService;
   readonly submissions: SubmissionService;
   readonly digests: DigestService;
@@ -58,6 +60,7 @@ export class Coordinator extends EventEmitter {
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
@@ -98,6 +101,7 @@ export class Coordinator extends EventEmitter {
       this.submissionNotifications.start();
       this.digests.start();
       this.notifications.start();
+      this.merging.start();
     } catch (error) { this.store.close(); throw error; }
   }
   async pullRequestDetails(url: string, signal?: AbortSignal) {
@@ -256,6 +260,7 @@ export class Coordinator extends EventEmitter {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
       this.notifications.stop();
+    await this.merging.close();
     await this.digests.close();
       await this.submissions.close();
       await this.submissionNotifications.close();

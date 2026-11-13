@@ -1,3 +1,5 @@
+import {migrateMerging} from "./merging/schema.js";
+import {MergeStore} from "./merging/store.js";
 import {migrateSubscriptions} from "./tracking/subscriptions.js";
 import {NotificationStore} from "./tracking/notifications.js";
 import {migrateRetirement} from "./tracking/retirement.js";
@@ -28,9 +30,11 @@ export function privateDirectory(path: string): void {
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
+  readonly merging: MergeStore;
   readonly activity: ActivityStore;
   readonly repairs: RepairStore;
   readonly conflicts: ConflictStore;
+  readonly mergeConflicts:ConflictStore;
   readonly submissions: SubmissionStore;
   readonly digests: DigestStore;
   readonly notifications:NotificationStore;
@@ -63,6 +67,9 @@ export class Store {
       migrateDigests(this.db);
       migrateRetirement(this.db,this.now());
       migrateSubscriptions(this.db);
+      migrateMerging(this.db);
+      this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
+      this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });

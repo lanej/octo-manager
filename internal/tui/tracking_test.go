@@ -217,3 +217,20 @@ func TestArchivedMonitoringRetainsDeadlineWarning(t *testing.T) {
 		}
 	}
 }
+
+func TestTrackingPresentsMergeNextStepAndPrerequisiteLinks(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "application", Url: "https://github.com/owner/application/pull/2", Enabled: true}}}
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "application", State: "waiting_owner", Detail: "Assess newly prepared head", PrerequisiteUrls: []string{"https://github.com/owner/library/pull/1"}}}
+	m.ensureSelection()
+	content := ansi.Strip(m.trackingContent())
+
+	for _, expected := range []string{"waiting owner", "Assess newly prepared head", "owner/library"} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("merge presentation missing %q: %s", expected, content)
+		}
+	}
+}

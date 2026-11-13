@@ -1,3 +1,8 @@
+import {
+  checked,
+  PreparationProfileSchema,
+  type PreparationProfile,
+} from "../merging/contracts.js";
 import { repairProfile, type RepairProfile } from "../repairs/types.js";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -32,6 +37,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
+  merging?: Record<string, PreparationProfile>;
   submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
   repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
@@ -100,11 +106,29 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
           "endpoints",
           "repairs",
           "submissionModels",
+          "merging",
         ].includes(k),
     )
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["merging"] !== undefined) {
+    const profiles = raw["merging"];
+    if (!object(profiles))
+      throw new Error("Invalid merge preparation configuration");
+    result.merging = {};
+    for (const [name, value] of Object.entries(profiles)) {
+      const profile = checked(PreparationProfileSchema, value);
+      if (
+        profile.kind === "toml_revision" &&
+        (profile.path === undefined ||
+          profile.key === undefined ||
+          profile.expectedValue === undefined)
+      )
+        throw new Error("TOML preparation needs path, key, and expectedValue");
+      result.merging[name] = profile;
+    }
+  }
   if (raw["submissionModels"] !== undefined) {
     const models = raw["submissionModels"];
     if (

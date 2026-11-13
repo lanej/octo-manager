@@ -7,6 +7,9 @@ export function agentMode(explicit: boolean, env: NodeJS.ProcessEnv): boolean {
   );
 }
 const reads = new Set([
+  "chains",
+  "references",
+  "dependencies",
   "get",
   "tracked",
   "pr",
