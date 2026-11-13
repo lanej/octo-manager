@@ -1,3 +1,4 @@
+import type { PollPolicy } from "./polling.js";
 import {
   checked,
   PreparationProfileSchema,
@@ -37,6 +38,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
+  polling?: PollPolicy;
   merging?: Record<string, PreparationProfile>;
   submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
   repairs: Record<string, RepairProfile>;
@@ -107,11 +109,41 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
           "repairs",
           "submissionModels",
           "merging",
+          "polling",
         ].includes(k),
     )
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["polling"] !== undefined) {
+    const value = raw["polling"];
+    if (
+      !object(value) ||
+      Object.keys(value).some(
+        (key) => !["minimumMs", "maximumMs", "activeMaximumMs"].includes(key),
+      )
+    )
+      throw new Error("Invalid polling configuration");
+    const minimumMs = value["minimumMs"] ?? 60000,
+      maximumMs = value["maximumMs"] ?? 900000,
+      activeMaximumMs = value["activeMaximumMs"] ?? 120000;
+    if (
+      typeof minimumMs !== "number" ||
+      !Number.isSafeInteger(minimumMs) ||
+      minimumMs < 1000 ||
+      typeof maximumMs !== "number" ||
+      !Number.isSafeInteger(maximumMs) ||
+      maximumMs < minimumMs ||
+      maximumMs > 3600000 ||
+      typeof activeMaximumMs !== "number" ||
+      !Number.isSafeInteger(activeMaximumMs) ||
+      activeMaximumMs < minimumMs ||
+      activeMaximumMs > maximumMs
+    )
+      throw new Error("Invalid polling interval bounds");
+    result.polling = { minimumMs, maximumMs, activeMaximumMs };
+  }
+
   if (raw["merging"] !== undefined) {
     const profiles = raw["merging"];
     if (!object(profiles))

@@ -1,5 +1,10 @@
 import type { DatabaseSync } from "node:sqlite";
-import { CheckWatchState, checkEvidence, type CheckWatches } from "./checks.js";
+import {
+  CheckWatchState,
+  checkEvidence,
+  checksFinished,
+  type CheckWatches,
+} from "./checks.js";
 import type { PRObservation } from "./types.js";
 export enum TrackingState {
   Watching = "watching",
@@ -46,7 +51,8 @@ export function lifecycle(row: Record<string, unknown>): Lifecycle {
 }
 export function migrateRetirement(db: DatabaseSync, now: number): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 13 || version === 12 || version === 11) return;
+  if (version === 14 || version === 13 || version === 12 || version === 11)
+    return;
   if (version !== 10)
     throw new Error("Unsupported retirement database version");
   db.exec("BEGIN IMMEDIATE");
@@ -160,6 +166,33 @@ export class RetirementStore {
       this.event(
         "pr_archived",
         "Polling stopped after a final complete refresh; unread deliveries retained",
+        id,
+      );
+    }
+  }
+  cachedMergedInside(id: string, observation: PRObservation): void {
+    const row = this.db.prepare("SELECT * FROM tracked_prs WHERE id=?").get(id);
+    if (row === undefined) return;
+    const current = lifecycle(row);
+    if (
+      current.state === TrackingState.Disabled ||
+      current.state === TrackingState.Archived
+    )
+      return;
+    const evidence = checkEvidence(observation);
+    if (
+      observation.lifecycle === "merged" &&
+      evidence.state === "complete" &&
+      (evidence.value.length === 0 || checksFinished(evidence)) &&
+      observation.reviews.state === "complete" &&
+      (observation.feedback === undefined ||
+        observation.feedback.state === "complete") &&
+      !this.checks.hasWaiting(id)
+    ) {
+      this.set(id, TrackingState.Archived, null, ArchiveReason.Settled);
+      this.event(
+        "pr_archived",
+        "Cached merged PR settled during startup; history and unread deliveries retained",
         id,
       );
     }

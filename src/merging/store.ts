@@ -168,7 +168,16 @@ export class MergeStore {
     detail: string,
     patch: Partial<MergeEntry> = {},
   ): MergeEntry {
-    const next = { ...entry, ...patch, state, detail: compact(detail, 1000) };
+    const current = this.entries().find((value) => value.id === entry.id);
+    const next = {
+      ...entry,
+      ...patch,
+      autoMerge: current?.autoMerge ?? entry.autoMerge,
+      state,
+      detail: compact(detail, 1000),
+    };
+    if (current !== undefined && current.autoMerge !== entry.autoMerge)
+      delete next.ready;
     const comparable = (value: MergeEntry) => {
       return { ...value, nextAt: 0, version: 0 };
     };
@@ -178,7 +187,7 @@ export class MergeStore {
       this.saveEntry(next);
       return next;
     }
-    next.version = entry.version + 1;
+    next.version = Math.max(entry.version, current?.version ?? 0) + 1;
     this.saveEntry(next);
     this.event("merge_entry_updated", `${state}: ${next.detail}`, entry.prId);
     const pr = this.tracking.pr(entry.prId);
@@ -245,6 +254,7 @@ export class MergeStore {
           );
         this.saveEntry({
           id: randomUUID(),
+          autoMerge: true,
           chainId: chain.id,
           prId: pr.id,
           method: item.method ?? "squash",
@@ -261,6 +271,60 @@ export class MergeStore {
         `Queued ${String(prs.length)} explicitly authorized PRs`,
       );
       return chain;
+    });
+  }
+  autoMerge(
+    prValue: string,
+    actorId: string,
+    enabled: boolean,
+    requestId: string,
+  ) {
+    return this.transaction(() => {
+      const pr = this.tracking.pr(prValue);
+      this.owner(pr, actorId);
+      let entry = this.entries().find(
+        (value) => value.prId === pr.id && !terminal(value.state),
+      );
+      if (entry === undefined && !enabled)
+        return { prId: pr.id, enabled: false };
+      if (entry === undefined) {
+        const observation = pr.observation;
+        const checks =
+          observation === undefined
+            ? []
+            : [
+                ...new Set(
+                  [observation.checks, observation.workflows].flatMap((part) =>
+                    part === undefined || part.state !== "complete"
+                      ? []
+                      : part.value.map((check) => check.name),
+                  ),
+                ),
+              ];
+        this.queue({
+          requestId,
+          actorId,
+          entries: [{ prUrl: pr.url, checks }],
+        });
+        entry = this.entry(pr.id);
+      }
+      if (entry.autoMerge === enabled) return { prId: pr.id, enabled, entry };
+      const next = { ...entry, autoMerge: enabled, nextAt: 0 };
+      delete next.ready;
+      this.saveEntry(next);
+      const saved = this.state(
+        next,
+        this.busy(pr.id)
+          ? entry.state
+          : enabled
+            ? EntryState.WaitingOwner
+            : EntryState.Waiting,
+        enabled
+          ? "Auto-merge on; owner assessment required"
+          : "Auto-merge off; an accepted GitHub operation may still finish",
+      );
+      this.event("auto_merge_changed", enabled ? "on" : "off", pr.id);
+      return { prId: pr.id, enabled, entry: saved };
     });
   }
   control(id: string, state: ChainState): MergeChain {
@@ -483,6 +547,7 @@ export class MergeStore {
           "Complete review evidence is required before marking ready",
         );
       const entry = this.entry(pr.id);
+      if (!entry.autoMerge) throw new Error("Auto-merge is off");
       if (this.chain(entry.chainId).state !== ChainState.Active)
         throw new Error("Merge chain is not active");
       return this.state(
@@ -508,6 +573,11 @@ export class MergeStore {
   saveOperation(value: MergeOperation): void {
     checked(OperationSchema, value);
     const previous = this.operations().find((op) => op.id === value.id);
+    if (
+      previous?.requestId !== undefined &&
+      previous.requestId !== value.requestId
+    )
+      throw new Error("Asynchronous request identity is immutable");
     if (
       previous !== undefined &&
       fingerprint([
@@ -558,6 +628,7 @@ export class MergeStore {
         op.state === OperationState.Running ||
         op.state === OperationState.Planned
       ) {
+        if (op.kind === "merge" && op.requestId !== undefined) continue;
         const local = op.kind === "prepare" && op.phase === "local";
         this.saveOperation({
           ...op,

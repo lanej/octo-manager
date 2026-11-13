@@ -7,6 +7,7 @@ message GitHubRateBudget {
   uint32 remaining = 2;
   int64 reset_at_ms = 3;
   int64 observed_at_ms = 4;
+  GitHubQuotaForecast forecast = 5;
 }
 
 message GitHubReadMinute {
@@ -27,4 +28,21 @@ message GitHubReadUsage {
   GitHubRateBudget graphql = 8;
   int64 rest_retry_at_ms = 9;
   int64 graphql_retry_at_ms = 10;
+}
+
+enum GitHubForecastState {
+ GIT_HUB_FORECAST_STATE_UNSPECIFIED = 0;
+ GIT_HUB_FORECAST_STATE_UNKNOWN = 1;
+ GIT_HUB_FORECAST_STATE_ON_TRACK = 2;
+ GIT_HUB_FORECAST_STATE_AT_RISK = 3;
+ GIT_HUB_FORECAST_STATE_EXHAUSTED = 4;
+}
+message GitHubQuotaForecast {
+ GitHubForecastState state = 1;
+ string reason = 2;
+ int64 window_ms = 3;
+ int64 sampled_at_ms = 4;
+ optional double units_per_hour = 5;
+ optional double projected_remaining_at_reset = 6;
+ optional int64 exhaust_at_ms = 7;
 }

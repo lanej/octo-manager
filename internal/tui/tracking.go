@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
 	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/input"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
@@ -76,7 +77,7 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
+	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), input.NewToggle("auto-merge", "Auto merge (a)", m.autoMergeEnabled(pr.GetId()), m.theme).View()}
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
@@ -270,6 +271,49 @@ func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
 	}
 
 	return strings.Join(append([]string{view}, unavailable...), "\n")
+}
+
+func (m *Model) autoMergeEnabled(prID string) bool {
+	enabled := false
+
+	for _, status := range m.snapshot.GetMergeStatuses() {
+		if status.GetPrId() == prID {
+			enabled = status.GetAutoMerge() && status.GetState() != "merged" && status.GetState() != "cancelled"
+		}
+	}
+
+	return enabled
+}
+
+func (m *Model) toggleAutoMerge() tea.Cmd {
+	pr := m.currentSubject().tracked
+	if pr == nil || m.commandPending {
+		return nil
+	}
+
+	enabled := !m.autoMergeEnabled(pr.GetId())
+
+	body, err := json.Marshal(struct {
+		Op      string `json:"op"`
+		PR      string `json:"pr"`
+		Enabled bool   `json:"enabled"`
+		Actor   string `json:"actorId"`
+		Request string `json:"requestId"`
+	}{Op: "auto_merge", PR: pr.GetId(), Enabled: enabled, Actor: pr.GetOwnerAgentId(), Request: fmt.Sprintf("dashboard-auto-%s-%d", pr.GetId(), time.Now().UnixNano())})
+	if err != nil {
+		return func() tea.Msg { return commandMsg{err: err} }
+	}
+
+	m.commandPending = true
+
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(m.ctx, 15*time.Second)
+		defer cancel()
+
+		_, err := m.api.RPC.MergeCommand(ctx, connect.NewRequest(&v1.MergeCommandRequest{InputJson: string(body)}))
+
+		return commandMsg{err: err}
+	}
 }
 
 func (m *Model) refreshTracked() tea.Cmd {

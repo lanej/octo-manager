@@ -10,6 +10,8 @@ export function parseCommand(
     args,
     allowPositionals: true,
     options: {
+      on: { type: "boolean" },
+      off: { type: "boolean" },
       "intent-file": { type: "string" },
       purpose: { type: "string" },
       title: { type: "string" },

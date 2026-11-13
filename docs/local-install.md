@@ -49,3 +49,5 @@ Useful recovery commands are in the [tracking guide](tracking.md). Existing inbo
 Queue endpoints now use [agent digests](agent-digests.md): superseded pending revisions are withdrawn before replacement, with uncertain effects retained for reconciliation. The existing hook also recognizes exact digest bodies; installation does not enable hooks or require PR submissions.
 
 Native release/runtime paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. The explicit `--no-start` option stages configuration without activating a service and returns the equivalent foreground command. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
+
+Startup upgrades cached retirement state before polling: settled merged PRs are archived with history and receipts retained, while incomplete checks keep draining. Explicitly disabled PRs stay disabled. See [polling and auto-merge](polling-and-auto-merge.md) for schema-14 upgrade behavior.

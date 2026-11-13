@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
@@ -25,6 +26,17 @@ export async function mergingCLI(
     return value;
   };
   switch (command) {
+    case "auto-merge":
+      if ((values.on === true) === (values.off === true))
+        throw new Error("Choose --on or --off");
+      input = {
+        op: "auto_merge",
+        pr: id ?? "",
+        enabled: values.on === true,
+        actorId,
+        requestId: values["request-id"] ?? randomUUID(),
+      };
+      break;
     case "chains":
       input = { op: "inspect", ...(id === undefined ? {} : { id }) };
       break;

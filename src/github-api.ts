@@ -92,8 +92,11 @@ export class GitHubRateLimitError extends Error {
   }
 }
 export class GitHubHTTPError extends Error {
-  constructor(readonly status: number) {
-    super(`GitHub read failed (HTTP ${String(status)})`);
+  constructor(
+    readonly status: number,
+    message = `GitHub read failed (HTTP ${String(status)})`,
+  ) {
+    super(message);
   }
 }
 export class GitHubReads {
@@ -153,7 +156,7 @@ export class GitHubReads {
   }
   write(
     path: string,
-    fields: Record<string, string>,
+    fields: Record<string, string | boolean>,
     signal?: AbortSignal,
     beforeSend?: () => void,
   ): Promise<unknown> {
@@ -168,7 +171,10 @@ export class GitHubReads {
         path,
       ];
       for (const [key, value] of Object.entries(fields))
-        args.push("-f", `${key}=${value}`);
+        args.push(
+          typeof value === "boolean" ? "-F" : "-f",
+          `${key}=${String(value)}`,
+        );
       beforeSend?.();
       return json((await this.exchange(args, "core", signal)).body);
     });
@@ -296,7 +302,8 @@ export class GitHubReads {
       (result.status < 200 || result.status >= 300)
     ) {
       if (result.status === 401)
-        throw new Error(
+        throw new GitHubHTTPError(
+          401,
           "GitHub authentication required: run gh auth login -h github.com",
         );
       if (result.status >= 500)

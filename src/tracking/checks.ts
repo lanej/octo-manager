@@ -83,7 +83,7 @@ export function checksFinished(
     evidence.value.every(executionFinished)
   );
 }
-function explicitlyReplaces(
+export function checkReplaces(
   previous: CheckObservation,
   candidate: CheckObservation,
 ): boolean {
@@ -117,7 +117,7 @@ function retainEvidence(
     (check) =>
       !observed.some(
         (candidate) =>
-          candidate.id === check.id || explicitlyReplaces(check, candidate),
+          candidate.id === check.id || checkReplaces(check, candidate),
       ),
   );
   if (missing.length === 0) return current;
@@ -175,6 +175,19 @@ export function workflowObservation(value: unknown): CheckObservation {
   return {
     id: `workflow:${String(id)}:${String(attempt)}`,
     key: `workflow:${String(id)}`,
+    ...(typeof value["run_number"] === "number" &&
+    Number.isSafeInteger(value["run_number"])
+      ? { runNumber: value["run_number"] }
+      : {}),
+    ...(typeof value["workflow_id"] === "number" &&
+    Number.isSafeInteger(value["workflow_id"])
+      ? { workflowId: value["workflow_id"] }
+      : {}),
+    ...(typeof value["check_suite_id"] === "number" &&
+    Number.isSafeInteger(value["check_suite_id"])
+      ? { suiteId: value["check_suite_id"] }
+      : {}),
+    ...(typeof value["event"] === "string" ? { event: value["event"] } : {}),
     name: string(value["name"]),
     headSha: string(value["head_sha"]),
     status: string(value["status"]),
@@ -202,6 +215,18 @@ export function storedCheckEvidence(
     return {
       id: string(entry["id"]),
       key: string(entry["key"]),
+      ...(entry["suiteId"] === undefined
+        ? {}
+        : { suiteId: integer(entry["suiteId"]) }),
+      ...(entry["runNumber"] === undefined
+        ? {}
+        : { runNumber: integer(entry["runNumber"]) }),
+      ...(entry["workflowId"] === undefined
+        ? {}
+        : { workflowId: integer(entry["workflowId"]) }),
+      ...(entry["event"] === undefined
+        ? {}
+        : { event: string(entry["event"]) }),
       name: string(entry["name"]),
       headSha: string(entry["headSha"]),
       status: string(entry["status"]),
@@ -369,4 +394,27 @@ export class CheckWatches {
         updatedAt: this.now(),
       });
   }
+}
+
+export function checkRunObservation(
+  value: unknown,
+  url: string,
+): CheckObservation {
+  if (!object(value)) throw new Error("Invalid GitHub check run");
+  const app = object(value["app"]) ? value["app"] : undefined,
+    suite = object(value["check_suite"]) ? value["check_suite"] : undefined;
+  const id = integer(value["id"]),
+    name = string(value["name"]),
+    at = Date.parse(string(value["started_at"] ?? value["completed_at"] ?? ""));
+  return {
+    id: `run:${String(id)}`,
+    key: `run:${app === undefined ? "" : String(integer(app["id"]))}:${name}`,
+    name,
+    headSha: string(value["head_sha"]),
+    status: string(value["status"]),
+    conclusion: string(value["conclusion"] ?? ""),
+    at: Number.isNaN(at) ? 0 : at,
+    url: typeof value["html_url"] === "string" ? value["html_url"] : url,
+    ...(suite === undefined ? {} : { suiteId: integer(suite["id"]) }),
+  };
 }

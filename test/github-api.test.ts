@@ -277,3 +277,14 @@ test("merge writes share cooldown and validate authority only when their queue s
   await rejected;
   assert.equal(writes, 0);
 });
+test("HTTP authentication rejection retains its typed status for merge outcome classification", async () => {
+  const reader = new GitHubReads(() => Promise.resolve(http(401, {})));
+  await assert.rejects(
+    reader.write("repos/o/r/pulls/1/merge-async", { sha: "a".repeat(40) }),
+    (error) =>
+      error instanceof Error &&
+      "status" in error &&
+      error.status === 401 &&
+      /authentication required/.test(error.message),
+  );
+});

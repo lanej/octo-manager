@@ -234,3 +234,28 @@ func TestTrackingPresentsMergeNextStepAndPrerequisiteLinks(t *testing.T) {
 		}
 	}
 }
+
+func TestTrackingHasAnOptInAutoMergeSwitch(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/1", OwnerAgentId: "owner", Enabled: true}}}
+	m.ensureSelection()
+
+	off := ansi.Strip(m.trackingContent())
+	if !strings.Contains(off, "Auto merge (a)") || !strings.Contains(off, "OFF") {
+		t.Fatal("auto merge must start off")
+	}
+
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "pr", AutoMerge: true, State: "waiting_owner", Detail: "Owner assessment required"}}
+
+	on := ansi.Strip(m.trackingContent())
+	if !strings.Contains(on, "ON") || !strings.Contains(on, "Owner assessment required") {
+		t.Fatal("switch hides pending readiness")
+	}
+
+	m.panel = trackingPanel
+	if m.key(tea.KeyPressMsg{Code: 'a', Text: "a"}) == nil || !m.commandPending {
+		t.Fatal("switch keyboard action was not wired")
+	}
+}

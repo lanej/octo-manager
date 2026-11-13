@@ -1,3 +1,9 @@
+import {
+  defaultPollPolicy,
+  schedulePoll,
+  type PollState,
+  type PollPolicy,
+} from "./polling.js";
 import { GitHubRateLimitError } from "../github-api.js";
 import { compact } from "./messages.js";
 import { shortId } from "./identifiers.js";
@@ -34,8 +40,9 @@ export class TrackingService {
   private handoffs: Handoffs | undefined;
   private timer?: ReturnType<typeof setInterval>;
   private refreshes = new Map<string, Promise<unknown>>();
+  private refreshTriggers = new Map<string, "manual" | "poll">();
   private refreshEpochs = new Map<string, number>();
-  private nextRefresh = new Map<string, number>();
+  private pollStates = new Map<string, PollState>();
   private githubRetryAt = 0;
   private deliveryBusy = false;
   private deliveryWork?: Promise<void>;
@@ -111,25 +118,30 @@ export class TrackingService {
     this.validateTarget(target);
     return this.store.assign(id, target);
   }
-  refresh(id: string): Promise<unknown> {
+  refresh(id: string, trigger: "poll" | "manual" = "manual"): Promise<unknown> {
     if (this.stopped)
       return Promise.reject(new Error("Coordinator is stopping"));
     const p = this.store.pr(id);
     if (!p.enabled) return Promise.reject(new Error("PR tracking is disabled"));
     const existing = this.refreshes.get(p.id);
+    if (existing !== undefined && trigger === "manual")
+      this.refreshTriggers.set(p.id, "manual");
     if (existing !== undefined)
       return this.refreshEpochs.get(p.id) === p.trackingEpoch
         ? existing
-        : existing.then(() => this.refresh(id));
+        : existing.then(() => this.refresh(id, trigger));
     if (this.now() < this.githubRetryAt)
       return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
     const controller = new AbortController();
     this.refreshControllers.set(p.id, controller);
+    this.refreshTriggers.set(p.id, trigger);
+    let observed: ObservationInput | undefined;
     const work = (async () => {
       try {
         const input: ObservationInput = await (
           this.options.read ?? readObservation
         )(p.url, controller.signal, undefined, this.now);
+        observed = input;
         if (!this.stopped)
           this.store.observe(p.id, input, this.config, p.trackingEpoch);
       } catch (error) {
@@ -144,15 +156,37 @@ export class TrackingService {
             error instanceof Error ? error.message : "GitHub refresh failed",
           );
       } finally {
-        this.nextRefresh.set(
+        const minimumMs =
+          this.options.intervalMs ??
+          this.config.polling?.minimumMs ??
+          defaultPollPolicy.minimumMs;
+        const policy: PollPolicy = {
+          minimumMs,
+          maximumMs: Math.max(
+            minimumMs,
+            this.config.polling?.maximumMs ?? defaultPollPolicy.maximumMs,
+          ),
+          activeMaximumMs: Math.max(
+            minimumMs,
+            this.config.polling?.activeMaximumMs ??
+              defaultPollPolicy.activeMaximumMs,
+          ),
+        };
+        this.pollStates.set(
           p.id,
-          Math.max(
-            this.now() + (this.options.intervalMs ?? 60000),
+          schedulePoll(
+            this.pollStates.get(p.id),
+            p.trackingEpoch,
+            observed,
+            this.now(),
+            policy,
+            this.refreshTriggers.get(p.id) ?? trigger,
             this.githubRetryAt,
           ),
         );
         this.refreshes.delete(p.id);
         this.refreshEpochs.delete(p.id);
+        this.refreshTriggers.delete(p.id);
         this.refreshControllers.delete(p.id);
       }
       return this.store.pr(p.id);
@@ -198,9 +232,11 @@ export class TrackingService {
         this.now() >= this.githubRetryAt &&
         (p.state === TrackingState.Watching ||
           p.state === TrackingState.Draining) &&
-        (this.nextRefresh.get(p.id) ?? 0) <= this.now()
+        ((this.pollStates.get(p.id)?.epoch === p.trackingEpoch
+          ? this.pollStates.get(p.id)?.nextAt
+          : undefined) ?? 0) <= this.now()
       )
-        void this.refresh(p.id).catch(() => {});
+        void this.refresh(p.id, "poll").catch(() => {});
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
       this.deliveryWork = this.deliverNext()

@@ -43,7 +43,7 @@ Omit `profile` for a merge-only dependency. Supply `referenceId` when confirming
 
 Assess readiness after evaluating review feedback, optionally while CI is running. Expected check names are exact; they combine with GitHub's required check contexts. Missing, incomplete, pending, or failing relevant evidence waits. An unprotected repository requires an explicit expected set or `noCi:true`; advisory checks outside the selected/required set do not block. The default merge method is squash; queue entries may explicitly select merge or rebase if the repository permits it. Drafts and GitHub eligibility gates still block. Repositories requiring GitHub merge queues remain blocked; this version does not enqueue into that queue or request administrative bypass.
 
-Readiness is rechecked after provider reads and when the shared GitHub queue dispatches the merge. The REST merge request includes the expected head `sha`. Authorization persists across later heads, but owner assessment does not: the owner must assess each resulting head. GitHub remains authoritative for branch protection and concurrent remote changes. Octo cannot make a remote comment and a merge atomic.
+Readiness is rechecked after provider reads and when the shared GitHub queue dispatches the merge. The asynchronous REST merge request includes the expected head `sha`; its accepted UUID is durably polled. Native stacked PRs wait for open predecessors rather than implicitly merging unselected targets. Authorization persists across later heads, but owner assessment does not: the owner must assess each resulting head. GitHub remains authoritative for branch protection and concurrent remote changes. Octo cannot make a remote comment and a merge atomic.
 
 ## Deterministic preparation
 
@@ -84,3 +84,5 @@ OCTO_LIVE_MERGE_ACCEPTANCE=1 OCTO_ACCEPTANCE_OWNER=YOUR_LOGIN bun scripts/test-m
 ```
 
 Provider contracts: [head-pinned REST merge](https://docs.github.com/en/rest/pulls/pulls#merge-a-pull-request), [effective branch rules](https://docs.github.com/en/rest/repos/rules#get-rules-for-a-branch), and [GitHub merge-state values](https://docs.github.com/en/graphql/reference/pulls#mergestatestatus).
+
+See [polling and auto-merge](polling-and-auto-merge.md) for the per-PR switch, schema-14 upgrade, cached retirement, and quota forecast contracts.
