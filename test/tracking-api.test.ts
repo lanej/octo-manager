@@ -48,7 +48,12 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
         dir,
         "--json",
       ],
-      { cwd: process.cwd(), stdout: "pipe", stderr: "pipe" },
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const result = JSON.parse(await new Response(cli.stdout).text());
     assert.equal(await cli.exited, 0);

@@ -1,3 +1,4 @@
+import { printResult } from "../cli-output.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { toJson } from "@bufbuild/protobuf";
@@ -44,10 +45,8 @@ export async function repairsCLI(
     const after = values.after ?? "0";
     if (!/^\d+$/u.test(after)) throw new Error("Invalid case cursor");
     const response = await client.listConflictCases({ afterId: BigInt(after) });
-    if (values.json === true)
-      console.log(
-        JSON.stringify(toJson(ListConflictCasesResponseSchema, response)),
-      );
+    if (values.json)
+      printResult(parsed, toJson(ListConflictCasesResponseSchema, response));
     else {
       for (const c of response.cases)
         console.log(
@@ -62,10 +61,8 @@ export async function repairsCLI(
     const id = positionals[1] ?? "";
     if (!/^\d+$/u.test(id)) throw new Error("Invalid case ID");
     const response = await client.getConflictCase({ id: BigInt(id) });
-    if (values.json === true)
-      console.log(
-        JSON.stringify(toJson(GetConflictCaseResponseSchema, response)),
-      );
+    if (values.json)
+      printResult(parsed, toJson(GetConflictCaseResponseSchema, response));
     else {
       const c = response.conflictCase;
       if (c !== undefined)
@@ -81,18 +78,16 @@ export async function repairsCLI(
       profile: values.profile ?? "",
       requestId: values["request-id"] ?? "",
     });
-    if (values.json === true)
-      console.log(
-        JSON.stringify(toJson(RequestRebaseResponseSchema, response)),
-      );
+    if (values.json)
+      printResult(parsed, toJson(RequestRebaseResponseSchema, response));
     else
       console.log(
         `Rebase requested for ${label(values.url ?? "PR")}. Follow progress in Tracking or with octo-manager repairs.`,
       );
   } else {
     const response = await client.listRepairs({});
-    if (values.json === true)
-      console.log(JSON.stringify(toJson(ListRepairsResponseSchema, response)));
+    if (values.json)
+      printResult(parsed, toJson(ListRepairsResponseSchema, response));
     else {
       for (const repair of response.repairs)
         console.log(

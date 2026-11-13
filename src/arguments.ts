@@ -1,8 +1,12 @@
+import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { basename } from "node:path";
 import { parseArgs } from "node:util";
 
-export function parseCommand(args: string[]) {
-  return parseArgs({
+export function parseCommand(
+  args: string[],
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const parsed = parseArgs({
     args,
     allowPositionals: true,
     options: {
@@ -33,6 +37,8 @@ export function parseCommand(args: string[]) {
       url: { type: "string" },
       "request-id": { type: "string" },
       json: { type: "boolean" },
+      agent: { type: "boolean" },
+      full: { type: "boolean" },
       "include-acknowledged": { type: "boolean" },
       "applicable-only": { type: "boolean" },
       after: { type: "string" },
@@ -46,6 +52,26 @@ export function parseCommand(args: string[]) {
       evidence: { type: "string" },
     },
   });
+  const agent = agentMode(parsed.values.agent === true, env),
+    full = parsed.values.full === true;
+  if (full && !readOnlyCommand(parsed.positionals))
+    throw new Error(
+      "--full is available only for read-only inspection commands",
+    );
+  if (agent && !full && parsed.values.watch === true)
+    throw new Error(
+      "Agent mode uses bounded responses; inspect events without --watch or explicitly use --full",
+    );
+  const json = parsed.values.json === true || agent || full;
+  return {
+    ...parsed,
+    values: {
+      ...parsed.values,
+      state: parsed.values.state ?? env["OCTO_MANAGER_STATE"],
+      json,
+    },
+    output: { agent, json, full },
+  };
 }
 
 export function directoryLabel(cwd: string): string {

@@ -1,9 +1,10 @@
+import { printResult } from "../cli-output.js";
 import { shortId } from "../tracking/identifiers.js";
 import { receiptOutput } from "./receipt-output.js";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import type { parseCommand } from "../arguments.js";
-import { schedulerClient, cliJSON } from "../client.js";
+import { schedulerClient } from "../client.js";
 export async function notificationsCLI(
   parsed: ReturnType<typeof parseCommand>,
 ): Promise<boolean> {
@@ -29,16 +30,14 @@ export async function notificationsCLI(
     });
     const message = response.message;
     if (message === undefined) throw new Error("Missing message receipt");
-    console.log(
-      JSON.stringify({
-        message: shortId(message.id),
-        applicable: message.applicable,
-        receivedAtMs:
-          message.acknowledgedAtMs === undefined
-            ? undefined
-            : Number(message.acknowledgedAtMs),
-      }),
-    );
+    printResult(parsed, {
+      message: shortId(message.id),
+      applicable: message.applicable,
+      receivedAtMs:
+        message.acknowledgedAtMs === undefined
+          ? undefined
+          : Number(message.acknowledgedAtMs),
+    });
     return true;
   }
   const revision =
@@ -65,11 +64,9 @@ export async function notificationsCLI(
       revision,
       agentId: values["agent-id"] ?? "",
     });
-    console.log(JSON.stringify(receiptOutput(response, directory)));
+    printResult(parsed, receiptOutput(response, directory));
     return true;
   }
-  console.log(
-    JSON.stringify(result, cliJSON, values.json === true ? undefined : 2),
-  );
+  printResult(parsed, result);
   return true;
 }

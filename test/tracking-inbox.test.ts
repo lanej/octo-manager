@@ -254,7 +254,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
         directory,
         "--json",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const body = await new Response(child.stdout).text();
     assert.equal(
@@ -299,7 +303,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
         directory,
         "--json",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const listed = await new Response(cli.stdout).text();
     assert.equal(await cli.exited, 0, await new Response(cli.stderr).text());

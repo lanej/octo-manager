@@ -316,22 +316,6 @@
     {
       "file": "src/cli.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "console.log(JSON.stringify(result, cliJSON, values.json ? undefined : 2));",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
       "source": "if (!command || values.help) {",
@@ -375,14 +359,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
       "source": "if (!command || values.help) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/use-unknown-in-catch-callback-variable",
-      "message": "Prefer the safe `: unknown` for a `catch` callback variable.",
-      "source": "main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });",
       "count": 1
     },
     {

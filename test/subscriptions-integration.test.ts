@@ -123,7 +123,11 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
         directory,
         "--json",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const [output, stderr, code] = await Promise.all([
       new Response(child.stdout).text(),
@@ -156,7 +160,11 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
         "--state",
         directory,
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      {
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
     );
     const [noticeOutput, noticeCode] = await Promise.all([
       new Response(receiptChild.stdout).text(),

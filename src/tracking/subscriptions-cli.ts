@@ -1,8 +1,9 @@
+import { printResult } from "../cli-output.js";
 import { shortId } from "./identifiers.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { parseCommand } from "../arguments.js";
-import { schedulerClient, cliJSON } from "../client.js";
+import { schedulerClient } from "../client.js";
 export async function subscriptionsCLI(
   parsed: ReturnType<typeof parseCommand>,
 ): Promise<boolean> {
@@ -45,18 +46,12 @@ export async function subscriptionsCLI(
             offset,
           });
   const ids = result.participants.map((item) => item.agentId);
-  console.log(
-    JSON.stringify(
-      {
-        ...result,
-        participants: result.participants.map((item) => ({
-          ...item,
-          agentId: shortId(item.agentId, ids),
-        })),
-      },
-      cliJSON,
-      values.json === true ? undefined : 2,
-    ),
-  );
+  printResult(parsed, {
+    ...result,
+    participants: result.participants.map((item) => ({
+      ...item,
+      agentId: shortId(item.agentId, ids),
+    })),
+  });
   return true;
 }
