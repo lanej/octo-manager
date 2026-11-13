@@ -89,6 +89,8 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     expect(compact.code).toBe(0);
     expect(compact.output).not.toContain("checksJson");
     expect(compact.output).toContain('"detailsOmitted":true');
+    coordinator.githubScheduler.tick();
+    await new Promise((resolve) => setImmediate(resolve));
     const full = await run(["pr", value.data.pr.id, "--full"], true);
     expect(full.code).toBe(0);
     expect(full.output).toContain("checksJson");
@@ -124,9 +126,13 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     offline = true;
     const stale = await run(["refresh", value.data.pr.id], true);
     expect(stale.code).toBe(0);
-    expect(stale.output).toContain("GitHub temporarily unavailable");
-    expect(stale.output).toContain("refreshErrorAtMs");
-    expect(stale.output).toContain('"observedAtMs":1000');
+    expect(stale.output).toContain("refresh");
+    coordinator.githubScheduler.tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    const errored = await run(["pr", value.data.pr.id], true);
+    expect(errored.output).toContain("GitHub temporarily unavailable");
+    expect(errored.output).toContain("refreshErrorAtMs");
+    expect(errored.output).toContain('"observedAtMs":1000');
     await client.setPaused({ paused: true });
     const job = coordinator.store.submit(
       { kind: "resolve_conflict" },

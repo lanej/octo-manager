@@ -124,6 +124,7 @@ func (m *Model) githubContent(width int) string {
 		return text.Badge("GitHub usage", m.theme) + "\n" + m.muted("Usage metrics unavailable from this coordinator.")
 	}
 
+	scheduler := m.schedulerContent()
 	budgets := m.sections("github-quota-comparison", width,
 		dashboardSection{id: "rest-budget", title: "REST QUOTA", content: func(w int) string {
 			return m.budgetView("REST", usage.GetRest(), usage.GetRestRetryAtMs(), usage.GetSampledAtMs(), w)
@@ -131,7 +132,7 @@ func (m *Model) githubContent(width int) string {
 		dashboardSection{id: "graphql-budget", title: "GRAPHQL QUOTA", content: func(w int) string {
 			return m.budgetView("GraphQL", usage.GetGraphql(), usage.GetGraphqlRetryAtMs(), usage.GetSampledAtMs(), w)
 		}})
-	lines := []string{m.muted("Shared authentication budget · includes other tools · GraphQL uses points"), budgets, "", text.Badge("Octo API traffic", m.theme), m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses", usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())), m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)), m.muted("Rolling hour · per-minute counts · current minute is partial · resets on restart")}
+	lines := []string{scheduler, m.muted("Shared authentication budget · includes other tools · GraphQL uses points"), budgets, "", text.Badge("Octo API traffic", m.theme), m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses", usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())), m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)), m.muted("Rolling hour · per-minute counts · current minute is partial · resets on restart")}
 
 	minutes := usage.GetMinutes()
 	if len(minutes) == 0 {
@@ -153,4 +154,33 @@ func (m *Model) githubContent(width int) string {
 		m.field("Metrics sampled", m.timestamp(usage.GetSampledAtMs(), fullTimestamp)))
 
 	return strings.Join(lines, "\n")
+}
+
+func (m *Model) schedulerContent() string {
+	status := m.snapshot.GetGithubScheduler()
+	if status == nil {
+		return m.muted("Scheduler cadence unavailable from this coordinator.")
+	}
+
+	activity := "idle"
+	if status.GetInFlight() {
+		activity = "1 active"
+	}
+
+	next := "awaiting work"
+	if status.GetQueuedRequests() > 0 || status.GetInFlight() {
+		next = m.timestamp(status.GetNextDispatchAtMs(), fullTimestamp)
+	}
+
+	lines := []string{text.Badge("GitHub scheduler", m.theme), m.field("Cadence", fmt.Sprintf("tick %s · minimum request gap %s", time.Duration(status.GetTickMs())*time.Millisecond, time.Duration(status.GetRequestSpacingMs())*time.Millisecond)), m.field("Requests", fmt.Sprintf("%d queued · %s", status.GetQueuedRequests(), activity)), m.field("Next eligible dispatch", next)}
+	for _, cooldown := range []struct {
+		name string
+		at   int64
+	}{{"REST", status.GetCoreRetryAtMs()}, {"GraphQL", status.GetGraphqlRetryAtMs()}} {
+		if cooldown.at > m.snapshot.GetGithubUsage().GetSampledAtMs() {
+			lines = append(lines, m.field(cooldown.name+" cooldown", m.timestamp(cooldown.at, fullTimestamp)))
+		}
+	}
+
+	return strings.Join(lines, "\n") + "\n"
 }

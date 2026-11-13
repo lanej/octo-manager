@@ -1,3 +1,6 @@
+import {GitHubScheduler} from "./scheduling/service.js";
+import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
+import {githubReads} from "./github-api.js";
 import {MergeService,type MergeOptions} from "./merging/service.js";
 import {NotificationService} from "./tracking/notifications.js";
 import type {NotificationReader} from "./tracking/notification-reader.js";
@@ -38,6 +41,8 @@ export function transient(error: string): boolean {
 export class Coordinator extends EventEmitter {
   readonly store: Store;
   readonly tracking: TrackingService;
+  readonly githubScheduler: GitHubScheduler;
+  private releaseDispatch: (()=>void) | undefined;
   readonly merging:MergeService;
   readonly repairs: RepairService;
   readonly submissions: SubmissionService;
@@ -59,7 +64,12 @@ export class Coordinator extends EventEmitter {
     super(); this.now = options.now ?? Date.now;
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
+      this.tracking.tick();
+      this.notifications.flush().catch(()=>{});
+      this.merging.tick().catch(()=>{});
+    });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
@@ -95,18 +105,19 @@ export class Coordinator extends EventEmitter {
       chmodSync(this.socketPath, 0o600);
       this.timer = setInterval(() => this.tick(), 100);
       this.tick();
-      this.tracking.start();
+      this.releaseDispatch=githubReads.setDispatcher(this.githubScheduler);
       this.repairs.start();
       this.submissions.start();
       this.submissionNotifications.start();
       this.digests.start();
-      this.notifications.start();
-      this.merging.start();
+
+      this.githubScheduler.start();
     } catch (error) { this.store.close(); throw error; }
   }
-  async pullRequestDetails(url: string, signal?: AbortSignal) {
+  pullRequestDetails(url: string) {
     if (this.stopping) throw new Error("Coordinator is stopping");
-    return (this.options.reviewReader ?? readPullRequestDetails)(url, signal);
+    this.githubScheduler.ensureReviews(url);
+    return Promise.resolve(this.githubScheduler.reviewState(url).details);
   }
   snapshot(): Snapshot {
     if (this.finalSnapshot) return this.finalSnapshot;
@@ -114,8 +125,11 @@ export class Coordinator extends EventEmitter {
     return { scheduler: this.stopped ? "stopped" : this.stopping ? "stopping" : this.store.paused() ? "paused" : "running", worker: recoveryPid ? "recovering" : this.active ? "busy" : "idle", jobs: this.store.jobs(), events: this.store.events(), ...(recoveryPid ? { recoveryPid } : {}) };
   }
   private notify(): void { this.emit("change"); }
-  private change(id: string, status: Status, detail = "", patch: Partial<Job> = {}): Job {
+  private change(id: string, status: Status, detail = "", patch: Partial<Job> = {}, clear: readonly ("error" | "result" | "fixture")[] = []): Job {
     const job = { ...transition(this.store.get(id), status, this.now()), ...patch };
+    if (clear.includes("error")) delete job.error;
+    if (clear.includes("result")) delete job.result;
+    if (clear.includes("fixture")) delete job.fixture;
     this.store.save(job, status, detail); this.notify(); return job;
   }
   command(value: unknown): unknown {
@@ -139,7 +153,7 @@ export class Coordinator extends EventEmitter {
       if (this.recoveryPids.size || this.active?.jobId === v.id) throw new Error("Wait for the previous worker to exit before retrying");
       const job = this.store.get(v.id);
       if (job.status !== "failed" && job.status !== "interrupted") throw new Error("Only failed or interrupted jobs can be retried");
-      return this.change(job.id, "queued", "Manual retry", { error: undefined, result: undefined, retryCount: 0, availableAt: this.now(), fixture: undefined });
+      return this.change(job.id, "queued", "Manual retry", { retryCount: 0, availableAt: this.now() }, ["error", "result", "fixture"]);
     }
     throw new Error("Unsupported command or arguments");
   }
@@ -159,7 +173,7 @@ export class Coordinator extends EventEmitter {
     for (const job of this.store.jobs()) if (job.status === "retry_wait" && job.availableAt <= now) this.change(job.id, "queued", "Retry delay elapsed");
     const job = nextReady(this.store.jobs(), now);
     if (!job) return;
-    const claimed = this.change(job.id, "running", "Worker claimed", { error: undefined, result: undefined, attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] });
+    const claimed = this.change(job.id, "running", "Worker claimed", { attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] }, ["error", "result"]);
     const active: Active = { jobId: job.id, attempt: claimed.attempts.length, abort: new AbortController(), exited: Promise.resolve() };
     this.active = active;
     active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, "worker_idle", "Worker slot released"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });
@@ -250,7 +264,7 @@ export class Coordinator extends EventEmitter {
         const delay = transient(error) ? retryDelay(job.retryCount) : undefined;
         if (delay !== undefined) this.change(job.id, "retry_wait", error, { attempts, error, retryCount: job.retryCount + 1, availableAt: this.now() + delay });
         else this.change(job.id, "failed", error, { attempts, error });
-      } else this.change(job.id, "succeeded", "Job completed", { attempts, result });
+      } else this.change(job.id, "succeeded", "Job completed", { attempts, ...(result === undefined ? {} : { result }) });
       if (fixture) await removeFixture(this.directory, fixture).catch(() => {});
     }
   }
@@ -260,6 +274,8 @@ export class Coordinator extends EventEmitter {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
       this.notifications.stop();
+      await this.githubScheduler.close();
+
     await this.merging.close();
     await this.digests.close();
       await this.submissions.close();
@@ -271,7 +287,7 @@ export class Coordinator extends EventEmitter {
       if (this.server?.listening) await new Promise<void>(resolve => this.server!.close(() => resolve()));
       if (existsSync(this.socketPath)) unlinkSync(this.socketPath);
       this.finalSnapshot = { ...this.snapshot(), scheduler: "stopped" };
-      this.stopped = true; this.store.close();
+      this.stopped = true; this.releaseDispatch?.(); this.store.close();
     })();
     return this.closePromise;
   }

@@ -22,7 +22,12 @@ test('generated Connect contract has typed failures, atomic snapshot cursors, re
     assert(before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.RUNNING));
     assert(!before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.SUCCEEDED));
     const review=await client.getPullRequest({url:'https://github.com/owner/repo/pull/12'});
-    assert.equal(review.pullRequest!.messages[0]!.bodyMarkdown,'Looks good');assert.equal(review.pullRequest!.observedAtMs,1234n);
+    assert.equal(review.pullRequest,undefined);
+    coordinator.githubScheduler.tick();
+    await new Promise(resolve=>setImmediate(resolve));
+    const cached=await client.getPullRequest({url:'https://github.com/owner/repo/pull/12'});
+    const details=cached.pullRequest;assert.ok(details!==undefined);
+    assert.equal(details.messages[0]?.bodyMarkdown,'Looks good');assert.equal(details.observedAtMs,1234n);
     await assert.rejects(client.getPullRequest({url:'file:///etc/passwd'}),code(Code.InvalidArgument));
     await assert.rejects(client.submitJob({ requestId: 'bad', task: {} }), code(Code.InvalidArgument));
     const request = { requestId: 'one', task: { kind: { case: 'resolveConflict' as const, value: {} } } };

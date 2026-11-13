@@ -57,6 +57,7 @@ export class ConflictStore {
       version !== 9 &&
       version !== 10 &&
       version !== 11 &&
+      version !== 15 &&
       version !== 14 &&
       version !== 13 &&
       version !== 12

@@ -1,3 +1,4 @@
+import type { RequestDispatch } from "./scheduling/service.js";
 import {
   sdkTransport,
   type GitHubTransport,
@@ -53,6 +54,13 @@ export class GitHubReads {
   private retryAtMs: Record<Resource, number> = { core: 0, graphql: 0 };
   private rateLimitAttempts: Record<Resource, number> = { core: 0, graphql: 0 };
   private readonly metrics: GitHubUsage;
+  private dispatcher: RequestDispatch | undefined;
+  setDispatcher(value: RequestDispatch): () => void {
+    this.dispatcher = value;
+    return () => {
+      if (this.dispatcher === value) this.dispatcher = undefined;
+    };
+  }
   constructor(
     private run: GitHubTransport = sdkTransport(),
     private now: () => number = Date.now,
@@ -137,6 +145,7 @@ export class GitHubReads {
     );
   }
   private enqueue<T>(workItem: () => Promise<T>): Promise<T> {
+    if (this.dispatcher !== undefined) return workItem();
     const work = this.queue.then(workItem);
     this.queue = work.then(
       () => {},
@@ -159,9 +168,26 @@ export class GitHubReads {
       this.remember(oldest, undefined);
     }
   }
-  private async request(path: string, signal?: AbortSignal): Promise<unknown> {
+  private request(path: string, signal?: AbortSignal): Promise<unknown> {
+    if (this.dispatcher !== undefined) {
+      const bounded =
+        signal === undefined
+          ? this.dispatcher.signal
+          : AbortSignal.any([signal, this.dispatcher.signal]);
+      return this.dispatcher.dispatch(
+        "core",
+        () => this.requestNow(path, bounded),
+        bounded,
+      );
+    }
+    return this.requestNow(path, signal);
+  }
+  private async requestNow(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     const cached = this.cache.get(path);
-    const result = await this.exchange(
+    const result = await this.exchangeNow(
       {
         method: "GET",
         path,
@@ -186,6 +212,25 @@ export class GitHubReads {
     return value;
   }
   private async exchange(
+    request: GitHubRequest,
+    resource: Resource,
+    signal?: AbortSignal,
+    beforeSend?: () => void,
+  ): Promise<GitHubResponse> {
+    if (this.dispatcher !== undefined) {
+      const bounded =
+        signal === undefined
+          ? this.dispatcher.signal
+          : AbortSignal.any([signal, this.dispatcher.signal]);
+      return this.dispatcher.dispatch(
+        resource,
+        () => this.exchangeNow(request, resource, bounded, beforeSend),
+        bounded,
+      );
+    }
+    return this.exchangeNow(request, resource, signal, beforeSend);
+  }
+  private async exchangeNow(
     request: GitHubRequest,
     resource: Resource,
     signal?: AbortSignal,
@@ -238,9 +283,11 @@ export class GitHubReads {
         retryAfter === undefined && reset === undefined ? at + fallback : 0,
       );
       this.retryAtMs[resource] = deadline;
+      this.dispatcher?.defer(resource, deadline);
       if (limited && result.headers.get("x-ratelimit-remaining") !== "0") {
         const other = resource === "core" ? "graphql" : "core";
         this.retryAtMs[other] = Math.max(this.retryAtMs[other], deadline);
+        this.dispatcher?.defer(other, deadline);
         this.rateLimitAttempts[other] = Math.max(
           this.rateLimitAttempts[other],
           this.rateLimitAttempts[resource],

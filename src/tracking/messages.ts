@@ -57,7 +57,7 @@ export type ReadFailedLog = (
   signal: AbortSignal,
 ) => Promise<string>;
 const failedLog: ReadFailedLog = async (repository, run, job, signal) => {
-  const bounded = AbortSignal.any([signal, AbortSignal.timeout(4500)]);
+  const bounded = signal;
   const metadata = await githubReads.read(
     `repos/${repository}/actions/jobs/${job}`,
     bounded,

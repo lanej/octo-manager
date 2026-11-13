@@ -16,7 +16,8 @@ export interface Participant {
 }
 export function migrateSubscriptions(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 14 || version === 13 || version === 12) return;
+  if (version === 15 || version === 14 || version === 13 || version === 12)
+    return;
   if (version !== 11)
     throw new Error("Unsupported subscription database version");
   db.exec(`BEGIN IMMEDIATE;

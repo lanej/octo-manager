@@ -2326,6 +2326,7 @@ func (x *RefreshTrackedPullRequestRequest) GetId() string {
 type RefreshTrackedPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
+	Refresh       *RefreshStatus         `protobuf:"bytes,2,opt,name=refresh,proto3" json:"refresh,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2363,6 +2364,13 @@ func (*RefreshTrackedPullRequestResponse) Descriptor() ([]byte, []int) {
 func (x *RefreshTrackedPullRequestResponse) GetPr() *TrackedPullRequest {
 	if x != nil {
 		return x.Pr
+	}
+	return nil
+}
+
+func (x *RefreshTrackedPullRequestResponse) GetRefresh() *RefreshStatus {
+	if x != nil {
+		return x.Refresh
 	}
 	return nil
 }
@@ -3703,7 +3711,7 @@ var File_octomanager_v1_tracking_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\n" +
-	"\x1doctomanager/v1/tracking.proto\x12\x0eoctomanager.v1\"\x87\x01\n" +
+	"\x1doctomanager/v1/tracking.proto\x12\x0eoctomanager.v1\x1a\x1boctomanager/v1/github.proto\"\x87\x01\n" +
 	"\vAgentTarget\x12\x18\n" +
 	"\aharness\x18\x01 \x01(\tR\aharness\x12\x1a\n" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1d\n" +
@@ -3904,9 +3912,10 @@ const file_octomanager_v1_tracking_proto_rawDesc = "" +
 	"\x1dGetTrackedPullRequestResponse\x122\n" +
 	"\x02pr\x18\x01 \x01(\v2\".octomanager.v1.TrackedPullRequestR\x02pr\"2\n" +
 	" RefreshTrackedPullRequestRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"W\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x90\x01\n" +
 	"!RefreshTrackedPullRequestResponse\x122\n" +
-	"\x02pr\x18\x01 \x01(\v2\".octomanager.v1.TrackedPullRequestR\x02pr\"O\n" +
+	"\x02pr\x18\x01 \x01(\v2\".octomanager.v1.TrackedPullRequestR\x02pr\x127\n" +
+	"\arefresh\x18\x02 \x01(\v2\x1d.octomanager.v1.RefreshStatusR\arefresh\"O\n" +
 	"\x19AssignPullRequestResponse\x122\n" +
 	"\x02pr\x18\x01 \x01(\v2\".octomanager.v1.TrackedPullRequestR\x02pr\"+\n" +
 	"\x19UntrackPullRequestRequest\x12\x0e\n" +
@@ -4093,6 +4102,7 @@ var file_octomanager_v1_tracking_proto_goTypes = []any{
 	(*ListPRParticipantsResponse)(nil),        // 55: octomanager.v1.ListPRParticipantsResponse
 	(*SubscribePullRequestResponse)(nil),      // 56: octomanager.v1.SubscribePullRequestResponse
 	(*UnsubscribePullRequestResponse)(nil),    // 57: octomanager.v1.UnsubscribePullRequestResponse
+	(*RefreshStatus)(nil),                     // 58: octomanager.v1.RefreshStatus
 }
 var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	4,  // 0: octomanager.v1.AgentReference.target:type_name -> octomanager.v1.AgentTarget
@@ -4123,25 +4133,26 @@ var file_octomanager_v1_tracking_proto_depIdxs = []int32{
 	8,  // 25: octomanager.v1.TrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
 	8,  // 26: octomanager.v1.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
 	8,  // 27: octomanager.v1.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	8,  // 28: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	8,  // 29: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
-	16, // 30: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
-	16, // 31: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
-	16, // 32: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
-	16, // 33: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
-	44, // 34: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
-	44, // 35: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
-	4,  // 36: octomanager.v1.RegisterAgentRequest.target:type_name -> octomanager.v1.AgentTarget
-	5,  // 37: octomanager.v1.RegisterAgentResponse.agent:type_name -> octomanager.v1.AgentReference
-	4,  // 38: octomanager.v1.SubscribePullRequestRequest.agent:type_name -> octomanager.v1.AgentTarget
-	51, // 39: octomanager.v1.ListPRParticipantsResponse.participants:type_name -> octomanager.v1.PRParticipant
-	51, // 40: octomanager.v1.SubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
-	51, // 41: octomanager.v1.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	58, // 28: octomanager.v1.RefreshTrackedPullRequestResponse.refresh:type_name -> octomanager.v1.RefreshStatus
+	8,  // 29: octomanager.v1.AssignPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	8,  // 30: octomanager.v1.UntrackPullRequestResponse.pr:type_name -> octomanager.v1.TrackedPullRequest
+	16, // 31: octomanager.v1.GetActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 32: octomanager.v1.AcknowledgeActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 33: octomanager.v1.StartActionResponse.action:type_name -> octomanager.v1.PendingAction
+	16, // 34: octomanager.v1.ReprofileActionResponse.action:type_name -> octomanager.v1.PendingAction
+	44, // 35: octomanager.v1.ListAgentMessagesResponse.messages:type_name -> octomanager.v1.AgentMessage
+	44, // 36: octomanager.v1.AcknowledgeMessageResponse.message:type_name -> octomanager.v1.AgentMessage
+	4,  // 37: octomanager.v1.RegisterAgentRequest.target:type_name -> octomanager.v1.AgentTarget
+	5,  // 38: octomanager.v1.RegisterAgentResponse.agent:type_name -> octomanager.v1.AgentReference
+	4,  // 39: octomanager.v1.SubscribePullRequestRequest.agent:type_name -> octomanager.v1.AgentTarget
+	51, // 40: octomanager.v1.ListPRParticipantsResponse.participants:type_name -> octomanager.v1.PRParticipant
+	51, // 41: octomanager.v1.SubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
+	51, // 42: octomanager.v1.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v1.PRParticipant
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_tracking_proto_init() }
@@ -4149,6 +4160,7 @@ func file_octomanager_v1_tracking_proto_init() {
 	if File_octomanager_v1_tracking_proto != nil {
 		return
 	}
+	file_octomanager_v1_github_proto_init()
 	file_octomanager_v1_tracking_proto_msgTypes[0].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[1].OneofWrappers = []any{}
 	file_octomanager_v1_tracking_proto_msgTypes[3].OneofWrappers = []any{}

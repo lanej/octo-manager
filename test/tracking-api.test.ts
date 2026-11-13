@@ -60,6 +60,8 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
     assert.equal(result.pr.url, url);
     const client = schedulerClient(dir);
     await client.refreshTrackedPullRequest({ id: result.pr.id });
+    coordinator.githubScheduler.tick();
+    await new Promise((resolve) => setImmediate(resolve));
     const snapshot = (await client.getSnapshot({})).snapshot!;
     assert.equal(snapshot.jobs.length, 0);
     assert.equal(snapshot.tracking!.prs.length, 1);

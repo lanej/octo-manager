@@ -35,6 +35,9 @@ const scalarFields = new Set([
   "seq",
   "jobId",
   "at",
+  "dueAtMs",
+  "lastAttemptAtMs",
+  "lastError",
   "refreshError",
   "refreshErrorAtMs",
   "observedAtMs",
@@ -83,6 +86,7 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "refresh",
   "chains",
   "entries",
   "operations",

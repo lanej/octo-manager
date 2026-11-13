@@ -1,3 +1,4 @@
+import {dashboardRoutes,wireScheduler,wireRefresh,wireDetails} from "./scheduling/rpc.js";
 import {digestReceipt} from "./notifications/receipt.js";
 import { complexity, renderTemplate } from "./submissions/contracts.js";
 import { inboxRoutes } from "./tracking/inbox-rpc.js";
@@ -37,6 +38,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
     tracking: wireTracking(coordinator.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
+    githubScheduler:wireScheduler(coordinator.githubScheduler),
     mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,chainState:coordinator.store.merging.chain(entry.chainId).state,autoMerge:entry.autoMerge,state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
     repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
@@ -68,6 +70,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    ...dashboardRoutes(coordinator),
     mergeCommand(r){return trackingOperation(()=>({resultJson:JSON.stringify(coordinator.merging.command(JSON.parse(r.inputJson)))}));},
     subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
@@ -127,7 +130,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
     async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},
-    async refreshTrackedPullRequest(r){return trackingOperation(async()=>{await tracking.refresh(r.id);return {pr:wirePR(tracking.store.pr(r.id))};});},
+    refreshTrackedPullRequest(r){return trackingOperation(()=>{tracking.requestRefresh(r.id);return {pr:wirePR(tracking.store.pr(r.id)),refresh:wireRefresh(coordinator.store.schedules.get(`tracking:${tracking.store.pr(r.id).id}`))};});},
     async assignPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.assign(r.id,owner(r.owner)))}));},
     async untrackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.untrack(r.id))}));},
     async listActions(r){return {actions:tracking.store.actions().filter(a=>!r.prId||a.prId===r.prId).map(wireAction)};},
@@ -142,17 +145,12 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       return { job: wireJob(command(coordinator, { op: "submit", requestId: request.requestId, task: parsed }) as Job) };
     },
     getJob(request) { return { job: wireJob(command(coordinator, { op: "get", id: request.id }) as Job) }; },
-    async getPullRequest(request, context) {
-      try { parseTask({ kind: "summarize_pr", url: request.url }); }
-      catch { throw new ConnectError("A valid GitHub PR URL is required", Code.InvalidArgument); }
-      try {
-        const value = await coordinator.pullRequestDetails(request.url, context.signal);
-        return { pullRequest: { ...value, observedAtMs: BigInt(value.observedAtMs), messages: value.messages.map(message => ({ ...message, atMs: BigInt(message.atMs), line: message.line === undefined ? undefined : BigInt(message.line) })) } };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "GitHub read failed";
-        if (message.includes("Only confirmed public")) throw new ConnectError("Only confirmed public repository PRs are supported", Code.PermissionDenied);
-        throw new ConnectError("GitHub reviews unavailable; check gh authentication, access, and connectivity", Code.Unavailable);
-      }
+    getPullRequest(request) {
+      return trackingOperation(()=>{
+        coordinator.githubScheduler.ensureReviews(request.url,request.refresh);
+        const view=coordinator.githubScheduler.reviewState(request.url);
+        return {pullRequest:wireDetails(view.details),refresh:wireRefresh(view.schedule)};
+      });
     },
     getSnapshot() { return { snapshot: wireSnapshot(coordinator) }; },
     cancelJob(request) { return { job: wireJob(command(coordinator, { op: "cancel", id: request.id }) as Job) }; },

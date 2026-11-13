@@ -1,3 +1,4 @@
+import {migrateScheduling,ScheduleStore} from "./scheduling/store.js";
 import {migrateAutoMerge} from "./merging/upgrade.js";
 import {migrateMerging} from "./merging/schema.js";
 import {MergeStore} from "./merging/store.js";
@@ -31,6 +32,7 @@ export function privateDirectory(path: string): void {
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
+  readonly schedules: ScheduleStore;
   readonly merging: MergeStore;
   readonly activity: ActivityStore;
   readonly repairs: RepairStore;
@@ -70,6 +72,8 @@ export class Store {
       migrateSubscriptions(this.db);
       migrateMerging(this.db);
       migrateAutoMerge(this.db);
+      migrateScheduling(this.db);
+      this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});

@@ -1,3 +1,5 @@
+import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
+import type { ScheduleStore } from "../scheduling/store.js";
 import {
   defaultPollPolicy,
   schedulePoll,
@@ -29,6 +31,8 @@ import {
 } from "../agents/codex.js";
 export interface TrackingOptions {
   stateDirectory?: string;
+  schedules?: ScheduleStore;
+  interactive?: <T>(work: () => T) => T;
   managedQueue?: (agentId: string) => boolean;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
@@ -48,6 +52,7 @@ export class TrackingService {
   private deliveryWork?: Promise<void>;
   private refreshControllers = new Map<string, AbortController>();
   private stopped = false;
+  private deliveryAbort = new AbortController();
   private connections = new Set<AgentConnection>();
   constructor(
     readonly store: TrackingStore,
@@ -107,7 +112,7 @@ export class TrackingService {
   track(url: string, target: AgentTarget) {
     this.validateTarget(target);
     const p = this.store.track(url, target);
-    void this.refresh(p.id).catch(() => {});
+    this.requestRefresh(p.id);
     return p;
   }
   subscribe(id: string, target: AgentTarget) {
@@ -117,6 +122,58 @@ export class TrackingService {
   assign(id: string, target: AgentTarget) {
     this.validateTarget(target);
     return this.store.assign(id, target);
+  }
+  requestRefresh(id: string): void {
+    const pr = this.store.pr(id);
+    if (!pr.enabled) throw new Error("PR tracking is disabled");
+    if (this.stopped) throw new Error("Coordinator is stopping");
+    if (this.refreshes.has(pr.id)) {
+      this.refreshTriggers.set(pr.id, "manual");
+      return;
+    }
+    const old = this.pollState(pr.id);
+    const next: PollState = {
+      ...old,
+      epoch: pr.trackingEpoch,
+      active: old?.active ?? false,
+      intervalMs: this.config.polling?.minimumMs ?? 60000,
+      nextAt: this.now(),
+    };
+    this.savePoll(pr.id, next, true);
+  }
+  private pollState(id: string): PollState | undefined {
+    const saved = this.options.schedules?.get(`tracking:${id}`);
+    if (saved !== undefined && saved.epoch !== undefined)
+      return {
+        epoch: saved.epoch,
+        active: saved.active === true,
+        intervalMs: saved.intervalMs,
+        nextAt: saved.dueAtMs,
+        ...(saved.signature === undefined
+          ? {}
+          : { signature: saved.signature }),
+      };
+    return this.pollStates.get(id);
+  }
+  private savePoll(id: string, state: PollState, interactive = false): void {
+    this.pollStates.set(id, state);
+    const previous = this.options.schedules?.get(`tracking:${id}`);
+    const lastError = this.store.pr(id).lastRefreshError?.message;
+    this.options.schedules?.save({
+      ...(previous?.lastAttemptAtMs === undefined
+        ? {}
+        : { lastAttemptAtMs: previous.lastAttemptAtMs }),
+      ...(lastError === undefined ? {} : { lastError }),
+      key: `tracking:${id}`,
+      kind: RefreshKind.Tracking,
+      subject: id,
+      dueAtMs: state.nextAt,
+      intervalMs: state.intervalMs,
+      epoch: state.epoch,
+      active: state.active,
+      ...(state.signature === undefined ? {} : { signature: state.signature }),
+      state: interactive ? ScheduleState.Queued : ScheduleState.Deferred,
+    });
   }
   refresh(id: string, trigger: "poll" | "manual" = "manual"): Promise<unknown> {
     if (this.stopped)
@@ -132,6 +189,17 @@ export class TrackingService {
         : existing.then(() => this.refresh(id, trigger));
     if (this.now() < this.githubRetryAt)
       return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
+    const scheduled = this.options.schedules?.get(`tracking:${p.id}`);
+    this.options.schedules?.save({
+      ...scheduled,
+      key: `tracking:${p.id}`,
+      kind: RefreshKind.Tracking,
+      subject: p.id,
+      dueAtMs: scheduled?.dueAtMs ?? this.now(),
+      intervalMs: scheduled?.intervalMs ?? 60000,
+      state: ScheduleState.Running,
+      lastAttemptAtMs: this.now(),
+    });
     const controller = new AbortController();
     this.refreshControllers.set(p.id, controller);
     this.refreshTriggers.set(p.id, trigger);
@@ -172,10 +240,10 @@ export class TrackingService {
               defaultPollPolicy.activeMaximumMs,
           ),
         };
-        this.pollStates.set(
+        this.savePoll(
           p.id,
           schedulePoll(
-            this.pollStates.get(p.id),
+            this.pollState(p.id),
             p.trackingEpoch,
             observed,
             this.now(),
@@ -184,6 +252,16 @@ export class TrackingService {
             this.githubRetryAt,
           ),
         );
+        if (this.stopped) {
+          const interrupted = this.options.schedules?.get(`tracking:${p.id}`);
+          if (interrupted !== undefined)
+            this.options.schedules?.save({
+              ...interrupted,
+              state: ScheduleState.Queued,
+              dueAtMs: this.now(),
+              deferredReason: "Interrupted refresh queued after restart",
+            });
+        }
         this.refreshes.delete(p.id);
         this.refreshEpochs.delete(p.id);
         this.refreshTriggers.delete(p.id);
@@ -231,12 +309,14 @@ export class TrackingService {
         p.enabled &&
         this.now() >= this.githubRetryAt &&
         (p.state === TrackingState.Watching ||
-          p.state === TrackingState.Draining) &&
-        ((this.pollStates.get(p.id)?.epoch === p.trackingEpoch
-          ? this.pollStates.get(p.id)?.nextAt
+          p.state === TrackingState.Draining ||
+          this.options.schedules?.get(`tracking:${p.id}`)?.state ===
+            ScheduleState.Queued) &&
+        ((this.pollState(p.id)?.epoch === p.trackingEpoch
+          ? this.pollState(p.id)?.nextAt
           : undefined) ?? 0) <= this.now()
       )
-        void this.refresh(p.id, "poll").catch(() => {});
+        this.runPoll(p.id);
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
       this.deliveryWork = this.deliverNext()
@@ -245,6 +325,20 @@ export class TrackingService {
           this.deliveryBusy = false;
         });
     }
+  }
+  private runPoll(id: string): void {
+    const saved = this.options.schedules?.get(`tracking:${id}`);
+    const run = () =>
+      this.refresh(
+        id,
+        saved?.state === ScheduleState.Queued ? "manual" : "poll",
+      ).catch(() => {});
+    if (
+      saved?.state === ScheduleState.Queued &&
+      this.options.interactive !== undefined
+    )
+      this.options.interactive(run).catch(() => {});
+    else run().catch(() => {});
   }
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveries().find((d) => {
@@ -284,7 +378,14 @@ export class TrackingService {
       ) {
         const excerpt = await (
           this.options.failureExcerpt ?? readFailureExcerpt
-        )(action, pr.url, AbortSignal.timeout(5000));
+        )(
+          action,
+          pr.url,
+          AbortSignal.any([
+            this.deliveryAbort.signal,
+            AbortSignal.timeout(5000),
+          ]),
+        );
         if (!this.current(d)) return;
         const message = agentMessage(action, pr.url, d.id, excerpt, {
           actions: this.store.actions().map((action) => action.id),
@@ -574,6 +675,7 @@ export class TrackingService {
   }
   async close(): Promise<void> {
     this.stopped = true;
+    this.deliveryAbort.abort();
     if (this.timer) clearInterval(this.timer);
     for (const controller of this.refreshControllers.values())
       controller.abort();
