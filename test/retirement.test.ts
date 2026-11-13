@@ -1,3 +1,5 @@
+import { rejects } from "node:assert/strict";
+import { GitHubRateLimitError } from "../src/github-api.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Store } from "../src/store.js";
@@ -338,4 +340,50 @@ test("notification access failures retain server retry deadlines", () => {
   expect(
     notificationAccessError("HTTP/2 401 Unauthorized\r\n\r\n{}").retryAt,
   ).toBeUndefined();
+});
+
+test("retirement deadlines expire locally during a shared GitHub cooldown without resuming archived polling", async () => {
+  const f = await fixture();
+  let reads = 0;
+  const retryAt = f.now + 2 * 86400000;
+  const service = new TrackingService(f.store.tracking, f.config, () => f.now, {
+    read: () => {
+      reads++;
+      return reads === 1
+        ? Promise.reject(new GitHubRateLimitError(retryAt))
+        : Promise.resolve(observation(f.now, "closed"));
+    },
+  });
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    f.store.tracking.observe(
+      pr.id,
+      observation(f.now, "open", "in_progress"),
+      f.config,
+    );
+    f.store.tracking.observe(
+      pr.id,
+      observation(f.now, "closed", "in_progress"),
+      f.config,
+    );
+    await service.refresh(pr.id);
+    expect(reads).toBe(1);
+    f.advance(86400001);
+    service.tick();
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+    expect(f.store.tracking.checks.list(pr.id)[0]?.state).toBe(
+      CheckWatchState.Expired,
+    );
+    await rejects(service.refresh(pr.id), GitHubRateLimitError);
+    expect(reads).toBe(1);
+    f.advance(86400000);
+    service.tick();
+    expect(reads).toBe(1);
+    await service.refresh(pr.id);
+    expect(reads).toBe(2);
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+  } finally {
+    await service.close();
+    await f.close();
+  }
 });
