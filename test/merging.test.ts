@@ -527,7 +527,7 @@ test("schema upgrade preserves records and operation leases block policy edits a
     try {
       assert.equal(
         db.prepare("PRAGMA user_version").get()?.["user_version"],
-        14,
+        15,
       );
     } finally {
       db.close();

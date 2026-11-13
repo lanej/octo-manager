@@ -4350,14 +4350,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(review.pullRequest!.messages[0]!.bodyMarkdown,'Looks good');assert.equal(review.pullRequest!.observedAtMs,1234n);",
-      "count": 1
-    },
-    {
-      "file": "test/rpc.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
       "source": "const accepted = (await client.submitJob(request)).job!;",
       "count": 1
     },

@@ -27,6 +27,7 @@ type (
 		url     string
 		details *v1.PullRequestDetails
 		err     error
+		status  *v1.RefreshStatus
 	}
 	historyMsg struct {
 		job, instance   string
@@ -57,12 +58,12 @@ func (m *Model) loadReviews(force bool) tea.Cmd {
 		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 		defer cancel()
 
-		response, err := m.api.RPC.GetPullRequest(ctx, connect.NewRequest(&v1.GetPullRequestRequest{Url: address}))
+		response, err := m.api.RPC.GetPullRequest(ctx, connect.NewRequest(&v1.GetPullRequestRequest{Url: address, Refresh: force}))
 		if err != nil {
 			return reviewMsg{url: address, err: err}
 		}
 
-		return reviewMsg{url: address, details: response.Msg.GetPullRequest()}
+		return reviewMsg{url: address, details: response.Msg.GetPullRequest(), status: response.Msg.GetRefresh()}
 	}
 }
 
@@ -101,10 +102,16 @@ func (m *Model) applyReview(msg reviewMsg) tea.Cmd {
 	if msg.err != nil {
 		m.reviewErrors[msg.url] = safe(msg.err.Error())
 	} else if msg.details == nil {
-		m.reviewErrors[msg.url] = "Coordinator returned no PR details"
+		m.reviewErrors[msg.url] = ""
 	} else {
 		m.reviews[msg.url] = msg.details
 		m.reviewErrors[msg.url] = ""
+	}
+
+	if msg.status != nil {
+		m.reviewStatuses[msg.url] = msg.status
+		m.reviewLoading[msg.url] = msg.status.GetState() == v1.RefreshState_REFRESH_STATE_QUEUED || msg.status.GetState() == v1.RefreshState_REFRESH_STATE_RUNNING
+		m.reviewErrors[msg.url] = safe(msg.status.GetLastError())
 	}
 
 	if m.currentSubject().url == msg.url {
@@ -159,7 +166,12 @@ func (m *Model) reviewsMarkdown() string {
 
 	notice := ""
 	if m.reviewLoading[address] {
-		notice = "Refreshing GitHub reviews…\n\n"
+		notice = "Refresh pending; showing the latest stored review state.\n\n"
+		if status := m.reviewStatuses[address]; status.GetState() == v1.RefreshState_REFRESH_STATE_QUEUED {
+			notice = "Refresh queued; showing the latest stored review state.\n\n"
+		} else if status.GetState() == v1.RefreshState_REFRESH_STATE_RUNNING {
+			notice = "Refreshing; showing the latest stored review state.\n\n"
+		}
 	}
 
 	if m.reviewErrors[address] != "" {
@@ -172,6 +184,10 @@ func (m *Model) reviewsMarkdown() string {
 		}
 
 		return notice
+	}
+
+	if status := m.reviewStatuses[address]; status != nil && status.GetDueAtMs() != 0 {
+		notice += "Next eligible refresh: " + m.timestamp(status.GetDueAtMs(), fullTimestamp) + "\n\n"
 	}
 
 	result := notice + "# " + safe(details.GetTitle()) + "\n\n" + safe(details.GetState()) + " · observed " + m.timestamp(details.GetObservedAtMs(), fullTimestamp) + " · head `" + shortSHA(details.GetHeadSha()) + "`\n\n"

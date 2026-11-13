@@ -78,6 +78,13 @@ func (m *Model) trackingContent() string {
 	}
 
 	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), m.trackingAutomation(pr)}
+	if status := m.selectedRefresh; status != nil {
+		parts = append(parts, m.field("Refresh", stateName(status.GetState().String(), "REFRESH_STATE_")), m.field("Next eligible", m.timestamp(status.GetDueAtMs(), fullTimestamp)))
+		if status.GetLastError() != "" {
+			parts = append(parts, m.field("Refresh error", safe(status.GetLastError())))
+		}
+	}
+
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}

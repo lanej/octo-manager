@@ -123,7 +123,7 @@ type rejectingWatch struct {
 	code connect.Code
 }
 
-func (s rejectingWatch) Watch(context.Context, *connect.Request[v1.WatchRequest], *connect.ServerStream[v1.WatchResponse]) error {
+func (s rejectingWatch) WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest], *connect.ServerStream[v1.WatchDashboardResponse]) error {
 	return connect.NewError(s.code, errors.New("invalid cursor or instance"))
 }
 
@@ -139,12 +139,12 @@ func TestRejectedWatchResynchronizes(t *testing.T) {
 		t.Cleanup(server.Close)
 		rpc := octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
-		stream, err := rpc.Watch(t.Context(), connect.NewRequest(&v1.WatchRequest{InstanceId: "fixture", AfterSequence: 999}))
+		stream, err := rpc.WatchDashboard(t.Context(), connect.NewRequest(&v1.WatchDashboardRequest{}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		next := m.Update(watchMsg{instance: "fixture", stream: stream})
+		next := m.Update(dashboardOpened{version: m.dashboardVersion, stream: stream})
 		if next == nil {
 			t.Fatal("stream receive was not scheduled")
 		}
@@ -158,10 +158,6 @@ func TestRejectedWatchResynchronizes(t *testing.T) {
 
 		if m.watching {
 			t.Fatal("rejected stream still watching")
-		}
-
-		if m.instance != "" {
-			t.Fatal("rejected cursor does not request a fresh snapshot")
 		}
 
 		fresh := example()

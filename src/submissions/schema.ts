@@ -5,6 +5,7 @@ export function migrateSubmissions(db: DatabaseSync): void {
   );
   if (
     version === 9 ||
+    version === 15 ||
     version === 14 ||
     version === 13 ||
     version === 12 ||

@@ -15,7 +15,7 @@ The state directory is owner-only (0700), and the socket is owner-only (0600). T
 | `SubmitJob` | Returns the durable job handle; acceptance is not completion. |
 | `GetJob` | Returns the current confirmed job state and optional result/error. |
 | `GetSnapshot` | Returns scheduler/worker state, jobs, the latest 100 events, the canonical allowed transition graph, an instance ID, and a sequence cursor. |
-| `GetPullRequest` | Reads a validated public PR URL and returns observed PR details plus review, inline, and discussion messages. |
+| `GetPullRequest` | Returns cached details and refresh status for a validated public PR URL; `refresh=true` queues an earlier refresh. |
 | `ListEvents` | Returns up to 200 events strictly after a sequence, optionally filtered by job. |
 | `Watch` | Streams persisted events strictly after the requested sequence, optionally filtered by job. |
 | `CancelJob` | May return `cancelling`; inspect subsequent state until `cancelled`. |
@@ -39,15 +39,15 @@ The instance ID is persisted in that database and survives coordinator restart. 
 
 The Charmed frontend groups jobs by their canonical PR task URL; jobs and attempts remain execution handles below that identity. Case differences and a trailing slash do not create separate PR entries. Browser opening is local to the frontend and does not mutate scheduler state or GitHub.
 
-The Charmed frontend uses watch events to request fresh snapshots and also refreshes once per second for reconnection and liveness. It serializes snapshot requests, keeps results visible during connection loss, and displays unconfirmed command failures. Its worker pane shows confirmed run/slot state, attempt PID and exit observation, and recent tool calls. The State tab paginates `ListEvents` from sequence zero for the selected run, independent of the latest 100 snapshot events. Selection and instance/version fences reject late history responses, including after reselecting the same run. The observed path includes only persisted transitions. The diagram derives terminal markers from `Snapshot.allowed_transitions`, generated from the same domain graph that validates transitions.
+The Charmed frontend subscribes with `WatchDashboard` and receives cached state on each coordinator tick. Its local retry timer reconnects disconnected streams without polling GitHub. Subscription generations fence late frames; cached results remain visible during connection loss. Its worker pane shows confirmed run/slot state, attempt PID and exit observation, and recent tool calls. The State tab paginates `ListEvents` from sequence zero for the selected run, independent of the latest 100 snapshot events. Selection and instance/version fences reject late history responses, including after reselecting the same run. The observed path includes only persisted transitions. The diagram derives terminal markers from `Snapshot.allowed_transitions`, generated from the same domain graph that validates transitions.
 
 Closing a watch or quitting the TUI cancels client I/O only. It does not cancel a job, stop the coordinator, or refresh provider credentials. Stop `serve` explicitly to shut down the coordinator; its existing interruption and worker-exit rules apply.
 
 ## GitHub review observations
 
-`GetPullRequest` confirms `base.repo.private === false` before reading message endpoints. It uses the existing `gh` login and only GET requests. Reviews are separate from model output and are not sent to Pi by this operation. No review, reply, resolution, or comment is published.
+`GetPullRequest` returns stored data immediately. Its scheduled loader confirms `base.repo.private === false` before reading message endpoints. It uses the existing `gh` login and only GET requests. Reviews are separate from model output and are not sent to Pi by this operation. No review, reply, resolution, or comment is published.
 
-The response includes title, PR state, head SHA, and the timestamp at which those PR facts were read. Reviews, inline comments, and issue discussion are subsequent independent reads, not one atomic GitHub snapshot. The UI loads once per PR and refreshes on `u`, keeps prior observations visible if refresh fails, and displays their original timestamp. It does not imply real-time review state or resolved-thread tracking. Commit IDs on review/inline messages identify observations on earlier heads; the interface does not infer which findings remain unresolved.
+The response includes title, PR state, head SHA, and the timestamp at which those PR facts were read. Reviews, inline comments, and issue discussion are subsequent independent reads, not one atomic GitHub snapshot. The scheduler refreshes a viewed PR when due; `u` queues an earlier refresh. The UI keeps prior observations visible if refresh fails and displays their original timestamp. It does not imply real-time review state or resolved-thread tracking. Commit IDs on review/inline messages identify observations on earlier heads; the interface does not infer which findings remain unresolved.
 
 The implementation reads the first 100 records from each of GitHub’s [review](https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request), [inline comment](https://docs.github.com/en/rest/pulls/comments#list-review-comments-on-a-pull-request), and [issue discussion](https://docs.github.com/en/rest/issues/comments#list-issue-comments) endpoints. A full source page sets `may_have_more_messages`; exactly 100 items can also set this conservative flag. Message bodies are capped at 4,000 characters with a per-message truncation flag. Original message URLs let users inspect the full content on GitHub. Upstream responses are size/time bounded; read failures remain visible instead of appearing as an empty review feed.
 
@@ -76,7 +76,7 @@ Automated checks run actual generated Go unary/streaming calls against the Bun s
 
 `TrackPullRequest`, `ListTrackedPullRequests`, `GetTrackedPullRequest`, `RefreshTrackedPullRequest`, `AssignPullRequest`, and `UntrackPullRequest` manage durable ownership independently of jobs. `ListActions`, `GetAction`, `AcknowledgeAction`, `StartAction`, `RetryDelivery`, and `ReprofileAction` expose pending work and recovery. `Snapshot.tracking` includes PRs, agents, actions, deliveries, and attempts. See the [tracking guide](tracking.md) for lifecycle rules.
 
-Tracking observations may read private metadata through existing GitHub authentication. `GetPullRequest` review messages and worker tools retain their public-only behavior. A refresh can return the retained PR with `refresh_error` when GitHub is unavailable; that is not a fresh successful observation. PR event filters preserve the existing global sequence and replay rules.
+Tracking observations may read private metadata through existing GitHub authentication. `GetPullRequest` review messages and worker tools retain their public-only behavior. A refresh request queues work and returns the retained PR plus refresh status immediately. Later scheduler frames carry successful observations or retained `refresh_error` evidence; queued acceptance is not a fresh observation. PR event filters preserve the existing global sequence and replay rules.
 
 ## PR submission operations
 
@@ -85,3 +85,9 @@ Tracking observations may read private metadata through existing GitHub authenti
 ## Agent digest operations
 
 `GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` expose [queued digest revisions](agent-digests.md). Inspection uses validated JSON records; receipt returns typed member identities, current applicability and receipt timestamps. Receipt is atomic across the exact revision members and is separate from action progress.
+
+## Tick-driven dashboard
+
+`WatchDashboard({url, reviews})` streams an initial cached frame and subsequent frames on the shared coordinator tick. Each frame contains the current `Snapshot`, optional cached `PullRequestDetails`, and `RefreshStatus` for the selected view. Review subscriptions register view interest without enrolling the PR; cancellation releases that interest. Other view data remains local to the coordinator. The original event `Watch` RPC remains available to event consumers.
+
+`RefreshStatus.state` is an enum: queued, running or deferred, with a separate eligibility deadline, latest attempt time and error. `Snapshot.github_scheduler` carries tick/request-spacing settings, tick sequence, next tick and dispatch times, queued/in-flight request counts and resource cooldowns. These timestamps remain Unix milliseconds; the TUI applies the configured presentation timezone.

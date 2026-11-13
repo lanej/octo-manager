@@ -20,17 +20,29 @@ Merges use GitHub's asynchronous API with an expected head SHA and no rule bypas
 
 Independent check-run IDs remain independent. Only cancelled workflow suites with a later successful invocation of the same workflow definition, automatic trigger, and head are omitted from the merge gate; the check-suite identity links their jobs. Failure/pending evidence and unknown suite relationships remain blocking. The original evidence remains in tracking history.
 
-## Adaptive polling
+## Shared scheduler and cached views
 
-Unchanged automatic polls back off from **1 → 2 → 4 → 8 → 15 minutes**. Head, target, lifecycle, check, review, feedback, or description changes reset the interval. Manual refresh and notification hints reset it too. Pending check evidence retains a two-minute ceiling, including after transient read failures. A GitHub rate-limit deadline always wins.
+The coordinator owns one GitHub scheduling tick. Its default cadence is one second. Tracking, notifications and merge reconciliation run from that clock; each retains its existing eligibility and freshness rules. Every GitHub API request, including pagination, logs, GraphQL and merge operations, passes through the shared dispatch gate.
+
+Requests are serialized, with a default minimum two-second gap after completion before another starts. This conservative gap also covers slow authentication before an HTTP send. Long requests can slow throughput; delayed ticks never cause catch-up bursts. Interactive requests alternate with waiting background requests, oldest first within each class. GitHub cooldowns take precedence, independently for REST and GraphQL unless a secondary limit pauses both.
+
+Unchanged PR observations back off from **1 → 2 → 4 → 8 → 15 minutes**. Pending check evidence retains a two-minute ceiling. Head, target, lifecycle, checks, reviews, feedback or description changes reset the interval. Refresh actions and notification hints request earlier work without bypassing dispatch spacing or cooldowns.
+
+The dashboard subscribes to its selected object with `WatchDashboard`. It receives an initial stored frame, then another on each scheduler tick. Switching tabs or PRs changes the subscription; it does not directly fetch GitHub. Global Activity and GitHub views present local coordinator data. Reviews register interest in a public PR without enrolling it or changing ownership. Closing a view removes that interest; tracked PR monitoring continues independently.
+
+Pressing `u` queues a refresh for the next available slot. Repeated requests collapse into existing work. Cached content remains visible with refresh status and observation time; a cache miss is pending, not a failed read. Errors retain the previous successful view and their own attempt metadata. “Next eligible” describes the scheduling deadline; requests may wait longer for pacing or cooldowns.
 
 Optional `config.json` settings:
 
 ```json
-{"polling":{"minimumMs":60000,"maximumMs":900000,"activeMaximumMs":120000}}
+{"polling":{"tickMs":1000,"requestSpacingMs":2000,"minimumMs":60000,"maximumMs":900000,"activeMaximumMs":120000}}
 ```
 
-The minimum is at least one second, the maximum at most one hour, and the active ceiling must fall within those bounds. Poll scheduling stays inside the tracker and is transient, as before: restart starts from the minimum interval. It adds no database schedule or extra GitHub discovery calls.
+`tickMs` is an integer from 100 ms to one minute; `requestSpacingMs` must be at least the tick interval and at most one hour. The PR polling minimum is at least one second, the maximum at most one hour, and the active ceiling lies within those bounds. Omitting settings preserves the defaults above.
+
+Schema 15 stores tracking/review schedules, review views and dispatch/cooldown deadlines. Restart retains backoff, requeues interrupted reads and preserves asynchronous merge identities. Review cache storage is bounded to 128 views and 16 MiB, evicting the oldest written view. Reopening an evicted view queues a refresh; reopening a failed first load preserves its retry deadline unless explicitly refreshed. Older coordinators reject schema 15.
+
+The GitHub dashboard shows cadence, queued/in-flight requests, next dispatch and cooldowns alongside the existing budget forecasts. Display updates do not consume GitHub requests.
 
 ## Dashboard forecast
 

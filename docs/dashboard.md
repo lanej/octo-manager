@@ -1,5 +1,7 @@
 # Dashboard layout
 
+The dashboard receives stored frames on the coordinator’s shared scheduling tick. View changes register interest; `u` queues a refresh while keeping cached content visible. The GitHub tab includes cadence, queued requests, next dispatch and cooldowns. See the [scheduler guide](polling-and-auto-merge.md).
+
 Each tab declares its purpose, main content and supporting regions through Charmed’s `tui.Screen`. The Bun coordinator owns durable data and automation; the Go TUI presents its snapshot and issues explicit commands. Detaching the dashboard leaves the coordinator running.
 
 Reviews and Tracking share PR navigation and pinned merge context. Output and Runtime share PR navigation and a worker pane. Activity and GitHub are global workspaces. Tracking starts by default; the local conflict demo uses Runtime. Worker-run controls are available only on Output and Runtime.
@@ -19,3 +21,5 @@ These images use the actual dashboard renderer with synthetic repository and age
 ![Tracking at 160 columns with explicit auto-merge status, ownership and actions](images/dashboard-tracking.png)
 
 ![GitHub budgets and traffic at 132 columns](images/dashboard-github.png)
+
+![Cached review feedback remains visible while a scheduler refresh is queued](images/dashboard-cached-reviews.png)

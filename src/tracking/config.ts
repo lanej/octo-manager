@@ -1,3 +1,7 @@
+import {
+  defaultSchedulerPolicy,
+  type SchedulerPolicy,
+} from "../scheduling/contracts.js";
 import type { PollPolicy } from "./polling.js";
 import {
   checked,
@@ -38,7 +42,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
-  polling?: PollPolicy;
+  polling?: PollPolicy & Partial<SchedulerPolicy>;
   merging?: Record<string, PreparationProfile>;
   submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
   repairs: Record<string, RepairProfile>;
@@ -120,7 +124,14 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
     if (
       !object(value) ||
       Object.keys(value).some(
-        (key) => !["minimumMs", "maximumMs", "activeMaximumMs"].includes(key),
+        (key) =>
+          ![
+            "minimumMs",
+            "maximumMs",
+            "activeMaximumMs",
+            "tickMs",
+            "requestSpacingMs",
+          ].includes(key),
       )
     )
       throw new Error("Invalid polling configuration");
@@ -141,7 +152,27 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
       activeMaximumMs > maximumMs
     )
       throw new Error("Invalid polling interval bounds");
-    result.polling = { minimumMs, maximumMs, activeMaximumMs };
+    const tickMs = value["tickMs"] ?? defaultSchedulerPolicy.tickMs;
+    const requestSpacingMs =
+      value["requestSpacingMs"] ?? defaultSchedulerPolicy.requestSpacingMs;
+    if (
+      typeof tickMs !== "number" ||
+      !Number.isSafeInteger(tickMs) ||
+      tickMs < 100 ||
+      tickMs > 60000 ||
+      typeof requestSpacingMs !== "number" ||
+      !Number.isSafeInteger(requestSpacingMs) ||
+      requestSpacingMs < tickMs ||
+      requestSpacingMs > 3600000
+    )
+      throw new Error("Invalid scheduler cadence");
+    result.polling = {
+      minimumMs,
+      maximumMs,
+      activeMaximumMs,
+      tickMs,
+      requestSpacingMs,
+    };
   }
 
   if (raw["merging"] !== undefined) {

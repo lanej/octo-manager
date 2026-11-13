@@ -143,6 +143,9 @@ const (
 	// SchedulerServiceGetPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// GetPullRequest RPC.
 	SchedulerServiceGetPullRequestProcedure = "/octomanager.v1.SchedulerService/GetPullRequest"
+	// SchedulerServiceWatchDashboardProcedure is the fully-qualified name of the SchedulerService's
+	// WatchDashboard RPC.
+	SchedulerServiceWatchDashboardProcedure = "/octomanager.v1.SchedulerService/WatchDashboard"
 	// SchedulerServiceGetSnapshotProcedure is the fully-qualified name of the SchedulerService's
 	// GetSnapshot RPC.
 	SchedulerServiceGetSnapshotProcedure = "/octomanager.v1.SchedulerService/GetSnapshot"
@@ -201,6 +204,7 @@ type SchedulerServiceClient interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
+	WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest]) (*connect.ServerStreamForClient[v1.WatchDashboardResponse], error)
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest]) (*connect.ServerStreamForClient[v1.WatchResponse], error)
@@ -442,6 +446,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 			connect.WithClientOptions(opts...),
 		),
+		watchDashboard: connect.NewClient[v1.WatchDashboardRequest, v1.WatchDashboardResponse](
+			httpClient,
+			baseURL+SchedulerServiceWatchDashboardProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("WatchDashboard")),
+			connect.WithClientOptions(opts...),
+		),
 		getSnapshot: connect.NewClient[v1.GetSnapshotRequest, v1.GetSnapshotResponse](
 			httpClient,
 			baseURL+SchedulerServiceGetSnapshotProcedure,
@@ -520,6 +530,7 @@ type schedulerServiceClient struct {
 	submitJob                 *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
 	getJob                    *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
 	getPullRequest            *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
+	watchDashboard            *connect.Client[v1.WatchDashboardRequest, v1.WatchDashboardResponse]
 	getSnapshot               *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
 	listEvents                *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
 	watch                     *connect.Client[v1.WatchRequest, v1.WatchResponse]
@@ -713,6 +724,11 @@ func (c *schedulerServiceClient) GetPullRequest(ctx context.Context, req *connec
 	return c.getPullRequest.CallUnary(ctx, req)
 }
 
+// WatchDashboard calls octomanager.v1.SchedulerService.WatchDashboard.
+func (c *schedulerServiceClient) WatchDashboard(ctx context.Context, req *connect.Request[v1.WatchDashboardRequest]) (*connect.ServerStreamForClient[v1.WatchDashboardResponse], error) {
+	return c.watchDashboard.CallServerStream(ctx, req)
+}
+
 // GetSnapshot calls octomanager.v1.SchedulerService.GetSnapshot.
 func (c *schedulerServiceClient) GetSnapshot(ctx context.Context, req *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error) {
 	return c.getSnapshot.CallUnary(ctx, req)
@@ -782,6 +798,7 @@ type SchedulerServiceHandler interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
+	WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest], *connect.ServerStream[v1.WatchDashboardResponse]) error
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest], *connect.ServerStream[v1.WatchResponse]) error
@@ -1019,6 +1036,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 		connect.WithHandlerOptions(opts...),
 	)
+	schedulerServiceWatchDashboardHandler := connect.NewServerStreamHandler(
+		SchedulerServiceWatchDashboardProcedure,
+		svc.WatchDashboard,
+		connect.WithSchema(schedulerServiceMethods.ByName("WatchDashboard")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceGetSnapshotHandler := connect.NewUnaryHandler(
 		SchedulerServiceGetSnapshotProcedure,
 		svc.GetSnapshot,
@@ -1131,6 +1154,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceGetJobHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetPullRequestProcedure:
 			schedulerServiceGetPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceWatchDashboardProcedure:
+			schedulerServiceWatchDashboardHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetSnapshotProcedure:
 			schedulerServiceGetSnapshotHandler.ServeHTTP(w, r)
 		case SchedulerServiceListEventsProcedure:
@@ -1298,6 +1323,10 @@ func (UnimplementedSchedulerServiceHandler) GetJob(context.Context, *connect.Req
 
 func (UnimplementedSchedulerServiceHandler) GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest], *connect.ServerStream[v1.WatchDashboardResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.WatchDashboard is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error) {

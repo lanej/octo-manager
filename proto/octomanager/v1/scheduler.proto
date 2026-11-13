@@ -46,6 +46,7 @@ service SchedulerService {
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
   rpc GetJob(GetJobRequest) returns (GetJobResponse);
   rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
+  rpc WatchDashboard(WatchDashboardRequest) returns (stream WatchDashboardResponse);
   rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
   rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);
@@ -139,6 +140,7 @@ message Snapshot {
   repeated RepairAttempt repairs = 10;
   GitHubReadUsage github_usage = 11;
   repeated MergeStatus merge_statuses = 12;
+  GitHubSchedulerStatus github_scheduler = 13;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
@@ -186,8 +188,15 @@ message PullRequestDetails {
   repeated ReviewMessage messages = 6;
   bool may_have_more_messages = 7;
 }
-message GetPullRequestRequest { string url = 1; }
-message GetPullRequestResponse { PullRequestDetails pull_request = 1; }
+message GetPullRequestRequest { string url = 1; bool refresh = 2; }
+message GetPullRequestResponse { PullRequestDetails pull_request = 1; RefreshStatus refresh = 2; }
+message GitHubSchedulerStatus {
+ int64 tick_ms = 1; int64 request_spacing_ms = 2; uint64 tick_sequence = 3;
+ int64 next_tick_at_ms = 4; int64 next_dispatch_at_ms = 5; uint32 queued_requests = 6;
+ bool in_flight = 7; int64 core_retry_at_ms = 8; int64 graphql_retry_at_ms = 9;
+}
+message WatchDashboardRequest { string url = 1; bool reviews = 2; }
+message WatchDashboardResponse { Snapshot snapshot = 1; PullRequestDetails pull_request = 2; RefreshStatus refresh = 3; }
 
 message ListActivityResponse {
   repeated ActivityReport activities = 1;

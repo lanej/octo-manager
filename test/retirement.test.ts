@@ -484,3 +484,49 @@ test("SDK notification cooldown survives coordinator restart", async () => {
     await f.close();
   }
 });
+
+test("queued manual refresh can revisit archived enrollment without restarting automatic polls", async () => {
+  const f = await fixture();
+  let reads = 0;
+  const service = new TrackingService(f.store.tracking, f.config, () => f.now, {
+    schedules: f.store.schedules,
+    read: () => {
+      reads++;
+      return Promise.resolve(observation(f.now, "closed", "completed"));
+    },
+  });
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    f.store.tracking.observe(
+      pr.id,
+      observation(f.now, "closed", "completed"),
+      f.config,
+    );
+    f.store.tracking.observe(
+      pr.id,
+      observation(f.now, "closed", "completed"),
+      f.config,
+    );
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+    service.tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(reads).toBe(0);
+    service.requestRefresh(pr.id);
+    service.tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(reads).toBe(1);
+    const entry = f.store.schedules.get(`tracking:${pr.id}`);
+    expect(entry?.lastAttemptAtMs).toBe(f.now);
+    f.advance(900000);
+    service.tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(reads).toBe(1);
+    f.store.tracking.untrack(pr.id);
+    expect(() => {
+      service.requestRefresh(pr.id);
+    }).toThrow();
+  } finally {
+    await service.close();
+    await f.close();
+  }
+});

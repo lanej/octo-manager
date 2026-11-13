@@ -46,3 +46,6 @@ message GitHubQuotaForecast {
  optional double projected_remaining_at_reset = 6;
  optional int64 exhaust_at_ms = 7;
 }
+
+enum RefreshState { REFRESH_STATE_UNSPECIFIED = 0; REFRESH_STATE_QUEUED = 1; REFRESH_STATE_RUNNING = 2; REFRESH_STATE_DEFERRED = 3; }
+message RefreshStatus { RefreshState state = 1; int64 due_at_ms = 2; optional int64 last_attempt_at_ms = 3; string last_error = 4; }

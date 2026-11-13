@@ -1,5 +1,6 @@
 syntax = "proto3";
 package octomanager.v1;
+import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 enum ActionState {
@@ -162,7 +163,7 @@ message TrackPullRequestResponse { TrackedPullRequest pr = 1; }
 message GetTrackedPullRequestRequest { string id = 1; }
 message GetTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
 message RefreshTrackedPullRequestRequest { string id = 1; }
-message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
+message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; RefreshStatus refresh = 2; }
 message AssignPullRequestResponse { TrackedPullRequest pr = 1; }
 message UntrackPullRequestRequest { string id = 1; }
 message UntrackPullRequestResponse { TrackedPullRequest pr = 1; }

@@ -129,3 +129,38 @@ func TestTerminalPRWithoutMergeEntryHasOutcomeLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestSelectionChangingDashboardFrameCannotRelabelOldReviews(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.dashboardStarted = true
+	m.panel = reviewsPanel
+	m.snapshot.Jobs = []*v1.Job{prJob("old", "https://github.com/owner/repo/pull/1")}
+	m.selected = ""
+	m.ensureSelection()
+	m.syncDashboard()
+	version := m.dashboardVersion
+	fresh := example()
+	fresh.Jobs = []*v1.Job{prJob("new", "https://github.com/owner/repo/pull/2")}
+	m.applyDashboard(dashboardFrame{version: version, frame: &v1.WatchDashboardResponse{Snapshot: fresh, PullRequest: &v1.PullRequestDetails{Url: "https://github.com/owner/repo/pull/1", Title: "Old PR"}}})
+
+	if m.dashboardVersion == version {
+		t.Fatal("selection did not replace subscription")
+	}
+
+	if m.reviews["https://github.com/owner/repo/pull/2"] != nil {
+		t.Fatal("old frame relabeled another PR")
+	}
+}
+
+func TestQueuedReviewCacheMissIsPendingAndRetainsExistingContent(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	address := "https://github.com/owner/repo/pull/1"
+	m.reviews[address] = &v1.PullRequestDetails{Title: "Existing review"}
+	m.applyReview(reviewMsg{url: address, status: &v1.RefreshStatus{State: v1.RefreshState_REFRESH_STATE_QUEUED}})
+
+	if !m.reviewLoading[address] || m.reviewErrors[address] != "" || m.reviews[address].GetTitle() != "Existing review" {
+		t.Fatal("queued refresh discarded cached view or became an error")
+	}
+}
