@@ -26,7 +26,9 @@ export function currentMergeChecks(
           current.workflowId === old.workflowId &&
           current.event === old.event &&
           current.headSha === old.headSha &&
-          current.at > old.at &&
+          (current.runNumber !== undefined && old.runNumber !== undefined
+            ? current.runNumber > old.runNumber
+            : current.at > old.at) &&
           current.status === "completed" &&
           current.conclusion === "success",
       ),

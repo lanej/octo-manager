@@ -271,6 +271,7 @@ export class MergeService {
     return result;
   }
   private async advance(entry: MergeEntry): Promise<void> {
+    const expectedGraph = graphKey(this.store.dependencies(), entry.prId);
     let pr = this.store.tracking.pr(entry.prId);
     const observation = pr.observation;
     if (observation === undefined) {
@@ -366,7 +367,7 @@ export class MergeService {
         preparation.key,
         snapshot.observation.targetBase,
       ]);
-      await this.execute(entry, snapshot, {
+      await this.execute(entry, snapshot, expectedGraph, {
         profile: preparation.profile,
         commit: preparation.commit,
         key,
@@ -411,11 +412,12 @@ export class MergeService {
       });
       return;
     }
-    await this.execute(entry, snapshot);
+    await this.execute(entry, snapshot, expectedGraph);
   }
   private async execute(
     entry: MergeEntry,
     snapshot: MergeSnapshot,
+    expectedGraph: string,
     preparation?: { profile: PreparationProfile; commit: string; key: string },
   ): Promise<void> {
     const pr = this.store.tracking.pr(entry.prId),
@@ -433,7 +435,7 @@ export class MergeService {
       head: snapshot.observation.headSha,
       baseRef: target.ref,
       baseSha: target.sha,
-      graph: graphKey(this.store.dependencies(), pr.id),
+      graph: expectedGraph,
       ownerId: pr.ownerAgentId,
       createdAt: at,
       updatedAt: at,

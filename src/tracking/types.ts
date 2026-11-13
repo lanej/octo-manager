@@ -33,6 +33,7 @@ export type ObservationPart<T> =
 export interface CheckObservation {
   suiteId?: number;
   workflowId?: number;
+  runNumber?: number;
   event?: string;
   id: string;
   key: string;

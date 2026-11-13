@@ -20,13 +20,20 @@ function wire(message: AgentMessage) {
 export function inboxRoutes(store: TrackingStore) {
   return {
     listAgentMessages(request: ListAgentMessagesRequest) {
-      if (!store.agents().some((agent) => agent.id === request.agentId))
+      const agentId = resolveId(
+        request.agentId,
+        store.agents().map((agent) => agent.id),
+      );
+      if (
+        agentId === undefined ||
+        !store.agents().some((agent) => agent.id === agentId)
+      )
         throw new ConnectError("Agent not found", Code.NotFound);
       const after = Number(request.afterSequence);
       if (!Number.isSafeInteger(after) || after < 0)
         throw new ConnectError("Invalid inbox cursor", Code.InvalidArgument);
       const page = store.inbox.list(
-        request.agentId,
+        agentId,
         after,
         request.includeAcknowledged,
         request.applicableOnly,

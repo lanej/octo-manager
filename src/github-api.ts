@@ -92,8 +92,11 @@ export class GitHubRateLimitError extends Error {
   }
 }
 export class GitHubHTTPError extends Error {
-  constructor(readonly status: number) {
-    super(`GitHub read failed (HTTP ${String(status)})`);
+  constructor(
+    readonly status: number,
+    message = `GitHub read failed (HTTP ${String(status)})`,
+  ) {
+    super(message);
   }
 }
 export class GitHubReads {
@@ -299,7 +302,8 @@ export class GitHubReads {
       (result.status < 200 || result.status >= 300)
     ) {
       if (result.status === 401)
-        throw new Error(
+        throw new GitHubHTTPError(
+          401,
           "GitHub authentication required: run gh auth login -h github.com",
         );
       if (result.status >= 500)

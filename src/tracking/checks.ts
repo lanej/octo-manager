@@ -175,6 +175,10 @@ export function workflowObservation(value: unknown): CheckObservation {
   return {
     id: `workflow:${String(id)}:${String(attempt)}`,
     key: `workflow:${String(id)}`,
+    ...(typeof value["run_number"] === "number" &&
+    Number.isSafeInteger(value["run_number"])
+      ? { runNumber: value["run_number"] }
+      : {}),
     ...(typeof value["workflow_id"] === "number" &&
     Number.isSafeInteger(value["workflow_id"])
       ? { workflowId: value["workflow_id"] }
@@ -214,6 +218,9 @@ export function storedCheckEvidence(
       ...(entry["suiteId"] === undefined
         ? {}
         : { suiteId: integer(entry["suiteId"]) }),
+      ...(entry["runNumber"] === undefined
+        ? {}
+        : { runNumber: integer(entry["runNumber"]) }),
       ...(entry["workflowId"] === undefined
         ? {}
         : { workflowId: integer(entry["workflowId"]) }),

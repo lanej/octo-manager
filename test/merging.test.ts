@@ -106,6 +106,7 @@ async function fixture(
     pausedPush?: boolean;
     failMerge?: boolean;
     conflictMerge?: boolean;
+    authMerge?: boolean;
     inspect?: (c: Coordinator, url: string) => void;
     beforeSend?: (c: Coordinator) => void;
   } = {},
@@ -133,6 +134,10 @@ async function fixture(
       writes.push(`${url}@${head}`);
       const value = snapshots.get(url);
       assert(value !== undefined);
+      if (options.authMerge === true)
+        return Promise.reject(
+          new GitHubHTTPError(401, "Authentication required"),
+        );
       if (options.conflictMerge === true)
         return Promise.reject(new GitHubHTTPError(409));
       if (options.failMerge === true)
@@ -222,6 +227,10 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
           { prUrl: second, checks: ["CI"] },
         ],
       };
+    await client.listAgentMessages({
+      agentId: upstream.ownerAgentId.replaceAll("-", "").slice(0, 8),
+      afterSequence: 0n,
+    });
     const queued = await client.mergeCommand({
       inputJson: JSON.stringify({ op: "queue", input }),
     });
@@ -1184,6 +1193,135 @@ test("external commit-status contexts use their latest proven state without coll
       status: "failure",
       conclusion: "failure",
     });
+    assert.match(checkGate(entry, value) ?? "", /passing check/);
+    return Promise.resolve();
+  }));
+test("dependency edits during prerequisite inspection cannot execute a captured preparation recipe", () =>
+  fixture(
+    async (c, _advance, snapshots, writes) => {
+      const upstream = enroll(c, first),
+        pr = enroll(c, second, cValue()),
+        value = snapshots.get(first);
+      assert(value !== undefined);
+      value.observation.lifecycle = "merged";
+      value.mergeCommit = d;
+      c.store.tracking.observe(
+        upstream.id,
+        value.observation,
+        c.tracking.config,
+      );
+      c.store.merging.confirm(
+        second,
+        first,
+        pr.ownerAgentId,
+        "Initial recipe",
+        undefined,
+        profile,
+      );
+      c.store.merging.autoMerge(second, pr.ownerAgentId, true, "graph-race");
+      await c.merging.tick();
+      assert.deepEqual(writes, []);
+      assert.equal(c.store.merging.operations().length, 0);
+    },
+    {
+      inspect(c, url) {
+        if (url !== first) return;
+        const edge = c.store.merging.dependencies()[0];
+        if (edge !== undefined)
+          c.store.merging.removeDependency(
+            edge.id,
+            c.store.tracking.pr(second).ownerAgentId,
+          );
+      },
+    },
+  ));
+test("authentication rejection is a definite failure and releases the operation lease", () =>
+  fixture(
+    async (c, _advance, _snapshots, writes) => {
+      const pr = enroll(c, first);
+      c.store.merging.autoMerge(first, pr.ownerAgentId, true, "auth");
+      c.store.merging.ready(first, pr.ownerAgentId, a);
+      await c.merging.tick();
+      assert.equal(writes.length, 1);
+      assert.equal(
+        c.store.merging.operations()[0]?.state,
+        OperationState.Failed,
+      );
+      assert.equal(c.store.merging.busy(pr.id), false);
+      assert.equal(c.store.merging.entry(first).ready, undefined);
+    },
+    { authMerge: true },
+  ));
+test("workflow invocation numbers establish replacement when timestamps tie", () =>
+  fixture((c) => {
+    const pr = enroll(c, first);
+    c.store.merging.autoMerge(first, pr.ownerAgentId, true, "same-second");
+    const entry = c.store.merging.entry(first),
+      value = snapshot(),
+      at = "2026-11-13T00:00:00Z",
+      raw = {
+        name: "CI",
+        head_sha: a,
+        workflow_id: 10,
+        event: "pull_request",
+        status: "completed",
+        html_url: first,
+        run_started_at: at,
+      };
+    value.observation.checks = {
+      state: "complete",
+      value: [
+        checkRunObservation(
+          {
+            id: 1,
+            name: "CI",
+            app: { id: 1 },
+            check_suite: { id: 1 },
+            head_sha: a,
+            status: "completed",
+            conclusion: "cancelled",
+            started_at: at,
+          },
+          first,
+        ),
+        checkRunObservation(
+          {
+            id: 2,
+            name: "CI",
+            app: { id: 1 },
+            check_suite: { id: 2 },
+            head_sha: a,
+            status: "completed",
+            conclusion: "success",
+            started_at: at,
+          },
+          first,
+        ),
+      ],
+    };
+    value.observation.workflows = {
+      state: "complete",
+      value: [
+        workflowObservation({
+          ...raw,
+          id: 1,
+          run_number: 10,
+          check_suite_id: 1,
+          conclusion: "cancelled",
+        }),
+        workflowObservation({
+          ...raw,
+          id: 2,
+          run_number: 11,
+          check_suite_id: 2,
+          conclusion: "success",
+        }),
+      ],
+    };
+    assert.equal(checkGate(entry, value), undefined);
+    const replacement = value.observation.workflows.value[1];
+    assert(replacement !== undefined);
+    value.observation.workflows.value[1] = { ...replacement, runNumber: 9 };
     assert.match(checkGate(entry, value) ?? "", /passing check/);
     return Promise.resolve();
   }));
