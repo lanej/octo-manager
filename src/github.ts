@@ -1,21 +1,13 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { githubReads } from "./github-api.js";
 import { cleanText, parseTask } from "./domain.js";
-const exec = promisify(execFile);
 export async function readPullRequest(url: string, signal?: AbortSignal): Promise<unknown> {
   const task = parseTask({ kind: "summarize_pr", url });
   if (task.kind !== "summarize_pr") throw new Error("Expected PR task");
-  const parts = new URL(task.url).pathname.split("/");
-  let stdout: string;
-  try { ({ stdout } = await exec("gh", ["api", "--hostname", "github.com", "--method", "GET", `repos/${parts[1]}/${parts[2]}/pulls/${parts[4]}`], { signal, timeout: 30000, maxBuffer: 1024 * 1024 })); }
-  catch (error) {
-    const stderr = String((error as { stderr?: string }).stderr ?? "");
-    if (/401|403|auth|login|token/i.test(stderr)) throw new Error("GitHub authentication required: run gh auth login -h github.com");
-    if (/429|rate.limit/i.test(stderr)) throw new Error("GitHub rate limit (429)");
-    if (/50[0-4]/.test(stderr)) throw new Error("GitHub temporarily unavailable (503)");
-    throw new Error(signal?.aborted ? "Operation aborted" : "GitHub PR read failed; check repository access and connectivity");
-  }
-  return publicPullRequest(JSON.parse(stdout));
+  const [, owner, repo, , number] = new URL(task.url).pathname.split("/");
+  if (owner === undefined || repo === undefined || number === undefined) throw new Error("Invalid GitHub PR URL");
+  const pr: unknown = await githubRead(`repos/${owner}/${repo}/pulls/${number}`, signal);
+  if (typeof pr !== "object" || pr === null || Array.isArray(pr)) throw new Error("Invalid GitHub PR response");
+  return publicPullRequest(Object.fromEntries(Object.entries(pr)));
 }
 export function publicPullRequest(pr: Record<string, any>): unknown {
   if (pr.base?.repo?.private !== false) throw new Error("Only confirmed public repository PRs may be sent to the model");
@@ -32,12 +24,7 @@ export interface PullRequestDetails {
 }
 export type GithubRead = (path: string, signal?: AbortSignal) => Promise<any>;
 async function githubRead(path: string, signal?: AbortSignal): Promise<any> {
-  try {
-    const { stdout } = await exec("gh", ["api", "--hostname", "github.com", "--method", "GET", path], { signal, timeout: 20000, maxBuffer: 2 * 1024 * 1024 });
-    return JSON.parse(stdout);
-  } catch {
-    throw new Error(signal?.aborted ? "GitHub read cancelled" : "GitHub review read failed; check gh authentication, repository access, and connectivity");
-  }
+  return githubReads.read(path, signal);
 }
 export async function readPullRequestDetails(url: string, signal?: AbortSignal, read: GithubRead = githubRead): Promise<PullRequestDetails> {
   const task = parseTask({ kind: "summarize_pr", url });

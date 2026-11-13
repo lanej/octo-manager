@@ -12,6 +12,7 @@ import {
 import { TrackingStore } from "./store.js";
 import type { TrackingConfig } from "./config.js";
 import { readObservation } from "./github.js";
+import { GitHubRateLimitError } from "../github-api.js";
 import {
   CodexConnection,
   DeliveryError,
@@ -31,6 +32,7 @@ export class TrackingService {
   private timer?: ReturnType<typeof setInterval>;
   private refreshes = new Map<string, Promise<unknown>>();
   private nextRefresh = new Map<string, number>();
+  private githubRetryAt = 0;
   private deliveryBusy = false;
   private deliveryWork?: Promise<void>;
   private refreshControllers = new Map<string, AbortController>();
@@ -108,6 +110,8 @@ export class TrackingService {
     if (!p.enabled) return Promise.reject(new Error("PR tracking is disabled"));
     const existing = this.refreshes.get(p.id);
     if (existing) return existing;
+    if (this.now() < this.githubRetryAt)
+      return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
     const controller = new AbortController();
     this.refreshControllers.set(p.id, controller);
     const work = (async () => {
@@ -117,6 +121,8 @@ export class TrackingService {
         )(p.url, controller.signal, undefined, this.now);
         if (!this.stopped) this.store.observe(p.id, input, this.config);
       } catch (error) {
+        if (error instanceof GitHubRateLimitError)
+          this.githubRetryAt = Math.max(this.githubRetryAt, error.retryAtMs);
         if (!this.stopped)
           this.store.refreshError(
             p.id,
@@ -125,7 +131,10 @@ export class TrackingService {
       } finally {
         this.nextRefresh.set(
           p.id,
-          this.now() + (this.options.intervalMs ?? 60000),
+          Math.max(
+            this.now() + (this.options.intervalMs ?? 60000),
+            this.githubRetryAt,
+          ),
         );
         this.refreshes.delete(p.id);
         this.refreshControllers.delete(p.id);
@@ -167,6 +176,7 @@ export class TrackingService {
     for (const p of this.store.prs())
       if (
         p.enabled &&
+        this.now() >= this.githubRetryAt &&
         (p.observation === undefined ||
           p.observation.lifecycle === "open" ||
           this.store.checks.hasWaiting(p.id)) &&

@@ -5,26 +5,12 @@ import {
 } from "./feedback.js";
 import { workflowObservation } from "./checks.js";
 import { trackingPR } from "./evidence.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { githubReads, GitHubRateLimitError } from "../github-api.js";
+import { githubMetadata } from "./metadata.js";
 import type { ObservationInput, ObservationPart } from "./types.js";
-const exec = promisify(execFile);
 export type ReadGitHub = (path: string, signal?: AbortSignal) => Promise<any>;
 export async function ghRead(path: string, signal?: AbortSignal): Promise<any> {
-  try {
-    const { stdout } = await exec(
-      "gh",
-      ["api", "--hostname", "github.com", "--method", "GET", path],
-      { signal, timeout: 20000, maxBuffer: 2 * 1024 * 1024 },
-    );
-    return JSON.parse(stdout);
-  } catch {
-    throw new Error(
-      signal?.aborted
-        ? "GitHub tracking read cancelled"
-        : "GitHub tracking unavailable; check gh authentication, access, and connectivity",
-    );
-  }
+  return githubReads.read(path, signal);
 }
 export function canonicalPR(url: string): string {
   const m =
@@ -60,7 +46,8 @@ async function collection<T>(
       value: items,
       reason: "First 1000 records; more may exist",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof GitHubRateLimitError) throw error;
     return items.length
       ? {
           state: "partial",
@@ -75,6 +62,9 @@ export async function readObservation(
   signal?: AbortSignal,
   read: ReadGitHub = ghRead,
   now = Date.now,
+  readMetadata: typeof githubMetadata.read | undefined = read === ghRead
+    ? (url, signal) => githubMetadata.read(url, signal)
+    : undefined,
 ): Promise<ObservationInput> {
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
     "/",
@@ -82,7 +72,12 @@ export async function readObservation(
   if (owner === undefined || repo === undefined || number === undefined)
     throw new Error("Invalid GitHub PR URL");
   const root = `repos/${owner}/${repo}`;
-  const pr = trackingPR(await read(`${root}/pulls/${number}`, signal));
+  const initial =
+    readMetadata !== undefined
+      ? await readMetadata(canonicalPR(url), signal)
+      : undefined;
+  const pr =
+    initial?.pr ?? trackingPR(await read(`${root}/pulls/${number}`, signal));
   // rationale: The PR payload can retain an ancestor base SHA after the target branch advances.
   const refPath = `${root}/git/ref/heads/${encodeURIComponent(pr.base.ref)}`;
   const readTarget = async () => {
@@ -101,7 +96,11 @@ export async function readObservation(
     return { ref: pr.base.ref, sha: raw.object.sha };
   };
   const target =
-    pr.state === "open" && !pr.merged ? await readTarget() : undefined;
+    initial !== undefined
+      ? initial.target
+      : pr.state === "open" && !pr.merged
+        ? await readTarget()
+        : undefined;
   const observedAt = now();
   const [runs, statuses, reviews, inline, conversation, workflows] =
     await Promise.all([
@@ -222,10 +221,17 @@ export async function readObservation(
             ],
             reason: "Some check sources are incomplete",
           };
-  const [latestPR, latestTarget] = await Promise.all([
-    read(`${root}/pulls/${number}`, signal).then(trackingPR),
-    target === undefined ? undefined : readTarget(),
-  ]);
+  const latest =
+    readMetadata === undefined
+      ? undefined
+      : await readMetadata(canonicalPR(url), signal);
+  const [latestPR, latestTarget] =
+    latest === undefined
+      ? await Promise.all([
+          read(`${root}/pulls/${number}`, signal).then(trackingPR),
+          target === undefined ? undefined : readTarget(),
+        ])
+      : [latest.pr, latest.target];
   if (
     latestPR.head.sha !== pr.head.sha ||
     latestPR.base.ref !== pr.base.ref ||
