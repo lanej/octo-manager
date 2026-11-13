@@ -335,13 +335,7 @@ func (m *Model) queue(g geometry) string {
 		}
 	}
 
-<<<<<<< HEAD
 	return layout.Panel(title, strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
-||||||| parent of 281a265 (fix(tui): compact tracking and activity)
-	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
-=======
-	return layout.Panel("PULL REQUESTS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
->>>>>>> 281a265 (fix(tui): compact tracking and activity)
 }
 
 func counted(count int, noun string) string {
@@ -467,17 +461,22 @@ func (m *Model) View() string {
 }
 
 func (m *Model) renderMarkdown(content string, width int) string {
- rendered, err := m.markdownText(content, width)
- if err != nil { return safe(content) }
- return rendered
+	rendered, err := m.markdownText(content, width)
+	if err != nil {
+		return safe(content)
+	}
+
+	return rendered
 }
 
 func (m *Model) markdownText(content string, width int) (string, error) {
- style := text.MarkdownStyles(m.theme)
- style.H1.Prefix, style.H2.Prefix, style.H3.Prefix, style.H4.Prefix, style.H5.Prefix, style.H6.Prefix = "", "", "", "", "", ""
- if m.theme.Mode == theme.Mono {
-  style.Strong.BlockPrefix, style.Strong.BlockSuffix = "", ""
-  style.Emph.BlockPrefix, style.Emph.BlockSuffix = "", ""
- }
- return text.Markdown(safe(content), max(1, width), m.theme, text.MarkdownOptions{Styles: &style})
+	style := text.MarkdownStyles(m.theme)
+
+	style.H1.Prefix, style.H2.Prefix, style.H3.Prefix, style.H4.Prefix, style.H5.Prefix, style.H6.Prefix = "", "", "", "", "", ""
+	if m.theme.Mode == theme.Mono {
+		style.Strong.BlockPrefix, style.Strong.BlockSuffix = "", ""
+		style.Emph.BlockPrefix, style.Emph.BlockSuffix = "", ""
+	}
+
+	return text.Markdown(safe(content), max(1, width), m.theme, text.MarkdownOptions{Styles: &style})
 }

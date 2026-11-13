@@ -93,7 +93,9 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 				if row.detail != "" {
 					parts = append(parts, row.detail)
 				}
+
 				row.detail = strings.Join(parts, " · ")
+
 				break
 			}
 		}
