@@ -52,6 +52,7 @@ type Model struct {
 	focus              interaction.Focus
 	result             viewport.Model
 	activity           collection.LogViewer
+	checkWatchPR       string
 	selected           string
 	expanded           bool
 	refreshing         bool
@@ -416,7 +417,16 @@ func (m *Model) control(key string) tea.Cmd {
 		return commandMsg{err: err}
 	}
 }
-func (m *Model) Resize(size layout.Size) { m.size = size; m.resizeContent() }
+
+func (m *Model) Resize(size layout.Size) {
+	if m.size.Width != size.Width {
+		m.activityRender.valid = false
+	}
+
+	m.size = size
+	m.resizeContent()
+}
+
 func (m *Model) ensureSelection() {
 	if m.currentSubject().key != "" {
 		return

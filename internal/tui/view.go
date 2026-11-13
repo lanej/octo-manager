@@ -15,6 +15,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/navigation"
 	"github.com/lanej/charmed/text"
+	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
 
@@ -177,6 +178,10 @@ func (m *Model) events() []*v1.JobEvent {
 }
 
 func (m *Model) resizeContent() {
+	if m.panel != trackingPanel {
+		m.checkWatchPR = ""
+	}
+
 	g := m.geometry()
 	if g.activity == 0 {
 		m.focus.Set("result")
@@ -243,7 +248,23 @@ func (m *Model) resizeContent() {
 	}
 
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
+
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
+
+	if m.panel == trackingPanel {
+		prID := m.currentSubject().tracked.GetId()
+		if m.checkWatchPR != prID {
+			oldOffset = 0
+		}
+
+		m.checkWatchPR = prID
+		m.activity.SetWidth(max(1, logSize.Width-1))
+		m.activity.SetHeight(max(1, logSize.Height))
+		m.activity.SetContent(ansi.Wrap(m.checkWatchContent(m.currentSubject().tracked), max(1, logSize.Width-1), " "))
+		m.activity.SetYOffset(oldOffset)
+
+		return
+	}
 
 	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
 	for _, event := range m.events() {
@@ -314,7 +335,13 @@ func (m *Model) queue(g geometry) string {
 		}
 	}
 
+<<<<<<< HEAD
 	return layout.Panel(title, strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+||||||| parent of 281a265 (fix(tui): compact tracking and activity)
+	return layout.Panel("PULL REQUESTS / DEMOS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+=======
+	return layout.Panel("PULL REQUESTS", strings.Join(rows, "\n"), layout.Size{Width: g.left, Height: g.body}, m.theme, false)
+>>>>>>> 281a265 (fix(tui): compact tracking and activity)
 }
 
 func counted(count int, noun string) string {
@@ -380,15 +407,19 @@ func (m *Model) View() string {
 
 	right := tabs.View() + "\n" + layout.Panel("", content, layout.Size{Width: g.right, Height: g.result}, m.theme, m.focus.Current() == "result")
 	if g.activity > 0 {
-		lines := m.workerLines()
-		logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
+		if m.panel == trackingPanel {
+			right += "\n\n" + layout.Panel("CHECK WATCHES", layout.Row(m.activity.View(), (feedback.Scrollbar{Total: m.activity.TotalLineCount(), Visible: m.activity.Height(), Offset: m.activity.YOffset(), Height: m.activity.Height()}).View(m.theme)), layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
+		} else {
+			lines := m.workerLines()
+			logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
-		worker := strings.Join(lines, "\n")
-		if logSize.Height > len(lines) {
-			worker += "\n" + m.activity.View()
+			worker := strings.Join(lines, "\n")
+			if logSize.Height > len(lines) {
+				worker += "\n" + m.activity.View()
+			}
+
+			right += "\n\n" + layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
 		}
-
-		right += "\n\n" + layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, layout.Size{Width: g.right, Height: g.activity}, m.theme, m.focus.Current() == "activity")
 	}
 
 	body := right
@@ -433,4 +464,20 @@ func (m *Model) View() string {
 	footer := layout.Footer{Help: help, Status: status}
 
 	return layout.Fit(strings.Join(header, "\n")+"\n"+body+"\n"+footer.View(m.size.Width, m.theme)+"\n"+m.theme.Subtle().Render(notice), m.size)
+}
+
+func (m *Model) renderMarkdown(content string, width int) string {
+ rendered, err := m.markdownText(content, width)
+ if err != nil { return safe(content) }
+ return rendered
+}
+
+func (m *Model) markdownText(content string, width int) (string, error) {
+ style := text.MarkdownStyles(m.theme)
+ style.H1.Prefix, style.H2.Prefix, style.H3.Prefix, style.H4.Prefix, style.H5.Prefix, style.H6.Prefix = "", "", "", "", "", ""
+ if m.theme.Mode == theme.Mono {
+  style.Strong.BlockPrefix, style.Strong.BlockSuffix = "", ""
+  style.Emph.BlockPrefix, style.Emph.BlockSuffix = "", ""
+ }
+ return text.Markdown(safe(content), max(1, width), m.theme, text.MarkdownOptions{Styles: &style})
 }

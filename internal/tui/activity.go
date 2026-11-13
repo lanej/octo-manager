@@ -11,7 +11,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/collection"
 	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -163,7 +165,7 @@ func activityOutcome(outcome v1.ActivityOutcome) string {
 func (m *Model) activityContent() string {
 	history := m.agentActivity
 
-	parts := []string{text.Badge("Agent activity", m.theme), m.muted("Newest first · unchanged PR checks grouped · " + m.zoneLabel()), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
+	parts := []string{}
 	if history.err != nil {
 		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+text.Label(safe(history.err.Error()), m.theme), text.KeyHint("u", "retry", m.theme))
 	}
@@ -184,7 +186,7 @@ func (m *Model) activityContent() string {
 		parts = append(parts, text.Pill(fmt.Sprintf("%d–%d of %d", start+1, end, len(items)), text.Neutral, m.theme, text.Dim)+" "+text.KeyHint("h", "older", m.theme)+" · "+text.KeyHint("l", "newer", m.theme))
 	}
 
-	parts = append(parts, "")
+	table := collection.StaticTable{Columns: []collection.TableColumn{{Title: "TIME · " + m.zoneLabel(), Fixed: true}, {Title: "ACTION", Min: 18}, {Title: "DETAIL", Min: 24}}}
 
 	for _, item := range items[start:end] {
 		if item.event != nil {
@@ -198,24 +200,25 @@ func (m *Model) activityContent() string {
 				title += " " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
 			}
 
-			parts = append(parts, title, m.activityTime(event.GetAtMs()), row.detail)
+			details := []string{}
+			if row.detail != "" {
+				details = append(details, row.detail)
+			}
+
 			if row.prURL != "" {
-				parts = append(parts, m.link(row.prURL))
+				details = append(details, m.link(row.prURL))
 			} else if event.GetPrId() != "" {
-				parts = append(parts, m.muted("PR context unavailable"))
+				details = append(details, m.muted("PR context unavailable"))
 			}
 
-			if context != nil {
-				if context.GetActorAgentId() != "" {
-					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(sessionContext(context.GetActorLabel(), "", context.GetActorSessionId()), m.theme))
-				} else {
-					parts = append(parts, m.muted("Coordinator-observed transition."))
-				}
-			} else if event.GetKind() == "action_progress" {
-				parts = append(parts, text.Pill("transition unknown", text.Neutral, m.theme, text.Dim)+" Legacy event: transition state and actor were not recorded.")
+			if context != nil && context.GetActorAgentId() != "" {
+				details = append(details, text.Label(safe(context.GetActorHarness())+" · "+sessionContext(context.GetActorLabel(), "", context.GetActorSessionId()), m.theme))
+			} else if context == nil && event.GetKind() == "action_progress" {
+				title += " " + text.Pill("transition unknown", text.Neutral, m.theme, text.Dim)
+				details = append(details, m.muted("Legacy event: state and actor unrecorded."))
 			}
 
-			parts = append(parts, "")
+			table.Rows = append(table.Rows, []collection.TableCell{{Styled: m.activityTime(event.GetAtMs())}, {Styled: title}, {Styled: strings.Join(details, " · ")}})
 
 			continue
 		}
@@ -223,34 +226,33 @@ func (m *Model) activityContent() string {
 		entry := item.report
 		report := entry.GetReport()
 		actor := report.GetActor()
-		parts = append(parts, text.Log(activityTitle(report.GetName()), m.theme)+" "+text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.activityTime(entry.GetRecordedAtMs()), text.Label(safe(report.GetDetail()), m.theme))
+		title := text.Log(activityTitle(report.GetName()), m.theme) + " " + text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal)
 
 		identity := safe(actor.GetHarness())
 		if actor.GetVersion() != "" {
 			identity += " " + safe(actor.GetVersion())
 		}
 
-		parts = append(parts, text.Badge(identity, m.theme)+" "+text.Label(sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId()), m.theme))
-		if actor.GetModel() != "" {
-			parts = append(parts, m.field("Model", actor.GetModel()))
-		}
-
+		details := []string{text.Label(safe(report.GetDetail()), m.theme), text.Label(identity+" · "+sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId()), m.theme)}
 		if report.GetPrUrl() != "" {
-			parts = append(parts, m.link(report.GetPrUrl()))
+			details = append(details, m.link(report.GetPrUrl()))
 		}
 
 		if report.GetEvidenceUrl() != "" {
-			parts = append(parts, m.muted("Evidence: ")+m.link(report.GetEvidenceUrl()))
+			details = append(details, m.link(report.GetEvidenceUrl()))
 		}
 
-		parts = append(parts, "")
+		table.Rows = append(table.Rows, []collection.TableCell{{Styled: m.activityTime(entry.GetRecordedAtMs())}, {Styled: title}, {Styled: strings.Join(details, " · ")}})
 	}
 
-	return strings.Join(parts, "\n")
+	g := m.geometry()
+	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+
+	return strings.Join(append(parts, table.View(max(1, inner.Width-1), m.theme)), "\n")
 }
 
 func (m *Model) activityTime(at int64) string {
-	return m.muted(m.timestamp(at, briefTimestamp))
+	return m.muted(m.timestamp(at, fullTimestamp))
 }
 
 type activityItem struct {

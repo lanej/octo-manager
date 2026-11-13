@@ -102,13 +102,13 @@ ALTER TABLE events ADD COLUMN action_context_json TEXT
 
 ## Native presentation
 
-Activity and Tracking render structured fields directly with Charmed labels, badges, semantic pills, log glyphs, time atoms, pending indicators, and key hints. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. The native views retain ANSI-aware wrapping, the 50-entry activity window, cached rendering, paging, and keyboard scrolling; worker output and review prose retain Markdown rendering.
+Activity uses a compact Time / Action / Detail table. Tracking renders review Markdown, one Checks / Reviews / Feedback status row with colored coverage pills, and a separate scrollable check-watch log with the newest revision first. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. The native views retain ANSI-aware wrapping, the 50-entry activity window, cached rendering, paging, and keyboard scrolling; worker output and review prose retain Markdown rendering.
 
-![Native Charmed activity rows](images/atoms-activity.png)
+Screenshots use the native frontend with synthetic PR data.
 
-![Activity at 80 columns](images/atoms-activity-narrow.png)
+![Compact activity table](images/activity-presentation.png)
 
-![Native Charmed tracking fields and delivery states](images/atoms-tracking.png)
+![Tracking Markdown, coverage pills, and check-watch log](images/tracking-presentation.png)
 
 
 The presentation layer resolves internal references to linked `owner/repo#42` labels and commit links such as `owner/repo@abc12345`. Notification rows name the affected blocker and explain delivery outcomes; sequence numbers, operation IDs, delivery UUIDs, and other database keys are absent from the human timeline. Consecutive observations of the same PR head collapse into one visible check; a changed head or intervening event remains visible. Full events and identifiers remain available through `activity --json`. Historical event context wins over current ownership, and unavailable PR context is stated explicitly rather than guessed.

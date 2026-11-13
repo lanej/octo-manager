@@ -32,6 +32,7 @@ func model(t *testing.T, mode theme.Mode) *Model {
 	m.snapshot = example()
 	m.ensureSelection()
 	m.panel = outputPanel
+	m.Resize(layout.Size{Width: 132, Height: 40})
 
 	t.Cleanup(func() {
 		if err := m.Close(); err != nil {

@@ -37,15 +37,15 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	case "pr_observed":
 		row.title = "PR checked"
 		sha := strings.TrimPrefix(event.GetDetail(), "Observed head ")
-		row.detail = "Head commit " + m.commitLink(row.prURL, sha)
+		row.detail = m.commitLink(row.prURL, sha)
 	case "pr_tracked":
-		row.title, row.detail = "PR tracking started", "Watching for conflicts, failed checks, and review requests."
+		row.title, row.detail = "PR tracking started", ""
 	case "pr_retracked":
-		row.title, row.detail = "PR tracking resumed", "Watching for blockers again."
+		row.title, row.detail = "PR tracking resumed", ""
 	case "pr_untracked":
-		row.title, row.detail = "PR tracking stopped", "History is retained."
+		row.title, row.detail = "PR tracking stopped", ""
 	case "pr_assigned":
-		row.title, row.detail = "PR owner changed", "Future notifications go to the assigned session."
+		row.title, row.detail = "PR owner changed", ""
 	case "pr_refresh_failed":
 		row.title = "PR check failed"
 	case "action_opened":
@@ -61,25 +61,25 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	case "action_reprofiled":
 		row.title = "Repair instructions changed"
 	case "delivery_pending":
-		row.title, row.detail = "Notification queued", "Waiting to notify the responsible session."
+		row.title, row.detail = "Notification queued", ""
 	case "delivery_sending":
-		row.title, row.detail = "Notifying agent", "Sending the blocker to the responsible session."
+		row.title, row.detail = "Notifying agent", ""
 	case "delivery_delivered", "delivery_reconciled":
-		row.title, row.detail = "Notification accepted", "Codex accepted the notification for delivery; agent receipt and acknowledgment are unverified."
+		row.title, row.detail = "Notification accepted", "Agent receipt and acknowledgment unverified."
 	case "message_acknowledged":
-		row.title, row.detail = "Agent received notification", "The recipient recorded receipt; action acceptance and resolution remain separate."
+		row.title, row.detail = "Agent received notification", "Receipt recorded."
 	case "delivery_receipt_unavailable":
-		row.title, row.detail = "Receipt check unavailable", "The inbox message is retained; recipient receipt remains unverified."
+		row.title, row.detail = "Receipt check unavailable", "Receipt unverified."
 	case "delivery_uncertain":
-		row.title, row.detail = "Notification unconfirmed", "The send may have reached the agent. Confirmation is unavailable."
+		row.title, row.detail = "Notification unconfirmed", "Delivery unconfirmed."
 	case "delivery_unavailable":
-		row.title, row.detail = "Agent unavailable", "The notification could not be delivered."
+		row.title, row.detail = "Agent unavailable", ""
 	case "delivery_cancelled":
-		row.title, row.detail = "Notification cancelled", "This notification is no longer applicable."
+		row.title, row.detail = "Notification cancelled", ""
 	case "delivery_retry_requested":
-		row.title, row.detail = "Notification retry requested", "Another delivery attempt was requested."
+		row.title, row.detail = "Notification retry requested", ""
 	case "delivery_retry_wait", "delivery_waiting":
-		row.title, row.detail = "Notification retry scheduled", "Waiting before another delivery attempt."
+		row.title, row.detail = "Notification retry scheduled", ""
 	default:
 		if event.GetJobId() != "" {
 			row.title = "Worker update"
@@ -89,7 +89,11 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	if strings.HasPrefix(event.GetKind(), "delivery_") {
 		for _, action := range m.snapshot.GetTracking().GetActions() {
 			if action.GetId() == event.GetActionId() {
-				row.title += " · " + safe(action.GetSummary())
+				parts := []string{safe(action.GetSummary())}
+				if row.detail != "" {
+					parts = append(parts, row.detail)
+				}
+				row.detail = strings.Join(parts, " · ")
 				break
 			}
 		}
