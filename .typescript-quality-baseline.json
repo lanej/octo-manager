@@ -316,22 +316,6 @@
     {
       "file": "src/cli.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "console.log(JSON.stringify(result, cliJSON, values.json ? undefined : 2));",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
       "source": "if (!command || values.help) {",
@@ -375,14 +359,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
       "source": "if (!command || values.help) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/use-unknown-in-catch-callback-variable",
-      "message": "Prefer the safe `: unknown` for a `catch` callback variable.",
-      "source": "main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });",
       "count": 1
     },
     {
@@ -1151,30 +1127,6 @@
       "rule": "prettier",
       "message": "Formatting differs",
       "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS2379",
-      "message": "Argument of type '{ attempts: Attempt[]; result: string | undefined; }' is not assignable to parameter of type 'Partial<Job>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'result' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'.",
-      "source": "} else this.change(job.id, \"succeeded\", \"Job completed\", { attempts, result });",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS2379",
-      "message": "Argument of type '{ error: undefined; result: undefined; attempts: Attempt[]; }' is not assignable to parameter of type 'Partial<Job>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'result' are incompatible.\n    Type 'undefined' is not assignable to type 'string'.",
-      "source": "const claimed = this.change(job.id, \"running\", \"Worker claimed\", { error: undefined, result: undefined, attempts: [...job.attempts, { number: job.attempts.length + 1, startedAt: now }] });",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS2379",
-      "message": "Argument of type '{ error: undefined; result: undefined; retryCount: number; availableAt: number; fixture: undefined; }' is not assignable to parameter of type 'Partial<Job>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'result' are incompatible.\n    Type 'undefined' is not assignable to type 'string'.",
-      "source": "return this.change(job.id, \"queued\", \"Manual retry\", { error: undefined, result: undefined, retryCount: 0, availableAt: this.now(), fixture: undefined });",
       "count": 1
     },
     {
@@ -2519,7 +2471,7 @@
       "rule": "@typescript-eslint/no-explicit-any",
       "message": "Unexpected any. Specify a different type.",
       "source": "(c: any) => ({",
-      "count": 2
+      "count": 1
     },
     {
       "file": "src/tracking/github.ts",
@@ -2572,14 +2524,6 @@
     {
       "file": "src/tracking/github.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "at: Date.parse(c.started_at ?? c.completed_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "const raw = await read(",
@@ -2591,30 +2535,6 @@
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "const values = field ? raw[field] : raw;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .app on an `any` value.",
-      "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .completed_at on an `any` value.",
-      "source": "at: Date.parse(c.started_at ?? c.completed_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .conclusion on an `any` value.",
-      "source": "conclusion: String(c.conclusion ?? \"\"),",
       "count": 1
     },
     {
@@ -2645,56 +2565,8 @@
       "file": "src/tracking/github.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .head_sha on an `any` value.",
-      "source": "headSha: String(c.head_sha),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .html_url on an `any` value.",
-      "source": "url: String(c.html_url ?? url),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "id: `run:${c.id}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
       "source": "id: `status:${c.id}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .name on an `any` value.",
-      "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .name on an `any` value.",
-      "source": "name: String(c.name),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .started_at on an `any` value.",
-      "source": "at: Date.parse(c.started_at ?? c.completed_at ?? \"\") || 0,",
       "count": 1
     },
     {
@@ -2711,14 +2583,6 @@
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .state on an `any` value.",
       "source": "status: String(c.state),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .status on an `any` value.",
-      "source": "status: String(c.status),",
       "count": 1
     },
     {
@@ -2742,23 +2606,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"any\" of template literal expression.",
-      "source": "id: `run:${c.id}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"any\" of template literal expression.",
       "source": "id: `status:${c.id}`,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"any\" of template literal expression.",
-      "source": "key: `run:${c.app?.id ?? \"\"}:${c.name}`,",
       "count": 1
     },
     {
@@ -2807,14 +2655,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected number value in conditional. An explicit zero/NaN check is required.",
       "source": "at: Date.parse(c.created_at ?? \"\") || 0,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected number value in conditional. An explicit zero/NaN check is required.",
-      "source": "at: Date.parse(c.started_at ?? c.completed_at ?? \"\") || 0,",
       "count": 1
     },
     {
@@ -2999,14 +2839,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!d) return;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (existing) return existing;",
       "count": 1
     },
     {
@@ -4487,14 +4319,6 @@
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
       "source": "assert.equal(resumed.sequence, next.events.at(-1)!.sequence);",
-      "count": 1
-    },
-    {
-      "file": "test/rpc.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(review.pullRequest!.messages[0]!.bodyMarkdown,'Looks good');assert.equal(review.pullRequest!.observedAtMs,1234n);",
       "count": 1
     },
     {

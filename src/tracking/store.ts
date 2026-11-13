@@ -1,3 +1,6 @@
+import { compact } from "./messages.js";
+import { Subscriptions } from "./subscriptions.js";
+import { RetirementStore, lifecycle, TrackingState } from "./retirement.js";
 import { actionableFeedback } from "./review-signals.js";
 import { resolveId } from "./identifiers.js";
 import {
@@ -34,6 +37,8 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  readonly subscriptions: Subscriptions;
+  readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
   readonly checks: CheckWatches;
   constructor(
@@ -48,10 +53,28 @@ export class TrackingStore {
     ) => void,
   ) {
     migrateTracking(db);
+    this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id));
     this.inbox = new AgentInbox(db, now);
     this.checks = new CheckWatches(db, now);
+    this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
+      const observations = new Map(
+        this.prs().map((pr) => [pr.id, pr.observation]),
+      );
       for (const action of this.actions()) {
+        if (!unfinished(action)) continue;
+        const observation = observations.get(action.prId);
+        if (observation?.lifecycle === "merged") {
+          const progress = closeProgress(action, observation, this.now());
+          if (progress !== undefined) {
+            this.saveAction(
+              { ...action, progress, updatedAt: this.now() },
+              `action_${progress.state}`,
+            );
+            this.cancelDeliveries(action.id, "PR merged");
+          }
+          continue;
+        }
         if (
           unfinished(action) &&
           ((action.blocker.kind === "check_results" &&
@@ -155,6 +178,9 @@ export class TrackingStore {
       headSha: r.head_sha,
       baseSha: r.base_sha,
       ...(target === undefined ? {} : { targetBase: target }),
+      ...(typeof r["description"] === "string"
+        ? { description: r["description"] }
+        : {}),
       lifecycle: r.lifecycle,
       mergeability: r.mergeability,
       checks: parse(r.checks_json),
@@ -162,6 +188,13 @@ export class TrackingStore {
       ...(feedback === undefined ? {} : { feedback }),
       ...(workflows === undefined ? {} : { workflows }),
     };
+  }
+  reconcileCachedRetirement(): void {
+    this.transaction(() => {
+      for (const pr of this.prs())
+        if (pr.enabled && pr.observation?.lifecycle === "merged")
+          this.retirement.cachedMergedInside(pr.id, pr.observation);
+    });
   }
   prs(): TrackedPR[] {
     return this.db
@@ -179,6 +212,7 @@ export class TrackingStore {
           originAgentId: r.origin_agent_id,
           ownerAgentId: r.owner_agent_id,
           enabled: !!r.enabled,
+          ...lifecycle(r),
           createdAt: r.created_at_ms,
           updatedAt: r.updated_at_ms,
           ...(r.last_refresh_error === null
@@ -206,12 +240,8 @@ export class TrackingStore {
       if (existing) {
         if (existing.ownerAgentId !== agent.id)
           throw new Error("PR already has another owner; use assign");
-        if (!existing.enabled) {
-          this.db
-            .prepare(
-              "UPDATE tracked_prs SET enabled=1,updated_at_ms=? WHERE id=?",
-            )
-            .run(this.now(), existing.id);
+        if (!existing.enabled || existing.state === TrackingState.Archived) {
+          this.retirement.resumeInside(existing.id);
           this.event("pr_retracked", "Tracking resumed", existing.id);
           for (const a of this.actions().filter(
             (a) =>
@@ -367,12 +397,25 @@ export class TrackingStore {
       );
   }
   private enqueue(a: Action): void {
+    for (const participant of this.subscriptions.list(this.pr(a.prId)))
+      this.enqueueFor(a, participant.agentId);
+  }
+  private enqueueFor(a: Action, recipientAgentId: string): void {
+    if (
+      this.deliveries().some(
+        (d) =>
+          d.actionId === a.id &&
+          d.recipientAgentId === recipientAgentId &&
+          d.progress.state !== DeliveryState.Cancelled,
+      )
+    )
+      return;
     const at = this.now();
     this.saveDelivery(
       {
         id: randomUUID(),
         actionId: a.id,
-        recipientAgentId: a.ownerAgentId,
+        recipientAgentId,
         progress: { state: DeliveryState.Pending, nextAttemptAt: at },
         createdAt: at,
         updatedAt: at,
@@ -380,11 +423,75 @@ export class TrackingStore {
       "delivery_pending",
     );
   }
-  private cancelDeliveries(actionId: string, reason: string): void {
+  participants(id: string) {
+    return this.subscriptions.list(this.pr(id));
+  }
+  subscribe(id: string, target: AgentTarget) {
+    return this.transaction(() => {
+      const pr = this.pr(id),
+        agent = this.register(target);
+      if (this.subscriptions.addInside(pr, agent.id)) {
+        for (const action of this.actions().filter(
+          (a) => a.prId === pr.id && unfinished(a),
+        ))
+          this.enqueueFor(action, agent.id);
+        this.subscriptions.publishInside(pr);
+        this.event(
+          "pr_subscribed",
+          `${compact(agent.label ?? agent.harness, 120)} joined as observer`,
+          pr.id,
+        );
+      }
+      return this.participants(pr.id);
+    });
+  }
+  unsubscribe(id: string, agentId: string) {
+    return this.transaction(() => {
+      const pr = this.pr(id),
+        full = resolveId(
+          agentId,
+          this.agents().map((a) => a.id),
+        );
+      if (full === undefined) throw new Error("Agent not found");
+      if (this.subscriptions.removeInside(pr, full)) {
+        for (const delivery of this.deliveries().filter(
+          (d) =>
+            d.recipientAgentId === full &&
+            this.action(d.actionId).prId === pr.id &&
+            d.progress.state !== DeliveryState.Cancelled,
+        ))
+          this.saveDelivery(
+            {
+              ...delivery,
+              progress: {
+                state: DeliveryState.Cancelled,
+                at: this.now(),
+                reason: "Agent unsubscribed",
+              },
+              updatedAt: this.now(),
+            },
+            "delivery_cancelled",
+          );
+        this.subscriptions.publishInside(pr);
+        this.event(
+          "pr_unsubscribed",
+          `${compact(this.agent(full).label ?? this.agent(full).harness, 120)} stopped listening`,
+          pr.id,
+        );
+      }
+      return this.participants(pr.id);
+    });
+  }
+  private cancelDeliveries(
+    actionId: string,
+    reason: string,
+    includeDelivered = false,
+  ): void {
     for (const d of this.deliveries().filter(
       (d) =>
         d.actionId === actionId &&
         [
+          ...(includeDelivered ? [DeliveryState.Delivered] : []),
           DeliveryState.Pending,
           DeliveryState.Sending,
           DeliveryState.Uncertain,
@@ -413,7 +520,7 @@ export class TrackingStore {
       for (const a of this.actions().filter(
         (a) => a.prId === p.id && unfinished(a),
       )) {
-        this.cancelDeliveries(a.id, "Ownership reassigned");
+        this.cancelDeliveries(a.id, "Ownership reassigned", true);
         const next = {
           ...a,
           ownerAgentId: agent.id,
@@ -423,6 +530,7 @@ export class TrackingStore {
         this.saveAction(next, "action_reassigned");
         if (p.enabled) this.enqueue(next);
       }
+      this.subscriptions.publishInside(this.pr(p.id));
       this.event("pr_assigned", "Ownership reassigned", p.id);
       return this.pr(p.id);
     });
@@ -430,9 +538,7 @@ export class TrackingStore {
   untrack(id: string): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
-      this.db
-        .prepare("UPDATE tracked_prs SET enabled=0,updated_at_ms=? WHERE id=?")
-        .run(this.now(), p.id);
+      this.retirement.disableInside(p.id);
       for (const a of this.actions().filter((a) => a.prId === p.id))
         this.cancelDeliveries(a.id, "PR untracked");
       this.checks.cancel(p.id);
@@ -444,13 +550,18 @@ export class TrackingStore {
     id: string,
     input: ObservationInput,
     config: TrackingConfig,
+    expectedEpoch?: number,
   ): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
-      if (!p.enabled) return p;
+      if (
+        !p.enabled ||
+        (expectedEpoch !== undefined && p.trackingEpoch !== expectedEpoch)
+      )
+        return p;
       const result = this.db
         .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json,description) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         )
         .run(
           p.id,
@@ -470,6 +581,7 @@ export class TrackingStore {
           input.workflows === undefined
             ? null
             : JSON.stringify(input.workflows),
+          input.description ?? null,
         );
       const o: PRObservation = {
         ...input,
@@ -495,77 +607,84 @@ export class TrackingStore {
         }
       }
       const observedFindings = findings(o, p.url);
-      const checkResults = this.checks.observe(o).flatMap((watch) => {
-        const checks =
-          watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
-        const failures = checks.filter((check) => !successfulCheck(check));
-        const reported = [
-          ...this.actions().filter((action) => action.prId === p.id),
-          ...observedFindings,
-        ];
-        const unreported = failures.filter(
-          (check) =>
-            !reported.some((finding) => {
-              const blocker = finding.blocker;
-              if (blocker.kind === "check_results")
-                return (
-                  blocker.headSha === watch.headSha &&
-                  blocker.checks.some(
-                    (previous) =>
-                      previous.id === check.id &&
-                      previous.conclusion === check.conclusion,
-                  )
-                );
-              if (
-                blocker.kind !== "check_failed" ||
-                blocker.headSha !== watch.headSha
-              )
-                return false;
-              if (blocker.sourceId === check.id) return true;
-              const job = checks.find(
-                (candidate) => candidate.id === blocker.sourceId,
-              );
-              const run = (url: string) =>
-                /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
-                  url,
-                )?.[0];
-              return (
-                job !== undefined &&
-                job.at >= check.at &&
-                run(job.url) !== undefined &&
-                run(job.url) === run(check.url)
-              );
-            }),
-        );
-        if (
-          watch.state !== CheckWatchState.Completed ||
-          (unreported.length === 0 &&
-            (failures.length > 0 || o.lifecycle !== "open"))
+      const checkResults = this.checks
+        .observe(
+          o,
+          p.state === TrackingState.Archived ||
+            (p.state === TrackingState.Draining && o.lifecycle === "open"),
         )
-          return [];
-        return [
-          {
-            sourceKey: watch.id,
-            blocker: {
-              kind: "check_results" as const,
-              watchId: watch.id,
-              headSha: watch.headSha,
-              state: watch.state,
-              checks: failures.length === 0 ? checks : unreported,
-              ...(watch.replacementHeadSha === undefined
-                ? {}
-                : { replacementHeadSha: watch.replacementHeadSha }),
+        .flatMap((watch) => {
+          const checks =
+            watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
+          const failures = checks.filter((check) => !successfulCheck(check));
+          const reported = [
+            ...this.actions().filter((action) => action.prId === p.id),
+            ...observedFindings,
+          ];
+          const unreported = failures.filter(
+            (check) =>
+              !reported.some((finding) => {
+                const blocker = finding.blocker;
+                if (blocker.kind === "check_results")
+                  return (
+                    blocker.headSha === watch.headSha &&
+                    blocker.checks.some(
+                      (previous) =>
+                        previous.id === check.id &&
+                        previous.conclusion === check.conclusion,
+                    )
+                  );
+                if (
+                  blocker.kind !== "check_failed" ||
+                  blocker.headSha !== watch.headSha
+                )
+                  return false;
+                if (blocker.sourceId === check.id) return true;
+                const job = checks.find(
+                  (candidate) => candidate.id === blocker.sourceId,
+                );
+                const run = (url: string) =>
+                  /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
+                    url,
+                  )?.[0];
+                return (
+                  job !== undefined &&
+                  job.at >= check.at &&
+                  run(job.url) !== undefined &&
+                  run(job.url) === run(check.url)
+                );
+              }),
+          );
+          if (
+            o.lifecycle === "merged" ||
+            watch.state !== CheckWatchState.Completed ||
+            (unreported.length === 0 &&
+              (failures.length > 0 || o.lifecycle !== "open"))
+          )
+            return [];
+          return [
+            {
+              sourceKey: watch.id,
+              blocker: {
+                kind: "check_results" as const,
+                watchId: watch.id,
+                headSha: watch.headSha,
+                state: watch.state,
+                checks: failures.length === 0 ? checks : unreported,
+                ...(watch.replacementHeadSha === undefined
+                  ? {}
+                  : { replacementHeadSha: watch.replacementHeadSha }),
+              },
+              summary:
+                failures.length === 0
+                  ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
+                  : unreported.length === 1
+                    ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
+                    : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
+              evidenceUrl: p.url,
             },
-            summary:
-              failures.length === 0
-                ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
-                : unreported.length === 1
-                  ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
-                  : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
-            evidenceUrl: p.url,
-          },
-        ];
-      });
+          ];
+        });
       for (const f of [...findings(o, p.url), ...checkResults]) {
         if (
           this.actions().some(
@@ -594,6 +713,7 @@ export class TrackingStore {
         this.saveAction(a, "action_opened");
         this.enqueue(a);
       }
+      this.retirement.observeInside(p.id, o);
       return this.pr(p.id);
     });
   }
@@ -644,7 +764,11 @@ export class TrackingStore {
     const before = this.inbox.get(id),
       message = this.inbox.acknowledge(id, agentId);
     if (before?.acknowledgedAt === undefined) {
-      if (message.submissionId === undefined) {
+      if (message.workflowPRId !== undefined) {
+        this.event("message_acknowledged", message.id, message.workflowPRId);
+      } else if (message.participantPRId !== undefined) {
+        this.event("message_acknowledged", message.id, message.participantPRId);
+      } else if (message.submissionId === undefined) {
         const action = this.action(message.actionId);
         this.event("message_acknowledged", message.id, action.prId, action.id);
       } else this.event("message_acknowledged", message.id, "");
@@ -661,7 +785,7 @@ export class TrackingStore {
       if (
         !this.pr(a.prId).enabled ||
         !unfinished(a) ||
-        a.ownerAgentId !== d.recipientAgentId
+        !this.subscriptions.includes(a.prId, d.recipientAgentId)
       )
         throw new Error("Delivery no longer applicable");
       if (

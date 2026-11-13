@@ -23,16 +23,6 @@ type (
 		snapshot *v1.Snapshot
 		err      error
 	}
-	watchMsg struct {
-		stream   *connect.ServerStreamForClient[v1.WatchResponse]
-		instance string
-		err      error
-	}
-	eventMsg struct {
-		stream *connect.ServerStreamForClient[v1.WatchResponse]
-		event  *v1.JobEvent
-		err    error
-	}
 	commandMsg      struct{ err error }
 	browserMsg      struct{ err error }
 	streamClosedMsg struct{ err error }
@@ -40,6 +30,8 @@ type (
 )
 
 type Model struct {
+	dashboardStarted   bool
+	selectedRefresh    *v1.RefreshStatus
 	ctx                context.Context
 	cancel             context.CancelFunc
 	api                *client.Client
@@ -57,7 +49,11 @@ type Model struct {
 	expanded           bool
 	refreshing         bool
 	watching           bool
-	stream             *connect.ServerStreamForClient[v1.WatchResponse]
+	stream             *connect.ServerStreamForClient[v1.WatchDashboardResponse]
+	dashboardKey       string
+	dashboardVersion   uint64
+	dashboardCancel    context.CancelFunc
+	reviewStatuses     map[string]*v1.RefreshStatus
 	instance           string
 	cursor             uint64
 	connectionError    string
@@ -80,10 +76,11 @@ func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.
 
 	session, cancel := context.WithCancel(ctx)
 
-	return &Model{ctx: session, cancel: cancel, api: api, theme: t, location: location, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+	return &Model{panel: trackingPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviewStatuses: map[string]*v1.RefreshStatus{}, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd {
+	m.dashboardStarted = true
 	if m.terminalTheme {
 		return tea.Batch(m.refresh(), tick(), tea.RequestBackgroundColor, tea.RequestForegroundColor)
 	}
@@ -93,58 +90,7 @@ func (m *Model) Init() tea.Cmd {
 
 func tick() tea.Cmd { return tea.Tick(time.Second, func(time.Time) tea.Msg { return tickMsg{} }) }
 
-func (m *Model) refresh() tea.Cmd {
-	if m.refreshing {
-		return nil
-	}
-
-	m.refreshing = true
-
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
-		defer cancel()
-
-		response, err := m.api.RPC.GetSnapshot(ctx, connect.NewRequest(&v1.GetSnapshotRequest{}))
-		if err != nil {
-			return snapshotMsg{err: err}
-		}
-
-		return snapshotMsg{snapshot: response.Msg.GetSnapshot()}
-	}
-}
-
-func (m *Model) watch() tea.Cmd {
-	m.watching = true
-	instance, cursor := m.instance, m.cursor
-
-	return func() tea.Msg {
-		stream, err := m.api.RPC.Watch(m.ctx, connect.NewRequest(&v1.WatchRequest{InstanceId: instance, AfterSequence: cursor}))
-		return watchMsg{stream: stream, instance: instance, err: err}
-	}
-}
-
-func receive(stream *connect.ServerStreamForClient[v1.WatchResponse]) tea.Cmd {
-	return func() tea.Msg {
-		if stream.Receive() {
-			return eventMsg{stream: stream, event: stream.Msg().GetEvent()}
-		}
-
-		return eventMsg{stream: stream, err: stream.Err()}
-	}
-}
-
-func closeStream(stream *connect.ServerStreamForClient[v1.WatchResponse]) tea.Cmd {
-	return func() tea.Msg { return streamClosedMsg{err: stream.Close()} }
-}
-
-func (m *Model) watchFailed(err error) {
-	m.watching = false
-	if connect.CodeOf(err) == connect.CodeFailedPrecondition || connect.CodeOf(err) == connect.CodeOutOfRange {
-		m.instance = ""
-	}
-
-	m.connectionError = "Event stream unavailable; reconnecting"
-}
+func (m *Model) refresh() tea.Cmd { return m.syncDashboard() }
 
 func (m *Model) Update(message tea.Msg) tea.Cmd {
 	switch msg := message.(type) {
@@ -182,17 +128,7 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 
 		contextChanged := m.instance != msg.snapshot.GetInstanceId() || m.snapshot.GetSequence() != msg.snapshot.GetSequence()
 
-		var closing tea.Cmd
-
-		if m.instance != msg.snapshot.GetInstanceId() {
-			if m.stream != nil {
-				closing = closeStream(m.stream)
-				m.stream = nil
-			}
-
-			m.instance, m.cursor = msg.snapshot.GetInstanceId(), msg.snapshot.GetSequence()
-			m.watching = false
-		}
+		m.instance, m.cursor = msg.snapshot.GetInstanceId(), msg.snapshot.GetSequence()
 
 		m.snapshot, m.connectionError = msg.snapshot, ""
 		if contextChanged {
@@ -202,44 +138,28 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		m.ensureSelection()
 		m.resizeContent()
 
-		if !m.watching {
-			return tea.Batch(closing, m.watch(), m.loadHistory(), m.loadReviews(false), m.loadActivity())
-		}
-
-		return tea.Batch(closing, m.loadHistory(), m.loadReviews(false), m.loadActivity())
-	case watchMsg:
-		if msg.instance != m.instance {
+		return tea.Batch(m.syncDashboard(), m.loadHistory(), m.loadActivity())
+	case dashboardOpened:
+		if msg.version != m.dashboardVersion {
 			if msg.stream != nil {
-				return closeStream(msg.stream)
+				return closeDashboard(msg.stream)
 			}
 
 			return nil
 		}
 
 		if msg.err != nil {
-			m.watchFailed(msg.err)
+			m.watching = false
+			m.connectionError = "Dashboard unavailable; reconnecting"
 
 			return nil
 		}
 
 		m.stream = msg.stream
 
-		return receive(msg.stream)
-	case eventMsg:
-		if msg.stream != m.stream {
-			return nil
-		}
-
-		if msg.event == nil {
-			m.stream = nil
-			m.watchFailed(msg.err)
-
-			return closeStream(msg.stream)
-		}
-
-		m.cursor = msg.event.GetSequence()
-
-		return tea.Batch(m.refresh(), receive(msg.stream))
+		return dashboardReceive(msg.stream, msg.version)
+	case dashboardFrame:
+		return m.applyDashboard(msg)
 	case tickMsg:
 		return tea.Batch(m.refresh(), tick())
 	case streamClosedMsg:
@@ -266,7 +186,7 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 
 		return m.refresh()
 	case tea.KeyPressMsg:
-		return m.key(msg)
+		return tea.Batch(m.key(msg), m.syncDashboard())
 	}
 
 	return nil
@@ -292,14 +212,18 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 	case "h", "left":
 		if m.panel == activityPanel {
 			m.moveActivityPage(1)
-		} else if m.panel != githubPanel {
+		} else if m.tab().worker {
 			m.moveRun(-1)
 		}
 	case "l", "right":
 		if m.panel == activityPanel {
 			m.moveActivityPage(-1)
-		} else if m.panel != githubPanel {
+		} else if m.tab().worker {
 			m.moveRun(1)
+		}
+	case "a":
+		if m.panel == trackingPanel {
+			return m.toggleAutoMerge()
 		}
 	case "o":
 		if !m.globalPanel() {
@@ -310,7 +234,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.result.GotoTop()
 		m.resizeContent()
 
-		return m.loadReviews(false)
+		return nil
 	case "2":
 		m.panel = outputPanel
 		m.result.GotoTop()
@@ -379,6 +303,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.result.ScrollDown(3)
 		}
 	case "p", "c", "r":
+		if m.panel != outputPanel && m.panel != statePanel {
+			return nil
+		}
+
 		return m.control(key.String())
 	}
 

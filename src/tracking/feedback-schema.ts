@@ -7,6 +7,11 @@ export function migrateFeedback(db: DatabaseSync): void {
     version === 7 ||
     version === 8 ||
     version === 9 ||
+    version === 15 ||
+    version === 14 ||
+    version === 13 ||
+    version === 12 ||
+    version === 11 ||
     version === 10
   )
     return;

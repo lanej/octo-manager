@@ -1,3 +1,10 @@
+import {migrateScheduling,ScheduleStore} from "./scheduling/store.js";
+import {migrateAutoMerge} from "./merging/upgrade.js";
+import {migrateMerging} from "./merging/schema.js";
+import {MergeStore} from "./merging/store.js";
+import {migrateSubscriptions} from "./tracking/subscriptions.js";
+import {NotificationStore} from "./tracking/notifications.js";
+import {migrateRetirement} from "./tracking/retirement.js";
 import {migrateDigests} from "./notifications/schema.js";
 import {DigestStore} from "./notifications/store.js";
 import { migrateSubmissions } from "./submissions/schema.js";
@@ -25,11 +32,15 @@ export function privateDirectory(path: string): void {
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
+  readonly schedules: ScheduleStore;
+  readonly merging: MergeStore;
   readonly activity: ActivityStore;
   readonly repairs: RepairStore;
   readonly conflicts: ConflictStore;
+  readonly mergeConflicts:ConflictStore;
   readonly submissions: SubmissionStore;
   readonly digests: DigestStore;
+  readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
   constructor(readonly directory: string, private now: () => number = Date.now) {
@@ -57,8 +68,18 @@ export class Store {
       migrateChecks(this.db);
       migrateSubmissions(this.db);
       migrateDigests(this.db);
+      migrateRetirement(this.db,this.now());
+      migrateSubscriptions(this.db);
+      migrateMerging(this.db);
+      migrateAutoMerge(this.db);
+      migrateScheduling(this.db);
+      this.schedules=new ScheduleStore(this.db,this.now);
+      this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
+      this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
+      this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });
+      this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }

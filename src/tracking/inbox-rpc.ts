@@ -1,3 +1,4 @@
+import { resolveId } from "./identifiers.js";
 import { trackingOperation } from "./rpc.js";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type {
@@ -19,13 +20,20 @@ function wire(message: AgentMessage) {
 export function inboxRoutes(store: TrackingStore) {
   return {
     listAgentMessages(request: ListAgentMessagesRequest) {
-      if (!store.agents().some((agent) => agent.id === request.agentId))
+      const agentId = resolveId(
+        request.agentId,
+        store.agents().map((agent) => agent.id),
+      );
+      if (
+        agentId === undefined ||
+        !store.agents().some((agent) => agent.id === agentId)
+      )
         throw new ConnectError("Agent not found", Code.NotFound);
       const after = Number(request.afterSequence);
       if (!Number.isSafeInteger(after) || after < 0)
         throw new ConnectError("Invalid inbox cursor", Code.InvalidArgument);
       const page = store.inbox.list(
-        request.agentId,
+        agentId,
         after,
         request.includeAcknowledged,
         request.applicableOnly,
@@ -38,10 +46,14 @@ export function inboxRoutes(store: TrackingStore) {
     },
     acknowledgeMessage(request: AcknowledgeMessageRequest) {
       return trackingOperation(() => {
+        const agentId = resolveId(
+          request.agentId,
+          store.agents().map((agent) => agent.id),
+        );
         const message = store.inbox.get(request.id);
         if (message === undefined)
           throw new ConnectError("Message not found", Code.NotFound);
-        if (message.recipientAgentId !== request.agentId)
+        if (message.recipientAgentId !== agentId)
           throw new ConnectError(
             "Message belongs to another agent",
             Code.PermissionDenied,
@@ -55,7 +67,7 @@ export function inboxRoutes(store: TrackingStore) {
             Code.InvalidArgument,
           );
         return {
-          message: wire(store.acknowledgeMessage(request.id, request.agentId)),
+          message: wire(store.acknowledgeMessage(request.id, agentId)),
         };
       });
     },

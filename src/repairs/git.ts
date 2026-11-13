@@ -292,11 +292,12 @@ export class RebaseWorkspace {
     const line = await this.git(["ls-remote", "origin", `refs/heads/${ref}`]);
     return line.split(/\s/u)[0] ?? "";
   }
-  async push(head: string): Promise<void> {
+  async push(head: string, beforeSend?: () => void): Promise<void> {
     if (
       (await this.remoteHead(this.source.targetRef)) !== this.source.targetSha
     )
       throw new Error("Target branch moved before push");
+    beforeSend?.();
     await this.git([
       "push",
       "--no-follow-tags",

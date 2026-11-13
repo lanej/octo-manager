@@ -3,7 +3,7 @@ import {
   feedbackRevision,
   reviewObservation,
 } from "./feedback.js";
-import { workflowObservation } from "./checks.js";
+import { checkRunObservation, workflowObservation } from "./checks.js";
 import { trackingPR } from "./evidence.js";
 import { githubReads, GitHubRateLimitError } from "../github-api.js";
 import { githubMetadata } from "./metadata.js";
@@ -107,16 +107,7 @@ export async function readObservation(
       collection(
         `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
         "check_runs",
-        (c: any) => ({
-          id: `run:${c.id}`,
-          key: `run:${c.app?.id ?? ""}:${c.name}`,
-          name: String(c.name),
-          headSha: String(c.head_sha),
-          status: String(c.status),
-          conclusion: String(c.conclusion ?? ""),
-          at: Date.parse(c.started_at ?? c.completed_at ?? "") || 0,
-          url: String(c.html_url ?? url),
-        }),
+        (value: unknown) => checkRunObservation(value, url),
         read,
         signal,
       ),
@@ -248,6 +239,9 @@ export async function readObservation(
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
     ...(target === undefined ? {} : { targetBase: target }),
+    ...(initial?.description === undefined
+      ? {}
+      : { description: initial.description }),
     lifecycle: pr.merged ? "merged" : pr.state,
     mergeability:
       pr.mergeable === true

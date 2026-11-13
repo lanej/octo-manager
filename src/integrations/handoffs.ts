@@ -9,6 +9,7 @@ import {
   readFile,
   readdir,
   rename,
+  rm,
 } from "node:fs/promises";
 import { join, isAbsolute } from "node:path";
 import { canonicalPR } from "../tracking/github.js";
@@ -172,11 +173,16 @@ export class Handoffs {
           reason: result.reason.slice(0, 2000),
           at: this.now(),
         };
-        await writeFile(
-          join(this.root, "failed", file),
-          JSON.stringify(failed),
-          { mode: 0o600 },
-        );
+        const temporary = join(this.root, `.${randomUUID()}.tmp`);
+        try {
+          await writeFile(temporary, JSON.stringify(failed), {
+            mode: 0o600,
+            flag: "wx",
+          });
+          await rename(temporary, join(this.root, "failed", file));
+        } finally {
+          await rm(temporary, { force: true });
+        }
       }
       if (result.accepted) {
         try {

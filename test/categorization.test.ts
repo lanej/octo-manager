@@ -23,20 +23,17 @@ test("author-routed heuristics produce inspectable categories and delivery polic
     [codex("inconclusive", null), MessageCategory.Inconclusive],
     [codex("completed", false), MessageCategory.NoFindings],
     [codex("completed", null), MessageCategory.Inconclusive],
-    [codex("running", true), MessageCategory.Findings],
+    [codex("running", true), MessageCategory.Informational],
     [codex("future-status", null), MessageCategory.Unknown],
+    [codex("future-status", true), MessageCategory.Unknown],
   ] as const) {
     const result = engine.categorize(message);
     assert.equal(result.category, expected);
     assert.equal(result.classifier.id, "codex-review-state");
-    assert.equal(result.classifier.version, 1);
+    assert.equal(result.classifier.version, 2);
     assert.equal(result.classifier.layer, "heuristic");
     assert(result.rule.length > 0 && result.reason.length > 0);
-    assert.equal(
-      shouldNotify(result),
-      expected === MessageCategory.Findings ||
-        expected === MessageCategory.Unknown,
-    );
+    assert.equal(shouldNotify(result), expected === MessageCategory.Unknown);
   }
   const text =
     "Copilot reviewed 10 out of 10 changed files and generated 0 comments.";

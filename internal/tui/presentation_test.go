@@ -387,14 +387,14 @@ func TestCheckWatchPanelKeepsCurrentRevisionVisibleAndScrollsIndependently(t *te
 	scrolled = m.activity.YOffset()
 	m.key(tea.KeyPressMsg{Code: 'l', Text: "l"})
 
-	if m.selected != "run2" || m.activity.YOffset() != scrolled {
-		t.Fatal("worker-run navigation moved check watches")
+	if m.selected != "run1" || m.activity.YOffset() != scrolled {
+		t.Fatal("tracking navigation changed the selected run or check-watch scroll")
 	}
 
 	m.key(tea.KeyPressMsg{Code: 'h', Text: "h"})
 
 	if m.selected != "run1" || m.activity.YOffset() != scrolled {
-		t.Fatal("returning to a worker run moved check watches")
+		t.Fatal("tracking navigation changed the selected run or check-watch scroll")
 	}
 
 	m.Resize(layout.Size{Width: 40, Height: 16})

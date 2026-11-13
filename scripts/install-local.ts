@@ -1,3 +1,8 @@
+import {
+  serviceDefinition,
+  startService,
+  managerAvailable,
+} from "../src/install/service.js";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -18,8 +23,6 @@ import { parseArgs } from "node:util";
 import {
   codexHooks,
   desktopConfig,
-  launchAgent,
-  serviceLabel,
   shellQuote,
 } from "../src/install/config.js";
 
@@ -98,10 +101,8 @@ async function main(): Promise<void> {
       "no-start": { type: "boolean" },
     },
   });
-  if (process.platform !== "darwin")
-    throw new Error(
-      "Managed local installation currently supports macOS; use the documented manual coordinator on other platforms",
-    );
+  if (process.platform !== "darwin" && process.platform !== "linux")
+    throw new Error("Local installation supports macOS and Linux");
   if (Bun.version !== "1.4.4")
     throw new Error("Install with the repository's pinned Bun 1.4.4");
   if (run("git", ["status", "--porcelain"]).trim() !== "")
@@ -118,8 +119,19 @@ async function main(): Promise<void> {
         join(home, ".local", "state", "octo-manager"),
     );
   const launcher = join(home, ".local", "bin", "octo-manager"),
-    release = join(base, "releases", revision),
-    bun = join(base, "runtime", "bun-1.4.4", "bun");
+    release = join(
+      base,
+      "releases",
+      process.platform + "-" + process.arch,
+      revision,
+    ),
+    bun = join(
+      base,
+      "runtime",
+      process.platform + "-" + process.arch,
+      "bun-1.4.4",
+      "bun",
+    );
   const configHome = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config"),
     codexHome = process.env["CODEX_HOME"] ?? join(home, ".codex"),
     hooksPath = join(codexHome, "hooks.json"),
@@ -130,7 +142,24 @@ async function main(): Promise<void> {
       : undefined;
   const config =
     values.codex === true ? desktopConfig(await json(configPath)) : undefined;
-  const plist = join(home, "Library", "LaunchAgents", `${serviceLabel}.plist`);
+  const gh = Bun.which("gh");
+  if (gh === null) throw new Error("Install gh before configuring Octo");
+  const path = [
+    ...new Set([
+      dirname(gh),
+      join(home, ".local/bin"),
+      ...(process.env["PATH"] ?? "").split(":").filter((value) => value !== ""),
+    ]),
+  ].join(":");
+  const uid = process.getuid?.();
+  if (uid === undefined) throw new Error("A Unix user identity is required");
+  const input = { home, bun, release, state, path, configHome, codexHome };
+  const definition = serviceDefinition(process.platform, input, uid),
+    plist = definition.file;
+  const available =
+    values["no-start"] === true
+      ? false
+      : managerAvailable(definition, (command, args) => run(command, args));
   if (
     (await exists(plist)) &&
     !(await readFile(plist, "utf8")).includes(join(base, "releases"))
@@ -150,7 +179,12 @@ async function main(): Promise<void> {
   await privateDirectory(state);
   const lock = join(base, ".install-lock");
   await mkdir(lock, { mode: 0o700 });
-  const stage = join(base, "releases", `.install-${randomUUID()}`);
+  const stage = join(
+    base,
+    "releases",
+    process.platform + "-" + process.arch,
+    `.install-${randomUUID()}`,
+  );
   try {
     await privateDirectory(dirname(release));
     await privateDirectory(dirname(bun));
@@ -183,7 +217,12 @@ async function main(): Promise<void> {
       );
       await writeFile(
         join(stage, "release.json"),
-        JSON.stringify({ revision, bun: "1.4.4" }) + "\n",
+        JSON.stringify({
+          revision,
+          bun: "1.4.4",
+          platform: process.platform,
+          architecture: process.arch,
+        }) + "\n",
         { mode: 0o600 },
       );
       await rename(stage, release);
@@ -194,7 +233,9 @@ async function main(): Promise<void> {
       if (
         !object(installed) ||
         installed["revision"] !== revision ||
-        installed["bun"] !== "1.4.4"
+        installed["bun"] !== "1.4.4" ||
+        installed["platform"] !== process.platform ||
+        installed["architecture"] !== process.arch
       )
         throw new Error("Existing release metadata does not match");
     }
@@ -221,52 +262,16 @@ async function main(): Promise<void> {
       await configure(hooksPath, hooks, join(backups, "hooks.json"));
     if (config !== undefined)
       await configure(configPath, config, join(backups, "config.json"));
-    const gh = run("/usr/bin/which", ["gh"]).trim();
-    const path = [
-      ...new Set([
-        dirname(gh),
-        join(home, ".local", "bin"),
-        "/opt/homebrew/bin",
-        "/usr/local/bin",
-        "/usr/bin",
-        "/bin",
-        "/usr/sbin",
-        "/sbin",
-      ]),
-    ].join(":");
-    await atomic(
-      plist,
-      launchAgent(home, bun, release, state, path, configHome, codexHome),
-      0o600,
+    await atomic(definition.file, definition.text, 0o600);
+    if (definition.kind === "launchd")
+      run("/usr/bin/plutil", ["-lint", definition.file]);
+    const service = await startService(
+      definition,
+      input,
+      values["no-start"] === true,
+      (command, args) => run(command, args),
+      available,
     );
-    run("/usr/bin/plutil", ["-lint", plist]);
-    const uid = process.getuid?.();
-    if (uid === undefined)
-      throw new Error("A macOS user service requires a user ID");
-    const domain = `gui/${String(uid)}`,
-      target = `${domain}/${serviceLabel}`;
-    if (values["no-start"] !== true) {
-      try {
-        run("/bin/launchctl", ["print", target]);
-        run("/bin/launchctl", ["bootout", target]);
-      } catch {
-        /* No registered service on first install. */
-      }
-      for (let attempt = 0; ; attempt++) {
-        try {
-          run("/bin/launchctl", ["bootstrap", domain, plist]);
-          break;
-        } catch (error) {
-          if (!object(error) || error["status"] !== 5 || attempt >= 5)
-            throw error;
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.min(200 * 2 ** attempt, 1000)),
-          );
-        }
-      }
-      run("/bin/launchctl", ["enable", target]);
-      run("/bin/launchctl", ["kickstart", target]);
-    }
     console.log(
       JSON.stringify({
         installed: true,
@@ -274,9 +279,8 @@ async function main(): Promise<void> {
         release,
         launcher,
         state,
-        service: target,
-        plist,
-        started: values["no-start"] !== true,
+        ...service,
+        ...(definition.kind === "launchd" ? { plist } : {}),
         codexHooks: hooksPath,
         hookTrust:
           "Review new Octo definitions through Codex /hooks before native activation",

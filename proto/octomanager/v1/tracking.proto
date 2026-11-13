@@ -1,5 +1,6 @@
 syntax = "proto3";
 package octomanager.v1;
+import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 enum ActionState {
@@ -40,6 +41,7 @@ message TrackingObservation {
   optional string feedback_json = 10;
   optional string workflows_json = 11;
 }
+enum TrackingState { TRACKING_STATE_UNSPECIFIED=0; TRACKING_STATE_WATCHING=1; TRACKING_STATE_DRAINING=2; TRACKING_STATE_ARCHIVED=3; TRACKING_STATE_DISABLED=4; }
 message TrackedPullRequest {
   string id = 1;
   string url = 2;
@@ -51,6 +53,10 @@ message TrackedPullRequest {
   optional string refresh_error = 8;
   optional int64 refresh_error_at_ms = 9;
   TrackingObservation observation = 10;
+  TrackingState tracking_state=11;
+  optional int64 drain_deadline_at_ms=12;
+  optional int64 archived_at_ms=13;
+  optional string archive_reason=14;
 }
 message ExecutionProfile { string name = 1; string instructions = 2; optional string harness = 3; optional string model = 4; }
 message ConflictBlocker { string head_sha = 1; string base_sha = 2; optional string base_ref = 3; }
@@ -74,6 +80,7 @@ enum CheckWatchState {
   CHECK_WATCH_STATE_COMPLETED = 2;
   CHECK_WATCH_STATE_SUPERSEDED = 3;
   CHECK_WATCH_STATE_CANCELLED = 4;
+  CHECK_WATCH_STATE_EXPIRED = 5;
 }
 message CheckWatch {
   string id = 1;
@@ -156,7 +163,7 @@ message TrackPullRequestResponse { TrackedPullRequest pr = 1; }
 message GetTrackedPullRequestRequest { string id = 1; }
 message GetTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
 message RefreshTrackedPullRequestRequest { string id = 1; }
-message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
+message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; RefreshStatus refresh = 2; }
 message AssignPullRequestResponse { TrackedPullRequest pr = 1; }
 message UntrackPullRequestRequest { string id = 1; }
 message UntrackPullRequestResponse { TrackedPullRequest pr = 1; }
@@ -187,3 +194,12 @@ message AcknowledgeMessageResponse { AgentMessage message = 1; }
 
 message RegisterAgentRequest { AgentTarget target = 1; }
 message RegisterAgentResponse { AgentReference agent = 1; }
+
+message PRParticipant { string agent_id=1; string role=2; string label=3; string harness=4; }
+message SubscribePullRequestRequest { string id=1; AgentTarget agent=2; }
+message UnsubscribePullRequestRequest { string id=1; string agent_id=2; }
+message ListPRParticipantsRequest { string id=1; uint32 offset=2; }
+message ListPRParticipantsResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
+
+message SubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
+message UnsubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }

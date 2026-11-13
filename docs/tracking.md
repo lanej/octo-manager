@@ -206,3 +206,9 @@ The Tracking view shows watches and linked completion details; `tracking --json`
 New notifications contain actionable evidence without repeated policy or command arrays. The service confirms receipt when the exact immutable body appears as user input in the owning Codex thread; queue admission, assistant echoes, and altered copies do not qualify. This records a host receipt, not model processing or action acceptance/resolution. Explicit receipt and inbox commands remain available for manual recovery. Previously stored messages remain unchanged.
 
 Known bot lifecycle and no-findings summaries remain in observations without creating feedback actions or deliveries; see the [review lifecycle filter](agent-messages.md#review-lifecycle-filtering). Human and inline feedback and unknown provider formats remain eligible.
+
+## Automatic retirement
+
+See [PR monitoring retirement](retirement.md) for the watching/draining/archived lifecycle, 24-hour incomplete-result cutoff and notification-driven reopening. Automatic archival retains applicable unread delivery; explicit `untrack` remains an immediate stop.
+
+Coordinator GitHub HTTP calls use the official Octokit core client. Each coordinator process obtains one credential through `gh auth token --hostname github.com` on its first API call and keeps it only in memory; restart after changing credentials. The shared client owns conditional caching, quota metrics, cooldowns and serialization, with no SDK retry plugin. Notification polling retains provider retry deadlines durably across restart. Responses remain bounded to 2 MiB; failed-job log excerpts may be unavailable for larger logs.

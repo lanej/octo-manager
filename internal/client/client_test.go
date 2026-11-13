@@ -86,8 +86,32 @@ func TestGeneratedGoClientTalksToBunOverUnixSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if reviews.Msg.GetPullRequest().GetHeadSha() != "controlled" || len(reviews.Msg.GetPullRequest().GetMessages()) != 1 || reviews.Msg.GetPullRequest().GetMessages()[0].GetBodyMarkdown() != "Looks good" {
-		t.Fatal("generated review contract lost fields")
+	if reviews.Msg.GetPullRequest() != nil || reviews.Msg.GetRefresh().GetState() != v1.RefreshState_REFRESH_STATE_QUEUED {
+		t.Fatal("cache miss did not return queued status")
+	}
+
+	dashboard, err := api.RPC.WatchDashboard(ctx, connect.NewRequest(&v1.WatchDashboardRequest{Url: "https://github.com/owner/repo/pull/12", Reviews: true}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var details *v1.PullRequestDetails
+	for dashboard.Receive() {
+		if details = dashboard.Msg().GetPullRequest(); details != nil {
+			break
+		}
+	}
+
+	if details == nil {
+		t.Fatalf("scheduled review did not arrive: %v", dashboard.Err())
+	}
+
+	if closeErr := dashboard.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	if details.GetHeadSha() != "controlled" || len(details.GetMessages()) != 1 || details.GetMessages()[0].GetBodyMarkdown() != "Looks good" {
+		t.Fatal("generated scheduled review contract lost fields")
 	}
 
 	request := &v1.SubmitJobRequest{RequestId: "go-contract", Task: &v1.Task{Kind: &v1.Task_ResolveConflict{ResolveConflict: &v1.ResolveConflictTask{}}}}

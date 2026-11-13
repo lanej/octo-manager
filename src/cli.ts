@@ -1,4 +1,7 @@
 #!/usr/bin/env bun
+import {mergingCLI} from "./merging/cli.js";
+import {printResult,printFailure} from "./cli-output.js";
+import {subscriptionsCLI} from "./tracking/subscriptions-cli.js";
 import { notificationsCLI } from "./notifications/cli.js";
 import { submissionsCLI } from "./submissions/cli.js";
 import { codexHookCLI } from "./integrations/codex.js";
@@ -12,14 +15,16 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { Coordinator } from "./coordinator.js";
 import { loadTrackingConfig } from "./tracking/config.js";
-import { request, trackingRequest, cliJSON } from "./client.js";
+import { request, trackingRequest } from "./client.js";
 import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
 async function main(): Promise<void> {
   const parsed = parseCommand(process.argv.slice(2));
+  if (await mergingCLI(parsed)) return;
   if (await notificationsCLI(parsed)) return;
+  if (await subscriptionsCLI(parsed)) return;
   if (await submissionsCLI(parsed)) return;
   if (await activityCLI(parsed)) return;
   if (await repairsCLI(parsed)) return;
@@ -28,7 +33,7 @@ async function main(): Promise<void> {
   const [command, argument] = positionals;
   if (command === "codex-hook") { await codexHookCLI(directory); return; }
   if (!command || values.help) {
-    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme terminal|dark|light|contrast|mono --timezone IANA_ZONE --request-id ID --json\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking | inbox --agent-id ID [--after N] [--include-acknowledged] | acknowledge-message ID --agent-id ID. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
+    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme terminal|dark|light|contrast|mono --timezone IANA_ZONE --request-id ID --json --agent --full (read-only inspection)\nAuto-merge: auto-merge PR --on|--off --agent-id OWNER_ID. Merge chains: queue-chain --intent-file FILE | chains [ID] | references [PR] | dependencies [PR] | merge-command --intent-file FILE | merge-ready PR --head SHA --agent-id ID | pause-chain ID | resume-chain ID | cancel-chain ID | reconcile-operation ID.\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking | inbox --agent-id ID [--after N] [--include-acknowledged] | acknowledge-message ID --agent-id ID. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
   }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
@@ -76,7 +81,8 @@ async function main(): Promise<void> {
     let cursor = Number(values.after ?? 0);
     do {
       const events: JobEvent[] = await request(directory, { op: "events", id, after: cursor });
-      for (const event of events) { console.log(JSON.stringify(event)); cursor = event.seq; }
+      if(parsed.output.agent && !parsed.output.full){printResult(parsed,events);return;}
+      for (const event of events) { printResult(parsed,event); cursor = event.seq; }
       if (!values.watch) break;
       const job = await request(directory, { op: "get", id });
       if (terminalStates.includes(job.status) && events.length < 200) break;
@@ -84,6 +90,6 @@ async function main(): Promise<void> {
     } while (true);
     return;
   } else throw new Error("Unsupported command; see --help");
-  console.log(JSON.stringify(result, cliJSON, values.json ? undefined : 2));
+  printResult(parsed,result);
 }
-main().catch(error => { console.error((error as Error).message); process.exitCode = 1; });
+main().catch((error:unknown) => { printFailure(error,process.argv.slice(2),process.env); process.exitCode = 1; });

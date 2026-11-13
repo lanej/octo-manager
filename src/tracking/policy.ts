@@ -125,6 +125,7 @@ export function closeProgress(
     observationId: o.id,
     reason,
   });
+  if (o.lifecycle === "merged") return supersede("PR merged");
   if (a.blocker.kind === "check_results") {
     if (a.blocker.headSha !== o.headSha) return supersede("PR head changed");
     if (a.blocker.checks.every(successfulCheck)) {

@@ -411,7 +411,7 @@ test("the coordinator reports failed workflow completion without a waiting calle
       reads++;
       return Promise.resolve(
         observation({
-          lifecycle: reads === 1 ? "open" : "merged",
+          lifecycle: reads === 1 ? "open" : "closed",
           checks: { state: "complete", value: [check("run:job")] },
           workflows: {
             state: "complete",
@@ -720,3 +720,84 @@ test("readiness distinguishes conflicts and neutral checks and expires when the 
     }
   }
 });
+
+for (const upgrade of [false, true]) {
+  test(`merged failures retire without losing history (${upgrade ? "upgrade" : "refresh"})`, async () => {
+    const directory = await mkdtemp(join(tmpdir(), "octo-merged-failures-"));
+    let store = new Store(directory);
+    const config = defaultTrackingConfig();
+    try {
+      const pr = store.tracking.track(url, {
+        harness: "codex",
+        endpoint: "local",
+        sessionId: "owner",
+      });
+      const failure = observation({
+        workflows: {
+          state: "complete",
+          value: [check("workflow:1", "completed", "failure")],
+        },
+      });
+      store.tracking.observe(pr.id, failure, config);
+      const action = store.tracking
+        .actions()
+        .find((a) => a.blocker.kind === "check_results");
+      assert(action !== undefined);
+      const delivery = store.tracking
+        .deliveries()
+        .find((d) => d.actionId === action.id);
+      assert(delivery !== undefined);
+      store.tracking.inbox.record(delivery.id, "Final failed workflow");
+      assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, true);
+      if (upgrade) {
+        store.close();
+        const db = new DatabaseSync(join(directory, "jobs.sqlite"));
+        try {
+          db.prepare(
+            "UPDATE pr_observations SET lifecycle='merged' WHERE pr_id=?",
+          ).run(pr.id);
+        } finally {
+          db.close();
+        }
+        store = new Store(directory);
+      } else {
+        store.tracking.observe(
+          pr.id,
+          { ...failure, lifecycle: "merged" },
+          config,
+        );
+      }
+      assert.equal(
+        store.tracking.actions().find((a) => a.id === action.id)?.progress
+          .state,
+        ActionState.Superseded,
+      );
+      assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
+      assert.equal(
+        store.tracking.inbox.get(delivery.id)?.body,
+        "Final failed workflow",
+      );
+      assert.equal(
+        store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
+        undefined,
+      );
+      assert.equal(
+        store.tracking.checks.list()[0]?.state,
+        CheckWatchState.Completed,
+      );
+      const actions = store.tracking.actions().length;
+      store.tracking.observe(
+        pr.id,
+        { ...failure, lifecycle: "merged" },
+        config,
+      );
+      assert.equal(store.tracking.actions().length, actions);
+      store.close();
+      store = new Store(directory);
+      assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
+    } finally {
+      store.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+}

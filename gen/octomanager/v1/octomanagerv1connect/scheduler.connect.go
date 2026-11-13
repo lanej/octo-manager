@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceMergeCommandProcedure is the fully-qualified name of the SchedulerService's
+	// MergeCommand RPC.
+	SchedulerServiceMergeCommandProcedure = "/octomanager.v1.SchedulerService/MergeCommand"
 	// SchedulerServiceGetAgentDigestProcedure is the fully-qualified name of the SchedulerService's
 	// GetAgentDigest RPC.
 	SchedulerServiceGetAgentDigestProcedure = "/octomanager.v1.SchedulerService/GetAgentDigest"
@@ -81,6 +84,15 @@ const (
 	// SchedulerServiceRegisterAgentProcedure is the fully-qualified name of the SchedulerService's
 	// RegisterAgent RPC.
 	SchedulerServiceRegisterAgentProcedure = "/octomanager.v1.SchedulerService/RegisterAgent"
+	// SchedulerServiceSubscribePullRequestProcedure is the fully-qualified name of the
+	// SchedulerService's SubscribePullRequest RPC.
+	SchedulerServiceSubscribePullRequestProcedure = "/octomanager.v1.SchedulerService/SubscribePullRequest"
+	// SchedulerServiceUnsubscribePullRequestProcedure is the fully-qualified name of the
+	// SchedulerService's UnsubscribePullRequest RPC.
+	SchedulerServiceUnsubscribePullRequestProcedure = "/octomanager.v1.SchedulerService/UnsubscribePullRequest"
+	// SchedulerServiceListPRParticipantsProcedure is the fully-qualified name of the SchedulerService's
+	// ListPRParticipants RPC.
+	SchedulerServiceListPRParticipantsProcedure = "/octomanager.v1.SchedulerService/ListPRParticipants"
 	// SchedulerServiceTrackPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// TrackPullRequest RPC.
 	SchedulerServiceTrackPullRequestProcedure = "/octomanager.v1.SchedulerService/TrackPullRequest"
@@ -131,6 +143,9 @@ const (
 	// SchedulerServiceGetPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// GetPullRequest RPC.
 	SchedulerServiceGetPullRequestProcedure = "/octomanager.v1.SchedulerService/GetPullRequest"
+	// SchedulerServiceWatchDashboardProcedure is the fully-qualified name of the SchedulerService's
+	// WatchDashboard RPC.
+	SchedulerServiceWatchDashboardProcedure = "/octomanager.v1.SchedulerService/WatchDashboard"
 	// SchedulerServiceGetSnapshotProcedure is the fully-qualified name of the SchedulerService's
 	// GetSnapshot RPC.
 	SchedulerServiceGetSnapshotProcedure = "/octomanager.v1.SchedulerService/GetSnapshot"
@@ -152,6 +167,7 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v1.SchedulerService service.
 type SchedulerServiceClient interface {
+	MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error)
 	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
@@ -168,6 +184,9 @@ type SchedulerServiceClient interface {
 	RecordActivity(context.Context, *connect.Request[v1.RecordActivityRequest]) (*connect.Response[v1.RecordActivityResponse], error)
 	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 	RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error)
+	SubscribePullRequest(context.Context, *connect.Request[v1.SubscribePullRequestRequest]) (*connect.Response[v1.SubscribePullRequestResponse], error)
+	UnsubscribePullRequest(context.Context, *connect.Request[v1.UnsubscribePullRequestRequest]) (*connect.Response[v1.UnsubscribePullRequestResponse], error)
+	ListPRParticipants(context.Context, *connect.Request[v1.ListPRParticipantsRequest]) (*connect.Response[v1.ListPRParticipantsResponse], error)
 	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
 	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
 	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
@@ -185,6 +204,7 @@ type SchedulerServiceClient interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
+	WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest]) (*connect.ServerStreamForClient[v1.WatchDashboardResponse], error)
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest]) (*connect.ServerStreamForClient[v1.WatchResponse], error)
@@ -204,6 +224,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		mergeCommand: connect.NewClient[v1.MergeCommandRequest, v1.MergeCommandResponse](
+			httpClient,
+			baseURL+SchedulerServiceMergeCommandProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("MergeCommand")),
+			connect.WithClientOptions(opts...),
+		),
 		getAgentDigest: connect.NewClient[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse](
 			httpClient,
 			baseURL+SchedulerServiceGetAgentDigestProcedure,
@@ -298,6 +324,24 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceRegisterAgentProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("RegisterAgent")),
+			connect.WithClientOptions(opts...),
+		),
+		subscribePullRequest: connect.NewClient[v1.SubscribePullRequestRequest, v1.SubscribePullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceSubscribePullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("SubscribePullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		unsubscribePullRequest: connect.NewClient[v1.UnsubscribePullRequestRequest, v1.UnsubscribePullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServiceUnsubscribePullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("UnsubscribePullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		listPRParticipants: connect.NewClient[v1.ListPRParticipantsRequest, v1.ListPRParticipantsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListPRParticipantsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListPRParticipants")),
 			connect.WithClientOptions(opts...),
 		),
 		trackPullRequest: connect.NewClient[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse](
@@ -402,6 +446,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 			connect.WithClientOptions(opts...),
 		),
+		watchDashboard: connect.NewClient[v1.WatchDashboardRequest, v1.WatchDashboardResponse](
+			httpClient,
+			baseURL+SchedulerServiceWatchDashboardProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("WatchDashboard")),
+			connect.WithClientOptions(opts...),
+		),
 		getSnapshot: connect.NewClient[v1.GetSnapshotRequest, v1.GetSnapshotResponse](
 			httpClient,
 			baseURL+SchedulerServiceGetSnapshotProcedure,
@@ -443,6 +493,7 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	mergeCommand              *connect.Client[v1.MergeCommandRequest, v1.MergeCommandResponse]
 	getAgentDigest            *connect.Client[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse]
 	listAgentDigests          *connect.Client[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse]
 	acknowledgeAgentDigest    *connect.Client[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse]
@@ -459,6 +510,9 @@ type schedulerServiceClient struct {
 	recordActivity            *connect.Client[v1.RecordActivityRequest, v1.RecordActivityResponse]
 	listActivity              *connect.Client[v1.ListActivityRequest, v1.ListActivityResponse]
 	registerAgent             *connect.Client[v1.RegisterAgentRequest, v1.RegisterAgentResponse]
+	subscribePullRequest      *connect.Client[v1.SubscribePullRequestRequest, v1.SubscribePullRequestResponse]
+	unsubscribePullRequest    *connect.Client[v1.UnsubscribePullRequestRequest, v1.UnsubscribePullRequestResponse]
+	listPRParticipants        *connect.Client[v1.ListPRParticipantsRequest, v1.ListPRParticipantsResponse]
 	trackPullRequest          *connect.Client[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse]
 	listTrackedPullRequests   *connect.Client[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse]
 	getTrackedPullRequest     *connect.Client[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse]
@@ -476,12 +530,18 @@ type schedulerServiceClient struct {
 	submitJob                 *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
 	getJob                    *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
 	getPullRequest            *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
+	watchDashboard            *connect.Client[v1.WatchDashboardRequest, v1.WatchDashboardResponse]
 	getSnapshot               *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
 	listEvents                *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
 	watch                     *connect.Client[v1.WatchRequest, v1.WatchResponse]
 	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
 	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
 	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+}
+
+// MergeCommand calls octomanager.v1.SchedulerService.MergeCommand.
+func (c *schedulerServiceClient) MergeCommand(ctx context.Context, req *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error) {
+	return c.mergeCommand.CallUnary(ctx, req)
 }
 
 // GetAgentDigest calls octomanager.v1.SchedulerService.GetAgentDigest.
@@ -562,6 +622,21 @@ func (c *schedulerServiceClient) ListActivity(ctx context.Context, req *connect.
 // RegisterAgent calls octomanager.v1.SchedulerService.RegisterAgent.
 func (c *schedulerServiceClient) RegisterAgent(ctx context.Context, req *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error) {
 	return c.registerAgent.CallUnary(ctx, req)
+}
+
+// SubscribePullRequest calls octomanager.v1.SchedulerService.SubscribePullRequest.
+func (c *schedulerServiceClient) SubscribePullRequest(ctx context.Context, req *connect.Request[v1.SubscribePullRequestRequest]) (*connect.Response[v1.SubscribePullRequestResponse], error) {
+	return c.subscribePullRequest.CallUnary(ctx, req)
+}
+
+// UnsubscribePullRequest calls octomanager.v1.SchedulerService.UnsubscribePullRequest.
+func (c *schedulerServiceClient) UnsubscribePullRequest(ctx context.Context, req *connect.Request[v1.UnsubscribePullRequestRequest]) (*connect.Response[v1.UnsubscribePullRequestResponse], error) {
+	return c.unsubscribePullRequest.CallUnary(ctx, req)
+}
+
+// ListPRParticipants calls octomanager.v1.SchedulerService.ListPRParticipants.
+func (c *schedulerServiceClient) ListPRParticipants(ctx context.Context, req *connect.Request[v1.ListPRParticipantsRequest]) (*connect.Response[v1.ListPRParticipantsResponse], error) {
+	return c.listPRParticipants.CallUnary(ctx, req)
 }
 
 // TrackPullRequest calls octomanager.v1.SchedulerService.TrackPullRequest.
@@ -649,6 +724,11 @@ func (c *schedulerServiceClient) GetPullRequest(ctx context.Context, req *connec
 	return c.getPullRequest.CallUnary(ctx, req)
 }
 
+// WatchDashboard calls octomanager.v1.SchedulerService.WatchDashboard.
+func (c *schedulerServiceClient) WatchDashboard(ctx context.Context, req *connect.Request[v1.WatchDashboardRequest]) (*connect.ServerStreamForClient[v1.WatchDashboardResponse], error) {
+	return c.watchDashboard.CallServerStream(ctx, req)
+}
+
 // GetSnapshot calls octomanager.v1.SchedulerService.GetSnapshot.
 func (c *schedulerServiceClient) GetSnapshot(ctx context.Context, req *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error) {
 	return c.getSnapshot.CallUnary(ctx, req)
@@ -681,6 +761,7 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v1.SchedulerService service.
 type SchedulerServiceHandler interface {
+	MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error)
 	GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error)
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
@@ -697,6 +778,9 @@ type SchedulerServiceHandler interface {
 	RecordActivity(context.Context, *connect.Request[v1.RecordActivityRequest]) (*connect.Response[v1.RecordActivityResponse], error)
 	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 	RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error)
+	SubscribePullRequest(context.Context, *connect.Request[v1.SubscribePullRequestRequest]) (*connect.Response[v1.SubscribePullRequestResponse], error)
+	UnsubscribePullRequest(context.Context, *connect.Request[v1.UnsubscribePullRequestRequest]) (*connect.Response[v1.UnsubscribePullRequestResponse], error)
+	ListPRParticipants(context.Context, *connect.Request[v1.ListPRParticipantsRequest]) (*connect.Response[v1.ListPRParticipantsResponse], error)
 	TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error)
 	ListTrackedPullRequests(context.Context, *connect.Request[v1.ListTrackedPullRequestsRequest]) (*connect.Response[v1.ListTrackedPullRequestsResponse], error)
 	GetTrackedPullRequest(context.Context, *connect.Request[v1.GetTrackedPullRequestRequest]) (*connect.Response[v1.GetTrackedPullRequestResponse], error)
@@ -714,6 +798,7 @@ type SchedulerServiceHandler interface {
 	SubmitJob(context.Context, *connect.Request[v1.SubmitJobRequest]) (*connect.Response[v1.SubmitJobResponse], error)
 	GetJob(context.Context, *connect.Request[v1.GetJobRequest]) (*connect.Response[v1.GetJobResponse], error)
 	GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error)
+	WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest], *connect.ServerStream[v1.WatchDashboardResponse]) error
 	GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error)
 	ListEvents(context.Context, *connect.Request[v1.ListEventsRequest]) (*connect.Response[v1.ListEventsResponse], error)
 	Watch(context.Context, *connect.Request[v1.WatchRequest], *connect.ServerStream[v1.WatchResponse]) error
@@ -729,6 +814,12 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v1.File_octomanager_v1_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceMergeCommandHandler := connect.NewUnaryHandler(
+		SchedulerServiceMergeCommandProcedure,
+		svc.MergeCommand,
+		connect.WithSchema(schedulerServiceMethods.ByName("MergeCommand")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceGetAgentDigestHandler := connect.NewUnaryHandler(
 		SchedulerServiceGetAgentDigestProcedure,
 		svc.GetAgentDigest,
@@ -823,6 +914,24 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceRegisterAgentProcedure,
 		svc.RegisterAgent,
 		connect.WithSchema(schedulerServiceMethods.ByName("RegisterAgent")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceSubscribePullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceSubscribePullRequestProcedure,
+		svc.SubscribePullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("SubscribePullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceUnsubscribePullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServiceUnsubscribePullRequestProcedure,
+		svc.UnsubscribePullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("UnsubscribePullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListPRParticipantsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListPRParticipantsProcedure,
+		svc.ListPRParticipants,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListPRParticipants")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceTrackPullRequestHandler := connect.NewUnaryHandler(
@@ -927,6 +1036,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		connect.WithSchema(schedulerServiceMethods.ByName("GetPullRequest")),
 		connect.WithHandlerOptions(opts...),
 	)
+	schedulerServiceWatchDashboardHandler := connect.NewServerStreamHandler(
+		SchedulerServiceWatchDashboardProcedure,
+		svc.WatchDashboard,
+		connect.WithSchema(schedulerServiceMethods.ByName("WatchDashboard")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceGetSnapshotHandler := connect.NewUnaryHandler(
 		SchedulerServiceGetSnapshotProcedure,
 		svc.GetSnapshot,
@@ -965,6 +1080,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v1.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceMergeCommandProcedure:
+			schedulerServiceMergeCommandHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetAgentDigestProcedure:
 			schedulerServiceGetAgentDigestHandler.ServeHTTP(w, r)
 		case SchedulerServiceListAgentDigestsProcedure:
@@ -997,6 +1114,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceListActivityHandler.ServeHTTP(w, r)
 		case SchedulerServiceRegisterAgentProcedure:
 			schedulerServiceRegisterAgentHandler.ServeHTTP(w, r)
+		case SchedulerServiceSubscribePullRequestProcedure:
+			schedulerServiceSubscribePullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceUnsubscribePullRequestProcedure:
+			schedulerServiceUnsubscribePullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceListPRParticipantsProcedure:
+			schedulerServiceListPRParticipantsHandler.ServeHTTP(w, r)
 		case SchedulerServiceTrackPullRequestProcedure:
 			schedulerServiceTrackPullRequestHandler.ServeHTTP(w, r)
 		case SchedulerServiceListTrackedPullRequestsProcedure:
@@ -1031,6 +1154,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceGetJobHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetPullRequestProcedure:
 			schedulerServiceGetPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServiceWatchDashboardProcedure:
+			schedulerServiceWatchDashboardHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetSnapshotProcedure:
 			schedulerServiceGetSnapshotHandler.ServeHTTP(w, r)
 		case SchedulerServiceListEventsProcedure:
@@ -1051,6 +1176,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) MergeCommand(context.Context, *connect.Request[v1.MergeCommandRequest]) (*connect.Response[v1.MergeCommandResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.MergeCommand is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) GetAgentDigest(context.Context, *connect.Request[v1.GetAgentDigestRequest]) (*connect.Response[v1.GetAgentDigestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAgentDigest is not implemented"))
@@ -1114,6 +1243,18 @@ func (UnimplementedSchedulerServiceHandler) ListActivity(context.Context, *conne
 
 func (UnimplementedSchedulerServiceHandler) RegisterAgent(context.Context, *connect.Request[v1.RegisterAgentRequest]) (*connect.Response[v1.RegisterAgentResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RegisterAgent is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) SubscribePullRequest(context.Context, *connect.Request[v1.SubscribePullRequestRequest]) (*connect.Response[v1.SubscribePullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.SubscribePullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) UnsubscribePullRequest(context.Context, *connect.Request[v1.UnsubscribePullRequestRequest]) (*connect.Response[v1.UnsubscribePullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.UnsubscribePullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListPRParticipants(context.Context, *connect.Request[v1.ListPRParticipantsRequest]) (*connect.Response[v1.ListPRParticipantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.ListPRParticipants is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) TrackPullRequest(context.Context, *connect.Request[v1.TrackPullRequestRequest]) (*connect.Response[v1.TrackPullRequestResponse], error) {
@@ -1182,6 +1323,10 @@ func (UnimplementedSchedulerServiceHandler) GetJob(context.Context, *connect.Req
 
 func (UnimplementedSchedulerServiceHandler) GetPullRequest(context.Context, *connect.Request[v1.GetPullRequestRequest]) (*connect.Response[v1.GetPullRequestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) WatchDashboard(context.Context, *connect.Request[v1.WatchDashboardRequest], *connect.ServerStream[v1.WatchDashboardResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.WatchDashboard is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetSnapshot(context.Context, *connect.Request[v1.GetSnapshotRequest]) (*connect.Response[v1.GetSnapshotResponse], error) {

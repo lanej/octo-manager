@@ -2,7 +2,7 @@
 
 A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The working path covers public PR reviews and discussion, worker summaries, and an actual disposable merge conflict.
 
-![GitHub review messages with persistent worker status](docs/images/dashboard.png)
+![Tracking dashboard with explicit auto-merge status and grouped ownership and actions](docs/images/dashboard-tracking.png)
 
 See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
 
@@ -49,13 +49,24 @@ Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id 
 
 ## Dashboard and commands
 
-The dashboard centers on pull requests, with one URL header and a compact PR list. **1 Reviews** shows actual GitHub reviews, inline comments, and discussion, including author, message link, observed PR head, and earlier-commit markers. **2 Output** shows the selected worker’s Markdown response. **3 State** shows its observed Charmed state diagram with the latest transition highlighted and timestamped transitions. The worker pane stays visible with run status, attempt, process exit observation, and recent tool calls.
+The dashboard opens on Tracking and gives each tab a dedicated workspace:
 
-Reviews load on first selection; press `u` to refresh. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
+| Tab | Purpose | Layout |
+| --- | --- | --- |
+| **1 Reviews** | Review decisions, inline feedback and discussion | PR navigation and review feed |
+| **2 Output** | Selected worker response and recent tools | PR navigation, output and worker pane |
+| **3 Runtime** | Dispatch health and persisted run transitions | PR navigation, state history and worker pane |
+| **4 Tracking** | Ownership, automation, blockers and delivery | PR navigation; nested automation/ownership and actions/delivery sections |
+| **5 Activity** | Reported agent operations across sessions | Global timeline without PR or worker panes |
+| **6 GitHub** | API budgets, forecasts and traffic | Global view; nested REST and GraphQL quota sections |
+
+Auto-merge status stays visible in the PR list and Tracking/Reviews context, including paused chains and cancelled chains with in-flight operations. Tracking retains the opt-in `a` switch and shows the next merge step; an enabled switch does not imply checks or owner assessment have passed. Confirmed merged/closed PRs show their outcome. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
+
+Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
 Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
 
-The dashboard pins Charmed’s `a4599d7` revision ([compact links and wrapping groups](https://github.com/lanej/charmed/pull/39)) and uses its native tabs, header/footer, connection indicator, scrollbar, log-level atoms, state diagram, themes, panels, focus, viewports, structured logs, and Glamour Markdown. Retry cycles retain chronological transition traces. Diagrams can grow vertically inside the scrollable State view; terminals too narrow for a diagram retain the textual path and full history. The main view and recent tools scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, `1/2/3` to change view, Tab to change scroll pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
+The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`6` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
 
 ```text
 octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
@@ -77,6 +88,14 @@ The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and C
 
 Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
 
+## Polling and auto-merge
+
+[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
+
+## Dependency-aware merge chains
+
+[Merge chains](docs/merge-chains.md) connect confirmed dependencies across repositories. References suggest relationships; explicit queues authorize selected PRs; owner assessments authorize the current reviewed head. Deterministic preparation runs before another owner assessment and a head-pinned merge.
+
 ## Agent activity
 
 Press **5 Activity** for named operations across all sessions. Existing coordinator events appear automatically; calling agents report external work with `record-activity`, including outcome, session, optional harness version/model, PR link, and evidence. Reports are durable and safe to retry; reported success remains distinct from independent verification. See the [activity guide](docs/activity.md) for the CLI, typed API, and SQL schema.
@@ -93,7 +112,7 @@ bun run generate
 bun run check
 ```
 
-Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, run the dotfiles TypeScript compiler/lint/format profile, exercise the Bun scheduler and Connect API, audit Bun dependencies, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. TypeScript uses the existing-code retrofit: `.typescript-quality-baseline.json` records current findings and cannot grow; this is not full TypeScript compliance. Go uses strict enforcement without a baseline. Quality tools are isolated under `.typescript-quality/` with their own pinned npm lockfile; application dependencies remain managed by Bun. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
+Generation uses pinned Buf, Protobuf-ES, protoc-gen-go, and protoc-gen-connect-go versions. Checks build both applications, run the dotfiles TypeScript compiler/lint/format profile, exercise the Bun scheduler and Connect API, audit Bun dependencies, and run the committed strict Go profile with race tests and reachable-vulnerability analysis. Biome lint is required without baseline exceptions, alongside typed ESLint and Prettier. TypeScript uses the existing-code retrofit: `.typescript-quality-baseline.json` records current findings and cannot grow; this is not full TypeScript compliance. Go uses strict enforcement without a baseline. Quality tools are isolated under `.typescript-quality/` with their own pinned npm lockfile; application dependencies remain managed by Bun. The same command runs in Linux/macOS CI. Provider-backed live acceptance requires network access and existing credentials; controlled tests do not establish provider availability.
 
 The quality compiler includes source, tests, and generation scripts. It uses Bun-compatible module resolution while preserving the independent NodeNext application build. Only generated Protobuf and Codex protocol files are excluded from lint/format inventory. Imported dependency declarations are still checked; current Bun/Gaxios declaration incompatibilities are visible in the retrofit baseline. After fixing existing findings, run `node scripts/check-typescript.mjs ratchet` and commit the reduced baseline. New findings, missing modules, and suppression-policy violations fail the check.
 
@@ -104,3 +123,5 @@ Agent notifications follow the [agent message standard](docs/agent-messages.md):
 ## PR submission
 
 Octo can run a dedicated PR writer, publish, and enroll a pushed branch for its calling Codex session, including private repositories. Use `submit-pr --intent-file FILE`; inspect operations with `submission ID`. Contribution analysis is cached as immutable source-cited policy versions, and structured briefs retain falsifiable claims and validation facts. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
+
+`bun run check` gives the typed TypeScript analyzer an explicit 4 GiB Node heap budget on both local machines and CI; Octokit declarations exceed the default roughly 2 GiB heap on hosted macOS. Individual lint runs use `node --max-old-space-size=4096 scripts/check-typescript.mjs lint`. This changes analysis memory limits, without disabling rules or growing the retrofit baseline.

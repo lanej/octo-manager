@@ -2,15 +2,15 @@
 // @generated from file octomanager/v1/github.proto (package octomanager.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file octomanager/v1/github.proto.
  */
 export const file_octomanager_v1_github: GenFile = /*@__PURE__*/
-  fileDesc("ChtvY3RvbWFuYWdlci92MS9naXRodWIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxImEKEEdpdEh1YlJhdGVCdWRnZXQSDQoFbGltaXQYASABKA0SEQoJcmVtYWluaW5nGAIgASgNEhMKC3Jlc2V0X2F0X21zGAMgASgDEhYKDm9ic2VydmVkX2F0X21zGAQgASgDIl4KEEdpdEh1YlJlYWRNaW51dGUSFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIMCgRyZXN0GAIgASgEEg8KB2dyYXBocWwYAyABKAQSFAoMY2FjaGVfcmV1c2VzGAQgASgEIskCCg9HaXRIdWJSZWFkVXNhZ2USFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIVCg1zYW1wbGVkX2F0X21zGAIgASgDEhAKCHJlcXVlc3RzGAMgASgEEhQKDGNhY2hlX3JldXNlcxgEIAEoBBITCgtyYXRlX2xpbWl0cxgFIAEoBBIxCgdtaW51dGVzGAYgAygLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmVhZE1pbnV0ZRIuCgRyZXN0GAcgASgLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmF0ZUJ1ZGdldBIxCgdncmFwaHFsGAggASgLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmF0ZUJ1ZGdldBIYChByZXN0X3JldHJ5X2F0X21zGAkgASgDEhsKE2dyYXBocWxfcmV0cnlfYXRfbXMYCiABKANCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw");
+  fileDesc("ChtvY3RvbWFuYWdlci92MS9naXRodWIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxIpgBChBHaXRIdWJSYXRlQnVkZ2V0Eg0KBWxpbWl0GAEgASgNEhEKCXJlbWFpbmluZxgCIAEoDRITCgtyZXNldF9hdF9tcxgDIAEoAxIWCg5vYnNlcnZlZF9hdF9tcxgEIAEoAxI1Cghmb3JlY2FzdBgFIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YlF1b3RhRm9yZWNhc3QiXgoQR2l0SHViUmVhZE1pbnV0ZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEgwKBHJlc3QYAiABKAQSDwoHZ3JhcGhxbBgDIAEoBBIUCgxjYWNoZV9yZXVzZXMYBCABKAQiyQIKD0dpdEh1YlJlYWRVc2FnZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEhUKDXNhbXBsZWRfYXRfbXMYAiABKAMSEAoIcmVxdWVzdHMYAyABKAQSFAoMY2FjaGVfcmV1c2VzGAQgASgEEhMKC3JhdGVfbGltaXRzGAUgASgEEjEKB21pbnV0ZXMYBiADKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSZWFkTWludXRlEi4KBHJlc3QYByABKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSYXRlQnVkZ2V0EjEKB2dyYXBocWwYCCABKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSYXRlQnVkZ2V0EhgKEHJlc3RfcmV0cnlfYXRfbXMYCSABKAMSGwoTZ3JhcGhxbF9yZXRyeV9hdF9tcxgKIAEoAyKtAgoTR2l0SHViUXVvdGFGb3JlY2FzdBIyCgVzdGF0ZRgBIAEoDjIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YkZvcmVjYXN0U3RhdGUSDgoGcmVhc29uGAIgASgJEhEKCXdpbmRvd19tcxgDIAEoAxIVCg1zYW1wbGVkX2F0X21zGAQgASgDEhsKDnVuaXRzX3Blcl9ob3VyGAUgASgBSACIAQESKQoccHJvamVjdGVkX3JlbWFpbmluZ19hdF9yZXNldBgGIAEoAUgBiAEBEhoKDWV4aGF1c3RfYXRfbXMYByABKANIAogBAUIRCg9fdW5pdHNfcGVyX2hvdXJCHwodX3Byb2plY3RlZF9yZW1haW5pbmdfYXRfcmVzZXRCEAoOX2V4aGF1c3RfYXRfbXMimwEKDVJlZnJlc2hTdGF0dXMSKwoFc3RhdGUYASABKA4yHC5vY3RvbWFuYWdlci52MS5SZWZyZXNoU3RhdGUSEQoJZHVlX2F0X21zGAIgASgDEh8KEmxhc3RfYXR0ZW1wdF9hdF9tcxgDIAEoA0gAiAEBEhIKCmxhc3RfZXJyb3IYBCABKAlCFQoTX2xhc3RfYXR0ZW1wdF9hdF9tcyrQAQoTR2l0SHViRm9yZWNhc3RTdGF0ZRImCiJHSVRfSFVCX0ZPUkVDQVNUX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9VTktOT1dOEAESIwofR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9PTl9UUkFDSxACEiIKHkdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfQVRfUklTSxADEiQKIEdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfRVhIQVVTVEVEEAQqfgoMUmVmcmVzaFN0YXRlEh0KGVJFRlJFU0hfU1RBVEVfVU5TUEVDSUZJRUQQABIYChRSRUZSRVNIX1NUQVRFX1FVRVVFRBABEhkKFVJFRlJFU0hfU1RBVEVfUlVOTklORxACEhoKFlJFRlJFU0hfU1RBVEVfREVGRVJSRUQQA0JAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
 
 /**
  * @generated from message octomanager.v1.GitHubRateBudget
@@ -35,6 +35,11 @@ export type GitHubRateBudget = Message<"octomanager.v1.GitHubRateBudget"> & {
    * @generated from field: int64 observed_at_ms = 4;
    */
   observedAtMs: bigint;
+
+  /**
+   * @generated from field: octomanager.v1.GitHubQuotaForecast forecast = 5;
+   */
+  forecast?: GitHubQuotaForecast | undefined;
 };
 
 /**
@@ -137,4 +142,150 @@ export type GitHubReadUsage = Message<"octomanager.v1.GitHubReadUsage"> & {
  */
 export const GitHubReadUsageSchema: GenMessage<GitHubReadUsage> = /*@__PURE__*/
   messageDesc(file_octomanager_v1_github, 2);
+
+/**
+ * @generated from message octomanager.v1.GitHubQuotaForecast
+ */
+export type GitHubQuotaForecast = Message<"octomanager.v1.GitHubQuotaForecast"> & {
+  /**
+   * @generated from field: octomanager.v1.GitHubForecastState state = 1;
+   */
+  state: GitHubForecastState;
+
+  /**
+   * @generated from field: string reason = 2;
+   */
+  reason: string;
+
+  /**
+   * @generated from field: int64 window_ms = 3;
+   */
+  windowMs: bigint;
+
+  /**
+   * @generated from field: int64 sampled_at_ms = 4;
+   */
+  sampledAtMs: bigint;
+
+  /**
+   * @generated from field: optional double units_per_hour = 5;
+   */
+  unitsPerHour?: number | undefined;
+
+  /**
+   * @generated from field: optional double projected_remaining_at_reset = 6;
+   */
+  projectedRemainingAtReset?: number | undefined;
+
+  /**
+   * @generated from field: optional int64 exhaust_at_ms = 7;
+   */
+  exhaustAtMs?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.GitHubQuotaForecast.
+ * Use `create(GitHubQuotaForecastSchema)` to create a new message.
+ */
+export const GitHubQuotaForecastSchema: GenMessage<GitHubQuotaForecast> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_github, 3);
+
+/**
+ * @generated from message octomanager.v1.RefreshStatus
+ */
+export type RefreshStatus = Message<"octomanager.v1.RefreshStatus"> & {
+  /**
+   * @generated from field: octomanager.v1.RefreshState state = 1;
+   */
+  state: RefreshState;
+
+  /**
+   * @generated from field: int64 due_at_ms = 2;
+   */
+  dueAtMs: bigint;
+
+  /**
+   * @generated from field: optional int64 last_attempt_at_ms = 3;
+   */
+  lastAttemptAtMs?: bigint | undefined;
+
+  /**
+   * @generated from field: string last_error = 4;
+   */
+  lastError: string;
+};
+
+/**
+ * Describes the message octomanager.v1.RefreshStatus.
+ * Use `create(RefreshStatusSchema)` to create a new message.
+ */
+export const RefreshStatusSchema: GenMessage<RefreshStatus> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_github, 4);
+
+/**
+ * @generated from enum octomanager.v1.GitHubForecastState
+ */
+export enum GitHubForecastState {
+  /**
+   * @generated from enum value: GIT_HUB_FORECAST_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GIT_HUB_FORECAST_STATE_UNKNOWN = 1;
+   */
+  UNKNOWN = 1,
+
+  /**
+   * @generated from enum value: GIT_HUB_FORECAST_STATE_ON_TRACK = 2;
+   */
+  ON_TRACK = 2,
+
+  /**
+   * @generated from enum value: GIT_HUB_FORECAST_STATE_AT_RISK = 3;
+   */
+  AT_RISK = 3,
+
+  /**
+   * @generated from enum value: GIT_HUB_FORECAST_STATE_EXHAUSTED = 4;
+   */
+  EXHAUSTED = 4,
+}
+
+/**
+ * Describes the enum octomanager.v1.GitHubForecastState.
+ */
+export const GitHubForecastStateSchema: GenEnum<GitHubForecastState> = /*@__PURE__*/
+  enumDesc(file_octomanager_v1_github, 0);
+
+/**
+ * @generated from enum octomanager.v1.RefreshState
+ */
+export enum RefreshState {
+  /**
+   * @generated from enum value: REFRESH_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: REFRESH_STATE_QUEUED = 1;
+   */
+  QUEUED = 1,
+
+  /**
+   * @generated from enum value: REFRESH_STATE_RUNNING = 2;
+   */
+  RUNNING = 2,
+
+  /**
+   * @generated from enum value: REFRESH_STATE_DEFERRED = 3;
+   */
+  DEFERRED = 3,
+}
+
+/**
+ * Describes the enum octomanager.v1.RefreshState.
+ */
+export const RefreshStateSchema: GenEnum<RefreshState> = /*@__PURE__*/
+  enumDesc(file_octomanager_v1_github, 1);
 

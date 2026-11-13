@@ -167,3 +167,25 @@ func TestTerminalThemeAdaptsWithoutReplacingCharmedOrLosingScroll(t *testing.T) 
 		t.Fatal("explicit theme was overridden")
 	}
 }
+
+func TestGitHubForecastDistinguishesRiskCapacityAndUnknownHistory(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.GithubUsage = usageExample()
+	m.snapshot.GithubUsage.Rest.Forecast = &v1.GitHubQuotaForecast{State: v1.GitHubForecastState_GIT_HUB_FORECAST_STATE_AT_RISK, UnitsPerHour: new(6000.0), WindowMs: 300000, ExhaustAtMs: new(m.snapshot.GetGithubUsage().GetSampledAtMs() + 60000)}
+
+	content := ansi.Strip(m.githubContent(124))
+	if !strings.Contains(content, "Limit before reset") || !strings.Contains(content, "6000 requests/hour") || !strings.Contains(m.githubSummary(), "limit before reset") {
+		t.Fatal("forecast risk is hidden")
+	}
+
+	m.snapshot.GithubUsage.Rest.Forecast = &v1.GitHubQuotaForecast{State: v1.GitHubForecastState_GIT_HUB_FORECAST_STATE_ON_TRACK, UnitsPerHour: new(1000.0), ProjectedRemainingAtReset: new(3200.0), WindowMs: 300000}
+	if !strings.Contains(ansi.Strip(m.githubContent(124)), "3200 requests projected remaining") {
+		t.Fatal("capacity estimate missing")
+	}
+
+	m.snapshot.GithubUsage.Rest.Forecast = &v1.GitHubQuotaForecast{State: v1.GitHubForecastState_GIT_HUB_FORECAST_STATE_UNKNOWN, Reason: "Quota observation is stale"}
+	if !strings.Contains(ansi.Strip(m.githubContent(124)), "Quota observation is stale") {
+		t.Fatal("stale forecast presented as current")
+	}
+}

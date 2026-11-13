@@ -1,9 +1,18 @@
 import { shortId } from "../src/tracking/identifiers.js";
 import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { test, spyOn } from "bun:test";
 import * as filesystem from "node:fs/promises";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  rm,
+  readFile,
+  writeFile,
+  stat,
+  symlink,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Coordinator } from "../src/coordinator.js";
@@ -47,17 +56,27 @@ function artifact(sessionId = "owner", address = url) {
     },
   };
 }
-async function hook(directory: string, event: object): Promise<string> {
+async function hookProcess(
+  directory: string,
+  input: string,
+  logLevel?: string,
+): Promise<{ output: string; error: string }> {
+  const env = { ...process.env };
+  if (logLevel === undefined) delete env["OCTO_MANAGER_HOOK_LOG_LEVEL"];
+  else env["OCTO_MANAGER_HOOK_LOG_LEVEL"] = logLevel;
   const child = Bun.spawn(
     [process.execPath, "src/cli.ts", "codex-hook", "--state", directory],
-    { cwd: process.cwd(), stdin: "pipe", stdout: "pipe", stderr: "pipe" },
+    { cwd: process.cwd(), env, stdin: "pipe", stdout: "pipe", stderr: "pipe" },
   );
-  await child.stdin.write(JSON.stringify(event));
+  await child.stdin.write(input);
   await child.stdin.end();
   const output = await new Response(child.stdout).text();
   const error = await new Response(child.stderr).text();
   assert.equal(await child.exited, 0, error);
-  return output;
+  return { output, error };
+}
+async function hook(directory: string, event: object): Promise<string> {
+  return (await hookProcess(directory, JSON.stringify(event))).output;
 }
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 500; i++) {
@@ -66,6 +85,196 @@ async function until(check: () => boolean): Promise<void> {
   }
   assert.fail("Native integration handoff did not finish");
 }
+
+test("hook failures append private diagnostics with the underlying connection error without logging payloads", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-errors-"));
+  try {
+    const event = {
+      session_id: "owner",
+      cwd: "/work/feature",
+      hook_event_name: "UserPromptSubmit",
+      prompt: "private prompt must not appear in diagnostics",
+      tool_response: "private tool output must not appear in diagnostics",
+    };
+    const first = await hookProcess(directory, JSON.stringify(event));
+    assert(first.output.includes("could not complete this hook"));
+    const path = join(directory, "codex-hook-errors.jsonl");
+    const log = await readFile(path, "utf8");
+    assert.equal(first.error, log);
+    assert(log.includes('"event":"UserPromptSubmit"'));
+    assert(log.includes('"sessionId":"owner"'));
+    assert(log.includes('"phase":"recovery"'));
+    assert(log.includes('"level":"error"'));
+    assert(log.includes('"name":"ConnectError"'));
+    assert(log.includes('"message":'));
+    assert(log.includes('"stack":'));
+    assert(log.includes('"code":'));
+    assert(log.includes(`connect ENOENT ${join(directory, "run.sock")}`));
+    assert(log.includes('"code":"ENOENT"'));
+    assert(log.includes('"cause":'));
+    assert(!log.includes(event.prompt));
+    assert(!log.includes(event.tool_response));
+    assert.equal((await stat(path)).mode & 0o777, 0o600);
+    const second = await hookProcess(directory, JSON.stringify(event));
+    assert.equal(await readFile(path, "utf8"), log + second.error);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("hook diagnostics can be disabled without suppressing the advisory warning", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-logging-off-"));
+  try {
+    const result = await hookProcess(
+      directory,
+      JSON.stringify({
+        session_id: "owner",
+        cwd: "/work/feature",
+        hook_event_name: "UserPromptSubmit",
+      }),
+      "off",
+    );
+    assert(result.output.includes("could not complete this hook"));
+    assert.equal(result.error, "");
+    await assert.rejects(stat(join(directory, "codex-hook-errors.jsonl")), {
+      code: "ENOENT",
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("invalid hook log levels report a fixed configuration error without logging the setting", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-log-level-"));
+  try {
+    const result = await hookProcess(
+      directory,
+      "{}",
+      "private-invalid-setting",
+    );
+    assert(result.output.includes("could not complete this hook"));
+    assert(result.error.includes("expected error or off"));
+    assert(!result.error.includes("private-invalid-setting"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("successful hooks produce no diagnostics with default or disabled logging", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-success-"));
+  const coordinator = new Coordinator(directory);
+  try {
+    await coordinator.start();
+    for (const logLevel of [undefined, "off"]) {
+      const result = await hookProcess(
+        directory,
+        JSON.stringify({
+          session_id: "quiet-owner",
+          cwd: "/work/feature",
+          hook_event_name: "SessionStart",
+          source: "resume",
+        }),
+        logLevel,
+      );
+      assert.equal(result.error, "");
+      const output: unknown = JSON.parse(result.output);
+      assert(
+        typeof output === "object" &&
+          output !== null &&
+          "hookSpecificOutput" in output,
+      );
+      const context = output.hookSpecificOutput;
+      assert(
+        typeof context === "object" &&
+          context !== null &&
+          "hookEventName" in context,
+      );
+      assert.equal(context.hookEventName, "SessionStart");
+    }
+    await assert.rejects(stat(join(directory, "codex-hook-errors.jsonl")), {
+      code: "ENOENT",
+    });
+  } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("malformed hook input logs a parse failure without copying parser input excerpts", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-parse-"));
+  try {
+    const result = await hookProcess(directory, '{"prompt":"secret-input');
+    assert(result.output.includes("could not complete this hook"));
+    const log = await readFile(
+      join(directory, "codex-hook-errors.jsonl"),
+      "utf8",
+    );
+    assert(log.includes('"phase":"input"'));
+    assert(log.includes('"name":"SyntaxError"'));
+    assert(log.includes("Invalid JSON in Codex hook input"));
+    assert(!log.includes("secret-input"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("a closed stderr pipe preserves both the diagnostic file and advisory stdout response", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-stderr-"));
+  try {
+    const child = spawn(
+      process.execPath,
+      ["src/cli.ts", "codex-hook", "--state", directory],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, OCTO_MANAGER_HOOK_LOG_LEVEL: "error" },
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    );
+    child.stderr.destroy();
+    let output = "";
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      output += chunk;
+    });
+    const exit = new Promise<number | null>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("close", resolve);
+    });
+    child.stdin.end("{bad");
+    assert.equal(await exit, 0);
+    assert(output.includes("could not complete this hook"));
+    const log = await readFile(
+      join(directory, "codex-hook-errors.jsonl"),
+      "utf8",
+    );
+    assert(log.includes("Invalid JSON in Codex hook input"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("hook logging refuses symlinks and retains the original failure on stderr when the log is unavailable", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-hook-log-link-"));
+  try {
+    const target = join(directory, "retained");
+    await writeFile(target, "Retained data", { mode: 0o600 });
+    await symlink(target, join(directory, "codex-hook-errors.jsonl"));
+    const result = await hookProcess(
+      directory,
+      JSON.stringify({
+        session_id: "owner",
+        cwd: "invalid-relative-path",
+        hook_event_name: "SessionStart",
+      }),
+    );
+    assert(result.output.includes("could not complete this hook"));
+    assert(result.error.includes("Invalid Codex hook session context"));
+    assert(result.error.includes('"loggingError":'));
+    assert.equal(await readFile(target, "utf8"), "Retained data");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 test("native PR attachment survives offline intake, preserves ownership and recovers exact unread notices with independent receipts", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-native-"));
@@ -101,6 +310,36 @@ test("native PR attachment survives offline intake, preserves ownership and reco
     const notice = store.inbox.list(pr.ownerAgentId).messages[0];
     assert(notice !== undefined);
     assert.equal((await handoffs.status("owner")).pending.length, 0);
+    const receiptFailure = spyOn(
+      store.inbox,
+      "acknowledge",
+    ).mockImplementationOnce(() => {
+      throw new ConnectError("Receipt storage failed", Code.Internal);
+    });
+    try {
+      const failedRecovery = await hookProcess(
+        directory,
+        JSON.stringify({
+          session_id: "owner",
+          cwd: "/work/feature",
+          hook_event_name: "SessionStart",
+          source: "resume",
+        }),
+      );
+      assert(failedRecovery.output.includes(shortId(notice.id)));
+      assert(!failedRecovery.output.includes("systemMessage"));
+      assert(failedRecovery.error.includes("Receipt storage failed"));
+      assert(failedRecovery.error.includes('"phase":"receipt"'));
+      const log = await readFile(
+        join(directory, "codex-hook-errors.jsonl"),
+        "utf8",
+      );
+      assert(log.includes("Receipt storage failed"));
+      assert(!log.includes(notice.body));
+      assert.equal(store.inbox.get(notice.id)?.acknowledgedAt, undefined);
+    } finally {
+      receiptFailure.mockRestore();
+    }
     const recovery = await hook(directory, {
       session_id: "owner",
       cwd: "/work/feature",
@@ -378,5 +617,52 @@ test("handoff status tolerates files removed after listing but preserves read an
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  }
+});
+
+test("failed handoff publication never exposes a partially written status file", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "om-atomic-handoff-"));
+  const handoffs = new Handoffs(directory);
+  const request = await handoffs.enqueue(
+    "https://github.com/owner/repo/pull/1",
+    { harness: "codex", endpoint: "local", sessionId: "atomic" },
+    directory,
+  );
+  const partial = Promise.withResolvers<undefined>(),
+    resume = Promise.withResolvers<undefined>();
+  const original = filesystem.writeFile;
+  let capture = true;
+  const write = spyOn(filesystem, "writeFile").mockImplementation(
+    async (path, data, options) => {
+      if (capture && typeof path === "string" && path.startsWith(directory)) {
+        capture = false;
+        await original(path, "{", options);
+        partial.resolve(undefined);
+        await resume.promise;
+        await original(path, data, { mode: 0o600, flag: "w" });
+        return;
+      }
+      await original(path, data, options);
+    },
+  );
+  const draining = handoffs.drain(() => ({
+    accepted: false,
+    reason: "Conflicting owner",
+  }));
+  try {
+    await partial.promise;
+    const during = await handoffs.status("atomic");
+    assert.equal(during.failed.length, 0);
+    assert.equal(during.pending[0]?.id, request.id);
+    resume.resolve(undefined);
+    await draining;
+    const after = await handoffs.status("atomic");
+    assert.equal(after.pending.length, 0);
+    assert.equal(after.failed[0]?.reason, "Conflicting owner");
+  } finally {
+    resume.resolve(undefined);
+    await draining.catch(() => {});
+    write.mockRestore();
+    await rm(directory, { recursive: true, force: true });
   }
 });

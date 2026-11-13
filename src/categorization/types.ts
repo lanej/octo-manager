@@ -1,6 +1,7 @@
 import type { ReviewFeedback } from "../tracking/types.js";
 export enum MessageCategory {
   Findings = "findings",
+  Informational = "informational",
   Progress = "progress",
   Inconclusive = "inconclusive",
   NoFindings = "no_findings",

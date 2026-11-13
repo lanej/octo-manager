@@ -9,6 +9,7 @@ import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc MergeCommand(MergeCommandRequest) returns (MergeCommandResponse);
   rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
   rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);
   rpc AcknowledgeAgentDigest(AcknowledgeAgentDigestRequest) returns (AcknowledgeAgentDigestResponse);
@@ -25,6 +26,9 @@ service SchedulerService {
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
   rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
   rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+  rpc SubscribePullRequest(SubscribePullRequestRequest) returns (SubscribePullRequestResponse);
+  rpc UnsubscribePullRequest(UnsubscribePullRequestRequest) returns (UnsubscribePullRequestResponse);
+  rpc ListPRParticipants(ListPRParticipantsRequest) returns (ListPRParticipantsResponse);
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
   rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
   rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);
@@ -42,6 +46,7 @@ service SchedulerService {
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
   rpc GetJob(GetJobRequest) returns (GetJobResponse);
   rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
+  rpc WatchDashboard(WatchDashboardRequest) returns (stream WatchDashboardResponse);
   rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
   rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);
@@ -134,6 +139,8 @@ message Snapshot {
   TrackingSnapshot tracking = 9;
   repeated RepairAttempt repairs = 10;
   GitHubReadUsage github_usage = 11;
+  repeated MergeStatus merge_statuses = 12;
+  GitHubSchedulerStatus github_scheduler = 13;
 }
 message SubmitJobRequest { string request_id = 1; Task task = 2; }
 message SubmitJobResponse { Job job = 1; }
@@ -181,8 +188,15 @@ message PullRequestDetails {
   repeated ReviewMessage messages = 6;
   bool may_have_more_messages = 7;
 }
-message GetPullRequestRequest { string url = 1; }
-message GetPullRequestResponse { PullRequestDetails pull_request = 1; }
+message GetPullRequestRequest { string url = 1; bool refresh = 2; }
+message GetPullRequestResponse { PullRequestDetails pull_request = 1; RefreshStatus refresh = 2; }
+message GitHubSchedulerStatus {
+ int64 tick_ms = 1; int64 request_spacing_ms = 2; uint64 tick_sequence = 3;
+ int64 next_tick_at_ms = 4; int64 next_dispatch_at_ms = 5; uint32 queued_requests = 6;
+ bool in_flight = 7; int64 core_retry_at_ms = 8; int64 graphql_retry_at_ms = 9;
+}
+message WatchDashboardRequest { string url = 1; bool reviews = 2; }
+message WatchDashboardResponse { Snapshot snapshot = 1; PullRequestDetails pull_request = 2; RefreshStatus refresh = 3; }
 
 message ListActivityResponse {
   repeated ActivityReport activities = 1;
@@ -190,3 +204,7 @@ message ListActivityResponse {
   uint64 next_sequence = 3;
   bool has_more = 4;
 }
+
+message MergeCommandRequest { string input_json = 1; }
+message MergeCommandResponse { string result_json = 1; }
+message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; bool auto_merge = 6; string chain_state = 7; }

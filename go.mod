@@ -9,7 +9,7 @@ require (
 	connectrpc.com/connect v1.21.1
 	github.com/NimbleMarkets/ntcharts/v2 v2.9.0
 	github.com/charmbracelet/x/ansi v0.11.9
-	github.com/lanej/charmed v0.0.0-20261112231323-d7f55a5b1ca9
+	github.com/lanej/charmed v0.0.0-20261113144826-c2cec551b6d1
 	google.golang.org/protobuf v1.36.12
 )
 

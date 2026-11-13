@@ -1,3 +1,13 @@
+import {
+  defaultSchedulerPolicy,
+  type SchedulerPolicy,
+} from "../scheduling/contracts.js";
+import type { PollPolicy } from "./polling.js";
+import {
+  checked,
+  PreparationProfileSchema,
+  type PreparationProfile,
+} from "../merging/contracts.js";
 import { repairProfile, type RepairProfile } from "../repairs/types.js";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -32,6 +42,8 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
+  polling?: PollPolicy & Partial<SchedulerPolicy>;
+  merging?: Record<string, PreparationProfile>;
   submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
   repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
@@ -100,11 +112,86 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
           "endpoints",
           "repairs",
           "submissionModels",
+          "merging",
+          "polling",
         ].includes(k),
     )
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["polling"] !== undefined) {
+    const value = raw["polling"];
+    if (
+      !object(value) ||
+      Object.keys(value).some(
+        (key) =>
+          ![
+            "minimumMs",
+            "maximumMs",
+            "activeMaximumMs",
+            "tickMs",
+            "requestSpacingMs",
+          ].includes(key),
+      )
+    )
+      throw new Error("Invalid polling configuration");
+    const minimumMs = value["minimumMs"] ?? 60000,
+      maximumMs = value["maximumMs"] ?? 900000,
+      activeMaximumMs = value["activeMaximumMs"] ?? 120000;
+    if (
+      typeof minimumMs !== "number" ||
+      !Number.isSafeInteger(minimumMs) ||
+      minimumMs < 1000 ||
+      typeof maximumMs !== "number" ||
+      !Number.isSafeInteger(maximumMs) ||
+      maximumMs < minimumMs ||
+      maximumMs > 3600000 ||
+      typeof activeMaximumMs !== "number" ||
+      !Number.isSafeInteger(activeMaximumMs) ||
+      activeMaximumMs < minimumMs ||
+      activeMaximumMs > maximumMs
+    )
+      throw new Error("Invalid polling interval bounds");
+    const tickMs = value["tickMs"] ?? defaultSchedulerPolicy.tickMs;
+    const requestSpacingMs =
+      value["requestSpacingMs"] ?? defaultSchedulerPolicy.requestSpacingMs;
+    if (
+      typeof tickMs !== "number" ||
+      !Number.isSafeInteger(tickMs) ||
+      tickMs < 100 ||
+      tickMs > 60000 ||
+      typeof requestSpacingMs !== "number" ||
+      !Number.isSafeInteger(requestSpacingMs) ||
+      requestSpacingMs < tickMs ||
+      requestSpacingMs > 3600000
+    )
+      throw new Error("Invalid scheduler cadence");
+    result.polling = {
+      minimumMs,
+      maximumMs,
+      activeMaximumMs,
+      tickMs,
+      requestSpacingMs,
+    };
+  }
+
+  if (raw["merging"] !== undefined) {
+    const profiles = raw["merging"];
+    if (!object(profiles))
+      throw new Error("Invalid merge preparation configuration");
+    result.merging = {};
+    for (const [name, value] of Object.entries(profiles)) {
+      const profile = checked(PreparationProfileSchema, value);
+      if (
+        profile.kind === "toml_revision" &&
+        (profile.path === undefined ||
+          profile.key === undefined ||
+          profile.expectedValue === undefined)
+      )
+        throw new Error("TOML preparation needs path, key, and expectedValue");
+      result.merging[name] = profile;
+    }
+  }
   if (raw["submissionModels"] !== undefined) {
     const models = raw["submissionModels"];
     if (

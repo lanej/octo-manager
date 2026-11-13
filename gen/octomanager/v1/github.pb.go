@@ -21,12 +21,120 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GitHubForecastState int32
+
+const (
+	GitHubForecastState_GIT_HUB_FORECAST_STATE_UNSPECIFIED GitHubForecastState = 0
+	GitHubForecastState_GIT_HUB_FORECAST_STATE_UNKNOWN     GitHubForecastState = 1
+	GitHubForecastState_GIT_HUB_FORECAST_STATE_ON_TRACK    GitHubForecastState = 2
+	GitHubForecastState_GIT_HUB_FORECAST_STATE_AT_RISK     GitHubForecastState = 3
+	GitHubForecastState_GIT_HUB_FORECAST_STATE_EXHAUSTED   GitHubForecastState = 4
+)
+
+// Enum value maps for GitHubForecastState.
+var (
+	GitHubForecastState_name = map[int32]string{
+		0: "GIT_HUB_FORECAST_STATE_UNSPECIFIED",
+		1: "GIT_HUB_FORECAST_STATE_UNKNOWN",
+		2: "GIT_HUB_FORECAST_STATE_ON_TRACK",
+		3: "GIT_HUB_FORECAST_STATE_AT_RISK",
+		4: "GIT_HUB_FORECAST_STATE_EXHAUSTED",
+	}
+	GitHubForecastState_value = map[string]int32{
+		"GIT_HUB_FORECAST_STATE_UNSPECIFIED": 0,
+		"GIT_HUB_FORECAST_STATE_UNKNOWN":     1,
+		"GIT_HUB_FORECAST_STATE_ON_TRACK":    2,
+		"GIT_HUB_FORECAST_STATE_AT_RISK":     3,
+		"GIT_HUB_FORECAST_STATE_EXHAUSTED":   4,
+	}
+)
+
+func (x GitHubForecastState) Enum() *GitHubForecastState {
+	p := new(GitHubForecastState)
+	*p = x
+	return p
+}
+
+func (x GitHubForecastState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GitHubForecastState) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v1_github_proto_enumTypes[0].Descriptor()
+}
+
+func (GitHubForecastState) Type() protoreflect.EnumType {
+	return &file_octomanager_v1_github_proto_enumTypes[0]
+}
+
+func (x GitHubForecastState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GitHubForecastState.Descriptor instead.
+func (GitHubForecastState) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v1_github_proto_rawDescGZIP(), []int{0}
+}
+
+type RefreshState int32
+
+const (
+	RefreshState_REFRESH_STATE_UNSPECIFIED RefreshState = 0
+	RefreshState_REFRESH_STATE_QUEUED      RefreshState = 1
+	RefreshState_REFRESH_STATE_RUNNING     RefreshState = 2
+	RefreshState_REFRESH_STATE_DEFERRED    RefreshState = 3
+)
+
+// Enum value maps for RefreshState.
+var (
+	RefreshState_name = map[int32]string{
+		0: "REFRESH_STATE_UNSPECIFIED",
+		1: "REFRESH_STATE_QUEUED",
+		2: "REFRESH_STATE_RUNNING",
+		3: "REFRESH_STATE_DEFERRED",
+	}
+	RefreshState_value = map[string]int32{
+		"REFRESH_STATE_UNSPECIFIED": 0,
+		"REFRESH_STATE_QUEUED":      1,
+		"REFRESH_STATE_RUNNING":     2,
+		"REFRESH_STATE_DEFERRED":    3,
+	}
+)
+
+func (x RefreshState) Enum() *RefreshState {
+	p := new(RefreshState)
+	*p = x
+	return p
+}
+
+func (x RefreshState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RefreshState) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v1_github_proto_enumTypes[1].Descriptor()
+}
+
+func (RefreshState) Type() protoreflect.EnumType {
+	return &file_octomanager_v1_github_proto_enumTypes[1]
+}
+
+func (x RefreshState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RefreshState.Descriptor instead.
+func (RefreshState) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v1_github_proto_rawDescGZIP(), []int{1}
+}
+
 type GitHubRateBudget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         uint32                 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	Remaining     uint32                 `protobuf:"varint,2,opt,name=remaining,proto3" json:"remaining,omitempty"`
 	ResetAtMs     int64                  `protobuf:"varint,3,opt,name=reset_at_ms,json=resetAtMs,proto3" json:"reset_at_ms,omitempty"`
 	ObservedAtMs  int64                  `protobuf:"varint,4,opt,name=observed_at_ms,json=observedAtMs,proto3" json:"observed_at_ms,omitempty"`
+	Forecast      *GitHubQuotaForecast   `protobuf:"bytes,5,opt,name=forecast,proto3" json:"forecast,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -87,6 +195,13 @@ func (x *GitHubRateBudget) GetObservedAtMs() int64 {
 		return x.ObservedAtMs
 	}
 	return 0
+}
+
+func (x *GitHubRateBudget) GetForecast() *GitHubQuotaForecast {
+	if x != nil {
+		return x.Forecast
+	}
+	return nil
 }
 
 type GitHubReadMinute struct {
@@ -273,16 +388,177 @@ func (x *GitHubReadUsage) GetGraphqlRetryAtMs() int64 {
 	return 0
 }
 
+type GitHubQuotaForecast struct {
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	State                     GitHubForecastState    `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v1.GitHubForecastState" json:"state,omitempty"`
+	Reason                    string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	WindowMs                  int64                  `protobuf:"varint,3,opt,name=window_ms,json=windowMs,proto3" json:"window_ms,omitempty"`
+	SampledAtMs               int64                  `protobuf:"varint,4,opt,name=sampled_at_ms,json=sampledAtMs,proto3" json:"sampled_at_ms,omitempty"`
+	UnitsPerHour              *float64               `protobuf:"fixed64,5,opt,name=units_per_hour,json=unitsPerHour,proto3,oneof" json:"units_per_hour,omitempty"`
+	ProjectedRemainingAtReset *float64               `protobuf:"fixed64,6,opt,name=projected_remaining_at_reset,json=projectedRemainingAtReset,proto3,oneof" json:"projected_remaining_at_reset,omitempty"`
+	ExhaustAtMs               *int64                 `protobuf:"varint,7,opt,name=exhaust_at_ms,json=exhaustAtMs,proto3,oneof" json:"exhaust_at_ms,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *GitHubQuotaForecast) Reset() {
+	*x = GitHubQuotaForecast{}
+	mi := &file_octomanager_v1_github_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GitHubQuotaForecast) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GitHubQuotaForecast) ProtoMessage() {}
+
+func (x *GitHubQuotaForecast) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_github_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GitHubQuotaForecast.ProtoReflect.Descriptor instead.
+func (*GitHubQuotaForecast) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_github_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GitHubQuotaForecast) GetState() GitHubForecastState {
+	if x != nil {
+		return x.State
+	}
+	return GitHubForecastState_GIT_HUB_FORECAST_STATE_UNSPECIFIED
+}
+
+func (x *GitHubQuotaForecast) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *GitHubQuotaForecast) GetWindowMs() int64 {
+	if x != nil {
+		return x.WindowMs
+	}
+	return 0
+}
+
+func (x *GitHubQuotaForecast) GetSampledAtMs() int64 {
+	if x != nil {
+		return x.SampledAtMs
+	}
+	return 0
+}
+
+func (x *GitHubQuotaForecast) GetUnitsPerHour() float64 {
+	if x != nil && x.UnitsPerHour != nil {
+		return *x.UnitsPerHour
+	}
+	return 0
+}
+
+func (x *GitHubQuotaForecast) GetProjectedRemainingAtReset() float64 {
+	if x != nil && x.ProjectedRemainingAtReset != nil {
+		return *x.ProjectedRemainingAtReset
+	}
+	return 0
+}
+
+func (x *GitHubQuotaForecast) GetExhaustAtMs() int64 {
+	if x != nil && x.ExhaustAtMs != nil {
+		return *x.ExhaustAtMs
+	}
+	return 0
+}
+
+type RefreshStatus struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	State           RefreshState           `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v1.RefreshState" json:"state,omitempty"`
+	DueAtMs         int64                  `protobuf:"varint,2,opt,name=due_at_ms,json=dueAtMs,proto3" json:"due_at_ms,omitempty"`
+	LastAttemptAtMs *int64                 `protobuf:"varint,3,opt,name=last_attempt_at_ms,json=lastAttemptAtMs,proto3,oneof" json:"last_attempt_at_ms,omitempty"`
+	LastError       string                 `protobuf:"bytes,4,opt,name=last_error,json=lastError,proto3" json:"last_error,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *RefreshStatus) Reset() {
+	*x = RefreshStatus{}
+	mi := &file_octomanager_v1_github_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshStatus) ProtoMessage() {}
+
+func (x *RefreshStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_github_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshStatus.ProtoReflect.Descriptor instead.
+func (*RefreshStatus) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_github_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RefreshStatus) GetState() RefreshState {
+	if x != nil {
+		return x.State
+	}
+	return RefreshState_REFRESH_STATE_UNSPECIFIED
+}
+
+func (x *RefreshStatus) GetDueAtMs() int64 {
+	if x != nil {
+		return x.DueAtMs
+	}
+	return 0
+}
+
+func (x *RefreshStatus) GetLastAttemptAtMs() int64 {
+	if x != nil && x.LastAttemptAtMs != nil {
+		return *x.LastAttemptAtMs
+	}
+	return 0
+}
+
+func (x *RefreshStatus) GetLastError() string {
+	if x != nil {
+		return x.LastError
+	}
+	return ""
+}
+
 var File_octomanager_v1_github_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_github_proto_rawDesc = "" +
 	"\n" +
-	"\x1boctomanager/v1/github.proto\x12\x0eoctomanager.v1\"\x8c\x01\n" +
+	"\x1boctomanager/v1/github.proto\x12\x0eoctomanager.v1\"\xcd\x01\n" +
 	"\x10GitHubRateBudget\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\rR\x05limit\x12\x1c\n" +
 	"\tremaining\x18\x02 \x01(\rR\tremaining\x12\x1e\n" +
 	"\vreset_at_ms\x18\x03 \x01(\x03R\tresetAtMs\x12$\n" +
-	"\x0eobserved_at_ms\x18\x04 \x01(\x03R\fobservedAtMs\"\x87\x01\n" +
+	"\x0eobserved_at_ms\x18\x04 \x01(\x03R\fobservedAtMs\x12?\n" +
+	"\bforecast\x18\x05 \x01(\v2#.octomanager.v1.GitHubQuotaForecastR\bforecast\"\x87\x01\n" +
 	"\x10GitHubReadMinute\x12\"\n" +
 	"\rstarted_at_ms\x18\x01 \x01(\x03R\vstartedAtMs\x12\x12\n" +
 	"\x04rest\x18\x02 \x01(\x04R\x04rest\x12\x18\n" +
@@ -300,7 +576,36 @@ const file_octomanager_v1_github_proto_rawDesc = "" +
 	"\agraphql\x18\b \x01(\v2 .octomanager.v1.GitHubRateBudgetR\agraphql\x12'\n" +
 	"\x10rest_retry_at_ms\x18\t \x01(\x03R\rrestRetryAtMs\x12-\n" +
 	"\x13graphql_retry_at_ms\x18\n" +
-	" \x01(\x03R\x10graphqlRetryAtMsB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	" \x01(\x03R\x10graphqlRetryAtMs\"\x89\x03\n" +
+	"\x13GitHubQuotaForecast\x129\n" +
+	"\x05state\x18\x01 \x01(\x0e2#.octomanager.v1.GitHubForecastStateR\x05state\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x1b\n" +
+	"\twindow_ms\x18\x03 \x01(\x03R\bwindowMs\x12\"\n" +
+	"\rsampled_at_ms\x18\x04 \x01(\x03R\vsampledAtMs\x12)\n" +
+	"\x0eunits_per_hour\x18\x05 \x01(\x01H\x00R\funitsPerHour\x88\x01\x01\x12D\n" +
+	"\x1cprojected_remaining_at_reset\x18\x06 \x01(\x01H\x01R\x19projectedRemainingAtReset\x88\x01\x01\x12'\n" +
+	"\rexhaust_at_ms\x18\a \x01(\x03H\x02R\vexhaustAtMs\x88\x01\x01B\x11\n" +
+	"\x0f_units_per_hourB\x1f\n" +
+	"\x1d_projected_remaining_at_resetB\x10\n" +
+	"\x0e_exhaust_at_ms\"\xc7\x01\n" +
+	"\rRefreshStatus\x122\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x1c.octomanager.v1.RefreshStateR\x05state\x12\x1a\n" +
+	"\tdue_at_ms\x18\x02 \x01(\x03R\adueAtMs\x120\n" +
+	"\x12last_attempt_at_ms\x18\x03 \x01(\x03H\x00R\x0flastAttemptAtMs\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"last_error\x18\x04 \x01(\tR\tlastErrorB\x15\n" +
+	"\x13_last_attempt_at_ms*\xd0\x01\n" +
+	"\x13GitHubForecastState\x12&\n" +
+	"\"GIT_HUB_FORECAST_STATE_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eGIT_HUB_FORECAST_STATE_UNKNOWN\x10\x01\x12#\n" +
+	"\x1fGIT_HUB_FORECAST_STATE_ON_TRACK\x10\x02\x12\"\n" +
+	"\x1eGIT_HUB_FORECAST_STATE_AT_RISK\x10\x03\x12$\n" +
+	" GIT_HUB_FORECAST_STATE_EXHAUSTED\x10\x04*~\n" +
+	"\fRefreshState\x12\x1d\n" +
+	"\x19REFRESH_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14REFRESH_STATE_QUEUED\x10\x01\x12\x19\n" +
+	"\x15REFRESH_STATE_RUNNING\x10\x02\x12\x1a\n" +
+	"\x16REFRESH_STATE_DEFERRED\x10\x03B@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_github_proto_rawDescOnce sync.Once
@@ -314,21 +619,29 @@ func file_octomanager_v1_github_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_github_proto_rawDescData
 }
 
-var file_octomanager_v1_github_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_octomanager_v1_github_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_octomanager_v1_github_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_octomanager_v1_github_proto_goTypes = []any{
-	(*GitHubRateBudget)(nil), // 0: octomanager.v1.GitHubRateBudget
-	(*GitHubReadMinute)(nil), // 1: octomanager.v1.GitHubReadMinute
-	(*GitHubReadUsage)(nil),  // 2: octomanager.v1.GitHubReadUsage
+	(GitHubForecastState)(0),    // 0: octomanager.v1.GitHubForecastState
+	(RefreshState)(0),           // 1: octomanager.v1.RefreshState
+	(*GitHubRateBudget)(nil),    // 2: octomanager.v1.GitHubRateBudget
+	(*GitHubReadMinute)(nil),    // 3: octomanager.v1.GitHubReadMinute
+	(*GitHubReadUsage)(nil),     // 4: octomanager.v1.GitHubReadUsage
+	(*GitHubQuotaForecast)(nil), // 5: octomanager.v1.GitHubQuotaForecast
+	(*RefreshStatus)(nil),       // 6: octomanager.v1.RefreshStatus
 }
 var file_octomanager_v1_github_proto_depIdxs = []int32{
-	1, // 0: octomanager.v1.GitHubReadUsage.minutes:type_name -> octomanager.v1.GitHubReadMinute
-	0, // 1: octomanager.v1.GitHubReadUsage.rest:type_name -> octomanager.v1.GitHubRateBudget
-	0, // 2: octomanager.v1.GitHubReadUsage.graphql:type_name -> octomanager.v1.GitHubRateBudget
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	5, // 0: octomanager.v1.GitHubRateBudget.forecast:type_name -> octomanager.v1.GitHubQuotaForecast
+	3, // 1: octomanager.v1.GitHubReadUsage.minutes:type_name -> octomanager.v1.GitHubReadMinute
+	2, // 2: octomanager.v1.GitHubReadUsage.rest:type_name -> octomanager.v1.GitHubRateBudget
+	2, // 3: octomanager.v1.GitHubReadUsage.graphql:type_name -> octomanager.v1.GitHubRateBudget
+	0, // 4: octomanager.v1.GitHubQuotaForecast.state:type_name -> octomanager.v1.GitHubForecastState
+	1, // 5: octomanager.v1.RefreshStatus.state:type_name -> octomanager.v1.RefreshState
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_github_proto_init() }
@@ -336,18 +649,21 @@ func file_octomanager_v1_github_proto_init() {
 	if File_octomanager_v1_github_proto != nil {
 		return
 	}
+	file_octomanager_v1_github_proto_msgTypes[3].OneofWrappers = []any{}
+	file_octomanager_v1_github_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_github_proto_rawDesc), len(file_octomanager_v1_github_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   3,
+			NumEnums:      2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_octomanager_v1_github_proto_goTypes,
 		DependencyIndexes: file_octomanager_v1_github_proto_depIdxs,
+		EnumInfos:         file_octomanager_v1_github_proto_enumTypes,
 		MessageInfos:      file_octomanager_v1_github_proto_msgTypes,
 	}.Build()
 	File_octomanager_v1_github_proto = out.File

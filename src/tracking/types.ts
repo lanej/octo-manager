@@ -1,3 +1,4 @@
+import type { Lifecycle } from "./retirement.js";
 import type { CheckWatch, CheckWatchState } from "./checks.js";
 export type UnixMillis = number;
 export interface AgentRef {
@@ -14,7 +15,7 @@ export interface AgentTarget {
   sessionId: string;
   label?: string;
 }
-export interface TrackedPR {
+export interface TrackedPR extends Lifecycle {
   id: string;
   url: string;
   originAgentId: string;
@@ -30,6 +31,10 @@ export type ObservationPart<T> =
   | { state: "partial"; value: T; reason: string }
   | { state: "unavailable"; reason: string };
 export interface CheckObservation {
+  suiteId?: number;
+  workflowId?: number;
+  runNumber?: number;
+  event?: string;
   id: string;
   key: string;
   name: string;
@@ -73,6 +78,7 @@ export interface ActionEventContext {
   actorLabel?: string;
 }
 export interface PRObservation {
+  description?: string;
   id: number;
   prId: string;
   observedAt: UnixMillis;

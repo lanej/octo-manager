@@ -2,7 +2,7 @@
 
 Octo takes over GitHub check and review monitoring after a PR is enrolled. Agents can finish their local work and move on; completed checks and new or edited review summaries, inline comments, and conversation comments return through the durable inbox. A notification requests triage and reporting; it does not grant repair or merge authority.
 
-## Install on macOS
+## Install on macOS or Linux
 
 Use the pinned Bun 1.4.4, the repository dependencies, GitHub CLI with an existing login, and the Go toolchain from `go.mod`. Commit reviewed source changes before installing:
 
@@ -20,7 +20,7 @@ launchctl print gui/$(id -u)/com.lanej.octo-manager
 launchctl kickstart -k gui/$(id -u)/com.lanej.octo-manager
 ```
 
-Linux continues to use the manual coordinator described in the README. `--home DIR` supports a separate installation root; normal configuration overrides `XDG_CONFIG_HOME` and `CODEX_HOME` remain supported.
+Linux uses a systemd user unit at the selected configuration home’s `systemd/user/octo-manager.service`. If no user manager is available, installation completes with `started: false` and a safely quoted foreground command that preserves HOME, PATH, state, configuration and Codex home. An available manager’s configuration or startup failure remains an error. Linux service logs are available through `journalctl --user -u octo-manager.service`. `--home DIR` supports a separate installation root; normal configuration overrides `XDG_CONFIG_HOME` and `CODEX_HOME` remain supported.
 
 ## Activate native Codex hooks
 
@@ -44,6 +44,12 @@ The existing coordinator owns GitHub polling, check watches, durable notificatio
 
 Session setup supplies standing evidence-handling rules once. Recovery retains the original action and immutable evidence identifiers without repeating those rules in every message. Full-body matching prevents a delivery marker copied into an altered prompt from acknowledging the original notification. Hooks are advisory and do not block ordinary agent work if the coordinator is unavailable.
 
+Hook diagnostic logging defaults to errors only: failures append a private JSON record to `codex-hook-errors.jsonl` in the selected state directory and also write it to stderr; successful hooks produce no diagnostics. Set `OCTO_MANAGER_HOOK_LOG_LEVEL=off` in the hook process environment to disable diagnostic logging, or `error` to select the default explicitly. Disabling diagnostics preserves advisory warnings and unread-message recovery. Records include the time, error level, hook event and session when available, failing phase, exception message and stack, error code and bounded cause chain. Raw prompts and tool payloads are excluded; malformed JSON records a fixed parse error because parser messages can include input excerpts. If the log cannot be written, stderr retains the original failure and the logging error. A logging failure does not acknowledge unread notifications.
+
 Useful recovery commands are in the [tracking guide](tracking.md). Existing inbox and action records remain compatible; the API adds optional registration, full-body receipt validation, and applicable-only listing without a database migration.
 
 Queue endpoints now use [agent digests](agent-digests.md): superseded pending revisions are withdrawn before replacement, with uncertain effects retained for reconciliation. The existing hook also recognizes exact digest bodies; installation does not enable hooks or require PR submissions.
+
+Native release/runtime paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. The explicit `--no-start` option stages configuration without activating a service and returns the equivalent foreground command. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
+
+Startup upgrades cached retirement state before polling: settled merged PRs are archived with history and receipts retained, while incomplete checks keep draining. Explicitly disabled PRs stay disabled. See [polling and auto-merge](polling-and-auto-merge.md) for schema-14 upgrade behavior.

@@ -202,3 +202,60 @@ func TestPRSidebarMentionsJobsOnlyWhenLocalJobsExist(t *testing.T) {
 		t.Fatal("a local fixture was mislabeled as a pull request")
 	}
 }
+
+func TestArchivedMonitoringRetainsDeadlineWarning(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "archived", Url: "https://github.com/owner/repo/pull/1", Enabled: true, TrackingState: v1.TrackingState_TRACKING_STATE_ARCHIVED, ArchiveReason: new("deadline")}}}
+	m.ensureSelection()
+	view := ansi.Strip(m.trackingContent())
+
+	for _, want := range []string{"Monitoring:", "archived", "check results remain incomplete"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("missing retirement presentation %q", want)
+		}
+	}
+}
+
+func TestTrackingPresentsMergeNextStepAndPrerequisiteLinks(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "application", Url: "https://github.com/owner/application/pull/2", Enabled: true}}}
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "application", State: "waiting_owner", Detail: "Assess newly prepared head", PrerequisiteUrls: []string{"https://github.com/owner/library/pull/1"}}}
+	m.ensureSelection()
+	content := ansi.Strip(m.trackingContent())
+
+	for _, expected := range []string{"waiting owner", "Assess newly prepared head", "owner/library"} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("merge presentation missing %q: %s", expected, content)
+		}
+	}
+}
+
+func TestTrackingHasAnOptInAutoMergeSwitch(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/1", OwnerAgentId: "owner", Enabled: true}}}
+	m.ensureSelection()
+
+	off := ansi.Strip(m.trackingContent())
+	if !strings.Contains(off, "Auto-merge (a)") || !strings.Contains(off, "OFF") {
+		t.Fatal("auto merge must start off")
+	}
+
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "pr", AutoMerge: true, State: "waiting_owner", Detail: "Owner assessment required"}}
+
+	on := ansi.Strip(m.trackingContent())
+	if !strings.Contains(on, "ON") || !strings.Contains(on, "Owner assessment required") {
+		t.Fatal("switch hides pending readiness")
+	}
+
+	m.panel = trackingPanel
+	if m.key(tea.KeyPressMsg{Code: 'a', Text: "a"}) == nil || !m.commandPending {
+		t.Fatal("switch keyboard action was not wired")
+	}
+}

@@ -120,13 +120,13 @@ func TestReviewsAndWorkerStateStayDistinct(t *testing.T) {
 	m.Resize(layout.Size{Width: 132, Height: 40})
 
 	view := ansi.Strip(m.View())
-	for _, expected := range []string{"changes requested", "Fix cancellation", "Slot idle", "Run 1/1", "succeeded"} {
+	for _, expected := range []string{"changes requested", "Fix cancellation", "REVIEW FEEDBACK"} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("missing %q in view:\n%s", expected, view)
 		}
 	}
 
-	if strings.Contains(view, address) || !strings.Contains(view, "owner/repo#1") || strings.Contains(view, "A completed summary") {
+	if strings.Contains(view, "WORKER ·") || strings.Contains(view, address) || !strings.Contains(view, "owner/repo#1") || strings.Contains(view, "A completed summary") {
 		t.Fatal("duplicate PR identity or worker output mixed into reviews")
 	}
 

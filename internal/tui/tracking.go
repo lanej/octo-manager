@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
 	"github.com/lanej/charmed/feedback"
+	"github.com/lanej/charmed/input"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
@@ -77,9 +78,24 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	parts := []string{m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId()))}
+	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), m.trackingAutomation(pr)}
+	if status := m.selectedRefresh; status != nil {
+		parts = append(parts, m.field("Refresh", stateName(status.GetState().String(), "REFRESH_STATE_")), m.field("Next eligible", m.timestamp(status.GetDueAtMs(), fullTimestamp)))
+		if status.GetLastError() != "" {
+			parts = append(parts, m.field("Refresh error", safe(status.GetLastError())))
+		}
+	}
+
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
+	}
+
+	if pr.GetTrackingState() != v1.TrackingState_TRACKING_STATE_UNSPECIFIED {
+		parts = append(parts, m.field("Monitoring", stateName(pr.GetTrackingState().String(), "TRACKING_STATE_")))
+	}
+
+	if pr.GetArchiveReason() == "deadline" {
+		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" Drain deadline reached; check results remain incomplete.")
 	}
 
 	if !pr.GetEnabled() {
@@ -113,7 +129,19 @@ func (m *Model) trackingContent() string {
 	}
 
 	parts = append(parts, m.repairContent(pr.GetId()))
+	for _, merge := range m.snapshot.GetMergeStatuses() {
+		if merge.GetPrId() != pr.GetId() {
+			continue
+		}
 
+		parts = append(parts, m.field("Merge chain", strings.ReplaceAll(merge.GetState(), "_", " ")), m.field("Next step", merge.GetDetail()))
+		for _, prerequisite := range merge.GetPrerequisiteUrls() {
+			parts = append(parts, m.field("Requires merge", m.trackingLinks(&v1.TrackedPullRequest{Url: prerequisite})))
+		}
+	}
+
+	overview := strings.Join(parts, "\n")
+	parts = nil
 	count := m.openActions(pr.GetId())
 
 	tone := text.Success
@@ -210,7 +238,12 @@ func (m *Model) trackingContent() string {
 
 	parts = append(parts, "", text.KeyHint("u", "refresh", m.theme), m.muted("Delivery, acknowledgment, and verified resolution are separate."))
 
-	return strings.Join(parts, "\n")
+	width := max(1, layout.PanelContentSize(layout.Size{Width: m.geometry().right}).Width-1)
+	if width < 32 {
+		return overview + "\n" + strings.Join(parts, "\n")
+	}
+
+	return m.sections("tracking-sections", width, dashboardSection{id: "ownership", title: "AUTOMATION & OWNERSHIP", content: func(int) string { return overview }}, dashboardSection{id: "blockers", title: "ACTIONS & DELIVERY", content: func(int) string { return strings.Join(parts, "\n") }})
 }
 
 func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
@@ -262,6 +295,49 @@ func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
 	return strings.Join(append([]string{view}, unavailable...), "\n")
 }
 
+func (m *Model) autoMergeEnabled(prID string) bool {
+	enabled := false
+
+	for _, status := range m.snapshot.GetMergeStatuses() {
+		if status.GetPrId() == prID {
+			enabled = status.GetAutoMerge() && status.GetState() != "merged" && status.GetState() != "cancelled"
+		}
+	}
+
+	return enabled
+}
+
+func (m *Model) toggleAutoMerge() tea.Cmd {
+	pr := m.currentSubject().tracked
+	if pr == nil || m.commandPending {
+		return nil
+	}
+
+	enabled := !m.autoMergeEnabled(pr.GetId())
+
+	body, err := json.Marshal(struct {
+		Op      string `json:"op"`
+		PR      string `json:"pr"`
+		Enabled bool   `json:"enabled"`
+		Actor   string `json:"actorId"`
+		Request string `json:"requestId"`
+	}{Op: "auto_merge", PR: pr.GetId(), Enabled: enabled, Actor: pr.GetOwnerAgentId(), Request: fmt.Sprintf("dashboard-auto-%s-%d", pr.GetId(), time.Now().UnixNano())})
+	if err != nil {
+		return func() tea.Msg { return commandMsg{err: err} }
+	}
+
+	m.commandPending = true
+
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(m.ctx, 15*time.Second)
+		defer cancel()
+
+		_, err := m.api.RPC.MergeCommand(ctx, connect.NewRequest(&v1.MergeCommandRequest{InputJson: string(body)}))
+
+		return commandMsg{err: err}
+	}
+}
+
 func (m *Model) refreshTracked() tea.Cmd {
 	pr := m.currentSubject().tracked
 	if pr == nil || m.commandPending {
@@ -304,4 +380,20 @@ func (m *Model) deliveryDetails(raw string) string {
 	}
 
 	return ""
+}
+
+func (m *Model) trackingAutomation(pr *v1.TrackedPullRequest) string {
+	label := m.automationLabel(pr.GetId())
+
+	lifecycle := pr.GetObservation().GetLifecycle()
+	if lifecycle == "merged" || lifecycle == "closed" {
+		return text.Pill(label, text.Neutral, m.theme, text.Normal)
+	}
+
+	toggle := input.NewToggle("auto-merge", "Auto-merge (a)", m.autoMergeEnabled(pr.GetId()), m.theme).View()
+	if label == "Auto-merge ON" || label == "Manual merge" {
+		return toggle
+	}
+
+	return toggle + "\n" + label
 }

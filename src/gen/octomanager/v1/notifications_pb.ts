@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/notifications.proto.
  */
 export const file_octomanager_v1_notifications: GenFile = /*@__PURE__*/
-  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJHChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBAUILCglfcmV2aXNpb24iLQoWR2V0QWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCSI9ChdMaXN0QWdlbnREaWdlc3RzUmVxdWVzdBIVCghhZ2VudF9pZBgBIAEoCUgAiAEBQgsKCV9hZ2VudF9pZCIwChhMaXN0QWdlbnREaWdlc3RzUmVzcG9uc2USFAoMZGlnZXN0c19qc29uGAEgAygJIn0KHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBAUIQCg5fZXhwZWN0ZWRfYm9keSK0AQoRQWdlbnREaWdlc3RNZW1iZXISEgoKbWVzc2FnZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSGgoNc3VibWlzc2lvbl9pZBgDIAEoCUgAiAEBEhIKCmFwcGxpY2FibGUYBCABKAgSHwoSYWNrbm93bGVkZ2VkX2F0X21zGAUgASgDSAGIAQFCEAoOX3N1Ym1pc3Npb25faWRCFQoTX2Fja25vd2xlZGdlZF9hdF9tcyJqCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USEwoLcmVjb3JkX2pzb24YASABKAkSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52MS5BZ2VudERpZ2VzdE1lbWJlckJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
+  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJHChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBAUILCglfcmV2aXNpb24iLQoWR2V0QWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCSI9ChdMaXN0QWdlbnREaWdlc3RzUmVxdWVzdBIVCghhZ2VudF9pZBgBIAEoCUgAiAEBQgsKCV9hZ2VudF9pZCIwChhMaXN0QWdlbnREaWdlc3RzUmVzcG9uc2USFAoMZGlnZXN0c19qc29uGAEgAygJIn0KHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBAUIQCg5fZXhwZWN0ZWRfYm9keSKFAgoRQWdlbnREaWdlc3RNZW1iZXISEgoKbWVzc2FnZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSGgoNc3VibWlzc2lvbl9pZBgDIAEoCUgAiAEBEg8KB3N1bW1hcnkYBiABKAkSDgoGcHJfdXJsGAcgASgJEhYKDnJlY2lwaWVudF9yb2xlGAggASgJEhYKDm93bmVyX2FnZW50X2lkGAkgASgJEhIKCmFwcGxpY2FibGUYBCABKAgSHwoSYWNrbm93bGVkZ2VkX2F0X21zGAUgASgDSAGIAQFCEAoOX3N1Ym1pc3Npb25faWRCFQoTX2Fja25vd2xlZGdlZF9hdF9tcyJqCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USEwoLcmVjb3JkX2pzb24YASABKAkSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52MS5BZ2VudERpZ2VzdE1lbWJlckJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
 
 /**
  * JSON record schemas are validated by the notification capability.
@@ -137,6 +137,26 @@ export type AgentDigestMember = Message<"octomanager.v1.AgentDigestMember"> & {
    * @generated from field: optional string submission_id = 3;
    */
   submissionId?: string | undefined;
+
+  /**
+   * @generated from field: string summary = 6;
+   */
+  summary: string;
+
+  /**
+   * @generated from field: string pr_url = 7;
+   */
+  prUrl: string;
+
+  /**
+   * @generated from field: string recipient_role = 8;
+   */
+  recipientRole: string;
+
+  /**
+   * @generated from field: string owner_agent_id = 9;
+   */
+  ownerAgentId: string;
 
   /**
    * @generated from field: bool applicable = 4;

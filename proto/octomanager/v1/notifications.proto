@@ -12,6 +12,10 @@ message AgentDigestMember {
   string message_id = 1;
   string action_id = 2;
   optional string submission_id = 3;
+  string summary=6;
+  string pr_url=7;
+  string recipient_role=8;
+  string owner_agent_id=9;
   bool applicable = 4;
   optional int64 acknowledged_at_ms = 5;
 }
