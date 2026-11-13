@@ -1,25 +1,27 @@
+import type {
+  GitHubRequest,
+  GitHubResponse,
+  GitHubTransport,
+} from "../src/github-sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  GitHubReads,
-  GitHubRateLimitError,
-  type GitHubCommand,
-} from "../src/github-api.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
 
 function http(
   status: number,
   body: unknown,
   headers: Record<string, string> = {},
-): string {
-  return [
-    `HTTP/2.0 ${String(status)} Response`,
-    ...Object.entries(headers).map(([key, value]) => `${key}: ${value}`),
-    "",
-    JSON.stringify(body),
-  ].join("\r\n");
+): GitHubResponse {
+  return {
+    status,
+    headers: new Map(
+      Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
+    ),
+    body: JSON.stringify(body),
+  };
 }
 test("conditional reads reuse only server-confirmed evidence and replace changed responses", async () => {
-  const calls: string[][] = [];
+  const calls: GitHubRequest[] = [];
   const replies = [
     http(200, { head: "one" }, { ETag: '"one"' }),
     http(304, null),
@@ -49,18 +51,18 @@ test("conditional reads reuse only server-confirmed evidence and replace changed
   await reader.read("repos/owner/repo/pulls/1");
   await reader.read("repos/owner/repo/pulls/1");
   assert.equal(calls.length, 6);
-  assert.equal(calls[0]?.includes("--header"), false);
-  assert.equal(calls[1]?.includes('If-None-Match: "one"'), true);
-  assert.equal(calls[3]?.includes('If-None-Match: "two"'), true);
-  assert.equal(calls[5]?.includes("--header"), false);
+  assert.equal(calls[0]?.headers?.["if-none-match"] !== undefined, false);
+  assert.equal(calls[1]?.headers?.["if-none-match"] === '"one"', true);
+  assert.equal(calls[3]?.headers?.["if-none-match"] === '"two"', true);
+  assert.equal(calls[5]?.headers?.["if-none-match"] !== undefined, false);
 });
 test("all read clients share a serial queue; cancellation and failure release the queue", async () => {
-  let finish: ((value: string) => void) | undefined;
-  const calls: string[][] = [];
+  let finish: ((value: GitHubResponse) => void) | undefined;
+  const calls: GitHubRequest[] = [];
   const reader = new GitHubReads((args) => {
     calls.push(args);
     if (calls.length === 1)
-      return new Promise<string>((resolve) => {
+      return new Promise<GitHubResponse>((resolve) => {
         finish = resolve;
       });
     return Promise.resolve(http(200, { data: { ok: true } }));
@@ -79,7 +81,7 @@ test("all read clients share a serial queue; cancellation and failure release th
   await cancelled;
   assert.deepEqual(await third, { data: { ok: true }, errors: [] });
   assert.equal(calls.length, 2);
-  assert.equal(calls[1]?.includes("graphql"), true);
+  assert.equal(calls[1]?.path === "graphql", true);
 });
 test("primary rate limits pause REST reads until reset without blocking the separate GraphQL budget", async () => {
   let at = 1000;
@@ -99,7 +101,7 @@ test("primary rate limits pause REST reads until reset without blocking the sepa
           ),
         );
       return Promise.resolve(
-        args.includes("graphql")
+        args.path === "graphql"
           ? http(200, { data: { ok: true } })
           : http(200, { fresh: true }),
       );
@@ -178,7 +180,7 @@ test("the last successful REST response is usable but pauses subsequent reads", 
   assert.equal(calls, 1);
 });
 test("invalid, missing, partial, and forbidden responses cannot become cached evidence", async () => {
-  const run: GitHubCommand = () => Promise.resolve(http(304, null));
+  const run: GitHubTransport = () => Promise.resolve(http(304, null));
   await assert.rejects(
     new GitHubReads(run).read("first"),
     /without cached evidence/,
@@ -189,7 +191,11 @@ test("invalid, missing, partial, and forbidden responses cannot become cached ev
   );
   await assert.rejects(
     new GitHubReads(() =>
-      Promise.resolve("HTTP/2.0 200 OK\r\n\r\nprivate invalid response"),
+      Promise.resolve({
+        status: 200,
+        headers: new Map(),
+        body: "private invalid response",
+      }),
     ).read("first"),
     /^Error: Invalid GitHub JSON response$/,
   );
@@ -237,7 +243,7 @@ test("HTTP 200 GraphQL secondary rate-limit errors pause both API resources", as
   assert.equal(calls, 1);
 });
 test("the REST cache evicts older objects within its bounded entry count", async () => {
-  const calls: string[][] = [];
+  const calls: GitHubRequest[] = [];
   const reader = new GitHubReads((args) => {
     calls.push(args);
     return Promise.resolve(http(200, {}, { etag: '"one"' }));
@@ -245,17 +251,18 @@ test("the REST cache evicts older objects within its bounded entry count", async
   for (let index = 0; index < 129; index++)
     await reader.read(`object/${String(index)}`);
   await reader.read("object/0");
-  assert.equal(calls.at(-1)?.includes("--header"), false);
+  assert.equal(calls.at(-1)?.headers?.["if-none-match"] !== undefined, false);
 });
 test("merge writes share cooldown and validate authority only when their queue slot executes", async () => {
-  let release: ((value: string) => void) | undefined;
+  let release: ((value: GitHubResponse) => void) | undefined;
   let writes = 0;
   let allowed = true;
-  const reader = new GitHubReads((args) => {
-    if (args.includes("hold"))
-      return new Promise<string>((resolve) => {
+  const reader = new GitHubReads((args, _signal, beforeSend) => {
+    if (args.path === "hold")
+      return new Promise<GitHubResponse>((resolve) => {
         release = resolve;
       });
+    beforeSend?.();
     writes++;
     return Promise.resolve(http(200, { merged: true, sha: "a".repeat(40) }));
   });

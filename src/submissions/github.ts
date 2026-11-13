@@ -1,8 +1,5 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, posix } from "node:path";
+import { posix } from "node:path";
+import { githubReads } from "../github-api.js";
 import { ghRead, type ReadGitHub, canonicalPR } from "../tracking/github.js";
 import {
   hash,
@@ -11,7 +8,6 @@ import {
   type SubmissionInput,
   type WriterDraft,
 } from "./contracts.js";
-const exec = promisify(execFile);
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("Invalid GitHub submission response");
@@ -238,41 +234,24 @@ export class GitHubSubmissions implements SubmissionGitHub {
     marker: string,
     signal: AbortSignal,
   ): Promise<PublishedPR> {
-    const directory = await mkdtemp(join(tmpdir(), "octo-publish-"));
-    try {
-      const input = join(directory, "request.json");
-      await writeFile(
-        input,
-        JSON.stringify({
+    const item = record(
+      await githubReads.post(
+        `repos/${request.repository}/pulls`,
+        {
           title: draft.title,
           body: `${draft.body}\n\n${marker}`,
           head: request.headRef,
           base: request.baseRef,
           draft: request.draft,
-        }),
-        { mode: 0o600 },
-      );
-      const { stdout } = await exec(
-        "gh",
-        [
-          "api",
-          "--method",
-          "POST",
-          `repos/${request.repository}/pulls`,
-          "--input",
-          input,
-        ],
-        { signal, timeout: 30000, maxBuffer: 2 * 1024 * 1024 },
-      );
-      const item = record(JSON.parse(stdout));
-      return {
-        url: canonicalPR(string(item["html_url"])),
-        headSha: string(record(item["head"])["sha"]),
-        body: string(item["body"]),
-        state: string(item["state"]),
-      };
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
+        },
+        signal,
+      ),
+    );
+    return {
+      url: canonicalPR(string(item["html_url"])),
+      headSha: string(record(item["head"])["sha"]),
+      body: string(item["body"]),
+      state: string(item["state"]),
+    };
   }
 }

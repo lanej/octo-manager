@@ -1,5 +1,5 @@
 import { rejects } from "node:assert/strict";
-import { GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Store } from "../src/store.js";
@@ -9,6 +9,7 @@ import { TrackingState, ArchiveReason } from "../src/tracking/retirement.js";
 import { CheckWatchState } from "../src/tracking/checks.js";
 import { NotificationService } from "../src/tracking/notifications.js";
 import {
+  githubNotificationReader,
   parseNotificationResponse,
   notificationAccessError,
   type NotificationPage,
@@ -420,6 +421,66 @@ test("startup retains draining PRs whose cached checks are still running", async
     f.reopen();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
   } finally {
+    await f.close();
+  }
+});
+
+test("SDK notification cooldown survives coordinator restart", async () => {
+  const f = await fixture();
+  let tracking: TrackingService | undefined;
+  let service: NotificationService | undefined;
+  let calls = 0;
+  const reader = () =>
+    githubNotificationReader(
+      new GitHubReads(
+        (request) => {
+          calls++;
+          return Promise.resolve(
+            request.path === "user"
+              ? {
+                  status: 200,
+                  headers: new Map<string, string>(),
+                  body: '{"login":"owner"}',
+                }
+              : {
+                  status: 429,
+                  headers: new Map([["retry-after", "180"]]),
+                  body: '{"message":"rate limit"}',
+                },
+          );
+        },
+        () => f.now,
+      ),
+    );
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
+    f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
+    tracking = new TrackingService(f.store.tracking, f.config, () => f.now);
+    service = new NotificationService(
+      f.store.notifications,
+      tracking,
+      () => f.now,
+      reader(),
+    );
+    await service.flush();
+    expect(f.store.notifications.status().nextPollAt).toBe(f.now + 180000);
+    await service.close();
+    await tracking.close();
+    f.reopen();
+    f.advance(61000);
+    tracking = new TrackingService(f.store.tracking, f.config, () => f.now);
+    service = new NotificationService(
+      f.store.notifications,
+      tracking,
+      () => f.now,
+      reader(),
+    );
+    await service.flush();
+    expect(calls).toBe(2);
+  } finally {
+    await service?.close();
+    await tracking?.close();
     await f.close();
   }
 });

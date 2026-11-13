@@ -1,0 +1,17 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
+  "extends": [
+    "./.typescript-quality/biome.json"
+  ],
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!dist",
+      "!.agents",
+      "!.typescript-quality",
+      "!src/gen",
+      "!src/agents/protocol"
+    ]
+  }
+}

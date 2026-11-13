@@ -1,11 +1,10 @@
 import { feedbackExcerpt } from "./review-signals.js";
 import { shortId } from "./identifiers.js";
-import { execFile } from "node:child_process";
-import { promisify, stripVTControlCharacters } from "node:util";
+import { stripVTControlCharacters } from "node:util";
 import type { Action } from "./types.js";
 import { successfulCheck } from "./checks.js";
 import { canonicalPR } from "./github.js";
-const exec = promisify(execFile);
+import { githubReads } from "../github-api.js";
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
     .filter(
@@ -48,13 +47,13 @@ export type ReadFailedLog = (
   job: string,
   signal: AbortSignal,
 ) => Promise<string>;
-const failedLog: ReadFailedLog = async (repository, run, job, signal) => {
-  const { stdout } = await exec(
-    "gh",
-    ["run", "view", run, "--repo", repository, "--job", job, "--log-failed"],
-    { signal, timeout: 4500, maxBuffer: 512 * 1024 },
+const failedLog: ReadFailedLog = async (repository, _run, job, signal) => {
+  const result = await githubReads.raw(
+    `repos/${repository}/actions/jobs/${job}/logs`,
+    {},
+    AbortSignal.any([signal, AbortSignal.timeout(4500)]),
   );
-  return stdout;
+  return result.body;
 };
 export async function readFailureExcerpt(
   action: Action,

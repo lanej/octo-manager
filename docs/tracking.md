@@ -210,3 +210,5 @@ Known bot lifecycle and no-findings summaries remain in observations without cre
 ## Automatic retirement
 
 See [PR monitoring retirement](retirement.md) for the watching/draining/archived lifecycle, 24-hour incomplete-result cutoff and notification-driven reopening. Automatic archival retains applicable unread delivery; explicit `untrack` remains an immediate stop.
+
+Coordinator GitHub HTTP calls use the official Octokit core client. Each coordinator process obtains one credential through `gh auth token --hostname github.com` on its first API call and keeps it only in memory; restart after changing credentials. The shared client owns conditional caching, quota metrics, cooldowns and serialization, with no SDK retry plugin. Notification polling retains provider retry deadlines durably across restart. Responses remain bounded to 2 MiB; failed-job log excerpts may be unavailable for larger logs.

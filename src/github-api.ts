@@ -1,17 +1,14 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import {
+  sdkTransport,
+  type GitHubTransport,
+  type GitHubResponse,
+  type GitHubRequest,
+} from "./github-sdk.js";
 import {
   GitHubUsage,
   type GitHubReadUsage,
   type GitHubResource,
 } from "./github-usage.js";
-
-const exec = promisify(execFile);
-interface Response {
-  status: number;
-  headers: Map<string, string>;
-  body: string;
-}
 interface CachedResponse {
   etag: string;
   body: string;
@@ -20,56 +17,6 @@ type Resource = GitHubResource;
 export interface GitHubQueryResult {
   data: Record<string, unknown>;
   errors: unknown[];
-}
-export type GitHubCommand = (
-  args: string[],
-  signal?: AbortSignal,
-) => Promise<string>;
-const command: GitHubCommand = async (args, signal) => {
-  try {
-    const { stdout } = await exec("gh", args, {
-      signal,
-      timeout: 20000,
-      maxBuffer: 2 * 1024 * 1024,
-    });
-    return stdout;
-  } catch (error) {
-    // rationale: gh exits nonzero for HTTP errors, but --include retains the response and rate-limit headers.
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "stdout" in error &&
-      typeof error.stdout === "string" &&
-      error.stdout.startsWith("HTTP/")
-    )
-      return error.stdout;
-    throw new Error(
-      signal?.aborted === true
-        ? "GitHub read cancelled"
-        : "GitHub unavailable; check gh authentication, access, and connectivity",
-    );
-  }
-};
-function response(raw: string): Response {
-  const boundary = /\r?\n\r?\n/u.exec(raw);
-  if (boundary === null) throw new Error("Invalid GitHub HTTP response");
-  const lines = raw.slice(0, boundary.index).split(/\r?\n/u);
-  const status = /^HTTP\/[\d.]+ (\d{3})\b/u.exec(lines.shift() ?? "");
-  if (status?.[1] === undefined) throw new Error("Invalid GitHub HTTP status");
-  const headers = new Map<string, string>();
-  for (const line of lines) {
-    const colon = line.indexOf(":");
-    if (colon > 0)
-      headers.set(
-        line.slice(0, colon).toLowerCase(),
-        line.slice(colon + 1).trim(),
-      );
-  }
-  return {
-    status: Number(status[1]),
-    headers,
-    body: raw.slice(boundary.index + boundary[0].length),
-  };
 }
 function seconds(value: string | undefined): number | undefined {
   if (value === undefined || !/^\d+$/u.test(value)) return undefined;
@@ -107,7 +54,7 @@ export class GitHubReads {
   private rateLimitAttempts: Record<Resource, number> = { core: 0, graphql: 0 };
   private readonly metrics: GitHubUsage;
   constructor(
-    private run: GitHubCommand = command,
+    private run: GitHubTransport = sdkTransport(),
     private now: () => number = Date.now,
   ) {
     this.metrics = new GitHubUsage(now);
@@ -122,17 +69,7 @@ export class GitHubReads {
   query(query: string, signal?: AbortSignal): Promise<GitHubQueryResult> {
     return this.enqueue(async () => {
       const result = await this.exchange(
-        [
-          "api",
-          "--hostname",
-          "github.com",
-          "--method",
-          "POST",
-          "--include",
-          "graphql",
-          "-f",
-          `query=${query}`,
-        ],
+        { method: "POST", path: "graphql", data: { query } },
         "graphql",
         signal,
       );
@@ -161,23 +98,43 @@ export class GitHubReads {
     beforeSend?: () => void,
   ): Promise<unknown> {
     return this.enqueue(async () => {
-      const args = [
-        "api",
-        "--hostname",
-        "github.com",
-        "--include",
-        "--method",
-        "PUT",
-        path,
-      ];
-      for (const [key, value] of Object.entries(fields))
-        args.push(
-          typeof value === "boolean" ? "-F" : "-f",
-          `${key}=${String(value)}`,
-        );
-      beforeSend?.();
-      return json((await this.exchange(args, "core", signal)).body);
+      return json(
+        (
+          await this.exchange(
+            { method: "PUT", path, data: fields },
+            "core",
+            signal,
+            beforeSend,
+          )
+        ).body,
+      );
     });
+  }
+  raw(
+    path: string,
+    headers: Record<string, string>,
+    signal?: AbortSignal,
+  ): Promise<GitHubResponse> {
+    return this.enqueue(() =>
+      this.exchange({ method: "GET", path, headers }, "core", signal),
+    );
+  }
+  post(
+    path: string,
+    fields: Record<string, string | boolean>,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    return this.enqueue(async () =>
+      json(
+        (
+          await this.exchange(
+            { method: "POST", path, data: fields },
+            "core",
+            signal,
+          )
+        ).body,
+      ),
+    );
   }
   private enqueue<T>(workItem: () => Promise<T>): Promise<T> {
     const work = this.queue.then(workItem);
@@ -204,19 +161,15 @@ export class GitHubReads {
   }
   private async request(path: string, signal?: AbortSignal): Promise<unknown> {
     const cached = this.cache.get(path);
-    const args = [
-      "api",
-      "--hostname",
-      "github.com",
-      "--method",
-      "GET",
-      "--include",
-      path,
-      ...(cached === undefined
-        ? []
-        : ["--header", `If-None-Match: ${cached.etag}`]),
-    ];
-    const result = await this.exchange(args, "core", signal);
+    const result = await this.exchange(
+      {
+        method: "GET",
+        path,
+        headers: cached === undefined ? {} : { "if-none-match": cached.etag },
+      },
+      "core",
+      signal,
+    );
     if (result.status === 304) {
       if (cached === undefined)
         throw new Error("GitHub returned 304 without cached evidence");
@@ -233,15 +186,16 @@ export class GitHubReads {
     return value;
   }
   private async exchange(
-    args: string[],
+    request: GitHubRequest,
     resource: Resource,
     signal?: AbortSignal,
-  ): Promise<Response> {
+    beforeSend?: () => void,
+  ): Promise<GitHubResponse> {
     signal?.throwIfAborted();
     if (this.now() < this.retryAtMs[resource])
       throw new GitHubRateLimitError(this.retryAtMs[resource]);
     this.metrics.attempt(resource);
-    const result = response(await this.run(args, signal));
+    const result = await this.run(request, signal, beforeSend);
     this.metrics.observe(resource, result.headers);
     const body =
       resource === "graphql" && result.status === 200
