@@ -177,10 +177,19 @@ test("successful hooks produce no diagnostics with default or disabled logging",
         logLevel,
       );
       assert.equal(result.error, "");
-      assert.equal(
-        JSON.parse(result.output).hookSpecificOutput.hookEventName,
-        "SessionStart",
+      const output: unknown = JSON.parse(result.output);
+      assert(
+        typeof output === "object" &&
+          output !== null &&
+          "hookSpecificOutput" in output,
       );
+      const context = output.hookSpecificOutput;
+      assert(
+        typeof context === "object" &&
+          context !== null &&
+          "hookEventName" in context,
+      );
+      assert.equal(context.hookEventName, "SessionStart");
     }
     await assert.rejects(stat(join(directory, "codex-hook-errors.jsonl")), {
       code: "ENOENT",
