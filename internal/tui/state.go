@@ -18,7 +18,7 @@ func transitionStatus(kind string) (v1.JobStatus, bool) {
 func (m *Model) stateView(width int) string {
 	job := m.job()
 	if job == nil {
-		return "Select a PR run to inspect its state."
+		return strings.Join([]string{text.Badge("Scheduler health", m.theme), m.field("Dispatch", stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")), m.field("Worker slot", stateName(m.snapshot.GetWorker().String(), "WORKER_STATE_")), fmt.Sprintf("%d retained worker runs", len(m.snapshot.GetJobs())), "", "No worker run selected. PR tracking and automated merging continue independently."}, "\n")
 	}
 
 	arrow := " ─▶ "

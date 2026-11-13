@@ -124,19 +124,14 @@ func (m *Model) githubContent(width int) string {
 		return text.Badge("GitHub usage", m.theme) + "\n" + m.muted("Usage metrics unavailable from this coordinator.")
 	}
 
-	lines := []string{
-		text.Badge("GitHub quota remaining", m.theme),
-		m.muted("Shared authentication budget · includes other tools · GraphQL uses points"),
-		m.budgetView("REST", usage.GetRest(), usage.GetRestRetryAtMs(), usage.GetSampledAtMs(), width),
-		"",
-		m.budgetView("GraphQL", usage.GetGraphql(), usage.GetGraphqlRetryAtMs(), usage.GetSampledAtMs(), width),
-		"",
-		text.Badge("Octo API traffic", m.theme),
-		m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses",
-			usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())),
-		m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)),
-		m.muted("Rolling hour · per-minute counts · current minute is partial · resets on restart"),
-	}
+	budgets := m.sections("github-quota-comparison", width,
+		dashboardSection{id: "rest-budget", title: "REST QUOTA", content: func(w int) string {
+			return m.budgetView("REST", usage.GetRest(), usage.GetRestRetryAtMs(), usage.GetSampledAtMs(), w)
+		}},
+		dashboardSection{id: "graphql-budget", title: "GRAPHQL QUOTA", content: func(w int) string {
+			return m.budgetView("GraphQL", usage.GetGraphql(), usage.GetGraphqlRetryAtMs(), usage.GetSampledAtMs(), w)
+		}})
+	lines := []string{m.muted("Shared authentication budget · includes other tools · GraphQL uses points"), budgets, "", text.Badge("Octo API traffic", m.theme), m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses", usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())), m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)), m.muted("Rolling hour · per-minute counts · current minute is partial · resets on restart")}
 
 	minutes := usage.GetMinutes()
 	if len(minutes) == 0 {
