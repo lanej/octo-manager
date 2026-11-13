@@ -27,7 +27,7 @@ function decision(
 }
 export const codexHeuristic: HeuristicClassifier = {
   id: "codex-review-state",
-  version: 1,
+  version: 2,
   categorize(message) {
     const unknown = () =>
       decision(
@@ -35,6 +35,38 @@ export const codexHeuristic: HeuristicClassifier = {
         "unrecognized-state",
         "No recognized Codex review-state evidence",
       );
+    if (
+      message.author.toLowerCase() !== codexAuthor ||
+      message.source === "inline"
+    )
+      return unknown();
+    if (message.body.includes("<!-- codex-code-review-finding:v1 -->"))
+      return decision(
+        MessageCategory.Findings,
+        "finding-body",
+        "Codex message contains an actual review finding",
+      );
+    if (message.body.includes("<!-- codex-review-receipt:v1 -->")) {
+      const text = message.body
+        .replace(/<!--[\s\S]*?-->/gu, "")
+        .replace(
+          /<details>\s*<summary>ℹ️ About Codex in GitHub<\/summary>[\s\S]*?<\/details>/gu,
+          "",
+        )
+        .replace(/\s+/gu, " ")
+        .trim();
+      if (
+        /^### 💡 Codex Review Here are some automated review suggestions for this pull request\. \*\*Reviewed commit:\*\* `[a-f0-9]{7,40}`$/u.test(
+          text,
+        )
+      )
+        return decision(
+          MessageCategory.Informational,
+          "review-receipt",
+          "Review receipt contains no finding details",
+        );
+      return unknown();
+    }
     if (!isCodexSummary(message)) return unknown();
     const match = /<!--\s*codex-review-state:v1\s+([\s\S]*?)\s*-->/.exec(
       message.body,
@@ -51,19 +83,12 @@ export const codexHeuristic: HeuristicClassifier = {
       (entry) => entry !== undefined,
     );
     if (entries.length === 0) return unknown();
-    if (
-      entries.some(
-        (entry) =>
-          object(entry) &&
-          (entry["has_any_findings"] === true ||
-            entry["has_unresolved_findings"] === true),
-      )
-    )
-      return decision(
-        MessageCategory.Findings,
-        "reported-findings",
-        "Codex reports code or security findings",
-      );
+    const hasFindings = entries.some(
+      (entry) =>
+        object(entry) &&
+        (entry["has_any_findings"] === true ||
+          entry["has_unresolved_findings"] === true),
+    );
     let pending = false,
       uncertain = false;
     for (const entry of entries) {
@@ -77,7 +102,8 @@ export const codexHeuristic: HeuristicClassifier = {
       )
         return unknown();
       for (const key of ["has_any_findings", "has_unresolved_findings"])
-        if (entry[key] !== false && entry[key] !== null) return unknown();
+        if (entry[key] !== true && entry[key] !== false && entry[key] !== null)
+          return unknown();
       pending ||= progress.has(status);
       uncertain ||=
         inconclusive.has(status) ||
@@ -85,6 +111,12 @@ export const codexHeuristic: HeuristicClassifier = {
           (entry["has_any_findings"] === null ||
             entry["has_unresolved_findings"] === null));
     }
+    if (hasFindings)
+      return decision(
+        MessageCategory.Informational,
+        "findings-summary",
+        "Status summary reports findings delivered separately as review comments",
+      );
     if (uncertain)
       return decision(
         MessageCategory.Inconclusive,

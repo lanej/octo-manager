@@ -58,3 +58,5 @@ Membership changes produce one current roster notification per remaining partici
 
 
 Agent CLI calls automatically select the tighter [agent output contract](cli-output.md); `--json` stays available explicitly, and full evidence requires an explicit read-only inspection.
+
+Known Codex status summaries and boilerplate review receipts are informational even when summary metadata says findings exist. Actual finding comments remain eligible for delivery; unfamiliar substantive feedback and inline comments are preserved. On restart, existing informational actions become superseded and pending deliveries are cancelled while raw evidence and receipts remain in history.

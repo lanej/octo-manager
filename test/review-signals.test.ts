@@ -54,7 +54,7 @@ test("known review lifecycle and no-findings summaries stay quiet while real and
   for (const status of ["queued", "running", "inconclusive", "completed"]) {
     assert.equal(actionableFeedback(codex(status)), false);
     assert.equal(actionableFeedback(codex(status, false)), false);
-    assert.equal(actionableFeedback(codex(status, true)), true);
+    assert.equal(actionableFeedback(codex(status, true)), false);
   }
   assert.equal(
     actionableFeedback(
@@ -159,7 +159,11 @@ test("status edits remain raw observations without actions, and later findings c
       store.tracking.pr(pr.id).observation?.feedback?.state,
       "complete",
     );
-    const findings = codex("completed", true);
+    const findings = feedbackRevision({
+      ...codex("completed", true),
+      source: "inline",
+      body: "Fix the data-loss race. <!-- codex-code-review-finding:v1 -->",
+    });
     store.tracking.observe(pr.id, observation([findings]), config);
     store.tracking.observe(pr.id, observation([findings]), config);
     assert.equal(store.tracking.actions().length, 1);
@@ -177,11 +181,7 @@ test("status edits remain raw observations without actions, and later findings c
     );
     assert.equal(
       store.tracking.action(action.id).progress.state,
-      ActionState.Superseded,
-    );
-    assert.equal(
-      store.tracking.deliveries()[0]?.progress.state,
-      DeliveryState.Cancelled,
+      ActionState.Open,
     );
     assert.equal(store.tracking.actions().length, 1);
   } finally {
@@ -190,49 +190,95 @@ test("status edits remain raw observations without actions, and later findings c
   }
 });
 
-test("restart retires previously queued lifecycle chatter while retaining its immutable evidence", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "octo-review-legacy-"));
-  let store = new Store(directory);
-  const config = defaultTrackingConfig();
-  const pr = store.tracking.track(url, {
-    harness: "codex",
-    endpoint: "local",
-    sessionId: "owner",
-  });
-  try {
-    const legacy = spyOn(reviewSignals, "actionableFeedback").mockReturnValue(
-      true,
-    );
+for (const noise of [
+  codex("running"),
+  codex("completed", true),
+  feedbackRevision({
+    ...codex("completed"),
+    source: "review",
+    body: "<!-- codex-review-receipt:v1 -->\n### 💡 Codex Review\nHere are some automated review suggestions for this pull request.\n**Reviewed commit:** `43c2b47359`\n<details><summary>ℹ️ About Codex in GitHub</summary>Help text</details>",
+  }),
+]) {
+  test(`restart retires queued Codex noise: ${noise.body.slice(0, 60)}`, async () => {
+    const directory = await mkdtemp(join(tmpdir(), "octo-review-legacy-"));
+    let store = new Store(directory);
+    const config = defaultTrackingConfig();
+    const pr = store.tracking.track(url, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "owner",
+    });
     try {
-      store.tracking.observe(pr.id, observation([codex("running")]), config);
+      const legacy = spyOn(reviewSignals, "actionableFeedback").mockReturnValue(
+        true,
+      );
+      try {
+        store.tracking.observe(pr.id, observation([noise]), config);
+      } finally {
+        legacy.mockRestore();
+      }
+      const action = store.tracking.actions()[0],
+        delivery = store.tracking.deliveries()[0];
+      assert(action !== undefined && delivery !== undefined);
+      store.tracking.inbox.record(delivery.id, "Historical lifecycle message");
+      store.close();
+      store = new Store(directory);
+      assert.equal(
+        store.tracking.action(action.id).progress.state,
+        ActionState.Superseded,
+      );
+      assert.equal(
+        store.tracking.deliveries()[0]?.progress.state,
+        DeliveryState.Cancelled,
+      );
+      assert.equal(
+        store.tracking.inbox.get(delivery.id)?.body,
+        "Historical lifecycle message",
+      );
+      assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
+      assert.equal(
+        store.tracking.pr(pr.id).observation?.feedback?.state,
+        "complete",
+      );
     } finally {
-      legacy.mockRestore();
+      store.close();
+      await rm(directory, { recursive: true, force: true });
     }
-    const action = store.tracking.actions()[0],
-      delivery = store.tracking.deliveries()[0];
-    assert(action !== undefined && delivery !== undefined);
-    store.tracking.inbox.record(delivery.id, "Historical lifecycle message");
-    store.close();
-    store = new Store(directory);
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Superseded,
-    );
-    assert.equal(
-      store.tracking.deliveries()[0]?.progress.state,
-      DeliveryState.Cancelled,
-    );
-    assert.equal(
-      store.tracking.inbox.get(delivery.id)?.body,
-      "Historical lifecycle message",
-    );
-    assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
-    assert.equal(
-      store.tracking.pr(pr.id).observation?.feedback?.state,
-      "complete",
-    );
-  } finally {
-    store.close();
-    await rm(directory, { recursive: true, force: true });
-  }
+  });
+}
+
+test("Codex receipts suppress boilerplate but preserve extra findings and other authors", () => {
+  const receipt = feedbackRevision({
+    ...codex("completed"),
+    source: "review",
+    body: "<!-- codex-review-receipt:v1 -->\n### 💡 Codex Review\nHere are some automated review suggestions for this pull request.\n**Reviewed commit:** `43c2b47359`\n<details><summary>ℹ️ About Codex in GitHub</summary>Help text</details>",
+  });
+  assert.equal(actionableFeedback(receipt), false);
+  assert.equal(
+    actionableFeedback({
+      ...receipt,
+      body:
+        receipt.body +
+        "\n<details><summary>P1 finding</summary>Fix data loss.</details>",
+    }),
+    true,
+  );
+  assert.equal(actionableFeedback({ ...receipt, author: "human" }), true);
+  assert.equal(actionableFeedback({ ...receipt, source: "inline" }), true);
+  assert.equal(
+    actionableFeedback({
+      ...receipt,
+      body: receipt.body + "\nP1: Fix data loss.",
+    }),
+    true,
+  );
+  assert.equal(
+    actionableFeedback({
+      ...codex("completed", true),
+      body:
+        codex("completed", true).body +
+        "\n<!-- codex-code-review-finding:v1 --> Fix the race.",
+    }),
+    true,
+  );
 });
