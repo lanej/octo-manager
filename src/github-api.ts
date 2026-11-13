@@ -1,5 +1,10 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import {
+  GitHubUsage,
+  type GitHubReadUsage,
+  type GitHubResource,
+} from "./github-usage.js";
 
 const exec = promisify(execFile);
 interface Response {
@@ -11,7 +16,7 @@ interface CachedResponse {
   etag: string;
   body: string;
 }
-type Resource = "core" | "graphql";
+type Resource = GitHubResource;
 export interface GitHubQueryResult {
   data: Record<string, unknown>;
   errors: unknown[];
@@ -92,10 +97,16 @@ export class GitHubReads {
   private cacheBytes = 0;
   private retryAtMs: Record<Resource, number> = { core: 0, graphql: 0 };
   private rateLimitAttempts: Record<Resource, number> = { core: 0, graphql: 0 };
+  private readonly metrics: GitHubUsage;
   constructor(
     private run: GitHubCommand = command,
     private now: () => number = Date.now,
-  ) {}
+  ) {
+    this.metrics = new GitHubUsage(now);
+  }
+  usage(): GitHubReadUsage {
+    return this.metrics.snapshot(this.retryAtMs);
+  }
   read(path: string, signal?: AbortSignal): Promise<unknown> {
     // rationale: Share one read queue and cooldown across tracking, repairs, submissions, and review clients.
     return this.enqueue(() => this.request(path, signal));
@@ -177,6 +188,7 @@ export class GitHubReads {
       if (cached === undefined)
         throw new Error("GitHub returned 304 without cached evidence");
       this.remember(path, cached);
+      this.metrics.reused();
       return json(cached.body);
     }
     const value = json(result.body);
@@ -195,7 +207,9 @@ export class GitHubReads {
     signal?.throwIfAborted();
     if (this.now() < this.retryAtMs[resource])
       throw new GitHubRateLimitError(this.retryAtMs[resource]);
+    this.metrics.attempt(resource);
     const result = response(await this.run(args, signal));
+    this.metrics.observe(resource, result.headers);
     const body =
       resource === "graphql" && result.status === 200
         ? json(result.body)
@@ -246,7 +260,10 @@ export class GitHubReads {
         );
       }
     }
-    if (limited) throw new GitHubRateLimitError(this.retryAtMs[resource]);
+    if (limited) {
+      this.metrics.limited();
+      throw new GitHubRateLimitError(this.retryAtMs[resource]);
+    }
     if (
       result.status !== 304 &&
       (result.status < 200 || result.status >= 300)

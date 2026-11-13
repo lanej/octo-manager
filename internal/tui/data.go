@@ -19,6 +19,7 @@ const (
 	statePanel
 	trackingPanel
 	activityPanel
+	githubPanel
 )
 
 type (
@@ -160,6 +161,8 @@ func (m *Model) panelID() string {
 		return "tracking"
 	case activityPanel:
 		return "agent-activity"
+	case githubPanel:
+		return "github"
 	default:
 		return "unknown"
 	}

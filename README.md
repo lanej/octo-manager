@@ -32,7 +32,7 @@ bin/octo-manager events JOB_ID --watch
 
 All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. For a persistent macOS service and automatic Codex enrollment, use the [local installation guide](docs/local-install.md). Manual runs remain available on both platforms. Codex notifications attach to an already running local Codex app-server; installation does not change MCP configuration.
 
-Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. Use `--theme dark`, `light`, `contrast`, or `mono` when launching the dashboard.
+Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. The default `--theme terminal` inherits the terminal's reported background and foreground while keeping Charmed's semantic colors. It does not replace Kitty's background. Use `--theme dark`, `light`, `contrast`, or `mono` for an explicit palette.
 
 Dashboard timestamps use local time, honoring `TZ` when set and otherwise the OS timezone. Use `--timezone` to override presentation for one dashboard. For example, `TZ=Asia/Tokyo bin/octo-manager dashboard` uses Tokyo time; `bin/octo-manager dashboard --timezone America/Los_Angeles` selects Los Angeles explicitly. `--timezone local` restores the `TZ`/OS default, and `--timezone UTC` selects UTC. An invalid explicit zone fails before the UI starts. Stored Unix milliseconds, API values, ordering, and elapsed durations remain unchanged.
 
@@ -80,6 +80,10 @@ Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls,
 ## Agent activity
 
 Press **5 Activity** for named operations across all sessions. Existing coordinator events appear automatically; calling agents report external work with `record-activity`, including outcome, session, optional harness version/model, PR link, and evidence. Reports are durable and safe to retry; reported success remains distinct from independent verification. See the [activity guide](docs/activity.md) for the CLI, typed API, and SQL schema.
+
+Press **6 GitHub** for REST and GraphQL quota bars and a Charmed chart of read attempts per minute. Quota values come from the latest GitHub response headers and include other tools sharing the same authentication; GraphQL remaining values are points. Missing quota evidence and observations past their reset time remain explicit. The chart shows up to 60 minutes of this coordinator's REST attempts, GraphQL attempts, and confirmed cache reuses, with a partial current minute. Counts include transport failures and exclude Git pushes and GitHub writes. History and totals reset when the coordinator restarts. Dashboard refreshes read these metrics locally and make no additional GitHub requests.
+
+![Native Charmed quota gauges and traffic chart on Kitty's Nord background, using controlled visual fixture data](docs/images/github-usage.png)
 
 ## Development
 

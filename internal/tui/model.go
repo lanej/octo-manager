@@ -4,6 +4,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"time"
 
 	"charm.land/bubbles/v2/viewport"
@@ -39,33 +40,35 @@ type (
 )
 
 type Model struct {
-	ctx             context.Context
-	cancel          context.CancelFunc
-	api             *client.Client
-	snapshot        *v1.Snapshot
-	size            layout.Size
-	theme           theme.Theme
-	location        *time.Location
-	focus           interaction.Focus
-	result          viewport.Model
-	activity        collection.LogViewer
-	selected        string
-	expanded        bool
-	refreshing      bool
-	watching        bool
-	stream          *connect.ServerStreamForClient[v1.WatchResponse]
-	instance        string
-	cursor          uint64
-	connectionError string
-	commandError    string
-	commandPending  bool
-	panel           panelView
-	reviews         map[string]*v1.PullRequestDetails
-	reviewErrors    map[string]string
-	reviewLoading   map[string]bool
-	history         historyState
-	agentActivity   activityHistory
-	activityRender  activityRenderCache
+	ctx                context.Context
+	cancel             context.CancelFunc
+	api                *client.Client
+	snapshot           *v1.Snapshot
+	size               layout.Size
+	theme              theme.Theme
+	terminalTheme      bool
+	terminalForeground color.Color
+	location           *time.Location
+	focus              interaction.Focus
+	result             viewport.Model
+	activity           collection.LogViewer
+	selected           string
+	expanded           bool
+	refreshing         bool
+	watching           bool
+	stream             *connect.ServerStreamForClient[v1.WatchResponse]
+	instance           string
+	cursor             uint64
+	connectionError    string
+	commandError       string
+	commandPending     bool
+	panel              panelView
+	reviews            map[string]*v1.PullRequestDetails
+	reviewErrors       map[string]string
+	reviewLoading      map[string]bool
+	history            historyState
+	agentActivity      activityHistory
+	activityRender     activityRenderCache
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {
@@ -78,8 +81,15 @@ func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.
 	return &Model{ctx: session, cancel: cancel, api: api, theme: t, location: location, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
-func (m *Model) Init() tea.Cmd { return tea.Batch(m.refresh(), tick()) }
-func tick() tea.Cmd            { return tea.Tick(time.Second, func(time.Time) tea.Msg { return tickMsg{} }) }
+func (m *Model) Init() tea.Cmd {
+	if m.terminalTheme {
+		return tea.Batch(m.refresh(), tick(), tea.RequestBackgroundColor, tea.RequestForegroundColor)
+	}
+
+	return tea.Batch(m.refresh(), tick())
+}
+
+func tick() tea.Cmd { return tea.Tick(time.Second, func(time.Time) tea.Msg { return tickMsg{} }) }
 
 func (m *Model) refresh() tea.Cmd {
 	if m.refreshing {
@@ -136,6 +146,19 @@ func (m *Model) watchFailed(err error) {
 
 func (m *Model) Update(message tea.Msg) tea.Cmd {
 	switch msg := message.(type) {
+	case tea.BackgroundColorMsg:
+		m.terminalBackground(msg)
+		return nil
+	case tea.ForegroundColorMsg:
+		if m.terminalTheme && msg.Color != nil {
+			m.terminalForeground = msg.Color
+			m.theme.Foreground = msg.Color
+			m.theme.SelectionForeground = msg.Color
+			m.activityRender.valid = false
+			m.resizeContent()
+		}
+
+		return nil
 	case activityMsg:
 		return m.applyActivity(msg)
 	case reviewMsg:
@@ -252,13 +275,13 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.cancel()
 		return tea.Quit
 	case "j", "down":
-		if m.panel == activityPanel {
+		if m.globalPanel() {
 			m.result.ScrollDown(3)
 		} else {
 			m.move(1)
 		}
 	case "k", "up":
-		if m.panel == activityPanel {
+		if m.globalPanel() {
 			m.result.ScrollUp(3)
 		} else {
 			m.move(-1)
@@ -266,17 +289,17 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 	case "h", "left":
 		if m.panel == activityPanel {
 			m.moveActivityPage(1)
-		} else {
+		} else if m.panel != githubPanel {
 			m.moveRun(-1)
 		}
 	case "l", "right":
 		if m.panel == activityPanel {
 			m.moveActivityPage(-1)
-		} else {
+		} else if m.panel != githubPanel {
 			m.moveRun(1)
 		}
 	case "o":
-		if m.panel != activityPanel {
+		if !m.globalPanel() {
 			return m.openPullRequest()
 		}
 	case "1":
@@ -295,6 +318,12 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.resizeContent()
 
 		return m.loadActivity()
+	case "6":
+		m.panel = githubPanel
+		m.result.GotoTop()
+		m.resizeContent()
+
+		return m.refresh()
 	case "4":
 		m.panel = trackingPanel
 		m.result.GotoTop()
@@ -306,6 +335,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 
 		return m.loadHistory()
 	case "u":
+		if m.panel == githubPanel {
+			return m.refresh()
+		}
+
 		if m.panel == activityPanel {
 			m.agentActivity.seenThrough = 0
 
@@ -350,7 +383,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 }
 
 func (m *Model) control(key string) tea.Cmd {
-	if m.snapshot == nil || m.commandPending || (m.panel == activityPanel && key != "p") {
+	if m.snapshot == nil || m.commandPending || (m.globalPanel() && key != "p") {
 		return nil
 	}
 
@@ -394,7 +427,7 @@ func (m *Model) ensureSelection() {
 }
 
 func (m *Model) selectSubject(item subject) {
-	if m.panel == activityPanel {
+	if m.globalPanel() {
 		m.selected = item.key
 		if len(item.jobs) > 0 {
 			m.selected = item.jobs[len(item.jobs)-1].GetId()

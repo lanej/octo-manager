@@ -16,6 +16,9 @@ test('generated Connect contract has typed failures, atomic snapshot cursors, re
     await coordinator.start(); coordinator.command({ op: 'pause' });
     const client = schedulerClient(directory);
     const before = (await client.getSnapshot({})).snapshot!;
+    assert(before.githubUsage !== undefined);
+    assert(before.githubUsage.sampledAtMs >= before.githubUsage.startedAtMs);
+    assert(before.githubUsage.minutes.length >= 1);
     assert(before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.RUNNING));
     assert(!before.allowedTransitions.some(edge=>edge.from===JobStatus.QUEUED && edge.to===JobStatus.SUCCEEDED));
     const review=await client.getPullRequest({url:'https://github.com/owner/repo/pull/12'});

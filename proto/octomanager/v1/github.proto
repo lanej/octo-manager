@@ -1,0 +1,30 @@
+syntax = "proto3";
+package octomanager.v1;
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
+
+message GitHubRateBudget {
+  uint32 limit = 1;
+  uint32 remaining = 2;
+  int64 reset_at_ms = 3;
+  int64 observed_at_ms = 4;
+}
+
+message GitHubReadMinute {
+  int64 started_at_ms = 1;
+  uint64 rest = 2;
+  uint64 graphql = 3;
+  uint64 cache_reuses = 4;
+}
+
+message GitHubReadUsage {
+  int64 started_at_ms = 1;
+  int64 sampled_at_ms = 2;
+  uint64 requests = 3;
+  uint64 cache_reuses = 4;
+  uint64 rate_limits = 5;
+  repeated GitHubReadMinute minutes = 6;
+  GitHubRateBudget rest = 7;
+  GitHubRateBudget graphql = 8;
+  int64 rest_retry_at_ms = 9;
+  int64 graphql_retry_at_ms = 10;
+}
