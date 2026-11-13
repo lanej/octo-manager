@@ -1,4 +1,6 @@
-import { isAbsolute } from "node:path";
+import { constants } from "node:fs";
+import { mkdir, open } from "node:fs/promises";
+import { isAbsolute, join } from "node:path";
 import { schedulerClient } from "../client.js";
 import { directoryLabel } from "../arguments.js";
 import { canonicalPR } from "../tracking/github.js";
@@ -39,6 +41,87 @@ function artifactResult(value: unknown, url: string): boolean {
 interface HookResult {
   output?: object;
   acknowledge?: () => Promise<void>;
+}
+function errorDetails(error: unknown, depth = 0): object {
+  if (error instanceof Error) {
+    const code: unknown = "code" in error ? error.code : undefined;
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...(typeof code === "string" || typeof code === "number" ? { code } : {}),
+      ...(error.cause === undefined || depth >= 4
+        ? {}
+        : { cause: errorDetails(error.cause, depth + 1) }),
+    };
+  }
+  return {
+    name: "NonError",
+    message: typeof error === "string" ? error : "Non-Error value thrown",
+  };
+}
+async function writeHookDiagnostic(line: string): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const onError = () => {
+      resolve();
+    };
+    process.stderr.once("error", onError);
+    try {
+      process.stderr.write(line, (error) => {
+        if (error === null || error === undefined)
+          process.stderr.off("error", onError);
+        resolve();
+      });
+    } catch {
+      process.stderr.off("error", onError);
+      resolve();
+    }
+  });
+}
+async function logHookError(
+  directory: string,
+  error: unknown,
+  value: unknown,
+  phase: "input" | "recovery" | "output" | "receipt",
+): Promise<void> {
+  const line =
+    JSON.stringify({
+      at: new Date().toISOString(),
+      level: "error",
+      phase,
+      ...(object(value) && typeof value["hook_event_name"] === "string"
+        ? { event: value["hook_event_name"].slice(0, 200) }
+        : {}),
+      ...(object(value) && typeof value["session_id"] === "string"
+        ? { sessionId: value["session_id"].slice(0, 200) }
+        : {}),
+      error: errorDetails(error),
+    }) + "\n";
+  let diagnostic = line;
+  try {
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const file = await open(
+      join(directory, "codex-hook-errors.jsonl"),
+      constants.O_WRONLY |
+        constants.O_CREAT |
+        constants.O_APPEND |
+        constants.O_NOFOLLOW |
+        constants.O_NONBLOCK,
+      0o600,
+    );
+    try {
+      if (!(await file.stat()).isFile())
+        throw new Error("Hook error log must be a regular file");
+      await file.chmod(0o600);
+      await file.appendFile(line);
+    } finally {
+      await file.close();
+    }
+  } catch (loggingError) {
+    diagnostic +=
+      JSON.stringify({ loggingError: errorDetails(loggingError) }) + "\n";
+  }
+  await writeHookDiagnostic(diagnostic);
 }
 export async function codexHook(
   value: unknown,
@@ -187,8 +270,15 @@ export async function codexHook(
   };
 }
 export async function codexHookCLI(directory: string): Promise<void> {
+  const logLevel = process.env["OCTO_MANAGER_HOOK_LOG_LEVEL"] ?? "error";
   let emitted = false;
+  let value: unknown;
+  let phase: "input" | "recovery" | "output" | "receipt" = "input";
   try {
+    if (logLevel !== "error" && logLevel !== "off")
+      throw new Error(
+        "Invalid OCTO_MANAGER_HOOK_LOG_LEVEL; expected error or off",
+      );
     const reader = Bun.stdin.stream().getReader();
     const chunks: Uint8Array[] = [];
     let size = 0;
@@ -204,8 +294,14 @@ export async function codexHookCLI(directory: string): Promise<void> {
     } finally {
       reader.releaseLock();
     }
-    const value: unknown = JSON.parse(Buffer.concat(chunks).toString());
+    try {
+      value = JSON.parse(Buffer.concat(chunks).toString());
+    } catch {
+      throw new SyntaxError("Invalid JSON in Codex hook input");
+    }
+    phase = "recovery";
     const result = await codexHook(value, directory);
+    phase = "output";
     if (result.output !== undefined)
       await new Promise<void>((resolve, reject) => {
         process.stdout.write(JSON.stringify(result.output) + "\n", (error) => {
@@ -214,11 +310,13 @@ export async function codexHookCLI(directory: string): Promise<void> {
         });
       });
     emitted = result.output !== undefined;
+    phase = "receipt";
     await result.acknowledge?.();
-  } catch {
+  } catch (error) {
+    if (logLevel !== "off") await logHookError(directory, error, value, phase);
     const warning =
       "Octo integration could not complete this hook. Do not assume a new PR is monitored; existing handoffs and unread messages are retained.";
-    if (emitted) process.stderr.write(warning + "\n");
+    if (emitted) await writeHookDiagnostic(warning + "\n");
     else
       process.stdout.write(JSON.stringify({ systemMessage: warning }) + "\n");
   }
