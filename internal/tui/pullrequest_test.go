@@ -38,10 +38,11 @@ func TestPRNavigationGroupsRunsAndKeepsDemoDistinct(t *testing.T) {
 	}
 
 	view := ansi.Strip(m.View())
-	if strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "Run 2/2") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
+	if strings.Contains(view, "https://github.com/lanej/charmed/pull/21") || !strings.Contains(view, "2 runs") || !strings.Contains(view, "lanej/charmed#21") || strings.Contains(view, "latest") {
 		t.Fatal("PR identity and run history not visible")
 	}
 
+	m.panel = outputPanel
 	m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
 
 	if m.selected != "first" {

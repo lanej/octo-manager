@@ -149,25 +149,6 @@ func (m *Model) applyHistory(msg historyMsg) tea.Cmd {
 	return nil
 }
 
-func (m *Model) panelID() string {
-	switch m.panel {
-	case reviewsPanel:
-		return "reviews"
-	case outputPanel:
-		return "output"
-	case statePanel:
-		return "state"
-	case trackingPanel:
-		return "tracking"
-	case activityPanel:
-		return "agent-activity"
-	case githubPanel:
-		return "github"
-	default:
-		return "unknown"
-	}
-}
-
 func (m *Model) reviewsMarkdown() string {
 	address := m.currentSubject().url
 	if address == "" {
@@ -186,6 +167,10 @@ func (m *Model) reviewsMarkdown() string {
 	}
 
 	if details == nil {
+		if notice == "" {
+			return "No cached review feedback. Press **u** to load reviews for this PR."
+		}
+
 		return notice
 	}
 

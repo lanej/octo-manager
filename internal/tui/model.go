@@ -79,7 +79,7 @@ func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.
 
 	session, cancel := context.WithCancel(ctx)
 
-	return &Model{ctx: session, cancel: cancel, api: api, theme: t, location: location, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+	return &Model{panel: trackingPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -291,13 +291,13 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 	case "h", "left":
 		if m.panel == activityPanel {
 			m.moveActivityPage(1)
-		} else if m.panel != githubPanel {
+		} else if m.tab().worker {
 			m.moveRun(-1)
 		}
 	case "l", "right":
 		if m.panel == activityPanel {
 			m.moveActivityPage(-1)
-		} else if m.panel != githubPanel {
+		} else if m.tab().worker {
 			m.moveRun(1)
 		}
 	case "a":
@@ -382,6 +382,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.result.ScrollDown(3)
 		}
 	case "p", "c", "r":
+		if m.panel != outputPanel && m.panel != statePanel {
+			return nil
+		}
+
 		return m.control(key.String())
 	}
 

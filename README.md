@@ -2,7 +2,7 @@
 
 A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The working path covers public PR reviews and discussion, worker summaries, and an actual disposable merge conflict.
 
-![GitHub review messages with persistent worker status](docs/images/dashboard.png)
+![Tracking dashboard with explicit auto-merge status and grouped ownership and actions](docs/images/dashboard-tracking.png)
 
 See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
 
@@ -49,13 +49,24 @@ Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id 
 
 ## Dashboard and commands
 
-The dashboard centers on pull requests, with one URL header and a compact PR list. **1 Reviews** shows actual GitHub reviews, inline comments, and discussion, including author, message link, observed PR head, and earlier-commit markers. **2 Output** shows the selected worker’s Markdown response. **3 State** shows its observed Charmed state diagram with the latest transition highlighted and timestamped transitions. The worker pane stays visible with run status, attempt, process exit observation, and recent tool calls.
+The dashboard opens on Tracking and gives each tab a dedicated workspace:
+
+| Tab | Purpose | Layout |
+| --- | --- | --- |
+| **1 Reviews** | Review decisions, inline feedback and discussion | PR navigation and review feed |
+| **2 Output** | Selected worker response and recent tools | PR navigation, output and worker pane |
+| **3 Runtime** | Dispatch health and persisted run transitions | PR navigation, state history and worker pane |
+| **4 Tracking** | Ownership, automation, blockers and delivery | PR navigation; nested automation/ownership and actions/delivery sections |
+| **5 Activity** | Reported agent operations across sessions | Global timeline without PR or worker panes |
+| **6 GitHub** | API budgets, forecasts and traffic | Global view; nested REST and GraphQL quota sections |
+
+Auto-merge status stays visible in the PR list and Tracking/Reviews context, including paused chains and cancelled chains with in-flight operations. Tracking retains the opt-in `a` switch and shows the next merge step; an enabled switch does not imply checks or owner assessment have passed. Confirmed merged/closed PRs show their outcome. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
 
 Reviews load on first selection; press `u` to refresh. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
 Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
 
-The dashboard pins Charmed’s `a4599d7` revision ([compact links and wrapping groups](https://github.com/lanej/charmed/pull/39)) and uses its native tabs, header/footer, connection indicator, scrollbar, log-level atoms, state diagram, themes, panels, focus, viewports, structured logs, and Glamour Markdown. Retry cycles retain chronological transition traces. Diagrams can grow vertically inside the scrollable State view; terminals too narrow for a diagram retain the textual path and full history. The main view and recent tools scroll independently. Use `j/k` or up/down to select a PR or demo, `h/l` or left/right to inspect its runs, Enter to expand, `1/2/3` to change view, Tab to change scroll pane, `[` and `]` to scroll, `p` to pause dispatch, `c` to cancel the selected run, `r` to retry it, and `q` to detach. Narrow terminals stack panes, and very small terminals retain a quit hint.
+The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`6` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
 
 ```text
 octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID

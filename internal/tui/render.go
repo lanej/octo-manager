@@ -24,7 +24,11 @@ func (m *Model) renderedContent(source string, width int, markdown bool) string 
 	var rendered string
 
 	if markdown {
-		value, err := text.Markdown(source, width, m.theme)
+		styles := text.MarkdownStyles(m.theme)
+		styles.Strong.BlockPrefix, styles.Strong.BlockSuffix = "", ""
+		styles.Emph.BlockPrefix, styles.Emph.BlockSuffix = "", ""
+
+		value, err := text.Markdown(source, width, m.theme, text.MarkdownOptions{Styles: &styles})
 		if err != nil {
 			m.contentRender.valid = false
 

@@ -77,7 +77,7 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
-	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), input.NewToggle("auto-merge", "Auto merge (a)", m.autoMergeEnabled(pr.GetId()), m.theme).View()}
+	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), m.trackingAutomation(pr)}
 	if pr.GetOriginAgentId() != pr.GetOwnerAgentId() {
 		parts = append(parts, m.field("Origin", m.agentLabel(pr.GetOriginAgentId())))
 	}
@@ -128,6 +128,8 @@ func (m *Model) trackingContent() string {
 		}
 	}
 
+	overview := strings.Join(parts, "\n")
+	parts = nil
 	count := m.openActions(pr.GetId())
 
 	tone := text.Success
@@ -220,7 +222,12 @@ func (m *Model) trackingContent() string {
 
 	parts = append(parts, "", text.KeyHint("u", "refresh", m.theme), m.muted("Delivery, acknowledgment, and verified resolution are separate."))
 
-	return strings.Join(parts, "\n")
+	width := max(1, layout.PanelContentSize(layout.Size{Width: m.geometry().right}).Width-1)
+	if width < 32 {
+		return overview + "\n" + strings.Join(parts, "\n")
+	}
+
+	return m.sections("tracking-sections", width, dashboardSection{id: "ownership", title: "AUTOMATION & OWNERSHIP", content: func(int) string { return overview }}, dashboardSection{id: "blockers", title: "ACTIONS & DELIVERY", content: func(int) string { return strings.Join(parts, "\n") }})
 }
 
 func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
@@ -375,4 +382,20 @@ func (m *Model) deliveryDetails(raw string) string {
 	}
 
 	return ""
+}
+
+func (m *Model) trackingAutomation(pr *v1.TrackedPullRequest) string {
+	label := m.automationLabel(pr.GetId())
+
+	lifecycle := pr.GetObservation().GetLifecycle()
+	if lifecycle == "merged" || lifecycle == "closed" {
+		return text.Pill(label, text.Neutral, m.theme, text.Normal)
+	}
+
+	toggle := input.NewToggle("auto-merge", "Auto-merge (a)", m.autoMergeEnabled(pr.GetId()), m.theme).View()
+	if label == "Auto-merge ON" || label == "Manual merge" {
+		return toggle
+	}
+
+	return toggle + "\n" + label
 }

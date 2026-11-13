@@ -243,7 +243,7 @@ func TestTrackingHasAnOptInAutoMergeSwitch(t *testing.T) {
 	m.ensureSelection()
 
 	off := ansi.Strip(m.trackingContent())
-	if !strings.Contains(off, "Auto merge (a)") || !strings.Contains(off, "OFF") {
+	if !strings.Contains(off, "Auto-merge (a)") || !strings.Contains(off, "OFF") {
 		t.Fatal("auto merge must start off")
 	}
 
