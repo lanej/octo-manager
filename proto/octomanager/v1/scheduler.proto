@@ -198,4 +198,4 @@ message ListActivityResponse {
 
 message MergeCommandRequest { string input_json = 1; }
 message MergeCommandResponse { string result_json = 1; }
-message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; }
+message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; bool auto_merge = 6; }

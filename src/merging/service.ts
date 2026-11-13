@@ -1,3 +1,4 @@
+import { MergeDeclined } from "./async-merge.js";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -77,6 +78,13 @@ export class MergeService {
   }
   private dispatch(input: MergeCommand): unknown {
     switch (input.op) {
+      case "auto_merge":
+        return this.store.autoMerge(
+          input.pr,
+          input.actorId,
+          input.enabled,
+          input.requestId,
+        );
       case "queue":
         return this.store.queue(input.input);
       case "inspect":
@@ -172,6 +180,7 @@ export class MergeService {
     const current = this.store.entries().find((item) => item.id === entry.id);
     const authority = (value: MergeEntry) =>
       fingerprint([
+        value.autoMerge,
         value.checks,
         value.noCi,
         value.method,
@@ -184,6 +193,7 @@ export class MergeService {
     return (
       !this.abort.signal.aborted &&
       pr.enabled &&
+      entry.autoMerge &&
       this.store.chain(entry.chainId).state === ChainState.Active &&
       (op === undefined ||
         (pr.trackingEpoch === op.epoch &&
@@ -207,6 +217,15 @@ export class MergeService {
       this.reconcileRequested.delete(operation.id);
       await this.reconcile(operation);
     }
+    for (const operation of this.store
+      .operations()
+      .filter(
+        (op) =>
+          op.state === OperationState.Running &&
+          op.requestId !== undefined &&
+          (op.nextCheckAt ?? 0) <= this.now(),
+      ))
+      await this.pollMerge(operation);
     for (const entry of this.store
       .entries()
       .filter(
@@ -487,7 +506,7 @@ export class MergeService {
           },
         );
       } else {
-        const sha = await this.provider.merge(
+        const result = await this.provider.merge(
           pr.url,
           operation.head,
           entry.method,
@@ -506,6 +525,21 @@ export class MergeService {
               );
           },
         );
+        if (typeof result !== "string") {
+          if (result.state === "pending") {
+            this.store.saveOperation({
+              ...operation,
+              requestId: result.requestId,
+              nextCheckAt: this.now() + 60000,
+              updatedAt: this.now(),
+              detail: "GitHub accepted asynchronous merge",
+            });
+            return;
+          }
+          if (result.state === "failed") throw new MergeDeclined(result.reason);
+          if (result.state !== "merged") throw new Error(result.reason);
+        }
+        const sha = typeof result === "string" ? result : result.sha;
         operation = {
           ...operation,
           state: OperationState.Succeeded,
@@ -524,9 +558,11 @@ export class MergeService {
       const definite =
         operation.phase === "local" ||
         error instanceof EffectNotStarted ||
+        error instanceof MergeDeclined ||
         (error instanceof GitHubHTTPError &&
           error.status >= 400 &&
-          error.status < 500) ||
+          error.status < 500 &&
+          error.status !== 409) ||
         error instanceof GitHubRateLimitError;
       operation = {
         ...operation,
@@ -552,6 +588,84 @@ export class MergeService {
             : {}),
         },
       );
+    }
+  }
+  private async pollMerge(operation: MergeOperation): Promise<void> {
+    if (operation.requestId === undefined || this.provider.result === undefined)
+      return;
+    const entry = this.store
+      .entries()
+      .find((value) => value.id === operation.entryId);
+    if (entry === undefined) return;
+    try {
+      const result = await this.provider.result(
+        this.store.tracking.pr(operation.prId).url,
+        operation.requestId,
+        this.abort.signal,
+      );
+      if (result.state === "pending") {
+        this.store.saveOperation({
+          ...operation,
+          nextCheckAt: this.now() + 60000,
+          updatedAt: this.now(),
+        });
+        return;
+      }
+      if (result.state === "merged") {
+        this.store.transaction(() => {
+          this.store.saveOperation({
+            ...operation,
+            state: OperationState.Succeeded,
+            mergeCommit: result.sha,
+            updatedAt: this.now(),
+            detail: "GitHub confirmed asynchronous merge",
+          });
+          this.store.state(entry, EntryState.Merged, "GitHub confirmed merge", {
+            mergeCommit: result.sha,
+          });
+        });
+        return;
+      }
+      const uncertain = result.state === "enqueued";
+      this.store.saveOperation({
+        ...operation,
+        state: uncertain ? OperationState.Uncertain : OperationState.Failed,
+        detail: result.reason.slice(0, 2000),
+        updatedAt: this.now(),
+      });
+      const fresh = { ...entry };
+      delete fresh.ready;
+      this.store.state(
+        fresh,
+        uncertain
+          ? EntryState.Uncertain
+          : this.store.chain(entry.chainId).state === ChainState.Cancelled
+            ? EntryState.Cancelled
+            : EntryState.WaitingOwner,
+        result.reason,
+        { nextAt: this.now() + 60000 },
+      );
+    } catch (error) {
+      const missing = error instanceof GitHubHTTPError && error.status === 404;
+      this.store.saveOperation({
+        ...operation,
+        state: missing ? OperationState.Uncertain : OperationState.Running,
+        detail:
+          error instanceof Error
+            ? error.message.slice(0, 2000)
+            : "Merge result unavailable",
+        nextCheckAt:
+          error instanceof GitHubRateLimitError
+            ? Math.max(this.now() + 60000, error.retryAtMs)
+            : this.now() + 60000,
+        updatedAt: this.now(),
+      });
+      if (missing)
+        this.store.state(
+          entry,
+          EntryState.Uncertain,
+          "Asynchronous merge result expired; reconcile the remote PR before proceeding",
+        );
     }
   }
   private async reconcile(operation: MergeOperation): Promise<void> {

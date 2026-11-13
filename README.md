@@ -77,6 +77,10 @@ The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and C
 
 Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
 
+## Polling and auto-merge
+
+[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
+
 ## Dependency-aware merge chains
 
 [Merge chains](docs/merge-chains.md) connect confirmed dependencies across repositories. References suggest relationships; explicit queues authorize selected PRs; owner assessments authorize the current reviewed head. Deterministic preparation runs before another owner assessment and a head-pinned merge.

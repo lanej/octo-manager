@@ -387,3 +387,39 @@ test("retirement deadlines expire locally during a shared GitHub cooldown withou
     await f.close();
   }
 });
+test("startup archives cached settled merged PRs without fetching or removing history", async () => {
+  const f = await fixture();
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    f.store.tracking.observe(pr.id, observation(f.now), f.config);
+    f.store.tracking.observe(
+      pr.id,
+      { ...observation(f.now), lifecycle: "merged" },
+      f.config,
+    );
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
+    f.reopen();
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+    expect(f.store.tracking.prs().length).toBe(1);
+    expect(f.store.tracking.actions().length).toBeGreaterThan(0);
+    f.reopen();
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+  } finally {
+    await f.close();
+  }
+});
+test("startup retains draining PRs whose cached checks are still running", async () => {
+  const f = await fixture();
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    f.store.tracking.observe(
+      pr.id,
+      { ...observation(f.now, "open", "in_progress"), lifecycle: "merged" },
+      f.config,
+    );
+    f.reopen();
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
+  } finally {
+    await f.close();
+  }
+});

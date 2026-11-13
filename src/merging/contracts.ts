@@ -124,6 +124,7 @@ export const ChainSchema = object({
 });
 export type MergeChain = Static<typeof ChainSchema>;
 export const EntrySchema = object({
+  autoMerge: Type.Boolean(),
   id: text(),
   chainId: text(),
   prId: text(),
@@ -142,6 +143,8 @@ export const EntrySchema = object({
 });
 export type MergeEntry = Static<typeof EntrySchema>;
 export const OperationSchema = object({
+  requestId: Type.Optional(text()),
+  nextCheckAt: Type.Optional(Type.Integer()),
   epoch: Type.Integer(),
   id: text(),
   entryId: text(),
@@ -171,6 +174,13 @@ export const OperationSchema = object({
 export type MergeOperation = Static<typeof OperationSchema>;
 const actor = { actorId: text() };
 export const CommandSchema = Type.Union([
+  object({
+    op: Type.Literal("auto_merge"),
+    pr: text(2000),
+    enabled: Type.Boolean(),
+    actorId: text(),
+    requestId: text(),
+  }),
   object({ op: Type.Literal("queue"), input: QueueInputSchema }),
   object({ op: Type.Literal("inspect"), id: Type.Optional(text()) }),
   object({ op: Type.Literal("references"), pr: Type.Optional(text(2000)) }),

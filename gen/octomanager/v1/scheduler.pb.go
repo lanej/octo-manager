@@ -2150,6 +2150,7 @@ type MergeStatus struct {
 	State            string                 `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
 	Detail           string                 `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
 	PrerequisiteUrls []string               `protobuf:"bytes,5,rep,name=prerequisite_urls,json=prerequisiteUrls,proto3" json:"prerequisite_urls,omitempty"`
+	AutoMerge        bool                   `protobuf:"varint,6,opt,name=auto_merge,json=autoMerge,proto3" json:"auto_merge,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2217,6 +2218,13 @@ func (x *MergeStatus) GetPrerequisiteUrls() []string {
 		return x.PrerequisiteUrls
 	}
 	return nil
+}
+
+func (x *MergeStatus) GetAutoMerge() bool {
+	if x != nil {
+		return x.AutoMerge
+	}
+	return false
 }
 
 var File_octomanager_v1_scheduler_proto protoreflect.FileDescriptor
@@ -2385,13 +2393,15 @@ const file_octomanager_v1_scheduler_proto_rawDesc = "" +
 	"input_json\x18\x01 \x01(\tR\tinputJson\"7\n" +
 	"\x14MergeCommandResponse\x12\x1f\n" +
 	"\vresult_json\x18\x01 \x01(\tR\n" +
-	"resultJson\"\x98\x01\n" +
+	"resultJson\"\xb7\x01\n" +
 	"\vMergeStatus\x12\x13\n" +
 	"\x05pr_id\x18\x01 \x01(\tR\x04prId\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x14\n" +
 	"\x05state\x18\x03 \x01(\tR\x05state\x12\x16\n" +
 	"\x06detail\x18\x04 \x01(\tR\x06detail\x12+\n" +
-	"\x11prerequisite_urls\x18\x05 \x03(\tR\x10prerequisiteUrls*\xa8\x02\n" +
+	"\x11prerequisite_urls\x18\x05 \x03(\tR\x10prerequisiteUrls\x12\x1d\n" +
+	"\n" +
+	"auto_merge\x18\x06 \x01(\bR\tautoMerge*\xa8\x02\n" +
 	"\tJobStatus\x12\x1a\n" +
 	"\x16JOB_STATUS_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11JOB_STATUS_QUEUED\x10\x01\x12\x16\n" +

@@ -1,9 +1,11 @@
+import { QuotaHistory, type QuotaForecast } from "./github-forecast.js";
 export type GitHubResource = "core" | "graphql";
 export interface GitHubBudget {
   limit: number;
   remaining: number;
   resetAtMs: number;
   observedAtMs: number;
+  forecast?: QuotaForecast;
 }
 export interface GitHubReadMinute {
   startedAtMs: number;
@@ -34,6 +36,7 @@ export class GitHubUsage {
   private cacheReuses = 0;
   private rateLimits = 0;
   private readonly minutes = new Map<number, GitHubReadMinute>();
+  private readonly quotaHistory = new QuotaHistory();
   private readonly budgets: Partial<Record<GitHubResource, GitHubBudget>> = {};
   constructor(private readonly now: () => number) {
     this.startedAtMs = now();
@@ -85,6 +88,7 @@ export class GitHubUsage {
       resetAtMs: reset * 1000,
       observedAtMs: this.now(),
     };
+    this.quotaHistory.observe(resource, this.budgets[resource]);
   }
   snapshot(retryAtMs: Record<GitHubResource, number>): GitHubReadUsage {
     const at = this.now();
@@ -114,10 +118,28 @@ export class GitHubUsage {
       minutes,
       ...(this.budgets.core === undefined
         ? {}
-        : { rest: { ...this.budgets.core } }),
+        : {
+            rest: {
+              ...this.budgets.core,
+              forecast: this.quotaHistory.forecast(
+                "core",
+                this.budgets.core,
+                at,
+              ),
+            },
+          }),
       ...(this.budgets.graphql === undefined
         ? {}
-        : { graphql: { ...this.budgets.graphql } }),
+        : {
+            graphql: {
+              ...this.budgets.graphql,
+              forecast: this.quotaHistory.forecast(
+                "graphql",
+                this.budgets.graphql,
+                at,
+              ),
+            },
+          }),
       restRetryAtMs: retryAtMs.core,
       graphqlRetryAtMs: retryAtMs.graphql,
     };

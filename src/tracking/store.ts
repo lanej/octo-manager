@@ -173,6 +173,13 @@ export class TrackingStore {
       ...(workflows === undefined ? {} : { workflows }),
     };
   }
+  reconcileCachedRetirement(): void {
+    this.transaction(() => {
+      for (const pr of this.prs())
+        if (pr.enabled && pr.observation?.lifecycle === "merged")
+          this.retirement.cachedMergedInside(pr.id, pr.observation);
+    });
+  }
   prs(): TrackedPR[] {
     return this.db
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")

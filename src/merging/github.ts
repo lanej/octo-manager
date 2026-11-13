@@ -1,9 +1,29 @@
+import { mergeProgress, type MergeProgress } from "./async-merge.js";
 import { Type, type Static } from "typebox";
 import { githubReads } from "../github-api.js";
 import { canonicalPR, readObservation } from "../tracking/github.js";
 import type { ObservationInput } from "../tracking/types.js";
 import { checked, Sha, type MergeEntry } from "./contracts.js";
 const GateSchema = Type.Object({
+  stack: Type.Optional(
+    Type.Union([
+      Type.Null(),
+      Type.Object({
+        baseRefName: Type.String(),
+        entries: Type.Object({
+          nodes: Type.Array(
+            Type.Object({
+              pullRequest: Type.Object({
+                url: Type.String(),
+                state: Type.String(),
+              }),
+            }),
+          ),
+          pageInfo: Type.Object({ hasNextPage: Type.Boolean() }),
+        }),
+      }),
+    ]),
+  ),
   headRefOid: Sha,
   baseRefName: Type.String(),
   baseRefOid: Sha,
@@ -52,6 +72,7 @@ export interface MergeSnapshot {
   queueRequired: boolean;
   methods: MergeEntry["method"][];
   mergeCommit?: string;
+  nativePrerequisites?: string[];
 }
 export interface MergeProvider {
   inspect(url: string, signal: AbortSignal): Promise<MergeSnapshot>;
@@ -61,7 +82,12 @@ export interface MergeProvider {
     method: MergeEntry["method"],
     signal: AbortSignal,
     beforeSend: () => void,
-  ): Promise<string>;
+  ): Promise<string | MergeProgress>;
+  result?(
+    url: string,
+    requestId: string,
+    signal: AbortSignal,
+  ): Promise<MergeProgress>;
 }
 function location(url: string) {
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
@@ -74,7 +100,7 @@ function location(url: string) {
 export const mergeProvider: MergeProvider = {
   async inspect(url, signal) {
     const { owner, repo, number, root } = location(url);
-    const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
+    const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
     const observation = await readObservation(url, signal);
     const result = await githubReads.query(query, signal);
     if (result.errors.length > 0)
@@ -99,12 +125,36 @@ export const mergeProvider: MergeProvider = {
             ),
           )
         : [];
+    const nativePrerequisites: string[] = [];
+    if (pr.stack !== undefined && pr.stack !== null) {
+      if (pr.stack.entries.pageInfo.hasNextPage)
+        throw new Error(
+          "Native stack exceeds bounded inspection; owner intervention required",
+        );
+      let found = false;
+      for (const entry of pr.stack.entries.nodes) {
+        if (entry.pullRequest.url === canonicalPR(url)) {
+          found = true;
+          break;
+        }
+        if (entry.pullRequest.state === "OPEN")
+          nativePrerequisites.push(entry.pullRequest.url);
+      }
+      if (!found)
+        throw new Error("Current PR missing from native stack evidence");
+      if (
+        nativePrerequisites.length === 0 &&
+        pr.baseRefName !== pr.stack.baseRefName
+      )
+        throw new Error("Native stack target branch has not settled");
+    }
     const methods: MergeEntry["method"][] = [];
     if (repository.squashMergeAllowed) methods.push("squash");
     if (repository.mergeCommitAllowed) methods.push("merge");
     if (repository.rebaseMergeAllowed) methods.push("rebase");
     return {
       observation,
+      nativePrerequisites,
       draft: pr.isDraft,
       gate: pr.mergeStateStatus,
       review: pr.reviewDecision,
@@ -130,17 +180,29 @@ export const mergeProvider: MergeProvider = {
   },
   async merge(url, head, method, signal, beforeSend) {
     const { root, number } = location(url);
-    const result = checked(
-      Type.Object({ merged: Type.Boolean(), sha: Sha }),
+    return mergeProgress(
       await githubReads.write(
-        `${root}/pulls/${number}/merge`,
-        { sha: head, merge_method: method },
+        `${root}/pulls/${number}/merge-async`,
+        {
+          sha: head,
+          merge_method: method,
+          merge_action: "direct_merge",
+          bypass_rules: false,
+        },
         signal,
         beforeSend,
       ),
     );
-    if (!result.merged) throw new Error("GitHub did not confirm the merge");
-    return result.sha;
+  },
+  async result(url, requestId, signal) {
+    const { root, number } = location(url);
+    return mergeProgress(
+      await githubReads.read(
+        `${root}/pulls/${number}/merge-async/${encodeURIComponent(requestId)}`,
+        signal,
+      ),
+      requestId,
+    );
   },
 };
 export type GitHubGate = Static<typeof GateSchema>;

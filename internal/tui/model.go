@@ -300,6 +300,10 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		} else if m.panel != githubPanel {
 			m.moveRun(1)
 		}
+	case "a":
+		if m.panel == trackingPanel {
+			return m.toggleAutoMerge()
+		}
 	case "o":
 		if !m.globalPanel() {
 			return m.openPullRequest()

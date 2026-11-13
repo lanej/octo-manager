@@ -402,6 +402,9 @@ func (m *Model) View() string {
 	}
 
 	notice := "j/k PRs · h/l runs · enter expand · p pause · c cancel run · r retry run"
+	if m.panel == trackingPanel {
+		notice = "j/k PRs · a auto-merge · u refresh · o browser"
+	}
 
 	switch m.panel {
 	case activityPanel:

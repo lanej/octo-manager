@@ -153,7 +153,7 @@ export class GitHubReads {
   }
   write(
     path: string,
-    fields: Record<string, string>,
+    fields: Record<string, string | boolean>,
     signal?: AbortSignal,
     beforeSend?: () => void,
   ): Promise<unknown> {
@@ -168,7 +168,10 @@ export class GitHubReads {
         path,
       ];
       for (const [key, value] of Object.entries(fields))
-        args.push("-f", `${key}=${value}`);
+        args.push(
+          typeof value === "boolean" ? "-F" : "-f",
+          `${key}=${String(value)}`,
+        );
       beforeSend?.();
       return json((await this.exchange(args, "core", signal)).body);
     });

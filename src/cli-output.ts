@@ -3,6 +3,7 @@ import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
+  "autoMerge",
   "chainId",
   "entryId",
   "dependentId",
@@ -237,6 +238,7 @@ function inspectArgs(
     command = positionals[0] ?? "";
   if (
     [
+      "auto-merge",
       "queue-chain",
       "merge-command",
       "merge-ready",

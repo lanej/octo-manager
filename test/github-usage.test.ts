@@ -64,6 +64,14 @@ test("quota observations keep missing and invalid data distinct from exhausted b
     remaining: 0,
     resetAtMs: 100000,
     observedAtMs: 1000,
+    forecast: {
+      state: "exhausted",
+      reason: "GitHub reported no quota remaining",
+      windowMs: 0,
+      sampledAtMs: 1000,
+      projectedRemainingAtReset: 0,
+      exhaustAtMs: 1000,
+    },
   });
   const wire = wireGitHubUsage(value);
   assert(wire.rest !== undefined);

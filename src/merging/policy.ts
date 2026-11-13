@@ -1,3 +1,4 @@
+import { currentMergeChecks } from "./checks.js";
 import { createHash } from "node:crypto";
 import { canonicalPR } from "../tracking/github.js";
 import { actionableFeedback } from "../tracking/review-signals.js";
@@ -135,6 +136,8 @@ export function checkGate(
 ): string | undefined {
   const observation = snapshot.observation;
   if (snapshot.draft) return "PR is a draft";
+  if ((snapshot.nativePrerequisites?.length ?? 0) > 0)
+    return `Waiting for native stack predecessor: ${snapshot.nativePrerequisites?.[0] ?? ""}`;
   if (snapshot.queueRequired)
     return "Repository requires GitHub merge queue; direct merging is disabled";
   if (!snapshot.methods.includes(entry.method))
@@ -154,10 +157,7 @@ export function checkGate(
   if (expected.length === 0 && !entry.noCi)
     return "Owner must declare expected checks or explicit no CI";
   for (const name of expected) {
-    const matches = [
-      ...observation.checks.value,
-      ...observation.workflows.value,
-    ].filter(
+    const matches = currentMergeChecks(observation).filter(
       (check) => check.headSha === observation.headSha && check.name === name,
     );
     if (matches.length === 0) return `Waiting for expected check: ${name}`;
