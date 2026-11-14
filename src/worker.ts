@@ -5,6 +5,7 @@ import { createAgentSession, DefaultResourceLoader, getAgentDir, SessionManager,
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
 import { createWorkerRuntime } from "./auth.js";
+import { workerModel, type WorkerProvider } from "./worker-model.js";
 import { conflictBrief } from "./fixture.js";
 import { cleanText, parseTask, type Task } from "./domain.js";
 
@@ -52,13 +53,14 @@ function callTool(name: string, args: unknown): Promise<unknown> {
 function tool(name: string, description: string, parameters = Type.Object({}, { additionalProperties: false })): ToolDefinition {
   return { name, label: name, description, parameters, execute: async (_id, args) => ({ content: [{ type: "text", text: JSON.stringify(await callTool(name, args)) }], details: {} }) };
 }
-function diagnosis(error: unknown): string {
+function diagnosis(error: unknown, provider?: WorkerProvider): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/needs refreshing/i.test(message)) return "Existing Codex authentication needs refreshing through Codex";
-  if (/auth|credential|api.key|401|403|login/i.test(message)) return "Authentication required: use a signed-in Codex session or run octo-manager login";
+  if (/auth|credential|api.key|401|403|login/i.test(message)) return provider === "amazon-bedrock" ? "Authentication required: configure existing AWS credentials or a Bedrock bearer token" : "Authentication required: use a signed-in Codex session or run octo-manager login";
   if (/429|rate.limit/i.test(message)) return "Provider rate limit (429)";
   if (/500|502|503|504|ECONNRESET|ETIMEDOUT|EAI_AGAIN/i.test(message)) return "Provider temporarily unavailable (503)";
-  if (/model.*not|unknown.*model/i.test(message)) return "Configured OpenAI Codex model is unavailable; select a supported model with --model";
+  if (/model.*not|unknown.*model/i.test(message)) return "Configured worker model is unavailable; select a supported provider-qualified model with --model";
+  if (/Invalid worker model|Unsupported worker provider/u.test(message)) return message;
   if (/budget/i.test(message)) return "Attempt exceeded the model turn or tool budget";
   return "Pi worker failed; check provider access and model configuration";
 }
@@ -79,11 +81,14 @@ function prStage(raw: Record<string, unknown>): StageTask {
 async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): Promise<void> {
   let flushTimer: NodeJS.Timeout | undefined;
   let budgetExceeded = false;
+  let provider: WorkerProvider | undefined;
   try {
-    const { runtime, source } = await createWorkerRuntime();
+    const selected = workerModel(modelId);
+    provider = selected.provider;
+    const { runtime, source } = await createWorkerRuntime({ provider: selected.provider });
     if (aborted) return;
-    await send({ type: "progress", text: `Using existing ${source === "codex" ? "Codex" : "Pi"} ChatGPT authentication` });
-    const model = runtime.getModel("openai-codex", modelId);
+    await send({ type: "progress", text: source === "aws" ? "Using existing AWS Bedrock authentication" : `Using existing ${source === "codex" ? "Codex" : "Pi"} ChatGPT authentication` });
+    const model = runtime.getModel(selected.provider, selected.id);
     if (!model) throw new Error("Unknown model");
     const tools: ToolDefinition[] = task.kind === "pr_stage" ? [] : task.kind === "repair_conflicts" ? [
       tool("read_file", "Read a tracked text file in the isolated repair checkout.", Type.Object({ path: Type.String() }, { additionalProperties: false })),
@@ -112,7 +117,7 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
     const last = [...session.messages].reverse().find(message => message.role === "assistant");
     if (last?.role === "assistant" && (last.stopReason === "error" || last.stopReason === "aborted" || last.stopReason === "length")) throw new Error(last.errorMessage ?? `Provider response ${last.stopReason}`);
     await send({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
-  } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error) }); }
+  } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error, provider) }); }
   finally {
     if (flushTimer) clearInterval(flushTimer);
     session?.dispose();

@@ -153,6 +153,7 @@ test("routing selects exact-check profiles and rejects invalid configuration", a
     await writeFile(
       path,
       JSON.stringify({
+        workerModel: "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
         endpoints: { local: { delivery: "queue", socket: "/tmp/codex.sock" } },
         profiles: {
           lint: {
@@ -176,6 +177,19 @@ test("routing selects exact-check profiles and rejects invalid configuration", a
       delivery: "queue",
       socket: "/tmp/codex.sock",
     });
+    assert.equal(
+      config.workerModel,
+      "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+    );
+    for (const workerModel of [
+      "amazon-bedrock/",
+      "unknown/model",
+      12,
+      " ".repeat(201),
+    ]) {
+      await writeFile(path, JSON.stringify({ workerModel }));
+      assert.throws(() => loadTrackingConfig(path), /worker (model|provider)/u);
+    }
     for (const endpoint of [
       { delivery: "shell" },
       { command: "codex" },
