@@ -5,6 +5,12 @@ const text = (maxLength = 8000) => Type.String({ minLength: 1, maxLength });
 const object = <T extends Record<string, TSchema>>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
 const strings = (maxItems = 100) => Type.Array(text(), { maxItems });
+export const policyAnalystVersion = 2;
+export function isPullRequestTemplate(path: string): boolean {
+  return /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/iu.test(
+    path,
+  );
+}
 export enum SubmissionState {
   Queued = "queued",
   Analyzing = "analyzing",
@@ -129,7 +135,10 @@ export const PolicySchema = object({
   repository: text(200),
   version: Type.Integer({ minimum: 1 }),
   sourceDigest: text(100),
-  analystVersion: Type.Literal(1),
+  analystVersion: Type.Union([
+    Type.Literal(1),
+    Type.Literal(policyAnalystVersion),
+  ]),
   stockVersion: Type.Literal(1),
   createdAtMs: Type.Integer(),
   citationCorrections: Type.Optional(
@@ -195,6 +204,19 @@ export type Requirement = Static<typeof RequirementSchema>;
 export type PolicyAnalysis = Static<typeof PolicyAnalysisSchema>;
 export type RepositoryPolicy = Static<typeof PolicySchema>;
 export type ChangeAnalysis = Static<typeof ChangeAnalysisSchema>;
+export function normalizeChangeEvidence(
+  change: ChangeAnalysis,
+): ChangeAnalysis {
+  return {
+    ...change,
+    claims: change.claims.map((claim) =>
+      claim.basis === "observed" &&
+      claim.evidenceRefs.some((ref) => ref.startsWith("validation:"))
+        ? { ...claim, basis: "reported" }
+        : claim,
+    ),
+  };
+}
 export type WriterDraft = Static<typeof WriterSchema>;
 export type PrBrief = Static<typeof BriefSchema>;
 export type Role = "policy" | "change" | "writer";

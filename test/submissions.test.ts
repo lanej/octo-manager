@@ -4,6 +4,7 @@ import {
   publicationBlockers,
   parse,
   PolicyAnalysisSchema,
+  ChangeAnalysisSchema,
 } from "../src/submissions/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -267,6 +268,94 @@ test("blocks missing repository requirements and preserves falsifiable brief", a
     ).toContain("Read");
   } finally {
     await h.close();
+  }
+});
+test("policy analysis receives complete template discovery without change-specific context", async () => {
+  for (const paths of [[], [".github/pull_request_template.md"]]) {
+    const github = new GitHub(),
+      snapshot = github.snapshot.bind(github),
+      base = runner([]),
+      inputs: unknown[] = [];
+    github.snapshot = async (input) => {
+      const value = await snapshot(input);
+      return {
+        ...value,
+        sources: [
+          ...value.sources,
+          ...paths.map((path) => ({
+            path,
+            sha: "template-v1",
+            text: "Explain behavior.",
+          })),
+        ],
+      };
+    };
+    const run: RunStage = (role, input, ...rest) => {
+      if (role === "policy") inputs.push(input);
+      return base(role, input, ...rest);
+    };
+    const h = await harness(run, github);
+    try {
+      const value = h.service.submit(request("template-context"));
+      await until(
+        () => h.store.submissions.get(value.id).state === State.Succeeded,
+      );
+      expect(inputs).toHaveLength(1);
+      expect(inputs[0]).toMatchObject({
+        repository: "owner/repo",
+        templateDiscovery: { complete: true, paths },
+      });
+      expect(h.store.submissions.policy("owner/repo")?.analystVersion).toBe(2);
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("caller validation stays reported while raw analysis and invalid references remain inspectable", async () => {
+  for (const reference of ["validation:0", "validation:99"]) {
+    const base = runner([]);
+    const run: RunStage = async (role, input, ...rest) => {
+      const stage = await base(role, input, ...rest);
+      if (role !== "change") return stage;
+      const change = parse(ChangeAnalysisSchema, stage.result);
+      const result = {
+        ...change,
+        claims: [
+          {
+            statement: "Caller reports a passing check",
+            falsification: "Caller check report records a failure",
+            evidenceRefs: ["diff", reference],
+            basis: "observed",
+          },
+        ],
+      };
+      return { ...stage, result, raw: JSON.stringify(result) };
+    };
+    const h = await harness(run);
+    try {
+      const value = h.service.submit(request("reported-evidence"));
+      await until(() =>
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      const saved = h.store.submissions.get(value.id),
+        stage = saved.stages.find((item) => item.role === "change");
+      expect(saved.brief?.change.claims[0]?.basis).toBe("reported");
+      expect(parse(ChangeAnalysisSchema, stage?.result).claims[0]?.basis).toBe(
+        "observed",
+      );
+      if (reference === "validation:0") {
+        expect(saved.state).toBe(State.Succeeded);
+        expect(h.github.writes).toBe(1);
+      } else {
+        expect(saved.state).toBe(State.NeedsInput);
+        expect(saved.detail).toContain("Unknown evidence reference");
+        expect(h.github.writes).toBe(0);
+      }
+    } finally {
+      await h.close();
+    }
   }
 });
 test("blocks local-only writer output before publication or enrollment", async () => {

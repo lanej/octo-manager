@@ -3,6 +3,8 @@ import { githubReads } from "../github-api.js";
 import { ghRead, type ReadGitHub, canonicalPR } from "../tracking/github.js";
 import {
   hash,
+  isPullRequestTemplate,
+  policyAnalystVersion,
   type RepositorySnapshot,
   type Source,
   type SubmissionInput,
@@ -134,9 +136,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
     const policyPath = (path: string) =>
       /(?:^|\/)AGENTS\.md$/i.test(path) ||
       /(?:^|\/)(?:CONTRIBUTING)(?:\.[^/]*)?$/i.test(path) ||
-      /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/i.test(
-        path,
-      );
+      isPullRequestTemplate(path);
     const pending = [...blobs.keys()].filter(policyPath).sort();
     const sources: Source[] = [];
     let bytes = 0;
@@ -190,7 +190,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
         repository,
         sources: sources.map(({ path, sha }) => ({ path, sha })),
         stockVersion: 1,
-        analystVersion: 1,
+        analystVersion: policyAnalystVersion,
       }),
     };
   }

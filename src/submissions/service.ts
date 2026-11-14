@@ -7,6 +7,8 @@ import {
   ChangeAnalysisSchema,
   WriterSchema,
   parse,
+  isPullRequestTemplate,
+  normalizeChangeEvidence,
   policyBlockers,
   anchorPolicy,
   publicationBlockers,
@@ -241,6 +243,13 @@ export class SubmissionService {
       id,
       "policy",
       {
+        repository: snapshot.repository,
+        templateDiscovery: {
+          complete: true,
+          paths: snapshot.sources
+            .filter((source) => isPullRequestTemplate(source.path))
+            .map((source) => source.path),
+        },
         sources: snapshot.sources.map((source) => ({
           path: source.path,
           sha: source.sha,
@@ -324,7 +333,9 @@ export class SubmissionService {
       const policy = policyResult.value,
         changeStage = changeResult.value;
       signal.throwIfAborted();
-      const change = parse(ChangeAnalysisSchema, changeStage.result);
+      const change = normalizeChangeEvidence(
+        parse(ChangeAnalysisSchema, changeStage.result),
+      );
       this.update(id, {
         state: State.Writing,
         detail: "Dedicated PR writer drafting",

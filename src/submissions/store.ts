@@ -5,6 +5,7 @@ import {
   SubmissionState,
   hash,
   parse,
+  policyAnalystVersion,
   PolicySchema,
   stockProfiles,
   SubmissionSchema,
@@ -114,7 +115,9 @@ export class SubmissionStore {
   }
   cached(snapshot: RepositorySnapshot): RepositoryPolicy | undefined {
     return this.policies(snapshot.repository).findLast(
-      (policy) => policy.sourceDigest === snapshot.sourceDigest,
+      (policy) =>
+        policy.sourceDigest === snapshot.sourceDigest &&
+        policy.analystVersion === policyAnalystVersion,
     );
   }
   savePolicy(
@@ -129,7 +132,7 @@ export class SubmissionStore {
       repository: snapshot.repository,
       version: (this.policy(snapshot.repository)?.version ?? 0) + 1,
       sourceDigest: snapshot.sourceDigest,
-      analystVersion: 1,
+      analystVersion: policyAnalystVersion,
       stockVersion: 1,
       citationCorrections,
       complexityProfiles: stockProfiles,
