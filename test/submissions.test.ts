@@ -1,8 +1,11 @@
 import {
   anchorPolicy,
   policyBlockers,
+  publicationBlockers,
   parse,
   PolicyAnalysisSchema,
+  ChangeAnalysisSchema,
+  WriterSchema,
 } from "../src/submissions/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -102,7 +105,11 @@ class GitHub implements SubmissionGitHub {
       : Promise.resolve(value);
   }
 }
-function runner(roles: Role[], block = false): RunStage {
+function runner(
+  roles: Role[],
+  block = false,
+  draft: { title?: string; body?: string } = {},
+): RunStage {
   return (role, _input, _schema, instructions, model) => {
     roles.push(role);
     const result: unknown =
@@ -149,6 +156,7 @@ function runner(roles: Role[], block = false): RunStage {
                 : "Explains behavior in the example so readers can follow its purpose.",
               requirementChecks: [],
               blockers: [],
+              ...draft,
             };
     return Promise.resolve({
       role,
@@ -259,6 +267,297 @@ test("blocks missing repository requirements and preserves falsifiable brief", a
     expect(
       h.store.submissions.get(value.id).brief?.change.claims[0]?.falsification,
     ).toContain("Read");
+  } finally {
+    await h.close();
+  }
+});
+test("policy analysis receives complete template discovery without change-specific context", async () => {
+  for (const paths of [[], [".github/pull_request_template.md"]]) {
+    const github = new GitHub(),
+      snapshot = github.snapshot.bind(github),
+      base = runner([]),
+      inputs: unknown[] = [];
+    github.snapshot = async (input) => {
+      const value = await snapshot(input);
+      return {
+        ...value,
+        sources: [
+          ...value.sources,
+          ...paths.map((path) => ({
+            path,
+            sha: "template-v1",
+            text: "Explain behavior.",
+          })),
+        ],
+      };
+    };
+    const run: RunStage = (role, input, ...rest) => {
+      if (role === "policy") inputs.push(input);
+      return base(role, input, ...rest);
+    };
+    const h = await harness(run, github);
+    try {
+      const value = h.service.submit(request("template-context"));
+      await until(
+        () => h.store.submissions.get(value.id).state === State.Succeeded,
+      );
+      expect(inputs).toHaveLength(1);
+      expect(inputs[0]).toMatchObject({
+        repository: "owner/repo",
+        templateDiscovery: { complete: true, paths },
+      });
+      expect(h.store.submissions.policy("owner/repo")?.analystVersion).toBe(3);
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("caller validation stays reported while raw analysis and invalid references remain inspectable", async () => {
+  for (const reference of ["validation:0", "validation:99"]) {
+    const base = runner([]);
+    const run: RunStage = async (role, input, ...rest) => {
+      const stage = await base(role, input, ...rest);
+      if (role !== "change") return stage;
+      const change = parse(ChangeAnalysisSchema, stage.result);
+      const result = {
+        ...change,
+        claims: [
+          {
+            statement: "Caller reports a passing check",
+            falsification: "Caller check report records a failure",
+            evidenceRefs: ["diff", reference],
+            basis: "observed",
+          },
+        ],
+      };
+      return { ...stage, result, raw: JSON.stringify(result) };
+    };
+    const h = await harness(run);
+    try {
+      const value = h.service.submit(request("reported-evidence"));
+      await until(() =>
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      const saved = h.store.submissions.get(value.id),
+        stage = saved.stages.find((item) => item.role === "change");
+      expect(saved.brief?.change.claims[0]?.basis).toBe("reported");
+      expect(parse(ChangeAnalysisSchema, stage?.result).claims[0]?.basis).toBe(
+        "observed",
+      );
+      if (reference === "validation:0") {
+        expect(saved.state).toBe(State.Succeeded);
+        expect(h.github.writes).toBe(1);
+      } else {
+        expect(saved.state).toBe(State.NeedsInput);
+        expect(saved.detail).toContain("Unknown evidence reference");
+        expect(h.github.writes).toBe(0);
+      }
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("conditional requirements need source-backed not-applicable assessments", async () => {
+  for (const condition of [
+    "When changing keybindings:",
+    undefined,
+    "When changing deployment:",
+  ]) {
+    const github = new GitHub(),
+      snapshot = github.snapshot.bind(github),
+      base = runner([]);
+    github.snapshot = async (input) => {
+      const value = await snapshot(input);
+      return {
+        ...value,
+        sources: value.sources.map((source) => ({
+          ...source,
+          text: "Include behavior.\nWhen changing keybindings:\nRun native checks.",
+        })),
+      };
+    };
+    const run: RunStage = async (role, input, ...rest) => {
+      const stage = await base(role, input, ...rest);
+      if (role === "policy") {
+        const analysis = parse(PolicyAnalysisSchema, stage.result),
+          rule = analysis.requirements[0];
+        if (rule === undefined) throw new Error("No fixture requirement");
+        const result = {
+          ...analysis,
+          requirements: [
+            ...analysis.requirements,
+            {
+              ...rule,
+              id: "native-checks",
+              description: "Run native checks for keybinding changes",
+              line: 3,
+              quote: "Run native checks.",
+              ...(condition === undefined ? {} : { condition }),
+              check: { kind: "semantic" as const },
+            },
+          ],
+        };
+        return { ...stage, result, raw: JSON.stringify(result) };
+      }
+      if (role === "writer") {
+        const draft = parse(WriterSchema, stage.result);
+        const result = {
+          ...draft,
+          requirementChecks: [
+            {
+              ruleId: "native-checks",
+              status: "not_applicable",
+              rationale: "Only example.md changed; no keybinding changes.",
+            },
+          ],
+        };
+        return { ...stage, result, raw: JSON.stringify(result) };
+      }
+      return stage;
+    };
+    const h = await harness(run, github);
+    try {
+      const value = h.service.submit(request("conditional-check"));
+      await until(() =>
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      const saved = h.store.submissions.get(value.id);
+      if (condition === "When changing keybindings:") {
+        expect(saved.state).toBe(State.Succeeded);
+        expect(saved.brief?.draft.requirementChecks[0]?.status).toBe(
+          "not_applicable",
+        );
+        expect(h.github.writes).toBe(1);
+      } else {
+        expect(saved.state).toBe(State.NeedsInput);
+        expect(saved.detail).toContain(
+          condition === undefined
+            ? "verified source condition"
+            : "Unverified applicability condition",
+        );
+        expect(h.github.writes).toBe(0);
+      }
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("blocks local-only writer output before publication or enrollment", async () => {
+  for (const reference of [
+    "/Users/josh/Desktop/audit.pdf",
+    "/home/josh/audit.pdf",
+    "~/audit.pdf",
+    "/tmp/audit.pdf",
+    "/private/var/folders/audit.pdf",
+    "/var/folders/audit.pdf",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "[preview](localhost)",
+    "[preview](//localhost:3000)",
+    "[preview](//127.0.0.1:3000)",
+    "localhost:3000",
+    "[audit](file:///audit.pdf)",
+    "[audit](vscode://file/audit.pdf)",
+  ]) {
+    const h = await harness(
+      runner([], false, { body: `Explains behavior. See ${reference}` }),
+    );
+    try {
+      const value = h.service.submit(request("local-evidence"));
+      await until(() =>
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
+      expect(h.store.submissions.get(value.id).detail).toContain("local-only");
+      expect(h.github.writes).toBe(0);
+      expect(h.store.submissions.get(value.id).prId).toBeUndefined();
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("retains description title and nonblank content checks at publication", async () => {
+  for (const draft of [
+    { title: " " },
+    { title: "# Markdown heading" },
+    { title: "a".repeat(73) },
+    { title: "docs: see /Users/josh/example" },
+    { body: " " },
+  ]) {
+    const h = await harness(runner([], false, draft));
+    try {
+      const value = h.service.submit(request("invalid-description"));
+      await until(() =>
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
+      expect(h.github.writes).toBe(0);
+      expect(h.store.submissions.get(value.id).prId).toBeUndefined();
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("permits file labels and loopback prose with repository-specific title limits", async () => {
+  const h = await harness(
+    runner([], false, {
+      title: "fix: bind development server to localhost",
+      body: "Explains behavior. Set file: true in YAML. Bind localhost instead of all interfaces. See [source](https://github.com/owner/repo/blob/main/src/localhost.ts).",
+    }),
+  );
+  try {
+    const value = h.service.submit(request("file-label"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    expect(h.github.writes).toBe(1);
+    const brief = h.store.submissions.get(value.id).brief,
+      policy = h.store.submissions.policy("owner/repo"),
+      rule = policy?.analysis.requirements[0];
+    if (brief === undefined || policy === undefined || rule === undefined)
+      throw new Error("Missing submission policy or brief");
+    const longer = {
+      ...brief,
+      draft: { ...brief.draft, title: "a".repeat(90) },
+    };
+    expect(publicationBlockers(longer, policy, ["example.md"])).toContain(
+      "PR title must be at most 72 characters by default",
+    );
+    const longerTitlePolicy = {
+      ...policy,
+      analysis: {
+        ...policy.analysis,
+        requirements: [
+          ...policy.analysis.requirements,
+          {
+            ...rule,
+            id: "title-length",
+            description: "PR title must be at most 100 characters",
+            check: { kind: "title_max_length" as const, maximum: 100 },
+          },
+        ],
+      },
+    };
+    expect(
+      publicationBlockers(longer, longerTitlePolicy, ["example.md"]),
+    ).toEqual([]);
+    expect(
+      publicationBlockers(
+        { ...longer, draft: { ...longer.draft, title: "a".repeat(101) } },
+        longerTitlePolicy,
+        ["example.md"],
+      ),
+    ).toContain(
+      "Required title-length: PR title must be at most 100 characters",
+    );
   } finally {
     await h.close();
   }

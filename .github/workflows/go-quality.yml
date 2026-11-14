@@ -37,7 +37,7 @@ jobs:
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: npm ci --prefix .typescript-quality --ignore-scripts
       - run: bun run generate
-      - run: git diff --exit-code -- gen src/gen
+      - run: git diff --exit-code -- gen src/gen schemas
       - run: bun run check
       - name: Exercise native installation and manual startup
         run: bun scripts/test-install-acceptance.ts

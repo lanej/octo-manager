@@ -310,6 +310,10 @@
                   {
                     "type": "string",
                     "const": "unknown"
+                  },
+                  {
+                    "type": "string",
+                    "const": "not_applicable"
                   }
                 ]
               },
