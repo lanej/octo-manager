@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -21,15 +22,37 @@ import (
 type activityService struct {
 	octomanagerv1connect.UnimplementedSchedulerServiceHandler
 	cursors chan uint64
+	total   uint64
 }
 
 func (s activityService) ListActivity(_ context.Context, request *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
 	cursor := request.Msg.GetAfterSequence()
+
+	total := s.total
+	if total == 0 {
+		total = 201
+	}
+
+	first, last := cursor+1, min(cursor+200, total)
+	next, more := last, last < total
+
+	if request.Msg.BeforeSequence != nil {
+		cursor = request.Msg.GetBeforeSequence()
+		last = min(cursor-1, total)
+
+		first = 1
+		if last > 200 {
+			first = last - 199
+		}
+
+		next, more = first, first > 1
+	}
+
 	s.cursors <- cursor
 
 	var entries []*v1.ActivityReport
 
-	for sequence := cursor + 1; sequence <= min(cursor+200, 201); sequence++ {
+	for sequence := first; sequence <= last; sequence++ {
 		entries = append(entries, &v1.ActivityReport{Sequence: sequence, RecordedAtMs: 1794326090000, Report: &v1.ActivityInput{
 			Name: v1.ActivityName_ACTIVITY_NAME_MERGE_PR, Outcome: v1.ActivityOutcome_ACTIVITY_OUTCOME_SUCCEEDED,
 			Actor:  &v1.ActivityActor{Harness: "codex", SessionId: "caller", Version: new("0.167.0")},
@@ -37,7 +60,11 @@ func (s activityService) ListActivity(_ context.Context, request *connect.Reques
 		}})
 	}
 
-	return connect.NewResponse(&v1.ListActivityResponse{Activities: entries, NextSequence: min(cursor+200, 201), HasMore: cursor+200 < 201}), nil
+	if request.Msg.BeforeSequence != nil {
+		slices.Reverse(entries)
+	}
+
+	return connect.NewResponse(&v1.ListActivityResponse{Activities: entries, NextSequence: next, HasMore: more}), nil
 }
 
 func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
@@ -45,7 +72,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	m := model(t, theme.Dark)
 	m.snapshot.Jobs = nil
 	m.instance = "fixture"
-	m.snapshot.Sequence = 1
+	m.snapshot.Sequence = 201
 	service := activityService{cursors: make(chan uint64, 4)}
 	_, handler := octomanagerv1connect.NewSchedulerServiceHandler(service)
 	server := httptest.NewServer(handler)
@@ -59,14 +86,26 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	}
 
 	command = m.Update(command())
+	if command != nil || len(m.agentActivity.entries) != 200 || <-service.cursors != 202 {
+		t.Fatal("opening activity replayed history instead of loading a bounded recent page")
+	}
+
+	for range 4 {
+		command = m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+	}
+
 	if command == nil {
-		t.Fatal("next activity page was not requested")
+		t.Fatal("older activity was not requested on navigation")
 	}
 
 	m.Update(command())
 
-	if len(m.agentActivity.entries) != 201 || m.agentActivity.seenThrough != 1 || <-service.cursors != 0 || <-service.cursors != 200 {
+	if len(m.agentActivity.entries) != 201 || m.agentActivity.seenThrough != 201 || <-service.cursors != 2 {
 		t.Fatal("activity paging omitted durable reports or used incorrect cursors")
+	}
+
+	for range 4 {
+		m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 	}
 
 	for _, size := range []layout.Size{{Width: 132, Height: 40}, {Width: 80, Height: 32}, {Width: 40, Height: 16}} {
@@ -121,6 +160,52 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 
 	if !strings.Contains(ansi.Strip(m.activityContent()), "History incomplete") {
 		t.Fatal("failed activity reads appear as complete history")
+	}
+}
+
+func TestActivityOpensLatestLargeHistoryWithoutAutomaticReplay(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.instance = "large-history"
+	m.snapshot.Sequence = 120000
+	service := activityService{cursors: make(chan uint64, 4), total: 120000}
+	_, handler := octomanagerv1connect.NewSchedulerServiceHandler(service)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	m.api.RPC = octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
+
+	command := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
+	if command == nil {
+		t.Fatal("activity did not open")
+	}
+
+	if followup := m.Update(command()); followup != nil {
+		t.Fatal("opening activity automatically requested the older backlog")
+	}
+
+	if len(m.agentActivity.entries) != 200 || m.agentActivity.cursor != 120000 || m.agentActivity.oldest != 119801 || !m.agentActivity.hasOlder || <-service.cursors != 120001 {
+		t.Fatal("activity did not load only the most recent 200 records")
+	}
+
+	if m.loadActivity() != nil || m.agentActivity.loading {
+		t.Fatal("unchanged snapshot restarted history loading")
+	}
+
+	for range 4 {
+		command = m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+	}
+
+	if command == nil {
+		t.Fatal("older history was unavailable on demand")
+	}
+
+	if m.Update(command()) != nil || len(m.agentActivity.entries) != 400 || <-service.cursors != 119801 {
+		t.Fatal("older navigation did not load exactly one older page")
+	}
+
+	m.snapshot.Sequence = 120010
+	if m.loadActivity() != nil {
+		t.Fatal("live refresh moved an older page")
 	}
 }
 

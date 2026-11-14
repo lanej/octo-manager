@@ -42,4 +42,9 @@ message ActivityReport {
 }
 message RecordActivityRequest { ActivityInput report = 1; }
 message RecordActivityResponse { ActivityReport activity = 1; }
-message ListActivityRequest { uint64 after_sequence = 1; }
+message ListActivityRequest {
+  uint64 after_sequence = 1;
+  // An exclusive upper bound selects a recent page in descending sequence order.
+  // Omit for forward replay; zero selects the latest page. Do not combine with after_sequence.
+  optional uint64 before_sequence = 2;
+}

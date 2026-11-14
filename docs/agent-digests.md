@@ -1,5 +1,7 @@
 # Queued agent digests
 
+Queue reconciliation runs only when an agent has applicable unread messages, a live digest, pending digest cleanup, or historical inbox messages outside digest membership that may still have legacy queue entries. Successful idle legacy cleanup is reinspected once per minute to catch late native admission; local membership, receipt, applicability, or transport changes can trigger an earlier inspection. Repeated failures retain their first error event and retry with delays of 5, 10, 20, 40, and at most 60 seconds. Error events include the agent identity and actual rejection. Sessions with no inbox or digest work are not polled.
+
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving separate findings, a short excerpt and the failed-run or review link. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
 ## Replacement and cancellation

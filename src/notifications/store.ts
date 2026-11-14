@@ -164,6 +164,9 @@ export class DigestStore {
     });
     return next;
   }
+  defer(value: Digest, nextCheckAt: number): void {
+    this.write({ ...value, nextCheckAt });
+  }
   event(
     agentId: string,
     digestId: string | undefined,
@@ -175,7 +178,17 @@ export class DigestStore {
         "INSERT INTO agent_digest_events(digest_id,agent_id,at_ms,kind,detail) VALUES(?,?,?,?,?)",
       )
       .run(digestId ?? null, agentId, this.now(), kind, JSON.stringify(detail));
-    this.eventSink(kind, kind.replaceAll("_", " "));
+    const reason =
+      typeof detail === "object" &&
+      detail !== null &&
+      "reason" in detail &&
+      typeof detail.reason === "string"
+        ? detail.reason
+        : undefined;
+    this.eventSink(
+      kind,
+      `${kind.replaceAll("_", " ")} · agent ${agentId}${reason === undefined ? "" : ` · ${reason}`}`,
+    );
   }
   transaction<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");

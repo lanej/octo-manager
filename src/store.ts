@@ -130,6 +130,9 @@ export class Store {
       : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
     return rows.map(storedEvent);
   }
+  activityBefore(before: number): JobEvent[] {
+    return this.db.prepare("SELECT * FROM events WHERE seq<? AND kind!='progress' ORDER BY seq DESC LIMIT 201").all(before).map(storedEvent);
+  }
   paused(): boolean { return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.value === "true"; }
   setPaused(value: boolean): void {
     this.db.exec("BEGIN IMMEDIATE");
