@@ -456,6 +456,10 @@ test("blocks local-only writer output before publication or enrollment", async (
     "/var/folders/audit.pdf",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "[preview](localhost)",
+    "[preview](//localhost:3000)",
+    "[preview](//127.0.0.1:3000)",
+    "localhost:3000",
     "[audit](file:///audit.pdf)",
     "[audit](vscode://file/audit.pdf)",
   ]) {
@@ -502,9 +506,12 @@ test("retains description title and nonblank content checks at publication", asy
     }
   }
 });
-test("permits file labels and repository-specific title length contracts", async () => {
+test("permits file labels and loopback prose with repository-specific title limits", async () => {
   const h = await harness(
-    runner([], false, { body: "Explains behavior. Set file: true in YAML." }),
+    runner([], false, {
+      title: "fix: bind development server to localhost",
+      body: "Explains behavior. Set file: true in YAML. Bind localhost instead of all interfaces. See [source](https://github.com/owner/repo/blob/main/src/localhost.ts).",
+    }),
   );
   try {
     const value = h.service.submit(request("file-label"));

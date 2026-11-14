@@ -453,9 +453,13 @@ export function publicationBlockers(
     )
   )
     blockers.push("PR title must be one printable line");
+  const publicationText = `${brief.draft.title}\n${brief.draft.body}`;
   if (
-    /(?<![\w.])(?:\/Users\/|\/home\/\w|~\/|\/tmp\/|\/private\/(?:var|tmp)\/|\/var\/folders\/)|\blocalhost\b|127\.0\.0\.1|(?:file|vscode):\/\/|\]\((?:file:|vscode:|\/private\/)/u.test(
-      `${brief.draft.title}\n${brief.draft.body}`,
+    /(?<![\w.])(?:\/Users\/|\/home\/\w|~\/|\/tmp\/|\/private\/(?:var|tmp)\/|\/var\/folders\/)|(?:file|vscode):\/\/|\]\((?:file:|vscode:|\/private\/)/u.test(
+      publicationText,
+    ) ||
+    /(?:https?:\/\/|\]\((?:(?:https?:)?\/\/)?)(?:[^/\s@]+@)?(?:localhost|127\.0\.0\.1)\.?(?=[:/?#)\s]|$)|(?<![\w./])(?:localhost|127\.0\.0\.1):\d+\b/iu.test(
+      publicationText,
     )
   )
     blockers.push(
