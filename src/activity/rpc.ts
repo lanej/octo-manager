@@ -61,6 +61,7 @@ export function activityRoutes(
   store: ActivityStore,
   sequence: () => number,
   events: (after: number) => JobEvent[],
+  recent: (before: number) => JobEvent[],
 ) {
   return {
     recordActivity(request: RecordActivityRequest) {
@@ -79,6 +80,34 @@ export function activityRoutes(
       }
     },
     listActivity(request: ListActivityRequest) {
+      if (request.beforeSequence !== undefined) {
+        if (request.afterSequence !== 0n)
+          throw new ConnectError(
+            "Activity cursors cannot be combined",
+            Code.InvalidArgument,
+          );
+        const before =
+          request.beforeSequence === 0n
+            ? BigInt(sequence()) + 1n
+            : request.beforeSequence;
+        if (before < 0n || before > BigInt(sequence()) + 1n)
+          throw new ConnectError(
+            "Activity cursor is outside retained history",
+            Code.OutOfRange,
+          );
+        const rows = recent(Number(before)),
+          page = rows.slice(0, 200),
+          next = page.at(-1)?.sequence ?? 0n;
+        return {
+          activities: store
+            .list(0, Number(before))
+            .filter((entry) => BigInt(entry.sequence) >= next)
+            .map(wireReport),
+          events: page.filter((entry) => entry.kind !== "agent_activity"),
+          nextSequence: next,
+          hasMore: rows.length > 200,
+        };
+      }
       if (
         request.afterSequence < 0n ||
         request.afterSequence > BigInt(sequence())

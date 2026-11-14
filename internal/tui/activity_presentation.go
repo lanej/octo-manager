@@ -44,6 +44,10 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 		row.title = "GitHub notifications unavailable"
 	case "notification_monitor_recovered":
 		row.title = "GitHub notifications restored"
+	case "queue_inspection_unavailable", "digest_uncertain":
+		row.title = "Agent queue unavailable"
+	case "queue_inspection_recovered":
+		row.title = "Agent queue restored"
 	case "pr_observed":
 		row.title = "PR checked"
 		sha := strings.TrimPrefix(event.GetDetail(), "Observed head ")

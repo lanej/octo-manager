@@ -210,13 +210,13 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		}
 	case "h", "left":
 		if m.panel == activityPanel {
-			m.moveActivityPage(1)
+			return m.moveActivityPage(1)
 		} else if m.tab().worker {
 			m.moveRun(-1)
 		}
 	case "l", "right":
 		if m.panel == activityPanel {
-			m.moveActivityPage(-1)
+			return m.moveActivityPage(-1)
 		} else if m.tab().worker {
 			m.moveRun(1)
 		}

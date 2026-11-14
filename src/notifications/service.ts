@@ -27,7 +27,10 @@ export class DigestService {
   private work: Promise<void> | undefined;
   private stopped = false;
   private connections = new Set<QueueConnection>();
-  private checks = new Map<string, { signature: string; at: number }>();
+  private checks = new Map<
+    string,
+    { signature: string; at: number; failures: number; error?: string }
+  >();
   constructor(
     readonly store: DigestStore,
     private tracking: TrackingService,
@@ -64,47 +67,105 @@ export class DigestService {
   private pending(agentId: string): AgentMessage[] {
     return this.tracking.store.inbox.list(agentId, 0, false, true).messages;
   }
+  private legacy(agentId: string): AgentMessage[] {
+    const covered = new Set(
+      this.store
+        .list(agentId)
+        .flatMap((value) => this.store.revisions(value.id))
+        .flatMap((value) => value.messageIds),
+    );
+    const messages: AgentMessage[] = [];
+    let after = 0;
+    for (;;) {
+      const page = this.tracking.store.inbox.list(agentId, after, true);
+      messages.push(...page.messages.filter((value) => !covered.has(value.id)));
+      if (!page.hasMore) return messages;
+      after = page.nextSequence;
+    }
+  }
+  private signature(agent: AgentRef): string {
+    const active = this.store.active(agent.id);
+    return JSON.stringify([
+      this.pending(agent.id).map((value) => value.id),
+      this.legacy(agent.id).map((value) => [
+        value.id,
+        value.acknowledgedAt,
+        value.applicable,
+      ]),
+      active?.id,
+      active?.revision,
+      active?.state,
+      this.store
+        .list(agent.id)
+        .filter((value) => terminal(value) && value.cleanupPending)
+        .map((value) => value.id),
+      this.tracking.config.endpoints[agent.endpoint],
+    ]);
+  }
   private async run(): Promise<void> {
     for (const agent of this.tracking.store.agents()) {
       if (this.stopped) break;
       if (!this.managed(agent.id)) continue;
       const pending = this.pending(agent.id),
         active = this.store.active(agent.id),
-        signature = JSON.stringify([
-          pending.map((value) => value.id),
-          active?.id,
-          active?.revision,
-          active?.state,
-          this.tracking.config.endpoints[agent.endpoint],
-        ]),
+        legacy = this.legacy(agent.id),
+        cleanup = this.store
+          .list(agent.id)
+          .some((value) => terminal(value) && value.cleanupPending);
+      if (
+        pending.length === 0 &&
+        active === undefined &&
+        !cleanup &&
+        legacy.length === 0
+      ) {
+        this.checks.delete(agent.id);
+        continue;
+      }
+      const signature = this.signature(agent),
         previous = this.checks.get(agent.id);
       if (previous?.signature === signature && previous.at > this.now())
         continue;
+      let failures = 0;
+      let failure: string | undefined;
+      let delay = 1000;
       try {
         await this.sync(agent);
+        if (
+          previous?.error !== undefined &&
+          this.store.active(agent.id) === undefined
+        )
+          this.store.event(
+            agent.id,
+            undefined,
+            "queue_inspection_recovered",
+            {},
+          );
       } catch (error) {
+        failures =
+          (previous?.signature === signature ? previous.failures : 0) + 1;
+        delay = Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
         const current = this.store.active(agent.id),
           reason = (
             error instanceof Error
               ? error.message
               : "Queue reconciliation failed"
-          ).slice(0, 1000);
-        if (current !== undefined)
-          this.store.save(
-            {
-              ...current,
-              state:
-                current.state === State.Ready ||
-                current.state === State.Unavailable
-                  ? State.Unavailable
-                  : State.Uncertain,
-              error: reason,
-              nextCheckAt: this.now() + 5000,
-            },
-            "digest_uncertain",
-            { reason },
-          );
-        else
+          ).slice(0, 1000),
+          nextCheckAt = this.now() + delay;
+        failure = reason;
+        if (current !== undefined) {
+          const state =
+            current.state === State.Ready || current.state === State.Unavailable
+              ? State.Unavailable
+              : State.Uncertain;
+          if (current.state === state && current.error === reason)
+            this.store.defer(current, nextCheckAt);
+          else
+            this.store.save(
+              { ...current, state, error: reason, nextCheckAt },
+              "digest_uncertain",
+              { reason },
+            );
+        } else if (previous?.error !== reason)
           this.store.event(
             agent.id,
             undefined,
@@ -112,25 +173,23 @@ export class DigestService {
             { reason },
           );
       }
-      const fresh = this.store.active(agent.id),
-        unread = this.pending(agent.id);
-      const freshSignature = JSON.stringify([
-        unread.map((value) => value.id),
-        fresh?.id,
-        fresh?.revision,
-        fresh?.state,
-        this.tracking.config.endpoints[agent.endpoint],
-      ]);
+      const fresh = this.store.active(agent.id);
+      const idle =
+        this.pending(agent.id).length === 0 &&
+        fresh === undefined &&
+        !this.store.list(agent.id).some((value) => value.cleanupPending);
       this.checks.set(agent.id, {
-        signature: freshSignature,
+        signature: this.signature(agent),
         at: Math.max(
-          this.now() + (unread.length > 0 || fresh !== undefined ? 1000 : 5000),
+          this.now() + (failure === undefined && idle ? 60000 : delay),
           fresh !== undefined &&
             (fresh.state === State.Uncertain ||
               fresh.state === State.Unavailable)
             ? fresh.nextCheckAt
             : 0,
         ),
+        failures,
+        ...(failure === undefined ? {} : { error: failure }),
       });
     }
   }

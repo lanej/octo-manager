@@ -469,8 +469,11 @@ func (x *RecordActivityResponse) GetActivity() *ActivityReport {
 type ListActivityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AfterSequence uint64                 `protobuf:"varint,1,opt,name=after_sequence,json=afterSequence,proto3" json:"after_sequence,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// An exclusive upper bound selects a recent page in descending sequence order.
+	// Omit for forward replay; zero selects the latest page. Do not combine with after_sequence.
+	BeforeSequence *uint64 `protobuf:"varint,2,opt,name=before_sequence,json=beforeSequence,proto3,oneof" json:"before_sequence,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ListActivityRequest) Reset() {
@@ -506,6 +509,13 @@ func (*ListActivityRequest) Descriptor() ([]byte, []int) {
 func (x *ListActivityRequest) GetAfterSequence() uint64 {
 	if x != nil {
 		return x.AfterSequence
+	}
+	return 0
+}
+
+func (x *ListActivityRequest) GetBeforeSequence() uint64 {
+	if x != nil && x.BeforeSequence != nil {
+		return *x.BeforeSequence
 	}
 	return 0
 }
@@ -547,9 +557,11 @@ const file_octomanager_v1_activity_proto_rawDesc = "" +
 	"\x15RecordActivityRequest\x125\n" +
 	"\x06report\x18\x01 \x01(\v2\x1d.octomanager.v1.ActivityInputR\x06report\"T\n" +
 	"\x16RecordActivityResponse\x12:\n" +
-	"\bactivity\x18\x01 \x01(\v2\x1e.octomanager.v1.ActivityReportR\bactivity\"<\n" +
+	"\bactivity\x18\x01 \x01(\v2\x1e.octomanager.v1.ActivityReportR\bactivity\"~\n" +
 	"\x13ListActivityRequest\x12%\n" +
-	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence*\xcb\x01\n" +
+	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\x12,\n" +
+	"\x0fbefore_sequence\x18\x02 \x01(\x04H\x00R\x0ebeforeSequence\x88\x01\x01B\x12\n" +
+	"\x10_before_sequence*\xcb\x01\n" +
 	"\fActivityName\x12\x1d\n" +
 	"\x19ACTIVITY_NAME_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ACTIVITY_NAME_MERGE_PR\x10\x01\x12\x1c\n" +
@@ -609,6 +621,7 @@ func file_octomanager_v1_activity_proto_init() {
 	}
 	file_octomanager_v1_activity_proto_msgTypes[0].OneofWrappers = []any{}
 	file_octomanager_v1_activity_proto_msgTypes[1].OneofWrappers = []any{}
+	file_octomanager_v1_activity_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
