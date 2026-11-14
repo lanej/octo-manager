@@ -5,7 +5,7 @@ const text = (maxLength = 8000) => Type.String({ minLength: 1, maxLength });
 const object = <T extends Record<string, TSchema>>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
 const strings = (maxItems = 100) => Type.Array(text(), { maxItems });
-export const policyAnalystVersion = 2;
+export const policyAnalystVersion = 3;
 export function isPullRequestTemplate(path: string): boolean {
   return /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/iu.test(
     path,
@@ -82,6 +82,14 @@ export const RequirementSchema = object({
   sourceSha: text(100),
   line: Type.Integer({ minimum: 1 }),
   quote: text(),
+  condition: Type.Optional(
+    Type.String({
+      minLength: 1,
+      maxLength: 8000,
+      description:
+        "Exact unique applicability condition or contextual heading from the same cited source; omit for unconditional requirements.",
+    }),
+  ),
   scope: text(4000),
   check: Type.Union([
     object({ kind: Type.Literal("body_contains"), value: text() }),
@@ -137,6 +145,7 @@ export const PolicySchema = object({
   sourceDigest: text(100),
   analystVersion: Type.Union([
     Type.Literal(1),
+    Type.Literal(2),
     Type.Literal(policyAnalystVersion),
   ]),
   stockVersion: Type.Literal(1),
@@ -183,6 +192,7 @@ export const WriterSchema = object({
         Type.Literal("satisfied"),
         Type.Literal("unmet"),
         Type.Literal("unknown"),
+        Type.Literal("not_applicable"),
       ]),
       rationale: text(),
     }),
@@ -394,6 +404,15 @@ export function policyBlockers(
         .includes(requirement.quote)
     )
       blockers.push(`Unverified requirement citation: ${requirement.id}`);
+    if (requirement.condition !== undefined) {
+      const index = source?.text.indexOf(requirement.condition) ?? -1;
+      if (
+        requirement.condition.trim() === "" ||
+        index < 0 ||
+        source?.text.indexOf(requirement.condition, index + 1) !== -1
+      )
+        blockers.push(`Unverified applicability condition: ${requirement.id}`);
+    }
   }
   return blockers;
 }
@@ -402,6 +421,7 @@ export function publicationBlockers(
   policy: RepositoryPolicy,
   files: string[],
 ): string[] {
+  const checks = brief.draft.requirementChecks;
   const blockers = [
     ...brief.change.blockers,
     ...brief.draft.blockers,
@@ -416,7 +436,11 @@ export function publicationBlockers(
       (rule) =>
         rule.strength === "required" &&
         applicable(rule, files) &&
-        rule.check.kind === "title_max_length",
+        rule.check.kind === "title_max_length" &&
+        !checks.some(
+          (check) =>
+            check.ruleId === rule.id && check.status === "not_applicable",
+        ),
     ) &&
     Array.from(brief.draft.title).length > 72
   )
@@ -455,10 +479,17 @@ export function publicationBlockers(
         "Caller-reported validation cannot be marked independently observed",
       );
   }
-  const checks = brief.draft.requirementChecks;
   for (const rule of policy.analysis.requirements.filter(
     (rule) => rule.strength === "required" && applicable(rule, files),
   )) {
+    const assessment = checks.find((check) => check.ruleId === rule.id);
+    if (assessment?.status === "not_applicable") {
+      if (rule.condition === undefined || assessment.rationale.trim() === "")
+        blockers.push(
+          `Required ${rule.id}: not-applicable requires a verified source condition and rationale`,
+        );
+      continue;
+    }
     let met: boolean;
     switch (rule.check.kind) {
       case "body_contains":

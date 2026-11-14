@@ -5,6 +5,7 @@ import {
   parse,
   PolicyAnalysisSchema,
   ChangeAnalysisSchema,
+  WriterSchema,
 } from "../src/submissions/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -305,7 +306,7 @@ test("policy analysis receives complete template discovery without change-specif
         repository: "owner/repo",
         templateDiscovery: { complete: true, paths },
       });
-      expect(h.store.submissions.policy("owner/repo")?.analystVersion).toBe(2);
+      expect(h.store.submissions.policy("owner/repo")?.analystVersion).toBe(3);
     } finally {
       await h.close();
     }
@@ -351,6 +352,93 @@ test("caller validation stays reported while raw analysis and invalid references
       } else {
         expect(saved.state).toBe(State.NeedsInput);
         expect(saved.detail).toContain("Unknown evidence reference");
+        expect(h.github.writes).toBe(0);
+      }
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("conditional requirements need source-backed not-applicable assessments", async () => {
+  for (const condition of [
+    "When changing keybindings:",
+    undefined,
+    "When changing deployment:",
+  ]) {
+    const github = new GitHub(),
+      snapshot = github.snapshot.bind(github),
+      base = runner([]);
+    github.snapshot = async (input) => {
+      const value = await snapshot(input);
+      return {
+        ...value,
+        sources: value.sources.map((source) => ({
+          ...source,
+          text: "Include behavior.\nWhen changing keybindings:\nRun native checks.",
+        })),
+      };
+    };
+    const run: RunStage = async (role, input, ...rest) => {
+      const stage = await base(role, input, ...rest);
+      if (role === "policy") {
+        const analysis = parse(PolicyAnalysisSchema, stage.result),
+          rule = analysis.requirements[0];
+        if (rule === undefined) throw new Error("No fixture requirement");
+        const result = {
+          ...analysis,
+          requirements: [
+            ...analysis.requirements,
+            {
+              ...rule,
+              id: "native-checks",
+              description: "Run native checks for keybinding changes",
+              line: 3,
+              quote: "Run native checks.",
+              ...(condition === undefined ? {} : { condition }),
+              check: { kind: "semantic" as const },
+            },
+          ],
+        };
+        return { ...stage, result, raw: JSON.stringify(result) };
+      }
+      if (role === "writer") {
+        const draft = parse(WriterSchema, stage.result);
+        const result = {
+          ...draft,
+          requirementChecks: [
+            {
+              ruleId: "native-checks",
+              status: "not_applicable",
+              rationale: "Only example.md changed; no keybinding changes.",
+            },
+          ],
+        };
+        return { ...stage, result, raw: JSON.stringify(result) };
+      }
+      return stage;
+    };
+    const h = await harness(run, github);
+    try {
+      const value = h.service.submit(request("conditional-check"));
+      await until(() =>
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      const saved = h.store.submissions.get(value.id);
+      if (condition === "When changing keybindings:") {
+        expect(saved.state).toBe(State.Succeeded);
+        expect(saved.brief?.draft.requirementChecks[0]?.status).toBe(
+          "not_applicable",
+        );
+        expect(h.github.writes).toBe(1);
+      } else {
+        expect(saved.state).toBe(State.NeedsInput);
+        expect(saved.detail).toContain(
+          condition === undefined
+            ? "verified source condition"
+            : "Unverified applicability condition",
+        );
         expect(h.github.writes).toBe(0);
       }
     } finally {
