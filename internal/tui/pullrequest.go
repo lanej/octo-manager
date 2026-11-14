@@ -142,7 +142,11 @@ func (m *Model) selectJob(job *v1.Job) {
 	}
 
 	m.result.GotoTop()
-	m.activity.GotoBottom()
+
+	if m.panel != trackingPanel {
+		m.activity.GotoBottom()
+	}
+
 	m.resizeContent()
 }
 

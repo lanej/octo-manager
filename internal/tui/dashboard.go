@@ -14,7 +14,7 @@ import (
 
 type dashboardTab struct {
 	id, label, title, purpose, region string
-	global, worker                    bool
+	global, worker, watches           bool
 }
 
 func tabDefinition(panel panelView) dashboardTab {
@@ -26,7 +26,7 @@ func tabDefinition(panel panelView) dashboardTab {
 	case statePanel:
 		return dashboardTab{id: "state", label: "3 Runtime", title: "RUNTIME STATE", purpose: "Inspect scheduler health and persisted run transitions", region: "runtime-state", worker: true}
 	case trackingPanel:
-		return dashboardTab{id: "tracking", label: "4 Tracking", title: "PR TRACKING", purpose: "See ownership, blockers and the next merge step", region: "pr-tracking"}
+		return dashboardTab{id: "tracking", label: "4 Tracking", title: "PR TRACKING", purpose: "See ownership, blockers and the next merge step", region: "pr-tracking", watches: true}
 	case activityPanel:
 		return dashboardTab{id: "agent-activity", label: "5 Activity", title: "AGENT ACTIVITY", purpose: "Follow reported agent operations across sessions", region: "agent-activity", global: true}
 	case githubPanel:
@@ -52,13 +52,13 @@ func (m *Model) dashboardRecipe() layout.Node {
 			name = "wide"
 		}
 
-		if tab.worker {
+		if tab.worker || tab.watches {
 			workspace = &layout.Responsive{Name: "worker-" + name, Variants: []layout.Variant{
-				{Name: "visible", Min: layout.Size{Width: 32, Height: 12}, Root: &layout.Flex{Name: "run-workspace", Axis: layout.Vertical, Gap: 1, Children: []layout.Slot{{Node: workspace, Track: layout.Grow(3)}, {Node: region("worker", layout.SupportingRegion), Track: layout.Fixed(6)}}}},
-				{Name: "hidden", Root: workspace, Hidden: []layout.Omission{{ID: "worker", Reason: "Short workspaces reserve space for the primary run view; resize to restore tool activity."}}},
+				{Name: "visible", Min: layout.Size{Width: 32, Height: 12}, Root: &layout.Flex{Name: "run-workspace", Axis: layout.Vertical, Gap: 1, Children: []layout.Slot{{Node: workspace, Track: layout.Grow(3)}, {Node: region("activity", layout.SupportingRegion), Track: layout.Fixed(6)}}}},
+				{Name: "hidden", Root: workspace, Hidden: []layout.Omission{{ID: "activity", Reason: "Short workspaces reserve space for the primary view; resize to restore supporting activity."}}},
 			}}
 		} else {
-			omitted = append(omitted, layout.Omission{ID: "worker", Reason: "This tab is not worker-run inspection; output and runtime tabs retain worker activity."})
+			omitted = append(omitted, layout.Omission{ID: "activity", Reason: "This tab does not require supporting activity."})
 		}
 
 		if wide && !tab.global && !m.expanded {
@@ -77,7 +77,7 @@ func (m *Model) dashboardRecipe() layout.Node {
 	focused.Min = layout.Size{Width: 32, Height: 12}
 
 	hidden := []layout.Omission{}
-	for _, id := range []string{"header", "navigation", "context", "pull-requests", tab.region, "worker", "footer"} {
+	for _, id := range []string{"header", "navigation", "context", "pull-requests", tab.region, "activity", "footer"} {
 		hidden = append(hidden, layout.Omission{ID: id, Reason: "Terminal is too small for the dashboard; retain a visible quit control."})
 	}
 
@@ -88,7 +88,7 @@ func (m *Model) dashboardRecipe() layout.Node {
 }
 
 func (m *Model) dashboardScreen() (*charmedui.Screen, error) {
-	screen, err := charmedui.NewScreen("header", "navigation", "context", "pull-requests", m.tab().region, "worker", "footer", "notice")
+	screen, err := charmedui.NewScreen("header", "navigation", "context", "pull-requests", m.tab().region, "activity", "footer", "notice")
 	if err != nil {
 		return nil, err
 	}
@@ -158,16 +158,21 @@ func (m *Model) dashboardView() string {
 			views[region.ID] = m.dashboardContext(size.Width)
 		case "pull-requests":
 			views[region.ID] = m.queue(geometry{left: size.Width, body: size.Height})
-		case "worker":
-			inner := layout.PanelContentSize(size)
-			lines := m.workerLines()
+		case "activity":
+			if tab.watches {
+				bar := feedback.Scrollbar{Total: m.activity.TotalLineCount(), Visible: m.activity.Height(), Offset: m.activity.YOffset(), Height: m.activity.Height()}
+				views[region.ID] = layout.Panel("CHECK WATCHES", layout.Row(m.activity.View(), bar.View(m.theme)), size, m.theme, m.focus.Current() == "activity")
+			} else {
+				inner := layout.PanelContentSize(size)
+				lines := m.workerLines()
 
-			worker := strings.Join(lines, "\n")
-			if inner.Height > len(lines) {
-				worker += "\n" + m.activity.View()
+				worker := strings.Join(lines, "\n")
+				if inner.Height > len(lines) {
+					worker += "\n" + m.activity.View()
+				}
+
+				views[region.ID] = layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, size, m.theme, m.focus.Current() == "activity")
 			}
-
-			views[region.ID] = layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, size, m.theme, m.focus.Current() == "activity")
 		case "footer":
 			views[region.ID] = (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
 		case "notice":

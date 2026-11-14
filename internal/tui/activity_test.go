@@ -79,7 +79,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 			}
 		}
 
-		if size.Width >= 80 && (!strings.Contains(view, "Agent activity") || !strings.Contains(view, "success reported") || !strings.Contains(view, "codex 0.167.0")) {
+		if size.Width >= 80 && (!strings.Contains(view, "ACTION") || (!strings.Contains(view, "success") || !strings.Contains(view, "reported")) || !strings.Contains(view, "codex 0.167.0")) {
 			t.Fatal("activity view omits the named outcome or actor")
 		}
 	}
@@ -223,10 +223,42 @@ func TestActivityShowsHistoricalActionContextAndLegacyGaps(t *testing.T) {
 		{Sequence: 2, Kind: "action_progress", Detail: "Merge conflict", ActionContext: &v1.ActionEventContext{State: v1.ActionState_ACTION_STATE_ACKNOWLEDGED, PrUrl: "https://github.com/owner/repo/pull/1", ActorAgentId: new("original"), ActorHarness: new("codex"), ActorSessionId: new("first"), ActorLabel: new("Original owner")}},
 	}
 
-	source := ansi.Strip(m.activityContent())
-	for _, expected := range []string{"acknowledged", "owner/repo#1", "codex", "Original owner", "Legacy event: transition state and actor were not recorded"} {
+	source := strings.Join(strings.Fields(ansi.Strip(m.activityContent())), " ")
+	for _, expected := range []string{"acknowledged", "owner/repo#1", "codex", "Original owner", "unrecorded."} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("activity omitted %q", expected)
+		}
+	}
+}
+
+func TestActivityTableRetainsPerRecordDSTOffset(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+
+	location, err := DisplayLocation("America/Los_Angeles")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m.location = location
+
+	before, err := time.Parse(time.RFC3339, "2026-11-01T08:30:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := time.Parse(time.RFC3339, "2026-11-01T09:30:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m.agentActivity.events = []*v1.JobEvent{{Sequence: 1, AtMs: before.UnixMilli(), Kind: "pr_observed"}, {Sequence: 2, AtMs: after.UnixMilli(), Kind: "pr_observed"}}
+	m.Resize(layout.Size{Width: 208, Height: 111})
+
+	view := ansi.Strip(m.activityContent())
+	for _, want := range []string{"01:30:00 PDT -0700", "01:30:00 PST -0800"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("activity table lost DST distinction %q", want)
 		}
 	}
 }

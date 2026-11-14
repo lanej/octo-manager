@@ -14,6 +14,7 @@ import (
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
+	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
 
@@ -30,7 +31,7 @@ func (m *Model) geometry() geometry {
 
 	main, _ := frame.Region(m.tab().region)
 	rail, split := frame.Region("pull-requests")
-	worker, _ := frame.Region("worker")
+	worker, _ := frame.Region("activity")
 
 	return geometry{body: main.Dy() + worker.Dy(), left: rail.Dx(), right: main.Dx(), result: main.Dy(), activity: worker.Dy(), split: split}
 }
@@ -162,6 +163,10 @@ func (m *Model) events() []*v1.JobEvent {
 }
 
 func (m *Model) resizeContent() {
+	if m.panel != trackingPanel {
+		m.checkWatchPR = ""
+	}
+
 	g := m.geometry()
 	if g.activity == 0 {
 		m.focus.Set("result")
@@ -211,7 +216,23 @@ func (m *Model) resizeContent() {
 	}
 
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
+
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
+
+	if m.panel == trackingPanel {
+		prID := m.currentSubject().tracked.GetId()
+		if m.checkWatchPR != prID {
+			oldOffset = 0
+		}
+
+		m.checkWatchPR = prID
+		m.activity.SetWidth(max(1, logSize.Width-1))
+		m.activity.SetHeight(max(1, logSize.Height))
+		m.activity.SetContent(ansi.Wrap(m.checkWatchContent(m.currentSubject().tracked), max(1, logSize.Width-1), " "))
+		m.activity.SetYOffset(oldOffset)
+
+		return
+	}
 
 	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
 	for _, event := range m.events() {
@@ -331,6 +352,27 @@ func (m *Model) header() []string {
 	lines = append(lines, context[1:]...)
 
 	return append(lines, "")
+}
+
+func (m *Model) renderMarkdown(content string, width int) string {
+	rendered, err := m.markdownText(content, width)
+	if err != nil {
+		return safe(content)
+	}
+
+	return rendered
+}
+
+func (m *Model) markdownText(content string, width int) (string, error) {
+	style := text.MarkdownStyles(m.theme)
+
+	style.H1.Prefix, style.H2.Prefix, style.H3.Prefix, style.H4.Prefix, style.H5.Prefix, style.H6.Prefix = "", "", "", "", "", ""
+	if m.theme.Mode == theme.Mono {
+		style.Strong.BlockPrefix, style.Strong.BlockSuffix = "", ""
+		style.Emph.BlockPrefix, style.Emph.BlockSuffix = "", ""
+	}
+
+	return text.Markdown(safe(content), max(1, width), m.theme, text.MarkdownOptions{Styles: &style})
 }
 
 func (m *Model) View() string { return m.dashboardView() }

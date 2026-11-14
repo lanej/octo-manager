@@ -13,6 +13,7 @@ import (
 	"github.com/lanej/charmed/input"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
+	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
 
@@ -118,12 +119,16 @@ func (m *Model) trackingContent() string {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
 
-		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson()))+" · "+m.field("Feedback", observationStatus(o.GetFeedbackJson())))
+		parts = append(parts, layout.Row(m.muted("Checks "), m.coveragePill(o.GetChecksJson()), "  ", m.muted("Reviews "), m.coveragePill(o.GetReviewsJson()), "  ", m.muted("Feedback "), m.coveragePill(o.GetFeedbackJson())))
 	} else {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
-	parts = append(parts, m.checkWatchContent(pr), m.repairContent(pr.GetId()))
+	if m.geometry().activity == 0 {
+		parts = append(parts, m.checkWatchContent(pr))
+	}
+
+	parts = append(parts, m.repairContent(pr.GetId()))
 	for _, merge := range m.snapshot.GetMergeStatuses() {
 		if merge.GetPrId() != pr.GetId() {
 			continue
@@ -180,7 +185,9 @@ func (m *Model) trackingContent() string {
 					parts = append(parts, m.field("Location", location))
 				}
 
-				parts = append(parts, text.Label(safe(comment.GetBody()), m.theme))
+				g := m.geometry()
+				inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+				parts = append(parts, m.renderMarkdown(comment.GetBody(), max(1, inner.Width-1)))
 			}
 
 			if profile := action.GetProfile(); profile != nil {
@@ -193,7 +200,9 @@ func (m *Model) trackingContent() string {
 					parts = append(parts, m.field("Model", profile.GetModel()))
 				}
 
-				parts = append(parts, text.Label(safe(profile.GetInstructions()), m.theme))
+				g := m.geometry()
+				inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
+				parts = append(parts, m.renderMarkdown(profile.GetInstructions(), max(1, inner.Width-1)))
 			}
 
 			for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
@@ -260,19 +269,18 @@ func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
 
 	if o := pr.GetObservation(); o != nil {
 		repository, _ := parsePRURL(pr.GetUrl())
-		revision := func(label, sha string) {
-			if !validCommit(sha) || repository == "" {
-				unavailable = append(unavailable, m.muted(label+": unavailable"))
+		addRange := func(base string, glyph theme.Glyph) {
+			if !validCommit(base) || !validCommit(o.GetHeadSha()) || repository == "" {
+				unavailable = append(unavailable, m.muted("Revision range unavailable"))
 				return
 			}
 
-			add(strings.Split(repository, "/pull/")[0]+"/commit/"+sha, label+": "+sha[:8])
+			add(strings.Split(repository, "/pull/")[0]+"/compare/"+base+".."+o.GetHeadSha(), m.theme.Glyph(glyph)+" "+base[:8]+".."+o.GetHeadSha()[:8])
 		}
-		revision("Head", o.GetHeadSha())
-		revision("PR-reported base", o.GetBaseSha())
+		addRange(o.GetBaseSha(), theme.GlyphDownstream)
 
-		if target := o.GetTargetBase(); target != nil {
-			revision("Target "+target.GetRef(), target.GetSha())
+		if target := o.GetTargetBase(); target != nil && target.GetSha() != o.GetBaseSha() {
+			addRange(target.GetSha(), theme.GlyphUpstream)
 		}
 	}
 
@@ -347,23 +355,6 @@ func (m *Model) refreshTracked() tea.Cmd {
 
 		return commandMsg{err: err}
 	}
-}
-
-func observationStatus(raw string) string {
-	var value struct {
-		State  string
-		Reason string
-	}
-	if err := json.Unmarshal([]byte(raw), &value); err != nil {
-		return "unavailable"
-	}
-
-	result := safe(value.State)
-	if value.Reason != "" {
-		result += " (" + safe(value.Reason) + ")"
-	}
-
-	return result
 }
 
 func (m *Model) deliveryDetails(raw string) string {

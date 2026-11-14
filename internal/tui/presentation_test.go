@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
+	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
@@ -48,8 +50,8 @@ func TestActivityPresentsPRsCommitsAndActionsInsteadOfDatabaseKeys(t *testing.T)
 	}
 	raw := m.activityContent()
 
-	visible := ansi.Strip(raw)
-	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Failed check: Retry policy", "agent receipt and acknowledgment are unverified"} {
+	visible := strings.Join(strings.Fields(ansi.Strip(raw)), " ")
+	for _, want := range []string{"owner/repo#42", "owner/repo@aaaaaaaa", "Notification accepted", "Retry", "policy", "unverified"} {
 		if !strings.Contains(visible, want) {
 			t.Errorf("missing readable context %q", want)
 		}
@@ -81,7 +83,7 @@ func TestPresentationDoesNotInventMissingHistoryOrUnsafeLinks(t *testing.T) {
 	id := "unknown-private-database-key"
 	m.agentActivity.events = []*v1.JobEvent{{Kind: "pr_observed", PrId: &id, Detail: "Observed head " + strings.Repeat("a", 40)}}
 
-	view := ansi.Strip(m.activityContent())
+	view := strings.Join(strings.Fields(ansi.Strip(m.activityContent())), " ")
 	if !strings.Contains(view, "PR context unavailable") || strings.Contains(view, id) {
 		t.Fatal("missing context was exposed as an internal key")
 	}
@@ -132,13 +134,13 @@ func TestCharmedTrackingLinksKeepTargetsAcrossResize(t *testing.T) {
 		m.Resize(layout.Size{Width: width, Height: 40})
 
 		content := m.trackingLinks(pr)
-		for _, destination := range []string{prURL, "https://github.com/owner/repo/commit/" + head, "https://github.com/owner/repo/commit/" + base, "https://github.com/owner/repo/commit/" + target} {
+		for _, destination := range []string{prURL, "https://github.com/owner/repo/compare/" + base + ".." + head, "https://github.com/owner/repo/compare/" + target + ".." + head} {
 			if !strings.Contains(content, ansi.SetHyperlink(destination)) {
 				t.Errorf("width %d lost target %q", width, destination)
 			}
 		}
 
-		for _, role := range []string{"Head:", "PR-reported base:", "Target main:"} {
+		for _, role := range []string{"bbbbbbbb..aaaaaaaa", "cccccccc..aaaaaaaa"} {
 			if !strings.Contains(ansi.Strip(content), role) {
 				t.Errorf("width %d lost role %q", width, role)
 			}
@@ -182,7 +184,7 @@ func TestTrackingPresentsReviewFeedbackAndLocation(t *testing.T) {
 	m.ensureSelection()
 	view := ansi.Strip(m.trackingContent())
 
-	for _, want := range []string{"Code review from reviewer", "src/parser.ts:42", "Please reuse the existing parser.", "Feedback:", "Comments unavailable"} {
+	for _, want := range []string{"Code review from reviewer", "src/parser.ts:42", "Please reuse the existing parser.", "Feedback", "Partial"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("feedback missing %q", want)
 		}
@@ -221,7 +223,7 @@ func TestCheckWatchPresentsPendingCoverageAndLinkedResults(t *testing.T) {
 	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}, CheckWatches: []*v1.CheckWatch{{Id: "opaque-watch-id", PrId: "pr", HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, EvidenceJson: `{"state":"partial","reason":"Workflow still queued"}`}}}
 	pending := ansi.Strip(m.checkWatchContent(pr))
 
-	if !strings.Contains(pending, "waiting") || !strings.Contains(pending, "Workflow still queued") || strings.Contains(pending, "opaque-watch-id") {
+	if !strings.Contains(pending, "waiting") || !strings.Contains(pending, "Partial") || strings.Contains(pending, "Workflow still queued") || strings.Contains(pending, "opaque-watch-id") {
 		t.Fatal("check watch did not present human-readable pending state")
 	}
 
@@ -232,5 +234,172 @@ func TestCheckWatchPresentsPendingCoverageAndLinkedResults(t *testing.T) {
 
 	if !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/commit/"+sha)) || !strings.Contains(result, ansi.SetHyperlink("https://github.com/owner/repo/actions/runs/123")) {
 		t.Fatal("check completion lost its commit or run link")
+	}
+}
+
+func TestTrackingRendersReviewMarkdownAndStatusLayout(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []theme.Mode{theme.Dark, theme.Light, theme.Contrast, theme.Mono} {
+		m := model(t, mode)
+		m.snapshot.Jobs = nil
+		m.snapshot.Tracking = &v1.TrackingSnapshot{
+			Prs: []*v1.TrackedPullRequest{{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true, Observation: &v1.TrackingObservation{
+				ChecksJson: `{"state":"partial","reason":"Repeated coverage explanation"}`, ReviewsJson: `{"state":"complete"}`, FeedbackJson: new(`{"state":"unavailable","reason":"API unavailable"}`),
+			}}},
+			Actions: []*v1.PendingAction{{Id: "review", PrId: "pr", Summary: "Review feedback", State: v1.ActionState_ACTION_STATE_OPEN, Blocker: &v1.PendingAction_ReviewFeedback{ReviewFeedback: &v1.ReviewFeedback{
+				Body: "<!-- bot metadata -->\n\n### Review heading\n\n**Keep this prose** and `parser.ts`.\n\n```go\nreturn result\n```\n\n<details>\n<summary>Review details</summary>\n\nAdditional review evidence.\n\n</details>\n\n\x1b[2JVisible text",
+			}}}},
+		}
+		m.ensureSelection()
+		m.Resize(layout.Size{Width: 208, Height: 111})
+
+		content := ansi.Strip(m.result.View())
+		for _, want := range []string{"Review heading", "Keep this prose", "parser.ts", "return result", "Additional review evidence", "Visible text"} {
+			if !strings.Contains(content, want) {
+				t.Errorf("missing review content %q in %q", want, content)
+			}
+		}
+
+		for _, raw := range []string{"### Review heading", "**Keep this prose**", "```", "<!--", "<details>", "<summary>", "\x1b[2J", "Repeated coverage explanation"} {
+			if strings.Contains(ansi.Strip(m.result.View()), raw) {
+				t.Errorf("raw prose rendered %q", raw)
+			}
+		}
+
+		statusFound := false
+
+		for _, line := range strings.Split(content, "\n") {
+			if strings.Contains(line, "Checks") && strings.Contains(line, "Reviews") && strings.Contains(line, "Feedback") {
+				statusFound = true
+			}
+		}
+
+		if !statusFound {
+			t.Error("coverage fields do not share one status row")
+		}
+
+		for _, size := range []layout.Size{{Width: 80, Height: 32}, {Width: 40, Height: 16}} {
+			m.Resize(size)
+
+			for _, line := range strings.Split(m.View(), "\n") {
+				if ansi.StringWidth(line) > size.Width {
+					t.Fatal("review Markdown exceeds terminal width")
+				}
+			}
+		}
+	}
+}
+
+func TestCoveragePillsKeepPartialAndUnavailableDistinct(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+
+	cases := []struct {
+		raw, label string
+		tone       text.Tone
+	}{
+		{`{"state":"complete"}`, "Complete", text.Success},
+		{`{"state":"partial","reason":"Long repeated sentence"}`, "Partial", text.Warning},
+		{`{"state":"unavailable","reason":"Network failed"}`, "Unavailable", text.Danger},
+		{`invalid`, "Unavailable", text.Danger},
+		{`{"state":"new-provider-state"}`, "Unknown", text.Neutral},
+	}
+	for _, c := range cases {
+		if got := m.coveragePill(c.raw); got != text.Pill(c.label, c.tone, m.theme, text.Normal) {
+			t.Errorf("coverage %s did not retain its labeled semantic pill", c.raw)
+		}
+	}
+}
+
+func TestCheckWatchPanelKeepsCurrentRevisionVisibleAndScrollsIndependently(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	pr := &v1.TrackedPullRequest{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}
+
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}}
+	for i := range 12 {
+		m.snapshot.Tracking.CheckWatches = append(m.snapshot.Tracking.CheckWatches, &v1.CheckWatch{PrId: "pr", HeadSha: strings.Repeat("a", 40), CreatedAtMs: int64(i), State: v1.CheckWatchState_CHECK_WATCH_STATE_SUPERSEDED, EvidenceJson: `{"state":"partial","reason":"Repeated explanation"}`})
+	}
+
+	m.snapshot.Tracking.CheckWatches = append(m.snapshot.Tracking.CheckWatches, &v1.CheckWatch{PrId: "pr", HeadSha: strings.Repeat("b", 40), CreatedAtMs: 13, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, EvidenceJson: `{"state":"partial"}`})
+	m.ensureSelection()
+	m.Resize(layout.Size{Width: 208, Height: 40})
+
+	if !strings.Contains(ansi.Strip(m.activity.View()), "bbbbbbbb") || !strings.Contains(ansi.Strip(m.View()), "CHECK WATCHES") {
+		t.Fatal("current watch hidden behind superseded history")
+	}
+
+	if strings.Contains(ansi.Strip(m.result.View()), "bbbbbbbb") {
+		t.Fatal("watches duplicated in main tracking panel")
+	}
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.key(tea.KeyPressMsg{Code: ']', Text: "]"})
+
+	if m.activity.YOffset() == 0 || m.result.YOffset() != 0 {
+		t.Fatal("check-watch panel did not scroll independently")
+	}
+
+	other := &v1.TrackedPullRequest{Id: "other", Url: "https://github.com/owner/repo/pull/43", Enabled: true}
+
+	m.snapshot.Tracking.Prs = append(m.snapshot.Tracking.Prs, other)
+	for i := range 12 {
+		m.snapshot.Tracking.CheckWatches = append(m.snapshot.Tracking.CheckWatches, &v1.CheckWatch{PrId: "other", HeadSha: strings.Repeat("c", 40), CreatedAtMs: int64(i), EvidenceJson: `{"state":"partial"}`})
+	}
+
+	m.key(tea.KeyPressMsg{Code: 'j', Text: "j"})
+
+	if m.activity.YOffset() != 0 || !strings.Contains(ansi.Strip(m.activity.View()), "cccccccc") {
+		t.Fatal("PR selection retained another PR's watch offset")
+	}
+
+	m.key(tea.KeyPressMsg{Code: ']', Text: "]"})
+	scrolled := m.activity.YOffset()
+	m.resizeContent()
+
+	if scrolled == 0 || m.activity.YOffset() != scrolled {
+		t.Fatal("same-PR refresh lost watch scroll position")
+	}
+
+	m.key(tea.KeyPressMsg{Code: 'k', Text: "k"})
+
+	if m.activity.YOffset() != 0 || !strings.Contains(ansi.Strip(m.activity.View()), "bbbbbbbb") {
+		t.Fatal("returning to a PR hid its current watch")
+	}
+
+	m.key(tea.KeyPressMsg{Code: ']', Text: "]"})
+	m.key(tea.KeyPressMsg{Code: '2', Text: "2"})
+	m.key(tea.KeyPressMsg{Code: '4', Text: "4"})
+
+	if m.activity.YOffset() != 0 || !strings.Contains(ansi.Strip(m.activity.View()), "bbbbbbbb") {
+		t.Fatal("entering tracking retained the worker pane's offset")
+	}
+
+	m.snapshot.Jobs = []*v1.Job{
+		{Id: "run1", Task: &v1.Task{Kind: &v1.Task_SummarizePullRequest{SummarizePullRequest: &v1.SummarizePullRequestTask{Url: pr.GetUrl()}}}},
+		{Id: "run2", Task: &v1.Task{Kind: &v1.Task_SummarizePullRequest{SummarizePullRequest: &v1.SummarizePullRequestTask{Url: pr.GetUrl()}}}},
+	}
+	m.selected = "run1"
+	m.resizeContent()
+	m.key(tea.KeyPressMsg{Code: ']', Text: "]"})
+	scrolled = m.activity.YOffset()
+	m.key(tea.KeyPressMsg{Code: 'l', Text: "l"})
+
+	if m.selected != "run1" || m.activity.YOffset() != scrolled {
+		t.Fatal("tracking navigation changed the selected run or check-watch scroll")
+	}
+
+	m.key(tea.KeyPressMsg{Code: 'h', Text: "h"})
+
+	if m.selected != "run1" || m.activity.YOffset() != scrolled {
+		t.Fatal("tracking navigation changed the selected run or check-watch scroll")
+	}
+
+	m.Resize(layout.Size{Width: 40, Height: 16})
+
+	if m.focus.Current() != "result" || !strings.Contains(ansi.Strip(m.trackingContent()), "bbbbbbbb") {
+		t.Fatal("small terminal lost check watches or kept invisible focus")
 	}
 }

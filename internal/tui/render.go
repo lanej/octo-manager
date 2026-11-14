@@ -2,7 +2,6 @@ package tui
 
 import (
 	"github.com/charmbracelet/x/ansi"
-	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
 )
 
@@ -24,11 +23,7 @@ func (m *Model) renderedContent(source string, width int, markdown bool) string 
 	var rendered string
 
 	if markdown {
-		styles := text.MarkdownStyles(m.theme)
-		styles.Strong.BlockPrefix, styles.Strong.BlockSuffix = "", ""
-		styles.Emph.BlockPrefix, styles.Emph.BlockSuffix = "", ""
-
-		value, err := text.Markdown(source, width, m.theme, text.MarkdownOptions{Styles: &styles})
+		value, err := m.markdownText(source, width)
 		if err != nil {
 			m.contentRender.valid = false
 
