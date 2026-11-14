@@ -1,6 +1,7 @@
 import {
   anchorPolicy,
   policyBlockers,
+  publicationBlockers,
   parse,
   PolicyAnalysisSchema,
 } from "../src/submissions/contracts.js";
@@ -102,7 +103,11 @@ class GitHub implements SubmissionGitHub {
       : Promise.resolve(value);
   }
 }
-function runner(roles: Role[], block = false): RunStage {
+function runner(
+  roles: Role[],
+  block = false,
+  draft: { title?: string; body?: string } = {},
+): RunStage {
   return (role, _input, _schema, instructions, model) => {
     roles.push(role);
     const result: unknown =
@@ -149,6 +154,7 @@ function runner(roles: Role[], block = false): RunStage {
                 : "Explains behavior in the example so readers can follow its purpose.",
               requirementChecks: [],
               blockers: [],
+              ...draft,
             };
     return Promise.resolve({
       role,
@@ -259,6 +265,115 @@ test("blocks missing repository requirements and preserves falsifiable brief", a
     expect(
       h.store.submissions.get(value.id).brief?.change.claims[0]?.falsification,
     ).toContain("Read");
+  } finally {
+    await h.close();
+  }
+});
+test("blocks local-only writer output before publication or enrollment", async () => {
+  for (const reference of [
+    "/Users/josh/Desktop/audit.pdf",
+    "/home/josh/audit.pdf",
+    "~/audit.pdf",
+    "/tmp/audit.pdf",
+    "/private/var/folders/audit.pdf",
+    "/var/folders/audit.pdf",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "[audit](file:///audit.pdf)",
+    "[audit](vscode://file/audit.pdf)",
+  ]) {
+    const h = await harness(
+      runner([], false, { body: `Explains behavior. See ${reference}` }),
+    );
+    try {
+      const value = h.service.submit(request("local-evidence"));
+      await until(() =>
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
+      expect(h.store.submissions.get(value.id).detail).toContain("local-only");
+      expect(h.github.writes).toBe(0);
+      expect(h.store.submissions.get(value.id).prId).toBeUndefined();
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("retains description title and nonblank content checks at publication", async () => {
+  for (const draft of [
+    { title: " " },
+    { title: "# Markdown heading" },
+    { title: "a".repeat(73) },
+    { title: "docs: see /Users/josh/example" },
+    { body: " " },
+  ]) {
+    const h = await harness(runner([], false, draft));
+    try {
+      const value = h.service.submit(request("invalid-description"));
+      await until(() =>
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(
+          h.store.submissions.get(value.id).state,
+        ),
+      );
+      expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
+      expect(h.github.writes).toBe(0);
+      expect(h.store.submissions.get(value.id).prId).toBeUndefined();
+    } finally {
+      await h.close();
+    }
+  }
+});
+test("permits file labels and repository-specific title length contracts", async () => {
+  const h = await harness(
+    runner([], false, { body: "Explains behavior. Set file: true in YAML." }),
+  );
+  try {
+    const value = h.service.submit(request("file-label"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    expect(h.github.writes).toBe(1);
+    const brief = h.store.submissions.get(value.id).brief,
+      policy = h.store.submissions.policy("owner/repo"),
+      rule = policy?.analysis.requirements[0];
+    if (brief === undefined || policy === undefined || rule === undefined)
+      throw new Error("Missing submission policy or brief");
+    const longer = {
+      ...brief,
+      draft: { ...brief.draft, title: "a".repeat(90) },
+    };
+    expect(publicationBlockers(longer, policy, ["example.md"])).toContain(
+      "PR title must be at most 72 characters by default",
+    );
+    const longerTitlePolicy = {
+      ...policy,
+      analysis: {
+        ...policy.analysis,
+        requirements: [
+          ...policy.analysis.requirements,
+          {
+            ...rule,
+            id: "title-length",
+            description: "PR title must be at most 100 characters",
+            check: { kind: "title_max_length" as const, maximum: 100 },
+          },
+        ],
+      },
+    };
+    expect(
+      publicationBlockers(longer, longerTitlePolicy, ["example.md"]),
+    ).toEqual([]);
+    expect(
+      publicationBlockers(
+        { ...longer, draft: { ...longer.draft, title: "a".repeat(101) } },
+        longerTitlePolicy,
+        ["example.md"],
+      ),
+    ).toContain(
+      "Required title-length: PR title must be at most 100 characters",
+    );
   } finally {
     await h.close();
   }

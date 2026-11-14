@@ -385,6 +385,22 @@ export function publicationBlockers(
     ...brief.draft.blockers,
     ...policy.analysis.blockers,
   ];
+  if (brief.draft.title.trim().length === 0)
+    blockers.push("PR title must not be blank");
+  if (brief.draft.title.trimStart().startsWith("#"))
+    blockers.push("PR title must be plain text, not a Markdown heading");
+  if (
+    !policy.analysis.requirements.some(
+      (rule) =>
+        rule.strength === "required" &&
+        applicable(rule, files) &&
+        rule.check.kind === "title_max_length",
+    ) &&
+    Array.from(brief.draft.title).length > 72
+  )
+    blockers.push("PR title must be at most 72 characters by default");
+  if (brief.draft.body.trim().length === 0)
+    blockers.push("PR body must not be blank");
   if (
     Array.from(brief.draft.title).some(
       (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
@@ -392,8 +408,8 @@ export function publicationBlockers(
   )
     blockers.push("PR title must be one printable line");
   if (
-    /\]\((?:file:|vscode:|\/Users\/|\/private\/|\/tmp\/)/u.test(
-      brief.draft.body,
+    /(?<![\w.])(?:\/Users\/|\/home\/\w|~\/|\/tmp\/|\/private\/(?:var|tmp)\/|\/var\/folders\/)|\blocalhost\b|127\.0\.0\.1|(?:file|vscode):\/\/|\]\((?:file:|vscode:|\/private\/)/u.test(
+      `${brief.draft.title}\n${brief.draft.body}`,
     )
   )
     blockers.push(
