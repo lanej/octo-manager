@@ -14,6 +14,7 @@ import (
 	"github.com/lanej/charmed/interaction"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
+	charmedui "github.com/lanej/charmed/tui"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 	"github.com/lanej/octo-manager/internal/client"
 )
@@ -30,42 +31,49 @@ type (
 )
 
 type Model struct {
-	dashboardStarted   bool
-	selectedRefresh    *v1.RefreshStatus
-	ctx                context.Context
-	cancel             context.CancelFunc
-	api                *client.Client
-	snapshot           *v1.Snapshot
-	size               layout.Size
-	theme              theme.Theme
-	terminalTheme      bool
-	terminalForeground color.Color
-	location           *time.Location
-	focus              interaction.Focus
-	result             viewport.Model
-	activity           collection.LogViewer
-	selected           string
-	expanded           bool
-	refreshing         bool
-	watching           bool
-	stream             *connect.ServerStreamForClient[v1.WatchDashboardResponse]
-	dashboardKey       string
-	dashboardVersion   uint64
-	dashboardCancel    context.CancelFunc
-	reviewStatuses     map[string]*v1.RefreshStatus
-	instance           string
-	cursor             uint64
-	connectionError    string
-	commandError       string
-	commandPending     bool
-	panel              panelView
-	reviews            map[string]*v1.PullRequestDetails
-	reviewErrors       map[string]string
-	reviewLoading      map[string]bool
-	history            historyState
-	agentActivity      activityHistory
-	activityRender     activityRenderCache
-	contentRender      contentRenderCache
+	presentationRevision uint64
+	dashboardStarted     bool
+	selectedRefresh      *v1.RefreshStatus
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	api                  *client.Client
+	snapshot             *v1.Snapshot
+	size                 layout.Size
+	theme                theme.Theme
+	terminalTheme        bool
+	terminalForeground   color.Color
+	location             *time.Location
+	focus                interaction.Focus
+	result               viewport.Model
+	activity             collection.LogViewer
+	selected             string
+	expanded             bool
+	refreshing           bool
+	watching             bool
+	stream               *connect.ServerStreamForClient[v1.WatchDashboardResponse]
+	dashboardKey         string
+	dashboardVersion     uint64
+	dashboardCancel      context.CancelFunc
+	reviewStatuses       map[string]*v1.RefreshStatus
+	instance             string
+	cursor               uint64
+	connectionError      string
+	commandError         string
+	commandPending       bool
+	panel                panelView
+	reviews              map[string]*v1.PullRequestDetails
+	reviewErrors         map[string]string
+	reviewLoading        map[string]bool
+	history              historyState
+	agentActivity        activityHistory
+	activityRender       activityRenderCache
+	contentRender        contentRenderCache
+	screen               *charmedui.Screen
+	compiled             *layout.Compiled
+	layoutKey            dashboardLayoutKey
+	retained             map[string]*renderMemo
+	resultContent        string
+	usageChart           usageChart
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {

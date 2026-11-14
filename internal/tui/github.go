@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -11,8 +12,17 @@ import (
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
+	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
+
+type usageChart struct {
+	plot        chart.TimeSeries
+	first, last time.Time
+	peak        float64
+	palette     theme.Theme
+	valid       bool
+}
 
 func (m *Model) globalPanel() bool {
 	return m.panel == activityPanel || m.panel == githubPanel
@@ -142,14 +152,24 @@ func (m *Model) githubContent(width int) string {
 	series, peak := requestSeries(minutes)
 	first := time.UnixMilli(minutes[0].GetStartedAtMs())
 	last := time.UnixMilli(minutes[len(minutes)-1].GetStartedAtMs()).Add(time.Minute)
-	plot := chart.NewTimeSeries(series, layout.Size{Width: max(1, width), Height: 9}, m.theme,
-		timeserieslinechart.WithYRange(0, peak),
-		timeserieslinechart.WithTimeRange(first, last),
-		timeserieslinechart.WithXLabelFormatter(func(_ int, value float64) string {
-			return time.Unix(int64(math.Round(value)), 0).In(m.location).Format("15:04")
-		}),
-	)
-	lines = append(lines, plot.View(), chart.SeriesLegend(series, max(1, width), m.theme),
+	size := layout.Size{Width: max(1, width), Height: 9}
+
+	cached := &m.usageChart
+	if !cached.valid || cached.first != first || cached.last != last || cached.peak != peak || !reflect.DeepEqual(cached.palette, m.theme) {
+		cached.plot = chart.NewTimeSeries(series, size, m.theme,
+			timeserieslinechart.WithYRange(0, peak),
+			timeserieslinechart.WithTimeRange(first, last),
+			timeserieslinechart.WithXLabelFormatter(func(_ int, value float64) string {
+				return time.Unix(int64(math.Round(value)), 0).In(m.location).Format("15:04")
+			}),
+		)
+		cached.first, cached.last, cached.peak, cached.palette, cached.valid = first, last, peak, m.theme, true
+	} else {
+		cached.plot.ApplyData(series)
+		cached.plot.Resize(size)
+	}
+
+	lines = append(lines, cached.plot.View(), chart.SeriesLegend(series, max(1, width), m.theme),
 		m.muted("Chart times: "+m.zoneLabel()+" · HTTP attempts include transport failures; Git transport is excluded."),
 		m.field("Metrics sampled", m.timestamp(usage.GetSampledAtMs(), fullTimestamp)))
 
