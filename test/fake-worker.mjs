@@ -1,3 +1,4 @@
+import { sendWorkerResult } from "../src/worker-delivery.ts";
 import { randomUUID } from 'node:crypto';
 let attempt;
 let started = false;
@@ -7,10 +8,10 @@ function tool(name, args = {}) {
   const id = randomUUID();
   return new Promise((resolve, reject) => { pending.set(id, { resolve, reject }); send({ type: 'tool', id, name, args }); });
 }
-function finish(data) {
-  if (process.connected) process.send({ ...data, attempt }, () => {
-    if (process.connected) process.disconnect();
-  });
+async function finish(data) {
+  try { await sendWorkerResult(data, attempt); }
+  catch { process.exitCode = 1; }
+  finally { if (process.connected) process.disconnect(); }
 }
 process.on('message', async message => {
   if (message.type === 'tool_result') {

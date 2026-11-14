@@ -893,14 +893,6 @@
       "file": "src/coordinator.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
-      "message": "Invalid type \"number | Signals | null\" of template literal expression.",
-      "source": "const exit = new Promise<void>((resolve, reject) => { child.once(\"error\", reject); child.once(\"exit\", (code, signal) => { active.childExited = true; if (!done && !active.abort.signal.aborted) failure = `Worker exited before completion (${signal ?? code})`; resolve(); }); });",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"number\" of template literal expression.",
       "source": "this.store.save(job, \"worker_started\", `Attempt ${active.attempt}`);",
       "count": 1
@@ -1165,14 +1157,6 @@
       "file": "src/coordinator.ts",
       "tool": "tsc",
       "rule": "TS4111",
-      "message": "Property 'error' comes from an index signature, so it must be accessed with ['error'].",
-      "source": "else if (m.type === \"failure\" && typeof m.error === \"string\" && !done) { done = true; failure = cleanText(m.error, 2000); }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
       "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
       "source": "} catch (error) { if (child.connected) child.send({ type: \"tool_result\", id: m.id, error: errorText(error) }, () => {}); }",
       "count": 1
@@ -1382,14 +1366,6 @@
       "tool": "tsc",
       "rule": "TS4111",
       "message": "Property 'text' comes from an index signature, so it must be accessed with ['text'].",
-      "source": "} else if (m.type === \"done\" && typeof m.text === \"string\" && !done) { done = true; result = cleanText(m.text); }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'text' comes from an index signature, so it must be accessed with ['text'].",
       "source": "const text = cleanText(m.text, Math.min(2000, 32000 - outputBytes)); outputBytes += text.length;",
       "count": 1
     },
@@ -1399,22 +1375,6 @@
       "rule": "TS4111",
       "message": "Property 'text' comes from an index signature, so it must be accessed with ['text'].",
       "source": "if (m.type === \"progress\" && typeof m.text === \"string\" && outputBytes < 32000) {",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'type' comes from an index signature, so it must be accessed with ['type'].",
-      "source": "} else if (m.type === \"done\" && typeof m.text === \"string\" && !done) { done = true; result = cleanText(m.text); }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'type' comes from an index signature, so it must be accessed with ['type'].",
-      "source": "else if (m.type === \"failure\" && typeof m.error === \"string\" && !done) { done = true; failure = cleanText(m.error, 2000); }",
       "count": 1
     },
     {

@@ -1,3 +1,4 @@
+import { sendWorkerResult } from "./worker-delivery.js";
 import { workerResultText } from "./worker-result.js";
 import type { StageTask } from "./submissions/contracts.js";
 import { repairWorkerTask, record, single, type RepairWorkerTask } from "./repairs/types.js";
@@ -17,6 +18,7 @@ const pending = new Map<string, { resolve: (value: unknown) => void; reject: (er
 function send(value: object): Promise<void> {
   return new Promise(resolve => { if (process.connected) process.send?.({ ...value, attempt }, undefined, undefined, () => resolve()); else resolve(); });
 }
+function workerAborted(): boolean { return aborted; }
 function stop(): void {
   aborted = true;
   for (const request of pending.values()) request.reject(new Error("Worker aborted"));
@@ -82,6 +84,11 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
   let flushTimer: NodeJS.Timeout | undefined;
   let budgetExceeded = false;
   let provider: WorkerProvider | undefined;
+  const delivery = { terminalSent: false };
+  const finish = async (value: object) => {
+    delivery.terminalSent = true;
+    await sendWorkerResult(value, attempt);
+  };
   try {
     const selected = workerModel(modelId);
     provider = selected.provider;
@@ -116,12 +123,17 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
     if (aborted) return;
     const last = [...session.messages].reverse().find(message => message.role === "assistant");
     if (last?.role === "assistant" && (last.stopReason === "error" || last.stopReason === "aborted" || last.stopReason === "length")) throw new Error(last.errorMessage ?? `Provider response ${last.stopReason}`);
-    await send({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
-  } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error, provider) }); }
+    await finish({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
+  } catch (error) {
+    if (!workerAborted() && !delivery.terminalSent) {
+      try { await finish({ type: "failure", error: diagnosis(error, provider) }); }
+      catch { process.exitCode = 1; }
+    } else if (!workerAborted()) process.exitCode = 1;
+  }
   finally {
     if (flushTimer) clearInterval(flushTimer);
     session?.dispose();
     // WHY: Provider keep-alive sockets must not keep a completed worker occupying the scheduler slot.
-    process.exit(0);
+    process.exit(process.exitCode ?? 0);
   }
 }

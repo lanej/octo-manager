@@ -124,7 +124,18 @@ test("the real worker selects Bedrock before looking up its model and does not r
         child.kill();
         reject(new Error("Worker did not finish"));
       }, 10000);
-      child.on("message", (message: unknown) => messages.push(message));
+      child.on("message", (message: unknown) => {
+        messages.push(message);
+        if (
+          typeof message === "object" &&
+          message !== null &&
+          "type" in message &&
+          (message.type === "done" || message.type === "failure") &&
+          "attempt" in message &&
+          message.attempt === 1
+        )
+          child.send({ type: "result_ack", attempt: 1 }, () => {});
+      });
       child.once("error", (error) => {
         clearTimeout(deadline);
         reject(error);
