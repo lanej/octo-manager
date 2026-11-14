@@ -91,7 +91,19 @@ func (m *Model) regionInput(id string) renderInput {
 	case "navigation":
 		return m.input(fmt.Sprint(m.panel))
 	case "context":
-		return m.input(key, m.subjectSnapshot(), &v1.Snapshot{Scheduler: m.snapshot.GetScheduler(), Worker: m.snapshot.GetWorker(), GithubUsage: m.snapshot.GetGithubUsage()})
+		switch m.panel {
+		case reviewsPanel, trackingPanel:
+			pr := m.currentSubject().tracked
+			return m.input(key, pr, m.mergeStatus(pr.GetId()))
+		case outputPanel, statePanel:
+			return m.input(key, &v1.Snapshot{Scheduler: m.snapshot.GetScheduler(), Worker: m.snapshot.GetWorker()})
+		case githubPanel:
+			return m.input(key, m.snapshot.GetGithubUsage())
+		case activityPanel:
+			return m.input(key)
+		default:
+			return m.input(key)
+		}
 	case "pull-requests":
 		return m.input(m.selected, m.subjectSnapshot())
 	case "worker":
@@ -121,7 +133,7 @@ func (m *Model) contentInput(width int) renderInput {
 	case trackingPanel:
 		return m.input(fmt.Sprintf("%s/%d", key, width), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh)
 	case githubPanel:
-		return m.input(fmt.Sprintf("%s/%d", key, width), m.snapshot.GetGithubUsage(), m.snapshot.GetGithubScheduler())
+		return m.input(fmt.Sprintf("%s/%d", key, width), m.snapshot.GetGithubUsage(), m.schedulerViewStatus())
 	case activityPanel:
 		// Activity owns its bounded-page cache; do not clone its loaded history here.
 		return m.input(key)
@@ -158,4 +170,19 @@ func (m *Model) PresentationRevision() uint64 {
 	}
 
 	return m.presentationRevision
+}
+
+// The display consumes cadence and dispatch state, not the tick's identity.
+func (m *Model) schedulerViewStatus() *v1.GitHubSchedulerStatus {
+	status := m.snapshot.GetGithubScheduler()
+	if status == nil {
+		return nil
+	}
+
+	visible := &v1.GitHubSchedulerStatus{TickMs: status.GetTickMs(), RequestSpacingMs: status.GetRequestSpacingMs(), QueuedRequests: status.GetQueuedRequests(), InFlight: status.GetInFlight(), CoreRetryAtMs: status.GetCoreRetryAtMs(), GraphqlRetryAtMs: status.GetGraphqlRetryAtMs()}
+	if status.GetInFlight() || status.GetQueuedRequests() > 0 {
+		visible.NextDispatchAtMs = status.GetNextDispatchAtMs()
+	}
+
+	return visible
 }

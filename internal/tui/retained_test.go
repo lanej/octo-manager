@@ -63,6 +63,20 @@ func TestRetainedRuntimeNoopAndLatestFrame(t *testing.T) {
 	}
 }
 
+func TestUnrelatedBudgetObservationDoesNotPresentWorkerPane(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	before := m.PresentationRevision()
+	m.snapshot.GithubUsage = usageExample()
+	m.snapshot.Sequence++
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	if m.PresentationRevision() != before {
+		t.Fatal("hidden budget observation invalidated worker presentation")
+	}
+}
+
 func TestRetainedWorkerScrollAndChrome(t *testing.T) {
 	t.Parallel()
 	m := model(t, theme.Dark)
@@ -129,5 +143,33 @@ func TestPreparedMarkdownAcrossResize(t *testing.T) {
 
 	if m.contentRender.document == document || !strings.Contains(ansi.Strip(m.View()), "Replacement Markdown") {
 		t.Fatal("prepared document concealed changed source")
+	}
+}
+
+func TestSchedulerTickRetainsGitHubSource(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.panel = githubPanel
+	m.snapshot.GithubUsage = usageExample()
+	m.snapshot.GithubScheduler = &v1.GitHubSchedulerStatus{TickMs: 1000, RequestSpacingMs: 2000}
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	before := m.View()
+	prepared := m.memo("pane-source").revision
+	revision := m.PresentationRevision()
+	m.snapshot.GithubScheduler.TickSequence++
+	m.snapshot.GithubScheduler.NextTickAtMs = 1234
+	m.snapshot.GithubScheduler.NextDispatchAtMs = 5678
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	if m.memo("pane-source").revision != prepared || m.PresentationRevision() != revision || m.View() != before {
+		t.Fatal("undisplayed tick state rebuilt GitHub content")
+	}
+
+	m.snapshot.GithubScheduler.QueuedRequests = 1
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	if !strings.Contains(ansi.Strip(m.View()), "1 queued") {
+		t.Fatal("visible scheduler queue change was suppressed")
 	}
 }

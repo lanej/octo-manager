@@ -14,15 +14,15 @@ Measurements below are medians of three 100 ms samples on one Apple Silicon host
 
 | Workload | Before (ms/op) | Retained (ms/op) |
 | --- | ---: | ---: |
-| Reviews, equal snapshot | 5.36 | 0.32 |
-| Output, equal snapshot | 7.02 | 0.36 |
-| Runtime, equal snapshot | 5.31 | 0.28 |
-| Tracking, equal snapshot | 6.10 | 0.29 |
-| Activity, equal snapshot | 1.42 | 0.21 |
-| GitHub, equal snapshot | 4.02 | 0.24 |
-| Two width changes and presentations | 22.43 | 12.91 |
+| Reviews, equal snapshot | 5.36 | 0.26 |
+| Output, equal snapshot | 7.02 | 0.37 |
+| Runtime, equal snapshot | 5.31 | 0.29 |
+| Tracking, equal snapshot | 6.10 | 0.27 |
+| Activity, equal snapshot | 1.42 | 0.22 |
+| GitHub, equal snapshot | 4.02 | 0.25 |
+| Two width changes and presentations | 22.43 | 13.61 |
 
-Tracking allocated about 5.46 MB per equal snapshot before retention and 0.42 MB afterward. Idle `Root.View()` changed from rebuilding the scene (about 1.60 ms and 1.36 MB per call) to returning the completed frame with zero allocations. That idle access benchmark does not establish idle process CPU; reconnect ticks and incoming stream observations still have processing costs. Changed observations still generate changed pane content before presentation; the runtime coalesces completed frames, not application message processing.
+Tracking allocated about 5.46 MB per equal snapshot before retention and 0.40 MB afterward. Idle `Root.View()` changed from rebuilding the scene (about 1.60 ms and 1.36 MB per call) to returning the completed frame with zero allocations. That idle access benchmark does not establish idle process CPU; reconnect ticks and incoming stream observations still have processing costs. Changed observations still generate changed pane content before presentation; the runtime coalesces completed frames, not application message processing.
 
 Run the focused workloads with the repository’s declared Go toolchain:
 
@@ -31,3 +31,7 @@ go test ./internal/tui -run '^$' -bench BenchmarkDashboard -benchmem -benchtime=
 ```
 
 Use `gotestsum --jsonfile results.json -- ...` when collecting machine-readable output. Some gotestsum versions label benchmark cases as unknown failures despite the underlying package ending in a `pass` action; inspect the Go JSON result rather than discarding actual failures or interpreting that wrapper classification as a failed benchmark.
+
+## Native acceptance
+
+The rebuilt frontend and installed `3142760` frontend were exercised serially against the running local coordinator. Each session visited all six tabs at 132×40 and 80×32, entered 12×5 recovery, and quit normally. No layout/render failure surface appeared. These live observations include changing coordinator data and establish interaction and recovery behavior; they are not the frozen inputs used by the benchmark table. The service, persisted state, and GitHub scheduler were shared rather than replaced with fixture data.
