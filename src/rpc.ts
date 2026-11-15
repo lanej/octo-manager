@@ -102,11 +102,8 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       const messages=coordinator.digests.acknowledge(id,number,agentId,r.expectedBody);
       return digestReceipt(coordinator.digests,tracking.store,id,number,messages);
     });},
-    submitPullRequest(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(
-          coordinator.submissions.submit(JSON.parse(r.inputJson)),
-        ),
-      }));
+    submitPullRequest() {
+      throw new ConnectError("Legacy drafting retired; run pr init, pr validate, then submit-pr --title TITLE --body-file FILE.", Code.FailedPrecondition);
     },
     getSubmission(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),

@@ -1,3 +1,5 @@
+import { Coordinator } from "../src/coordinator.js";
+import { schedulerClient } from "../src/client.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -164,6 +166,25 @@ test("default service retires queued legacy analysis and rejects new model reque
     await service.close();
     await tracking.close();
     store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("legacy submission RPC returns clear migration feedback instead of an internal tracking error", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-legacy-rpc-"));
+  const coordinator = new Coordinator(directory);
+  try {
+    await coordinator.start();
+    let message = "";
+    try {
+      await schedulerClient(directory).submitPullRequest({ inputJson: "{}" });
+    } catch (error) {
+      message = error instanceof Error ? error.message : "";
+    }
+    expect(message).toContain("Legacy drafting retired");
+    expect(coordinator.store.submissions.list()).toHaveLength(0);
+  } finally {
+    await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
 });
