@@ -1,3 +1,4 @@
+import type { MessagePresentation } from "../merging/receipt-types.js";
 import { resolveId } from "../tracking/identifiers.js";
 import {
   CodexConnection,
@@ -19,6 +20,7 @@ import {
 } from "./types.js";
 import { renderDigest } from "./render.js";
 export interface DigestOptions {
+  presentation?: (message: AgentMessage) => MessagePresentation;
   connect?: (agent: AgentRef, socket: string) => QueueConnection;
   intervalMs?: number;
 }
@@ -65,7 +67,11 @@ export class DigestService {
     return this.work;
   }
   private pending(agentId: string): AgentMessage[] {
-    return this.tracking.store.inbox.list(agentId, 0, false, true).messages;
+    return this.tracking.store.inbox
+      .list(agentId, 0, false, true)
+      .messages.filter(
+        (message) => this.options.presentation?.(message).defer !== true,
+      );
   }
   private legacy(agentId: string): AgentMessage[] {
     const covered = new Set(
@@ -86,7 +92,10 @@ export class DigestService {
   private signature(agent: AgentRef): string {
     const active = this.store.active(agent.id);
     return JSON.stringify([
-      this.pending(agent.id).map((value) => value.id),
+      this.pending(agent.id).map((value) => [
+        value.id,
+        this.options.presentation?.(value),
+      ]),
       this.legacy(agent.id).map((value) => [
         value.id,
         value.acknowledgedAt,
@@ -206,7 +215,12 @@ export class DigestService {
     const messages = this.pending(agent.id);
     if (messages.length === 0) return undefined;
     const render = (receiptId: string) =>
-      renderDigest(messages, this.directory, receiptId);
+      renderDigest(
+        messages,
+        this.directory,
+        receiptId,
+        this.options.presentation,
+      );
     const active = this.store.active(agent.id);
     return active === undefined
       ? this.store.create(agent.id, transport, render)
@@ -466,7 +480,12 @@ export class DigestService {
         return;
       }
       active = this.store.revise(active, (receiptId) =>
-        renderDigest(messages, this.directory, receiptId),
+        renderDigest(
+          messages,
+          this.directory,
+          receiptId,
+          this.options.presentation,
+        ),
       );
       let version = this.store.version(active.id, active.revision);
       if (keep !== undefined && keep.version.revision === version.revision) {
@@ -523,7 +542,12 @@ export class DigestService {
         return;
       }
       active = this.store.revise(active, (receiptId) =>
-        renderDigest(latest, this.directory, receiptId),
+        renderDigest(
+          latest,
+          this.directory,
+          receiptId,
+          this.options.presentation,
+        ),
       );
       version = this.store.version(active.id, active.revision);
       const operation = "queue_enqueue";

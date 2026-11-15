@@ -21,3 +21,6 @@ message AgentDigestMember {
   optional int64 acknowledged_at_ms = 5;
 }
 message AcknowledgeAgentDigestResponse { string record_json = 1; repeated AgentDigestMember messages = 2; }
+
+message MergeAgentMessageRequest { string receipt_id = 1; string agent_id = 2; AgentTarget agent_target = 3; }
+message MergeAgentMessageResponse { string result_json = 1; }

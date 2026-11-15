@@ -73,7 +73,7 @@ export class Coordinator extends EventEmitter {
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
+    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,...options.digestOptions});
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
     this.socketPath = join(directory, "run.sock");

@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/notifications.proto.
  */
 export const file_octomanager_v1_notifications: GenFile = /*@__PURE__*/
-  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiItChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEhMKC3JlY29yZF9qc29uGAEgASgJIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIjAKGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIUCgxkaWdlc3RzX2pzb24YASADKAkixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zImoKHkFja25vd2xlZGdlQWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCRIzCghtZXNzYWdlcxgCIAMoCzIhLm9jdG9tYW5hZ2VyLnYxLkFnZW50RGlnZXN0TWVtYmVyQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MTtvY3RvbWFuYWdlcnYxYgZwcm90bzM", [file_octomanager_v1_tracking]);
+  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiItChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEhMKC3JlY29yZF9qc29uGAEgASgJIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIjAKGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIUCgxkaWdlc3RzX2pzb24YASADKAkixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zImoKHkFja25vd2xlZGdlQWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCRIzCghtZXNzYWdlcxgCIAMoCzIhLm9jdG9tYW5hZ2VyLnYxLkFnZW50RGlnZXN0TWVtYmVyInMKGE1lcmdlQWdlbnRNZXNzYWdlUmVxdWVzdBISCgpyZWNlaXB0X2lkGAEgASgJEhAKCGFnZW50X2lkGAIgASgJEjEKDGFnZW50X3RhcmdldBgDIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0IjAKGU1lcmdlQWdlbnRNZXNzYWdlUmVzcG9uc2USEwoLcmVzdWx0X2pzb24YASABKAlCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw", [file_octomanager_v1_tracking]);
 
 /**
  * JSON record schemas are validated by the notification capability.
@@ -214,4 +214,48 @@ export type AcknowledgeAgentDigestResponse = Message<"octomanager.v1.Acknowledge
  */
 export const AcknowledgeAgentDigestResponseSchema: GenMessage<AcknowledgeAgentDigestResponse> = /*@__PURE__*/
   messageDesc(file_octomanager_v1_notifications, 6);
+
+/**
+ * @generated from message octomanager.v1.MergeAgentMessageRequest
+ */
+export type MergeAgentMessageRequest = Message<"octomanager.v1.MergeAgentMessageRequest"> & {
+  /**
+   * @generated from field: string receipt_id = 1;
+   */
+  receiptId: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: octomanager.v1.AgentTarget agent_target = 3;
+   */
+  agentTarget?: AgentTarget | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.MergeAgentMessageRequest.
+ * Use `create(MergeAgentMessageRequestSchema)` to create a new message.
+ */
+export const MergeAgentMessageRequestSchema: GenMessage<MergeAgentMessageRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_notifications, 7);
+
+/**
+ * @generated from message octomanager.v1.MergeAgentMessageResponse
+ */
+export type MergeAgentMessageResponse = Message<"octomanager.v1.MergeAgentMessageResponse"> & {
+  /**
+   * @generated from field: string result_json = 1;
+   */
+  resultJson: string;
+};
+
+/**
+ * Describes the message octomanager.v1.MergeAgentMessageResponse.
+ * Use `create(MergeAgentMessageResponseSchema)` to create a new message.
+ */
+export const MergeAgentMessageResponseSchema: GenMessage<MergeAgentMessageResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_notifications, 8);
 

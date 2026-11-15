@@ -124,6 +124,8 @@ export const ChainSchema = object({
 });
 export type MergeChain = Static<typeof ChainSchema>;
 export const EntrySchema = object({
+  receiptId: Type.Optional(text()),
+  receiptContext: Type.Optional(text()),
   autoMerge: Type.Boolean(),
   id: text(),
   chainId: text(),

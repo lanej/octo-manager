@@ -9,7 +9,7 @@ An unsolicited message must give the receiving agent a decision to make or work 
 - Do not send a second completion summary for a job failure already reported. Suppress its corresponding failed workflow summary, while retaining unrelated failures.
 - Do not infer new authority from a notification. Standing task authority and evidence-handling rules belong in session/integration setup, once.
 
-Successful completion is actionable as a merge-assessment signal. Report the exact revision and distinguish check conclusions from GitHub conflict status. “Checks passed; no merge conflicts” does not establish required approvals or every branch-protection rule. Repeated observations and restarts do not repeat a completion; newly observed executions can create another watch generation. Completion for an already closed or merged PR stays in history without a readiness notice.
+Successful completion is actionable as a merge-assessment signal. Report the exact revision and distinguish check conclusions from GitHub conflict status. Check completion alone does not establish required approvals or branch-protection compliance; the scheduler confirms eligibility before using “Ready.” Repeated observations and restarts do not repeat a completion; newly observed executions can create another watch generation. Completion for an already closed or merged PR stays in history without a readiness notice.
 
 ## Initial message
 
@@ -21,7 +21,7 @@ PR #13 · macOS check failed at ad8968bf
 Failed run: https://github.com/lanej/octo-manager/actions/runs/43135409074/job/130909441931
 ```
 
-A successful completion is shorter: “PR #13 · Checks passed; no merge conflicts at ad8968bf,” with the PR link. Neutral/skipped conclusions are labeled explicitly, and unknown/conflicting GitHub merge status is preserved. Temporary coverage loss does not erase a confirmed completion; positively observed pending/failing executions, a changed revision, or PR closure retire an outdated readiness action.
+A confirmed eligible completion is shorter: a linked PR followed by “Ready” and its merge command. Other completions retain “Checks passed” or “Checks complete” with the remaining blocker when known. Neutral/skipped conclusions are labeled explicitly, and unknown/conflicting GitHub merge status is preserved. Temporary coverage loss does not erase a confirmed completion; positively observed pending/failing executions, a changed revision, or PR closure retire an outdated readiness action.
 
 The renderer budgets 120 UTF-8 bytes for the heading, 480 for the excerpt, 120 for an inline location, and 512 per rendered HTTPS link. Excerpts end with an ellipsis when truncated and are presented as quoted data. Control sequences are removed. These component limits keep the message below 4 KiB; typical messages are substantially smaller. Truncation changes presentation, not the stored action or watch evidence.
 
@@ -31,7 +31,7 @@ For GitHub Actions job failures, the service attempts a read-only failed-log exc
 
 Freeze the rendered message before sending and reuse the exact body and delivery ID for retries. The service reconciles the owning Codex thread through the app-server API. Only an exact matching user-message body records a receipt through the ordinary audited acknowledgment operation. A queue ID, echoed marker, assistant quotation, or altered body is insufficient. API/history failure leaves receipt unknown and retains retry/recovery state. Receipt establishes host context delivery; action acceptance, reconciliation, and resolution remain separate.
 
-Each queued message ends with `Ack: ` followed by the inline command `octo-manager ack ID`. The opaque ID identifies the frozen content, including all grouped items. Do not expose digest revisions, recipient IDs, update counts, duplicate branding, or action IDs in the delivered body. Combine a PR heading with its only update; use bullets only when that PR has multiple updates. Manual inbox and receipt APIs remain available when automatic reconciliation cannot establish delivery. Optional hook recovery returns the stored body without repeating policy around it. Existing immutable messages are retained as sent. For queue endpoints, the [digest reconciler](agent-digests.md) can withdraw exact managed queue copies while retaining canonical history; it never removes unrelated user messages.
+Each queued message ends with one bare inline command. A confirmed Ready notice for its owner offers `octo-manager merge ID`, which records receipt and queues a one-shot merge of the frozen revision. Other notices offer `octo-manager ack ID`. The opaque ID identifies the frozen content, including all grouped items. Do not expose digest revisions, recipient IDs, update counts, duplicate branding, or action IDs in the delivered body. Generated PR references are Markdown links. Combine a PR heading with its only update; use bullets only when that PR has multiple updates. Manual inbox and receipt APIs remain available when automatic reconciliation cannot establish delivery. Optional hook recovery returns the stored body without repeating policy around it. Existing immutable messages are retained as sent. For queue endpoints, the [digest reconciler](agent-digests.md) can withdraw exact managed queue copies while retaining canonical history; it never removes unrelated user messages.
 
 Keep conversational reports to the decision: outcome and necessary next step, usually one to three sentences. A notification should not create a new reporting ceremony.
 
@@ -62,3 +62,10 @@ Agent CLI calls automatically select the tighter [agent output contract](cli-out
 Known Codex status summaries and boilerplate review receipts are informational even when summary metadata says findings exist. Actual finding comments remain eligible for delivery; unfamiliar substantive feedback and inline comments are preserved. On restart, existing informational actions become superseded and pending deliveries are cancelled while raw evidence and receipts remain in history.
 
 Failed-run excerpts use validated job step timings to select failed-step log lines before finding a diagnostic. Fatal runtime diagnostics take precedence over generic error lines, and timestamp prefixes are removed. The final excerpt remains bounded to 480 bytes; missing step timing, ambiguous second-level boundaries or inaccessible logs yield the failed-run link without a guessed excerpt.
+
+
+## Ready notices and merge commands
+
+A completed check watch becomes “Ready” only after the scheduler confirms the current GitHub gates, required checks, target, merge method and dependency policy. Check completion alone is labeled “Checks passed” or “Checks complete,” with the remaining blocker when known. Routine conflict-free wording and check totals are omitted. The [receipt merge contract](receipt-merges.md) describes freshness, pinned authority and recovery.
+
+A single Ready notice to the current owner ends with `octo-manager merge ID`; observers and batches retain `octo-manager ack ID`. Hooks and history reconciliation acknowledge incoming content only. They never invoke the offered merge command. A calling agent explicitly chooses whether to merge after reviewing the notice and its current task authority. Explicit merge preserves the automatic-merge switch and cannot select a newer head implicitly. Request acceptance, confirmed merge and unknown remote outcomes remain separate.

@@ -1,3 +1,4 @@
+import type { ReceiptTarget } from "../merging/receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
@@ -103,7 +104,11 @@ export class DigestStore {
   create(
     agentId: string,
     transport: QueueTransport,
-    render: (receiptId: string) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => {
+      body: string;
+      messageIds: string[];
+      mergeTarget?: ReceiptTarget;
+    },
   ): Digest {
     const existing = this.active(agentId);
     if (existing !== undefined) return existing;
@@ -140,14 +145,20 @@ export class DigestStore {
   }
   revise(
     value: Digest,
-    render: (receiptId: string) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => {
+      body: string;
+      messageIds: string[];
+      mergeTarget?: ReceiptTarget;
+    },
   ): Digest {
     const previous = this.version(value.id, value.revision);
     const current = render(previous.dispatchId);
     if (
       JSON.stringify(current.messageIds) ===
         JSON.stringify(previous.messageIds) &&
-      current.body === previous.body
+      current.body === previous.body &&
+      JSON.stringify(current.mergeTarget) ===
+        JSON.stringify(previous.mergeTarget)
     )
       return value;
     const dispatchId = this.dispatchId();

@@ -9,6 +9,7 @@ import "octomanager/v1/github.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
 service SchedulerService {
+  rpc MergeAgentMessage(MergeAgentMessageRequest) returns (MergeAgentMessageResponse);
   rpc MergeCommand(MergeCommandRequest) returns (MergeCommandResponse);
   rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
   rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);

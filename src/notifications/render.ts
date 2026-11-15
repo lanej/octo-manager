@@ -1,3 +1,7 @@
+import type {
+  MessagePresentation,
+  ReceiptTarget,
+} from "../merging/receipt-types.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { cleanText } from "../domain.js";
@@ -6,7 +10,10 @@ import type { AgentMessage } from "../tracking/inbox.js";
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
-function entry(message: AgentMessage): { group: string; lines: string[] } {
+function entry(
+  message: AgentMessage,
+  presentation?: MessagePresentation,
+): { group: string; lines: string[] } {
   const lines = message.body
     .split("\n")
     .filter((line) => line !== "" && !line.startsWith("[octo-delivery:"));
@@ -32,7 +39,7 @@ function entry(message: AgentMessage): { group: string; lines: string[] } {
   return {
     group: heading?.[1] ?? "",
     lines: [
-      `- ${cleanText((heading?.[2] ?? first).replace("Checks completed (includes neutral/skipped); no merge conflicts", "Checks complete; no conflicts").replace("Checks passed; no merge conflicts", "Checks passed; no conflicts"), 240)}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
+      `- ${cleanText((presentation?.summary ?? heading?.[2] ?? first).replace("Checks completed (includes neutral/skipped); no merge conflicts", "Checks complete").replace("Checks passed; no merge conflicts", "Checks passed"), 768)}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
       ...(message.participantPRId !== undefined
         ? lines
             .filter((line) => line.startsWith("> "))
@@ -49,8 +56,13 @@ export function renderDigest(
   messages: AgentMessage[],
   directory: string,
   receiptId: string,
-): { body: string; messageIds: string[] } {
-  const command = `octo-manager ack ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+  presentation?: (message: AgentMessage) => MessagePresentation,
+): { body: string; messageIds: string[]; mergeTarget?: ReceiptTarget } {
+  const singleTarget =
+    messages.length === 1 && messages[0] !== undefined
+      ? presentation?.(messages[0]).mergeTarget
+      : undefined;
+  const command = `octo-manager ${singleTarget === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
   const fence = "`".repeat(
     1 +
       Math.max(
@@ -58,13 +70,13 @@ export function renderDigest(
         ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
       ),
   );
-  const footer = `Ack: ${fence}${command}${fence}`;
+  const footer = `${fence}${command}${fence}`;
   const selected: AgentMessage[] = [];
   function body(rows: AgentMessage[]): string {
     const groups = new Map<string, string[]>();
     const counts = new Map<string, number>();
     for (const row of rows) {
-      const item = entry(row);
+      const item = entry(row, presentation?.(row));
       counts.set(item.group, (counts.get(item.group) ?? 0) + 1);
       groups.set(item.group, [
         ...(groups.get(item.group) ?? []),
@@ -93,6 +105,7 @@ export function renderDigest(
   if (selected.length === 0)
     throw new Error("No notification fits the digest size bound");
   return {
+    ...(singleTarget === undefined ? {} : { mergeTarget: singleTarget }),
     body: body(selected),
     messageIds: selected.map((message) => message.id),
   };
@@ -100,9 +113,9 @@ export function renderDigest(
 
 // The footer is canonical; the coordinator still verifies the exact full body.
 export function messageReceiptId(body: string): string | undefined {
-  const start = body.lastIndexOf("\nAck: ");
-  if (start < 0) return undefined;
-  const footer = body.slice(start + 6).trimEnd();
+  const footer = (
+    body.split("\n").findLast((line) => line.trim() !== "") ?? ""
+  ).replace(/^Ack: /u, "");
   const fence = footer.match(/^`+/u)?.[0];
   if (fence === undefined) return undefined;
   const end = footer.indexOf(fence, fence.length);
@@ -111,7 +124,7 @@ export function messageReceiptId(body: string): string | undefined {
   const parts = command.split(" ");
   const id = parts[2];
   return parts[0] === "octo-manager" &&
-    parts[1] === "ack" &&
+    (parts[1] === "ack" || parts[1] === "merge") &&
     id !== undefined &&
     /^[a-f0-9-]{8,36}$/u.test(id)
     ? id

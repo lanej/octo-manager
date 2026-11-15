@@ -53,6 +53,37 @@ export interface ReferenceSource {
   text: string;
   url: string;
 }
+// Preserve character offsets so evidence excerpts still point at the original line.
+function referenceProse(text: string): string {
+  let fence: string | undefined;
+  return text
+    .split("\n")
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})/u.exec(line)?.[1];
+      if (fence !== undefined) {
+        if (
+          marker !== undefined &&
+          marker[0] === fence[0] &&
+          marker.length >= fence.length &&
+          line.trim() === marker
+        )
+          fence = undefined;
+        return " ".repeat(line.length);
+      }
+      if (marker !== undefined) {
+        fence = marker;
+        return " ".repeat(line.length);
+      }
+      return line
+        .replace(/(`+)(.*?)\1/gu, (value: string) => " ".repeat(value.length))
+        .replace(
+          /\[[^\]\n]*\]\((https:\/\/github\.com\/[^)]+)\)/gu,
+          (value: string, url: string) =>
+            " ".repeat(value.length - url.length - 1) + url + ")",
+        );
+    })
+    .join("\n");
+}
 export function references(
   pr: TrackedPR,
   sources: ReferenceSource[],
@@ -64,8 +95,9 @@ export function references(
   >();
   const repository = new URL(pr.url).pathname.split("/").slice(1, 3).join("/");
   for (const source of sources) {
+    const prose = referenceProse(source.text);
     const matches = [
-      ...source.text.matchAll(
+      ...prose.matchAll(
         /https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*\b|(?<![\w/])(?:[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)?#[1-9][0-9]*\b/gu,
       ),
     ];
@@ -83,7 +115,7 @@ export function references(
           targetKind = "issue_or_pr";
         }
       }
-      if (target === pr.url) continue;
+      if (target === pr.url || target.length > 512) continue;
       const at = match.index,
         begin = source.text.lastIndexOf("\n", at) + 1,
         end = source.text.indexOf("\n", at);
@@ -131,7 +163,10 @@ export function readyFor(
   );
 }
 export function checkGate(
-  entry: import("./contracts.js").MergeEntry,
+  entry: Pick<
+    import("./contracts.js").MergeEntry,
+    "method" | "checks" | "noCi"
+  >,
   snapshot: import("./github.js").MergeSnapshot,
 ): string | undefined {
   const observation = snapshot.observation;

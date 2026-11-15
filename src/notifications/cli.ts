@@ -12,6 +12,7 @@ export async function notificationsCLI(
   const { values, positionals } = parsed,
     [command, id] = positionals;
   if (
+    command !== "merge" &&
     command !== "ack" &&
     command !== "message" &&
     command !== "digest" &&
@@ -26,9 +27,9 @@ export async function notificationsCLI(
         join(homedir(), ".local/state/octo-manager"),
     ),
     client = schedulerClient(directory);
-  if (command === "ack") {
+  if (command === "ack" || command === "merge") {
     if (id === undefined || id === "")
-      throw new Error("ack requires a message receipt ID");
+      throw new Error(`${command} requires a message receipt ID`);
     const environmentAgent = process.env["OCTO_MANAGER_AGENT_ID"]?.trim();
     const agentId =
       values["agent-id"] ??
@@ -41,7 +42,7 @@ export async function notificationsCLI(
       throw new Error(
         "Cannot identify this session; set CODEX_THREAD_ID or pass --agent-id",
       );
-    const response = await client.acknowledgeAgentDigest({
+    const request = {
       receiptId: id,
       ...(agentId === undefined
         ? {
@@ -53,7 +54,14 @@ export async function notificationsCLI(
             },
           }
         : { agentId }),
-    });
+    };
+    if (command === "merge") {
+      const response = await client.mergeAgentMessage(request);
+      const result: unknown = JSON.parse(response.resultJson);
+      printResult(parsed, result);
+      return true;
+    }
+    const response = await client.acknowledgeAgentDigest(request);
     const compact = receiptOutput(response, directory);
     printResult(parsed, {
       receipt: { id },
@@ -68,7 +76,24 @@ export async function notificationsCLI(
     if (typeof value !== "object" || value === null || !("revision" in value))
       throw new Error("Invalid message inspection response");
     const stored = digestRevision(value.revision);
-    printResult(parsed, { id: shortId(stored.dispatchId), body: stored.body });
+    let merge: { pr: string; head: string; method: string } | undefined;
+    if (values.full === true && stored.mergeTarget !== undefined) {
+      const tracked = await client.getTrackedPullRequest({
+        id: stored.mergeTarget.prId,
+      });
+      if (tracked.pr === undefined)
+        throw new Error("Merge target PR not found");
+      merge = {
+        pr: tracked.pr.url,
+        head: stored.mergeTarget.head,
+        method: stored.mergeTarget.method,
+      };
+    }
+    printResult(parsed, {
+      id: shortId(stored.dispatchId),
+      body: stored.body,
+      ...(merge === undefined ? {} : { merge }),
+    });
     return true;
   }
   if (command === "acknowledge-message") {

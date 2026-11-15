@@ -458,6 +458,110 @@ func (x *AcknowledgeAgentDigestResponse) GetMessages() []*AgentDigestMember {
 	return nil
 }
 
+type MergeAgentMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ReceiptId     string                 `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentTarget   *AgentTarget           `protobuf:"bytes,3,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeAgentMessageRequest) Reset() {
+	*x = MergeAgentMessageRequest{}
+	mi := &file_octomanager_v1_notifications_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeAgentMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeAgentMessageRequest) ProtoMessage() {}
+
+func (x *MergeAgentMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_notifications_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeAgentMessageRequest.ProtoReflect.Descriptor instead.
+func (*MergeAgentMessageRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_notifications_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *MergeAgentMessageRequest) GetReceiptId() string {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return ""
+}
+
+func (x *MergeAgentMessageRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *MergeAgentMessageRequest) GetAgentTarget() *AgentTarget {
+	if x != nil {
+		return x.AgentTarget
+	}
+	return nil
+}
+
+type MergeAgentMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResultJson    string                 `protobuf:"bytes,1,opt,name=result_json,json=resultJson,proto3" json:"result_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeAgentMessageResponse) Reset() {
+	*x = MergeAgentMessageResponse{}
+	mi := &file_octomanager_v1_notifications_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeAgentMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeAgentMessageResponse) ProtoMessage() {}
+
+func (x *MergeAgentMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_notifications_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeAgentMessageResponse.ProtoReflect.Descriptor instead.
+func (*MergeAgentMessageResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_notifications_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *MergeAgentMessageResponse) GetResultJson() string {
+	if x != nil {
+		return x.ResultJson
+	}
+	return ""
+}
+
 var File_octomanager_v1_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_notifications_proto_rawDesc = "" +
@@ -504,7 +608,15 @@ const file_octomanager_v1_notifications_proto_rawDesc = "" +
 	"\x1eAcknowledgeAgentDigestResponse\x12\x1f\n" +
 	"\vrecord_json\x18\x01 \x01(\tR\n" +
 	"recordJson\x12=\n" +
-	"\bmessages\x18\x02 \x03(\v2!.octomanager.v1.AgentDigestMemberR\bmessagesB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\bmessages\x18\x02 \x03(\v2!.octomanager.v1.AgentDigestMemberR\bmessages\"\x94\x01\n" +
+	"\x18MergeAgentMessageRequest\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x01 \x01(\tR\treceiptId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12>\n" +
+	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v1.AgentTargetR\vagentTarget\"<\n" +
+	"\x19MergeAgentMessageResponse\x12\x1f\n" +
+	"\vresult_json\x18\x01 \x01(\tR\n" +
+	"resultJsonB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_notifications_proto_rawDescOnce sync.Once
@@ -518,7 +630,7 @@ func file_octomanager_v1_notifications_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_notifications_proto_rawDescData
 }
 
-var file_octomanager_v1_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_octomanager_v1_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_octomanager_v1_notifications_proto_goTypes = []any{
 	(*GetAgentDigestRequest)(nil),          // 0: octomanager.v1.GetAgentDigestRequest
 	(*GetAgentDigestResponse)(nil),         // 1: octomanager.v1.GetAgentDigestResponse
@@ -527,16 +639,19 @@ var file_octomanager_v1_notifications_proto_goTypes = []any{
 	(*AcknowledgeAgentDigestRequest)(nil),  // 4: octomanager.v1.AcknowledgeAgentDigestRequest
 	(*AgentDigestMember)(nil),              // 5: octomanager.v1.AgentDigestMember
 	(*AcknowledgeAgentDigestResponse)(nil), // 6: octomanager.v1.AcknowledgeAgentDigestResponse
-	(*AgentTarget)(nil),                    // 7: octomanager.v1.AgentTarget
+	(*MergeAgentMessageRequest)(nil),       // 7: octomanager.v1.MergeAgentMessageRequest
+	(*MergeAgentMessageResponse)(nil),      // 8: octomanager.v1.MergeAgentMessageResponse
+	(*AgentTarget)(nil),                    // 9: octomanager.v1.AgentTarget
 }
 var file_octomanager_v1_notifications_proto_depIdxs = []int32{
-	7, // 0: octomanager.v1.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v1.AgentTarget
+	9, // 0: octomanager.v1.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v1.AgentTarget
 	5, // 1: octomanager.v1.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v1.AgentDigestMember
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	9, // 2: octomanager.v1.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v1.AgentTarget
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_notifications_proto_init() }
@@ -555,7 +670,7 @@ func file_octomanager_v1_notifications_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_notifications_proto_rawDesc), len(file_octomanager_v1_notifications_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

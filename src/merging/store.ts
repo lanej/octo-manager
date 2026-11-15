@@ -1,3 +1,7 @@
+import {
+  NoticeReadinessSchema,
+  type NoticeReadiness,
+} from "./receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -40,6 +44,53 @@ export class MergeStore {
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
+  noticeReadiness(prId: string): NoticeReadiness | undefined {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-readiness:${prId}`);
+    return row === undefined
+      ? undefined
+      : checked(NoticeReadinessSchema, JSON.parse(String(row["value"])));
+  }
+  saveNoticeReadiness(value: NoticeReadiness): void {
+    checked(NoticeReadinessSchema, value);
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(`merge-readiness:${value.target.prId}`, JSON.stringify(value));
+  }
+  receiptRequest(
+    id: string,
+  ): { entry: MergeEntry; current: boolean } | undefined {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`receipt-merge:${id}`);
+    if (row === undefined) return undefined;
+    const entry = this.entries().find(
+      (value) => value.id === String(row["value"]),
+    );
+    if (entry === undefined) throw new Error("Receipt merge entry not found");
+    return { entry, current: entry.receiptId === id };
+  }
+  saveReceiptRequest(id: string, entry: MergeEntry): void {
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING",
+      )
+      .run(`receipt-merge:${id}`, entry.id);
+  }
+  readinessAction(messageId: string): string | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
+      )
+      .get(messageId);
+    const subject = row?.["subject_id"];
+    return typeof subject === "string" && subject.startsWith("ready:")
+      ? subject.slice(6)
+      : undefined;
+  }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
     this.db.exec("BEGIN IMMEDIATE");
@@ -529,7 +580,12 @@ export class MergeStore {
       );
     });
   }
-  ready(prValue: string, actorId: string, head: string): MergeEntry {
+  ready(
+    prValue: string,
+    actorId: string,
+    head: string,
+    receipt?: { id: string; context: string },
+  ): MergeEntry {
     return this.transaction(() => {
       const pr = this.tracking.pr(prValue),
         owner = this.owner(pr, actorId);
@@ -546,8 +602,13 @@ export class MergeStore {
         throw new Error(
           "Complete review evidence is required before marking ready",
         );
-      const entry = this.entry(pr.id);
-      if (!entry.autoMerge) throw new Error("Auto-merge is off");
+      const entry = { ...this.entry(pr.id) };
+      if (receipt === undefined) {
+        delete entry.receiptId;
+        delete entry.receiptContext;
+      }
+      if (!entry.autoMerge && receipt === undefined)
+        throw new Error("Auto-merge is off");
       if (this.chain(entry.chainId).state !== ChainState.Active)
         throw new Error("Merge chain is not active");
       return this.state(
@@ -564,6 +625,9 @@ export class MergeStore {
             graph: graphKey(this.dependencies(), pr.id),
             at: this.now(),
           },
+          ...(receipt === undefined
+            ? {}
+            : { receiptId: receipt.id, receiptContext: receipt.context }),
           nextAt: 0,
           preparationHold: false,
         },
@@ -746,7 +810,7 @@ export class MergeStore {
             "reference",
             ref.id,
             ref.revision,
-            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: ${ref.targetUrl}\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: octo-manager references ${pr.url}`,
+            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: octo-manager references ${pr.url}`,
             true,
           );
         }
