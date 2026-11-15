@@ -289,7 +289,15 @@ test("response loss and restart reconcile an admitted digest without duplicating
     const value = f.store.digests.active(f.actor.id);
     if (value === undefined) throw new Error("No digest");
     expect(value.state).toBe(DigestState.Uncertain);
+    const frozen = f.store.digests.version(value.id, value.revision);
     await f.reopen();
+    expect(f.store.digests.delivery(frozen.dispatchId.slice(0, 8))).toEqual(
+      frozen,
+    );
+    expect(
+      f.store.digests.delivery(frozen.dispatchId.replaceAll("-", "")),
+    ).toEqual(frozen);
+    expect(f.store.digests.delivery(frozen.dispatchId)).toEqual(frozen);
     await f.flush();
     expect(f.queue.operations).toEqual(["add"]);
     expect(f.queue.slots).toHaveLength(1);
