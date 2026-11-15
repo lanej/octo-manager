@@ -75,6 +75,18 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},
+    mergeAgentMessage(r) {return trackingOperation(()=>{
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const version=coordinator.store.digests.delivery(r.receiptId);
+      const agentId=r.agentTarget===undefined?r.agentId:
+        tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      const recipient=r.agentId===""?agentId:coordinator.store.merging.actor(r.agentId);
+      coordinator.digests.acknowledge(version.digestId,version.revision,recipient);
+      const target=version.mergeTarget;
+      if(target===undefined)return {resultJson:JSON.stringify({receipt:r.receiptId,state:"blocked",reason:"This message has no merge target"})};
+      const result=coordinator.store.merging.transaction(()=>coordinator.merging.receipts.request(target,version.dispatchId,recipient));
+      return {resultJson:JSON.stringify({receipt:r.receiptId,...result})};
+    });},
     getAgentDigest(r) {return trackingOperation(()=>{
       if(r.receiptId!=="" && (r.id!=="" || r.revision!==undefined))throw new Error("Invalid mixed message receipt references");
       const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);

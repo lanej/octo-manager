@@ -1,3 +1,4 @@
+import { ReceiptMerges, receiptContext } from "./receipts.js";
 import { MergeDeclined } from "./async-merge.js";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -54,7 +55,19 @@ export class MergeService {
     this.prepare = options.prepare ?? preparer(root, cases);
     this.interval = options.intervalMs ?? 1000;
     store.recover();
+    this.receipts = new ReceiptMerges(
+      store,
+      tracking,
+      (id, observation) =>
+        this.snapshot(
+          id,
+          AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]),
+          observation,
+        ),
+      now,
+    );
   }
+  readonly receipts: ReceiptMerges;
   private profiles: Record<string, PreparationProfile>;
   private interval: number;
   start(): void {
@@ -186,6 +199,8 @@ export class MergeService {
         value.method,
         value.ready,
         value.preparationHold,
+        value.receiptId,
+        value.receiptContext,
       ]);
     if (current === undefined || authority(current) !== authority(entry))
       return false;
@@ -193,10 +208,12 @@ export class MergeService {
     return (
       !this.abort.signal.aborted &&
       pr.enabled &&
-      entry.autoMerge &&
+      (entry.autoMerge || entry.receiptId !== undefined) &&
       this.store.chain(entry.chainId).state === ChainState.Active &&
       (op === undefined ||
-        (pr.trackingEpoch === op.epoch &&
+        ((entry.receiptId === undefined ||
+          receiptContext(this.store, pr) === entry.receiptContext) &&
+          pr.trackingEpoch === op.epoch &&
           pr.ownerAgentId === op.ownerId &&
           pr.observation?.headSha === op.head &&
           pr.observation.targetBase?.ref === op.baseRef &&
@@ -252,16 +269,37 @@ export class MergeService {
           error instanceof Error
             ? error.message
             : "Merge evaluation unavailable",
-          { nextAt: delay },
+          {
+            nextAt:
+              entry.receiptId === undefined ? delay : Number.MAX_SAFE_INTEGER,
+          },
         );
       }
     }
     this.store.completeChains();
+    await this.receipts.refresh();
   }
-  private async snapshot(prId: string): Promise<MergeSnapshot> {
+  private async snapshot(
+    prId: string,
+    signal: AbortSignal = this.abort.signal,
+    cached?: import("../tracking/types.js").PRObservation,
+  ): Promise<MergeSnapshot> {
     const pr = this.store.tracking.pr(prId),
       epoch = pr.trackingEpoch;
-    const result = await this.provider.inspect(pr.url, this.abort.signal);
+    const result =
+      cached !== undefined && this.provider.readiness !== undefined
+        ? await this.provider.readiness(pr.url, cached, signal)
+        : await this.provider.inspect(pr.url, signal);
+    if (cached !== undefined) {
+      if (
+        result.observation.headSha !== cached.headSha ||
+        result.observation.targetBase?.ref !== cached.targetBase?.ref ||
+        result.observation.targetBase?.sha !== cached.targetBase?.sha ||
+        result.observation.lifecycle !== cached.lifecycle
+      )
+        throw new Error("PR changed during readiness inspection");
+      return result;
+    }
     this.store.tracking.observe(
       pr.id,
       result.observation,
@@ -274,6 +312,21 @@ export class MergeService {
     const expectedGraph = graphKey(this.store.dependencies(), entry.prId);
     let pr = this.store.tracking.pr(entry.prId);
     const observation = pr.observation;
+    if (
+      entry.receiptId !== undefined &&
+      (receiptContext(this.store, pr) !== entry.receiptContext ||
+        this.store
+          .dependencies()
+          .some((d) => d.dependentId === pr.id && d.preparation !== undefined))
+    ) {
+      this.store.state(
+        entry,
+        EntryState.Blocked,
+        "PR or dependency context changed since the merge notice",
+        { nextAt: Number.MAX_SAFE_INTEGER },
+      );
+      return;
+    }
     if (observation === undefined) {
       this.store.state(
         entry,
@@ -407,9 +460,19 @@ export class MergeService {
     }
     const gate = checkGate(entry, snapshot);
     if (gate !== undefined) {
-      this.store.state(entry, EntryState.WaitingChecks, gate, {
-        nextAt: this.now() + 60000,
-      });
+      this.store.state(
+        entry,
+        entry.receiptId === undefined
+          ? EntryState.WaitingChecks
+          : EntryState.Blocked,
+        gate,
+        {
+          nextAt:
+            entry.receiptId === undefined
+              ? this.now() + 60000
+              : Number.MAX_SAFE_INTEGER,
+        },
+      );
       return;
     }
     await this.execute(entry, snapshot, expectedGraph);

@@ -289,7 +289,10 @@ function inspectArgs(
     return ["action", lookup(action, "id") ?? positionals[1] ?? "", "--full"];
   if (command === "subscribe" || command === "unsubscribe")
     return ["participants", positionals[1] ?? values.url ?? "", "--full"];
-  if (command === "ack") return ["message", positionals[1] ?? "", "--full"];
+  if (command === "merge" && lookup(root, "chain") !== undefined)
+    return ["chains", lookup(root, "chain") ?? "", "--full"];
+  if (command === "ack" || command === "merge")
+    return ["message", positionals[1] ?? "", "--full"];
   if (command === "acknowledge-digest") {
     const receipt = record(root["receipt"]) ? root["receipt"] : {};
     return [
@@ -395,9 +398,12 @@ export function printResult(
           result,
           cliJSON,
           parsed.values.json ||
-            ["ack", "acknowledge-digest", "acknowledge-message"].includes(
-              parsed.positionals[0] ?? "",
-            )
+            [
+              "ack",
+              "merge",
+              "acknowledge-digest",
+              "acknowledge-message",
+            ].includes(parsed.positionals[0] ?? "")
             ? undefined
             : 2,
         ),

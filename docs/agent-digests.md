@@ -4,6 +4,8 @@ Queue reconciliation runs only when an agent has applicable unread messages, a l
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving separate findings, a short excerpt and the failed-run or review link. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
+Identical displayed entries within a PR share one line. Submission notices asking for applicability verification share one request with distinct rule IDs listed once. These are presentation groups: every selected original message remains an immutable receipt member, and distinct evidence links remain visible.
+
 ## Replacement and cancellation
 
 Octo freezes a revision before transport access. When membership changes, it withdraws the old queue entry, requires `deleted: true`, rechecks current applicability, then admits the replacement with a fresh dispatch UUID. It does not use in-place queue updates. An empty digest is withdrawn without replacement. Queue withdrawal never acknowledges a notification or resolves an action.
@@ -42,10 +44,11 @@ The notification capability owns these records and transport reconciliation. Pro
 
 ## Inspection and receipt
 
-Agent-facing messages carry one opaque ID for their exact frozen content, without a digest marker, revision, update count or recipient ID. A PR with one update uses a single line; multiple updates for that PR use bullets. The footer is a copyable command:
+Agent-facing messages carry one opaque ID for their exact frozen content, without a digest marker, revision, update count or recipient ID. A PR with one update uses a single line; multiple updates for that PR use bullets. The footer is one bare, copyable command:
 
 ```sh
-octo-manager ack RECEIPT_ID
+octo-manager merge RECEIPT_ID # One Ready notice, current owner only.
+octo-manager ack RECEIPT_ID   # Receipt without merging.
 octo-manager message RECEIPT_ID
 ```
 
@@ -69,3 +72,6 @@ Acknowledgment output is deliberately smaller than inspection: `record_json` con
 PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.
 
 Merged PRs supersede outstanding actions and withdraw their queued notifications; immutable check snapshots, messages and receipts remain available as history. Startup reconciles existing actions against cached merged observations without a GitHub request. Closed, unmerged PRs still deliver final check failures while draining.
+
+
+A frozen revision can contain a validated merge target: PR, owner, tracking epoch, exact head, merge method, action, evidence-context and policy fingerprints. It is included only when the selected members contain one unambiguous owner Ready target. Changing that target creates another immutable dispatch even if the visible summary stays the same. [Receipt merges](receipt-merges.md) preserve separate receipt and merge outcomes; the public ID remains sufficient for either command.

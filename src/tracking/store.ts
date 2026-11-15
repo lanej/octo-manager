@@ -498,14 +498,40 @@ export class TrackingStore {
       return this.participants(pr.id);
     });
   }
+  replaceCompletionNotifications(
+    actionId: string,
+    recipients: readonly string[],
+  ): void {
+    if (!this.db.isTransaction) {
+      this.transaction(() => {
+        this.replaceCompletionNotifications(actionId, recipients);
+      });
+      return;
+    }
+    const action = this.action(actionId);
+    if (
+      action.blocker.kind !== "check_results" ||
+      action.blocker.state !== CheckWatchState.Completed ||
+      !action.blocker.checks.every(successfulCheck)
+    )
+      throw new Error("Invalid completion replacement");
+    this.cancelDeliveries(
+      actionId,
+      "Replaced by an immutable readiness notice",
+      true,
+      recipients,
+    );
+  }
   private cancelDeliveries(
     actionId: string,
     reason: string,
     includeDelivered = false,
+    recipients?: readonly string[],
   ): void {
     for (const d of this.deliveries().filter(
       (d) =>
         d.actionId === actionId &&
+        (recipients === undefined || recipients.includes(d.recipientAgentId)) &&
         [
           ...(includeDelivered ? [DeliveryState.Delivered] : []),
           DeliveryState.Pending,

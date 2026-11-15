@@ -1,3 +1,4 @@
+import { ReceiptTargetSchema } from "../merging/receipt-types.js";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 export enum DigestState {
@@ -35,6 +36,7 @@ export const DigestSchema = Type.Object(
 export const RevisionSchema = Type.Object(
   {
     dispatchId: text(),
+    mergeTarget: Type.Optional(ReceiptTargetSchema),
     digestId: text(),
     revision: Type.Integer({ minimum: 1, maximum: 4294967295 }),
     body: text(),

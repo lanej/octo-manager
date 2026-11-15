@@ -104,7 +104,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     );
     expect(version.messageIds).toHaveLength(2);
     expect(version.body).toContain(
-      `Ack: \`octo-manager ack ${shortId(version.dispatchId)}`,
+      `\`octo-manager ack ${shortId(version.dispatchId)}`,
     );
     expect(version.body).not.toContain(actor.id);
     expect(slot?.body).toBe(version.body);
