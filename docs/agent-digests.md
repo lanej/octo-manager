@@ -4,6 +4,8 @@ Queue reconciliation runs only when an agent has applicable unread messages, a l
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving separate findings, a short excerpt and the failed-run or review link. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
+Identical displayed entries within a PR share one line. Submission notices asking for applicability verification share one request with distinct rule IDs listed once. These are presentation groups: every selected original message remains an immutable receipt member, and distinct evidence links remain visible.
+
 ## Replacement and cancellation
 
 Octo freezes a revision before transport access. When membership changes, it withdraws the old queue entry, requires `deleted: true`, rechecks current applicability, then admits the replacement with a fresh dispatch UUID. It does not use in-place queue updates. An empty digest is withdrawn without replacement. Queue withdrawal never acknowledges a notification or resolves an action.

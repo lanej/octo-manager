@@ -67,6 +67,49 @@ function entry(
     ],
   };
 }
+// Collapse presentation only: every selected source remains in the receipt.
+function compactEntries(items: { group: string; lines: string[] }[]): {
+  group: string;
+  lines: string[];
+}[] {
+  const result: { group: string; lines: string[] }[] = [];
+  const conditions = new Set<string>();
+  let applicability: { group: string; lines: string[] } | undefined;
+  for (const item of items) {
+    const prefix = "- PR submission needs_input: ";
+    const reason = "Unverified applicability condition: ";
+    const summary = item.lines[0] ?? "";
+    const blockers = summary.slice(prefix.length).split("; ");
+    if (
+      item.group === "" &&
+      item.lines.length === 1 &&
+      summary.startsWith(prefix) &&
+      blockers.every(
+        (blocker) =>
+          blocker.startsWith(reason) && blocker.length > reason.length,
+      )
+    ) {
+      for (const blocker of blockers)
+        conditions.add(blocker.slice(reason.length));
+      if (applicability === undefined) {
+        applicability = { group: "", lines: [] };
+        result.push(applicability);
+      }
+      applicability.lines = [
+        `- PR submission needs input: verify applicability conditions: ${[...conditions].join(", ")}`,
+      ];
+    } else if (
+      !result.some(
+        (previous) =>
+          previous.group === item.group &&
+          JSON.stringify(previous.lines) === JSON.stringify(item.lines),
+      )
+    ) {
+      result.push(item);
+    }
+  }
+  return result;
+}
 export function renderDigest(
   messages: AgentMessage[],
   directory: string,
@@ -106,8 +149,9 @@ export function renderDigest(
   function body(rows: AgentMessage[]): string {
     const groups = new Map<string, string[]>();
     const counts = new Map<string, number>();
-    for (const row of rows) {
-      const item = entry(row, presentations.get(row.id));
+    for (const item of compactEntries(
+      rows.map((row) => entry(row, presentations.get(row.id))),
+    )) {
       counts.set(item.group, (counts.get(item.group) ?? 0) + 1);
       groups.set(item.group, [
         ...(groups.get(item.group) ?? []),
