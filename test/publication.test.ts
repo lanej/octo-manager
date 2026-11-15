@@ -474,6 +474,29 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     expect(valid.code).toBe(0);
     expect(valid.value).toEqual({ valid: true });
     expect(existsSync(called)).toBe(false);
+    const unsupported = await run(
+      [
+        "submit-pr",
+        "--title",
+        "feat: explain",
+        "--body-file",
+        description,
+        "--base",
+        "main",
+        "--track",
+        "--harness",
+        "claude",
+        "--thread-id",
+        "claude-session",
+      ],
+      h.root,
+      h.directory,
+      env,
+    );
+    expect(unsupported.code).toBe(1);
+    expect(JSON.stringify(unsupported.value)).toContain("tracking_harness");
+    expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
+    expect(existsSync(called)).toBe(false);
     const accepted = await run(
       [
         "submit-pr",
