@@ -1,3 +1,4 @@
+import { linkPRReferences } from "./links.js";
 import type {
   MessagePresentation,
   ReceiptTarget,
@@ -36,10 +37,22 @@ function entry(
       line.startsWith("[Evidence](") || line.startsWith("[Failed run]("),
   );
 
+  const summary = (presentation?.summary ?? heading?.[2] ?? first)
+    .replace(
+      "Checks completed (includes neutral/skipped); no merge conflicts",
+      "Checks complete",
+    )
+    .replace("Checks passed; no merge conflicts", "Checks passed");
+  const sourceUrl = heading?.[1]?.match(
+    /\((https:\/\/github\.com\/[^)]+)\)$/u,
+  )?.[1];
+  const knownUrl = summary.match(
+    /https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*\b/u,
+  )?.[0];
   return {
     group: heading?.[1] ?? "",
     lines: [
-      `- ${cleanText((presentation?.summary ?? heading?.[2] ?? first).replace("Checks completed (includes neutral/skipped); no merge conflicts", "Checks complete").replace("Checks passed; no merge conflicts", "Checks passed"), 768)}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
+      `- ${linkPRReferences(cleanText(summary), sourceUrl, knownUrl)}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
       ...(message.participantPRId !== undefined
         ? lines
             .filter((line) => line.startsWith("> "))
@@ -47,7 +60,9 @@ function entry(
             .map((line) => `  ${cleanText(line, 180)}`)
         : excerpt === ""
           ? []
-          : [`  > ${cleanText(excerpt, 180)}`]),
+          : [
+              `  > ${linkPRReferences(cleanText(excerpt), sourceUrl, knownUrl, 480)}`,
+            ]),
       ...(evidence === undefined ? [] : [`  ${evidence}`]),
     ],
   };
