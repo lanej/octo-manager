@@ -30,6 +30,7 @@ type activityMsg struct {
 	entries         []*v1.ActivityReport
 	events          []*v1.JobEvent
 	next            uint64
+	before          uint64
 	more            bool
 	err             error
 }
@@ -42,6 +43,10 @@ type activityHistory struct {
 	entries                      []*v1.ActivityReport
 	events                       []*v1.JobEvent
 	err                          error
+	oldest                       uint64
+	hasOlder                     bool
+	loaded                       bool
+	retryBefore                  uint64
 }
 
 func (m *Model) loadActivity() tea.Cmd {
@@ -55,10 +60,27 @@ func (m *Model) loadActivity() tea.Cmd {
 		m.resizeContent()
 	}
 
-	if m.agentActivity.loading || (m.agentActivity.seenThrough >= m.snapshot.GetSequence() && m.agentActivity.err == nil) {
+	if m.agentActivity.loading {
 		return nil
 	}
 
+	if m.agentActivity.err != nil {
+		return m.requestActivity(m.agentActivity.retryBefore)
+	}
+
+	if m.agentActivity.page > 0 || (m.agentActivity.seenThrough >= m.snapshot.GetSequence() && (m.agentActivity.loaded || m.agentActivity.cursor != 0 || m.agentActivity.seenThrough != 0)) {
+		return nil
+	}
+
+	var before uint64
+	if !m.agentActivity.loaded && m.agentActivity.cursor == 0 && m.agentActivity.seenThrough == 0 {
+		before = m.snapshot.GetSequence() + 1
+	}
+
+	return m.requestActivity(before)
+}
+
+func (m *Model) requestActivity(before uint64) tea.Cmd {
 	m.agentActivity.loading = true
 	m.activityRender.valid = false
 	m.resizeContent()
@@ -68,12 +90,17 @@ func (m *Model) loadActivity() tea.Cmd {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
 
-		response, err := m.api.RPC.ListActivity(ctx, connect.NewRequest(&v1.ListActivityRequest{AfterSequence: cursor}))
-		if err != nil {
-			return activityMsg{instance: instance, version: version, target: target, err: err}
+		request := &v1.ListActivityRequest{AfterSequence: cursor}
+		if before != 0 {
+			request = &v1.ListActivityRequest{BeforeSequence: new(before)}
 		}
 
-		return activityMsg{instance: instance, version: version, target: target, entries: response.Msg.GetActivities(), events: response.Msg.GetEvents(), next: response.Msg.GetNextSequence(), more: response.Msg.GetHasMore()}
+		response, err := m.api.RPC.ListActivity(ctx, connect.NewRequest(request))
+		if err != nil {
+			return activityMsg{instance: instance, version: version, target: target, before: before, err: err}
+		}
+
+		return activityMsg{instance: instance, version: version, target: target, before: before, entries: response.Msg.GetActivities(), events: response.Msg.GetEvents(), next: response.Msg.GetNextSequence(), more: response.Msg.GetHasMore()}
 	}
 }
 
@@ -84,6 +111,7 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 
 	m.agentActivity.loading = false
 	m.agentActivity.err = msg.err
+	m.agentActivity.retryBefore = msg.before
 	m.activityRender.valid = false
 
 	if msg.err != nil {
@@ -91,7 +119,8 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 		return nil
 	}
 
-	if msg.next < m.agentActivity.cursor || (msg.more && msg.next == m.agentActivity.cursor) {
+	if (msg.before == 0 && (msg.next < m.agentActivity.cursor || (msg.more && msg.next == m.agentActivity.cursor))) ||
+		(msg.before != 0 && (msg.next >= msg.before || (msg.more && msg.next == 0))) {
 		m.agentActivity.err = errors.New("activity page did not advance its cursor")
 		m.resizeContent()
 
@@ -99,15 +128,29 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 	}
 
 	for _, entry := range msg.entries {
-		if entry.GetSequence() > m.agentActivity.cursor {
+		if (msg.before == 0 && entry.GetSequence() > m.agentActivity.cursor) || (msg.before != 0 && entry.GetSequence() < msg.before) {
 			m.agentActivity.entries = append(m.agentActivity.entries, entry)
 		}
 	}
 
 	for _, event := range msg.events {
-		if event.GetSequence() > m.agentActivity.cursor {
+		if (msg.before == 0 && event.GetSequence() > m.agentActivity.cursor) || (msg.before != 0 && event.GetSequence() < msg.before) {
 			m.agentActivity.events = append(m.agentActivity.events, event)
 		}
+	}
+
+	if msg.before != 0 {
+		if !m.agentActivity.loaded && m.agentActivity.cursor == 0 && m.agentActivity.seenThrough == 0 {
+			m.agentActivity.cursor = msg.target
+			m.agentActivity.seenThrough = msg.target
+		}
+
+		m.agentActivity.oldest = msg.next
+		m.agentActivity.hasOlder = msg.more
+		m.agentActivity.loaded = true
+		m.resizeContent()
+
+		return nil
 	}
 
 	m.agentActivity.cursor = msg.next
@@ -180,8 +223,13 @@ func (m *Model) activityContent() string {
 	start := min(history.page*activityPageSize, ((len(items)-1)/activityPageSize)*activityPageSize)
 
 	end := min(start+activityPageSize, len(items))
-	if len(items) > activityPageSize {
-		parts = append(parts, text.Pill(fmt.Sprintf("%d–%d of %d", start+1, end, len(items)), text.Neutral, m.theme, text.Dim)+" "+text.KeyHint("h", "older", m.theme)+" · "+text.KeyHint("l", "newer", m.theme))
+	if len(items) > activityPageSize || history.hasOlder {
+		count := fmt.Sprintf("%d loaded", len(items))
+		if history.hasOlder {
+			count += " · older history available"
+		}
+
+		parts = append(parts, text.Pill(fmt.Sprintf("%d–%d of %s", start+1, end, count), text.Neutral, m.theme, text.Dim)+" "+text.KeyHint("h", "older", m.theme)+" · "+text.KeyHint("l", "newer", m.theme))
 	}
 
 	parts = append(parts, "")
@@ -303,16 +351,28 @@ func (m *Model) renderedActivity(width int) string {
 	return m.activityRender.rendered
 }
 
-func (m *Model) moveActivityPage(delta int) {
-	count := len(m.agentActivity.entries) + len(m.agentActivity.events)
+func (m *Model) moveActivityPage(delta int) tea.Cmd {
+	count := len(activityItems(m.agentActivity))
 
 	page := min(max(0, m.agentActivity.page+delta), max(0, (count-1)/activityPageSize))
 	if page == m.agentActivity.page {
-		return
+		if delta > 0 && m.agentActivity.hasOlder && !m.agentActivity.loading {
+			m.agentActivity.page++
+
+			return m.requestActivity(m.agentActivity.oldest)
+		}
+
+		return nil
 	}
 
 	m.agentActivity.page = page
 	m.activityRender.valid = false
 	m.result.GotoTop()
 	m.resizeContent()
+
+	if page == 0 {
+		return m.loadActivity()
+	}
+
+	return nil
 }

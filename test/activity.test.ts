@@ -177,6 +177,16 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
     assert(tailReport !== undefined);
     assert.equal(tailReport.outcome, ActivityOutcome.UNCERTAIN);
     assert.equal(tailReport.operationId, input.operationId);
+    const recent = await client.listActivity({ beforeSequence: 0n });
+    assert.equal(recent.hasMore, false);
+    assert.equal(recent.nextSequence, 1n);
+    assert.equal(recent.events.length, 1);
+    assert.equal(recent.activities.length, 2);
+    assert.equal(recent.activities[0]?.sequence, 203n);
+    await assert.rejects(
+      client.listActivity({ afterSequence: 1n, beforeSequence: 0n }),
+      hasCode(Code.InvalidArgument),
+    );
     await coordinator.close();
     const reopened = new Store(directory);
     try {
@@ -194,6 +204,42 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
     } finally {
       reopened.close();
     }
+  } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("recent activity pages bound a large history and retain forward replay and older evidence", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-activity-recent-"));
+  const coordinator = new Coordinator(directory);
+  try {
+    for (let i = 1; i <= 12000; i++)
+      coordinator.store.event(
+        "",
+        "queue_inspection_unavailable",
+        `failure ${String(i)}`,
+      );
+    await coordinator.start();
+    const client = schedulerClient(directory);
+    const recent = await client.listActivity({ beforeSequence: 12001n });
+    assert.equal(recent.events.length, 200);
+    assert.equal(recent.events[0]?.detail, "failure 12000");
+    assert.equal(recent.events.at(-1)?.detail, "failure 11801");
+    assert.equal(recent.nextSequence, 11801n);
+    assert.equal(recent.hasMore, true);
+    const older = await client.listActivity({
+      beforeSequence: recent.nextSequence,
+    });
+    assert.equal(older.events[0]?.detail, "failure 11800");
+    assert.equal(older.events.at(-1)?.detail, "failure 11601");
+    const replay = await client.listActivity({ afterSequence: 0n });
+    assert.equal(replay.events[0]?.detail, "failure 1");
+    assert.equal(replay.nextSequence, 200n);
+    await assert.rejects(
+      client.listActivity({ beforeSequence: 12002n }),
+      hasCode(Code.OutOfRange),
+    );
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
