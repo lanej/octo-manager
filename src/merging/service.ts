@@ -101,6 +101,7 @@ export class MergeService {
             input.pr,
             input.actorId,
             input.requestId,
+            input.instructions,
           );
         return this.store.autoMerge(
           input.pr,

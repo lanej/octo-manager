@@ -389,7 +389,12 @@ export class MergeStore {
       ? "explicit"
       : "inherited";
   }
-  useDefault(prValue: string, actorId: string, requestId: string) {
+  useDefault(
+    prValue: string,
+    actorId: string,
+    requestId: string,
+    instructions?: string,
+  ) {
     const pr = this.tracking.pr(prValue);
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
@@ -410,7 +415,7 @@ export class MergeStore {
       actorId,
       enabled,
       requestId,
-      undefined,
+      instructions,
       "inherited",
     );
   }

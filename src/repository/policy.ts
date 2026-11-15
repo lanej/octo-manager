@@ -248,7 +248,16 @@ export class RepositoryPolicies {
             pr.observation.workflows.state !== "complete"))
       )
         continue;
-      if (this.merging.settingSource(pr.id) !== "explicit") {
+      const current = entries.find((entry) => !terminal(entry.state));
+      if (
+        this.merging.settingSource(pr.id) !== "explicit" &&
+        (current === undefined
+          ? next.autoMerge
+          : current.autoMerge !== next.autoMerge ||
+            current.autoMergeSource !== "inherited" ||
+            current.autoMergeStage !== next.stage ||
+            current.trackingEpoch !== pr.trackingEpoch)
+      ) {
         this.merging.autoMerge(
           pr.id,
           pr.ownerAgentId,
