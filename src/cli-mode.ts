@@ -31,6 +31,8 @@ const reads = new Set([
 ]);
 export function readOnlyCommand(positionals: string[]): boolean {
   const command = positionals[0] ?? "";
+  if (command === "pr" && ["init", "refresh"].includes(positionals[1] ?? ""))
+    return false;
   return (
     reads.has(command) ||
     (command === "repo-policy" &&

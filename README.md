@@ -43,6 +43,33 @@ The worker uses existing Pi ChatGPT authentication when configured, otherwise a 
 
 If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub reads use the existing `gh` login. Private or indeterminate repository visibility is rejected before content reaches the model. Public PR content goes to the selected model provider. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
 
+### Amazon Bedrock
+
+Use a provider-qualified model, such as `serve --model amazon-bedrock/us.anthropic.claude-sonnet-5-5`. Unqualified model names retain the OpenAI Codex provider. Bedrock workers use Pi's native AWS credential resolution and an empty read-only credential store; they do not require ChatGPT authentication or copy credentials. Supply an explicit `AWS_PROFILE`, AWS access-key variables, ECS/web-identity configuration, or `AWS_BEARER_TOKEN_BEDROCK`. Missing Bedrock configuration fails without falling back to Codex.
+
+Persist the default worker model in `$XDG_CONFIG_HOME/octo-manager/config.json` (normally `~/.config/octo-manager/config.json`) so a managed reinstall does not replace your selection. `serve --model` overrides this value. PR drafting and repair profiles have separate model settings:
+
+```json
+{
+  "workerModel": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+  "submissionModels": {
+    "policy": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+    "change": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+    "writer": "amazon-bedrock/us.anthropic.claude-sonnet-5-5"
+  }
+}
+```
+
+Merge these keys into your existing configuration. Services must also receive your existing AWS environment. On Linux, a user-owned systemd drop-in survives regeneration of the managed unit. For an existing trusted shell environment file, `systemctl --user edit octo-manager.service` can select the installed launcher without pinning an old release:
+
+```ini
+[Service]
+ExecStart=
+ExecStart=/bin/bash -c '. "$$HOME/.config/bedrock/env" && exec "$$HOME/.local/bin/octo-manager" serve'
+```
+
+The environment file remains your credential source; keep it private. Reload the user service manager and restart Octo after changing service settings. On macOS, configure AWS credentials in the launchd service environment before starting Octo.
+
 ## PR tracking
 
 Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
@@ -122,6 +149,6 @@ Agent notifications follow the [agent message standard](docs/agent-messages.md):
 
 ## PR submission
 
-Octo can run a dedicated PR writer, publish, and enroll a pushed branch for its calling Codex session, including private repositories. Use `submit-pr --intent-file FILE`; inspect operations with `submission ID`. Contribution analysis is cached as immutable source-cited policy versions, and structured briefs retain falsifiable claims and validation facts. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
+Octo accepts caller-written PR titles and descriptions, validates local format rules, and returns a durable pending receipt before a short-lived publisher contacts GitHub. Use `pr init`, `pr validate --title TITLE --body-file FILE`, then `submit-pr --title TITLE --body-file FILE`; inspect completion with `submission ID`. No daemon or model is required for submission. Optional `pr init --derive` samples bounded repository guidance and recent PRs to propose advisory writing guidance. Tracking requires explicit `--track --thread-id SESSION`. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
 
 `bun run check` gives the typed TypeScript analyzer an explicit 4 GiB Node heap budget on both local machines and CI; Octokit declarations exceed the default roughly 2 GiB heap on hosted macOS. Individual lint runs use `node --max-old-space-size=4096 scripts/check-typescript.mjs lint`. This changes analysis memory limits, without disabling rules or growing the retrofit baseline.

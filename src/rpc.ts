@@ -102,22 +102,16 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       const messages=coordinator.digests.acknowledge(id,number,agentId,r.expectedBody);
       return digestReceipt(coordinator.digests,tracking.store,id,number,messages);
     });},
-    submitPullRequest(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(
-          coordinator.submissions.submit(JSON.parse(r.inputJson)),
-        ),
-      }));
+    submitPullRequest() {
+      throw new ConnectError("Legacy drafting retired; run pr init, pr validate, then submit-pr --title TITLE --body-file FILE.", Code.FailedPrecondition);
     },
     getSubmission(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),
       }));
     },
-    listSubmissions() {
-      return {
-        submissionsJson: coordinator.store.submissions
-          .list()
-          .map((value) => JSON.stringify(value)),
-      };
+    listSubmissions(r) {
+      const page = coordinator.store.submissions.summaryPage(r.beforeRowId === 0n ? Number.MAX_SAFE_INTEGER : Number(r.beforeRowId), r.limit === 0 ? 20 : r.limit);
+      return { submissionsJson: page.items.map((value) => JSON.stringify(value)), nextBeforeRowId: BigInt(page.next ?? 0) };
     },
     retrySubmission(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(coordinator.submissions.retry(r.id)),
