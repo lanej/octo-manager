@@ -242,7 +242,7 @@ export class MergeStore {
     this.saveEntry(next);
     this.event("merge_entry_updated", `${state}: ${next.detail}`, entry.prId);
     const pr = this.tracking.pr(entry.prId);
-    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: octo-manager chains ${shortId(entry.chainId)}`;
+    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: \`octo-manager chain show ${shortId(entry.chainId)}\``;
     this.notice(
       pr,
       "entry",
@@ -412,7 +412,7 @@ export class MergeStore {
             "entry",
             entry.id,
             String(next.version),
-            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: octo-manager chains ${shortId(chain.id)}`,
+            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: \`octo-manager chain show ${shortId(chain.id)}\``,
             [
               EntryState.WaitingOwner,
               EntryState.Blocked,
@@ -810,7 +810,7 @@ export class MergeStore {
             "reference",
             ref.id,
             ref.revision,
-            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: octo-manager references ${pr.url}`,
+            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: \`octo-manager reference list ${pr.url}\``,
             true,
           );
         }

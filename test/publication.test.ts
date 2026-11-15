@@ -403,6 +403,7 @@ async function run(
       process.execPath,
       resolve("src/cli.ts"),
       ...args,
+      "--json",
       "--state",
       state,
       "--cwd",
@@ -594,7 +595,12 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     );
     expect(escaped.code).toBe(1);
     expect(Buffer.byteLength(escaped.stdout)).toBeLessThanOrEqual(1025);
-    const page = await run(["submissions"], h.root, h.directory, env);
+    const page = await run(
+      ["history", "submissions"],
+      h.root,
+      h.directory,
+      env,
+    );
     expect(Buffer.byteLength(page.stdout)).toBeLessThan(4096);
     expect(page.stdout).not.toContain("large ");
     await writeFile(

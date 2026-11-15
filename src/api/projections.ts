@@ -39,7 +39,13 @@ export function digestInspection(
       "error",
       "state",
     ],
-    numberKeys = ["revision", "receivedRevision", "currentRevision"];
+    numberKeys = [
+      "revision",
+      "receivedRevision",
+      "currentRevision",
+      "oldRevision",
+      "nextRevision",
+    ];
   return {
     ...value,
     events: value.events.map((event) => {
@@ -54,8 +60,10 @@ export function digestInspection(
         raw["messages"].every((item: unknown) => typeof item === "string")
       )
         detail["messages"] = raw["messages"];
-      if (typeof raw["deleted"] === "boolean")
-        detail["deleted"] = raw["deleted"];
+      for (const key of ["deleted", "historyComplete"])
+        if (typeof raw[key] === "boolean") detail[key] = raw[key];
+      const omittedFields = Object.keys(raw).filter((key) => !(key in detail));
+      if (omittedFields.length > 0) detail["omittedFields"] = omittedFields;
       return { ...event, detail };
     }),
   };

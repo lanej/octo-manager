@@ -239,7 +239,7 @@ export async function codexHook(
   const lines: string[] = [];
   if (event === "SessionStart")
     lines.push(
-      "Octo monitors enrolled PRs and returns actionable evidence through its inbox. Existing task authorization still applies; receipts are tracked automatically. Full evidence: octo-manager action ACTION_ID.",
+      "Octo monitors enrolled PRs and returns actionable evidence through its inbox. Existing task authorization still applies; receipts are tracked automatically. Full evidence: octo-manager action show ACTION_ID.",
     );
   if (status.pending.length > 0)
     lines.push(
@@ -256,7 +256,7 @@ export async function codexHook(
     notices.length;
   if (omitted > 0 || page.hasMore)
     lines.push(
-      `More unread notifications remain. Retrieve them with octo-manager inbox --agent-id ${agentId} --applicable-only; their receipts have not been recorded by this hook.`,
+      `More unread notifications remain. Retrieve them with octo-manager agent inbox --agent-id ${agentId} --applicable-only; their receipts have not been recorded by this hook.`,
     );
   if (lines.length === 0) return {};
   return {
