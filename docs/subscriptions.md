@@ -3,10 +3,10 @@
 A PR has one responsible owner and any number of observer subscriptions. One agent can listen to multiple PRs, including PRs in different repositories. Ownership determines who may acknowledge or start an action; listening determines who receives updates. This is local coordinator membership, not a GitHub notification subscription or an access grant.
 
 ```sh
-octo-manager subscribe https://github.com/owner/repo/pull/17 --thread-id THREAD --label "Independent review"
-octo-manager participants https://github.com/owner/repo/pull/17
-octo-manager participants https://github.com/owner/repo/pull/17 --after 20
-octo-manager unsubscribe https://github.com/owner/repo/pull/17 --agent-id AGENT
+octo-manager pr subscribe https://github.com/owner/repo/pull/17 --thread-id THREAD --label "Independent review"
+octo-manager pr participants https://github.com/owner/repo/pull/17
+octo-manager pr participants https://github.com/owner/repo/pull/17 --after 20
+octo-manager pr unsubscribe https://github.com/owner/repo/pull/17 --agent-id AGENT
 ```
 
 `subscribe` requires an already enrolled, enabled PR. It never silently enrolls a new PR, takes ownership or resumes manual untracking. The owner listens implicitly and cannot unsubscribe without transferring ownership or untracking. Existing records migrate with their owner as the only listener. Repeating the same subscription is a no-op. A new observer receives applicable unfinished actions; unrelated historical or resolved actions are not replayed. Lists return at most 20 participants, their total and `has_more`; `--after` is a participant offset. Use the normal `--state` option for another coordinator.

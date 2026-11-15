@@ -59,7 +59,7 @@ Administrative inspection exposes the internal envelope and revision:
 ```sh
 octo-manager messages list --agent-id AGENT_ID
 octo-manager messages inspect DIGEST_ID --revision 2
-octo-manager acknowledge-digest DIGEST_ID --revision 2 --agent-id AGENT_ID
+octo-manager action ack-digest DIGEST_ID --revision 2 --agent-id AGENT_ID
 ```
 
 Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and receipt-agent prefixes are accepted; ambiguous prefixes fail. Agent-facing receipt commands use the opaque dispatch ID and infer the recipient. Inspection returns the selected immutable revision, revision numbers, receipts and the latest 100 journal events. The complete journal remains stored. `GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` are generated Connect RPCs; receipt can require `expected_body` and returns each member's current applicability. Treat obsolete members as historical evidence, not new work.

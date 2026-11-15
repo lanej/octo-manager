@@ -7,11 +7,11 @@ Tracking belongs to the TypeScript coordinator; the Go dashboard is its client. 
 Start the coordinator with `bin/octo-manager serve`, then register a PR from its owning session:
 
 ```sh
-bin/octo-manager track --url https://github.com/OWNER/REPO/pull/123 --harness codex --thread-id THREAD_ID --label 'Review session'
-bin/octo-manager tracked
-bin/octo-manager tracking --json
-bin/octo-manager refresh PR_ID
-bin/octo-manager actions PR_ID
+bin/octo-manager pr track --url https://github.com/OWNER/REPO/pull/123 --harness codex --thread-id THREAD_ID --label 'Review session'
+bin/octo-manager pr list
+bin/octo-manager agent status --json
+bin/octo-manager pr refresh PR_ID
+bin/octo-manager action list PR_ID
 ```
 
 Use the same `--state DIR` on every command when selecting a nondefault state directory. The tracking dashboard is **4 Tracking**; it shows ownership, observation freshness, pending actions, profile, and delivery state even when the PR has no worker runs. Press `u` to refresh. Existing Reviews/Output/State views remain available. The Reviews message feed retains its existing public-only restriction; private tracking shows check and effective-review metadata in Tracking.
@@ -31,11 +31,11 @@ Rate-limit responses pause reads until GitHub's `Retry-After` or exhausted-budge
 Actions represent confirmed merge conflicts, current-head failed checks, effective changes-requested reviews, informational review feedback, and completed/superseded check-watch reports. Repeated observations do not create duplicate unfinished actions. A recurring blocker after resolution creates another action, preserving the earlier episode.
 
 ```sh
-bin/octo-manager action ACTION_ID
-bin/octo-manager acknowledge ACTION_ID --agent-id AGENT_ID
-bin/octo-manager working ACTION_ID --agent-id AGENT_ID
-bin/octo-manager assign PR_ID --thread-id NEW_THREAD_ID
-bin/octo-manager untrack PR_ID
+bin/octo-manager action show ACTION_ID
+bin/octo-manager action ack ACTION_ID --agent-id AGENT_ID
+bin/octo-manager action start ACTION_ID --agent-id AGENT_ID
+bin/octo-manager pr assign PR_ID --thread-id NEW_THREAD_ID
+bin/octo-manager pr untrack PR_ID
 ```
 
 Acknowledgment and work reporting require the current owner's agent ID. This is a local ownership contract, not authentication against other unrestricted processes under the same account. Reassignment resets unfinished actions to open, preserves ownership history in events, and cancels pending deliveries to the old owner. Same-owner enrollment resumes an untracked PR. Untracking disables polling and delivery while retaining history.
@@ -65,8 +65,8 @@ A successful app-server response means transport admission, not recipient receip
 New messages retain immutable text before transport access. Transient delivery failures retry after 5, 30, then at most every 120 seconds while applicable; explicit app-server rejection remains unavailable and visible. Unknown acceptance becomes uncertain. Accepted unread messages are rechecked after five minutes. Octo checks queue and thread history before replay: a matching queue/history record defers resend, a lookup failure retains the message and retries the lookup after a minute, and absence permits replay using the same ID and exact text. Bounded absence cannot prove rejection, so duplicate receipt remains possible. Restart retains receipt-check deadlines and recovers interrupted sends as uncertain. Historical sends without frozen text are not reconstructed or automatically replayed.
 
 ```sh
-bin/octo-manager tracking --json
-bin/octo-manager retry-delivery DELIVERY_ID
+bin/octo-manager agent status --json
+bin/octo-manager action retry-delivery DELIVERY_ID
 ```
 
 Explicit retry resets backoff while retaining numbered attempts; messages already acknowledged cannot be retried. Retrying an uncertain delivery can duplicate work if the earlier message was accepted; inspect the thread before requesting it.
@@ -96,7 +96,7 @@ Configuration defaults to `$XDG_CONFIG_HOME/octo-manager/config.json`, or `~/.co
 Rules are evaluated in order; the first matching blocker kind and optional exact check name selects the profile. Defaults cover conflicts, failed checks, and requested changes. Profiles are copied onto actions. Reprofile unfinished actions explicitly after restarting with new configuration:
 
 ```sh
-bin/octo-manager reprofile ACTION_ID
+bin/octo-manager action reprofile ACTION_ID
 ```
 
 Agent references identify a harness, endpoint, and opaque session ID. Codex is the only implemented delivery adapter; unsupported registrations fail clearly. Harness versions are observations, not identity: agent records retain the last observed runtime, and each delivery attempt snapshots its observed version. Repair execution, harness/model dispatch, agent pools, and Paseo remain future clients of these records.
@@ -172,10 +172,10 @@ interface AgentMessage {
 Use the supplied message-specific receipt argv immediately after reading. A receipt means only that this message reached the recipient. It neither accepts nor resolves its action. If a replayed marker is already handled, record receipt again (idempotently) and avoid repeating work. Inspect the action's current owner and state before responding to old evidence. Messages for former owners remain in their historical inbox with `applicable: false`; they are not reassigned or replayed as current work.
 
 ```sh
-bin/octo-manager inbox --agent-id AGENT_ID --json
-bin/octo-manager inbox --agent-id AGENT_ID --after SEQUENCE --json
-bin/octo-manager acknowledge-message DELIVERY_ID --agent-id AGENT_ID
-bin/octo-manager inbox --agent-id AGENT_ID --include-acknowledged --json
+bin/octo-manager agent inbox --agent-id AGENT_ID --json
+bin/octo-manager agent inbox --agent-id AGENT_ID --after SEQUENCE --json
+bin/octo-manager action ack-message DELIVERY_ID --agent-id AGENT_ID
+bin/octo-manager agent inbox --agent-id AGENT_ID --include-acknowledged --json
 ```
 
 `ListAgentMessages` returns at most 200 messages, `next_sequence`, and `has_more`. It defaults to unacknowledged records for the requested agent; inspect `applicable` before acting. Start unread recovery from sequence zero after reconnecting so a cursor advanced past an unacknowledged message does not hide it. A response cursor is a paging position, not a cumulative acknowledgment. `AcknowledgeMessage(id, agent_id)` records a delivery-specific, immutable receipt and rejects another recipient. These identifiers fit the existing owner-only local API contract; they are not cryptographic agent authentication.
@@ -190,7 +190,7 @@ SQLite version 7 adds `delivery_messages`, preserving all existing identities an
 Enroll the PR once, then continue working. Octo owns polling and returns check completion and actionable failures through the owning agent's durable inbox; the caller does not run a blocking `gh pr checks --watch` loop.
 
 ```sh
-bin/octo-manager track --url https://github.com/OWNER/REPO/pull/NUMBER --thread-id "$CODEX_THREAD_ID"
+bin/octo-manager pr track --url https://github.com/OWNER/REPO/pull/NUMBER --thread-id "$CODEX_THREAD_ID"
 ```
 
 Every observed head of an enrolled open PR gets a persistent check watch. Each watch has a PR, exact `headSha`, generation number, `state` (`waiting`, `completed`, `superseded`, or `cancelled`), collected check evidence, and millisecond timestamps. Workflow runs are read independently by head SHA so queued workflows without materialized jobs prevent premature completion. The first complete observation can report already-finished checks. Empty check lists, unknown conclusions, pending/running executions, and partial/unavailable source reads remain waiting. Both commit statuses/check runs and workflow coverage must be complete.

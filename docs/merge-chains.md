@@ -26,11 +26,11 @@ Create an intent file, then submit it through the coordinator:
 ```
 
 ```sh
-octo-manager queue-chain --intent-file chain.json
-octo-manager references https://github.com/owner/application/pull/2
+octo-manager chain queue --intent-file chain.json
+octo-manager reference list https://github.com/owner/application/pull/2
 octo-manager merge-command --intent-file dependency.json
-octo-manager merge-ready https://github.com/owner/library/pull/1 --head FULL_SHA --agent-id OWNER_ID
-octo-manager chains CHAIN_ID
+octo-manager pr ready https://github.com/owner/library/pull/1 --head FULL_SHA --agent-id OWNER_ID
+octo-manager chain list CHAIN_ID
 ```
 
 `dependency.json` specifies the dependent first; use the source PR's current owner:
@@ -60,11 +60,11 @@ Validation must leave a clean worktree. The push uses the original source SHA as
 ## Stop and recover
 
 ```sh
-octo-manager pause-chain CHAIN_ID
-octo-manager resume-chain CHAIN_ID
-octo-manager cancel-chain CHAIN_ID
-octo-manager reconcile-operation OPERATION_ID
-octo-manager chains CHAIN_ID --full
+octo-manager chain pause CHAIN_ID
+octo-manager chain resume CHAIN_ID
+octo-manager chain cancel CHAIN_ID
+octo-manager chain reconcile OPERATION_ID
+octo-manager chain list CHAIN_ID --full
 ```
 
 An external operation already in flight can finish after pause/cancel. Interrupted local-only work is failed; an interrupted push/merge is uncertain. Reconciliation inspects the remote result and never resends the operation. A confirmed matching prepared head or actual merge resolves the lease; inconclusive evidence keeps it uncertain. Policy and graph edits are blocked while a dependent PR has an in-flight/uncertain operation. A merged result observed after an uncertain merge confirms the PR state without claiming which actor merged it.

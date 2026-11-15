@@ -27,10 +27,10 @@ Use the repository’s actual checks and a model available to the existing Codex
 ```sh
 octo-manager serve --config /path/to/config.json --state /path/to/state
 # Enroll the PR from its owning session first, as described in tracking.md.
-octo-manager rebase --url https://github.com/owner/repo/pull/42 \
+octo-manager repair rebase --url https://github.com/owner/repo/pull/42 \
   --profile rebase --request-id pr42-rebase-1 --state /path/to/state
-octo-manager repairs --state /path/to/state
-octo-manager repairs --state /path/to/state --json
+octo-manager repair list --state /path/to/state
+octo-manager repair list --state /path/to/state --json
 ```
 
 The rebase command authorizes a source-branch update for that request, subject to its profile and verification. It is not triggered by a notification or merely detecting a conflict. Replaying the same request ID returns the existing attempt; changed input is rejected. A new execution requires a new request ID. Only one active repair per PR is accepted.
@@ -70,9 +70,9 @@ SQLite migration 5 adds `conflict_cases`, linked to `repair_attempts`. Each case
 `ListConflictCases` returns up to 100 summaries after a numeric cursor, excluding source text. `GetConflictCase` returns full retained evidence. Both use typed Connect messages. Join the case’s repair ID with `ListRepairs` to distinguish recipe application from final validation, push, and hosted-check outcomes. Empty or missing text evidence cannot establish what a recipe would have done.
 
 ```sh
-octo-manager conflict-cases --state /path/to/state
-octo-manager conflict-cases --after 100 --json --state /path/to/state
-octo-manager conflict-case 1 --json --state /path/to/state
+octo-manager conflict list --state /path/to/state
+octo-manager conflict list --after 100 --json --state /path/to/state
+octo-manager conflict show 1 --json --state /path/to/state
 ```
 
 This corpus supports later grouping by recipe, path, decision, and repair outcome, and offline reproduction from the captured three versions. It does not automatically promote a recurring pattern into a trusted rule. Repository owners can put approved guidance, such as using block sequences in frequently edited configuration, into the existing repair profile’s `instructions` and repository formatter policy. The next recipe should earn its scope through retained examples and validation rather than increasingly broad agent instructions.

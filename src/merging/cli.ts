@@ -73,9 +73,6 @@ export async function mergingCLI(
     case "reference-dismiss":
       input = { op: "decide", id: id ?? "", actorId, decision: "dismissed" };
       break;
-    case "merge-command":
-      input = checked(CommandSchema, intent());
-      break;
     case "merge-ready":
       input = { op: "ready", pr: id ?? "", head: values.head ?? "", actorId };
       break;

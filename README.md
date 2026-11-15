@@ -25,9 +25,9 @@ bin/octo-manager dashboard
 From Codex or a third terminal:
 
 ```sh
-bin/octo-manager submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
-bin/octo-manager get JOB_ID --json
-bin/octo-manager events JOB_ID --watch
+bin/octo-manager job submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
+bin/octo-manager job show JOB_ID --json
+bin/octo-manager job events JOB_ID --watch
 ```
 
 All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. For a persistent macOS service and automatic Codex enrollment, use the [local installation guide](docs/local-install.md). Manual runs remain available on both platforms. Codex notifications attach to an already running local Codex app-server; installation does not change MCP configuration.
@@ -45,7 +45,7 @@ If no usable session exists, `bin/octo-manager login` opens Pi with tools and di
 
 ## PR tracking
 
-Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
+Enroll public or private PRs with `bin/octo-manager pr track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
 
 ## Dashboard and commands
 
@@ -69,11 +69,11 @@ Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on
 The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`6` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
 
 ```text
-octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
-octo-manager get JOB_ID --json
-octo-manager events JOB_ID --after SEQUENCE [--watch]
-octo-manager cancel JOB_ID
-octo-manager retry JOB_ID
+octo-manager job submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
+octo-manager job show JOB_ID --json
+octo-manager job events JOB_ID --after SEQUENCE [--watch]
+octo-manager job cancel JOB_ID
+octo-manager job retry JOB_ID
 octo-manager pause
 octo-manager resume
 ```

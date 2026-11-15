@@ -25,7 +25,7 @@ A confirmed eligible completion is shorter: a linked PR followed by “Ready” 
 
 The renderer budgets 120 UTF-8 bytes for the heading, 480 for the excerpt, 120 for an inline location, and 512 per rendered HTTPS link. Excerpts end with an ellipsis when truncated and are presented as quoted data. Control sequences are removed. These component limits keep the message below 4 KiB; typical messages are substantially smaller. Truncation changes presentation, not the stored action or watch evidence.
 
-For GitHub Actions job failures, the service attempts a read-only failed-log excerpt with a five-second deadline and a 512 KiB process-output limit. It reads only the repository named by the tracked PR. It searches the final 100 log lines for an error and includes up to four lines. A missing, oversized, or unavailable log omits the excerpt while retaining the failed-run link; an excerpt is not a claim of root cause. Other check providers retain their evidence link without an invented error. Agents fetch additional evidence only when needed with `octo-manager action ACTION_ID` or the linked run.
+For GitHub Actions job failures, the service attempts a read-only failed-log excerpt with a five-second deadline and a 512 KiB process-output limit. It reads only the repository named by the tracked PR. It searches the final 100 log lines for an error and includes up to four lines. A missing, oversized, or unavailable log omits the excerpt while retaining the failed-run link; an excerpt is not a claim of root cause. Other check providers retain their evidence link without an invented error. Agents fetch additional evidence only when needed with `octo-manager action show ACTION_ID` or the linked run.
 
 ## Delivery, receipts, and replies
 

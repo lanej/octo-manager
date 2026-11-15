@@ -241,6 +241,11 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (command === "dependency-confirm")
+    return ["dependencies", values.pr ?? ""];
+  if (command === "dependency-remove") return ["dependencies"];
+  if (command === "reference-dismiss") return ["references"];
+  if (command === "merge-policy") return ["pr", positionals[1] ?? ""];
   if (
     [
       "auto-merge",
