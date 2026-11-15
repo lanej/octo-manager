@@ -83,7 +83,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     coordinator.store.submissions.notify(
       submission,
       actor.id,
-      "PR submission needs_input: Synthetic request",
+      "[octo-delivery:11111111]\nPR submission needs_input: Synthetic request",
     );
     await coordinator.start();
     for (let attempt = 0; attempt < 100; attempt++) {
@@ -153,6 +153,10 @@ test("coordinator combines both producers and atomically receipts exact members 
       expectedBody: version.body,
     });
     expect(receipt.messages).toHaveLength(2);
+    expect(
+      receipt.messages.find((message) => message.submissionId === submission.id)
+        ?.summary,
+    ).toBe("PR submission needs_input: Synthetic request");
     expect(Buffer.byteLength(receipt.recordJson)).toBeLessThan(300);
     expect(receipt.recordJson).not.toContain("synthetic_history");
     expect(receipt.recordJson).not.toContain("messageIds");

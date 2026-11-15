@@ -43,7 +43,12 @@ export function digestReceipt(
         summary: compact(
           action?.summary ??
             (message.participantPRId === undefined
-              ? (message.body.split("\n")[0] ?? "Octo update")
+              ? (message.body
+                  .split("\n")
+                  .find(
+                    (line) =>
+                      line.trim() !== "" && !line.startsWith("[octo-delivery:"),
+                  ) ?? "Octo update")
               : "PR participants changed"),
           160,
         ),
