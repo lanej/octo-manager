@@ -25,6 +25,7 @@ export const NoticeReadinessSchema = Type.Object(
     retryAt: Type.Integer(),
     eligible: Type.Boolean(),
     reason: Type.String({ maxLength: 1000 }),
+    inspectionError: Type.Optional(Type.String({ maxLength: 1000 })),
   },
   { additionalProperties: false },
 );

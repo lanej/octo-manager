@@ -114,6 +114,7 @@ export class ReceiptMerges {
     const cached = this.store.noticeReadiness(pr.id);
     if (
       cached === undefined ||
+      cached.inspectionError !== undefined ||
       cached.target.actionId !== action.id ||
       cached.target.context !== receiptContext(this.store, pr) ||
       cached.policy !== this.policyKey(pr) ||
@@ -207,7 +208,8 @@ export class ReceiptMerges {
         old?.target.actionId === selected.action.id &&
         old.target.context === context &&
         old.policy === policyKey &&
-        JSON.stringify(old.recipients) === JSON.stringify(queueRecipients) &&
+        (old.inspectionError !== undefined ||
+          JSON.stringify(old.recipients) === JSON.stringify(queueRecipients)) &&
         old.retryAt > this.now()
       )
         continue;
@@ -221,51 +223,78 @@ export class ReceiptMerges {
         policy: policyKey,
         method: "squash",
       };
-      let reason = "Merge readiness unavailable",
+      target.method = authorized?.method ?? "squash";
+      const dependencyBlocked = this.store
+        .dependencies()
+        .some(
+          (d) =>
+            d.dependentId === pr.id &&
+            (this.store.tracking.pr(d.prerequisiteId).observation?.lifecycle !==
+              "merged" ||
+              d.preparation !== undefined),
+        );
+      let reason = "dependency requirements remain",
         eligible = false;
       try {
-        const snapshot = await this.inspect(pr.id, selected.pr.observation);
-        const fresh = this.tracking.store.pr(pr.id);
-        const existing = this.store
-          .entries()
-          .find((e) => e.prId === pr.id && !terminal(e.state));
-        target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
-        const policy = existing ?? {
-          method: target.method,
-          checks: [
-            ...new Set(
-              currentMergeChecks(snapshot.observation).map((c) => c.name),
-            ),
-          ],
-          noCi: false,
-        };
-        const dependencies = this.store
-          .dependencies()
-          .filter((d) => d.dependentId === pr.id);
-        reason =
-          receiptContext(this.store, fresh) !== context ||
-          this.policyKey(fresh) !== policyKey
-            ? "PR changed; waiting for current evidence"
-            : dependencies.some(
-                  (d) =>
-                    this.store.tracking.pr(d.prerequisiteId).observation
-                      ?.lifecycle !== "merged" || d.preparation !== undefined,
-                )
-              ? "dependency requirements remain"
+        if (!dependencyBlocked) {
+          const snapshot = await this.inspect(pr.id, selected.pr.observation);
+          const fresh = this.tracking.store.pr(pr.id);
+          const existing = this.store
+            .entries()
+            .find((e) => e.prId === pr.id && !terminal(e.state));
+          target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
+          const policy = existing ?? {
+            method: target.method,
+            checks: [
+              ...new Set(
+                currentMergeChecks(snapshot.observation).map((c) => c.name),
+              ),
+            ],
+            noCi: false,
+          };
+          reason =
+            receiptContext(this.store, fresh) !== context ||
+            this.policyKey(fresh) !== policyKey
+              ? "PR changed; waiting for current evidence"
               : existing !== undefined &&
                   (this.store.chain(existing.chainId).state !==
                     ChainState.Active ||
                     this.store.busy(pr.id))
                 ? "merge policy is paused or already busy"
                 : (checkGate(policy, snapshot) ?? "");
-        if (reason === "GitHub review gate: REVIEW_REQUIRED")
-          reason = "awaiting review";
-        else if (reason === "GitHub review gate: CHANGES_REQUESTED")
-          reason = "review changes requested";
-        else if (reason === "PR is a draft") reason = "draft";
-        eligible = reason === "";
+          if (reason === "GitHub review gate: REVIEW_REQUIRED")
+            reason = "awaiting review";
+          else if (reason === "GitHub review gate: CHANGES_REQUESTED")
+            reason = "review changes requested";
+          else if (reason === "PR is a draft") reason = "draft";
+          eligible = reason === "";
+        }
       } catch (error) {
-        reason = `Readiness unavailable: ${error instanceof Error ? error.message.slice(0, 900) : "eligibility read failed"}`;
+        // A failed read is not evidence that eligibility changed. Keep the last
+        // decision for deduplication, but suppress its offer until revalidated.
+        const sameDecision =
+          old?.target.actionId === target.actionId &&
+          old.target.context === context &&
+          old.policy === policyKey;
+        this.store.saveNoticeReadiness({
+          ...(sameDecision
+            ? old
+            : {
+                target,
+                policy: policyKey,
+                generation: (old?.generation ?? 0) + 1,
+                recipients: queueRecipients,
+                eligible: false,
+                reason: "readiness unavailable",
+              }),
+          checkedAt: this.now(),
+          retryAt: this.now() + 300000,
+          inspectionError:
+            error instanceof Error
+              ? error.message.slice(0, 1000)
+              : "eligibility read failed",
+        });
+        return;
       }
       const semantic = fingerprint([
         target,
@@ -356,6 +385,12 @@ export class ReceiptMerges {
         state: "blocked",
         pr: pr.url,
         reason: "PR changed since this notice; inspect the current revision",
+      };
+    if (this.store.noticeReadiness(pr.id)?.inspectionError !== undefined)
+      return {
+        state: "blocked",
+        pr: pr.url,
+        reason: "Readiness unavailable; waiting for a successful inspection",
       };
     let entry = this.store
       .entries()
