@@ -13,8 +13,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
-	"github.com/lanej/octo-manager/gen/octomanager/v1/octomanagerv1connect"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/gen/octomanager/v2/octomanagerv2connect"
 	"github.com/lanej/octo-manager/internal/client"
 )
 
@@ -119,7 +119,7 @@ func TestIndependentScrollAndResizeFocus(t *testing.T) {
 }
 
 type rejectingWatch struct {
-	octomanagerv1connect.UnimplementedSchedulerServiceHandler
+	octomanagerv2connect.UnimplementedSchedulerServiceHandler
 	code connect.Code
 }
 
@@ -134,10 +134,10 @@ func TestRejectedWatchResynchronizes(t *testing.T) {
 		m := model(t, theme.Dark)
 		m.instance, m.cursor, m.watching = "fixture", 999, true
 		m.snapshot.Sequence = 999
-		_, handler := octomanagerv1connect.NewSchedulerServiceHandler(rejectingWatch{code: code})
+		_, handler := octomanagerv2connect.NewSchedulerServiceHandler(rejectingWatch{code: code})
 		server := httptest.NewServer(handler)
 		t.Cleanup(server.Close)
-		rpc := octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
+		rpc := octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
 		stream, err := rpc.WatchDashboard(t.Context(), connect.NewRequest(&v1.WatchDashboardRequest{}))
 		if err != nil {

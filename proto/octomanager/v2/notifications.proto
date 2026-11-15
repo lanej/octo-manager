@@ -1,0 +1,27 @@
+syntax = "proto3";
+package octomanager.v2;
+import "octomanager/v2/tracking.proto";
+import "octomanager/v2/domain.proto";
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
+
+// Frozen content and exact receipts are separate typed records.
+message GetAgentDigestRequest { string id = 1; optional uint32 revision = 2; string receipt_id = 3; }
+message GetAgentDigestResponse { DomainDigestInspection inspection = 1; }
+message ListAgentDigestsRequest { optional string agent_id = 1; }
+message ListAgentDigestsResponse { repeated DomainAgentDigest digests = 1; }
+message AcknowledgeAgentDigestRequest { string id = 1; uint32 revision = 2; string agent_id = 3; optional string expected_body = 4; string receipt_id = 5; AgentTarget agent_target = 6; }
+message AgentDigestMember {
+  string message_id = 1;
+  string action_id = 2;
+  optional string submission_id = 3;
+  string summary=6;
+  string pr_url=7;
+  string recipient_role=8;
+  string owner_agent_id=9;
+  bool applicable = 4;
+  optional int64 acknowledged_at_ms = 5;
+}
+message AcknowledgeAgentDigestResponse { DomainDigestReceipt receipt = 1; repeated AgentDigestMember messages = 2; }
+
+message MergeAgentMessageRequest { string receipt_id = 1; string agent_id = 2; AgentTarget agent_target = 3; }
+message MergeAgentMessageResponse { DomainMergeReceiptResult result = 1; }

@@ -1,3 +1,5 @@
+import { record as objectRecord } from "../src/api/codec.js";
+import { cliJSON } from "../src/client.js";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { messageReceiptId } from "../src/notifications/render.js";
@@ -109,9 +111,30 @@ test("coordinator combines both producers and atomically receipts exact members 
     expect(version.body).not.toContain(actor.id);
     expect(slot?.body).toBe(version.body);
     expect(directCalls).toBe(0);
+    const reconciliation = {
+      historyComplete: false,
+      oldRevision: 0,
+      nextRevision: 2,
+    };
+    coordinator.store.digests.event(actor.id, digest.id, "queue_replaced", {
+      ...reconciliation,
+      futureEvidence: "retained in journal",
+    });
     const client = schedulerClient(directory),
       record = await client.getAgentDigest({ id: digest.id, revision: 1 });
-    expect(record.recordJson).toContain(digest.id);
+    expect(JSON.stringify(record.inspection, cliJSON)).toContain(digest.id);
+    const inspection: unknown = JSON.parse(
+      JSON.stringify(record.inspection, cliJSON),
+    );
+    const events = objectRecord(inspection)["events"];
+    if (!Array.isArray(events)) throw new Error("Missing digest events");
+    const replacement: unknown = events.find(
+      (value: unknown) => objectRecord(value)["kind"] === "queue_replaced",
+    );
+    expect(objectRecord(replacement)["detail"]).toEqual({
+      ...reconciliation,
+      omittedFields: ["futureEvidence"],
+    });
     const altered = codexHook(
       {
         hook_event_name: "UserPromptSubmit",
@@ -157,10 +180,16 @@ test("coordinator combines both producers and atomically receipts exact members 
       receipt.messages.find((message) => message.submissionId === submission.id)
         ?.summary,
     ).toBe("PR submission needs_input: Synthetic request");
-    expect(Buffer.byteLength(receipt.recordJson)).toBeLessThan(300);
-    expect(receipt.recordJson).not.toContain("synthetic_history");
-    expect(receipt.recordJson).not.toContain("messageIds");
-    expect(receipt.recordJson).not.toContain("events");
+    expect(
+      Buffer.byteLength(JSON.stringify(receipt.receipt, cliJSON)),
+    ).toBeLessThan(300);
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
+      "synthetic_history",
+    );
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
+      "messageIds",
+    );
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain("events");
     expect(
       receipt.messages.every(
         (message) => message.acknowledgedAtMs !== undefined,

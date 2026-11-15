@@ -21,7 +21,7 @@ Outcomes are enum values: `attempted`, `succeeded`, `failed`, and `uncertain`. T
 Keep the coordinator running with `octo-manager serve`. Use the same `--state` directory for the reporter and dashboard, or set `OCTO_MANAGER_STATE` for the Bun CLI. No worker or PR enrollment is required.
 
 ```sh
-octo-manager record-activity \
+octo-manager activity record \
   --name merge_pr --outcome attempted \
   --request-id pr42-merge-attempt --operation-id pr42-merge \
   --harness codex --thread-id SESSION_ID \
@@ -30,7 +30,7 @@ octo-manager record-activity \
 
 # Perform the operation through the calling agent's authorized tools.
 
-octo-manager record-activity \
+octo-manager activity record \
   --name merge_pr --outcome succeeded \
   --request-id pr42-merge-result --operation-id pr42-merge \
   --harness codex --thread-id SESSION_ID \
@@ -38,7 +38,7 @@ octo-manager record-activity \
   --detail 'GitHub reports MERGED; fetched main contains the merge commit' \
   --evidence https://github.com/owner/repo/commit/MERGE_SHA
 
-octo-manager activity --after 0 --json
+octo-manager activity list --after 0 --json
 ```
 
 Use `failed` when failure is known and `uncertain` when the operation may have happened but confirmation is unavailable. Use `--label TOPIC` for a recognizable session topic. The CLI captures its working directory by default; `--cwd DIR` overrides it. The UI prefers the topic, otherwise the final two directory components, and uses an eight-character session ID only for older reports without context. Topics and directories are capped at 48 display columns; full metadata stays in the stored record and JSON API. Keep `--cwd` fixed when retrying a report from another directory. Tracking enrollment similarly defaults its existing label to the caller’s directory.

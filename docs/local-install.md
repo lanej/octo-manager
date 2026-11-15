@@ -44,7 +44,7 @@ Codex requires review and trust of new hook definitions through its supported `/
 | UserPromptSubmit | Record receipt of an exact incoming Octo message and recover applicable unread notifications. |
 | PostToolUse | After successful native `attach_artifact` of a GitHub pull request, queue enrollment under the calling session. |
 
-PR attachment is the initial automatic enrollment path for the Codex desktop app. A plain CLI session or a PR that is never attached still needs explicit `octo-manager track --url URL --thread-id THREAD_ID`. Arbitrary shell output and GitHub URLs in prose do not trigger enrollment. Subagent hooks use Codex's parent session ID, preserving parent ownership.
+PR attachment is the initial automatic enrollment path for the Codex desktop app. A plain CLI session or a PR that is never attached still needs explicit `octo-manager pr track --url URL --thread-id THREAD_ID`. Arbitrary shell output and GitHub URLs in prose do not trigger enrollment. Subagent hooks use Codex's parent session ID, preserving parent ownership.
 
 ## Delivery and recovery
 

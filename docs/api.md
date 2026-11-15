@@ -1,93 +1,13 @@
-# Scheduler API v1
+# Local API
 
-The source of truth is [`scheduler.proto`](../proto/octomanager/v1/scheduler.proto), in the `octomanager.v1` package. `bun run generate` runs Buf lint and pinned Go and TypeScript generators. Commit the schema and both generated outputs together. CI regenerates them and rejects drift. Never reuse field numbers or enum values; incompatible behavior needs a new API version.
+The Bun coordinator serves the generated `octomanager.v2` Connect API over its Unix socket. The CLI and Charmed Go dashboard use the generated clients. `GetServerInfo` reports the protocol version; clients check it before requests or dashboard streaming and report incompatible server/client installations clearly. Install the coordinator, CLI, and dashboard together. The v1 service is not served.
 
-## Transport and ownership
+RPC records use explicit Protobuf messages, enums, and variants for check/review coverage, feedback, delivery progress and outcomes, merge policy and results, frozen messages and receipts, and archived submissions and policies. Domain records are not serialized inside string or bytes fields, and the API has no `Struct`, `Value`, or `Any` escape hatch. Markdown, logs, and original worker output remain source text. Invalid archived worker results retain their raw source and an explicit invalid-result marker.
 
-The Bun coordinator serves the official Connect Node adapter through Bun's Node HTTP implementation, using HTTP/1.1 on `STATE/run.sock`. Go uses the generated Connect client with a custom `net/http` Unix dialer. The TypeScript CLI uses the official Connect Node client with `socketPath`; requests use independent HTTP connections so stream cancellation or restart cannot reuse a stale Bun connection. Both binary Protobuf and Connect JSON use the same contract. No TCP listener is opened.
+Merge operations have dedicated requests and responses. JSON intent files remain local CLI input where appropriate; they are validated and translated into typed requests. CLI JSON output is a presentation format rather than a serialized document nested in an API field. Database JSON serialization remains an internal storage detail.
 
-The state directory is owner-only (0700), and the socket is owner-only (0600). The coordinator acquires its SQLite ownership lock before removing a stale socket. These permissions isolate other accounts; unrestricted processes under the same account remain trusted. The frontend never reads SQLite or provider credentials and cannot execute Git commands. Workers retain their existing scoped tool protocol inside the coordinator.
+`bun run generate` exports the domain contract messages, runs Protobuf lint, and regenerates TypeScript and Go bindings. `proto/api-wire-tags.json` preserves field, enum, and variant numbers across property reordering and additive edits; removed tags remain reserved and incompatible type changes require a protocol version change. Generated domain conversion metadata is committed alongside the bindings. Code-generation drift is checked in CI.
 
-## Operations
+Observation variants preserve complete-empty, partial, and unavailable evidence separately. Receipt records preserve exact frozen membership and timestamps; acknowledgment does not accept work, resolve a blocker, or authorize a merge. Diagnostic journal fields have explicit types; unsupported historical fields are identified in `omittedFields`, and the original journal remains stored.
 
-| RPC | Confirmation |
-| --- | --- |
-| `SubmitJob` | Returns the durable job handle; acceptance is not completion. |
-| `GetJob` | Returns the current confirmed job state and optional result/error. |
-| `GetSnapshot` | Returns scheduler/worker state, jobs, the latest 100 events, the canonical allowed transition graph, an instance ID, and a sequence cursor. |
-| `GetPullRequest` | Returns cached details and refresh status for a validated public PR URL; `refresh=true` queues an earlier refresh. |
-| `ListEvents` | Returns up to 200 events strictly after a sequence, optionally filtered by job. |
-| `Watch` | Streams persisted events strictly after the requested sequence, optionally filtered by job. |
-| `CancelJob` | May return `cancelling`; inspect subsequent state until `cancelled`. |
-| `RetryJob` | Explicitly requeues failed/interrupted work after the previous worker fence clears. |
-| `SetPaused` | Confirms dispatch pause/resume; active work continues. |
-
-`Task` is a Protobuf `oneof`: summarize a public GitHub pull request or run the disposable conflict fixture. State, attempt timestamps, worker exit observations, errors, and Markdown results are typed fields. Job state is a stable enum; event `kind` remains a string so additional observations can be displayed without inventing a parallel domain model. Clients must tolerate unknown event kinds and display unknown enum values safely.
-
-`Snapshot.github_usage` is an additive, optional message defined in [`github.proto`](../proto/octomanager/v1/github.proto). It carries this process's read-attempt totals, confirmed cache reuses, rate-limit responses, at most 60 chronological minute buckets, optional REST/GraphQL quota observations, and per-resource retry deadlines. An absent budget means it has not been observed; remaining zero means an observed exhausted budget. Each quota observation retains its own timestamp and reset time, and expired observations are not replenished locally. Quota reflects shared authentication usage; minute counts describe only executed Octo read commands, including transport failures, and exclude locally cancelled or cooldown-blocked work, Git pushes, and writes. These metrics are in memory, reset on coordinator restart, and require no database migration or additional GitHub reads. Older coordinators omit the message, and older clients ignore it.
-
-## Snapshot, watch, and reconnect
-
-1. Obtain `GetSnapshot`, including `instance_id` and `sequence`.
-2. Start `Watch` with that instance ID and `after_sequence=sequence`.
-3. Process events in increasing sequence order. Persist a cursor only after processing its event; deduplicate repeated sequences after reconnect.
-4. Resume with the last processed cursor after a transport failure.
-
-The single coordinator owns all writes, and snapshot reads do not yield. The snapshot and cursor therefore represent one consistent point in that owner's execution. Events created between the snapshot and the watch are replayed from SQLite. Event history is retained for the life of the database; there is currently no pruning policy.
-
-The instance ID is persisted in that database and survives coordinator restart. Replacing the database creates a new instance. A mismatched instance produces `FailedPrecondition`; a cursor ahead of the available history produces `OutOfRange`. Both require a fresh snapshot rather than silently moving the cursor. Timestamps describe observations; sequence numbers determine order.
-
-The Charmed frontend groups jobs by their canonical PR task URL; jobs and attempts remain execution handles below that identity. Case differences and a trailing slash do not create separate PR entries. Browser opening is local to the frontend and does not mutate scheduler state or GitHub.
-
-The Charmed frontend subscribes with `WatchDashboard` and receives cached state on each coordinator tick. Its local retry timer reconnects disconnected streams without polling GitHub. Subscription generations fence late frames; cached results remain visible during connection loss. Its worker pane shows confirmed run/slot state, attempt PID and exit observation, and recent tool calls. The State tab paginates `ListEvents` from sequence zero for the selected run, independent of the latest 100 snapshot events. Selection and instance/version fences reject late history responses, including after reselecting the same run. The observed path includes only persisted transitions. The diagram derives terminal markers from `Snapshot.allowed_transitions`, generated from the same domain graph that validates transitions.
-
-Closing a watch or quitting the TUI cancels client I/O only. It does not cancel a job, stop the coordinator, or refresh provider credentials. Stop `serve` explicitly to shut down the coordinator; its existing interruption and worker-exit rules apply.
-
-## GitHub review observations
-
-`GetPullRequest` returns stored data immediately. Its scheduled loader confirms `base.repo.private === false` before reading message endpoints. It uses the existing `gh` login and only GET requests. Reviews are separate from model output and are not sent to Pi by this operation. No review, reply, resolution, or comment is published.
-
-The response includes title, PR state, head SHA, and the timestamp at which those PR facts were read. Reviews, inline comments, and issue discussion are subsequent independent reads, not one atomic GitHub snapshot. The scheduler refreshes a viewed PR when due; `u` queues an earlier refresh. The UI keeps prior observations visible if refresh fails and displays their original timestamp. It does not imply real-time review state or resolved-thread tracking. Commit IDs on review/inline messages identify observations on earlier heads; the interface does not infer which findings remain unresolved.
-
-The implementation reads the first 100 records from each of GitHub’s [review](https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request), [inline comment](https://docs.github.com/en/rest/pulls/comments#list-review-comments-on-a-pull-request), and [issue discussion](https://docs.github.com/en/rest/issues/comments#list-issue-comments) endpoints. A full source page sets `may_have_more_messages`; exactly 100 items can also set this conservative flag. Message bodies are capped at 4,000 characters with a per-message truncation flag. Original message URLs let users inspect the full content on GitHub. Upstream responses are size/time bounded; read failures remain visible instead of appearing as an empty review feed.
-
-## Idempotency and errors
-
-Repeating a `SubmitJob` request ID with the same task returns the existing job. Reusing it with a different task returns `AlreadyExists`. After an uncertain submission, retry with the original ID instead of creating another job. Cancel/retry outcomes should be reconciled with `GetJob`; the transport does not blindly retry mutations.
-
-| Connect code | Meaning |
-| --- | --- |
-| `InvalidArgument` | Missing/invalid task, URL, or request ID. |
-| `NotFound` | Unknown job. |
-| `AlreadyExists` | Request ID reused for a different task. |
-| `FailedPrecondition` | Retry fence/state violation or replaced state instance. |
-| `OutOfRange` | Cursor outside available history. |
-| `Unavailable` | Coordinator/GitHub cannot be reached or review reads fail. |
-| `PermissionDenied` | PR visibility is private or cannot be confirmed public. |
-| `Internal` | Unexpected coordinator failure; internal details are withheld. |
-
-The server limits decoded requests to 16 KiB and responses to 4 MiB. Scheduler unary calls use ten-second deadlines; review reads use a thirty-second client deadline with twenty-second bounds on each `gh` invocation. Watch is a long-lived cancellable stream. The TypeScript client's default deadline can be overridden through Connect call options for a long-lived watch. Streaming framing, flow control, cancellation, and status encoding belong to the official Connect implementations.
-
-## Verification
-
-Automated checks run actual generated Go unary/streaming calls against the Bun server over a Unix socket, with a real disposable Git conflict and a controlled worker. They check snapshot/watch gaps, replay, typed failures, duplicate submissions, pagination, stream cancellation, and persisted identity on restart. Scheduler tests continue to exercise process fencing and recovery. Provider-backed acceptance is recorded separately and is not established by the controlled worker.
-
-## Tracking operations
-
-`TrackPullRequest`, `ListTrackedPullRequests`, `GetTrackedPullRequest`, `RefreshTrackedPullRequest`, `AssignPullRequest`, and `UntrackPullRequest` manage durable ownership independently of jobs. `ListActions`, `GetAction`, `AcknowledgeAction`, `StartAction`, `RetryDelivery`, and `ReprofileAction` expose pending work and recovery. `Snapshot.tracking` includes PRs, agents, actions, deliveries, and attempts. See the [tracking guide](tracking.md) for lifecycle rules.
-
-Tracking observations may read private metadata through existing GitHub authentication. `GetPullRequest` review messages and worker tools retain their public-only behavior. A refresh request queues work and returns the retained PR plus refresh status immediately. Later scheduler frames carry successful observations or retained `refresh_error` evidence; queued acceptance is not a fresh observation. PR event filters preserve the existing global sequence and replay rules.
-
-## PR submission operations
-
-`SubmitPullRequest`, `GetSubmission`, `ListSubmissions`, `RetrySubmission`, `CancelSubmission` and `GetRepositoryPolicy` use the same local Connect service. Their JSON payload fields are validated by the exported [versioned intent, policy, brief and submission schemas](../schemas/). JSON keeps this evolving document contract identical across worker output, persistence and external tooling; protobuf provides the typed transport envelope. `AgentMessage.submission_id` identifies pre-PR operation callbacks while `action_id` continues to identify PR blocker messages. Both share the existing inbox cursor and acknowledgment RPC.
-
-## Agent digest operations
-
-`GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` expose [queued digest revisions](agent-digests.md). Inspection uses validated JSON records; receipt returns typed member identities, current applicability and receipt timestamps. Receipt is atomic across the exact revision members and is separate from action progress.
-
-## Tick-driven dashboard
-
-`WatchDashboard({url, reviews})` streams an initial cached frame and subsequent frames on the shared coordinator tick. Each frame contains the current `Snapshot`, optional cached `PullRequestDetails`, and `RefreshStatus` for the selected view. Review subscriptions register view interest without enrolling the PR; cancellation releases that interest. Other view data remains local to the coordinator. The original event `Watch` RPC remains available to event consumers.
-
-`RefreshStatus.state` is an enum: queued, running or deferred, with a separate eligibility deadline, latest attempt time and error. `Snapshot.github_scheduler` carries tick/request-spacing settings, tick sequence, next tick and dispatch times, queued/in-flight request counts and resource cooldowns. These timestamps remain Unix milliseconds; the TUI applies the configured presentation timezone.
+Legacy drafting and publication execution RPCs are retired. Typed historical reads remain available. The scheduler reconciles legacy publishing, enrolling, and uncertain records only when they retain a saved publication brief. It uses the shared GitHub dispatcher, verifies a unique existing marker and the saved head/repository/open state, and enrolls only confirmed matches. Missing or ambiguous matches remain uncertain. Recovery deadlines are persisted before lookup, using delays of one, five, and fifteen minutes, then hourly; longer provider cooldowns still apply. Recovery never invokes a worker or creates a PR.

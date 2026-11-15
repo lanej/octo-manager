@@ -103,6 +103,22 @@ export class ReceiptMerges {
     );
   }
   presentation = (message: AgentMessage): MessagePresentation => {
+    const prId =
+      message.workflowPRId ??
+      message.participantPRId ??
+      (message.actionId === ""
+        ? undefined
+        : this.tracking.store.action(message.actionId).prId);
+    const instructions =
+      prId === undefined
+        ? undefined
+        : this.store.agentInstructions(prId, message.recipientAgentId);
+    return {
+      ...this.readinessPresentation(message),
+      ...(instructions === undefined ? {} : { instructions }),
+    };
+  };
+  private readinessPresentation(message: AgentMessage): MessagePresentation {
     const selected = this.selection(message);
     if (selected === undefined) return {};
     const { action, pr } = selected;
@@ -131,7 +147,7 @@ export class ReceiptMerges {
       : {
           summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${publicReason(cached.reason)}`,
         };
-  };
+  }
   async refresh(): Promise<void> {
     for (const pr of this.tracking.store.prs()) {
       if (!pr.enabled) continue;

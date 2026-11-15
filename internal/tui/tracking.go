@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -13,7 +12,7 @@ import (
 	"github.com/lanej/charmed/input"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func (m *Model) agentLabel(id string) string {
@@ -118,7 +117,7 @@ func (m *Model) trackingContent() string {
 			parts = append(parts, m.muted("Current target revision unavailable (legacy or closed observation)."))
 		}
 
-		parts = append(parts, m.field("Checks", observationStatus(o.GetChecksJson()))+" · "+m.field("Reviews", observationStatus(o.GetReviewsJson()))+" · "+m.field("Feedback", observationStatus(o.GetFeedbackJson())))
+		parts = append(parts, m.field("Checks", observationStatus(o.GetChecks()))+" · "+m.field("Reviews", observationStatus(o.GetReviews()))+" · "+m.field("Feedback", observationStatus(o.GetFeedback())))
 	} else {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
@@ -201,7 +200,7 @@ func (m *Model) trackingContent() string {
 					continue
 				}
 
-				details := strings.TrimSpace(m.deliveryDetails(delivery.GetProgressJson()))
+				details := strings.TrimSpace(m.deliveryDetails(delivery.GetProgress()))
 				if delivery.AcknowledgedAtMs != nil && strings.HasSuffix(details, "; receipt pending.") {
 					details = strings.TrimSuffix(details, "; receipt pending.") + "."
 				}
@@ -307,24 +306,13 @@ func (m *Model) toggleAutoMerge() tea.Cmd {
 
 	enabled := !m.autoMergeEnabled(pr.GetId())
 
-	body, err := json.Marshal(struct {
-		Op      string `json:"op"`
-		PR      string `json:"pr"`
-		Enabled bool   `json:"enabled"`
-		Actor   string `json:"actorId"`
-		Request string `json:"requestId"`
-	}{Op: "auto_merge", PR: pr.GetId(), Enabled: enabled, Actor: pr.GetOwnerAgentId(), Request: fmt.Sprintf("dashboard-auto-%s-%d", pr.GetId(), time.Now().UnixNano())})
-	if err != nil {
-		return func() tea.Msg { return commandMsg{err: err} }
-	}
-
 	m.commandPending = true
 
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 15*time.Second)
 		defer cancel()
 
-		_, err := m.api.RPC.MergeCommand(ctx, connect.NewRequest(&v1.MergeCommandRequest{InputJson: string(body)}))
+		_, err := m.api.RPC.SetAutoMerge(ctx, connect.NewRequest(&v1.SetAutoMergeRequest{Pr: new(pr.GetId()), Enabled: new(enabled), ActorId: new(pr.GetOwnerAgentId()), RequestId: new(fmt.Sprintf("dashboard-auto-%s-%d", pr.GetId(), time.Now().UnixNano()))}))
 
 		return commandMsg{err: err}
 	}
@@ -347,48 +335,6 @@ func (m *Model) refreshTracked() tea.Cmd {
 
 		return commandMsg{err: err}
 	}
-}
-
-func observationStatus(raw string) string {
-	var value struct {
-		State  string
-		Reason string
-	}
-	if err := json.Unmarshal([]byte(raw), &value); err != nil {
-		return "unavailable"
-	}
-
-	result := safe(value.State)
-	if value.Reason != "" {
-		result += " (" + safe(value.Reason) + ")"
-	}
-
-	return result
-}
-
-func (m *Model) deliveryDetails(raw string) string {
-	var value struct {
-		Reason        string
-		Note          string
-		NextAttemptAt int64
-	}
-	if err := json.Unmarshal([]byte(raw), &value); err != nil {
-		return "Delivery details unavailable.\n\n"
-	}
-
-	if value.Reason != "" {
-		return safe(value.Reason) + "\n\n"
-	}
-
-	if value.Note != "" {
-		return safe(value.Note) + "\n\n"
-	}
-
-	if value.NextAttemptAt != 0 {
-		return "Next attempt " + m.timestamp(value.NextAttemptAt, fullTimestamp) + "\n\n"
-	}
-
-	return ""
 }
 
 func (m *Model) trackingAutomation(pr *v1.TrackedPullRequest) string {

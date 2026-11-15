@@ -17,6 +17,7 @@ const reads = new Set([
   "action",
   "tracking",
   "inbox",
+  "agents",
   "digest",
   "message",
   "digests",
@@ -28,10 +29,18 @@ const reads = new Set([
   "submission",
   "submissions",
   "events",
+  "legacy-submissions",
+  "legacy-submission",
+  "legacy-policy",
 ]);
 export function readOnlyCommand(positionals: string[]): boolean {
   const command = positionals[0] ?? "";
   if (command === "pr" && ["init", "refresh"].includes(positionals[1] ?? ""))
+    return false;
+  if (
+    command === "pr" &&
+    ["init", "refresh", "validate"].includes(positionals[1] ?? "")
+  )
     return false;
   return (
     reads.has(command) ||

@@ -1,3 +1,8 @@
+import { unwire } from "../src/api/codec.js";
+import {
+  DomainMergeReceiptResultSchema,
+  DomainMergeReceiptResultState,
+} from "../src/gen/octomanager/v2/domain_pb.js";
 import { linkPRReferences } from "../src/notifications/links.js";
 import { DeliveryState } from "../src/tracking/types.js";
 import assert from "node:assert/strict";
@@ -166,10 +171,16 @@ async function fixture(initialReview: string | null = null) {
       uncertain = true;
     },
     async merge() {
-      return schedulerClient(directory).mergeAgentMessage({
+      const response = await schedulerClient(directory).mergeAgentMessage({
         receiptId: id,
         agentTarget: owner,
       });
+      assert(response.result !== undefined);
+      return {
+        resultText: JSON.stringify(
+          unwire(DomainMergeReceiptResultSchema, response.result),
+        ),
+      };
     },
     observe() {
       coordinator.store.tracking.observe(pr.id, current.observation, config);
@@ -220,11 +231,12 @@ test("Ready offers one merge command; hook receipt alone cannot merge; explicit 
       ],
       { stdout: "pipe", stderr: "pipe" },
     );
-    const [inspection, inspectionCode] = await Promise.all([
+    const [inspection, inspectionCode, inspectionError] = await Promise.all([
       new Response(inspect.stdout).text(),
       inspect.exited,
+      new Response(inspect.stderr).text(),
     ]);
-    expect(inspectionCode).toBe(0);
+    expect(inspectionCode, inspectionError).toBe(0);
     const inspected: unknown = JSON.parse(inspection);
     expect(inspected).toMatchObject({
       merge: { pr: url, head, method: "squash" },
@@ -263,7 +275,7 @@ test("Ready offers one merge command; hook receipt alone cannot merge; explicit 
     await f.reopen();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain('"merged"');
+    expect((await f.merge()).resultText).toContain('"merged"');
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
   } finally {
@@ -292,7 +304,7 @@ test("another recipient cannot use the merge receipt and stale head requests ack
       observation: { ...f.current.observation, headSha: "d".repeat(40) },
     };
     f.observe();
-    expect((await f.merge()).resultJson).toContain('"blocked"');
+    expect((await f.merge()).resultText).toContain('"blocked"');
     expect(
       f.coordinator.store.digests.receipts(f.notice.digestId),
     ).toHaveLength(1);
@@ -329,7 +341,7 @@ test("unknown merge outcomes are not replayed by repeated receipt commands", asy
     await f.merge();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain('"uncertain"');
+    expect((await f.merge()).resultText).toContain('"uncertain"');
     f.advance();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -384,7 +396,7 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
       requestId: "off",
     });
     await f.coordinator.merging.tick();
-    expect((await f.merge()).resultJson).toContain("changed since this notice");
+    expect((await f.merge()).resultText).toContain("changed since this notice");
     const unread = f.coordinator.store.tracking.inbox.list(
       f.pr.ownerAgentId,
       0,
@@ -410,8 +422,8 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
           receiptId: token,
           agentTarget: owner,
         })
-      ).resultJson,
-    ).toContain("queued");
+      ).result?.state,
+    ).toBe(DomainMergeReceiptResultState.QUEUED);
     expect(f.coordinator.store.merging.entries()[0]?.autoMerge).toBe(false);
     f.coordinator.merging.command({
       op: "auto_merge",
@@ -481,7 +493,7 @@ test("approval after check receipt produces one fresh linked Ready notice and ol
       receiptId: token,
       agentTarget: owner,
     });
-    expect((await f.merge()).resultJson).toContain("no merge target");
+    expect((await f.merge()).resultText).toContain("no merge target");
     expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBe(
       ready.dispatchId,
     );
@@ -520,10 +532,10 @@ test("a new ordinary owner assessment retires obsolete receipt authority without
       head: newer,
     });
     expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBeUndefined();
-    expect((await f.merge()).resultJson).toContain("superseded");
+    expect((await f.merge()).resultText).toContain("superseded");
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain("superseded");
+    expect((await f.merge()).resultText).toContain("superseded");
     expect(f.coordinator.store.merging.operations()[0]?.head).toBe(newer);
   } finally {
     await f.close();
@@ -900,7 +912,7 @@ test("read failures and recovery do not repeat a receipted Ready decision, inclu
       expect(f.reads).toBe(reads);
       if (cycle === 0) {
         await f.reopen();
-        expect((await f.merge()).resultJson).toContain('"blocked"');
+        expect((await f.merge()).resultText).toContain('"blocked"');
         expect(f.coordinator.store.merging.entries()).toHaveLength(0);
       }
       expect(
@@ -992,6 +1004,149 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
   }
 });
 
+test("caller instructions survive restart and accompany only its PR updates and confirmed merge", async () => {
+  const f = await fixture();
+  const instructions =
+    "Fix review findings; after merge pull latest and reinstall.";
+  try {
+    const observer = f.coordinator.tracking.registerAgent({
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    f.coordinator.tracking.subscribe(f.pr.id, {
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        resolve("src/cli.ts"),
+        "pr",
+        "auto-merge",
+        url,
+        "--on",
+        "--agent-id",
+        f.pr.ownerAgentId,
+        "--instructions",
+        instructions,
+        "--state",
+        f.directory,
+        "--json",
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const [code, output, error] = await Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    expect(code, error + output).toBe(0);
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
+    ).toBe(instructions);
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, observer.id),
+    ).toBeUndefined();
+    const frozen = f.coordinator.store.digests.version(
+      f.notice.digestId,
+      f.notice.revision,
+    ).body;
+    expect(frozen).not.toContain(instructions);
+    await f.reopen();
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
+    ).toBe(instructions);
+    await f.coordinator.merging.tick();
+    const pending = f.coordinator.store.tracking.inbox.list(
+      f.pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    const body = renderDigest(
+      pending,
+      f.directory,
+      "12345678",
+      f.coordinator.merging.receipts.presentation,
+    ).body;
+    expect(body.split(instructions)).toHaveLength(2);
+    f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head);
+    await f.coordinator.merging.tick();
+    expect(f.writes).toBe(1);
+    await f.coordinator.digests.flush();
+    const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    assert(digest !== undefined);
+    const delivered = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    ).body;
+    expect(delivered).toContain("GitHub confirmed merge");
+    expect(delivered).toContain(`Instructions: ${instructions}`);
+  } finally {
+    await f.close();
+  }
+});
+
+test("instruction updates and clearing do not change readiness, and invalid or non-owner configuration fails", async () => {
+  const f = await fixture();
+  try {
+    const store = f.coordinator.store.merging;
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "instructions",
+      "Review and repair actionable feedback.",
+    );
+    store.ready(url, f.pr.ownerAgentId, head);
+    const before = store.entry(url).ready;
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "replace",
+      "After merge update the local install.",
+    );
+    expect(store.entry(url).ready).toEqual(before);
+    const observer = f.coordinator.tracking.registerAgent({
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    expect(() =>
+      store.autoMerge(url, observer.id, true, "unauthorized", "Do work"),
+    ).toThrow();
+    expect(() =>
+      store.autoMerge(
+        url,
+        f.pr.ownerAgentId,
+        true,
+        "oversize",
+        "x".repeat(1001),
+      ),
+    ).toThrow();
+    store.autoMerge(url, f.pr.ownerAgentId, true, "clear", "");
+    expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
+    expect(store.entry(url).ready).toEqual(before);
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "restore",
+      "After merge reinstall.",
+    );
+    const assigned = f.coordinator.store.tracking.assign(f.pr.id, {
+      ...owner,
+      sessionId: "new-owner",
+    });
+    expect(
+      store.agentInstructions(f.pr.id, assigned.ownerAgentId),
+    ).toBeUndefined();
+    expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+
 test("a squash receipt cannot authorize a replacement rebase chain for the same head", async () => {
   const f = await fixture();
   try {
@@ -1001,7 +1156,7 @@ test("a squash receipt cannot authorize a replacement rebase chain for the same 
       actorId: f.pr.ownerAgentId,
       entries: [{ prUrl: url, method: "rebase", checks: ["CI"] }],
     });
-    expect((await f.merge()).resultJson).toContain("blocked");
+    expect((await f.merge()).resultText).toContain("blocked");
     expect(f.coordinator.store.merging.entry(url).ready).toBeUndefined();
     expect(f.writes).toBe(0);
   } finally {

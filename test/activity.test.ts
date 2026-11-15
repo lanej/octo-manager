@@ -11,7 +11,7 @@ import { Store } from "../src/store.js";
 import {
   ActivityName,
   ActivityOutcome,
-} from "../src/gen/octomanager/v1/activity_pb.js";
+} from "../src/gen/octomanager/v2/activity_pb.js";
 
 const input = {
   requestId: "merge-report-1",
@@ -84,19 +84,19 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
       "--json",
     ];
     for (const prefix of [
-      ["--state", directory, "record-activity"],
-      ["record-activity", "--state", directory],
+      ["--state", directory, "activity", "record"],
+      ["activity", "record", "--state", directory],
     ]) {
       assert.match(await cli([...prefix, ...reportArgs]), /"sequence":"1"/u);
     }
     for (const args of [
-      ["--state", directory, "activity", "--json"],
-      ["activity", "--state", directory, "--json"],
+      ["--state", directory, "activity", "list", "--json"],
+      ["activity", "list", "--state", directory, "--json"],
     ]) {
       assert.match(await cli(args), /ACTIVITY_NAME_MERGE_PR/u);
     }
     assert.match(
-      await cli(["--state", directory, "tracking", "--json"]),
+      await cli(["--state", directory, "agent", "status", "--json"]),
       /"prs":\[\]/u,
     );
     const client = schedulerClient(directory);

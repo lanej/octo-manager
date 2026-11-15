@@ -7,9 +7,9 @@ Octo owns auto-merge. It does not need GitHub's repository-wide auto-merge setti
 In **Tracking**, press **a** to toggle the Charmed **Auto merge** switch for the selected PR. Agents use:
 
 ```sh
-octo-manager auto-merge https://github.com/owner/repo/pull/42 --on --agent-id OWNER_ID
-octo-manager merge-ready https://github.com/owner/repo/pull/42 --head FULL_SHA --agent-id OWNER_ID
-octo-manager auto-merge https://github.com/owner/repo/pull/42 --off --agent-id OWNER_ID
+octo-manager pr auto-merge https://github.com/owner/repo/pull/42 --on --agent-id OWNER_ID
+octo-manager pr ready https://github.com/owner/repo/pull/42 --head FULL_SHA --agent-id OWNER_ID
+octo-manager pr auto-merge https://github.com/owner/repo/pull/42 --off --agent-id OWNER_ID
 ```
 
 Turning the switch on explicitly queues that PR and discovers expected check names from its complete cached check/workflow evidence. An empty check set still requires the owner to declare a no-CI policy; it never silently passes. The switch does not replace the owning agent's assessment of the exact head. New heads, target/owner/enrollment changes, actionable feedback, or policy changes invalidate readiness. Existing dependency and GitHub eligibility gates remain in force. A paused or cancelled chain takes precedence over the switch.

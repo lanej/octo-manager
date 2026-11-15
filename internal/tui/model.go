@@ -15,7 +15,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
 	charmedui "github.com/lanej/charmed/tui"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 	"github.com/lanej/octo-manager/internal/client"
 )
 

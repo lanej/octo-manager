@@ -1,3 +1,5 @@
+import { parseCommand } from "../src/arguments.js";
+import { mergeRequest } from "../src/api/merge-client.js";
 import {
   checkRunObservation,
   workflowObservation,
@@ -231,18 +233,14 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
       agentId: upstream.ownerAgentId.replaceAll("-", "").slice(0, 8),
       afterSequence: 0n,
     });
-    const queued = await client.mergeCommand({
-      inputJson: JSON.stringify({ op: "queue", input }),
-    });
-    const raw: unknown = JSON.parse(queued.resultJson);
+    const queued = await mergeRequest(client, { op: "queue", input });
+    const raw: unknown = queued;
     const chain = checked(ChainSchema, raw);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "ready",
-        pr: first,
-        actorId: upstream.ownerAgentId,
-        head: a,
-      }),
+    await mergeRequest(client, {
+      op: "ready",
+      pr: first,
+      actorId: upstream.ownerAgentId,
+      head: a,
     });
     await c.merging.tick();
     assert.deepEqual(
@@ -267,13 +265,11 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
     advance();
     await c.merging.tick();
     assert.equal(writes.length, 2);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "ready",
-        pr: second,
-        actorId: downstream.ownerAgentId,
-        head: e,
-      }),
+    await mergeRequest(client, {
+      op: "ready",
+      pr: second,
+      actorId: downstream.ownerAgentId,
+      head: e,
     });
     await c.merging.tick();
     assert.equal(writes.at(-1), `${second}@${e}`);
@@ -314,6 +310,16 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
     assert.equal(store.chains().length, 0);
     assert.equal(coordinator.store.tracking.prs().length, 2);
     assert.equal(store.refs().length, 2);
+    const notice = coordinator.store.tracking.inbox
+      .list(downstream.ownerAgentId, 0, false, true)
+      .messages.find((message) => message.body.includes("Inspect:"));
+    assert(notice !== undefined);
+    const inspection = notice.body.match(
+      /Inspect: `octo-manager ([^`]+)`/u,
+    )?.[1];
+    assert(inspection !== undefined);
+    const parsed = parseCommand(inspection.split(" "), {});
+    assert.deepEqual(parsed.positionals, ["references", second]);
     const ref = store.refs().find((ref) => ref.targetUrl === first);
     assert(ref !== undefined);
     store.confirm(
@@ -645,6 +651,12 @@ test("resume republishes the current owner handoff once while preserving withdra
     assert.equal(pending().length, 1);
     const old = pending()[0];
     assert(old !== undefined);
+    const inspection = old.body.match(/Inspect: `octo-manager ([^`]+)`/u)?.[1];
+    assert(inspection !== undefined);
+    assert.equal(
+      parseCommand(inspection.split(" "), {}).positionals[0],
+      "chains",
+    );
     c.store.merging.control(chain.id, ChainState.Paused);
     assert.equal(pending().length, 0);
     c.store.merging.control(chain.id, ChainState.Active);
@@ -877,14 +889,12 @@ test("auto-merge is opt-in, owner-controlled and can be turned off before dispat
     assert.equal(c.store.merging.entries().length, 0);
     await c.start();
     const client = schedulerClient(c.directory);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "auto_merge",
-        pr: first,
-        enabled: true,
-        actorId: pr.ownerAgentId,
-        requestId: "switch-on",
-      }),
+    await mergeRequest(client, {
+      op: "auto_merge",
+      pr: first,
+      enabled: true,
+      actorId: pr.ownerAgentId,
+      requestId: "switch-on",
     });
     assert.equal(c.store.merging.entry(first).autoMerge, true);
     assert.equal(

@@ -200,6 +200,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
     signal: AbortSignal,
   ): Promise<PublishedPR | undefined> {
     const owner = request.repository.split("/")[0] ?? "";
+    const matches = new Map<string, PublishedPR>();
     for (let page = 1; page <= 10; page++) {
       const items = list(
         await this.read(
@@ -210,19 +211,26 @@ export class GitHubSubmissions implements SubmissionGitHub {
       for (const raw of items) {
         const item = record(raw),
           body = typeof item["body"] === "string" ? item["body"] : "";
-        if (body.includes(marker))
-          return {
+        if (body.includes(marker)) {
+          const matched = {
             url: canonicalPR(string(item["html_url"])),
             headSha: string(record(item["head"])["sha"]),
             body,
             state: string(item["state"]),
           };
+          matches.set(matched.url, matched);
+          if (matches.size > 1)
+            throw new Error(
+              "Publication lookup is ambiguous; multiple PRs contain the saved marker",
+            );
+          continue;
+        }
         if (item["state"] === "open")
           throw new Error(
             `An unrelated PR already exists: ${string(item["html_url"])}`,
           );
       }
-      if (items.length < 100) return undefined;
+      if (items.length < 100) return [...matches.values()][0];
     }
     throw new Error(
       "PR lookup coverage is incomplete; publication cannot safely continue",

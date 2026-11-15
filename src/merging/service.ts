@@ -97,6 +97,7 @@ export class MergeService {
           input.actorId,
           input.enabled,
           input.requestId,
+          input.instructions,
         );
       case "queue":
         return this.store.queue(input.input);

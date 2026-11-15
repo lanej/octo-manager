@@ -1,7 +1,7 @@
-import { RefreshState } from "../gen/octomanager/v1/github_pb.js";
+import { RefreshState } from "../gen/octomanager/v2/github_pb.js";
 import { once } from "node:events";
 import type { ServiceImpl } from "@connectrpc/connect";
-import { SchedulerService } from "../gen/octomanager/v1/scheduler_pb.js";
+import { SchedulerService } from "../gen/octomanager/v2/scheduler_pb.js";
 import type { Coordinator } from "../coordinator.js";
 import type { PullRequestDetails } from "../github.js";
 import { wireSnapshot } from "../rpc.js";

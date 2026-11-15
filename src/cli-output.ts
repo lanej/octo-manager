@@ -1,3 +1,4 @@
+import { displayArguments } from "./command-tree.js";
 import type { parseCommand } from "./arguments.js";
 import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
@@ -240,6 +241,11 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (command === "dependency-confirm")
+    return ["dependencies", values.pr ?? ""];
+  if (command === "dependency-remove") return ["dependencies"];
+  if (command === "reference-dismiss") return ["references"];
+  if (command === "merge-policy") return ["pr", positionals[1] ?? ""];
   if (
     [
       "auto-merge",
@@ -262,6 +268,7 @@ function inspectArgs(
       ["after", values.after],
       ["revision", values.revision],
       ["version", values.version],
+      ["policy-version", values["policy-version"]],
       ["tier", values.tier],
       ["repo", values.repo],
       ["url", values.url],
@@ -342,7 +349,7 @@ export function agentResponse(
       JSON.stringify(raw === undefined ? null : raw, cliJSON),
     ),
     omission: Omission = { remaining: 8, items: 0, details: false };
-  const args = inspectArgs(parsed, normalized);
+  const args = displayArguments(inspectArgs(parsed, normalized));
   if (parsed.values.state !== undefined && !args.includes("--state"))
     args.push("--state", parsed.values.state);
 
@@ -397,7 +404,7 @@ export function printResult(
       : JSON.stringify(
           result,
           cliJSON,
-          parsed.values.json ||
+          parsed.values.json === true ||
             [
               "ack",
               "merge",

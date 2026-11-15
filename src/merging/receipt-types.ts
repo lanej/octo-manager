@@ -32,6 +32,7 @@ export const NoticeReadinessSchema = Type.Object(
 export type NoticeReadiness = Static<typeof NoticeReadinessSchema>;
 export interface MessagePresentation {
   defer?: boolean;
+  instructions?: string;
   summary?: string;
   mergeTarget?: ReceiptTarget;
 }

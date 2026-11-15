@@ -21,57 +21,58 @@ function decode(text: string) {
   return value;
 }
 test("explicit JSON is separate from agent detection and full inspection never replays a mutation", () => {
-  expect(parseCommand(["tracked"], {}).output).toEqual({
+  expect(parseCommand(["pr", "list"], {}).output).toEqual({
     agent: false,
     json: false,
     full: false,
   });
-  expect(parseCommand(["tracked", "--json"], {}).output).toEqual({
+  expect(parseCommand(["pr", "list", "--json"], {}).output).toEqual({
     agent: false,
     json: true,
     full: false,
   });
   expect(
-    parseCommand(["tracked"], { CODEX_THREAD_ID: "thread" }).output,
+    parseCommand(["pr", "list"], { CODEX_THREAD_ID: "thread" }).output,
   ).toEqual({ agent: true, json: true, full: false });
   expect(
-    parseCommand(["tracked"], { CODEX_THREAD_ID: "  " }).output.agent,
+    parseCommand(["pr", "list"], { CODEX_THREAD_ID: "  " }).output.agent,
   ).toBe(false);
   expect(
-    parseCommand(["tracked"], {
+    parseCommand(["pr", "list"], {
       CODEX_THREAD_ID: "thread",
       OCTO_MANAGER_AGENT: "0",
     }).output.agent,
   ).toBe(false);
   expect(
-    parseCommand(["tracked", "--agent"], { OCTO_MANAGER_AGENT: "0" }).output
+    parseCommand(["pr", "list", "--agent"], { OCTO_MANAGER_AGENT: "0" }).output
       .agent,
   ).toBe(true);
   expect(
-    parseCommand(["tracked"], { OCTO_MANAGER_AGENT: "1" }).values.json,
+    parseCommand(["pr", "list"], { OCTO_MANAGER_AGENT: "1" }).values.json,
   ).toBe(true);
   expect(
-    parseCommand(["pr", "p", "--full"], { CODEX_THREAD_ID: "thread" }).output
-      .full,
+    parseCommand(["pr", "show", "p", "--full"], { CODEX_THREAD_ID: "thread" })
+      .output.full,
   ).toBe(true);
-  for (const command of [
-    "track",
-    "acknowledge-digest",
-    "rebase",
-    "retry-submission",
+  for (const args of [
+    ["pr", "track", "--url", "https://github.com/o/r/pull/1"],
+    ["ack", "12345678"],
+    ["publication", "retry", "id"],
   ])
-    expect(() => parseCommand([command, "--full"], {})).toThrow("read-only");
-  expect(() => parseCommand(["repo-policy", "refresh", "--full"], {})).toThrow(
-    "read-only",
-  );
+    expect(() => parseCommand([...args, "--full"], {})).toThrow("read-only");
   expect(() =>
-    parseCommand(["events", "job", "--watch"], { OCTO_MANAGER_AGENT: "1" }),
+    parseCommand(["job", "events", "job", "--watch"], {
+      OCTO_MANAGER_AGENT: "1",
+    }),
   ).toThrow("bounded responses");
 });
 test("agent output bounds actionable rows, excludes evidence payloads and retains complete links", () => {
-  const parsed = parseCommand(["tracking", "--state", "/tmp/custom state"], {
-    OCTO_MANAGER_AGENT: "1",
-  });
+  const parsed = parseCommand(
+    ["agent", "status", "--state", "/tmp/custom state"],
+    {
+      OCTO_MANAGER_AGENT: "1",
+    },
+  );
   const evidenceUrl =
     "https://github.com/" + "r".repeat(160) + "/actions/runs/1";
   const output = agentResponse(parsed, {
@@ -110,7 +111,7 @@ test("agent output bounds actionable rows, excludes evidence payloads and retain
     state: "open",
     summary: "A failing check",
   });
-  expect(response.next).toContain("'tracking'");
+  expect(response.next).toContain("'agent' 'status'");
   expect(response.next).toContain("'--full'");
   expect(response.next).toContain("'/tmp/custom state'");
 });
@@ -139,15 +140,33 @@ test("mutation results point to read-only inspection and JSON escaping cannot ex
   expect(Buffer.byteLength(output)).toBeLessThanOrEqual(3000);
   const retry = decode(
     agentResponse(
-      parseCommand(["retry-delivery", "delivery"], { OCTO_MANAGER_AGENT: "1" }),
+      parseCommand(["action", "retry-delivery", "delivery"], {
+        OCTO_MANAGER_AGENT: "1",
+      }),
       { delivery: { id: "delivery", actionId: "action" } },
     ),
   );
-  expect(retry.next).toContain("'action' 'action'");
+  expect(retry.next).toContain("'action' 'show' 'action'");
   expect(retry.next).not.toContain("retry-delivery");
   const activity = decode(
     agentResponse(
-      parseCommand(["record-activity"], { OCTO_MANAGER_AGENT: "1" }),
+      parseCommand(
+        [
+          "activity",
+          "record",
+          "--name",
+          "run_checks",
+          "--outcome",
+          "succeeded",
+          "--operation-id",
+          "op",
+          "--request-id",
+          "request",
+          "--detail",
+          "Checks passed",
+        ],
+        { OCTO_MANAGER_AGENT: "1" },
+      ),
       {
         activity: {
           sequence: "2345",

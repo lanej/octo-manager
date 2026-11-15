@@ -9,7 +9,7 @@ import { fork, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { schedulerClient } from "../src/client.js";
-import { JobStatus } from "../src/gen/octomanager/v1/scheduler_pb.js";
+import { JobStatus } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
 test("worker selectors retain existing models and identify the Bedrock provider", () => {
   assert.deepEqual(workerModel("gpt-6.1-terra"), {

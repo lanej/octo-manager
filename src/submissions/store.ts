@@ -23,6 +23,33 @@ export class SubmissionStore {
     private now: () => number,
     private event: (kind: string, detail: string) => void,
   ) {}
+  reconciliation(id: string): { attempts: number; nextAt: number } {
+    const row = this.db
+      .prepare(
+        "SELECT json_extract(value,'$.attempts') AS attempts,json_extract(value,'$.nextAt') AS nextAt FROM settings WHERE key=?",
+      )
+      .get(`submission-recovery:${id}`);
+    if (row === undefined) return { attempts: 0, nextAt: 0 };
+    const attempts = row["attempts"],
+      nextAt = row["nextAt"];
+    if (
+      typeof attempts !== "number" ||
+      !Number.isSafeInteger(attempts) ||
+      attempts < 0 ||
+      typeof nextAt !== "number" ||
+      !Number.isSafeInteger(nextAt) ||
+      nextAt < 0
+    )
+      throw new Error("Invalid submission recovery state");
+    return { attempts, nextAt };
+  }
+  deferReconciliation(id: string, attempts: number, nextAt: number): void {
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(`submission-recovery:${id}`, JSON.stringify({ attempts, nextAt }));
+  }
   list(): Submission[] {
     return this.db
       .prepare("SELECT data FROM pr_submissions ORDER BY rowid")

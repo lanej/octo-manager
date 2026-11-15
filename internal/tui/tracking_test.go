@@ -9,7 +9,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func TestTrackedPRWithoutWorkerAndNavigation(t *testing.T) {
@@ -139,7 +139,7 @@ func TestClosedPRKeepsAcknowledgedFailureInHistoryWithoutPendingWork(t *testing.
 		Actions: []*v1.PendingAction{action},
 		Deliveries: []*v1.ActionDelivery{{
 			ActionId: "report", State: v1.DeliveryState_DELIVERY_STATE_DELIVERED,
-			ProgressJson:    `{"note":"Included in one queued digest; receipt pending."}`,
+			Progress:        &v1.DomainDeliveryProgress{Variant: &v1.DomainDeliveryProgress_Variant_3{Variant_3: &v1.DomainDeliveryProgressVariant3{Note: new("Included in one queued digest; receipt pending.")}}},
 			MessageSequence: new(uint64(1)), AcknowledgedAtMs: new(int64(1000)),
 		}},
 	}

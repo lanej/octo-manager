@@ -91,6 +91,23 @@ export class MergeStore {
       ? subject.slice(6)
       : undefined;
   }
+  agentInstructions(prId: string, agentId: string): string | undefined {
+    const pr = this.tracking.pr(prId);
+    if (pr.ownerAgentId !== agentId) return undefined;
+    const entry = this.entries()
+      .filter((value) => value.prId === pr.id)
+      .sort((a, b) => {
+        const priority = Number(terminal(a.state)) - Number(terminal(b.state));
+        return priority !== 0
+          ? priority
+          : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
+      })[0];
+    const instructions = entry?.agentInstructions;
+    return instructions?.agentId === agentId &&
+      instructions.epoch === pr.trackingEpoch
+      ? instructions.text
+      : undefined;
+  }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
     this.db.exec("BEGIN IMMEDIATE");
@@ -242,7 +259,7 @@ export class MergeStore {
     this.saveEntry(next);
     this.event("merge_entry_updated", `${state}: ${next.detail}`, entry.prId);
     const pr = this.tracking.pr(entry.prId);
-    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: octo-manager chains ${shortId(entry.chainId)}`;
+    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: \`octo-manager chain show ${shortId(entry.chainId)}\``;
     this.notice(
       pr,
       "entry",
@@ -329,10 +346,19 @@ export class MergeStore {
     actorId: string,
     enabled: boolean,
     requestId: string,
+    instructions?: string,
   ) {
     return this.transaction(() => {
       const pr = this.tracking.pr(prValue);
-      this.owner(pr, actorId);
+      const actor = this.owner(pr, actorId);
+      if (
+        instructions !== undefined &&
+        ((instructions !== "" && (!enabled || instructions.trim() === "")) ||
+          Buffer.byteLength(instructions) > 1000)
+      )
+        throw new Error(
+          "Instructions require auto-merge on and 1-1000 UTF-8 bytes",
+        );
       let entry = this.entries().find(
         (value) => value.prId === pr.id && !terminal(value.state),
       );
@@ -358,6 +384,17 @@ export class MergeStore {
           entries: [{ prUrl: pr.url, checks }],
         });
         entry = this.entry(pr.id);
+      }
+      if (instructions !== undefined) {
+        entry = { ...entry };
+        if (instructions === "") delete entry.agentInstructions;
+        else
+          entry.agentInstructions = {
+            agentId: actor,
+            epoch: pr.trackingEpoch,
+            text: instructions,
+          };
+        this.saveEntry(entry);
       }
       if (entry.autoMerge === enabled) return { prId: pr.id, enabled, entry };
       const next = { ...entry, autoMerge: enabled, nextAt: 0 };
@@ -412,7 +449,7 @@ export class MergeStore {
             "entry",
             entry.id,
             String(next.version),
-            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: octo-manager chains ${shortId(chain.id)}`,
+            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: \`octo-manager chain show ${shortId(chain.id)}\``,
             [
               EntryState.WaitingOwner,
               EntryState.Blocked,
@@ -810,7 +847,7 @@ export class MergeStore {
             "reference",
             ref.id,
             ref.revision,
-            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: octo-manager references ${pr.url}`,
+            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: \`octo-manager reference list ${pr.url}\``,
             true,
           );
         }

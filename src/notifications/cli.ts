@@ -1,3 +1,9 @@
+import { unwire } from "../api/codec.js";
+import {
+  DomainMergeReceiptResultSchema,
+  DomainDigestInspectionSchema,
+  DomainAgentDigestSchema,
+} from "../gen/octomanager/v2/domain_pb.js";
 import { revision as digestRevision } from "./types.js";
 import { printResult } from "../cli-output.js";
 import { shortId } from "../tracking/identifiers.js";
@@ -57,7 +63,9 @@ export async function notificationsCLI(
     };
     if (command === "merge") {
       const response = await client.mergeAgentMessage(request);
-      const result: unknown = JSON.parse(response.resultJson);
+      if (response.result === undefined)
+        throw new Error("Missing merge result");
+      const result = unwire(DomainMergeReceiptResultSchema, response.result);
       printResult(parsed, result);
       return true;
     }
@@ -72,7 +80,9 @@ export async function notificationsCLI(
   }
   if (command === "message") {
     const response = await client.getAgentDigest({ receiptId: id ?? "" });
-    const value: unknown = JSON.parse(response.recordJson);
+    if (response.inspection === undefined)
+      throw new Error("Missing message inspection");
+    const value = unwire(DomainDigestInspectionSchema, response.inspection);
     if (typeof value !== "object" || value === null || !("revision" in value))
       throw new Error("Invalid message inspection response");
     const stored = digestRevision(value.revision);
@@ -124,12 +134,13 @@ export async function notificationsCLI(
   if (command === "digests")
     result = (
       await client.listAgentDigests({ agentId: values["agent-id"] })
-    ).digestsJson.map((value) => JSON.parse(value) as unknown);
-  else if (command === "digest")
-    result = JSON.parse(
-      (await client.getAgentDigest({ id: id ?? "", revision })).recordJson,
-    ) as unknown;
-  else {
+    ).digests.map((value) => unwire(DomainAgentDigestSchema, value));
+  else if (command === "digest") {
+    const response = await client.getAgentDigest({ id: id ?? "", revision });
+    if (response.inspection === undefined)
+      throw new Error("Missing digest inspection");
+    result = unwire(DomainDigestInspectionSchema, response.inspection);
+  } else {
     if (revision === undefined)
       throw new Error("acknowledge-digest requires --revision N");
     const response = await client.acknowledgeAgentDigest({

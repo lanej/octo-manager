@@ -1,3 +1,5 @@
+import { wire } from "../api/codec.js";
+import { DomainDigestReceiptSchema } from "../gen/octomanager/v2/domain_pb.js";
 import type { DigestService } from "./service.js";
 import type { TrackingStore } from "../tracking/store.js";
 import type { AgentMessage } from "../tracking/inbox.js";
@@ -13,7 +15,7 @@ export function digestReceipt(
     receipt = service.store.receipt(value.id, number);
   if (receipt === undefined) throw new Error("Digest receipt not found");
   return {
-    recordJson: JSON.stringify({
+    receipt: wire(DomainDigestReceiptSchema, {
       id: value.id,
       revision: number,
       currentRevision: value.revision,

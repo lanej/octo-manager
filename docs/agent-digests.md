@@ -57,8 +57,8 @@ octo-manager message RECEIPT_ID
 Administrative inspection exposes the internal envelope and revision:
 
 ```sh
-octo-manager digests --agent-id AGENT_ID
-octo-manager digest DIGEST_ID --revision 2
+octo-manager messages list --agent-id AGENT_ID
+octo-manager messages inspect DIGEST_ID --revision 2
 octo-manager acknowledge-digest DIGEST_ID --revision 2 --agent-id AGENT_ID
 ```
 

@@ -12,12 +12,12 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
-	"github.com/lanej/octo-manager/gen/octomanager/v1/octomanagerv1connect"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/gen/octomanager/v2/octomanagerv2connect"
 )
 
 type historyService struct {
-	octomanagerv1connect.UnimplementedSchedulerServiceHandler
+	octomanagerv2connect.UnimplementedSchedulerServiceHandler
 	cursors chan uint64
 }
 
@@ -54,10 +54,10 @@ func TestFullHistoryPagesAndFencesSelection(t *testing.T) {
 	m.instance = "fixture"
 	m.snapshot.Sequence = 201
 	service := historyService{cursors: make(chan uint64, 4)}
-	_, handler := octomanagerv1connect.NewSchedulerServiceHandler(service)
+	_, handler := octomanagerv2connect.NewSchedulerServiceHandler(service)
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
-	m.api.RPC = octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
+	m.api.RPC = octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
 	command := m.loadHistory()
 	if command == nil {

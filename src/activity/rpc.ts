@@ -7,14 +7,14 @@ import {
   type RecordActivityRequest,
   type ListActivityRequest,
   type ActivityInput as WireInput,
-} from "../gen/octomanager/v1/activity_pb.js";
+} from "../gen/octomanager/v2/activity_pb.js";
 import {
   ActivityName,
   ActivityOutcome,
   type ActivityReport,
   type ActivityInput,
 } from "./types.js";
-import type { JobEvent } from "../gen/octomanager/v1/scheduler_pb.js";
+import type { JobEvent } from "../gen/octomanager/v2/scheduler_pb.js";
 import type { ActivityStore } from "./store.js";
 
 export const activityNames: Record<ActivityName, WireName> = {
