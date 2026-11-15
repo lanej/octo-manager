@@ -29,6 +29,28 @@ export class SubmissionStore {
       .all()
       .map((row) => parse(SubmissionSchema, JSON.parse(String(row["data"]))));
   }
+  summaryPage(
+    before = Number.MAX_SAFE_INTEGER,
+    limit = 20,
+  ): { items: Record<string, unknown>[]; next: number | undefined } {
+    const count = Math.max(1, Math.min(limit, 20));
+    const rows = this.db
+      .prepare(
+        "SELECT rowid,id,state,substr(json_extract(data,'$.detail'),1,160) AS detail,json_extract(data,'$.prUrl') AS url FROM pr_submissions WHERE rowid<? ORDER BY rowid DESC LIMIT ?",
+      )
+      .all(before, count + 1);
+    return {
+      items: rows
+        .slice(0, count)
+        .map((row) =>
+          Object.fromEntries(
+            Object.entries(row).filter(([key]) => key !== "rowid"),
+          ),
+        ),
+      next:
+        rows.length > count ? Number(rows[count - 1]?.["rowid"]) : undefined,
+    };
+  }
   get(id: string): Submission {
     const all = this.list(),
       resolved = resolveId(
