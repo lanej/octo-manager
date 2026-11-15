@@ -1,6 +1,6 @@
 # Agent activity
 
-Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, short session topic or directory and harness, optional runtime version and model, PR link, evidence, and recorded time. The UI renders a cached window of 50 entries. Use **h/l** for older/newer pages, **j/k** or **[/]** to scroll within a page, and **u** to refresh. Loaded history remains available for page navigation; new reports can shift a page as the live timeline grows.
+Octo records named agent operations alongside its existing worker, blocker, and delivery events. Press **5 Activity** in the dashboard for a global timeline across sessions, including activity with no worker job or tracked PR. The view shows the operation, reported outcome, short session topic or directory and harness, optional runtime version and model, PR link, evidence, and recorded time. The UI loads at most 50 records into one page buffer. Each entry is one terminal line with aligned timestamp, subject, and message columns; long content is truncated at the viewport edge. Use **h/l** for older/newer pages, **j/k** or **[/]** to scroll within a page, and **u** to return to the latest page or retry a failed read. Older and newer pages are fetched on demand and replace the current buffer. Only navigation cursors are retained; activity history remains in SQLite. Live refresh pauses while viewing older pages.
 
 Coordinator events are recorded automatically by existing operations. Work performed outside Octo, such as a calling agent merging a PR or running checks, must be reported explicitly through the CLI or typed RPC. This does not instrument every agent session automatically. Actor metadata and outcomes are supplied by the caller; recording a success does not independently verify execution, authenticate an agent identity, acknowledge a blocker, or resolve it.
 
@@ -50,6 +50,8 @@ Replaying a request ID with an identical normalized report returns the original 
 ## Data and API
 
 `RecordActivity` receives an `ActivityInput`; `ActivityName` and `ActivityOutcome` are Protobuf enums. The coordinator validates the report before storage. Names reuse existing task terminology; adding another operation requires updating the typed catalog, wire enum, UI label, and database constraint through a migration. Harnesses remain metadata, so adding another harness does not require an operation or schema change.
+
+`ListActivity` retains ascending replay through `afterSequence`. Its optional `beforeSequence` selects an exclusive upper bound and returns up to 200 records in descending order; zero selects the latest page. In this mode `nextSequence` is the oldest returned sequence and `hasMore` indicates older records. The recent-only `limit` selects 1–200 records; zero defaults to 200, and the dashboard requests 50. The cursors cannot be combined. Worker progress is excluded from recent activity pages. No database migration is required.
 
 ```typescript
 interface ActivityInput {
@@ -102,11 +104,11 @@ ALTER TABLE events ADD COLUMN action_context_json TEXT
 
 ## Native presentation
 
-Activity and Tracking render structured fields directly with Charmed labels, badges, semantic pills, log glyphs, time atoms, pending indicators, and key hints. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. The native views retain ANSI-aware wrapping, the 50-entry activity window, cached rendering, paging, and keyboard scrolling; worker output and review prose retain Markdown rendering.
+Activity and Tracking render structured fields directly with Charmed labels, badges, semantic pills, log glyphs, time atoms, pending indicators, and key hints. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. Tracking retains ANSI-aware wrapping. Activity uses one aligned log line per entry, truncates long rows at the viewport edge while preserving PR numbers and link targets, and replaces its 50-record buffer during paging. Worker output and review prose retain Markdown rendering.
 
-![Native Charmed activity rows](images/atoms-activity.png)
+![Activity log with synthetic agent reports at 132 columns](images/activity-log.png)
 
-![Activity at 80 columns](images/atoms-activity-narrow.png)
+![Activity log with synthetic agent reports at 80 columns](images/activity-log-narrow.png)
 
 ![Native Charmed tracking fields and delivery states](images/atoms-tracking.png)
 

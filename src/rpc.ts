@@ -127,7 +127,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     registerAgent(r){return trackingOperation(()=>({agent:wireAgent(tracking.registerAgent(owner(r.target)))}));},
     ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),
-    ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),
+    ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent), (before) => coordinator.store.activityBefore(before).map(wireEvent)),
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
     async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},

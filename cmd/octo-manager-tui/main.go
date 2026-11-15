@@ -36,6 +36,8 @@ func run() error {
 
 	zone := flag.String("timezone", "local", "display timezone: local (TZ or OS default), UTC, or an IANA name")
 
+	hours := flag.Int("github-hours", tui.DefaultGitHubHours, "hourly GitHub traffic buckets to display (1–168)")
+
 	flag.Parse()
 
 	location, err := tui.DisplayLocation(*zone)
@@ -55,6 +57,10 @@ func run() error {
 	t := theme.New(selected)
 	api := client.New(filepath.Join(*state, "run.sock"))
 	scene := tui.New(context.Background(), api, t, location)
+
+	if err := scene.SetGitHubHours(*hours); err != nil {
+		return errors.Join(err, scene.Close())
+	}
 
 	root := &runtime.Root{Scene: scene, Background: t.Background, AltScreen: true, ASCII: t.ASCII}
 	if *mode == "terminal" {

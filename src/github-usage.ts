@@ -7,12 +7,15 @@ export interface GitHubBudget {
   observedAtMs: number;
   forecast?: QuotaForecast;
 }
-export interface GitHubReadMinute {
+export interface GitHubTrafficBucket {
   startedAtMs: number;
   rest: number;
   graphql: number;
   cacheReuses: number;
 }
+export type GitHubReadMinute = GitHubTrafficBucket;
+export type GitHubReadHour = GitHubTrafficBucket;
+
 export interface GitHubReadUsage {
   startedAtMs: number;
   sampledAtMs: number;
@@ -20,6 +23,7 @@ export interface GitHubReadUsage {
   cacheReuses: number;
   rateLimits: number;
   minutes: GitHubReadMinute[];
+  hours: GitHubReadHour[];
   rest?: GitHubBudget;
   graphql?: GitHubBudget;
   restRetryAtMs: number;
@@ -35,32 +39,69 @@ export class GitHubUsage {
   private requests = 0;
   private cacheReuses = 0;
   private rateLimits = 0;
-  private readonly minutes = new Map<number, GitHubReadMinute>();
+  private readonly minutes = new Map<number, GitHubTrafficBucket>();
+  private readonly hours = new Map<number, GitHubTrafficBucket>();
   private readonly quotaHistory = new QuotaHistory();
   private readonly budgets: Partial<Record<GitHubResource, GitHubBudget>> = {};
   constructor(private readonly now: () => number) {
     this.startedAtMs = now();
   }
-  private bucket(): GitHubReadMinute {
-    const minute = Math.floor(this.now() / 60000) * 60000;
-    for (const at of this.minutes.keys())
-      if (at < minute - 59 * 60000) this.minutes.delete(at);
-    let bucket = this.minutes.get(minute);
+  private bucket(
+    buckets: Map<number, GitHubTrafficBucket>,
+    at: number,
+    span: number,
+    capacity: number,
+  ): GitHubTrafficBucket {
+    const start = Math.floor(at / span) * span;
+    for (const key of buckets.keys())
+      if (key < start - (capacity - 1) * span) buckets.delete(key);
+    let bucket = buckets.get(start);
     if (bucket === undefined) {
-      bucket = { startedAtMs: minute, rest: 0, graphql: 0, cacheReuses: 0 };
-      this.minutes.set(minute, bucket);
+      bucket = { startedAtMs: start, rest: 0, graphql: 0, cacheReuses: 0 };
+      buckets.set(start, bucket);
     }
     return bucket;
   }
+  private window(
+    buckets: Map<number, GitHubTrafficBucket>,
+    at: number,
+    span: number,
+    capacity: number,
+  ): GitHubTrafficBucket[] {
+    const latest = Math.floor(at / span) * span;
+    const earliest = Math.max(
+      latest - (capacity - 1) * span,
+      Math.floor(this.startedAtMs / span) * span,
+    );
+    for (const key of buckets.keys()) if (key < earliest) buckets.delete(key);
+    const result: GitHubTrafficBucket[] = [];
+    for (let start = earliest; start <= latest; start += span)
+      result.push({
+        ...(buckets.get(start) ?? {
+          startedAtMs: start,
+          rest: 0,
+          graphql: 0,
+          cacheReuses: 0,
+        }),
+      });
+    return result;
+  }
   attempt(resource: GitHubResource): void {
     this.requests++;
-    const bucket = this.bucket();
-    if (resource === "core") bucket.rest++;
-    else bucket.graphql++;
+    const at = this.now();
+    for (const bucket of [
+      this.bucket(this.minutes, at, 60000, 60),
+      this.bucket(this.hours, at, 3600000, 168),
+    ]) {
+      if (resource === "core") bucket.rest++;
+      else bucket.graphql++;
+    }
   }
   reused(): void {
     this.cacheReuses++;
-    this.bucket().cacheReuses++;
+    const at = this.now();
+    this.bucket(this.minutes, at, 60000, 60).cacheReuses++;
+    this.bucket(this.hours, at, 3600000, 168).cacheReuses++;
   }
   limited(): void {
     this.rateLimits++;
@@ -92,23 +133,8 @@ export class GitHubUsage {
   }
   snapshot(retryAtMs: Record<GitHubResource, number>): GitHubReadUsage {
     const at = this.now();
-    const latest = Math.floor(at / 60000) * 60000;
-    const earliest = Math.max(
-      latest - 59 * 60000,
-      Math.floor(this.startedAtMs / 60000) * 60000,
-    );
-    for (const minute of this.minutes.keys())
-      if (minute < earliest) this.minutes.delete(minute);
-    const minutes: GitHubReadMinute[] = [];
-    for (let minute = earliest; minute <= latest; minute += 60000)
-      minutes.push({
-        ...(this.minutes.get(minute) ?? {
-          startedAtMs: minute,
-          rest: 0,
-          graphql: 0,
-          cacheReuses: 0,
-        }),
-      });
+    const minutes = this.window(this.minutes, at, 60000, 60);
+    const hours = this.window(this.hours, at, 3600000, 168);
     return {
       startedAtMs: this.startedAtMs,
       sampledAtMs: at,
@@ -116,6 +142,7 @@ export class GitHubUsage {
       cacheReuses: this.cacheReuses,
       rateLimits: this.rateLimits,
       minutes,
+      hours,
       ...(this.budgets.core === undefined
         ? {}
         : {

@@ -25,11 +25,13 @@ class Queue implements QueueConnection {
   cancelMode: "normal" | "consume" | "lose_before" | "lose_after" = "normal";
   coverage = true;
   inspectFailure = false;
+  inspections = 0;
   onCancel: (() => void) | undefined;
   prepare(): Promise<{ busy: boolean }> {
     return Promise.resolve({ busy: false });
   }
   queued(): Promise<QueuedMessage[]> {
+    this.inspections++;
     return this.inspectFailure
       ? Promise.reject(new Error("Queue coverage incomplete"))
       : Promise.resolve(structuredClone(this.slots));
@@ -151,6 +153,10 @@ async function fixture() {
     },
     async flush() {
       now += 6000;
+      await service.flush();
+    },
+    async advance(milliseconds: number) {
+      now += milliseconds;
       await service.flush();
     },
     async reopen() {
@@ -393,6 +399,121 @@ test("incomplete queue inspection fails closed", async () => {
     expect(f.store.digests.active(f.actor.id)?.state).toBe(
       DigestState.Unavailable,
     );
+  } finally {
+    await f.close();
+  }
+});
+test("idle queue recipients are not inspected, while new unread work and cleanup still run", async () => {
+  const f = await fixture();
+  try {
+    f.queue.inspectFailure = true;
+    for (let i = 0; i < 20; i++) await f.flush();
+    expect(f.queue.inspections).toBe(0);
+    expect(f.store.eventsSince(0)).toEqual([]);
+    f.notice("A");
+    await f.flush();
+    expect(f.queue.inspections).toBe(1);
+    expect(f.store.digests.active(f.actor.id)?.state).toBe(
+      DigestState.Unavailable,
+    );
+    f.queue.inspectFailure = false;
+    await f.flush();
+    const active = f.store.digests.active(f.actor.id);
+    if (active === undefined) throw new Error("No active digest");
+    f.service.acknowledge(active.id, active.revision, f.actor.id);
+    await f.flush();
+    expect(f.queue.slots).toHaveLength(0);
+    const inspections = f.queue.inspections;
+    await f.flush();
+    await f.reopen();
+    await f.flush();
+    expect(f.queue.inspections).toBe(inspections);
+  } finally {
+    await f.close();
+  }
+});
+test("unchanged inspection failures back off without repeating events, then recover", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("A");
+    f.queue.inspectFailure = true;
+    await f.advance(0);
+    const active = f.store.digests.active(f.actor.id);
+    if (active === undefined) throw new Error("No active digest");
+    await f.advance(4999);
+    expect(f.queue.inspections).toBe(1);
+    await f.advance(1);
+    expect(f.queue.inspections).toBe(2);
+    await f.advance(9999);
+    expect(f.queue.inspections).toBe(2);
+    await f.advance(1);
+    expect(f.queue.inspections).toBe(3);
+    const failures = f.store.digests
+      .events(active.id)
+      .filter((event) => event.kind === "digest_uncertain");
+    expect(failures).toHaveLength(1);
+    expect(
+      f.store.eventsSince(0).find((event) => event.kind === "digest_uncertain")
+        ?.detail,
+    ).toContain("Queue coverage incomplete");
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    f.queue.inspectFailure = false;
+    await f.advance(20000);
+    expect(f.queue.operations).toEqual(["add"]);
+    expect(f.store.digests.get(active.id).state).toBe(DigestState.Queued);
+    expect(f.store.digests.get(active.id).error).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+test("standalone acknowledged and superseded legacy queue entries still receive cleanup", async () => {
+  for (const kind of ["acknowledged", "superseded"]) {
+    const f = await fixture();
+    try {
+      const notice = f.notice("Legacy"),
+        message = f.store.tracking.inbox.get(notice.id);
+      if (message === undefined) throw new Error("No notice");
+      f.queue.slots.push({
+        queueId: "legacy",
+        clientId: notice.id,
+        body: message.body,
+      });
+      if (kind === "acknowledged")
+        f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+      else f.store.submissions.invalidateNotices(notice.submissionId);
+      await f.flush();
+      expect(f.queue.operations).toEqual(["cancel"]);
+      expect(f.queue.slots).toHaveLength(0);
+      expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+      const inspections = f.queue.inspections;
+      await f.flush();
+      expect(f.queue.inspections).toBe(inspections);
+    } finally {
+      await f.close();
+    }
+  }
+});
+test("idle legacy cleanup reinspects late admission without polling unused recipients", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("Legacy"),
+      message = f.store.tracking.inbox.get(notice.id);
+    if (message === undefined) throw new Error("No notice");
+    f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+    await f.advance(0);
+    expect(f.queue.inspections).toBe(1);
+    f.queue.slots.push({
+      queueId: "late-legacy",
+      clientId: notice.id,
+      body: message.body,
+    });
+    await f.advance(59999);
+    expect(f.queue.inspections).toBe(1);
+    await f.advance(1);
+    expect(f.queue.operations).toEqual(["cancel"]);
+    expect(f.queue.slots).toHaveLength(0);
   } finally {
     await f.close();
   }

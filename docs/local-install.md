@@ -22,6 +22,16 @@ launchctl kickstart -k gui/$(id -u)/com.lanej.octo-manager
 
 Linux uses a systemd user unit at the selected configuration home’s `systemd/user/octo-manager.service`. If no user manager is available, installation completes with `started: false` and a safely quoted foreground command that preserves HOME, PATH, state, configuration and Codex home. An available manager’s configuration or startup failure remains an error. Linux service logs are available through `journalctl --user -u octo-manager.service`. `--home DIR` supports a separate installation root; normal configuration overrides `XDG_CONFIG_HOME` and `CODEX_HOME` remain supported.
 
+## GitHub traffic history
+
+The GitHub tab groups Octo’s REST attempts, GraphQL attempts, and cache reuses into hourly buckets. It shows the latest 24 buckets by default, including the current partial hour. Use `octo-manager dashboard --github-hours 6` to select 1–168 buckets. Changing the display window does not change GitHub polling or quota forecasts.
+
+Hourly counters retain up to 168 UTC-aligned hours in memory, independently of the rolling minute samples and GitHub quota resets. History begins when the coordinator starts and resets when it restarts; time before startup is not reported as zero traffic. Startup and current hours are labeled partial, without extrapolating their counts. Bucket timestamps use the configured presentation timezone, including `TZ`; numeric offsets distinguish repeated local hours during DST transitions.
+
+![Hourly traffic across midnight using synthetic counts, with a six-bucket window](images/github-hourly.png)
+
+![The hourly traffic view at 80 columns](images/github-hourly-narrow.png)
+
 ## Activate native Codex hooks
 
 `--codex` appends three command-hook groups to `CODEX_HOME/hooks.json` without reordering or replacing existing hooks. It defaults an absent local endpoint delivery mode to `queue`, preserving an explicitly selected delivery mode. It changes neither MCP configuration nor Codex trust settings.

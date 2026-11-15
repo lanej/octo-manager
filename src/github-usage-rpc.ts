@@ -55,6 +55,12 @@ export function wireGitHubUsage(value: GitHubReadUsage): WireUsage {
     graphql: budget(value.graphql),
     restRetryAtMs: BigInt(value.restRetryAtMs),
     graphqlRetryAtMs: BigInt(value.graphqlRetryAtMs),
+    hours: value.hours.map((hour) => ({
+      startedAtMs: BigInt(hour.startedAtMs),
+      rest: BigInt(hour.rest),
+      graphql: BigInt(hour.graphql),
+      cacheReuses: BigInt(hour.cacheReuses),
+    })),
     minutes: value.minutes.map((minute) => ({
       startedAtMs: BigInt(minute.startedAtMs),
       rest: BigInt(minute.rest),
