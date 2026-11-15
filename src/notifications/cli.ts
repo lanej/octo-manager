@@ -1,3 +1,4 @@
+import { revision as digestRevision } from "./types.js";
 import { printResult } from "../cli-output.js";
 import { shortId } from "../tracking/identifiers.js";
 import { receiptOutput } from "./receipt-output.js";
@@ -11,6 +12,8 @@ export async function notificationsCLI(
   const { values, positionals } = parsed,
     [command, id] = positionals;
   if (
+    command !== "ack" &&
+    command !== "message" &&
     command !== "digest" &&
     command !== "digests" &&
     command !== "acknowledge-digest" &&
@@ -23,6 +26,51 @@ export async function notificationsCLI(
         join(homedir(), ".local/state/octo-manager"),
     ),
     client = schedulerClient(directory);
+  if (command === "ack") {
+    if (id === undefined || id === "")
+      throw new Error("ack requires a message receipt ID");
+    const environmentAgent = process.env["OCTO_MANAGER_AGENT_ID"]?.trim();
+    const agentId =
+      values["agent-id"] ??
+      (environmentAgent === "" ? undefined : environmentAgent);
+    const sessionId = values["thread-id"] ?? process.env["CODEX_THREAD_ID"];
+    if (
+      agentId === undefined &&
+      (sessionId === undefined || sessionId.trim() === "")
+    )
+      throw new Error(
+        "Cannot identify this session; set CODEX_THREAD_ID or pass --agent-id",
+      );
+    const response = await client.acknowledgeAgentDigest({
+      receiptId: id,
+      ...(agentId === undefined
+        ? {
+            agentTarget: {
+              harness: values.harness ?? "codex",
+              endpoint:
+                values.endpoint ?? process.env["OCTO_MANAGER_ENDPOINT"] ?? "",
+              sessionId: sessionId ?? "",
+            },
+          }
+        : { agentId }),
+    });
+    const compact = receiptOutput(response, directory);
+    printResult(parsed, {
+      receipt: { id },
+      items: compact.items,
+      omittedItems: compact.omittedItems,
+    });
+    return true;
+  }
+  if (command === "message") {
+    const response = await client.getAgentDigest({ receiptId: id ?? "" });
+    const value: unknown = JSON.parse(response.recordJson);
+    if (typeof value !== "object" || value === null || !("revision" in value))
+      throw new Error("Invalid message inspection response");
+    const stored = digestRevision(value.revision);
+    printResult(parsed, { id: shortId(stored.dispatchId), body: stored.body });
+    return true;
+  }
   if (command === "acknowledge-message") {
     const response = await client.acknowledgeMessage({
       id: id ?? "",

@@ -75,11 +75,20 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},
-    getAgentDigest(r) {return trackingOperation(()=>({recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision))}));},
+    getAgentDigest(r) {return trackingOperation(()=>{
+      if(r.receiptId!=="" && (r.id!=="" || r.revision!==undefined))throw new Error("Invalid mixed message receipt references");
+      const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
+      return {recordJson:JSON.stringify(coordinator.digests.inspect(version?.digestId??r.id,version?.revision??r.revision))};
+    });},
     listAgentDigests(r) {return {digestsJson:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>JSON.stringify(value))};},
     acknowledgeAgentDigest(r) {return trackingOperation(()=>{
-      const messages=coordinator.digests.acknowledge(r.id,r.revision,r.agentId,r.expectedBody);
-      return digestReceipt(coordinator.digests,tracking.store,r.id,r.revision,messages);
+      if(r.receiptId!=="" && (r.id!=="" || r.revision!==0))throw new Error("Invalid mixed message receipt references");
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
+      const id=version?.digestId??r.id,number=version?.revision??r.revision;
+      const agentId=r.agentTarget===undefined?r.agentId:tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      const messages=coordinator.digests.acknowledge(id,number,agentId,r.expectedBody);
+      return digestReceipt(coordinator.digests,tracking.store,id,number,messages);
     });},
     submitPullRequest() {
       throw new ConnectError("Legacy drafting retired; run pr init, pr validate, then submit-pr --title TITLE --body-file FILE.", Code.FailedPrecondition);

@@ -1,3 +1,4 @@
+import { messageReceiptId } from "../notifications/render.js";
 import { constants } from "node:fs";
 import { mkdir, open } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
@@ -195,6 +196,15 @@ export async function codexHook(
       deadline,
     );
   }
+  const receiptId =
+    event === "UserPromptSubmit" && typeof prompt === "string"
+      ? messageReceiptId(prompt)
+      : undefined;
+  if (receiptId !== undefined && typeof prompt === "string")
+    await client.acknowledgeAgentDigest(
+      { receiptId, agentId, expectedBody: prompt },
+      deadline,
+    );
   const digestMarker =
     event === "UserPromptSubmit" && typeof prompt === "string"
       ? /^\[octo-digest:([a-f0-9-]{8,36}):(\d+)\]\n/u.exec(prompt)

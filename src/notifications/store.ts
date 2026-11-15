@@ -17,7 +17,42 @@ export class DigestStore {
     private db: DatabaseSync,
     private now: () => number,
     private eventSink: (kind: string, detail: string) => void,
-  ) {}
+  ) {
+    // Index immutable delivery identities without rewriting historical records.
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
+    );
+  }
+  private dispatchId(): string {
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const id = randomUUID();
+      if (
+        this.db
+          .prepare(
+            "SELECT 1 FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? LIMIT 1",
+          )
+          .get(id.slice(0, 8)) === undefined
+      )
+        return id;
+    }
+    throw new Error("Unable to allocate a unique message receipt ID");
+  }
+  delivery(id: string): DigestRevision {
+    if (!/^[a-f0-9-]{8,36}$/u.test(id))
+      throw new Error("Invalid message receipt ID");
+    const rows = this.db
+      .prepare(
+        "SELECT data FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? AND replace(json_extract(data,'$.dispatchId'),'-','') LIKE ? LIMIT 2",
+      )
+      .all(id.slice(0, 8), `${id.replaceAll("-", "")}%`);
+    if (rows.length !== 1)
+      throw new Error(
+        rows.length === 0
+          ? "Message receipt not found"
+          : "Invalid ambiguous message receipt ID",
+      );
+    return revision(JSON.parse(String(rows[0]?.["data"])));
+  }
   list(agentId?: string): Digest[] {
     return this.db
       .prepare(
@@ -68,16 +103,14 @@ export class DigestStore {
   create(
     agentId: string,
     transport: QueueTransport,
-    render: (
-      id: string,
-      number: number,
-    ) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => { body: string; messageIds: string[] },
   ): Digest {
     const existing = this.active(agentId);
     if (existing !== undefined) return existing;
     const at = this.now(),
       id = randomUUID(),
-      content = render(id, 1),
+      dispatchId = this.dispatchId(),
+      content = render(dispatchId),
       value: Digest = {
         id,
         agentId,
@@ -93,7 +126,7 @@ export class DigestStore {
       this.write(value);
       this.insertVersion({
         ...content,
-        dispatchId: randomUUID(),
+        dispatchId,
         digestId: id,
         revision: 1,
         createdAt: at,
@@ -107,19 +140,18 @@ export class DigestStore {
   }
   revise(
     value: Digest,
-    render: (
-      id: string,
-      number: number,
-    ) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => { body: string; messageIds: string[] },
   ): Digest {
-    const content = render(value.id, value.revision + 1),
-      previous = this.version(value.id, value.revision);
+    const previous = this.version(value.id, value.revision);
+    const current = render(previous.dispatchId);
     if (
-      JSON.stringify(content.messageIds) ===
+      JSON.stringify(current.messageIds) ===
         JSON.stringify(previous.messageIds) &&
-      render(value.id, value.revision).body === previous.body
+      current.body === previous.body
     )
       return value;
+    const dispatchId = this.dispatchId();
+    const content = render(dispatchId);
     const next = {
       ...value,
       revision: value.revision + 1,
@@ -130,7 +162,7 @@ export class DigestStore {
       this.write(next);
       this.insertVersion({
         ...content,
-        dispatchId: randomUUID(),
+        dispatchId,
         digestId: value.id,
         revision: next.revision,
         createdAt: this.now(),

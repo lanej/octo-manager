@@ -18,6 +18,7 @@ const reads = new Set([
   "tracking",
   "inbox",
   "digest",
+  "message",
   "digests",
   "participants",
   "activity",

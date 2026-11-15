@@ -205,15 +205,8 @@ export class DigestService {
   ): Digest | undefined {
     const messages = this.pending(agent.id);
     if (messages.length === 0) return undefined;
-    const render = (id: string, number: number) =>
-      renderDigest(
-        id,
-        number,
-        agent.id,
-        messages,
-        this.directory,
-        this.tracking.store.agents().map((value) => value.id),
-      );
+    const render = (receiptId: string) =>
+      renderDigest(messages, this.directory, receiptId);
     const active = this.store.active(agent.id);
     return active === undefined
       ? this.store.create(agent.id, transport, render)
@@ -472,15 +465,8 @@ export class DigestService {
           );
         return;
       }
-      active = this.store.revise(active, (id, number) =>
-        renderDigest(
-          id,
-          number,
-          agent.id,
-          messages,
-          this.directory,
-          this.tracking.store.agents().map((value) => value.id),
-        ),
+      active = this.store.revise(active, (receiptId) =>
+        renderDigest(messages, this.directory, receiptId),
       );
       let version = this.store.version(active.id, active.revision);
       if (keep !== undefined && keep.version.revision === version.revision) {
@@ -536,15 +522,8 @@ export class DigestService {
         );
         return;
       }
-      active = this.store.revise(active, (id, number) =>
-        renderDigest(
-          id,
-          number,
-          agent.id,
-          latest,
-          this.directory,
-          this.tracking.store.agents().map((value) => value.id),
-        ),
+      active = this.store.revise(active, (receiptId) =>
+        renderDigest(latest, this.directory, receiptId),
       );
       version = this.store.version(active.id, active.revision);
       const operation = "queue_enqueue";

@@ -4,13 +4,15 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { AgentTarget } from "./tracking_pb.js";
+import { file_octomanager_v1_tracking } from "./tracking_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file octomanager/v1/notifications.proto.
  */
 export const file_octomanager_v1_notifications: GenFile = /*@__PURE__*/
-  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJHChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBAUILCglfcmV2aXNpb24iLQoWR2V0QWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCSI9ChdMaXN0QWdlbnREaWdlc3RzUmVxdWVzdBIVCghhZ2VudF9pZBgBIAEoCUgAiAEBQgsKCV9hZ2VudF9pZCIwChhMaXN0QWdlbnREaWdlc3RzUmVzcG9uc2USFAoMZGlnZXN0c19qc29uGAEgAygJIn0KHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBAUIQCg5fZXhwZWN0ZWRfYm9keSKFAgoRQWdlbnREaWdlc3RNZW1iZXISEgoKbWVzc2FnZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSGgoNc3VibWlzc2lvbl9pZBgDIAEoCUgAiAEBEg8KB3N1bW1hcnkYBiABKAkSDgoGcHJfdXJsGAcgASgJEhYKDnJlY2lwaWVudF9yb2xlGAggASgJEhYKDm93bmVyX2FnZW50X2lkGAkgASgJEhIKCmFwcGxpY2FibGUYBCABKAgSHwoSYWNrbm93bGVkZ2VkX2F0X21zGAUgASgDSAGIAQFCEAoOX3N1Ym1pc3Npb25faWRCFQoTX2Fja25vd2xlZGdlZF9hdF9tcyJqCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USEwoLcmVjb3JkX2pzb24YASABKAkSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52MS5BZ2VudERpZ2VzdE1lbWJlckJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
+  fileDesc("CiJvY3RvbWFuYWdlci92MS9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MSJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiItChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEhMKC3JlY29yZF9qc29uGAEgASgJIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIjAKGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIUCgxkaWdlc3RzX2pzb24YASADKAkixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYxLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zImoKHkFja25vd2xlZGdlQWdlbnREaWdlc3RSZXNwb25zZRITCgtyZWNvcmRfanNvbhgBIAEoCRIzCghtZXNzYWdlcxgCIAMoCzIhLm9jdG9tYW5hZ2VyLnYxLkFnZW50RGlnZXN0TWVtYmVyQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MTtvY3RvbWFuYWdlcnYxYgZwcm90bzM", [file_octomanager_v1_tracking]);
 
 /**
  * JSON record schemas are validated by the notification capability.
@@ -27,6 +29,11 @@ export type GetAgentDigestRequest = Message<"octomanager.v1.GetAgentDigestReques
    * @generated from field: optional uint32 revision = 2;
    */
   revision?: number | undefined;
+
+  /**
+   * @generated from field: string receipt_id = 3;
+   */
+  receiptId: string;
 };
 
 /**
@@ -110,6 +117,16 @@ export type AcknowledgeAgentDigestRequest = Message<"octomanager.v1.AcknowledgeA
    * @generated from field: optional string expected_body = 4;
    */
   expectedBody?: string | undefined;
+
+  /**
+   * @generated from field: string receipt_id = 5;
+   */
+  receiptId: string;
+
+  /**
+   * @generated from field: octomanager.v1.AgentTarget agent_target = 6;
+   */
+  agentTarget?: AgentTarget | undefined;
 };
 
 /**
