@@ -37,6 +37,11 @@ export function receiptContext(store: MergeStore, pr: TrackedPR): string {
     graphKey(store.dependencies(), pr.id),
   ]);
 }
+function publicReason(reason: string): string {
+  return reason.startsWith("Readiness unavailable:")
+    ? "readiness unavailable"
+    : reason;
+}
 export class ReceiptMerges {
   constructor(
     private store: MergeStore,
@@ -123,24 +128,59 @@ export class ReceiptMerges {
             : {}),
         }
       : {
-          summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${cached.reason}`,
+          summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${publicReason(cached.reason)}`,
         };
   };
   async refresh(): Promise<void> {
     for (const pr of this.tracking.store.prs()) {
       if (!pr.enabled) continue;
+      const prior = this.store.noticeReadiness(pr.id);
+      const merged = this.store
+        .entries()
+        .some(
+          (entry) =>
+            entry.prId === pr.id &&
+            entry.state === EntryState.Merged &&
+            entry.ready?.head === pr.observation?.headSha,
+        );
+      if (merged) {
+        if (prior !== undefined)
+          this.store.notice(
+            pr,
+            "entry",
+            `ready:${prior.target.actionId}`,
+            "merged",
+            "",
+            false,
+          );
+        continue;
+      }
+      const authorized = this.store
+        .entries()
+        .find((entry) => entry.prId === pr.id && !terminal(entry.state));
       if (
-        !this.tracking.store.subscriptions.list(pr).some((participant) => {
+        this.store.busy(pr.id) ||
+        (authorized?.ready !== undefined &&
+          authorized.state === EntryState.WaitingChecks &&
+          this.store.chain(authorized.chainId).state === ChainState.Active &&
+          (authorized.autoMerge || authorized.receiptId !== undefined))
+      )
+        continue;
+      const queueRecipients = this.tracking.store.subscriptions
+        .list(pr)
+        .filter((participant) => {
           const agent = this.tracking.store.agent(participant.agentId);
           return (
             this.tracking.config.endpoints[agent.endpoint]?.delivery === "queue"
           );
         })
-      )
-        continue;
+        .map((participant) => participant.agentId)
+        .sort();
+      if (queueRecipients.length === 0) continue;
       const selected = this.tracking.store
         .actions()
         .filter((action) => action.prId === pr.id)
+        .toReversed()
         .map((action) => this.candidate(action))
         .find((candidate) => candidate !== undefined);
       if (
@@ -167,6 +207,7 @@ export class ReceiptMerges {
         old?.target.actionId === selected.action.id &&
         old.target.context === context &&
         old.policy === policyKey &&
+        JSON.stringify(old.recipients) === JSON.stringify(queueRecipients) &&
         old.retryAt > this.now()
       )
         continue;
@@ -177,6 +218,7 @@ export class ReceiptMerges {
         epoch: pr.trackingEpoch,
         head: selected.pr.observation.headSha,
         context,
+        policy: policyKey,
         method: "squash",
       };
       let reason = "Merge readiness unavailable",
@@ -225,53 +267,67 @@ export class ReceiptMerges {
       } catch (error) {
         reason = `Readiness unavailable: ${error instanceof Error ? error.message.slice(0, 900) : "eligibility read failed"}`;
       }
-      if (old !== undefined && old.target.actionId !== target.actionId)
-        this.store.notice(
-          pr,
-          "entry",
-          `ready:${old.target.actionId}`,
-          "retired",
-          "",
-          false,
-        );
-      const revision = fingerprint([target, policyKey, eligible, reason]);
-      if (!eligible)
-        this.store.notice(
-          pr,
-          "entry",
-          `ready:${target.actionId}`,
-          revision,
-          "",
-          false,
-        );
-      const unreadCompletion = this.tracking.store.inbox
-        .list(pr.ownerAgentId, 0, false, true)
-        .messages.some((message) => message.actionId === target.actionId);
-      if (
-        eligible &&
-        !unreadCompletion &&
-        (old === undefined ||
-          !old.eligible ||
-          old.target.context !== context ||
-          old.policy !== policyKey)
-      ) {
-        const number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
-        this.store.notice(
-          pr,
-          "entry",
-          `ready:${target.actionId}`,
-          revision,
-          `[PR #${number}](${pr.url}) · Ready`,
-          true,
-        );
-      }
-      this.store.saveNoticeReadiness({
+      const semantic = fingerprint([
         target,
-        policy: policyKey,
-        checkedAt: this.now(),
-        retryAt: this.now() + 300000,
+        policyKey,
         eligible,
-        reason,
+        publicReason(reason),
+      ]);
+      const changed =
+        old === undefined ||
+        semantic !==
+          fingerprint([
+            old.target,
+            old.policy,
+            old.eligible,
+            publicReason(old.reason),
+          ]);
+      const generation =
+        old === undefined ? 1 : old.generation + (changed ? 1 : 0);
+      this.store.transaction(() => {
+        if (old !== undefined && old.target.actionId !== target.actionId)
+          this.store.notice(
+            pr,
+            "entry",
+            `ready:${old.target.actionId}`,
+            "retired",
+            "",
+            false,
+          );
+        const number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
+        if (
+          changed ||
+          JSON.stringify(old.recipients) !== JSON.stringify(queueRecipients)
+        ) {
+          this.store.notice(
+            pr,
+            "entry",
+            `ready:${target.actionId}`,
+            `${String(generation)}:${semantic}`,
+            `[PR #${number}](${pr.url}) · ${eligible ? "Ready" : `Checks complete · ${publicReason(reason)}`}`,
+            true,
+            queueRecipients,
+          );
+        }
+        for (const action of this.tracking.store
+          .actions()
+          .filter((action) => action.prId === pr.id)) {
+          if (this.candidate(action) !== undefined)
+            this.tracking.store.replaceCompletionNotifications(
+              action.id,
+              queueRecipients,
+            );
+        }
+        this.store.saveNoticeReadiness({
+          target,
+          policy: policyKey,
+          checkedAt: this.now(),
+          generation,
+          recipients: queueRecipients,
+          retryAt: this.now() + 300000,
+          eligible,
+          reason,
+        });
       });
       return; // One optional eligibility inspection per scheduler tick.
     }
@@ -293,7 +349,8 @@ export class ReceiptMerges {
       !pr.enabled ||
       pr.trackingEpoch !== target.epoch ||
       pr.observation?.headSha !== target.head ||
-      receiptContext(this.store, pr) !== target.context
+      receiptContext(this.store, pr) !== target.context ||
+      this.policyKey(pr) !== target.policy
     )
       return {
         state: "blocked",

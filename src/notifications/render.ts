@@ -58,25 +58,41 @@ export function renderDigest(
   receiptId: string,
   presentation?: (message: AgentMessage) => MessagePresentation,
 ): { body: string; messageIds: string[]; mergeTarget?: ReceiptTarget } {
-  const singleTarget =
-    messages.length === 1 && messages[0] !== undefined
-      ? presentation?.(messages[0]).mergeTarget
-      : undefined;
-  const command = `octo-manager ${singleTarget === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
-  const fence = "`".repeat(
-    1 +
-      Math.max(
-        0,
-        ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
-      ),
+  const candidates = messages.slice(0, 20);
+  const presentations = new Map(
+    candidates.map((message) => [message.id, presentation?.(message)]),
   );
-  const footer = `${fence}${command}${fence}`;
+  function mergeTarget(rows: AgentMessage[]): ReceiptTarget | undefined {
+    let selected: ReceiptTarget | undefined;
+    for (const row of rows) {
+      const target = presentations.get(row.id)?.mergeTarget;
+      if (target === undefined) continue;
+      if (
+        selected !== undefined &&
+        JSON.stringify(selected) !== JSON.stringify(target)
+      )
+        return undefined;
+      selected = target;
+    }
+    return selected;
+  }
+  function footer(rows: AgentMessage[]): string {
+    const command = `octo-manager ${mergeTarget(rows) === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+    const fence = "`".repeat(
+      1 +
+        Math.max(
+          0,
+          ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
+        ),
+    );
+    return `${fence}${command}${fence}`;
+  }
   const selected: AgentMessage[] = [];
   function body(rows: AgentMessage[]): string {
     const groups = new Map<string, string[]>();
     const counts = new Map<string, number>();
     for (const row of rows) {
-      const item = entry(row, presentation?.(row));
+      const item = entry(row, presentations.get(row.id));
       counts.set(item.group, (counts.get(item.group) ?? 0) + 1);
       groups.set(item.group, [
         ...(groups.get(item.group) ?? []),
@@ -92,9 +108,9 @@ export function renderDigest(
         }
         return `${heading === "" ? "" : heading + "\n"}${lines.join("\n")}`;
       })
-      .join("\n\n")}\n\n${footer}`;
+      .join("\n\n")}\n\n${footer(rows)}`;
   }
-  for (const message of messages) {
+  for (const message of candidates) {
     if (
       selected.length === 20 ||
       Buffer.byteLength(body([...selected, message])) > 6000
@@ -104,8 +120,9 @@ export function renderDigest(
   }
   if (selected.length === 0)
     throw new Error("No notification fits the digest size bound");
+  const target = mergeTarget(selected);
   return {
-    ...(singleTarget === undefined ? {} : { mergeTarget: singleTarget }),
+    ...(target === undefined ? {} : { mergeTarget: target }),
     body: body(selected),
     messageIds: selected.map((message) => message.id),
   };

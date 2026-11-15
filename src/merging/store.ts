@@ -824,9 +824,15 @@ export class MergeStore {
     revision: string,
     body: string,
     applicable: boolean,
+    recipients?: readonly string[],
   ): void {
     this.transaction(() => {
       for (const participant of this.tracking.subscriptions.list(pr)) {
+        if (
+          recipients !== undefined &&
+          !recipients.includes(participant.agentId)
+        )
+          continue;
         this.db
           .prepare(
             "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=?",
@@ -841,19 +847,28 @@ export class MergeStore {
             .get(kind, subjectId, participant.agentId, revision) !== undefined
         )
           continue;
+        const messageId = randomUUID();
+        const owner = this.tracking.agent(pr.ownerAgentId);
+        const role =
+          participant.agentId === pr.ownerAgentId
+            ? ""
+            : `\nRole: observer · Owner: ${compact(owner.label ?? owner.harness, 120).replaceAll("\n", " ")} (${shortId(owner.id)})`;
+        const content = subjectId.startsWith("ready:")
+          ? `[octo-delivery:${shortId(messageId)}]\n${body}${role}`
+          : body;
         this.db
           .prepare(
             "INSERT OR IGNORE INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
           )
           .run(
             nextInboxSequence(this.db),
-            randomUUID(),
+            messageId,
             pr.id,
             participant.agentId,
             kind,
             subjectId,
             revision,
-            compact(body, 6000),
+            compact(content, 6000),
             this.now(),
             null,
             this.now(),
