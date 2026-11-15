@@ -18,7 +18,7 @@ Paths in this policy are relative to the repository root. The authoritative pins
 | code-comments | 1.0.0 |
 | data-change-planning | 1.0.0 |
 | git | 1.0.3 |
-| go | 1.1.0 |
+| go | 1.1.1 |
 | javascript | 1.1.0 |
 | library-code-comments | 1.0.0 |
 | pr-writer | 1.0.2 |

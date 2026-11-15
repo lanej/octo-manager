@@ -332,17 +332,17 @@
     ".agents/source-code-versions.json": {
       "executable": false,
       "kind": "file",
-      "sha256": "61d328c058777fa14f957c756ca8ba75f50c9182beb79c373a3b273ea8cdc566"
+      "sha256": "f01fb9639074adcd97445f7b76d90d3d3cb9bcf87d630442526306af3cb816d7"
     },
     ".agents/source-code.md": {
       "executable": false,
       "kind": "file",
-      "sha256": "848612ff0b2c3ace7d0bda1de48b531e5728d9a8e705f86380bbc22d39743cc8"
+      "sha256": "c8516ab8b36878868db90db4714ee0f62afb321f6e12fe9ff1012244c08f1b2f"
     },
     ".github/workflows/go-quality.yml": {
       "executable": false,
       "kind": "file",
-      "sha256": "5eae5e8701f6f91bbefed3fc09f743146c55e81112332f708fecc05098dfe178"
+      "sha256": "0d483a02a963fd267c0447ab07287ea12b4c81817d1c294856f6c71f1a5e4cda"
     },
     ".github/workflows/protobuf-quality.yml": {
       "executable": false,
@@ -392,7 +392,7 @@
     ".source-code.json": {
       "executable": false,
       "kind": "file",
-      "sha256": "3a2dd46e7f1e43ee6c2a916afaa2cb0e361f5ba4beaeaf834448ecc7e91d9439"
+      "sha256": "cdc666bc388fbe619ec521dc51991bc737c8bffee024fd6adf41c72cdbc594c2"
     },
     ".typescript-quality.json": {
       "executable": false,
@@ -469,7 +469,7 @@
     "code-comments": "1.0.0",
     "data-change-planning": "1.0.0",
     "git": "1.0.3",
-    "go": "1.1.0",
+    "go": "1.1.1",
     "javascript": "1.1.0",
     "library-code-comments": "1.0.0",
     "pr-writer": "1.0.2",
@@ -493,7 +493,7 @@
     "testing",
     "typescript"
   ],
-  "source_revision": "5a1b427590cba6381f075fe14cb825ccd9de785b",
+  "source_revision": "1d53a965aa798775cd374dff2775d7f62d3de37e",
   "stage": "beta",
   "typescript_profile": true,
   "version": 1
