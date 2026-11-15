@@ -48,6 +48,9 @@ const (
 	// SchedulerServiceSubmitPullRequestProcedure is the fully-qualified name of the SchedulerService's
 	// SubmitPullRequest RPC.
 	SchedulerServiceSubmitPullRequestProcedure = "/octomanager.v1.SchedulerService/SubmitPullRequest"
+	// SchedulerServicePublishPreparedPullRequestProcedure is the fully-qualified name of the
+	// SchedulerService's PublishPreparedPullRequest RPC.
+	SchedulerServicePublishPreparedPullRequestProcedure = "/octomanager.v1.SchedulerService/PublishPreparedPullRequest"
 	// SchedulerServiceGetSubmissionProcedure is the fully-qualified name of the SchedulerService's
 	// GetSubmission RPC.
 	SchedulerServiceGetSubmissionProcedure = "/octomanager.v1.SchedulerService/GetSubmission"
@@ -172,6 +175,7 @@ type SchedulerServiceClient interface {
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
 	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
+	PublishPreparedPullRequest(context.Context, *connect.Request[v1.PublishPreparedPullRequestRequest]) (*connect.Response[v1.PublishPreparedPullRequestResponse], error)
 	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
 	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
 	RetrySubmission(context.Context, *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error)
@@ -252,6 +256,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceSubmitPullRequestProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("SubmitPullRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		publishPreparedPullRequest: connect.NewClient[v1.PublishPreparedPullRequestRequest, v1.PublishPreparedPullRequestResponse](
+			httpClient,
+			baseURL+SchedulerServicePublishPreparedPullRequestProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("PublishPreparedPullRequest")),
 			connect.WithClientOptions(opts...),
 		),
 		getSubmission: connect.NewClient[v1.GetSubmissionRequest, v1.GetSubmissionResponse](
@@ -493,50 +503,51 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
-	mergeCommand              *connect.Client[v1.MergeCommandRequest, v1.MergeCommandResponse]
-	getAgentDigest            *connect.Client[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse]
-	listAgentDigests          *connect.Client[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse]
-	acknowledgeAgentDigest    *connect.Client[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse]
-	submitPullRequest         *connect.Client[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse]
-	getSubmission             *connect.Client[v1.GetSubmissionRequest, v1.GetSubmissionResponse]
-	listSubmissions           *connect.Client[v1.ListSubmissionsRequest, v1.ListSubmissionsResponse]
-	retrySubmission           *connect.Client[v1.RetrySubmissionRequest, v1.RetrySubmissionResponse]
-	cancelSubmission          *connect.Client[v1.CancelSubmissionRequest, v1.CancelSubmissionResponse]
-	getRepositoryPolicy       *connect.Client[v1.GetRepositoryPolicyRequest, v1.GetRepositoryPolicyResponse]
-	listConflictCases         *connect.Client[v1.ListConflictCasesRequest, v1.ListConflictCasesResponse]
-	getConflictCase           *connect.Client[v1.GetConflictCaseRequest, v1.GetConflictCaseResponse]
-	requestRebase             *connect.Client[v1.RequestRebaseRequest, v1.RequestRebaseResponse]
-	listRepairs               *connect.Client[v1.ListRepairsRequest, v1.ListRepairsResponse]
-	recordActivity            *connect.Client[v1.RecordActivityRequest, v1.RecordActivityResponse]
-	listActivity              *connect.Client[v1.ListActivityRequest, v1.ListActivityResponse]
-	registerAgent             *connect.Client[v1.RegisterAgentRequest, v1.RegisterAgentResponse]
-	subscribePullRequest      *connect.Client[v1.SubscribePullRequestRequest, v1.SubscribePullRequestResponse]
-	unsubscribePullRequest    *connect.Client[v1.UnsubscribePullRequestRequest, v1.UnsubscribePullRequestResponse]
-	listPRParticipants        *connect.Client[v1.ListPRParticipantsRequest, v1.ListPRParticipantsResponse]
-	trackPullRequest          *connect.Client[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse]
-	listTrackedPullRequests   *connect.Client[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse]
-	getTrackedPullRequest     *connect.Client[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse]
-	refreshTrackedPullRequest *connect.Client[v1.RefreshTrackedPullRequestRequest, v1.RefreshTrackedPullRequestResponse]
-	assignPullRequest         *connect.Client[v1.AssignPullRequestRequest, v1.AssignPullRequestResponse]
-	untrackPullRequest        *connect.Client[v1.UntrackPullRequestRequest, v1.UntrackPullRequestResponse]
-	listActions               *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
-	getAction                 *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
-	acknowledgeAction         *connect.Client[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse]
-	startAction               *connect.Client[v1.StartActionRequest, v1.StartActionResponse]
-	retryDelivery             *connect.Client[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse]
-	listAgentMessages         *connect.Client[v1.ListAgentMessagesRequest, v1.ListAgentMessagesResponse]
-	acknowledgeMessage        *connect.Client[v1.AcknowledgeMessageRequest, v1.AcknowledgeMessageResponse]
-	reprofileAction           *connect.Client[v1.ReprofileActionRequest, v1.ReprofileActionResponse]
-	submitJob                 *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
-	getJob                    *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
-	getPullRequest            *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
-	watchDashboard            *connect.Client[v1.WatchDashboardRequest, v1.WatchDashboardResponse]
-	getSnapshot               *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
-	listEvents                *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
-	watch                     *connect.Client[v1.WatchRequest, v1.WatchResponse]
-	cancelJob                 *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
-	retryJob                  *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
-	setPaused                 *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
+	mergeCommand               *connect.Client[v1.MergeCommandRequest, v1.MergeCommandResponse]
+	getAgentDigest             *connect.Client[v1.GetAgentDigestRequest, v1.GetAgentDigestResponse]
+	listAgentDigests           *connect.Client[v1.ListAgentDigestsRequest, v1.ListAgentDigestsResponse]
+	acknowledgeAgentDigest     *connect.Client[v1.AcknowledgeAgentDigestRequest, v1.AcknowledgeAgentDigestResponse]
+	submitPullRequest          *connect.Client[v1.SubmitPullRequestRequest, v1.SubmitPullRequestResponse]
+	publishPreparedPullRequest *connect.Client[v1.PublishPreparedPullRequestRequest, v1.PublishPreparedPullRequestResponse]
+	getSubmission              *connect.Client[v1.GetSubmissionRequest, v1.GetSubmissionResponse]
+	listSubmissions            *connect.Client[v1.ListSubmissionsRequest, v1.ListSubmissionsResponse]
+	retrySubmission            *connect.Client[v1.RetrySubmissionRequest, v1.RetrySubmissionResponse]
+	cancelSubmission           *connect.Client[v1.CancelSubmissionRequest, v1.CancelSubmissionResponse]
+	getRepositoryPolicy        *connect.Client[v1.GetRepositoryPolicyRequest, v1.GetRepositoryPolicyResponse]
+	listConflictCases          *connect.Client[v1.ListConflictCasesRequest, v1.ListConflictCasesResponse]
+	getConflictCase            *connect.Client[v1.GetConflictCaseRequest, v1.GetConflictCaseResponse]
+	requestRebase              *connect.Client[v1.RequestRebaseRequest, v1.RequestRebaseResponse]
+	listRepairs                *connect.Client[v1.ListRepairsRequest, v1.ListRepairsResponse]
+	recordActivity             *connect.Client[v1.RecordActivityRequest, v1.RecordActivityResponse]
+	listActivity               *connect.Client[v1.ListActivityRequest, v1.ListActivityResponse]
+	registerAgent              *connect.Client[v1.RegisterAgentRequest, v1.RegisterAgentResponse]
+	subscribePullRequest       *connect.Client[v1.SubscribePullRequestRequest, v1.SubscribePullRequestResponse]
+	unsubscribePullRequest     *connect.Client[v1.UnsubscribePullRequestRequest, v1.UnsubscribePullRequestResponse]
+	listPRParticipants         *connect.Client[v1.ListPRParticipantsRequest, v1.ListPRParticipantsResponse]
+	trackPullRequest           *connect.Client[v1.TrackPullRequestRequest, v1.TrackPullRequestResponse]
+	listTrackedPullRequests    *connect.Client[v1.ListTrackedPullRequestsRequest, v1.ListTrackedPullRequestsResponse]
+	getTrackedPullRequest      *connect.Client[v1.GetTrackedPullRequestRequest, v1.GetTrackedPullRequestResponse]
+	refreshTrackedPullRequest  *connect.Client[v1.RefreshTrackedPullRequestRequest, v1.RefreshTrackedPullRequestResponse]
+	assignPullRequest          *connect.Client[v1.AssignPullRequestRequest, v1.AssignPullRequestResponse]
+	untrackPullRequest         *connect.Client[v1.UntrackPullRequestRequest, v1.UntrackPullRequestResponse]
+	listActions                *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
+	getAction                  *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
+	acknowledgeAction          *connect.Client[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse]
+	startAction                *connect.Client[v1.StartActionRequest, v1.StartActionResponse]
+	retryDelivery              *connect.Client[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse]
+	listAgentMessages          *connect.Client[v1.ListAgentMessagesRequest, v1.ListAgentMessagesResponse]
+	acknowledgeMessage         *connect.Client[v1.AcknowledgeMessageRequest, v1.AcknowledgeMessageResponse]
+	reprofileAction            *connect.Client[v1.ReprofileActionRequest, v1.ReprofileActionResponse]
+	submitJob                  *connect.Client[v1.SubmitJobRequest, v1.SubmitJobResponse]
+	getJob                     *connect.Client[v1.GetJobRequest, v1.GetJobResponse]
+	getPullRequest             *connect.Client[v1.GetPullRequestRequest, v1.GetPullRequestResponse]
+	watchDashboard             *connect.Client[v1.WatchDashboardRequest, v1.WatchDashboardResponse]
+	getSnapshot                *connect.Client[v1.GetSnapshotRequest, v1.GetSnapshotResponse]
+	listEvents                 *connect.Client[v1.ListEventsRequest, v1.ListEventsResponse]
+	watch                      *connect.Client[v1.WatchRequest, v1.WatchResponse]
+	cancelJob                  *connect.Client[v1.CancelJobRequest, v1.CancelJobResponse]
+	retryJob                   *connect.Client[v1.RetryJobRequest, v1.RetryJobResponse]
+	setPaused                  *connect.Client[v1.SetPausedRequest, v1.SetPausedResponse]
 }
 
 // MergeCommand calls octomanager.v1.SchedulerService.MergeCommand.
@@ -562,6 +573,11 @@ func (c *schedulerServiceClient) AcknowledgeAgentDigest(ctx context.Context, req
 // SubmitPullRequest calls octomanager.v1.SchedulerService.SubmitPullRequest.
 func (c *schedulerServiceClient) SubmitPullRequest(ctx context.Context, req *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error) {
 	return c.submitPullRequest.CallUnary(ctx, req)
+}
+
+// PublishPreparedPullRequest calls octomanager.v1.SchedulerService.PublishPreparedPullRequest.
+func (c *schedulerServiceClient) PublishPreparedPullRequest(ctx context.Context, req *connect.Request[v1.PublishPreparedPullRequestRequest]) (*connect.Response[v1.PublishPreparedPullRequestResponse], error) {
+	return c.publishPreparedPullRequest.CallUnary(ctx, req)
 }
 
 // GetSubmission calls octomanager.v1.SchedulerService.GetSubmission.
@@ -766,6 +782,7 @@ type SchedulerServiceHandler interface {
 	ListAgentDigests(context.Context, *connect.Request[v1.ListAgentDigestsRequest]) (*connect.Response[v1.ListAgentDigestsResponse], error)
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v1.AcknowledgeAgentDigestRequest]) (*connect.Response[v1.AcknowledgeAgentDigestResponse], error)
 	SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error)
+	PublishPreparedPullRequest(context.Context, *connect.Request[v1.PublishPreparedPullRequestRequest]) (*connect.Response[v1.PublishPreparedPullRequestResponse], error)
 	GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error)
 	ListSubmissions(context.Context, *connect.Request[v1.ListSubmissionsRequest]) (*connect.Response[v1.ListSubmissionsResponse], error)
 	RetrySubmission(context.Context, *connect.Request[v1.RetrySubmissionRequest]) (*connect.Response[v1.RetrySubmissionResponse], error)
@@ -842,6 +859,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceSubmitPullRequestProcedure,
 		svc.SubmitPullRequest,
 		connect.WithSchema(schedulerServiceMethods.ByName("SubmitPullRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServicePublishPreparedPullRequestHandler := connect.NewUnaryHandler(
+		SchedulerServicePublishPreparedPullRequestProcedure,
+		svc.PublishPreparedPullRequest,
+		connect.WithSchema(schedulerServiceMethods.ByName("PublishPreparedPullRequest")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceGetSubmissionHandler := connect.NewUnaryHandler(
@@ -1090,6 +1113,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceAcknowledgeAgentDigestHandler.ServeHTTP(w, r)
 		case SchedulerServiceSubmitPullRequestProcedure:
 			schedulerServiceSubmitPullRequestHandler.ServeHTTP(w, r)
+		case SchedulerServicePublishPreparedPullRequestProcedure:
+			schedulerServicePublishPreparedPullRequestHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetSubmissionProcedure:
 			schedulerServiceGetSubmissionHandler.ServeHTTP(w, r)
 		case SchedulerServiceListSubmissionsProcedure:
@@ -1195,6 +1220,10 @@ func (UnimplementedSchedulerServiceHandler) AcknowledgeAgentDigest(context.Conte
 
 func (UnimplementedSchedulerServiceHandler) SubmitPullRequest(context.Context, *connect.Request[v1.SubmitPullRequestRequest]) (*connect.Response[v1.SubmitPullRequestResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.SubmitPullRequest is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) PublishPreparedPullRequest(context.Context, *connect.Request[v1.PublishPreparedPullRequestRequest]) (*connect.Response[v1.PublishPreparedPullRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.PublishPreparedPullRequest is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetSubmission(context.Context, *connect.Request[v1.GetSubmissionRequest]) (*connect.Response[v1.GetSubmissionResponse], error) {

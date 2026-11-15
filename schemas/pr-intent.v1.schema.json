@@ -22,8 +22,59 @@
         {
           "type": "string",
           "const": "policy"
+        },
+        {
+          "type": "string",
+          "const": "prepare"
+        },
+        {
+          "type": "string",
+          "const": "validate"
         }
       ]
+    },
+    "headRepository": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "updateUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "contractToml": {
+      "type": "string",
+      "maxLength": 131072
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      },
+      "maxItems": 20
+    },
+    "description": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000
+        }
+      },
+      "additionalProperties": false
     },
     "requestId": {
       "type": "string",
@@ -50,6 +101,16 @@
       "maxLength": 300
     },
     "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16000
+    },
+    "problem": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16000
+    },
+    "outcome": {
       "type": "string",
       "minLength": 1,
       "maxLength": 16000

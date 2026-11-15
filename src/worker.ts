@@ -64,7 +64,7 @@ function diagnosis(error: unknown): string {
 }
 function prStage(raw: Record<string, unknown>): StageTask {
   const role = raw["role"];
-  if (role !== "policy" && role !== "change" && role !== "writer")
+  if (role !== "policy" && role !== "change" && role !== "writer" && role !== "evaluator")
     throw new Error("Invalid PR worker role");
   const instructions = raw["instructions"];
   if (

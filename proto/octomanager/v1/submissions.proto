@@ -15,3 +15,6 @@ message RetrySubmissionRequest { string id = 1; }
 message CancelSubmissionRequest { string id = 1; }
 message GetRepositoryPolicyRequest { string repository = 1; optional uint32 version = 2; string tier = 3; }
 message GetRepositoryPolicyResponse { string policy_json = 1; string template = 2; }
+
+message PublishPreparedPullRequestRequest { string id = 1; }
+message PublishPreparedPullRequestResponse { string submission_json = 1; }

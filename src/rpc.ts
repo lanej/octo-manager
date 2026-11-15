@@ -87,6 +87,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
         ),
       }));
     },
+    publishPreparedPullRequest(r){return trackingOperation(()=>({submissionJson:JSON.stringify(coordinator.submissions.publishPrepared(r.id))}));},
     getSubmission(r){return trackingOperation(()=>({
         submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),
       }));

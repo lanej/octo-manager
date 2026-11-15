@@ -127,20 +127,30 @@ export class GitHubReads {
       this.exchange({ method: "GET", path, headers }, "core", signal),
     );
   }
+  patch(
+    path: string,
+    fields: Record<string, string | boolean>,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    return this.writeJson("PATCH", path, fields, signal);
+  }
   post(
+    path: string,
+    fields: Record<string, string | boolean>,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    return this.writeJson("POST", path, fields, signal);
+  }
+  private writeJson(
+    method: "POST" | "PATCH",
     path: string,
     fields: Record<string, string | boolean>,
     signal: AbortSignal,
   ): Promise<unknown> {
     return this.enqueue(async () =>
       json(
-        (
-          await this.exchange(
-            { method: "POST", path, data: fields },
-            "core",
-            signal,
-          )
-        ).body,
+        (await this.exchange({ method, path, data: fields }, "core", signal))
+          .body,
       ),
     );
   }

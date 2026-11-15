@@ -72,7 +72,7 @@ export class Coordinator extends EventEmitter {
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
-    this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
+    this.submissions = new SubmissionService(this.store.submissions, this.tracking, {directory:this.store.directory,...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);

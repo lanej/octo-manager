@@ -1,7 +1,21 @@
+import { captureImages } from "./artifacts.js";
+import { join } from "node:path";
+import { homedir } from "node:os";
+import {
+  readContract,
+  scoreComplexity,
+  EvaluationSchema,
+  inspectMarkdown,
+  validateDiagrams,
+} from "./pr-contract.js";
+import { decide } from "./decision.js";
+import { analyzeFlow } from "./flow.js";
 import { Check } from "typebox/value";
 import { shortId } from "../tracking/identifiers.js";
 import {
   SubmissionState as State,
+  Complexity,
+  hash,
   SubmissionInputSchema,
   PolicyAnalysisSchema,
   ChangeAnalysisSchema,
@@ -11,9 +25,7 @@ import {
   normalizeChangeEvidence,
   policyBlockers,
   anchorPolicy,
-  publicationBlockers,
   renderTemplate,
-  stockProfiles,
   type Submission,
   type Role,
   type StageResult,
@@ -54,6 +66,9 @@ export interface SubmissionOptions {
   run?: RunStage;
   instructions?: typeof stageInstructions;
   models?: Partial<Record<Role, string>>;
+  flow?: typeof analyzeFlow;
+  directory?: string;
+  images?: typeof captureImages;
 }
 export class SubmissionService {
   private active:
@@ -95,9 +110,11 @@ export class SubmissionService {
   }
   submit(raw: unknown): Submission {
     if (this.stopped) throw new Error("Coordinator is stopping");
-    if (Buffer.byteLength(JSON.stringify(raw)) > 12000)
-      throw new Error("Submission input exceeds 12000 bytes");
+    if (Buffer.byteLength(JSON.stringify(raw)) > 240000)
+      throw new Error("Submission input exceeds 240000 bytes");
     const request = parse(SubmissionInputSchema, raw);
+    if (request.mode === "validate" && request.description === undefined)
+      throw new Error("Validation requires supplied title and body");
     this.tracking.registerAgent(request.owner);
     const value = this.store.request({
       ...request,
@@ -107,6 +124,30 @@ export class SubmissionService {
       this.tick();
     });
     return value;
+  }
+  publishPrepared(id: string): Submission {
+    const value = this.store.get(id);
+    if (value.prUrl !== undefined || value.publicationRequested === true)
+      return value;
+    if (
+      this.stopped ||
+      value.state !== State.Succeeded ||
+      value.decision?.status !== "valid" ||
+      value.preparedDigest === undefined ||
+      !["prepare", "validate"].includes(value.request.mode ?? "")
+    )
+      throw new Error("Only a completed valid preparation can be published");
+    this.store.invalidateNotices(value.id);
+    const next = this.update(value.id, {
+      publicationRequested: true,
+      state: State.Queued,
+      notificationRevision: 0,
+      detail: "Validated preparation queued for publication",
+    });
+    queueMicrotask(() => {
+      this.tick();
+    });
+    return next;
   }
   retry(id: string): Submission {
     const value = this.store.get(id);
@@ -139,7 +180,7 @@ export class SubmissionService {
     if (
       value.state === State.Publishing ||
       value.state === State.Enrolling ||
-      value.brief !== undefined
+      (value.brief !== undefined && value.preparedDigest === undefined)
     )
       throw new Error(
         "Publication may have happened; reconcile with retry instead of cancellation",
@@ -187,7 +228,10 @@ export class SubmissionService {
     const existing = this.store
       .get(id)
       .stages.findLast(
-        (stage) => stage.role === role && Check(schema, stage.result),
+        (stage) =>
+          stage.role === role &&
+          stage.invalidated !== true &&
+          Check(schema, stage.result),
       );
     if (existing !== undefined) return existing;
     const instructions = await (this.options.instructions ?? stageInstructions)(
@@ -266,7 +310,22 @@ export class SubmissionService {
       snapshot.sources,
     );
     const blockers = policyBlockers(analysis, snapshot.sources);
-    if (blockers.length > 0) throw new InputNeeded(blockers.join("; "));
+    if (blockers.length > 0) {
+      this.update(id, {
+        stages: this.store
+          .get(id)
+          .stages.map((item) =>
+            item.role === stage.role &&
+            item.at === stage.at &&
+            item.promptDigest === stage.promptDigest
+              ? { ...item, invalidated: true }
+              : item,
+          ),
+      });
+      throw new Error(
+        `Contribution analysis citation failure: ${blockers.join("; ")}`,
+      );
+    }
     const policy = this.store.savePolicy(snapshot, analysis, corrections);
     this.update(id, {
       policyVersion: policy.version,
@@ -282,7 +341,13 @@ export class SubmissionService {
         this.enroll(id, value.prUrl);
         return;
       }
-      if (value.brief !== undefined) {
+      if (
+        value.brief !== undefined &&
+        (value.publicationAttempted === true ||
+          (value.contract === undefined &&
+            (value.request.mode === undefined ||
+              value.request.mode === "publish")))
+      ) {
         const recovered = await this.github.find(value.request, marker, signal);
         if (recovered !== undefined) {
           signal.throwIfAborted();
@@ -310,67 +375,229 @@ export class SubmissionService {
         this.notice(id);
         return;
       }
-      const stages = await Promise.allSettled([
-        this.policy(id, snapshot, signal),
-        this.stage(
-          id,
-          "change",
-          { request: value.request, snapshot },
-          ChangeAnalysisSchema,
+      if (value.preparedDigest === undefined) {
+        const contract =
+          value.contract ??
+          readContract(value.request.contractToml ?? snapshot.contractToml);
+        if (
+          !snapshot.private &&
+          (snapshot.references ?? []).some((ref) => ref.private) &&
+          !readContract(value.request.contractToml).pr.overrides.some(
+            (rule) => rule.rule_id === "context.private-to-public",
+          )
+        )
+          throw new InputNeeded(
+            "Private context for a public PR requires an explicit context.private-to-public override with a disclosure reason",
+          );
+        const flow =
+          value.flow ??
+          (await (this.options.flow ?? analyzeFlow)(
+            value.request,
+            snapshot,
+            join(
+              this.options.directory ??
+                join(homedir(), ".local", "state", "octo-manager"),
+              "preparations",
+              id,
+            ),
+            signal,
+          ));
+        this.update(id, { contract, flow });
+        const stages = await Promise.allSettled([
+          this.policy(id, snapshot, signal),
+          this.stage(
+            id,
+            "change",
+            { request: value.request, snapshot, contract, flow },
+            ChangeAnalysisSchema,
+            signal,
+          ),
+        ]);
+        const policyResult = stages[0],
+          changeResult = stages[1];
+        if (policyResult.status === "rejected")
+          throw policyResult.reason instanceof Error
+            ? policyResult.reason
+            : new Error("Policy analysis failed");
+        if (changeResult.status === "rejected")
+          throw changeResult.reason instanceof Error
+            ? changeResult.reason
+            : new Error("Change analysis failed");
+        const policy = policyResult.value;
+        const change = normalizeChangeEvidence(
+          parse(ChangeAnalysisSchema, changeResult.value.result),
+        );
+        if (
+          change.factors === undefined ||
+          new Set(change.factors.map((f) => f.factor)).size !== 5
+        ) {
+          this.update(id, {
+            stages: this.store
+              .get(id)
+              .stages.map((item) =>
+                item.role === "change" ? { ...item, invalidated: true } : item,
+              ),
+          });
+          throw new Error(
+            "Change analyst must rate all five complexity factors exactly once",
+          );
+        }
+        const scored = scoreComplexity(change.factors, contract);
+        change.tier =
+          scored.tier === "routine"
+            ? Complexity.Routine
+            : scored.tier === "standard"
+              ? Complexity.Standard
+              : Complexity.Complex;
+        this.update(id, {
+          state: State.Writing,
+          detail: "Preparing contract-shaped PR description",
+          policyVersion: policy.version,
+          policyDigest: policy.sourceDigest,
+        });
+        const draft =
+          value.request.description === undefined
+            ? parse(
+                WriterSchema,
+                (
+                  await this.stage(
+                    id,
+                    "writer",
+                    {
+                      request: value.request,
+                      snapshot,
+                      policy,
+                      change,
+                      contract,
+                      flow,
+                      profile: contract.pr.profiles[scored.tier],
+                      template: renderTemplate(policy, change.tier),
+                    },
+                    WriterSchema,
+                    signal,
+                  )
+                ).result,
+              )
+            : {
+                ...value.request.description,
+                requirementChecks: [],
+                blockers: [],
+              };
+        const brief = {
+          schemaVersion: 1 as const,
+          request: value.request,
+          baseSha: snapshot.baseSha,
+          policyVersion: policy.version,
+          change,
+          draft,
+        };
+        const images = await (this.options.images ?? captureImages)(
+          inspectMarkdown(draft.body).images,
           signal,
-        ),
-      ]);
-      const policyResult = stages[0],
-        changeResult = stages[1];
-      if (policyResult.status === "rejected")
-        throw policyResult.reason instanceof Error
-          ? policyResult.reason
-          : new Error("Policy analysis failed");
-      if (changeResult.status === "rejected")
-        throw changeResult.reason instanceof Error
-          ? changeResult.reason
-          : new Error("Change analysis failed");
-      const policy = policyResult.value,
-        changeStage = changeResult.value;
-      signal.throwIfAborted();
-      const change = normalizeChangeEvidence(
-        parse(ChangeAnalysisSchema, changeStage.result),
-      );
-      this.update(id, {
-        state: State.Writing,
-        detail: "Dedicated PR writer drafting",
-        policyVersion: policy.version,
-        policyDigest: policy.sourceDigest,
-      });
-      const draftStage = await this.stage(
-        id,
-        "writer",
-        {
+        );
+        const evaluated = (
+          await this.stage(
+            id,
+            "evaluator",
+            {
+              request: value.request,
+              snapshot,
+              policy,
+              contract,
+              flow,
+              brief,
+              scored,
+            },
+            EvaluationSchema,
+            signal,
+          )
+        ).result;
+        if (!Check(EvaluationSchema, evaluated))
+          throw new Error("Invalid independent evaluation");
+        const decision = decide(
+          brief,
+          policy,
+          snapshot,
+          contract,
+          evaluated,
+          await validateDiagrams(inspectMarkdown(draft.body).diagrams),
+          flow,
+        );
+        const preparedDigest = hash({
           request: value.request,
           snapshot,
-          policy,
-          change,
-          profile: (policy.complexityProfiles ?? stockProfiles)[change.tier],
-          template: renderTemplate(policy, change.tier),
-        },
-        WriterSchema,
+          contract,
+          flow,
+          images,
+          brief,
+          evaluation: evaluated,
+          decision,
+        });
+        value = this.update(id, {
+          brief,
+          images,
+          evaluation: evaluated,
+          decision,
+          preparedDigest,
+        });
+      }
+      if (
+        value.brief === undefined ||
+        value.contract === undefined ||
+        value.evaluation === undefined ||
+        value.decision === undefined
+      )
+        throw new Error("Preparation is incomplete");
+      if (
+        value.preparedDigest !==
+        hash({
+          request: value.request,
+          snapshot,
+          contract: value.contract,
+          flow: value.flow,
+          images: value.images,
+          brief: value.brief,
+          evaluation: value.evaluation,
+          decision: value.decision,
+        })
+      )
+        throw new Error("Preparation content changed after validation");
+      if (value.decision.status !== "valid")
+        throw new InputNeeded(
+          `${value.decision.status}: ${value.decision.blockers.join("; ")}`,
+        );
+      if (
+        (value.request.mode === "prepare" ||
+          value.request.mode === "validate") &&
+        value.publicationRequested !== true
+      ) {
+        this.update(id, {
+          state: State.Succeeded,
+          detail: "Valid preparation saved; publication requires pr publish",
+        });
+        this.notice(id);
+        return;
+      }
+      const brief = value.brief;
+      if (
+        hash(
+          await (this.options.images ?? captureImages)(
+            inspectMarkdown(brief.draft.body).images,
+            signal,
+          ),
+        ) !== hash(value.images ?? [])
+      )
+        throw new Error("Inline image content changed after preparation");
+      await this.github.verify(
+        value.request,
+        snapshot.baseSha,
         signal,
+        snapshot,
       );
-      const brief = {
-        schemaVersion: 1 as const,
-        request: value.request,
-        baseSha: snapshot.baseSha,
-        policyVersion: policy.version,
-        change,
-        draft: parse(WriterSchema, draftStage.result),
-      };
-      this.update(id, { brief });
-      const blockers = publicationBlockers(brief, policy, snapshot.files);
-      if (blockers.length > 0) throw new InputNeeded(blockers.join("; "));
-      await this.github.verify(value.request, snapshot.baseSha, signal);
       const recovered = await this.github.find(value.request, marker, signal);
       signal.throwIfAborted();
       this.update(id, {
+        publicationAttempted: true,
         state: State.Publishing,
         detail: "Publishing approved structured draft",
       });
@@ -385,7 +612,9 @@ export class SubmissionService {
       const value = this.store.get(id);
       if (value.state === State.Cancelled) return;
       const state =
-        value.state === State.Publishing || value.state === State.Enrolling
+        value.publicationAttempted === true ||
+        value.state === State.Publishing ||
+        value.state === State.Enrolling
           ? State.Uncertain
           : error instanceof InputNeeded
             ? State.NeedsInput
@@ -404,6 +633,18 @@ export class SubmissionService {
   ): void {
     if (
       pr.headSha !== value.request.headSha ||
+      (value.preparedDigest !== undefined &&
+        (pr.title !== value.brief?.draft.title ||
+          pr.baseRef !== value.request.baseRef ||
+          pr.targetBaseSha !== value.snapshot?.baseSha ||
+          pr.headRepository?.toLowerCase() !==
+            (
+              value.request.headRepository ?? value.request.repository
+            ).toLowerCase() ||
+          pr.headRef !== value.request.headRef)) ||
+      (value.brief !== undefined &&
+        (pr.body !== `${value.brief.draft.body}\n\n${marker}` ||
+          (pr.title !== undefined && pr.title !== value.brief.draft.title))) ||
       !pr.body.includes(marker) ||
       pr.state !== "open" ||
       !pr.url
@@ -439,12 +680,14 @@ export class SubmissionService {
       owner.id,
       value.state === State.Succeeded && value.request.mode === "policy"
         ? `Contribution policy v${String(value.policyVersion)} stored for ${value.request.repository}.`
-        : value.state === State.Succeeded
-          ? `[PR #${value.prUrl?.split("/").at(-1) ?? ""}](${value.prUrl ?? ""}) · Published; tracking active.`
-          : `PR submission ${value.state}: ${value.detail.slice(0, 400)}\nNext: octo-manager submission ${shortId(
-              id,
-              this.store.list().map((item) => item.id),
-            )}`,
+        : value.state === State.Succeeded && value.prUrl === undefined
+          ? `PR preparation valid; inspect with octo-manager submission ${value.id}. Publish with octo-manager pr publish ${value.id}.`
+          : value.state === State.Succeeded
+            ? `[PR #${value.prUrl?.split("/").at(-1) ?? ""}](${value.prUrl ?? ""}) · Published; tracking active.`
+            : `PR submission ${value.state}: ${value.detail.slice(0, 400)}\nNext: octo-manager submission ${shortId(
+                id,
+                this.store.list().map((item) => item.id),
+              )}`,
     );
     this.update(id, { notificationRevision: 1 });
   }

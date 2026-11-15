@@ -1,3 +1,7 @@
+import {
+  ContractSchema,
+  DecisionSchema,
+} from "../src/submissions/pr-contract.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -9,6 +13,8 @@ import {
 const directory = new URL("../schemas/", import.meta.url);
 await mkdir(directory, { recursive: true });
 for (const [name, schema] of Object.entries({
+  "pr-contract.v1": ContractSchema,
+  "pr-decision.v1": DecisionSchema,
   "pr-intent.v1": SubmissionInputSchema,
   "repository-pr-policy.v1": PolicySchema,
   "pr-brief.v1": BriefSchema,

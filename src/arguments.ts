@@ -11,8 +11,12 @@ export function parseCommand(
     allowPositionals: true,
     options: {
       on: { type: "boolean" },
+      "no-wait": { type: "boolean" },
       off: { type: "boolean" },
       "intent-file": { type: "string" },
+      input: { type: "string" },
+      "description-file": { type: "string" },
+      "head-repo": { type: "string" },
       purpose: { type: "string" },
       title: { type: "string" },
       body: { type: "string" },

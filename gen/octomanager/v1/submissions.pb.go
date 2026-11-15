@@ -566,6 +566,94 @@ func (x *GetRepositoryPolicyResponse) GetTemplate() string {
 	return ""
 }
 
+type PublishPreparedPullRequestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PublishPreparedPullRequestRequest) Reset() {
+	*x = PublishPreparedPullRequestRequest{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublishPreparedPullRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublishPreparedPullRequestRequest) ProtoMessage() {}
+
+func (x *PublishPreparedPullRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublishPreparedPullRequestRequest.ProtoReflect.Descriptor instead.
+func (*PublishPreparedPullRequestRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *PublishPreparedPullRequestRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type PublishPreparedPullRequestResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PublishPreparedPullRequestResponse) Reset() {
+	*x = PublishPreparedPullRequestResponse{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublishPreparedPullRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublishPreparedPullRequestResponse) ProtoMessage() {}
+
+func (x *PublishPreparedPullRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublishPreparedPullRequestResponse.ProtoReflect.Descriptor instead.
+func (*PublishPreparedPullRequestResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *PublishPreparedPullRequestResponse) GetSubmissionJson() string {
+	if x != nil {
+		return x.SubmissionJson
+	}
+	return ""
+}
+
 var File_octomanager_v1_submissions_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_submissions_proto_rawDesc = "" +
@@ -602,7 +690,11 @@ const file_octomanager_v1_submissions_proto_rawDesc = "" +
 	"\x1bGetRepositoryPolicyResponse\x12\x1f\n" +
 	"\vpolicy_json\x18\x01 \x01(\tR\n" +
 	"policyJson\x12\x1a\n" +
-	"\btemplate\x18\x02 \x01(\tR\btemplateB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\btemplate\x18\x02 \x01(\tR\btemplate\"3\n" +
+	"!PublishPreparedPullRequestRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"M\n" +
+	"\"PublishPreparedPullRequestResponse\x12'\n" +
+	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJsonB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_submissions_proto_rawDescOnce sync.Once
@@ -616,20 +708,22 @@ func file_octomanager_v1_submissions_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_submissions_proto_rawDescData
 }
 
-var file_octomanager_v1_submissions_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_octomanager_v1_submissions_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_octomanager_v1_submissions_proto_goTypes = []any{
-	(*SubmitPullRequestRequest)(nil),    // 0: octomanager.v1.SubmitPullRequestRequest
-	(*SubmitPullRequestResponse)(nil),   // 1: octomanager.v1.SubmitPullRequestResponse
-	(*GetSubmissionResponse)(nil),       // 2: octomanager.v1.GetSubmissionResponse
-	(*RetrySubmissionResponse)(nil),     // 3: octomanager.v1.RetrySubmissionResponse
-	(*CancelSubmissionResponse)(nil),    // 4: octomanager.v1.CancelSubmissionResponse
-	(*GetSubmissionRequest)(nil),        // 5: octomanager.v1.GetSubmissionRequest
-	(*ListSubmissionsRequest)(nil),      // 6: octomanager.v1.ListSubmissionsRequest
-	(*ListSubmissionsResponse)(nil),     // 7: octomanager.v1.ListSubmissionsResponse
-	(*RetrySubmissionRequest)(nil),      // 8: octomanager.v1.RetrySubmissionRequest
-	(*CancelSubmissionRequest)(nil),     // 9: octomanager.v1.CancelSubmissionRequest
-	(*GetRepositoryPolicyRequest)(nil),  // 10: octomanager.v1.GetRepositoryPolicyRequest
-	(*GetRepositoryPolicyResponse)(nil), // 11: octomanager.v1.GetRepositoryPolicyResponse
+	(*SubmitPullRequestRequest)(nil),           // 0: octomanager.v1.SubmitPullRequestRequest
+	(*SubmitPullRequestResponse)(nil),          // 1: octomanager.v1.SubmitPullRequestResponse
+	(*GetSubmissionResponse)(nil),              // 2: octomanager.v1.GetSubmissionResponse
+	(*RetrySubmissionResponse)(nil),            // 3: octomanager.v1.RetrySubmissionResponse
+	(*CancelSubmissionResponse)(nil),           // 4: octomanager.v1.CancelSubmissionResponse
+	(*GetSubmissionRequest)(nil),               // 5: octomanager.v1.GetSubmissionRequest
+	(*ListSubmissionsRequest)(nil),             // 6: octomanager.v1.ListSubmissionsRequest
+	(*ListSubmissionsResponse)(nil),            // 7: octomanager.v1.ListSubmissionsResponse
+	(*RetrySubmissionRequest)(nil),             // 8: octomanager.v1.RetrySubmissionRequest
+	(*CancelSubmissionRequest)(nil),            // 9: octomanager.v1.CancelSubmissionRequest
+	(*GetRepositoryPolicyRequest)(nil),         // 10: octomanager.v1.GetRepositoryPolicyRequest
+	(*GetRepositoryPolicyResponse)(nil),        // 11: octomanager.v1.GetRepositoryPolicyResponse
+	(*PublishPreparedPullRequestRequest)(nil),  // 12: octomanager.v1.PublishPreparedPullRequestRequest
+	(*PublishPreparedPullRequestResponse)(nil), // 13: octomanager.v1.PublishPreparedPullRequestResponse
 }
 var file_octomanager_v1_submissions_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -651,7 +745,7 @@ func file_octomanager_v1_submissions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_submissions_proto_rawDesc), len(file_octomanager_v1_submissions_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

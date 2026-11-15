@@ -322,6 +322,8 @@ function inspectArgs(
   if (command === "rebase") return ["repairs", "--full"];
   if (
     command === "submit-pr" ||
+    (command === "pr" &&
+      ["prepare", "validate", "publish"].includes(positionals[1] ?? "")) ||
     command === "retry-submission" ||
     command === "cancel-submission"
   )

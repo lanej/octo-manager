@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "status",
+    "score",
+    "tier",
+    "proseWords",
+    "blockers",
+    "findings"
+  ],
+  "properties": {
+    "status": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "valid"
+        },
+        {
+          "type": "string",
+          "const": "invalid"
+        },
+        {
+          "type": "string",
+          "const": "needs_evidence"
+        }
+      ]
+    },
+    "score": {
+      "type": "integer"
+    },
+    "tier": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "routine"
+        },
+        {
+          "type": "string",
+          "const": "standard"
+        },
+        {
+          "type": "string",
+          "const": "complex"
+        }
+      ]
+    },
+    "proseWords": {
+      "type": "integer"
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8000
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ruleId",
+          "status",
+          "message",
+          "evidenceRefs"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "valid"
+              },
+              {
+                "type": "string",
+                "const": "invalid"
+              },
+              {
+                "type": "string",
+                "const": "needs_evidence"
+              }
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 100
+    }
+  },
+  "additionalProperties": false
+}

@@ -37,8 +37,59 @@
             {
               "type": "string",
               "const": "policy"
+            },
+            {
+              "type": "string",
+              "const": "prepare"
+            },
+            {
+              "type": "string",
+              "const": "validate"
             }
           ]
+        },
+        "headRepository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "updateUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "contractToml": {
+          "type": "string",
+          "maxLength": 131072
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "maxItems": 20
+        },
+        "description": {
+          "type": "object",
+          "required": [
+            "title",
+            "body"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60000
+            }
+          },
+          "additionalProperties": false
         },
         "requestId": {
           "type": "string",
@@ -65,6 +116,16 @@
           "maxLength": 300
         },
         "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000
+        },
+        "problem": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000
+        },
+        "outcome": {
           "type": "string",
           "minLength": 1,
           "maxLength": 16000
@@ -174,6 +235,67 @@
         "blockers"
       ],
       "properties": {
+        "factors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "factor",
+              "rating",
+              "rationale",
+              "evidenceRefs"
+            ],
+            "properties": {
+              "factor": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "breadth"
+                  },
+                  {
+                    "type": "string",
+                    "const": "behavior"
+                  },
+                  {
+                    "type": "string",
+                    "const": "coupling"
+                  },
+                  {
+                    "type": "string",
+                    "const": "compatibility"
+                  },
+                  {
+                    "type": "string",
+                    "const": "state_risk"
+                  }
+                ]
+              },
+              "rating": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "evidenceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8000
+                },
+                "minItems": 1,
+                "maxItems": 30
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
         "tier": {
           "enum": [
             "routine",

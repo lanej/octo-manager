@@ -66,7 +66,10 @@ export class SubmissionStore {
     return value;
   }
   save(value: Submission): Submission {
-    const updated = { ...value, updatedAt: this.now() };
+    const updated = parse(SubmissionSchema, {
+      ...value,
+      updatedAt: this.now(),
+    });
     this.db.exec("BEGIN IMMEDIATE");
     try {
       this.db

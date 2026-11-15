@@ -44,7 +44,9 @@ function codexEndpoint(value: unknown): CodexEndpoint {
 export interface TrackingConfig {
   polling?: PollPolicy & Partial<SchedulerPolicy>;
   merging?: Record<string, PreparationProfile>;
-  submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
+  submissionModels?: Partial<
+    Record<"policy" | "change" | "writer" | "evaluator", string>
+  >;
   repairs: Record<string, RepairProfile>;
   profiles: Record<string, ExecutionProfile>;
   rules: { kind: Blocker["kind"]; checkName?: string; profile: string }[];
@@ -197,12 +199,12 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
     if (
       !object(models) ||
       Object.keys(models).some(
-        (key) => !["policy", "change", "writer"].includes(key),
+        (key) => !["policy", "change", "writer", "evaluator"].includes(key),
       )
     )
       throw new Error("Invalid submission models");
     result.submissionModels = {};
-    for (const role of ["policy", "change", "writer"] as const) {
+    for (const role of ["policy", "change", "writer", "evaluator"] as const) {
       const model = models[role];
       if (model !== undefined) {
         if (
