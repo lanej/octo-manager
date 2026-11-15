@@ -142,6 +142,16 @@ test("updates protect observed collaborator edits and only replace title/body", 
   );
   expect(f.writes).toBe(0);
   f.current.body = snap.existing?.body ?? "";
+  f.current.head.ref = "different-ref-at-same-sha";
+  expect(f.github.verify(request, b, signal(), snap)).rejects.toThrow(
+    "changed after preparation",
+  );
+  f.current.head.ref = "feature";
+  f.current.head.repo.full_name = "another-fork/repo";
+  expect(f.github.verify(request, b, signal(), snap)).rejects.toThrow(
+    "changed after preparation",
+  );
+  f.current.head.repo.full_name = "fork/repo";
   await f.github.verify(request, b, signal(), snap);
   const saved = await f.github.publish(
     request,

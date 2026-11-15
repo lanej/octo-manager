@@ -122,6 +122,34 @@ async function capture(
   }
 }
 class OversizedCapture extends Error {}
+function captureFailure(error: unknown): string {
+  const details: Record<string, string | number | boolean | null> = {
+    message:
+      error instanceof Error
+        ? error.message
+        : "Full capture exceeded supported bounds",
+  };
+  if (typeof error === "object" && error !== null) {
+    for (const key of [
+      "stdout",
+      "stderr",
+      "code",
+      "signal",
+      "killed",
+    ] as const) {
+      if (!(key in error)) continue;
+      const value: unknown = Reflect.get(error, key);
+      if (
+        value === null ||
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+      )
+        details[key] = value;
+    }
+  }
+  return JSON.stringify(details, null, 2);
+}
 function oversized(error: unknown): boolean {
   if (error instanceof OversizedCapture) return true;
   if (
@@ -171,10 +199,7 @@ export async function analyzeFlow(
     } catch (error) {
       signal.throwIfAborted();
       if (!oversized(error)) throw error;
-      const reason =
-        error instanceof Error
-          ? error.message.slice(0, 1000)
-          : "Full capture exceeded supported bounds";
+      const reason = captureFailure(error);
       try {
         await writeFile(failure, reason, { flag: "wx", mode: 0o600 });
       } catch (writeError) {

@@ -113,6 +113,8 @@ export class GitHubSubmissions implements SubmissionGitHub {
         current.title !== snapshot.existing.title ||
         current.body !== snapshot.existing.body ||
         current.headSha !== snapshot.existing.headSha ||
+        current.headRepository !== snapshot.existing.headRepository ||
+        current.headRef !== snapshot.existing.headRef ||
         current.baseRef !== snapshot.existing.baseRef
       )
         throw new Error(

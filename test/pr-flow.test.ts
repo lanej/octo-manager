@@ -52,14 +52,16 @@ test("oversized capture falls back explicitly, reuses validated scope, and prese
     "exit 0",
     "fi",
   ];
+  const diagnostic = "detail".repeat(300) + "-retained-end";
   const script = [
     "#!/bin/sh",
     ...mapLines,
     "scoped=0",
     'for arg do last="$arg"; if [ "$arg" = "--changed-files-only" ]; then scoped=1; fi; done',
     'if [ "$scoped" = 0 ]; then',
+    "echo retained-stdout",
     "cat >&2 <<'JSON'",
-    '{"error":{"code":"analysis_too_large"}}',
+    JSON.stringify({ error: { code: "analysis_too_large", diagnostic } }),
     "JSON",
     "exit 1",
     "fi",
@@ -76,9 +78,12 @@ test("oversized capture falls back explicitly, reuses validated scope, and prese
     expect(
       await analyzeFlow(input, snapshot, directory, signal, binary),
     ).toMatchObject({ available: true, scope: "changed-files", limited: true });
-    expect(
-      await readFile(join(directory, "full-capture-failure.txt"), "utf8"),
-    ).toContain("Command failed");
+    const failure = await readFile(
+      join(directory, "full-capture-failure.txt"),
+      "utf8",
+    );
+    expect(failure).toContain(diagnostic);
+    expect(failure).toContain("retained-stdout");
     await writeFile(
       binary,
       [
