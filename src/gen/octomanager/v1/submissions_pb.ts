@@ -4,24 +4,28 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Value } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_struct } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file octomanager/v1/submissions.proto.
  */
 export const file_octomanager_v1_submissions: GenFile = /*@__PURE__*/
-  fileDesc("CiBvY3RvbWFuYWdlci92MS9zdWJtaXNzaW9ucy5wcm90bxIOb2N0b21hbmFnZXIudjEiLgoYU3VibWl0UHVsbFJlcXVlc3RSZXF1ZXN0EhIKCmlucHV0X2pzb24YASABKAkiNAoZU3VibWl0UHVsbFJlcXVlc3RSZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMAoVR2V0U3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIyChdSZXRyeVN1Ym1pc3Npb25SZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMwoYQ2FuY2VsU3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIiChRHZXRTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIYChZMaXN0U3VibWlzc2lvbnNSZXF1ZXN0IjMKF0xpc3RTdWJtaXNzaW9uc1Jlc3BvbnNlEhgKEHN1Ym1pc3Npb25zX2pzb24YASADKAkiJAoWUmV0cnlTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIlChdDYW5jZWxTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJgChpHZXRSZXBvc2l0b3J5UG9saWN5UmVxdWVzdBISCgpyZXBvc2l0b3J5GAEgASgJEhQKB3ZlcnNpb24YAiABKA1IAIgBARIMCgR0aWVyGAMgASgJQgoKCF92ZXJzaW9uIkQKG0dldFJlcG9zaXRvcnlQb2xpY3lSZXNwb25zZRITCgtwb2xpY3lfanNvbhgBIAEoCRIQCgh0ZW1wbGF0ZRgCIAEoCSIvCiFQdWJsaXNoUHJlcGFyZWRQdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkiPQoiUHVibGlzaFByZXBhcmVkUHVsbFJlcXVlc3RSZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAlCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YxO29jdG9tYW5hZ2VydjFiBnByb3RvMw");
+  fileDesc("CiBvY3RvbWFuYWdlci92MS9zdWJtaXNzaW9ucy5wcm90bxIOb2N0b21hbmFnZXIudjEiXgoYU3VibWl0UHVsbFJlcXVlc3RSZXF1ZXN0EjAKBWlucHV0GAIgASgLMiEub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSW5wdXRKBAgBEAJSCmlucHV0X2pzb24iZAoZU3VibWl0UHVsbFJlcXVlc3RSZXNwb25zZRIwCgpzdWJtaXNzaW9uGAIgASgLMhwub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSgQIARACUg9zdWJtaXNzaW9uX2pzb24iYAoVR2V0U3VibWlzc2lvblJlc3BvbnNlEjAKCnN1Ym1pc3Npb24YAiABKAsyHC5vY3RvbWFuYWdlci52MS5QclN1Ym1pc3Npb25KBAgBEAJSD3N1Ym1pc3Npb25fanNvbiJiChdSZXRyeVN1Ym1pc3Npb25SZXNwb25zZRIwCgpzdWJtaXNzaW9uGAIgASgLMhwub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSgQIARACUg9zdWJtaXNzaW9uX2pzb24iYwoYQ2FuY2VsU3VibWlzc2lvblJlc3BvbnNlEjAKCnN1Ym1pc3Npb24YAiABKAsyHC5vY3RvbWFuYWdlci52MS5QclN1Ym1pc3Npb25KBAgBEAJSD3N1Ym1pc3Npb25fanNvbiIiChRHZXRTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIYChZMaXN0U3VibWlzc2lvbnNSZXF1ZXN0ImQKF0xpc3RTdWJtaXNzaW9uc1Jlc3BvbnNlEjEKC3N1Ym1pc3Npb25zGAIgAygLMhwub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSgQIARACUhBzdWJtaXNzaW9uc19qc29uIiQKFlJldHJ5U3VibWlzc2lvblJlcXVlc3QSCgoCaWQYASABKAkiJQoXQ2FuY2VsU3VibWlzc2lvblJlcXVlc3QSCgoCaWQYASABKAkiYAoaR2V0UmVwb3NpdG9yeVBvbGljeVJlcXVlc3QSEgoKcmVwb3NpdG9yeRgBIAEoCRIUCgd2ZXJzaW9uGAIgASgNSACIAQESDAoEdGllchgDIAEoCUIKCghfdmVyc2lvbiJ2ChtHZXRSZXBvc2l0b3J5UG9saWN5UmVzcG9uc2USEAoIdGVtcGxhdGUYAiABKAkSMgoGcG9saWN5GAMgASgLMiIub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5UG9saWN5SgQIARACUgtwb2xpY3lfanNvbiIvCiFQdWJsaXNoUHJlcGFyZWRQdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkibQoiUHVibGlzaFByZXBhcmVkUHVsbFJlcXVlc3RSZXNwb25zZRIwCgpzdWJtaXNzaW9uGAIgASgLMhwub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSgQIARACUg9zdWJtaXNzaW9uX2pzb24i5AEKGFByQ29udHJhY3RQclByZXNlbnRhdGlvbhITCgZsYXlvdXQYASABKAlIAIgBARJHChxmaXJzdF9hcnRpZmFjdF9ieV9wcm9zZV93b3JkGAIgASgDSAFSHGZpcnN0X2FydGlmYWN0X2J5X3Byb3NlX3dvcmSIAQESKwoOZGlhZ3JhbV9mb3JtYXQYAyABKAlIAlIOZGlhZ3JhbV9mb3JtYXSIAQFCCQoHX2xheW91dEIfCh1fZmlyc3RfYXJ0aWZhY3RfYnlfcHJvc2Vfd29yZEIRCg9fZGlhZ3JhbV9mb3JtYXQi6wEKHVByQ29udHJhY3RQckNvbXBsZXhpdHlXZWlnaHRzEhQKB2JyZWFkdGgYASABKANIAIgBARIVCghiZWhhdmlvchgCIAEoA0gBiAEBEhUKCGNvdXBsaW5nGAMgASgDSAKIAQESGgoNY29tcGF0aWJpbGl0eRgEIAEoA0gDiAEBEiMKCnN0YXRlX3Jpc2sYBSABKANIBFIKc3RhdGVfcmlza4gBAUIKCghfYnJlYWR0aEILCglfYmVoYXZpb3JCCwoJX2NvdXBsaW5nQhAKDl9jb21wYXRpYmlsaXR5Qg0KC19zdGF0ZV9yaXNrIskBChZQckNvbnRyYWN0UHJDb21wbGV4aXR5Ej4KB3dlaWdodHMYASABKAsyLS5vY3RvbWFuYWdlci52MS5QckNvbnRyYWN0UHJDb21wbGV4aXR5V2VpZ2h0cxIlCgtyb3V0aW5lX21heBgCIAEoA0gAUgtyb3V0aW5lX21heIgBARInCgxzdGFuZGFyZF9tYXgYAyABKANIAVIMc3RhbmRhcmRfbWF4iAEBQg4KDF9yb3V0aW5lX21heEIPCg1fc3RhbmRhcmRfbWF4IqMBChtQckNvbnRyYWN0UHJQcm9maWxlc1JvdXRpbmUSLQoPbWF4X3Byb3NlX3dvcmRzGAEgASgDSABSD21heF9wcm9zZV93b3Jkc4gBARItCg9yZXF1aXJlX2RpYWdyYW0YAiABKAhIAVIPcmVxdWlyZV9kaWFncmFtiAEBQhIKEF9tYXhfcHJvc2Vfd29yZHNCEgoQX3JlcXVpcmVfZGlhZ3JhbSLRAQoUUHJDb250cmFjdFByUHJvZmlsZXMSPAoHcm91dGluZRgBIAEoCzIrLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RQclByb2ZpbGVzUm91dGluZRI9CghzdGFuZGFyZBgCIAEoCzIrLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RQclByb2ZpbGVzUm91dGluZRI8Cgdjb21wbGV4GAMgASgLMisub2N0b21hbmFnZXIudjEuUHJDb250cmFjdFByUHJvZmlsZXNSb3V0aW5lImYKGVByQ29udHJhY3RQck92ZXJyaWRlc0l0ZW0SHQoHcnVsZV9pZBgBIAEoCUgAUgdydWxlX2lkiAEBEhMKBnJlYXNvbhgCIAEoCUgBiAEBQgoKCF9ydWxlX2lkQgkKB19yZWFzb24iUQoVUHJDb250cmFjdFByT3ZlcnJpZGVzEjgKBWl0ZW1zGAEgAygLMikub2N0b21hbmFnZXIudjEuUHJDb250cmFjdFByT3ZlcnJpZGVzSXRlbSL8AQoMUHJDb250cmFjdFByEj4KDHByZXNlbnRhdGlvbhgBIAEoCzIoLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RQclByZXNlbnRhdGlvbhI6Cgpjb21wbGV4aXR5GAIgASgLMiYub2N0b21hbmFnZXIudjEuUHJDb250cmFjdFByQ29tcGxleGl0eRI2Cghwcm9maWxlcxgDIAEoCzIkLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RQclByb2ZpbGVzEjgKCW92ZXJyaWRlcxgEIAEoCzIlLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RQck92ZXJyaWRlcyJ2CgpQckNvbnRyYWN0EisKDnNjaGVtYV92ZXJzaW9uGAEgASgNSABSDnNjaGVtYV92ZXJzaW9uiAEBEigKAnByGAIgASgLMhwub2N0b21hbmFnZXIudjEuUHJDb250cmFjdFByQhEKD19zY2hlbWFfdmVyc2lvbiIuCh1QckNvbnRyYWN0U291cmNlQXV0aG9yZWRQYXRocxINCgVpdGVtcxgBIAMoCSLjAQoQUHJDb250cmFjdFNvdXJjZRITCgZzaGEyNTYYASABKAlIAIgBARIRCgRwYXRoGAIgASgJSAGIAQESFQoIYmxvYl9zaGEYAyABKAlIAogBARJFCg5hdXRob3JlZF9wYXRocxgEIAEoCzItLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RTb3VyY2VBdXRob3JlZFBhdGhzEhgKC3BhcnNlX2Vycm9yGAUgASgJSAOIAQFCCQoHX3NoYTI1NkIHCgVfcGF0aEILCglfYmxvYl9zaGFCDgoMX3BhcnNlX2Vycm9yIiwKG1ByU3VibWlzc2lvbklucHV0UmVmZXJlbmNlcxINCgVpdGVtcxgBIAMoCSJYChxQclN1Ym1pc3Npb25JbnB1dERlc2NyaXB0aW9uEhIKBXRpdGxlGAEgASgJSACIAQESEQoEYm9keRgCIAEoCUgBiAEBQggKBl90aXRsZUIHCgVfYm9keSKrAQofUHJTdWJtaXNzaW9uSW5wdXRWYWxpZGF0aW9uSXRlbRIUCgdjb21tYW5kGAEgASgJSACIAQESEwoGcmVzdWx0GAIgASgJSAGIAQESEQoEbm90ZRgDIAEoCUgCiAEBEhkKDGV2aWRlbmNlX3VybBgEIAEoCUgDiAEBQgoKCF9jb21tYW5kQgkKB19yZXN1bHRCBwoFX25vdGVCDwoNX2V2aWRlbmNlX3VybCJdChtQclN1Ym1pc3Npb25JbnB1dFZhbGlkYXRpb24SPgoFaXRlbXMYASADKAsyLy5vY3RvbWFuYWdlci52MS5QclN1Ym1pc3Npb25JbnB1dFZhbGlkYXRpb25JdGVtIqQBChZQclN1Ym1pc3Npb25JbnB1dE93bmVyEhQKB2hhcm5lc3MYASABKAlIAIgBARIVCghlbmRwb2ludBgCIAEoCUgBiAEBEhcKCnNlc3Npb25faWQYAyABKAlIAogBARISCgVsYWJlbBgEIAEoCUgDiAEBQgoKCF9oYXJuZXNzQgsKCV9lbmRwb2ludEINCgtfc2Vzc2lvbl9pZEIICgZfbGFiZWwirgYKEVByU3VibWlzc2lvbklucHV0EhEKBG1vZGUYASABKAlIAIgBARIcCg9oZWFkX3JlcG9zaXRvcnkYAiABKAlIAYgBARIXCgp1cGRhdGVfdXJsGAMgASgJSAKIAQESLAoIY29udHJhY3QYBCABKAsyGi5vY3RvbWFuYWdlci52MS5QckNvbnRyYWN0EjkKD2NvbnRyYWN0X3NvdXJjZRgFIAEoCzIgLm9jdG9tYW5hZ2VyLnYxLlByQ29udHJhY3RTb3VyY2USPwoKcmVmZXJlbmNlcxgGIAEoCzIrLm9jdG9tYW5hZ2VyLnYxLlByU3VibWlzc2lvbklucHV0UmVmZXJlbmNlcxJBCgtkZXNjcmlwdGlvbhgHIAEoCzIsLm9jdG9tYW5hZ2VyLnYxLlByU3VibWlzc2lvbklucHV0RGVzY3JpcHRpb24SFwoKcmVxdWVzdF9pZBgIIAEoCUgDiAEBEhcKCnJlcG9zaXRvcnkYCSABKAlIBIgBARIVCghoZWFkX3JlZhgKIAEoCUgFiAEBEhUKCGhlYWRfc2hhGAsgASgJSAaIAQESFQoIYmFzZV9yZWYYDCABKAlIB4gBARIUCgdwdXJwb3NlGA0gASgJSAiIAQESFAoHcHJvYmxlbRgOIAEoCUgJiAEBEhQKB291dGNvbWUYDyABKAlICogBARI/Cgp2YWxpZGF0aW9uGBAgASgLMisub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSW5wdXRWYWxpZGF0aW9uEhIKBWRyYWZ0GBEgASgISAuIAQESNQoFb3duZXIYEiABKAsyJi5vY3RvbWFuYWdlci52MS5QclN1Ym1pc3Npb25JbnB1dE93bmVyQgcKBV9tb2RlQhIKEF9oZWFkX3JlcG9zaXRvcnlCDQoLX3VwZGF0ZV91cmxCDQoLX3JlcXVlc3RfaWRCDQoLX3JlcG9zaXRvcnlCCwoJX2hlYWRfcmVmQgsKCV9oZWFkX3NoYUILCglfYmFzZV9yZWZCCgoIX3B1cnBvc2VCCgoIX3Byb2JsZW1CCgoIX291dGNvbWVCCAoGX2RyYWZ0IqYCCiJQclJlcG9zaXRvcnlTbmFwc2hvdFJlZmVyZW5jZXNJdGVtEhcKCnJlcG9zaXRvcnkYASABKAlIAIgBARITCgZudW1iZXIYAiABKANIAYgBARIRCgRraW5kGAMgASgJSAKIAQESFAoHcHJpdmF0ZRgEIAEoCEgDiAEBEhIKBXRpdGxlGAUgASgJSASIAQESEQoEYm9keRgGIAEoCUgFiAEBEhAKA3VybBgHIAEoCUgGiAEBEhcKCnVwZGF0ZWRfYXQYCCABKAlIB4gBAUINCgtfcmVwb3NpdG9yeUIJCgdfbnVtYmVyQgcKBV9raW5kQgoKCF9wcml2YXRlQggKBl90aXRsZUIHCgVfYm9keUIGCgRfdXJsQg0KC191cGRhdGVkX2F0ImMKHlByUmVwb3NpdG9yeVNuYXBzaG90UmVmZXJlbmNlcxJBCgVpdGVtcxgBIAMoCzIyLm9jdG9tYW5hZ2VyLnYxLlByUmVwb3NpdG9yeVNuYXBzaG90UmVmZXJlbmNlc0l0ZW0itAIKHFByUmVwb3NpdG9yeVNuYXBzaG90RXhpc3RpbmcSEAoDdXJsGAEgASgJSACIAQESEgoFdGl0bGUYAiABKAlIAYgBARIRCgRib2R5GAMgASgJSAKIAQESFQoIaGVhZF9zaGEYBCABKAlIA4gBARIcCg9oZWFkX3JlcG9zaXRvcnkYBSABKAlIBIgBARIVCghoZWFkX3JlZhgGIAEoCUgFiAEBEhUKCGJhc2VfcmVmGAcgASgJSAaIAQESFQoIYmFzZV9zaGEYCCABKAlIB4gBAUIGCgRfdXJsQggKBl90aXRsZUIHCgVfYm9keUILCglfaGVhZF9zaGFCEgoQX2hlYWRfcmVwb3NpdG9yeUILCglfaGVhZF9yZWZCCwoJX2Jhc2VfcmVmQgsKCV9iYXNlX3NoYSIqChlQclJlcG9zaXRvcnlTbmFwc2hvdEZpbGVzEg0KBWl0ZW1zGAEgAygJInMKH1ByUmVwb3NpdG9yeVNuYXBzaG90U291cmNlc0l0ZW0SEQoEcGF0aBgBIAEoCUgAiAEBEhAKA3NoYRgCIAEoCUgBiAEBEhEKBHRleHQYAyABKAlIAogBAUIHCgVfcGF0aEIGCgRfc2hhQgcKBV90ZXh0Il0KG1ByUmVwb3NpdG9yeVNuYXBzaG90U291cmNlcxI+CgVpdGVtcxgBIAMoCzIvLm9jdG9tYW5hZ2VyLnYxLlByUmVwb3NpdG9yeVNuYXBzaG90U291cmNlc0l0ZW0i1wQKFFByUmVwb3NpdG9yeVNuYXBzaG90EhcKCnJlcG9zaXRvcnkYASABKAlIAIgBARIVCghoZWFkX3NoYRgCIAEoCUgBiAEBEhUKCGJhc2Vfc2hhGAMgASgJSAKIAQESFAoHcHJpdmF0ZRgEIAEoCEgDiAEBEiwKCGNvbnRyYWN0GAUgASgLMhoub2N0b21hbmFnZXIudjEuUHJDb250cmFjdBI5Cg9jb250cmFjdF9zb3VyY2UYBiABKAsyIC5vY3RvbWFuYWdlci52MS5QckNvbnRyYWN0U291cmNlEkIKCnJlZmVyZW5jZXMYByABKAsyLi5vY3RvbWFuYWdlci52MS5QclJlcG9zaXRvcnlTbmFwc2hvdFJlZmVyZW5jZXMSPgoIZXhpc3RpbmcYCCABKAsyLC5vY3RvbWFuYWdlci52MS5QclJlcG9zaXRvcnlTbmFwc2hvdEV4aXN0aW5nEjgKBWZpbGVzGAkgASgLMikub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5U25hcHNob3RGaWxlcxIRCgRkaWZmGAogASgJSASIAQESPAoHc291cmNlcxgLIAEoCzIrLm9jdG9tYW5hZ2VyLnYxLlByUmVwb3NpdG9yeVNuYXBzaG90U291cmNlcxIaCg1zb3VyY2VfZGlnZXN0GAwgASgJSAWIAQFCDQoLX3JlcG9zaXRvcnlCCwoJX2hlYWRfc2hhQgsKCV9iYXNlX3NoYUIKCghfcHJpdmF0ZUIHCgVfZGlmZkIQCg5fc291cmNlX2RpZ2VzdCIgCg9QclRpdGxlUHJlZml4ZXMSDQoFaXRlbXMYASADKAkiLgoOUHJCb2R5Q29udGFpbnMSEgoFdmFsdWUYASABKAlIAIgBAUIICgZfdmFsdWUiQgoNUHJUaXRsZVByZWZpeBIxCghwcmVmaXhlcxgBIAEoCzIfLm9jdG9tYW5hZ2VyLnYxLlByVGl0bGVQcmVmaXhlcyI0ChBQclRpdGxlTWF4TGVuZ3RoEhQKB21heGltdW0YASABKANIAIgBAUIKCghfbWF4aW11bSIUChJQckV2aWRlbmNlUmVxdWlyZWQiFwoVUHJTZW1hbnRpY1JlcXVpcmVtZW50IogDChJQclJlcXVpcmVtZW50Q2hlY2sSRgoNYm9keV9jb250YWlucxgBIAEoCzIeLm9jdG9tYW5hZ2VyLnYxLlByQm9keUNvbnRhaW5zSABSDWJvZHlfY29udGFpbnMSQwoMdGl0bGVfcHJlZml4GAIgASgLMh0ub2N0b21hbmFnZXIudjEuUHJUaXRsZVByZWZpeEgAUgx0aXRsZV9wcmVmaXgSTgoQdGl0bGVfbWF4X2xlbmd0aBgDIAEoCzIgLm9jdG9tYW5hZ2VyLnYxLlByVGl0bGVNYXhMZW5ndGhIAFIQdGl0bGVfbWF4X2xlbmd0aBJSChFldmlkZW5jZV9yZXF1aXJlZBgEIAEoCzIiLm9jdG9tYW5hZ2VyLnYxLlByRXZpZGVuY2VSZXF1aXJlZEgAUhFldmlkZW5jZV9yZXF1aXJlZBI5CghzZW1hbnRpYxgFIAEoCzIlLm9jdG9tYW5hZ2VyLnYxLlByU2VtYW50aWNSZXF1aXJlbWVudEgAQgYKBHJ1bGUinAMKDVByUmVxdWlyZW1lbnQSDwoCaWQYASABKAlIAIgBARIVCghzdHJlbmd0aBgCIAEoCUgBiAEBEhUKCGNhdGVnb3J5GAMgASgJSAKIAQESGAoLZGVzY3JpcHRpb24YBCABKAlIA4gBARIYCgtzb3VyY2VfcGF0aBgFIAEoCUgEiAEBEhcKCnNvdXJjZV9zaGEYBiABKAlIBYgBARIRCgRsaW5lGAcgASgDSAaIAQESEgoFcXVvdGUYCCABKAlIB4gBARIWCgljb25kaXRpb24YCSABKAlICIgBARISCgVzY29wZRgKIAEoCUgJiAEBEjEKBWNoZWNrGAsgASgLMiIub2N0b21hbmFnZXIudjEuUHJSZXF1aXJlbWVudENoZWNrQgUKA19pZEILCglfc3RyZW5ndGhCCwoJX2NhdGVnb3J5Qg4KDF9kZXNjcmlwdGlvbkIOCgxfc291cmNlX3BhdGhCDQoLX3NvdXJjZV9zaGFCBwoFX2xpbmVCCAoGX3F1b3RlQgwKCl9jb25kaXRpb25CCAoGX3Njb3BlIj4KDlByUmVxdWlyZW1lbnRzEiwKBWl0ZW1zGAEgAygLMh0ub2N0b21hbmFnZXIudjEuUHJSZXF1aXJlbWVudCIbCgpQclRleHRMaXN0Eg0KBWl0ZW1zGAEgAygJIpoBChBQclBvbGljeUFuYWx5c2lzEjQKDHJlcXVpcmVtZW50cxgBIAEoCzIeLm9jdG9tYW5hZ2VyLnYxLlByUmVxdWlyZW1lbnRzEhUKCHRlbXBsYXRlGAIgASgJSACIAQESLAoIYmxvY2tlcnMYAyABKAsyGi5vY3RvbWFuYWdlci52MS5QclRleHRMaXN0QgsKCV90ZW1wbGF0ZSIlChRQckZhY3RvckV2aWRlbmNlUmVmcxINCgVpdGVtcxgBIAMoCSK3AQoSUHJDb21wbGV4aXR5RmFjdG9yEhMKBmZhY3RvchgBIAEoCUgAiAEBEhMKBnJhdGluZxgCIAEoA0gBiAEBEhYKCXJhdGlvbmFsZRgDIAEoCUgCiAEBEjsKDWV2aWRlbmNlX3JlZnMYBCABKAsyJC5vY3RvbWFuYWdlci52MS5QckZhY3RvckV2aWRlbmNlUmVmc0IJCgdfZmFjdG9yQgkKB19yYXRpbmdCDAoKX3JhdGlvbmFsZSJIChNQckNvbXBsZXhpdHlGYWN0b3JzEjEKBWl0ZW1zGAEgAygLMiIub2N0b21hbmFnZXIudjEuUHJDb21wbGV4aXR5RmFjdG9yIiQKE1ByQ2xhaW1FdmlkZW5jZVJlZnMSDQoFaXRlbXMYASADKAkivwEKD1ByQmVoYXZpb3JDbGFpbRIWCglzdGF0ZW1lbnQYASABKAlIAIgBARIaCg1mYWxzaWZpY2F0aW9uGAIgASgJSAGIAQESOgoNZXZpZGVuY2VfcmVmcxgDIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLlByQ2xhaW1FdmlkZW5jZVJlZnMSEgoFYmFzaXMYBCABKAlIAogBAUIMCgpfc3RhdGVtZW50QhAKDl9mYWxzaWZpY2F0aW9uQggKBl9iYXNpcyJCChBQckJlaGF2aW9yQ2xhaW1zEi4KBWl0ZW1zGAEgAygLMh8ub2N0b21hbmFnZXIudjEuUHJCZWhhdmlvckNsYWltIr0CChBQckNoYW5nZUFuYWx5c2lzEjQKB2ZhY3RvcnMYASABKAsyIy5vY3RvbWFuYWdlci52MS5QckNvbXBsZXhpdHlGYWN0b3JzEhEKBHRpZXIYAiABKAlIAIgBARIWCglyYXRpb25hbGUYAyABKAlIAYgBARIUCgdvdXRjb21lGAQgASgJSAKIAQESMAoGY2xhaW1zGAUgASgLMiAub2N0b21hbmFnZXIudjEuUHJCZWhhdmlvckNsYWltcxIvCgtsaW1pdGF0aW9ucxgGIAEoCzIaLm9jdG9tYW5hZ2VyLnYxLlByVGV4dExpc3QSLAoIYmxvY2tlcnMYByABKAsyGi5vY3RvbWFuYWdlci52MS5QclRleHRMaXN0QgcKBV90aWVyQgwKCl9yYXRpb25hbGVCCgoIX291dGNvbWUigQEKF1ByUmVxdWlyZW1lbnRBc3Nlc3NtZW50EhQKB3J1bGVfaWQYASABKAlIAIgBARITCgZzdGF0dXMYAiABKAlIAYgBARIWCglyYXRpb25hbGUYAyABKAlIAogBAUIKCghfcnVsZV9pZEIJCgdfc3RhdHVzQgwKCl9yYXRpb25hbGUiUgoYUHJSZXF1aXJlbWVudEFzc2Vzc21lbnRzEjYKBWl0ZW1zGAEgAygLMicub2N0b21hbmFnZXIudjEuUHJSZXF1aXJlbWVudEFzc2Vzc21lbnQivQEKDVByRGVzY3JpcHRpb24SEgoFdGl0bGUYASABKAlIAIgBARIRCgRib2R5GAIgASgJSAGIAQESRAoScmVxdWlyZW1lbnRfY2hlY2tzGAMgASgLMigub2N0b21hbmFnZXIudjEuUHJSZXF1aXJlbWVudEFzc2Vzc21lbnRzEiwKCGJsb2NrZXJzGAQgASgLMhoub2N0b21hbmFnZXIudjEuUHJUZXh0TGlzdEIICgZfdGl0bGVCBwoFX2JvZHkiJgoVUHJGaW5kaW5nRXZpZGVuY2VSZWZzEg0KBWl0ZW1zGAEgAygJIrcBChNQckV2YWx1YXRpb25GaW5kaW5nEhQKB3J1bGVfaWQYASABKAlIAIgBARITCgZzdGF0dXMYAiABKAlIAYgBARIUCgdtZXNzYWdlGAMgASgJSAKIAQESPAoNZXZpZGVuY2VfcmVmcxgEIAEoCzIlLm9jdG9tYW5hZ2VyLnYxLlByRmluZGluZ0V2aWRlbmNlUmVmc0IKCghfcnVsZV9pZEIJCgdfc3RhdHVzQgoKCF9tZXNzYWdlIkoKFFByRXZhbHVhdGlvbkZpbmRpbmdzEjIKBWl0ZW1zGAEgAygLMiMub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uRmluZGluZyKAAQoWUHJFdmFsdWF0aW9uQXNzZXNzbWVudBIUCgdydWxlX2lkGAEgASgJSACIAQESEwoGc3RhdHVzGAIgASgJSAGIAQESFgoJcmF0aW9uYWxlGAMgASgJSAKIAQFCCgoIX3J1bGVfaWRCCQoHX3N0YXR1c0IMCgpfcmF0aW9uYWxlIlAKF1ByRXZhbHVhdGlvbkFzc2Vzc21lbnRzEjUKBWl0ZW1zGAEgAygLMiYub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uQXNzZXNzbWVudCKLAQoMUHJFdmFsdWF0aW9uEjYKCGZpbmRpbmdzGAEgASgLMiQub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uRmluZGluZ3MSQwoScmVxdWlyZW1lbnRfY2hlY2tzGAIgASgLMicub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uQXNzZXNzbWVudHMikQIKDVByU3RhZ2VPdXRwdXQSMgoGcG9saWN5GAEgASgLMiAub2N0b21hbmFnZXIudjEuUHJQb2xpY3lBbmFseXNpc0gAEjIKBmNoYW5nZRgCIAEoCzIgLm9jdG9tYW5hZ2VyLnYxLlByQ2hhbmdlQW5hbHlzaXNIABIvCgZ3cml0ZXIYAyABKAsyHS5vY3RvbWFuYWdlci52MS5QckRlc2NyaXB0aW9uSAASMQoJZXZhbHVhdG9yGAQgASgLMhwub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uSAASKwoJbWFsZm9ybWVkGAUgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlSABCBwoFdmFsdWUi/AEKB1ByU3RhZ2USGAoLaW52YWxpZGF0ZWQYASABKAhIAIgBARIRCgRyb2xlGAIgASgJSAGIAQESEgoFbW9kZWwYAyABKAlIAogBARIaCg1wcm9tcHRfZGlnZXN0GAQgASgJSAOIAQESEAoDcmF3GAUgASgJSASIAQESLQoGcmVzdWx0GAYgASgLMh0ub2N0b21hbmFnZXIudjEuUHJTdGFnZU91dHB1dBIPCgJhdBgHIAEoA0gFiAEBQg4KDF9pbnZhbGlkYXRlZEIHCgVfcm9sZUIICgZfbW9kZWxCEAoOX3Byb21wdF9kaWdlc3RCBgoEX3Jhd0IFCgNfYXQiMgoIUHJTdGFnZXMSJgoFaXRlbXMYASADKAsyFy5vY3RvbWFuYWdlci52MS5QclN0YWdlIqECCgdQckJyaWVmEhsKDnNjaGVtYV92ZXJzaW9uGAEgASgNSACIAQESMgoHcmVxdWVzdBgCIAEoCzIhLm9jdG9tYW5hZ2VyLnYxLlByU3VibWlzc2lvbklucHV0EhUKCGJhc2Vfc2hhGAMgASgJSAGIAQESGwoOcG9saWN5X3ZlcnNpb24YBCABKANIAogBARIwCgZjaGFuZ2UYBSABKAsyIC5vY3RvbWFuYWdlci52MS5QckNoYW5nZUFuYWx5c2lzEiwKBWRyYWZ0GAYgASgLMh0ub2N0b21hbmFnZXIudjEuUHJEZXNjcmlwdGlvbkIRCg9fc2NoZW1hX3ZlcnNpb25CCwoJX2Jhc2Vfc2hhQhEKD19wb2xpY3lfdmVyc2lvbiItChxQclN1Ym1pc3Npb25EZWNpc2lvbkJsb2NrZXJzEg0KBWl0ZW1zGAEgAygJIpICChRQclN1Ym1pc3Npb25EZWNpc2lvbhITCgZzdGF0dXMYASABKAlIAIgBARISCgVzY29yZRgCIAEoA0gBiAEBEhEKBHRpZXIYAyABKAlIAogBARIYCgtwcm9zZV93b3JkcxgEIAEoA0gDiAEBEj4KCGJsb2NrZXJzGAUgASgLMiwub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uRGVjaXNpb25CbG9ja2VycxI2CghmaW5kaW5ncxgGIAEoCzIkLm9jdG9tYW5hZ2VyLnYxLlByRXZhbHVhdGlvbkZpbmRpbmdzQgkKB19zdGF0dXNCCAoGX3Njb3JlQgcKBV90aWVyQg4KDF9wcm9zZV93b3JkcyI+ChVQclN1Ym1pc3Npb25GbG93Tm9kZXMSJQoFaXRlbXMYASADKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUihwYKEFByU3VibWlzc2lvbkZsb3cSFgoJYXZhaWxhYmxlGAEgASgISACIAQESEgoFc2NvcGUYAiABKAlIAYgBARIYCgthbmFseXNpc19pZBgDIAEoCUgCiAEBEhsKDnNjaGVtYV92ZXJzaW9uGAQgASgDSAOIAQESMAoIY292ZXJhZ2UYBSABKAsyHi5vY3RvbWFuYWdlci52MS5QckZsb3dDb3ZlcmFnZRIXCgpub2RlX2NvdW50GAYgASgDSASIAQESFwoKZWRnZV9jb3VudBgHIAEoA0gFiAEBEjQKBW5vZGVzGAggASgLMiUub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uRmxvd05vZGVzEjQKBWVkZ2VzGAkgASgLMiUub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uRmxvd05vZGVzEjsKDGludGVyYWN0aW9ucxgKIAEoCzIlLm9jdG9tYW5hZ2VyLnYxLlByU3VibWlzc2lvbkZsb3dOb2RlcxIeChFpbnRlcmFjdGlvbl9jb3VudBgLIAEoA0gGiAEBEjoKC2RpYWdub3N0aWNzGAwgASgLMiUub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uRmxvd05vZGVzEhQKB2xpbWl0ZWQYDSABKAhIB4gBARIhChRmdWxsX2NhcHR1cmVfZmFpbHVyZRgOIAEoCUgIiAEBEhMKBnJlYXNvbhgPIAEoCUgJiAEBEiEKFGFsdGVybmF0aXZlX2V2aWRlbmNlGBAgASgJSAqIAQFCDAoKX2F2YWlsYWJsZUIICgZfc2NvcGVCDgoMX2FuYWx5c2lzX2lkQhEKD19zY2hlbWFfdmVyc2lvbkINCgtfbm9kZV9jb3VudEINCgtfZWRnZV9jb3VudEIUChJfaW50ZXJhY3Rpb25fY291bnRCCgoIX2xpbWl0ZWRCFwoVX2Z1bGxfY2FwdHVyZV9mYWlsdXJlQgkKB19yZWFzb25CFwoVX2FsdGVybmF0aXZlX2V2aWRlbmNlIn4KFlByU3VibWlzc2lvbkltYWdlc0l0ZW0SEAoDdXJsGAEgASgJSACIAQESEwoGc2hhMjU2GAIgASgJSAGIAQESGQoMY29udGVudF90eXBlGAMgASgJSAKIAQFCBgoEX3VybEIJCgdfc2hhMjU2Qg8KDV9jb250ZW50X3R5cGUiSwoSUHJTdWJtaXNzaW9uSW1hZ2VzEjUKBWl0ZW1zGAEgAygLMiYub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSW1hZ2VzSXRlbSInChZQclN1Ym1pc3Npb25Xb3JrZXJQaWRzEg0KBWl0ZW1zGAEgAygDIrMICgxQclN1Ym1pc3Npb24SDwoCaWQYASABKAlIAIgBARIyCgdyZXF1ZXN0GAIgASgLMiEub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSW5wdXQSEgoFc3RhdGUYAyABKAlIAYgBARITCgZkZXRhaWwYBCABKAlIAogBARIXCgpjcmVhdGVkX2F0GAUgASgDSAOIAQESFwoKdXBkYXRlZF9hdBgGIAEoA0gEiAEBEjYKCHNuYXBzaG90GAcgASgLMiQub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5U25hcHNob3QSGwoOcG9saWN5X3ZlcnNpb24YCCABKANIBYgBARIaCg1wb2xpY3lfZGlnZXN0GAkgASgJSAaIAQESKAoGc3RhZ2VzGAogASgLMhgub2N0b21hbmFnZXIudjEuUHJTdGFnZXMSJgoFYnJpZWYYCyABKAsyFy5vY3RvbWFuYWdlci52MS5QckJyaWVmEiwKCGNvbnRyYWN0GAwgASgLMhoub2N0b21hbmFnZXIudjEuUHJDb250cmFjdBIwCgpldmFsdWF0aW9uGA0gASgLMhwub2N0b21hbmFnZXIudjEuUHJFdmFsdWF0aW9uEjYKCGRlY2lzaW9uGA4gASgLMiQub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uRGVjaXNpb24SHAoPcHJlcGFyZWRfZGlnZXN0GA8gASgJSAeIAQESIgoVcHVibGljYXRpb25fcmVxdWVzdGVkGBAgASgISAiIAQESIgoVcHVibGljYXRpb25fYXR0ZW1wdGVkGBEgASgISAmIAQESLgoEZmxvdxgSIAEoCzIgLm9jdG9tYW5hZ2VyLnYxLlByU3VibWlzc2lvbkZsb3cSMgoGaW1hZ2VzGBMgASgLMiIub2N0b21hbmFnZXIudjEuUHJTdWJtaXNzaW9uSW1hZ2VzEhMKBnByX3VybBgUIAEoCUgKiAEBEhIKBXByX2lkGBUgASgJSAuIAQESOwoLd29ya2VyX3BpZHMYFiABKAsyJi5vY3RvbWFuYWdlci52MS5QclN1Ym1pc3Npb25Xb3JrZXJQaWRzEiIKFW5vdGlmaWNhdGlvbl9yZXZpc2lvbhgXIAEoA0gMiAEBQgUKA19pZEIICgZfc3RhdGVCCQoHX2RldGFpbEINCgtfY3JlYXRlZF9hdEINCgtfdXBkYXRlZF9hdEIRCg9fcG9saWN5X3ZlcnNpb25CEAoOX3BvbGljeV9kaWdlc3RCEgoQX3ByZXBhcmVkX2RpZ2VzdEIYChZfcHVibGljYXRpb25fcmVxdWVzdGVkQhgKFl9wdWJsaWNhdGlvbl9hdHRlbXB0ZWRCCQoHX3ByX3VybEIICgZfcHJfaWRCGAoWX25vdGlmaWNhdGlvbl9yZXZpc2lvbiLBAQorUHJSZXBvc2l0b3J5UG9saWN5Q29tcGxleGl0eVByb2ZpbGVzUm91dGluZRIWCgltaW5fd29yZHMYASABKANIAIgBARIWCgltYXhfd29yZHMYAiABKANIAYgBARIVCghndWlkYW5jZRgDIAEoCUgCiAEBEhUKCGFkdmlzb3J5GAQgASgISAOIAQFCDAoKX21pbl93b3Jkc0IMCgpfbWF4X3dvcmRzQgsKCV9ndWlkYW5jZUILCglfYWR2aXNvcnkikQIKJFByUmVwb3NpdG9yeVBvbGljeUNvbXBsZXhpdHlQcm9maWxlcxJMCgdyb3V0aW5lGAEgASgLMjsub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5UG9saWN5Q29tcGxleGl0eVByb2ZpbGVzUm91dGluZRJNCghzdGFuZGFyZBgCIAEoCzI7Lm9jdG9tYW5hZ2VyLnYxLlByUmVwb3NpdG9yeVBvbGljeUNvbXBsZXhpdHlQcm9maWxlc1JvdXRpbmUSTAoHY29tcGxleBgDIAEoCzI7Lm9jdG9tYW5hZ2VyLnYxLlByUmVwb3NpdG9yeVBvbGljeUNvbXBsZXhpdHlQcm9maWxlc1JvdXRpbmUiqQEKKVByUmVwb3NpdG9yeVBvbGljeUNpdGF0aW9uQ29ycmVjdGlvbnNJdGVtEhQKB3J1bGVfaWQYASABKAlIAIgBARIaCg1yZXBvcnRlZF9saW5lGAIgASgDSAGIAQESGgoNdmVyaWZpZWRfbGluZRgDIAEoA0gCiAEBQgoKCF9ydWxlX2lkQhAKDl9yZXBvcnRlZF9saW5lQhAKDl92ZXJpZmllZF9saW5lInEKJVByUmVwb3NpdG9yeVBvbGljeUNpdGF0aW9uQ29ycmVjdGlvbnMSSAoFaXRlbXMYASADKAsyOS5vY3RvbWFuYWdlci52MS5QclJlcG9zaXRvcnlQb2xpY3lDaXRhdGlvbkNvcnJlY3Rpb25zSXRlbSLkBAoSUHJSZXBvc2l0b3J5UG9saWN5ElEKE2NvbXBsZXhpdHlfcHJvZmlsZXMYASABKAsyNC5vY3RvbWFuYWdlci52MS5QclJlcG9zaXRvcnlQb2xpY3lDb21wbGV4aXR5UHJvZmlsZXMSGwoOc2NoZW1hX3ZlcnNpb24YAiABKA1IAIgBARIXCgpyZXBvc2l0b3J5GAMgASgJSAGIAQESFAoHdmVyc2lvbhgEIAEoA0gCiAEBEhoKDXNvdXJjZV9kaWdlc3QYBSABKAlIA4gBARIcCg9hbmFseXN0X3ZlcnNpb24YBiABKA1IBIgBARIaCg1zdG9ja192ZXJzaW9uGAcgASgNSAWIAQESGgoNY3JlYXRlZF9hdF9tcxgIIAEoA0gGiAEBElMKFGNpdGF0aW9uX2NvcnJlY3Rpb25zGAkgASgLMjUub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5UG9saWN5Q2l0YXRpb25Db3JyZWN0aW9ucxI8Cgdzb3VyY2VzGAogASgLMisub2N0b21hbmFnZXIudjEuUHJSZXBvc2l0b3J5U25hcHNob3RTb3VyY2VzEjIKCGFuYWx5c2lzGAsgASgLMiAub2N0b21hbmFnZXIudjEuUHJQb2xpY3lBbmFseXNpc0IRCg9fc2NoZW1hX3ZlcnNpb25CDQoLX3JlcG9zaXRvcnlCCgoIX3ZlcnNpb25CEAoOX3NvdXJjZV9kaWdlc3RCEgoQX2FuYWx5c3RfdmVyc2lvbkIQCg5fc3RvY2tfdmVyc2lvbkIQCg5fY3JlYXRlZF9hdF9tcyKrAgoOUHJGbG93Q292ZXJhZ2USJQoLdG90YWxfbm9kZXMYASABKANIAFILdG90YWxfbm9kZXOIAQESJQoLc2hvd25fbm9kZXMYAiABKANIAVILc2hvd25fbm9kZXOIAQESOQoVb21pdHRlZF9jb250ZXh0X25vZGVzGAMgASgDSAJSFW9taXR0ZWRfY29udGV4dF9ub2Rlc4gBARI7ChZjb2xsYXBzZWRfZGV0YWlsX25vZGVzGAQgASgDSANSFmNvbGxhcHNlZF9kZXRhaWxfbm9kZXOIAQFCDgoMX3RvdGFsX25vZGVzQg4KDF9zaG93bl9ub2Rlc0IYChZfb21pdHRlZF9jb250ZXh0X25vZGVzQhkKF19jb2xsYXBzZWRfZGV0YWlsX25vZGVzQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MTtvY3RvbWFuYWdlcnYxYgZwcm90bzM", [file_google_protobuf_struct]);
 
 /**
- * Structured JSON is validated with the exported versioned JSON Schemas.
+ * Known structures use typed fields. Domain string variants are validated at the
+ * coordinator boundary. Value is reserved for heterogeneous provider evidence or
+ * malformed output, whose original shape must remain inspectable.
  *
  * @generated from message octomanager.v1.SubmitPullRequestRequest
  */
 export type SubmitPullRequestRequest = Message<"octomanager.v1.SubmitPullRequestRequest"> & {
   /**
-   * @generated from field: string input_json = 1;
+   * @generated from field: octomanager.v1.PrSubmissionInput input = 2;
    */
-  inputJson: string;
+  input?: PrSubmissionInput | undefined;
 };
 
 /**
@@ -36,9 +40,9 @@ export const SubmitPullRequestRequestSchema: GenMessage<SubmitPullRequestRequest
  */
 export type SubmitPullRequestResponse = Message<"octomanager.v1.SubmitPullRequestResponse"> & {
   /**
-   * @generated from field: string submission_json = 1;
+   * @generated from field: octomanager.v1.PrSubmission submission = 2;
    */
-  submissionJson: string;
+  submission?: PrSubmission | undefined;
 };
 
 /**
@@ -53,9 +57,9 @@ export const SubmitPullRequestResponseSchema: GenMessage<SubmitPullRequestRespon
  */
 export type GetSubmissionResponse = Message<"octomanager.v1.GetSubmissionResponse"> & {
   /**
-   * @generated from field: string submission_json = 1;
+   * @generated from field: octomanager.v1.PrSubmission submission = 2;
    */
-  submissionJson: string;
+  submission?: PrSubmission | undefined;
 };
 
 /**
@@ -70,9 +74,9 @@ export const GetSubmissionResponseSchema: GenMessage<GetSubmissionResponse> = /*
  */
 export type RetrySubmissionResponse = Message<"octomanager.v1.RetrySubmissionResponse"> & {
   /**
-   * @generated from field: string submission_json = 1;
+   * @generated from field: octomanager.v1.PrSubmission submission = 2;
    */
-  submissionJson: string;
+  submission?: PrSubmission | undefined;
 };
 
 /**
@@ -87,9 +91,9 @@ export const RetrySubmissionResponseSchema: GenMessage<RetrySubmissionResponse> 
  */
 export type CancelSubmissionResponse = Message<"octomanager.v1.CancelSubmissionResponse"> & {
   /**
-   * @generated from field: string submission_json = 1;
+   * @generated from field: octomanager.v1.PrSubmission submission = 2;
    */
-  submissionJson: string;
+  submission?: PrSubmission | undefined;
 };
 
 /**
@@ -134,9 +138,9 @@ export const ListSubmissionsRequestSchema: GenMessage<ListSubmissionsRequest> = 
  */
 export type ListSubmissionsResponse = Message<"octomanager.v1.ListSubmissionsResponse"> & {
   /**
-   * @generated from field: repeated string submissions_json = 1;
+   * @generated from field: repeated octomanager.v1.PrSubmission submissions = 2;
    */
-  submissionsJson: string[];
+  submissions: PrSubmission[];
 };
 
 /**
@@ -212,14 +216,14 @@ export const GetRepositoryPolicyRequestSchema: GenMessage<GetRepositoryPolicyReq
  */
 export type GetRepositoryPolicyResponse = Message<"octomanager.v1.GetRepositoryPolicyResponse"> & {
   /**
-   * @generated from field: string policy_json = 1;
-   */
-  policyJson: string;
-
-  /**
    * @generated from field: string template = 2;
    */
   template: string;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicy policy = 3;
+   */
+  policy?: PrRepositoryPolicy | undefined;
 };
 
 /**
@@ -251,9 +255,9 @@ export const PublishPreparedPullRequestRequestSchema: GenMessage<PublishPrepared
  */
 export type PublishPreparedPullRequestResponse = Message<"octomanager.v1.PublishPreparedPullRequestResponse"> & {
   /**
-   * @generated from field: string submission_json = 1;
+   * @generated from field: octomanager.v1.PrSubmission submission = 2;
    */
-  submissionJson: string;
+  submission?: PrSubmission | undefined;
 };
 
 /**
@@ -262,4 +266,2184 @@ export type PublishPreparedPullRequestResponse = Message<"octomanager.v1.Publish
  */
 export const PublishPreparedPullRequestResponseSchema: GenMessage<PublishPreparedPullRequestResponse> = /*@__PURE__*/
   messageDesc(file_octomanager_v1_submissions, 13);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrPresentation
+ */
+export type PrContractPrPresentation = Message<"octomanager.v1.PrContractPrPresentation"> & {
+  /**
+   * @generated from field: optional string layout = 1;
+   */
+  layout?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 first_artifact_by_prose_word = 2 [json_name = "first_artifact_by_prose_word"];
+   */
+  firstArtifactByProseWord?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string diagram_format = 3 [json_name = "diagram_format"];
+   */
+  diagramFormat?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrPresentation.
+ * Use `create(PrContractPrPresentationSchema)` to create a new message.
+ */
+export const PrContractPrPresentationSchema: GenMessage<PrContractPrPresentation> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 14);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrComplexityWeights
+ */
+export type PrContractPrComplexityWeights = Message<"octomanager.v1.PrContractPrComplexityWeights"> & {
+  /**
+   * @generated from field: optional int64 breadth = 1;
+   */
+  breadth?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 behavior = 2;
+   */
+  behavior?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 coupling = 3;
+   */
+  coupling?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 compatibility = 4;
+   */
+  compatibility?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 state_risk = 5 [json_name = "state_risk"];
+   */
+  stateRisk?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrComplexityWeights.
+ * Use `create(PrContractPrComplexityWeightsSchema)` to create a new message.
+ */
+export const PrContractPrComplexityWeightsSchema: GenMessage<PrContractPrComplexityWeights> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 15);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrComplexity
+ */
+export type PrContractPrComplexity = Message<"octomanager.v1.PrContractPrComplexity"> & {
+  /**
+   * @generated from field: octomanager.v1.PrContractPrComplexityWeights weights = 1;
+   */
+  weights?: PrContractPrComplexityWeights | undefined;
+
+  /**
+   * @generated from field: optional int64 routine_max = 2 [json_name = "routine_max"];
+   */
+  routineMax?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 standard_max = 3 [json_name = "standard_max"];
+   */
+  standardMax?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrComplexity.
+ * Use `create(PrContractPrComplexitySchema)` to create a new message.
+ */
+export const PrContractPrComplexitySchema: GenMessage<PrContractPrComplexity> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 16);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrProfilesRoutine
+ */
+export type PrContractPrProfilesRoutine = Message<"octomanager.v1.PrContractPrProfilesRoutine"> & {
+  /**
+   * @generated from field: optional int64 max_prose_words = 1 [json_name = "max_prose_words"];
+   */
+  maxProseWords?: bigint | undefined;
+
+  /**
+   * @generated from field: optional bool require_diagram = 2 [json_name = "require_diagram"];
+   */
+  requireDiagram?: boolean | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrProfilesRoutine.
+ * Use `create(PrContractPrProfilesRoutineSchema)` to create a new message.
+ */
+export const PrContractPrProfilesRoutineSchema: GenMessage<PrContractPrProfilesRoutine> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 17);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrProfiles
+ */
+export type PrContractPrProfiles = Message<"octomanager.v1.PrContractPrProfiles"> & {
+  /**
+   * @generated from field: octomanager.v1.PrContractPrProfilesRoutine routine = 1;
+   */
+  routine?: PrContractPrProfilesRoutine | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPrProfilesRoutine standard = 2;
+   */
+  standard?: PrContractPrProfilesRoutine | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPrProfilesRoutine complex = 3;
+   */
+  complex?: PrContractPrProfilesRoutine | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrProfiles.
+ * Use `create(PrContractPrProfilesSchema)` to create a new message.
+ */
+export const PrContractPrProfilesSchema: GenMessage<PrContractPrProfiles> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 18);
+
+/**
+ * @generated from message octomanager.v1.PrContractPrOverridesItem
+ */
+export type PrContractPrOverridesItem = Message<"octomanager.v1.PrContractPrOverridesItem"> & {
+  /**
+   * @generated from field: optional string rule_id = 1 [json_name = "rule_id"];
+   */
+  ruleId?: string | undefined;
+
+  /**
+   * @generated from field: optional string reason = 2;
+   */
+  reason?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrOverridesItem.
+ * Use `create(PrContractPrOverridesItemSchema)` to create a new message.
+ */
+export const PrContractPrOverridesItemSchema: GenMessage<PrContractPrOverridesItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 19);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrContractPrOverrides
+ */
+export type PrContractPrOverrides = Message<"octomanager.v1.PrContractPrOverrides"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrContractPrOverridesItem items = 1;
+   */
+  items: PrContractPrOverridesItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPrOverrides.
+ * Use `create(PrContractPrOverridesSchema)` to create a new message.
+ */
+export const PrContractPrOverridesSchema: GenMessage<PrContractPrOverrides> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 20);
+
+/**
+ * @generated from message octomanager.v1.PrContractPr
+ */
+export type PrContractPr = Message<"octomanager.v1.PrContractPr"> & {
+  /**
+   * @generated from field: octomanager.v1.PrContractPrPresentation presentation = 1;
+   */
+  presentation?: PrContractPrPresentation | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPrComplexity complexity = 2;
+   */
+  complexity?: PrContractPrComplexity | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPrProfiles profiles = 3;
+   */
+  profiles?: PrContractPrProfiles | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPrOverrides overrides = 4;
+   */
+  overrides?: PrContractPrOverrides | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractPr.
+ * Use `create(PrContractPrSchema)` to create a new message.
+ */
+export const PrContractPrSchema: GenMessage<PrContractPr> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 21);
+
+/**
+ * @generated from message octomanager.v1.PrContract
+ */
+export type PrContract = Message<"octomanager.v1.PrContract"> & {
+  /**
+   * @generated from field: optional uint32 schema_version = 1 [json_name = "schema_version"];
+   */
+  schemaVersion?: number | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractPr pr = 2;
+   */
+  pr?: PrContractPr | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContract.
+ * Use `create(PrContractSchema)` to create a new message.
+ */
+export const PrContractSchema: GenMessage<PrContract> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 22);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrContractSourceAuthoredPaths
+ */
+export type PrContractSourceAuthoredPaths = Message<"octomanager.v1.PrContractSourceAuthoredPaths"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractSourceAuthoredPaths.
+ * Use `create(PrContractSourceAuthoredPathsSchema)` to create a new message.
+ */
+export const PrContractSourceAuthoredPathsSchema: GenMessage<PrContractSourceAuthoredPaths> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 23);
+
+/**
+ * @generated from message octomanager.v1.PrContractSource
+ */
+export type PrContractSource = Message<"octomanager.v1.PrContractSource"> & {
+  /**
+   * @generated from field: optional string sha256 = 1;
+   */
+  sha256?: string | undefined;
+
+  /**
+   * @generated from field: optional string path = 2;
+   */
+  path?: string | undefined;
+
+  /**
+   * @generated from field: optional string blob_sha = 3;
+   */
+  blobSha?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractSourceAuthoredPaths authored_paths = 4;
+   */
+  authoredPaths?: PrContractSourceAuthoredPaths | undefined;
+
+  /**
+   * @generated from field: optional string parse_error = 5;
+   */
+  parseError?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrContractSource.
+ * Use `create(PrContractSourceSchema)` to create a new message.
+ */
+export const PrContractSourceSchema: GenMessage<PrContractSource> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 24);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionInputReferences
+ */
+export type PrSubmissionInputReferences = Message<"octomanager.v1.PrSubmissionInputReferences"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInputReferences.
+ * Use `create(PrSubmissionInputReferencesSchema)` to create a new message.
+ */
+export const PrSubmissionInputReferencesSchema: GenMessage<PrSubmissionInputReferences> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 25);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionInputDescription
+ */
+export type PrSubmissionInputDescription = Message<"octomanager.v1.PrSubmissionInputDescription"> & {
+  /**
+   * @generated from field: optional string title = 1;
+   */
+  title?: string | undefined;
+
+  /**
+   * @generated from field: optional string body = 2;
+   */
+  body?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInputDescription.
+ * Use `create(PrSubmissionInputDescriptionSchema)` to create a new message.
+ */
+export const PrSubmissionInputDescriptionSchema: GenMessage<PrSubmissionInputDescription> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 26);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionInputValidationItem
+ */
+export type PrSubmissionInputValidationItem = Message<"octomanager.v1.PrSubmissionInputValidationItem"> & {
+  /**
+   * @generated from field: optional string command = 1;
+   */
+  command?: string | undefined;
+
+  /**
+   * @generated from field: optional string result = 2;
+   */
+  result?: string | undefined;
+
+  /**
+   * @generated from field: optional string note = 3;
+   */
+  note?: string | undefined;
+
+  /**
+   * @generated from field: optional string evidence_url = 4;
+   */
+  evidenceUrl?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInputValidationItem.
+ * Use `create(PrSubmissionInputValidationItemSchema)` to create a new message.
+ */
+export const PrSubmissionInputValidationItemSchema: GenMessage<PrSubmissionInputValidationItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 27);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionInputValidation
+ */
+export type PrSubmissionInputValidation = Message<"octomanager.v1.PrSubmissionInputValidation"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrSubmissionInputValidationItem items = 1;
+   */
+  items: PrSubmissionInputValidationItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInputValidation.
+ * Use `create(PrSubmissionInputValidationSchema)` to create a new message.
+ */
+export const PrSubmissionInputValidationSchema: GenMessage<PrSubmissionInputValidation> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 28);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionInputOwner
+ */
+export type PrSubmissionInputOwner = Message<"octomanager.v1.PrSubmissionInputOwner"> & {
+  /**
+   * @generated from field: optional string harness = 1;
+   */
+  harness?: string | undefined;
+
+  /**
+   * @generated from field: optional string endpoint = 2;
+   */
+  endpoint?: string | undefined;
+
+  /**
+   * @generated from field: optional string session_id = 3;
+   */
+  sessionId?: string | undefined;
+
+  /**
+   * @generated from field: optional string label = 4;
+   */
+  label?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInputOwner.
+ * Use `create(PrSubmissionInputOwnerSchema)` to create a new message.
+ */
+export const PrSubmissionInputOwnerSchema: GenMessage<PrSubmissionInputOwner> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 29);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionInput
+ */
+export type PrSubmissionInput = Message<"octomanager.v1.PrSubmissionInput"> & {
+  /**
+   * @generated from field: optional string mode = 1;
+   */
+  mode?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_repository = 2;
+   */
+  headRepository?: string | undefined;
+
+  /**
+   * @generated from field: optional string update_url = 3;
+   */
+  updateUrl?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContract contract = 4;
+   */
+  contract?: PrContract | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractSource contract_source = 5;
+   */
+  contractSource?: PrContractSource | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInputReferences references = 6;
+   */
+  references?: PrSubmissionInputReferences | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInputDescription description = 7;
+   */
+  description?: PrSubmissionInputDescription | undefined;
+
+  /**
+   * @generated from field: optional string request_id = 8;
+   */
+  requestId?: string | undefined;
+
+  /**
+   * @generated from field: optional string repository = 9;
+   */
+  repository?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_ref = 10;
+   */
+  headRef?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_sha = 11;
+   */
+  headSha?: string | undefined;
+
+  /**
+   * @generated from field: optional string base_ref = 12;
+   */
+  baseRef?: string | undefined;
+
+  /**
+   * @generated from field: optional string purpose = 13;
+   */
+  purpose?: string | undefined;
+
+  /**
+   * @generated from field: optional string problem = 14;
+   */
+  problem?: string | undefined;
+
+  /**
+   * @generated from field: optional string outcome = 15;
+   */
+  outcome?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInputValidation validation = 16;
+   */
+  validation?: PrSubmissionInputValidation | undefined;
+
+  /**
+   * @generated from field: optional bool draft = 17;
+   */
+  draft?: boolean | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInputOwner owner = 18;
+   */
+  owner?: PrSubmissionInputOwner | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionInput.
+ * Use `create(PrSubmissionInputSchema)` to create a new message.
+ */
+export const PrSubmissionInputSchema: GenMessage<PrSubmissionInput> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 30);
+
+/**
+ * @generated from message octomanager.v1.PrRepositorySnapshotReferencesItem
+ */
+export type PrRepositorySnapshotReferencesItem = Message<"octomanager.v1.PrRepositorySnapshotReferencesItem"> & {
+  /**
+   * @generated from field: optional string repository = 1;
+   */
+  repository?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 number = 2;
+   */
+  number?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string kind = 3;
+   */
+  kind?: string | undefined;
+
+  /**
+   * @generated from field: optional bool private = 4;
+   */
+  private?: boolean | undefined;
+
+  /**
+   * @generated from field: optional string title = 5;
+   */
+  title?: string | undefined;
+
+  /**
+   * @generated from field: optional string body = 6;
+   */
+  body?: string | undefined;
+
+  /**
+   * @generated from field: optional string url = 7;
+   */
+  url?: string | undefined;
+
+  /**
+   * @generated from field: optional string updated_at = 8;
+   */
+  updatedAt?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotReferencesItem.
+ * Use `create(PrRepositorySnapshotReferencesItemSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotReferencesItemSchema: GenMessage<PrRepositorySnapshotReferencesItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 31);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRepositorySnapshotReferences
+ */
+export type PrRepositorySnapshotReferences = Message<"octomanager.v1.PrRepositorySnapshotReferences"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrRepositorySnapshotReferencesItem items = 1;
+   */
+  items: PrRepositorySnapshotReferencesItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotReferences.
+ * Use `create(PrRepositorySnapshotReferencesSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotReferencesSchema: GenMessage<PrRepositorySnapshotReferences> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 32);
+
+/**
+ * @generated from message octomanager.v1.PrRepositorySnapshotExisting
+ */
+export type PrRepositorySnapshotExisting = Message<"octomanager.v1.PrRepositorySnapshotExisting"> & {
+  /**
+   * @generated from field: optional string url = 1;
+   */
+  url?: string | undefined;
+
+  /**
+   * @generated from field: optional string title = 2;
+   */
+  title?: string | undefined;
+
+  /**
+   * @generated from field: optional string body = 3;
+   */
+  body?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_sha = 4;
+   */
+  headSha?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_repository = 5;
+   */
+  headRepository?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_ref = 6;
+   */
+  headRef?: string | undefined;
+
+  /**
+   * @generated from field: optional string base_ref = 7;
+   */
+  baseRef?: string | undefined;
+
+  /**
+   * @generated from field: optional string base_sha = 8;
+   */
+  baseSha?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotExisting.
+ * Use `create(PrRepositorySnapshotExistingSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotExistingSchema: GenMessage<PrRepositorySnapshotExisting> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 33);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRepositorySnapshotFiles
+ */
+export type PrRepositorySnapshotFiles = Message<"octomanager.v1.PrRepositorySnapshotFiles"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotFiles.
+ * Use `create(PrRepositorySnapshotFilesSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotFilesSchema: GenMessage<PrRepositorySnapshotFiles> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 34);
+
+/**
+ * @generated from message octomanager.v1.PrRepositorySnapshotSourcesItem
+ */
+export type PrRepositorySnapshotSourcesItem = Message<"octomanager.v1.PrRepositorySnapshotSourcesItem"> & {
+  /**
+   * @generated from field: optional string path = 1;
+   */
+  path?: string | undefined;
+
+  /**
+   * @generated from field: optional string sha = 2;
+   */
+  sha?: string | undefined;
+
+  /**
+   * @generated from field: optional string text = 3;
+   */
+  text?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotSourcesItem.
+ * Use `create(PrRepositorySnapshotSourcesItemSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotSourcesItemSchema: GenMessage<PrRepositorySnapshotSourcesItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 35);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRepositorySnapshotSources
+ */
+export type PrRepositorySnapshotSources = Message<"octomanager.v1.PrRepositorySnapshotSources"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrRepositorySnapshotSourcesItem items = 1;
+   */
+  items: PrRepositorySnapshotSourcesItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshotSources.
+ * Use `create(PrRepositorySnapshotSourcesSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotSourcesSchema: GenMessage<PrRepositorySnapshotSources> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 36);
+
+/**
+ * @generated from message octomanager.v1.PrRepositorySnapshot
+ */
+export type PrRepositorySnapshot = Message<"octomanager.v1.PrRepositorySnapshot"> & {
+  /**
+   * @generated from field: optional string repository = 1;
+   */
+  repository?: string | undefined;
+
+  /**
+   * @generated from field: optional string head_sha = 2;
+   */
+  headSha?: string | undefined;
+
+  /**
+   * @generated from field: optional string base_sha = 3;
+   */
+  baseSha?: string | undefined;
+
+  /**
+   * @generated from field: optional bool private = 4;
+   */
+  private?: boolean | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContract contract = 5;
+   */
+  contract?: PrContract | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContractSource contract_source = 6;
+   */
+  contractSource?: PrContractSource | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshotReferences references = 7;
+   */
+  references?: PrRepositorySnapshotReferences | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshotExisting existing = 8;
+   */
+  existing?: PrRepositorySnapshotExisting | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshotFiles files = 9;
+   */
+  files?: PrRepositorySnapshotFiles | undefined;
+
+  /**
+   * @generated from field: optional string diff = 10;
+   */
+  diff?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshotSources sources = 11;
+   */
+  sources?: PrRepositorySnapshotSources | undefined;
+
+  /**
+   * @generated from field: optional string source_digest = 12;
+   */
+  sourceDigest?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositorySnapshot.
+ * Use `create(PrRepositorySnapshotSchema)` to create a new message.
+ */
+export const PrRepositorySnapshotSchema: GenMessage<PrRepositorySnapshot> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 37);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrTitlePrefixes
+ */
+export type PrTitlePrefixes = Message<"octomanager.v1.PrTitlePrefixes"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrTitlePrefixes.
+ * Use `create(PrTitlePrefixesSchema)` to create a new message.
+ */
+export const PrTitlePrefixesSchema: GenMessage<PrTitlePrefixes> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 38);
+
+/**
+ * @generated from message octomanager.v1.PrBodyContains
+ */
+export type PrBodyContains = Message<"octomanager.v1.PrBodyContains"> & {
+  /**
+   * @generated from field: optional string value = 1;
+   */
+  value?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrBodyContains.
+ * Use `create(PrBodyContainsSchema)` to create a new message.
+ */
+export const PrBodyContainsSchema: GenMessage<PrBodyContains> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 39);
+
+/**
+ * @generated from message octomanager.v1.PrTitlePrefix
+ */
+export type PrTitlePrefix = Message<"octomanager.v1.PrTitlePrefix"> & {
+  /**
+   * @generated from field: octomanager.v1.PrTitlePrefixes prefixes = 1;
+   */
+  prefixes?: PrTitlePrefixes | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrTitlePrefix.
+ * Use `create(PrTitlePrefixSchema)` to create a new message.
+ */
+export const PrTitlePrefixSchema: GenMessage<PrTitlePrefix> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 40);
+
+/**
+ * @generated from message octomanager.v1.PrTitleMaxLength
+ */
+export type PrTitleMaxLength = Message<"octomanager.v1.PrTitleMaxLength"> & {
+  /**
+   * @generated from field: optional int64 maximum = 1;
+   */
+  maximum?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrTitleMaxLength.
+ * Use `create(PrTitleMaxLengthSchema)` to create a new message.
+ */
+export const PrTitleMaxLengthSchema: GenMessage<PrTitleMaxLength> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 41);
+
+/**
+ * @generated from message octomanager.v1.PrEvidenceRequired
+ */
+export type PrEvidenceRequired = Message<"octomanager.v1.PrEvidenceRequired"> & {
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvidenceRequired.
+ * Use `create(PrEvidenceRequiredSchema)` to create a new message.
+ */
+export const PrEvidenceRequiredSchema: GenMessage<PrEvidenceRequired> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 42);
+
+/**
+ * @generated from message octomanager.v1.PrSemanticRequirement
+ */
+export type PrSemanticRequirement = Message<"octomanager.v1.PrSemanticRequirement"> & {
+};
+
+/**
+ * Describes the message octomanager.v1.PrSemanticRequirement.
+ * Use `create(PrSemanticRequirementSchema)` to create a new message.
+ */
+export const PrSemanticRequirementSchema: GenMessage<PrSemanticRequirement> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 43);
+
+/**
+ * @generated from message octomanager.v1.PrRequirementCheck
+ */
+export type PrRequirementCheck = Message<"octomanager.v1.PrRequirementCheck"> & {
+  /**
+   * @generated from oneof octomanager.v1.PrRequirementCheck.rule
+   */
+  rule: {
+    /**
+     * @generated from field: octomanager.v1.PrBodyContains body_contains = 1 [json_name = "body_contains"];
+     */
+    value: PrBodyContains;
+    case: "bodyContains";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrTitlePrefix title_prefix = 2 [json_name = "title_prefix"];
+     */
+    value: PrTitlePrefix;
+    case: "titlePrefix";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrTitleMaxLength title_max_length = 3 [json_name = "title_max_length"];
+     */
+    value: PrTitleMaxLength;
+    case: "titleMaxLength";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrEvidenceRequired evidence_required = 4 [json_name = "evidence_required"];
+     */
+    value: PrEvidenceRequired;
+    case: "evidenceRequired";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrSemanticRequirement semantic = 5;
+     */
+    value: PrSemanticRequirement;
+    case: "semantic";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message octomanager.v1.PrRequirementCheck.
+ * Use `create(PrRequirementCheckSchema)` to create a new message.
+ */
+export const PrRequirementCheckSchema: GenMessage<PrRequirementCheck> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 44);
+
+/**
+ * @generated from message octomanager.v1.PrRequirement
+ */
+export type PrRequirement = Message<"octomanager.v1.PrRequirement"> & {
+  /**
+   * @generated from field: optional string id = 1;
+   */
+  id?: string | undefined;
+
+  /**
+   * @generated from field: optional string strength = 2;
+   */
+  strength?: string | undefined;
+
+  /**
+   * @generated from field: optional string category = 3;
+   */
+  category?: string | undefined;
+
+  /**
+   * @generated from field: optional string description = 4;
+   */
+  description?: string | undefined;
+
+  /**
+   * @generated from field: optional string source_path = 5;
+   */
+  sourcePath?: string | undefined;
+
+  /**
+   * @generated from field: optional string source_sha = 6;
+   */
+  sourceSha?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 line = 7;
+   */
+  line?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string quote = 8;
+   */
+  quote?: string | undefined;
+
+  /**
+   * @generated from field: optional string condition = 9;
+   */
+  condition?: string | undefined;
+
+  /**
+   * @generated from field: optional string scope = 10;
+   */
+  scope?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRequirementCheck check = 11;
+   */
+  check?: PrRequirementCheck | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRequirement.
+ * Use `create(PrRequirementSchema)` to create a new message.
+ */
+export const PrRequirementSchema: GenMessage<PrRequirement> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 45);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRequirements
+ */
+export type PrRequirements = Message<"octomanager.v1.PrRequirements"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrRequirement items = 1;
+   */
+  items: PrRequirement[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRequirements.
+ * Use `create(PrRequirementsSchema)` to create a new message.
+ */
+export const PrRequirementsSchema: GenMessage<PrRequirements> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 46);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrTextList
+ */
+export type PrTextList = Message<"octomanager.v1.PrTextList"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrTextList.
+ * Use `create(PrTextListSchema)` to create a new message.
+ */
+export const PrTextListSchema: GenMessage<PrTextList> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 47);
+
+/**
+ * @generated from message octomanager.v1.PrPolicyAnalysis
+ */
+export type PrPolicyAnalysis = Message<"octomanager.v1.PrPolicyAnalysis"> & {
+  /**
+   * @generated from field: octomanager.v1.PrRequirements requirements = 1;
+   */
+  requirements?: PrRequirements | undefined;
+
+  /**
+   * @generated from field: optional string template = 2;
+   */
+  template?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrTextList blockers = 3;
+   */
+  blockers?: PrTextList | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrPolicyAnalysis.
+ * Use `create(PrPolicyAnalysisSchema)` to create a new message.
+ */
+export const PrPolicyAnalysisSchema: GenMessage<PrPolicyAnalysis> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 48);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrFactorEvidenceRefs
+ */
+export type PrFactorEvidenceRefs = Message<"octomanager.v1.PrFactorEvidenceRefs"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrFactorEvidenceRefs.
+ * Use `create(PrFactorEvidenceRefsSchema)` to create a new message.
+ */
+export const PrFactorEvidenceRefsSchema: GenMessage<PrFactorEvidenceRefs> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 49);
+
+/**
+ * @generated from message octomanager.v1.PrComplexityFactor
+ */
+export type PrComplexityFactor = Message<"octomanager.v1.PrComplexityFactor"> & {
+  /**
+   * @generated from field: optional string factor = 1;
+   */
+  factor?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 rating = 2;
+   */
+  rating?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string rationale = 3;
+   */
+  rationale?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrFactorEvidenceRefs evidence_refs = 4;
+   */
+  evidenceRefs?: PrFactorEvidenceRefs | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrComplexityFactor.
+ * Use `create(PrComplexityFactorSchema)` to create a new message.
+ */
+export const PrComplexityFactorSchema: GenMessage<PrComplexityFactor> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 50);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrComplexityFactors
+ */
+export type PrComplexityFactors = Message<"octomanager.v1.PrComplexityFactors"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrComplexityFactor items = 1;
+   */
+  items: PrComplexityFactor[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrComplexityFactors.
+ * Use `create(PrComplexityFactorsSchema)` to create a new message.
+ */
+export const PrComplexityFactorsSchema: GenMessage<PrComplexityFactors> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 51);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrClaimEvidenceRefs
+ */
+export type PrClaimEvidenceRefs = Message<"octomanager.v1.PrClaimEvidenceRefs"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrClaimEvidenceRefs.
+ * Use `create(PrClaimEvidenceRefsSchema)` to create a new message.
+ */
+export const PrClaimEvidenceRefsSchema: GenMessage<PrClaimEvidenceRefs> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 52);
+
+/**
+ * @generated from message octomanager.v1.PrBehaviorClaim
+ */
+export type PrBehaviorClaim = Message<"octomanager.v1.PrBehaviorClaim"> & {
+  /**
+   * @generated from field: optional string statement = 1;
+   */
+  statement?: string | undefined;
+
+  /**
+   * @generated from field: optional string falsification = 2;
+   */
+  falsification?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrClaimEvidenceRefs evidence_refs = 3;
+   */
+  evidenceRefs?: PrClaimEvidenceRefs | undefined;
+
+  /**
+   * @generated from field: optional string basis = 4;
+   */
+  basis?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrBehaviorClaim.
+ * Use `create(PrBehaviorClaimSchema)` to create a new message.
+ */
+export const PrBehaviorClaimSchema: GenMessage<PrBehaviorClaim> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 53);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrBehaviorClaims
+ */
+export type PrBehaviorClaims = Message<"octomanager.v1.PrBehaviorClaims"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrBehaviorClaim items = 1;
+   */
+  items: PrBehaviorClaim[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrBehaviorClaims.
+ * Use `create(PrBehaviorClaimsSchema)` to create a new message.
+ */
+export const PrBehaviorClaimsSchema: GenMessage<PrBehaviorClaims> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 54);
+
+/**
+ * @generated from message octomanager.v1.PrChangeAnalysis
+ */
+export type PrChangeAnalysis = Message<"octomanager.v1.PrChangeAnalysis"> & {
+  /**
+   * @generated from field: octomanager.v1.PrComplexityFactors factors = 1;
+   */
+  factors?: PrComplexityFactors | undefined;
+
+  /**
+   * @generated from field: optional string tier = 2;
+   */
+  tier?: string | undefined;
+
+  /**
+   * @generated from field: optional string rationale = 3;
+   */
+  rationale?: string | undefined;
+
+  /**
+   * @generated from field: optional string outcome = 4;
+   */
+  outcome?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrBehaviorClaims claims = 5;
+   */
+  claims?: PrBehaviorClaims | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrTextList limitations = 6;
+   */
+  limitations?: PrTextList | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrTextList blockers = 7;
+   */
+  blockers?: PrTextList | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrChangeAnalysis.
+ * Use `create(PrChangeAnalysisSchema)` to create a new message.
+ */
+export const PrChangeAnalysisSchema: GenMessage<PrChangeAnalysis> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 55);
+
+/**
+ * @generated from message octomanager.v1.PrRequirementAssessment
+ */
+export type PrRequirementAssessment = Message<"octomanager.v1.PrRequirementAssessment"> & {
+  /**
+   * @generated from field: optional string rule_id = 1;
+   */
+  ruleId?: string | undefined;
+
+  /**
+   * @generated from field: optional string status = 2;
+   */
+  status?: string | undefined;
+
+  /**
+   * @generated from field: optional string rationale = 3;
+   */
+  rationale?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRequirementAssessment.
+ * Use `create(PrRequirementAssessmentSchema)` to create a new message.
+ */
+export const PrRequirementAssessmentSchema: GenMessage<PrRequirementAssessment> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 56);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRequirementAssessments
+ */
+export type PrRequirementAssessments = Message<"octomanager.v1.PrRequirementAssessments"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrRequirementAssessment items = 1;
+   */
+  items: PrRequirementAssessment[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRequirementAssessments.
+ * Use `create(PrRequirementAssessmentsSchema)` to create a new message.
+ */
+export const PrRequirementAssessmentsSchema: GenMessage<PrRequirementAssessments> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 57);
+
+/**
+ * @generated from message octomanager.v1.PrDescription
+ */
+export type PrDescription = Message<"octomanager.v1.PrDescription"> & {
+  /**
+   * @generated from field: optional string title = 1;
+   */
+  title?: string | undefined;
+
+  /**
+   * @generated from field: optional string body = 2;
+   */
+  body?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRequirementAssessments requirement_checks = 3;
+   */
+  requirementChecks?: PrRequirementAssessments | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrTextList blockers = 4;
+   */
+  blockers?: PrTextList | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrDescription.
+ * Use `create(PrDescriptionSchema)` to create a new message.
+ */
+export const PrDescriptionSchema: GenMessage<PrDescription> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 58);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrFindingEvidenceRefs
+ */
+export type PrFindingEvidenceRefs = Message<"octomanager.v1.PrFindingEvidenceRefs"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrFindingEvidenceRefs.
+ * Use `create(PrFindingEvidenceRefsSchema)` to create a new message.
+ */
+export const PrFindingEvidenceRefsSchema: GenMessage<PrFindingEvidenceRefs> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 59);
+
+/**
+ * @generated from message octomanager.v1.PrEvaluationFinding
+ */
+export type PrEvaluationFinding = Message<"octomanager.v1.PrEvaluationFinding"> & {
+  /**
+   * @generated from field: optional string rule_id = 1;
+   */
+  ruleId?: string | undefined;
+
+  /**
+   * @generated from field: optional string status = 2;
+   */
+  status?: string | undefined;
+
+  /**
+   * @generated from field: optional string message = 3;
+   */
+  message?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrFindingEvidenceRefs evidence_refs = 4;
+   */
+  evidenceRefs?: PrFindingEvidenceRefs | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvaluationFinding.
+ * Use `create(PrEvaluationFindingSchema)` to create a new message.
+ */
+export const PrEvaluationFindingSchema: GenMessage<PrEvaluationFinding> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 60);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrEvaluationFindings
+ */
+export type PrEvaluationFindings = Message<"octomanager.v1.PrEvaluationFindings"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrEvaluationFinding items = 1;
+   */
+  items: PrEvaluationFinding[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvaluationFindings.
+ * Use `create(PrEvaluationFindingsSchema)` to create a new message.
+ */
+export const PrEvaluationFindingsSchema: GenMessage<PrEvaluationFindings> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 61);
+
+/**
+ * @generated from message octomanager.v1.PrEvaluationAssessment
+ */
+export type PrEvaluationAssessment = Message<"octomanager.v1.PrEvaluationAssessment"> & {
+  /**
+   * @generated from field: optional string rule_id = 1;
+   */
+  ruleId?: string | undefined;
+
+  /**
+   * @generated from field: optional string status = 2;
+   */
+  status?: string | undefined;
+
+  /**
+   * @generated from field: optional string rationale = 3;
+   */
+  rationale?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvaluationAssessment.
+ * Use `create(PrEvaluationAssessmentSchema)` to create a new message.
+ */
+export const PrEvaluationAssessmentSchema: GenMessage<PrEvaluationAssessment> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 62);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrEvaluationAssessments
+ */
+export type PrEvaluationAssessments = Message<"octomanager.v1.PrEvaluationAssessments"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrEvaluationAssessment items = 1;
+   */
+  items: PrEvaluationAssessment[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvaluationAssessments.
+ * Use `create(PrEvaluationAssessmentsSchema)` to create a new message.
+ */
+export const PrEvaluationAssessmentsSchema: GenMessage<PrEvaluationAssessments> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 63);
+
+/**
+ * @generated from message octomanager.v1.PrEvaluation
+ */
+export type PrEvaluation = Message<"octomanager.v1.PrEvaluation"> & {
+  /**
+   * @generated from field: octomanager.v1.PrEvaluationFindings findings = 1;
+   */
+  findings?: PrEvaluationFindings | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrEvaluationAssessments requirement_checks = 2;
+   */
+  requirementChecks?: PrEvaluationAssessments | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrEvaluation.
+ * Use `create(PrEvaluationSchema)` to create a new message.
+ */
+export const PrEvaluationSchema: GenMessage<PrEvaluation> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 64);
+
+/**
+ * @generated from message octomanager.v1.PrStageOutput
+ */
+export type PrStageOutput = Message<"octomanager.v1.PrStageOutput"> & {
+  /**
+   * @generated from oneof octomanager.v1.PrStageOutput.value
+   */
+  value: {
+    /**
+     * @generated from field: octomanager.v1.PrPolicyAnalysis policy = 1;
+     */
+    value: PrPolicyAnalysis;
+    case: "policy";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrChangeAnalysis change = 2;
+     */
+    value: PrChangeAnalysis;
+    case: "change";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrDescription writer = 3;
+     */
+    value: PrDescription;
+    case: "writer";
+  } | {
+    /**
+     * @generated from field: octomanager.v1.PrEvaluation evaluator = 4;
+     */
+    value: PrEvaluation;
+    case: "evaluator";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Value malformed = 5;
+     */
+    value: Value;
+    case: "malformed";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message octomanager.v1.PrStageOutput.
+ * Use `create(PrStageOutputSchema)` to create a new message.
+ */
+export const PrStageOutputSchema: GenMessage<PrStageOutput> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 65);
+
+/**
+ * @generated from message octomanager.v1.PrStage
+ */
+export type PrStage = Message<"octomanager.v1.PrStage"> & {
+  /**
+   * @generated from field: optional bool invalidated = 1;
+   */
+  invalidated?: boolean | undefined;
+
+  /**
+   * @generated from field: optional string role = 2;
+   */
+  role?: string | undefined;
+
+  /**
+   * @generated from field: optional string model = 3;
+   */
+  model?: string | undefined;
+
+  /**
+   * @generated from field: optional string prompt_digest = 4;
+   */
+  promptDigest?: string | undefined;
+
+  /**
+   * @generated from field: optional string raw = 5;
+   */
+  raw?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrStageOutput result = 6;
+   */
+  result?: PrStageOutput | undefined;
+
+  /**
+   * @generated from field: optional int64 at = 7;
+   */
+  at?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrStage.
+ * Use `create(PrStageSchema)` to create a new message.
+ */
+export const PrStageSchema: GenMessage<PrStage> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 66);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrStages
+ */
+export type PrStages = Message<"octomanager.v1.PrStages"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrStage items = 1;
+   */
+  items: PrStage[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrStages.
+ * Use `create(PrStagesSchema)` to create a new message.
+ */
+export const PrStagesSchema: GenMessage<PrStages> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 67);
+
+/**
+ * @generated from message octomanager.v1.PrBrief
+ */
+export type PrBrief = Message<"octomanager.v1.PrBrief"> & {
+  /**
+   * @generated from field: optional uint32 schema_version = 1;
+   */
+  schemaVersion?: number | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInput request = 2;
+   */
+  request?: PrSubmissionInput | undefined;
+
+  /**
+   * @generated from field: optional string base_sha = 3;
+   */
+  baseSha?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 policy_version = 4;
+   */
+  policyVersion?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrChangeAnalysis change = 5;
+   */
+  change?: PrChangeAnalysis | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrDescription draft = 6;
+   */
+  draft?: PrDescription | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrBrief.
+ * Use `create(PrBriefSchema)` to create a new message.
+ */
+export const PrBriefSchema: GenMessage<PrBrief> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 68);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionDecisionBlockers
+ */
+export type PrSubmissionDecisionBlockers = Message<"octomanager.v1.PrSubmissionDecisionBlockers"> & {
+  /**
+   * @generated from field: repeated string items = 1;
+   */
+  items: string[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionDecisionBlockers.
+ * Use `create(PrSubmissionDecisionBlockersSchema)` to create a new message.
+ */
+export const PrSubmissionDecisionBlockersSchema: GenMessage<PrSubmissionDecisionBlockers> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 69);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionDecision
+ */
+export type PrSubmissionDecision = Message<"octomanager.v1.PrSubmissionDecision"> & {
+  /**
+   * @generated from field: optional string status = 1;
+   */
+  status?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 score = 2;
+   */
+  score?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string tier = 3;
+   */
+  tier?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 prose_words = 4;
+   */
+  proseWords?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionDecisionBlockers blockers = 5;
+   */
+  blockers?: PrSubmissionDecisionBlockers | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrEvaluationFindings findings = 6;
+   */
+  findings?: PrEvaluationFindings | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionDecision.
+ * Use `create(PrSubmissionDecisionSchema)` to create a new message.
+ */
+export const PrSubmissionDecisionSchema: GenMessage<PrSubmissionDecision> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 70);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionFlowNodes
+ */
+export type PrSubmissionFlowNodes = Message<"octomanager.v1.PrSubmissionFlowNodes"> & {
+  /**
+   * @generated from field: repeated google.protobuf.Value items = 1;
+   */
+  items: Value[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionFlowNodes.
+ * Use `create(PrSubmissionFlowNodesSchema)` to create a new message.
+ */
+export const PrSubmissionFlowNodesSchema: GenMessage<PrSubmissionFlowNodes> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 71);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionFlow
+ */
+export type PrSubmissionFlow = Message<"octomanager.v1.PrSubmissionFlow"> & {
+  /**
+   * @generated from field: optional bool available = 1;
+   */
+  available?: boolean | undefined;
+
+  /**
+   * @generated from field: optional string scope = 2;
+   */
+  scope?: string | undefined;
+
+  /**
+   * @generated from field: optional string analysis_id = 3;
+   */
+  analysisId?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 schema_version = 4;
+   */
+  schemaVersion?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrFlowCoverage coverage = 5;
+   */
+  coverage?: PrFlowCoverage | undefined;
+
+  /**
+   * @generated from field: optional int64 node_count = 6;
+   */
+  nodeCount?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 edge_count = 7;
+   */
+  edgeCount?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionFlowNodes nodes = 8;
+   */
+  nodes?: PrSubmissionFlowNodes | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionFlowNodes edges = 9;
+   */
+  edges?: PrSubmissionFlowNodes | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionFlowNodes interactions = 10;
+   */
+  interactions?: PrSubmissionFlowNodes | undefined;
+
+  /**
+   * @generated from field: optional int64 interaction_count = 11;
+   */
+  interactionCount?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionFlowNodes diagnostics = 12;
+   */
+  diagnostics?: PrSubmissionFlowNodes | undefined;
+
+  /**
+   * @generated from field: optional bool limited = 13;
+   */
+  limited?: boolean | undefined;
+
+  /**
+   * @generated from field: optional string full_capture_failure = 14;
+   */
+  fullCaptureFailure?: string | undefined;
+
+  /**
+   * @generated from field: optional string reason = 15;
+   */
+  reason?: string | undefined;
+
+  /**
+   * @generated from field: optional string alternative_evidence = 16;
+   */
+  alternativeEvidence?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionFlow.
+ * Use `create(PrSubmissionFlowSchema)` to create a new message.
+ */
+export const PrSubmissionFlowSchema: GenMessage<PrSubmissionFlow> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 72);
+
+/**
+ * @generated from message octomanager.v1.PrSubmissionImagesItem
+ */
+export type PrSubmissionImagesItem = Message<"octomanager.v1.PrSubmissionImagesItem"> & {
+  /**
+   * @generated from field: optional string url = 1;
+   */
+  url?: string | undefined;
+
+  /**
+   * @generated from field: optional string sha256 = 2;
+   */
+  sha256?: string | undefined;
+
+  /**
+   * @generated from field: optional string content_type = 3;
+   */
+  contentType?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionImagesItem.
+ * Use `create(PrSubmissionImagesItemSchema)` to create a new message.
+ */
+export const PrSubmissionImagesItemSchema: GenMessage<PrSubmissionImagesItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 73);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionImages
+ */
+export type PrSubmissionImages = Message<"octomanager.v1.PrSubmissionImages"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrSubmissionImagesItem items = 1;
+   */
+  items: PrSubmissionImagesItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionImages.
+ * Use `create(PrSubmissionImagesSchema)` to create a new message.
+ */
+export const PrSubmissionImagesSchema: GenMessage<PrSubmissionImages> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 74);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrSubmissionWorkerPids
+ */
+export type PrSubmissionWorkerPids = Message<"octomanager.v1.PrSubmissionWorkerPids"> & {
+  /**
+   * @generated from field: repeated int64 items = 1;
+   */
+  items: bigint[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmissionWorkerPids.
+ * Use `create(PrSubmissionWorkerPidsSchema)` to create a new message.
+ */
+export const PrSubmissionWorkerPidsSchema: GenMessage<PrSubmissionWorkerPids> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 75);
+
+/**
+ * @generated from message octomanager.v1.PrSubmission
+ */
+export type PrSubmission = Message<"octomanager.v1.PrSubmission"> & {
+  /**
+   * @generated from field: optional string id = 1;
+   */
+  id?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionInput request = 2;
+   */
+  request?: PrSubmissionInput | undefined;
+
+  /**
+   * @generated from field: optional string state = 3;
+   */
+  state?: string | undefined;
+
+  /**
+   * @generated from field: optional string detail = 4;
+   */
+  detail?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 created_at = 5;
+   */
+  createdAt?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 updated_at = 6;
+   */
+  updatedAt?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshot snapshot = 7;
+   */
+  snapshot?: PrRepositorySnapshot | undefined;
+
+  /**
+   * @generated from field: optional int64 policy_version = 8;
+   */
+  policyVersion?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string policy_digest = 9;
+   */
+  policyDigest?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrStages stages = 10;
+   */
+  stages?: PrStages | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrBrief brief = 11;
+   */
+  brief?: PrBrief | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrContract contract = 12;
+   */
+  contract?: PrContract | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrEvaluation evaluation = 13;
+   */
+  evaluation?: PrEvaluation | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionDecision decision = 14;
+   */
+  decision?: PrSubmissionDecision | undefined;
+
+  /**
+   * @generated from field: optional string prepared_digest = 15;
+   */
+  preparedDigest?: string | undefined;
+
+  /**
+   * @generated from field: optional bool publication_requested = 16;
+   */
+  publicationRequested?: boolean | undefined;
+
+  /**
+   * @generated from field: optional bool publication_attempted = 17;
+   */
+  publicationAttempted?: boolean | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionFlow flow = 18;
+   */
+  flow?: PrSubmissionFlow | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionImages images = 19;
+   */
+  images?: PrSubmissionImages | undefined;
+
+  /**
+   * @generated from field: optional string pr_url = 20;
+   */
+  prUrl?: string | undefined;
+
+  /**
+   * @generated from field: optional string pr_id = 21;
+   */
+  prId?: string | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrSubmissionWorkerPids worker_pids = 22;
+   */
+  workerPids?: PrSubmissionWorkerPids | undefined;
+
+  /**
+   * @generated from field: optional int64 notification_revision = 23;
+   */
+  notificationRevision?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrSubmission.
+ * Use `create(PrSubmissionSchema)` to create a new message.
+ */
+export const PrSubmissionSchema: GenMessage<PrSubmission> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 76);
+
+/**
+ * @generated from message octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine
+ */
+export type PrRepositoryPolicyComplexityProfilesRoutine = Message<"octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine"> & {
+  /**
+   * @generated from field: optional int64 min_words = 1;
+   */
+  minWords?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 max_words = 2;
+   */
+  maxWords?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string guidance = 3;
+   */
+  guidance?: string | undefined;
+
+  /**
+   * @generated from field: optional bool advisory = 4;
+   */
+  advisory?: boolean | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine.
+ * Use `create(PrRepositoryPolicyComplexityProfilesRoutineSchema)` to create a new message.
+ */
+export const PrRepositoryPolicyComplexityProfilesRoutineSchema: GenMessage<PrRepositoryPolicyComplexityProfilesRoutine> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 77);
+
+/**
+ * @generated from message octomanager.v1.PrRepositoryPolicyComplexityProfiles
+ */
+export type PrRepositoryPolicyComplexityProfiles = Message<"octomanager.v1.PrRepositoryPolicyComplexityProfiles"> & {
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine routine = 1;
+   */
+  routine?: PrRepositoryPolicyComplexityProfilesRoutine | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine standard = 2;
+   */
+  standard?: PrRepositoryPolicyComplexityProfilesRoutine | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine complex = 3;
+   */
+  complex?: PrRepositoryPolicyComplexityProfilesRoutine | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositoryPolicyComplexityProfiles.
+ * Use `create(PrRepositoryPolicyComplexityProfilesSchema)` to create a new message.
+ */
+export const PrRepositoryPolicyComplexityProfilesSchema: GenMessage<PrRepositoryPolicyComplexityProfiles> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 78);
+
+/**
+ * @generated from message octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem
+ */
+export type PrRepositoryPolicyCitationCorrectionsItem = Message<"octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem"> & {
+  /**
+   * @generated from field: optional string rule_id = 1;
+   */
+  ruleId?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 reported_line = 2;
+   */
+  reportedLine?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 verified_line = 3;
+   */
+  verifiedLine?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem.
+ * Use `create(PrRepositoryPolicyCitationCorrectionsItemSchema)` to create a new message.
+ */
+export const PrRepositoryPolicyCitationCorrectionsItemSchema: GenMessage<PrRepositoryPolicyCitationCorrectionsItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 79);
+
+/**
+ * Wrapper preserves an absent list versus a present empty list.
+ *
+ * @generated from message octomanager.v1.PrRepositoryPolicyCitationCorrections
+ */
+export type PrRepositoryPolicyCitationCorrections = Message<"octomanager.v1.PrRepositoryPolicyCitationCorrections"> & {
+  /**
+   * @generated from field: repeated octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem items = 1;
+   */
+  items: PrRepositoryPolicyCitationCorrectionsItem[];
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositoryPolicyCitationCorrections.
+ * Use `create(PrRepositoryPolicyCitationCorrectionsSchema)` to create a new message.
+ */
+export const PrRepositoryPolicyCitationCorrectionsSchema: GenMessage<PrRepositoryPolicyCitationCorrections> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 80);
+
+/**
+ * @generated from message octomanager.v1.PrRepositoryPolicy
+ */
+export type PrRepositoryPolicy = Message<"octomanager.v1.PrRepositoryPolicy"> & {
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicyComplexityProfiles complexity_profiles = 1;
+   */
+  complexityProfiles?: PrRepositoryPolicyComplexityProfiles | undefined;
+
+  /**
+   * @generated from field: optional uint32 schema_version = 2;
+   */
+  schemaVersion?: number | undefined;
+
+  /**
+   * @generated from field: optional string repository = 3;
+   */
+  repository?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 version = 4;
+   */
+  version?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string source_digest = 5;
+   */
+  sourceDigest?: string | undefined;
+
+  /**
+   * @generated from field: optional uint32 analyst_version = 6;
+   */
+  analystVersion?: number | undefined;
+
+  /**
+   * @generated from field: optional uint32 stock_version = 7;
+   */
+  stockVersion?: number | undefined;
+
+  /**
+   * @generated from field: optional int64 created_at_ms = 8;
+   */
+  createdAtMs?: bigint | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositoryPolicyCitationCorrections citation_corrections = 9;
+   */
+  citationCorrections?: PrRepositoryPolicyCitationCorrections | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrRepositorySnapshotSources sources = 10;
+   */
+  sources?: PrRepositorySnapshotSources | undefined;
+
+  /**
+   * @generated from field: octomanager.v1.PrPolicyAnalysis analysis = 11;
+   */
+  analysis?: PrPolicyAnalysis | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrRepositoryPolicy.
+ * Use `create(PrRepositoryPolicySchema)` to create a new message.
+ */
+export const PrRepositoryPolicySchema: GenMessage<PrRepositoryPolicy> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 81);
+
+/**
+ * PR Flow schema-4 coverage counts; heterogeneous graph records remain Value.
+ *
+ * @generated from message octomanager.v1.PrFlowCoverage
+ */
+export type PrFlowCoverage = Message<"octomanager.v1.PrFlowCoverage"> & {
+  /**
+   * @generated from field: optional int64 total_nodes = 1 [json_name = "total_nodes"];
+   */
+  totalNodes?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 shown_nodes = 2 [json_name = "shown_nodes"];
+   */
+  shownNodes?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 omitted_context_nodes = 3 [json_name = "omitted_context_nodes"];
+   */
+  omittedContextNodes?: bigint | undefined;
+
+  /**
+   * @generated from field: optional int64 collapsed_detail_nodes = 4 [json_name = "collapsed_detail_nodes"];
+   */
+  collapsedDetailNodes?: bigint | undefined;
+};
+
+/**
+ * Describes the message octomanager.v1.PrFlowCoverage.
+ * Use `create(PrFlowCoverageSchema)` to create a new message.
+ */
+export const PrFlowCoverageSchema: GenMessage<PrFlowCoverage> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_submissions, 82);
 

@@ -117,7 +117,9 @@ test("snapshot resolves fork refs, repository TOML and GitHub context visibility
     { ...input, references: ["#7", "private/context#7"] },
     signal(),
   );
-  expect(snap.contractToml).toBe("schema_version = 1\n");
+  expect(snap.contractToml).toBeUndefined();
+  expect(snap.contract?.schema_version).toBe(1);
+  expect(snap.contractSource?.blobSha).toBe("config");
   expect(snap.references?.map((ref) => ref.private)).toEqual([false, true]);
   expect(f.calls).toContain("repos/fork/repo/git/ref/heads/feature");
   expect(f.calls.some((path) => path.includes(b + "...fork%3A" + a))).toBe(

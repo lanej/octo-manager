@@ -9,6 +9,7 @@ package octomanagerv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -21,10 +22,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Structured JSON is validated with the exported versioned JSON Schemas.
+// Known structures use typed fields. Domain string variants are validated at the
+// coordinator boundary. Value is reserved for heterogeneous provider evidence or
+// malformed output, whose original shape must remain inspectable.
 type SubmitPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	InputJson     string                 `protobuf:"bytes,1,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	Input         *PrSubmissionInput     `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -59,18 +62,18 @@ func (*SubmitPullRequestRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SubmitPullRequestRequest) GetInputJson() string {
+func (x *SubmitPullRequestRequest) GetInput() *PrSubmissionInput {
 	if x != nil {
-		return x.InputJson
+		return x.Input
 	}
-	return ""
+	return nil
 }
 
 type SubmitPullRequestResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submission    *PrSubmission          `protobuf:"bytes,2,opt,name=submission,proto3" json:"submission,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SubmitPullRequestResponse) Reset() {
@@ -103,18 +106,18 @@ func (*SubmitPullRequestResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SubmitPullRequestResponse) GetSubmissionJson() string {
+func (x *SubmitPullRequestResponse) GetSubmission() *PrSubmission {
 	if x != nil {
-		return x.SubmissionJson
+		return x.Submission
 	}
-	return ""
+	return nil
 }
 
 type GetSubmissionResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submission    *PrSubmission          `protobuf:"bytes,2,opt,name=submission,proto3" json:"submission,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetSubmissionResponse) Reset() {
@@ -147,18 +150,18 @@ func (*GetSubmissionResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetSubmissionResponse) GetSubmissionJson() string {
+func (x *GetSubmissionResponse) GetSubmission() *PrSubmission {
 	if x != nil {
-		return x.SubmissionJson
+		return x.Submission
 	}
-	return ""
+	return nil
 }
 
 type RetrySubmissionResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submission    *PrSubmission          `protobuf:"bytes,2,opt,name=submission,proto3" json:"submission,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RetrySubmissionResponse) Reset() {
@@ -191,18 +194,18 @@ func (*RetrySubmissionResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *RetrySubmissionResponse) GetSubmissionJson() string {
+func (x *RetrySubmissionResponse) GetSubmission() *PrSubmission {
 	if x != nil {
-		return x.SubmissionJson
+		return x.Submission
 	}
-	return ""
+	return nil
 }
 
 type CancelSubmissionResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submission    *PrSubmission          `protobuf:"bytes,2,opt,name=submission,proto3" json:"submission,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CancelSubmissionResponse) Reset() {
@@ -235,11 +238,11 @@ func (*CancelSubmissionResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CancelSubmissionResponse) GetSubmissionJson() string {
+func (x *CancelSubmissionResponse) GetSubmission() *PrSubmission {
 	if x != nil {
-		return x.SubmissionJson
+		return x.Submission
 	}
-	return ""
+	return nil
 }
 
 type GetSubmissionRequest struct {
@@ -323,10 +326,10 @@ func (*ListSubmissionsRequest) Descriptor() ([]byte, []int) {
 }
 
 type ListSubmissionsResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionsJson []string               `protobuf:"bytes,1,rep,name=submissions_json,json=submissionsJson,proto3" json:"submissions_json,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submissions   []*PrSubmission        `protobuf:"bytes,2,rep,name=submissions,proto3" json:"submissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListSubmissionsResponse) Reset() {
@@ -359,9 +362,9 @@ func (*ListSubmissionsResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ListSubmissionsResponse) GetSubmissionsJson() []string {
+func (x *ListSubmissionsResponse) GetSubmissions() []*PrSubmission {
 	if x != nil {
-		return x.SubmissionsJson
+		return x.Submissions
 	}
 	return nil
 }
@@ -516,8 +519,8 @@ func (x *GetRepositoryPolicyRequest) GetTier() string {
 
 type GetRepositoryPolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PolicyJson    string                 `protobuf:"bytes,1,opt,name=policy_json,json=policyJson,proto3" json:"policy_json,omitempty"`
 	Template      string                 `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
+	Policy        *PrRepositoryPolicy    `protobuf:"bytes,3,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -552,18 +555,18 @@ func (*GetRepositoryPolicyResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *GetRepositoryPolicyResponse) GetPolicyJson() string {
-	if x != nil {
-		return x.PolicyJson
-	}
-	return ""
-}
-
 func (x *GetRepositoryPolicyResponse) GetTemplate() string {
 	if x != nil {
 		return x.Template
 	}
 	return ""
+}
+
+func (x *GetRepositoryPolicyResponse) GetPolicy() *PrRepositoryPolicy {
+	if x != nil {
+		return x.Policy
+	}
+	return nil
 }
 
 type PublishPreparedPullRequestRequest struct {
@@ -611,10 +614,10 @@ func (x *PublishPreparedPullRequestRequest) GetId() string {
 }
 
 type PublishPreparedPullRequestResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SubmissionJson string                 `protobuf:"bytes,1,opt,name=submission_json,json=submissionJson,proto3" json:"submission_json,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Submission    *PrSubmission          `protobuf:"bytes,2,opt,name=submission,proto3" json:"submission,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PublishPreparedPullRequestResponse) Reset() {
@@ -647,34 +650,4707 @@ func (*PublishPreparedPullRequestResponse) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *PublishPreparedPullRequestResponse) GetSubmissionJson() string {
+func (x *PublishPreparedPullRequestResponse) GetSubmission() *PrSubmission {
 	if x != nil {
-		return x.SubmissionJson
+		return x.Submission
+	}
+	return nil
+}
+
+type PrContractPrPresentation struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	Layout                   *string                `protobuf:"bytes,1,opt,name=layout,proto3,oneof" json:"layout,omitempty"`
+	FirstArtifactByProseWord *int64                 `protobuf:"varint,2,opt,name=first_artifact_by_prose_word,proto3,oneof" json:"first_artifact_by_prose_word,omitempty"`
+	DiagramFormat            *string                `protobuf:"bytes,3,opt,name=diagram_format,proto3,oneof" json:"diagram_format,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *PrContractPrPresentation) Reset() {
+	*x = PrContractPrPresentation{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrPresentation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrPresentation) ProtoMessage() {}
+
+func (x *PrContractPrPresentation) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrPresentation.ProtoReflect.Descriptor instead.
+func (*PrContractPrPresentation) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *PrContractPrPresentation) GetLayout() string {
+	if x != nil && x.Layout != nil {
+		return *x.Layout
 	}
 	return ""
+}
+
+func (x *PrContractPrPresentation) GetFirstArtifactByProseWord() int64 {
+	if x != nil && x.FirstArtifactByProseWord != nil {
+		return *x.FirstArtifactByProseWord
+	}
+	return 0
+}
+
+func (x *PrContractPrPresentation) GetDiagramFormat() string {
+	if x != nil && x.DiagramFormat != nil {
+		return *x.DiagramFormat
+	}
+	return ""
+}
+
+type PrContractPrComplexityWeights struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Breadth       *int64                 `protobuf:"varint,1,opt,name=breadth,proto3,oneof" json:"breadth,omitempty"`
+	Behavior      *int64                 `protobuf:"varint,2,opt,name=behavior,proto3,oneof" json:"behavior,omitempty"`
+	Coupling      *int64                 `protobuf:"varint,3,opt,name=coupling,proto3,oneof" json:"coupling,omitempty"`
+	Compatibility *int64                 `protobuf:"varint,4,opt,name=compatibility,proto3,oneof" json:"compatibility,omitempty"`
+	StateRisk     *int64                 `protobuf:"varint,5,opt,name=state_risk,proto3,oneof" json:"state_risk,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPrComplexityWeights) Reset() {
+	*x = PrContractPrComplexityWeights{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrComplexityWeights) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrComplexityWeights) ProtoMessage() {}
+
+func (x *PrContractPrComplexityWeights) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrComplexityWeights.ProtoReflect.Descriptor instead.
+func (*PrContractPrComplexityWeights) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *PrContractPrComplexityWeights) GetBreadth() int64 {
+	if x != nil && x.Breadth != nil {
+		return *x.Breadth
+	}
+	return 0
+}
+
+func (x *PrContractPrComplexityWeights) GetBehavior() int64 {
+	if x != nil && x.Behavior != nil {
+		return *x.Behavior
+	}
+	return 0
+}
+
+func (x *PrContractPrComplexityWeights) GetCoupling() int64 {
+	if x != nil && x.Coupling != nil {
+		return *x.Coupling
+	}
+	return 0
+}
+
+func (x *PrContractPrComplexityWeights) GetCompatibility() int64 {
+	if x != nil && x.Compatibility != nil {
+		return *x.Compatibility
+	}
+	return 0
+}
+
+func (x *PrContractPrComplexityWeights) GetStateRisk() int64 {
+	if x != nil && x.StateRisk != nil {
+		return *x.StateRisk
+	}
+	return 0
+}
+
+type PrContractPrComplexity struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Weights       *PrContractPrComplexityWeights `protobuf:"bytes,1,opt,name=weights,proto3" json:"weights,omitempty"`
+	RoutineMax    *int64                         `protobuf:"varint,2,opt,name=routine_max,proto3,oneof" json:"routine_max,omitempty"`
+	StandardMax   *int64                         `protobuf:"varint,3,opt,name=standard_max,proto3,oneof" json:"standard_max,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPrComplexity) Reset() {
+	*x = PrContractPrComplexity{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrComplexity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrComplexity) ProtoMessage() {}
+
+func (x *PrContractPrComplexity) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrComplexity.ProtoReflect.Descriptor instead.
+func (*PrContractPrComplexity) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *PrContractPrComplexity) GetWeights() *PrContractPrComplexityWeights {
+	if x != nil {
+		return x.Weights
+	}
+	return nil
+}
+
+func (x *PrContractPrComplexity) GetRoutineMax() int64 {
+	if x != nil && x.RoutineMax != nil {
+		return *x.RoutineMax
+	}
+	return 0
+}
+
+func (x *PrContractPrComplexity) GetStandardMax() int64 {
+	if x != nil && x.StandardMax != nil {
+		return *x.StandardMax
+	}
+	return 0
+}
+
+type PrContractPrProfilesRoutine struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	MaxProseWords  *int64                 `protobuf:"varint,1,opt,name=max_prose_words,proto3,oneof" json:"max_prose_words,omitempty"`
+	RequireDiagram *bool                  `protobuf:"varint,2,opt,name=require_diagram,proto3,oneof" json:"require_diagram,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PrContractPrProfilesRoutine) Reset() {
+	*x = PrContractPrProfilesRoutine{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrProfilesRoutine) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrProfilesRoutine) ProtoMessage() {}
+
+func (x *PrContractPrProfilesRoutine) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrProfilesRoutine.ProtoReflect.Descriptor instead.
+func (*PrContractPrProfilesRoutine) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *PrContractPrProfilesRoutine) GetMaxProseWords() int64 {
+	if x != nil && x.MaxProseWords != nil {
+		return *x.MaxProseWords
+	}
+	return 0
+}
+
+func (x *PrContractPrProfilesRoutine) GetRequireDiagram() bool {
+	if x != nil && x.RequireDiagram != nil {
+		return *x.RequireDiagram
+	}
+	return false
+}
+
+type PrContractPrProfiles struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Routine       *PrContractPrProfilesRoutine `protobuf:"bytes,1,opt,name=routine,proto3" json:"routine,omitempty"`
+	Standard      *PrContractPrProfilesRoutine `protobuf:"bytes,2,opt,name=standard,proto3" json:"standard,omitempty"`
+	Complex       *PrContractPrProfilesRoutine `protobuf:"bytes,3,opt,name=complex,proto3" json:"complex,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPrProfiles) Reset() {
+	*x = PrContractPrProfiles{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrProfiles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrProfiles) ProtoMessage() {}
+
+func (x *PrContractPrProfiles) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrProfiles.ProtoReflect.Descriptor instead.
+func (*PrContractPrProfiles) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *PrContractPrProfiles) GetRoutine() *PrContractPrProfilesRoutine {
+	if x != nil {
+		return x.Routine
+	}
+	return nil
+}
+
+func (x *PrContractPrProfiles) GetStandard() *PrContractPrProfilesRoutine {
+	if x != nil {
+		return x.Standard
+	}
+	return nil
+}
+
+func (x *PrContractPrProfiles) GetComplex() *PrContractPrProfilesRoutine {
+	if x != nil {
+		return x.Complex
+	}
+	return nil
+}
+
+type PrContractPrOverridesItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,proto3,oneof" json:"rule_id,omitempty"`
+	Reason        *string                `protobuf:"bytes,2,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPrOverridesItem) Reset() {
+	*x = PrContractPrOverridesItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrOverridesItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrOverridesItem) ProtoMessage() {}
+
+func (x *PrContractPrOverridesItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrOverridesItem.ProtoReflect.Descriptor instead.
+func (*PrContractPrOverridesItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *PrContractPrOverridesItem) GetRuleId() string {
+	if x != nil && x.RuleId != nil {
+		return *x.RuleId
+	}
+	return ""
+}
+
+func (x *PrContractPrOverridesItem) GetReason() string {
+	if x != nil && x.Reason != nil {
+		return *x.Reason
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrContractPrOverrides struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Items         []*PrContractPrOverridesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPrOverrides) Reset() {
+	*x = PrContractPrOverrides{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPrOverrides) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPrOverrides) ProtoMessage() {}
+
+func (x *PrContractPrOverrides) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPrOverrides.ProtoReflect.Descriptor instead.
+func (*PrContractPrOverrides) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *PrContractPrOverrides) GetItems() []*PrContractPrOverridesItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrContractPr struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Presentation  *PrContractPrPresentation `protobuf:"bytes,1,opt,name=presentation,proto3" json:"presentation,omitempty"`
+	Complexity    *PrContractPrComplexity   `protobuf:"bytes,2,opt,name=complexity,proto3" json:"complexity,omitempty"`
+	Profiles      *PrContractPrProfiles     `protobuf:"bytes,3,opt,name=profiles,proto3" json:"profiles,omitempty"`
+	Overrides     *PrContractPrOverrides    `protobuf:"bytes,4,opt,name=overrides,proto3" json:"overrides,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractPr) Reset() {
+	*x = PrContractPr{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractPr) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractPr) ProtoMessage() {}
+
+func (x *PrContractPr) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractPr.ProtoReflect.Descriptor instead.
+func (*PrContractPr) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *PrContractPr) GetPresentation() *PrContractPrPresentation {
+	if x != nil {
+		return x.Presentation
+	}
+	return nil
+}
+
+func (x *PrContractPr) GetComplexity() *PrContractPrComplexity {
+	if x != nil {
+		return x.Complexity
+	}
+	return nil
+}
+
+func (x *PrContractPr) GetProfiles() *PrContractPrProfiles {
+	if x != nil {
+		return x.Profiles
+	}
+	return nil
+}
+
+func (x *PrContractPr) GetOverrides() *PrContractPrOverrides {
+	if x != nil {
+		return x.Overrides
+	}
+	return nil
+}
+
+type PrContract struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SchemaVersion *uint32                `protobuf:"varint,1,opt,name=schema_version,proto3,oneof" json:"schema_version,omitempty"`
+	Pr            *PrContractPr          `protobuf:"bytes,2,opt,name=pr,proto3" json:"pr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContract) Reset() {
+	*x = PrContract{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContract) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContract) ProtoMessage() {}
+
+func (x *PrContract) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContract.ProtoReflect.Descriptor instead.
+func (*PrContract) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *PrContract) GetSchemaVersion() uint32 {
+	if x != nil && x.SchemaVersion != nil {
+		return *x.SchemaVersion
+	}
+	return 0
+}
+
+func (x *PrContract) GetPr() *PrContractPr {
+	if x != nil {
+		return x.Pr
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrContractSourceAuthoredPaths struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractSourceAuthoredPaths) Reset() {
+	*x = PrContractSourceAuthoredPaths{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractSourceAuthoredPaths) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractSourceAuthoredPaths) ProtoMessage() {}
+
+func (x *PrContractSourceAuthoredPaths) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractSourceAuthoredPaths.ProtoReflect.Descriptor instead.
+func (*PrContractSourceAuthoredPaths) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *PrContractSourceAuthoredPaths) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrContractSource struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Sha256        *string                        `protobuf:"bytes,1,opt,name=sha256,proto3,oneof" json:"sha256,omitempty"`
+	Path          *string                        `protobuf:"bytes,2,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	BlobSha       *string                        `protobuf:"bytes,3,opt,name=blob_sha,json=blobSha,proto3,oneof" json:"blob_sha,omitempty"`
+	AuthoredPaths *PrContractSourceAuthoredPaths `protobuf:"bytes,4,opt,name=authored_paths,json=authoredPaths,proto3" json:"authored_paths,omitempty"`
+	ParseError    *string                        `protobuf:"bytes,5,opt,name=parse_error,json=parseError,proto3,oneof" json:"parse_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrContractSource) Reset() {
+	*x = PrContractSource{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrContractSource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrContractSource) ProtoMessage() {}
+
+func (x *PrContractSource) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrContractSource.ProtoReflect.Descriptor instead.
+func (*PrContractSource) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *PrContractSource) GetSha256() string {
+	if x != nil && x.Sha256 != nil {
+		return *x.Sha256
+	}
+	return ""
+}
+
+func (x *PrContractSource) GetPath() string {
+	if x != nil && x.Path != nil {
+		return *x.Path
+	}
+	return ""
+}
+
+func (x *PrContractSource) GetBlobSha() string {
+	if x != nil && x.BlobSha != nil {
+		return *x.BlobSha
+	}
+	return ""
+}
+
+func (x *PrContractSource) GetAuthoredPaths() *PrContractSourceAuthoredPaths {
+	if x != nil {
+		return x.AuthoredPaths
+	}
+	return nil
+}
+
+func (x *PrContractSource) GetParseError() string {
+	if x != nil && x.ParseError != nil {
+		return *x.ParseError
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionInputReferences struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInputReferences) Reset() {
+	*x = PrSubmissionInputReferences{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInputReferences) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInputReferences) ProtoMessage() {}
+
+func (x *PrSubmissionInputReferences) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInputReferences.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInputReferences) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *PrSubmissionInputReferences) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrSubmissionInputDescription struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         *string                `protobuf:"bytes,1,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Body          *string                `protobuf:"bytes,2,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInputDescription) Reset() {
+	*x = PrSubmissionInputDescription{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInputDescription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInputDescription) ProtoMessage() {}
+
+func (x *PrSubmissionInputDescription) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInputDescription.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInputDescription) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *PrSubmissionInputDescription) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputDescription) GetBody() string {
+	if x != nil && x.Body != nil {
+		return *x.Body
+	}
+	return ""
+}
+
+type PrSubmissionInputValidationItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Command       *string                `protobuf:"bytes,1,opt,name=command,proto3,oneof" json:"command,omitempty"`
+	Result        *string                `protobuf:"bytes,2,opt,name=result,proto3,oneof" json:"result,omitempty"`
+	Note          *string                `protobuf:"bytes,3,opt,name=note,proto3,oneof" json:"note,omitempty"`
+	EvidenceUrl   *string                `protobuf:"bytes,4,opt,name=evidence_url,json=evidenceUrl,proto3,oneof" json:"evidence_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInputValidationItem) Reset() {
+	*x = PrSubmissionInputValidationItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInputValidationItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInputValidationItem) ProtoMessage() {}
+
+func (x *PrSubmissionInputValidationItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInputValidationItem.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInputValidationItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *PrSubmissionInputValidationItem) GetCommand() string {
+	if x != nil && x.Command != nil {
+		return *x.Command
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputValidationItem) GetResult() string {
+	if x != nil && x.Result != nil {
+		return *x.Result
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputValidationItem) GetNote() string {
+	if x != nil && x.Note != nil {
+		return *x.Note
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputValidationItem) GetEvidenceUrl() string {
+	if x != nil && x.EvidenceUrl != nil {
+		return *x.EvidenceUrl
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionInputValidation struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Items         []*PrSubmissionInputValidationItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInputValidation) Reset() {
+	*x = PrSubmissionInputValidation{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInputValidation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInputValidation) ProtoMessage() {}
+
+func (x *PrSubmissionInputValidation) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInputValidation.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInputValidation) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *PrSubmissionInputValidation) GetItems() []*PrSubmissionInputValidationItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrSubmissionInputOwner struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Harness       *string                `protobuf:"bytes,1,opt,name=harness,proto3,oneof" json:"harness,omitempty"`
+	Endpoint      *string                `protobuf:"bytes,2,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	SessionId     *string                `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`
+	Label         *string                `protobuf:"bytes,4,opt,name=label,proto3,oneof" json:"label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInputOwner) Reset() {
+	*x = PrSubmissionInputOwner{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInputOwner) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInputOwner) ProtoMessage() {}
+
+func (x *PrSubmissionInputOwner) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInputOwner.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInputOwner) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *PrSubmissionInputOwner) GetHarness() string {
+	if x != nil && x.Harness != nil {
+		return *x.Harness
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputOwner) GetEndpoint() string {
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputOwner) GetSessionId() string {
+	if x != nil && x.SessionId != nil {
+		return *x.SessionId
+	}
+	return ""
+}
+
+func (x *PrSubmissionInputOwner) GetLabel() string {
+	if x != nil && x.Label != nil {
+		return *x.Label
+	}
+	return ""
+}
+
+type PrSubmissionInput struct {
+	state          protoimpl.MessageState        `protogen:"open.v1"`
+	Mode           *string                       `protobuf:"bytes,1,opt,name=mode,proto3,oneof" json:"mode,omitempty"`
+	HeadRepository *string                       `protobuf:"bytes,2,opt,name=head_repository,json=headRepository,proto3,oneof" json:"head_repository,omitempty"`
+	UpdateUrl      *string                       `protobuf:"bytes,3,opt,name=update_url,json=updateUrl,proto3,oneof" json:"update_url,omitempty"`
+	Contract       *PrContract                   `protobuf:"bytes,4,opt,name=contract,proto3" json:"contract,omitempty"`
+	ContractSource *PrContractSource             `protobuf:"bytes,5,opt,name=contract_source,json=contractSource,proto3" json:"contract_source,omitempty"`
+	References     *PrSubmissionInputReferences  `protobuf:"bytes,6,opt,name=references,proto3" json:"references,omitempty"`
+	Description    *PrSubmissionInputDescription `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
+	RequestId      *string                       `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	Repository     *string                       `protobuf:"bytes,9,opt,name=repository,proto3,oneof" json:"repository,omitempty"`
+	HeadRef        *string                       `protobuf:"bytes,10,opt,name=head_ref,json=headRef,proto3,oneof" json:"head_ref,omitempty"`
+	HeadSha        *string                       `protobuf:"bytes,11,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	BaseRef        *string                       `protobuf:"bytes,12,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
+	Purpose        *string                       `protobuf:"bytes,13,opt,name=purpose,proto3,oneof" json:"purpose,omitempty"`
+	Problem        *string                       `protobuf:"bytes,14,opt,name=problem,proto3,oneof" json:"problem,omitempty"`
+	Outcome        *string                       `protobuf:"bytes,15,opt,name=outcome,proto3,oneof" json:"outcome,omitempty"`
+	Validation     *PrSubmissionInputValidation  `protobuf:"bytes,16,opt,name=validation,proto3" json:"validation,omitempty"`
+	Draft          *bool                         `protobuf:"varint,17,opt,name=draft,proto3,oneof" json:"draft,omitempty"`
+	Owner          *PrSubmissionInputOwner       `protobuf:"bytes,18,opt,name=owner,proto3" json:"owner,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PrSubmissionInput) Reset() {
+	*x = PrSubmissionInput{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionInput) ProtoMessage() {}
+
+func (x *PrSubmissionInput) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionInput.ProtoReflect.Descriptor instead.
+func (*PrSubmissionInput) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *PrSubmissionInput) GetMode() string {
+	if x != nil && x.Mode != nil {
+		return *x.Mode
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetHeadRepository() string {
+	if x != nil && x.HeadRepository != nil {
+		return *x.HeadRepository
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetUpdateUrl() string {
+	if x != nil && x.UpdateUrl != nil {
+		return *x.UpdateUrl
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetContract() *PrContract {
+	if x != nil {
+		return x.Contract
+	}
+	return nil
+}
+
+func (x *PrSubmissionInput) GetContractSource() *PrContractSource {
+	if x != nil {
+		return x.ContractSource
+	}
+	return nil
+}
+
+func (x *PrSubmissionInput) GetReferences() *PrSubmissionInputReferences {
+	if x != nil {
+		return x.References
+	}
+	return nil
+}
+
+func (x *PrSubmissionInput) GetDescription() *PrSubmissionInputDescription {
+	if x != nil {
+		return x.Description
+	}
+	return nil
+}
+
+func (x *PrSubmissionInput) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetRepository() string {
+	if x != nil && x.Repository != nil {
+		return *x.Repository
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetHeadRef() string {
+	if x != nil && x.HeadRef != nil {
+		return *x.HeadRef
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetHeadSha() string {
+	if x != nil && x.HeadSha != nil {
+		return *x.HeadSha
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetBaseRef() string {
+	if x != nil && x.BaseRef != nil {
+		return *x.BaseRef
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetPurpose() string {
+	if x != nil && x.Purpose != nil {
+		return *x.Purpose
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetProblem() string {
+	if x != nil && x.Problem != nil {
+		return *x.Problem
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetOutcome() string {
+	if x != nil && x.Outcome != nil {
+		return *x.Outcome
+	}
+	return ""
+}
+
+func (x *PrSubmissionInput) GetValidation() *PrSubmissionInputValidation {
+	if x != nil {
+		return x.Validation
+	}
+	return nil
+}
+
+func (x *PrSubmissionInput) GetDraft() bool {
+	if x != nil && x.Draft != nil {
+		return *x.Draft
+	}
+	return false
+}
+
+func (x *PrSubmissionInput) GetOwner() *PrSubmissionInputOwner {
+	if x != nil {
+		return x.Owner
+	}
+	return nil
+}
+
+type PrRepositorySnapshotReferencesItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Repository    *string                `protobuf:"bytes,1,opt,name=repository,proto3,oneof" json:"repository,omitempty"`
+	Number        *int64                 `protobuf:"varint,2,opt,name=number,proto3,oneof" json:"number,omitempty"`
+	Kind          *string                `protobuf:"bytes,3,opt,name=kind,proto3,oneof" json:"kind,omitempty"`
+	Private       *bool                  `protobuf:"varint,4,opt,name=private,proto3,oneof" json:"private,omitempty"`
+	Title         *string                `protobuf:"bytes,5,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Body          *string                `protobuf:"bytes,6,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Url           *string                `protobuf:"bytes,7,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	UpdatedAt     *string                `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3,oneof" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotReferencesItem) Reset() {
+	*x = PrRepositorySnapshotReferencesItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotReferencesItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotReferencesItem) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotReferencesItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotReferencesItem.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotReferencesItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetRepository() string {
+	if x != nil && x.Repository != nil {
+		return *x.Repository
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetNumber() int64 {
+	if x != nil && x.Number != nil {
+		return *x.Number
+	}
+	return 0
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetKind() string {
+	if x != nil && x.Kind != nil {
+		return *x.Kind
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetPrivate() bool {
+	if x != nil && x.Private != nil {
+		return *x.Private
+	}
+	return false
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetBody() string {
+	if x != nil && x.Body != nil {
+		return *x.Body
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetUrl() string {
+	if x != nil && x.Url != nil {
+		return *x.Url
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotReferencesItem) GetUpdatedAt() string {
+	if x != nil && x.UpdatedAt != nil {
+		return *x.UpdatedAt
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRepositorySnapshotReferences struct {
+	state         protoimpl.MessageState                `protogen:"open.v1"`
+	Items         []*PrRepositorySnapshotReferencesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotReferences) Reset() {
+	*x = PrRepositorySnapshotReferences{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotReferences) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotReferences) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotReferences) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotReferences.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotReferences) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *PrRepositorySnapshotReferences) GetItems() []*PrRepositorySnapshotReferencesItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrRepositorySnapshotExisting struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Url            *string                `protobuf:"bytes,1,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	Title          *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Body           *string                `protobuf:"bytes,3,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	HeadSha        *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	HeadRepository *string                `protobuf:"bytes,5,opt,name=head_repository,json=headRepository,proto3,oneof" json:"head_repository,omitempty"`
+	HeadRef        *string                `protobuf:"bytes,6,opt,name=head_ref,json=headRef,proto3,oneof" json:"head_ref,omitempty"`
+	BaseRef        *string                `protobuf:"bytes,7,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
+	BaseSha        *string                `protobuf:"bytes,8,opt,name=base_sha,json=baseSha,proto3,oneof" json:"base_sha,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotExisting) Reset() {
+	*x = PrRepositorySnapshotExisting{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotExisting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotExisting) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotExisting) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotExisting.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotExisting) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *PrRepositorySnapshotExisting) GetUrl() string {
+	if x != nil && x.Url != nil {
+		return *x.Url
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetBody() string {
+	if x != nil && x.Body != nil {
+		return *x.Body
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetHeadSha() string {
+	if x != nil && x.HeadSha != nil {
+		return *x.HeadSha
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetHeadRepository() string {
+	if x != nil && x.HeadRepository != nil {
+		return *x.HeadRepository
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetHeadRef() string {
+	if x != nil && x.HeadRef != nil {
+		return *x.HeadRef
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetBaseRef() string {
+	if x != nil && x.BaseRef != nil {
+		return *x.BaseRef
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotExisting) GetBaseSha() string {
+	if x != nil && x.BaseSha != nil {
+		return *x.BaseSha
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRepositorySnapshotFiles struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotFiles) Reset() {
+	*x = PrRepositorySnapshotFiles{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotFiles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotFiles) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotFiles) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotFiles.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotFiles) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *PrRepositorySnapshotFiles) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrRepositorySnapshotSourcesItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          *string                `protobuf:"bytes,1,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	Sha           *string                `protobuf:"bytes,2,opt,name=sha,proto3,oneof" json:"sha,omitempty"`
+	Text          *string                `protobuf:"bytes,3,opt,name=text,proto3,oneof" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotSourcesItem) Reset() {
+	*x = PrRepositorySnapshotSourcesItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotSourcesItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotSourcesItem) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotSourcesItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotSourcesItem.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotSourcesItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *PrRepositorySnapshotSourcesItem) GetPath() string {
+	if x != nil && x.Path != nil {
+		return *x.Path
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotSourcesItem) GetSha() string {
+	if x != nil && x.Sha != nil {
+		return *x.Sha
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshotSourcesItem) GetText() string {
+	if x != nil && x.Text != nil {
+		return *x.Text
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRepositorySnapshotSources struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Items         []*PrRepositorySnapshotSourcesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshotSources) Reset() {
+	*x = PrRepositorySnapshotSources{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshotSources) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshotSources) ProtoMessage() {}
+
+func (x *PrRepositorySnapshotSources) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshotSources.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshotSources) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *PrRepositorySnapshotSources) GetItems() []*PrRepositorySnapshotSourcesItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrRepositorySnapshot struct {
+	state          protoimpl.MessageState          `protogen:"open.v1"`
+	Repository     *string                         `protobuf:"bytes,1,opt,name=repository,proto3,oneof" json:"repository,omitempty"`
+	HeadSha        *string                         `protobuf:"bytes,2,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	BaseSha        *string                         `protobuf:"bytes,3,opt,name=base_sha,json=baseSha,proto3,oneof" json:"base_sha,omitempty"`
+	Private        *bool                           `protobuf:"varint,4,opt,name=private,proto3,oneof" json:"private,omitempty"`
+	Contract       *PrContract                     `protobuf:"bytes,5,opt,name=contract,proto3" json:"contract,omitempty"`
+	ContractSource *PrContractSource               `protobuf:"bytes,6,opt,name=contract_source,json=contractSource,proto3" json:"contract_source,omitempty"`
+	References     *PrRepositorySnapshotReferences `protobuf:"bytes,7,opt,name=references,proto3" json:"references,omitempty"`
+	Existing       *PrRepositorySnapshotExisting   `protobuf:"bytes,8,opt,name=existing,proto3" json:"existing,omitempty"`
+	Files          *PrRepositorySnapshotFiles      `protobuf:"bytes,9,opt,name=files,proto3" json:"files,omitempty"`
+	Diff           *string                         `protobuf:"bytes,10,opt,name=diff,proto3,oneof" json:"diff,omitempty"`
+	Sources        *PrRepositorySnapshotSources    `protobuf:"bytes,11,opt,name=sources,proto3" json:"sources,omitempty"`
+	SourceDigest   *string                         `protobuf:"bytes,12,opt,name=source_digest,json=sourceDigest,proto3,oneof" json:"source_digest,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PrRepositorySnapshot) Reset() {
+	*x = PrRepositorySnapshot{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositorySnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositorySnapshot) ProtoMessage() {}
+
+func (x *PrRepositorySnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositorySnapshot.ProtoReflect.Descriptor instead.
+func (*PrRepositorySnapshot) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *PrRepositorySnapshot) GetRepository() string {
+	if x != nil && x.Repository != nil {
+		return *x.Repository
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshot) GetHeadSha() string {
+	if x != nil && x.HeadSha != nil {
+		return *x.HeadSha
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshot) GetBaseSha() string {
+	if x != nil && x.BaseSha != nil {
+		return *x.BaseSha
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshot) GetPrivate() bool {
+	if x != nil && x.Private != nil {
+		return *x.Private
+	}
+	return false
+}
+
+func (x *PrRepositorySnapshot) GetContract() *PrContract {
+	if x != nil {
+		return x.Contract
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetContractSource() *PrContractSource {
+	if x != nil {
+		return x.ContractSource
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetReferences() *PrRepositorySnapshotReferences {
+	if x != nil {
+		return x.References
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetExisting() *PrRepositorySnapshotExisting {
+	if x != nil {
+		return x.Existing
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetFiles() *PrRepositorySnapshotFiles {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetDiff() string {
+	if x != nil && x.Diff != nil {
+		return *x.Diff
+	}
+	return ""
+}
+
+func (x *PrRepositorySnapshot) GetSources() *PrRepositorySnapshotSources {
+	if x != nil {
+		return x.Sources
+	}
+	return nil
+}
+
+func (x *PrRepositorySnapshot) GetSourceDigest() string {
+	if x != nil && x.SourceDigest != nil {
+		return *x.SourceDigest
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrTitlePrefixes struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrTitlePrefixes) Reset() {
+	*x = PrTitlePrefixes{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrTitlePrefixes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrTitlePrefixes) ProtoMessage() {}
+
+func (x *PrTitlePrefixes) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrTitlePrefixes.ProtoReflect.Descriptor instead.
+func (*PrTitlePrefixes) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *PrTitlePrefixes) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrBodyContains struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         *string                `protobuf:"bytes,1,opt,name=value,proto3,oneof" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrBodyContains) Reset() {
+	*x = PrBodyContains{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrBodyContains) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrBodyContains) ProtoMessage() {}
+
+func (x *PrBodyContains) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrBodyContains.ProtoReflect.Descriptor instead.
+func (*PrBodyContains) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *PrBodyContains) GetValue() string {
+	if x != nil && x.Value != nil {
+		return *x.Value
+	}
+	return ""
+}
+
+type PrTitlePrefix struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Prefixes      *PrTitlePrefixes       `protobuf:"bytes,1,opt,name=prefixes,proto3" json:"prefixes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrTitlePrefix) Reset() {
+	*x = PrTitlePrefix{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrTitlePrefix) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrTitlePrefix) ProtoMessage() {}
+
+func (x *PrTitlePrefix) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrTitlePrefix.ProtoReflect.Descriptor instead.
+func (*PrTitlePrefix) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *PrTitlePrefix) GetPrefixes() *PrTitlePrefixes {
+	if x != nil {
+		return x.Prefixes
+	}
+	return nil
+}
+
+type PrTitleMaxLength struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Maximum       *int64                 `protobuf:"varint,1,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrTitleMaxLength) Reset() {
+	*x = PrTitleMaxLength{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrTitleMaxLength) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrTitleMaxLength) ProtoMessage() {}
+
+func (x *PrTitleMaxLength) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrTitleMaxLength.ProtoReflect.Descriptor instead.
+func (*PrTitleMaxLength) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *PrTitleMaxLength) GetMaximum() int64 {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return 0
+}
+
+type PrEvidenceRequired struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrEvidenceRequired) Reset() {
+	*x = PrEvidenceRequired{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvidenceRequired) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvidenceRequired) ProtoMessage() {}
+
+func (x *PrEvidenceRequired) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvidenceRequired.ProtoReflect.Descriptor instead.
+func (*PrEvidenceRequired) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{42}
+}
+
+type PrSemanticRequirement struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSemanticRequirement) Reset() {
+	*x = PrSemanticRequirement{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSemanticRequirement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSemanticRequirement) ProtoMessage() {}
+
+func (x *PrSemanticRequirement) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSemanticRequirement.ProtoReflect.Descriptor instead.
+func (*PrSemanticRequirement) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{43}
+}
+
+type PrRequirementCheck struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Rule:
+	//
+	//	*PrRequirementCheck_BodyContains
+	//	*PrRequirementCheck_TitlePrefix
+	//	*PrRequirementCheck_TitleMaxLength
+	//	*PrRequirementCheck_EvidenceRequired
+	//	*PrRequirementCheck_Semantic
+	Rule          isPrRequirementCheck_Rule `protobuf_oneof:"rule"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRequirementCheck) Reset() {
+	*x = PrRequirementCheck{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRequirementCheck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRequirementCheck) ProtoMessage() {}
+
+func (x *PrRequirementCheck) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRequirementCheck.ProtoReflect.Descriptor instead.
+func (*PrRequirementCheck) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *PrRequirementCheck) GetRule() isPrRequirementCheck_Rule {
+	if x != nil {
+		return x.Rule
+	}
+	return nil
+}
+
+func (x *PrRequirementCheck) GetBodyContains() *PrBodyContains {
+	if x != nil {
+		if x, ok := x.Rule.(*PrRequirementCheck_BodyContains); ok {
+			return x.BodyContains
+		}
+	}
+	return nil
+}
+
+func (x *PrRequirementCheck) GetTitlePrefix() *PrTitlePrefix {
+	if x != nil {
+		if x, ok := x.Rule.(*PrRequirementCheck_TitlePrefix); ok {
+			return x.TitlePrefix
+		}
+	}
+	return nil
+}
+
+func (x *PrRequirementCheck) GetTitleMaxLength() *PrTitleMaxLength {
+	if x != nil {
+		if x, ok := x.Rule.(*PrRequirementCheck_TitleMaxLength); ok {
+			return x.TitleMaxLength
+		}
+	}
+	return nil
+}
+
+func (x *PrRequirementCheck) GetEvidenceRequired() *PrEvidenceRequired {
+	if x != nil {
+		if x, ok := x.Rule.(*PrRequirementCheck_EvidenceRequired); ok {
+			return x.EvidenceRequired
+		}
+	}
+	return nil
+}
+
+func (x *PrRequirementCheck) GetSemantic() *PrSemanticRequirement {
+	if x != nil {
+		if x, ok := x.Rule.(*PrRequirementCheck_Semantic); ok {
+			return x.Semantic
+		}
+	}
+	return nil
+}
+
+type isPrRequirementCheck_Rule interface {
+	isPrRequirementCheck_Rule()
+}
+
+type PrRequirementCheck_BodyContains struct {
+	BodyContains *PrBodyContains `protobuf:"bytes,1,opt,name=body_contains,proto3,oneof"`
+}
+
+type PrRequirementCheck_TitlePrefix struct {
+	TitlePrefix *PrTitlePrefix `protobuf:"bytes,2,opt,name=title_prefix,proto3,oneof"`
+}
+
+type PrRequirementCheck_TitleMaxLength struct {
+	TitleMaxLength *PrTitleMaxLength `protobuf:"bytes,3,opt,name=title_max_length,proto3,oneof"`
+}
+
+type PrRequirementCheck_EvidenceRequired struct {
+	EvidenceRequired *PrEvidenceRequired `protobuf:"bytes,4,opt,name=evidence_required,proto3,oneof"`
+}
+
+type PrRequirementCheck_Semantic struct {
+	Semantic *PrSemanticRequirement `protobuf:"bytes,5,opt,name=semantic,proto3,oneof"`
+}
+
+func (*PrRequirementCheck_BodyContains) isPrRequirementCheck_Rule() {}
+
+func (*PrRequirementCheck_TitlePrefix) isPrRequirementCheck_Rule() {}
+
+func (*PrRequirementCheck_TitleMaxLength) isPrRequirementCheck_Rule() {}
+
+func (*PrRequirementCheck_EvidenceRequired) isPrRequirementCheck_Rule() {}
+
+func (*PrRequirementCheck_Semantic) isPrRequirementCheck_Rule() {}
+
+type PrRequirement struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Strength      *string                `protobuf:"bytes,2,opt,name=strength,proto3,oneof" json:"strength,omitempty"`
+	Category      *string                `protobuf:"bytes,3,opt,name=category,proto3,oneof" json:"category,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	SourcePath    *string                `protobuf:"bytes,5,opt,name=source_path,json=sourcePath,proto3,oneof" json:"source_path,omitempty"`
+	SourceSha     *string                `protobuf:"bytes,6,opt,name=source_sha,json=sourceSha,proto3,oneof" json:"source_sha,omitempty"`
+	Line          *int64                 `protobuf:"varint,7,opt,name=line,proto3,oneof" json:"line,omitempty"`
+	Quote         *string                `protobuf:"bytes,8,opt,name=quote,proto3,oneof" json:"quote,omitempty"`
+	Condition     *string                `protobuf:"bytes,9,opt,name=condition,proto3,oneof" json:"condition,omitempty"`
+	Scope         *string                `protobuf:"bytes,10,opt,name=scope,proto3,oneof" json:"scope,omitempty"`
+	Check         *PrRequirementCheck    `protobuf:"bytes,11,opt,name=check,proto3" json:"check,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRequirement) Reset() {
+	*x = PrRequirement{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRequirement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRequirement) ProtoMessage() {}
+
+func (x *PrRequirement) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRequirement.ProtoReflect.Descriptor instead.
+func (*PrRequirement) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *PrRequirement) GetId() string {
+	if x != nil && x.Id != nil {
+		return *x.Id
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetStrength() string {
+	if x != nil && x.Strength != nil {
+		return *x.Strength
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetCategory() string {
+	if x != nil && x.Category != nil {
+		return *x.Category
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetSourcePath() string {
+	if x != nil && x.SourcePath != nil {
+		return *x.SourcePath
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetSourceSha() string {
+	if x != nil && x.SourceSha != nil {
+		return *x.SourceSha
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetLine() int64 {
+	if x != nil && x.Line != nil {
+		return *x.Line
+	}
+	return 0
+}
+
+func (x *PrRequirement) GetQuote() string {
+	if x != nil && x.Quote != nil {
+		return *x.Quote
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetCondition() string {
+	if x != nil && x.Condition != nil {
+		return *x.Condition
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetScope() string {
+	if x != nil && x.Scope != nil {
+		return *x.Scope
+	}
+	return ""
+}
+
+func (x *PrRequirement) GetCheck() *PrRequirementCheck {
+	if x != nil {
+		return x.Check
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRequirements struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PrRequirement       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRequirements) Reset() {
+	*x = PrRequirements{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRequirements) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRequirements) ProtoMessage() {}
+
+func (x *PrRequirements) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRequirements.ProtoReflect.Descriptor instead.
+func (*PrRequirements) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *PrRequirements) GetItems() []*PrRequirement {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrTextList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrTextList) Reset() {
+	*x = PrTextList{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrTextList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrTextList) ProtoMessage() {}
+
+func (x *PrTextList) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrTextList.ProtoReflect.Descriptor instead.
+func (*PrTextList) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *PrTextList) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrPolicyAnalysis struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Requirements  *PrRequirements        `protobuf:"bytes,1,opt,name=requirements,proto3" json:"requirements,omitempty"`
+	Template      *string                `protobuf:"bytes,2,opt,name=template,proto3,oneof" json:"template,omitempty"`
+	Blockers      *PrTextList            `protobuf:"bytes,3,opt,name=blockers,proto3" json:"blockers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrPolicyAnalysis) Reset() {
+	*x = PrPolicyAnalysis{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrPolicyAnalysis) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrPolicyAnalysis) ProtoMessage() {}
+
+func (x *PrPolicyAnalysis) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrPolicyAnalysis.ProtoReflect.Descriptor instead.
+func (*PrPolicyAnalysis) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *PrPolicyAnalysis) GetRequirements() *PrRequirements {
+	if x != nil {
+		return x.Requirements
+	}
+	return nil
+}
+
+func (x *PrPolicyAnalysis) GetTemplate() string {
+	if x != nil && x.Template != nil {
+		return *x.Template
+	}
+	return ""
+}
+
+func (x *PrPolicyAnalysis) GetBlockers() *PrTextList {
+	if x != nil {
+		return x.Blockers
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrFactorEvidenceRefs struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrFactorEvidenceRefs) Reset() {
+	*x = PrFactorEvidenceRefs{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrFactorEvidenceRefs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrFactorEvidenceRefs) ProtoMessage() {}
+
+func (x *PrFactorEvidenceRefs) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrFactorEvidenceRefs.ProtoReflect.Descriptor instead.
+func (*PrFactorEvidenceRefs) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *PrFactorEvidenceRefs) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrComplexityFactor struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Factor        *string                `protobuf:"bytes,1,opt,name=factor,proto3,oneof" json:"factor,omitempty"`
+	Rating        *int64                 `protobuf:"varint,2,opt,name=rating,proto3,oneof" json:"rating,omitempty"`
+	Rationale     *string                `protobuf:"bytes,3,opt,name=rationale,proto3,oneof" json:"rationale,omitempty"`
+	EvidenceRefs  *PrFactorEvidenceRefs  `protobuf:"bytes,4,opt,name=evidence_refs,json=evidenceRefs,proto3" json:"evidence_refs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrComplexityFactor) Reset() {
+	*x = PrComplexityFactor{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrComplexityFactor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrComplexityFactor) ProtoMessage() {}
+
+func (x *PrComplexityFactor) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrComplexityFactor.ProtoReflect.Descriptor instead.
+func (*PrComplexityFactor) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *PrComplexityFactor) GetFactor() string {
+	if x != nil && x.Factor != nil {
+		return *x.Factor
+	}
+	return ""
+}
+
+func (x *PrComplexityFactor) GetRating() int64 {
+	if x != nil && x.Rating != nil {
+		return *x.Rating
+	}
+	return 0
+}
+
+func (x *PrComplexityFactor) GetRationale() string {
+	if x != nil && x.Rationale != nil {
+		return *x.Rationale
+	}
+	return ""
+}
+
+func (x *PrComplexityFactor) GetEvidenceRefs() *PrFactorEvidenceRefs {
+	if x != nil {
+		return x.EvidenceRefs
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrComplexityFactors struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PrComplexityFactor  `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrComplexityFactors) Reset() {
+	*x = PrComplexityFactors{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrComplexityFactors) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrComplexityFactors) ProtoMessage() {}
+
+func (x *PrComplexityFactors) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrComplexityFactors.ProtoReflect.Descriptor instead.
+func (*PrComplexityFactors) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *PrComplexityFactors) GetItems() []*PrComplexityFactor {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrClaimEvidenceRefs struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrClaimEvidenceRefs) Reset() {
+	*x = PrClaimEvidenceRefs{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrClaimEvidenceRefs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrClaimEvidenceRefs) ProtoMessage() {}
+
+func (x *PrClaimEvidenceRefs) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrClaimEvidenceRefs.ProtoReflect.Descriptor instead.
+func (*PrClaimEvidenceRefs) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *PrClaimEvidenceRefs) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrBehaviorClaim struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Statement     *string                `protobuf:"bytes,1,opt,name=statement,proto3,oneof" json:"statement,omitempty"`
+	Falsification *string                `protobuf:"bytes,2,opt,name=falsification,proto3,oneof" json:"falsification,omitempty"`
+	EvidenceRefs  *PrClaimEvidenceRefs   `protobuf:"bytes,3,opt,name=evidence_refs,json=evidenceRefs,proto3" json:"evidence_refs,omitempty"`
+	Basis         *string                `protobuf:"bytes,4,opt,name=basis,proto3,oneof" json:"basis,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrBehaviorClaim) Reset() {
+	*x = PrBehaviorClaim{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrBehaviorClaim) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrBehaviorClaim) ProtoMessage() {}
+
+func (x *PrBehaviorClaim) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrBehaviorClaim.ProtoReflect.Descriptor instead.
+func (*PrBehaviorClaim) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *PrBehaviorClaim) GetStatement() string {
+	if x != nil && x.Statement != nil {
+		return *x.Statement
+	}
+	return ""
+}
+
+func (x *PrBehaviorClaim) GetFalsification() string {
+	if x != nil && x.Falsification != nil {
+		return *x.Falsification
+	}
+	return ""
+}
+
+func (x *PrBehaviorClaim) GetEvidenceRefs() *PrClaimEvidenceRefs {
+	if x != nil {
+		return x.EvidenceRefs
+	}
+	return nil
+}
+
+func (x *PrBehaviorClaim) GetBasis() string {
+	if x != nil && x.Basis != nil {
+		return *x.Basis
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrBehaviorClaims struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PrBehaviorClaim     `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrBehaviorClaims) Reset() {
+	*x = PrBehaviorClaims{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrBehaviorClaims) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrBehaviorClaims) ProtoMessage() {}
+
+func (x *PrBehaviorClaims) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrBehaviorClaims.ProtoReflect.Descriptor instead.
+func (*PrBehaviorClaims) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *PrBehaviorClaims) GetItems() []*PrBehaviorClaim {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrChangeAnalysis struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Factors       *PrComplexityFactors   `protobuf:"bytes,1,opt,name=factors,proto3" json:"factors,omitempty"`
+	Tier          *string                `protobuf:"bytes,2,opt,name=tier,proto3,oneof" json:"tier,omitempty"`
+	Rationale     *string                `protobuf:"bytes,3,opt,name=rationale,proto3,oneof" json:"rationale,omitempty"`
+	Outcome       *string                `protobuf:"bytes,4,opt,name=outcome,proto3,oneof" json:"outcome,omitempty"`
+	Claims        *PrBehaviorClaims      `protobuf:"bytes,5,opt,name=claims,proto3" json:"claims,omitempty"`
+	Limitations   *PrTextList            `protobuf:"bytes,6,opt,name=limitations,proto3" json:"limitations,omitempty"`
+	Blockers      *PrTextList            `protobuf:"bytes,7,opt,name=blockers,proto3" json:"blockers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrChangeAnalysis) Reset() {
+	*x = PrChangeAnalysis{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrChangeAnalysis) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrChangeAnalysis) ProtoMessage() {}
+
+func (x *PrChangeAnalysis) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrChangeAnalysis.ProtoReflect.Descriptor instead.
+func (*PrChangeAnalysis) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *PrChangeAnalysis) GetFactors() *PrComplexityFactors {
+	if x != nil {
+		return x.Factors
+	}
+	return nil
+}
+
+func (x *PrChangeAnalysis) GetTier() string {
+	if x != nil && x.Tier != nil {
+		return *x.Tier
+	}
+	return ""
+}
+
+func (x *PrChangeAnalysis) GetRationale() string {
+	if x != nil && x.Rationale != nil {
+		return *x.Rationale
+	}
+	return ""
+}
+
+func (x *PrChangeAnalysis) GetOutcome() string {
+	if x != nil && x.Outcome != nil {
+		return *x.Outcome
+	}
+	return ""
+}
+
+func (x *PrChangeAnalysis) GetClaims() *PrBehaviorClaims {
+	if x != nil {
+		return x.Claims
+	}
+	return nil
+}
+
+func (x *PrChangeAnalysis) GetLimitations() *PrTextList {
+	if x != nil {
+		return x.Limitations
+	}
+	return nil
+}
+
+func (x *PrChangeAnalysis) GetBlockers() *PrTextList {
+	if x != nil {
+		return x.Blockers
+	}
+	return nil
+}
+
+type PrRequirementAssessment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
+	Status        *string                `protobuf:"bytes,2,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Rationale     *string                `protobuf:"bytes,3,opt,name=rationale,proto3,oneof" json:"rationale,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRequirementAssessment) Reset() {
+	*x = PrRequirementAssessment{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRequirementAssessment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRequirementAssessment) ProtoMessage() {}
+
+func (x *PrRequirementAssessment) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRequirementAssessment.ProtoReflect.Descriptor instead.
+func (*PrRequirementAssessment) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *PrRequirementAssessment) GetRuleId() string {
+	if x != nil && x.RuleId != nil {
+		return *x.RuleId
+	}
+	return ""
+}
+
+func (x *PrRequirementAssessment) GetStatus() string {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return ""
+}
+
+func (x *PrRequirementAssessment) GetRationale() string {
+	if x != nil && x.Rationale != nil {
+		return *x.Rationale
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRequirementAssessments struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Items         []*PrRequirementAssessment `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRequirementAssessments) Reset() {
+	*x = PrRequirementAssessments{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRequirementAssessments) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRequirementAssessments) ProtoMessage() {}
+
+func (x *PrRequirementAssessments) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRequirementAssessments.ProtoReflect.Descriptor instead.
+func (*PrRequirementAssessments) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *PrRequirementAssessments) GetItems() []*PrRequirementAssessment {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrDescription struct {
+	state             protoimpl.MessageState    `protogen:"open.v1"`
+	Title             *string                   `protobuf:"bytes,1,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Body              *string                   `protobuf:"bytes,2,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	RequirementChecks *PrRequirementAssessments `protobuf:"bytes,3,opt,name=requirement_checks,json=requirementChecks,proto3" json:"requirement_checks,omitempty"`
+	Blockers          *PrTextList               `protobuf:"bytes,4,opt,name=blockers,proto3" json:"blockers,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *PrDescription) Reset() {
+	*x = PrDescription{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrDescription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrDescription) ProtoMessage() {}
+
+func (x *PrDescription) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrDescription.ProtoReflect.Descriptor instead.
+func (*PrDescription) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *PrDescription) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *PrDescription) GetBody() string {
+	if x != nil && x.Body != nil {
+		return *x.Body
+	}
+	return ""
+}
+
+func (x *PrDescription) GetRequirementChecks() *PrRequirementAssessments {
+	if x != nil {
+		return x.RequirementChecks
+	}
+	return nil
+}
+
+func (x *PrDescription) GetBlockers() *PrTextList {
+	if x != nil {
+		return x.Blockers
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrFindingEvidenceRefs struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrFindingEvidenceRefs) Reset() {
+	*x = PrFindingEvidenceRefs{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrFindingEvidenceRefs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrFindingEvidenceRefs) ProtoMessage() {}
+
+func (x *PrFindingEvidenceRefs) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrFindingEvidenceRefs.ProtoReflect.Descriptor instead.
+func (*PrFindingEvidenceRefs) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *PrFindingEvidenceRefs) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrEvaluationFinding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
+	Status        *string                `protobuf:"bytes,2,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Message       *string                `protobuf:"bytes,3,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	EvidenceRefs  *PrFindingEvidenceRefs `protobuf:"bytes,4,opt,name=evidence_refs,json=evidenceRefs,proto3" json:"evidence_refs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrEvaluationFinding) Reset() {
+	*x = PrEvaluationFinding{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvaluationFinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvaluationFinding) ProtoMessage() {}
+
+func (x *PrEvaluationFinding) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvaluationFinding.ProtoReflect.Descriptor instead.
+func (*PrEvaluationFinding) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *PrEvaluationFinding) GetRuleId() string {
+	if x != nil && x.RuleId != nil {
+		return *x.RuleId
+	}
+	return ""
+}
+
+func (x *PrEvaluationFinding) GetStatus() string {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return ""
+}
+
+func (x *PrEvaluationFinding) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
+	}
+	return ""
+}
+
+func (x *PrEvaluationFinding) GetEvidenceRefs() *PrFindingEvidenceRefs {
+	if x != nil {
+		return x.EvidenceRefs
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrEvaluationFindings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PrEvaluationFinding `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrEvaluationFindings) Reset() {
+	*x = PrEvaluationFindings{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvaluationFindings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvaluationFindings) ProtoMessage() {}
+
+func (x *PrEvaluationFindings) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvaluationFindings.ProtoReflect.Descriptor instead.
+func (*PrEvaluationFindings) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *PrEvaluationFindings) GetItems() []*PrEvaluationFinding {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrEvaluationAssessment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
+	Status        *string                `protobuf:"bytes,2,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Rationale     *string                `protobuf:"bytes,3,opt,name=rationale,proto3,oneof" json:"rationale,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrEvaluationAssessment) Reset() {
+	*x = PrEvaluationAssessment{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvaluationAssessment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvaluationAssessment) ProtoMessage() {}
+
+func (x *PrEvaluationAssessment) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvaluationAssessment.ProtoReflect.Descriptor instead.
+func (*PrEvaluationAssessment) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *PrEvaluationAssessment) GetRuleId() string {
+	if x != nil && x.RuleId != nil {
+		return *x.RuleId
+	}
+	return ""
+}
+
+func (x *PrEvaluationAssessment) GetStatus() string {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return ""
+}
+
+func (x *PrEvaluationAssessment) GetRationale() string {
+	if x != nil && x.Rationale != nil {
+		return *x.Rationale
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrEvaluationAssessments struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Items         []*PrEvaluationAssessment `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrEvaluationAssessments) Reset() {
+	*x = PrEvaluationAssessments{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvaluationAssessments) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvaluationAssessments) ProtoMessage() {}
+
+func (x *PrEvaluationAssessments) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvaluationAssessments.ProtoReflect.Descriptor instead.
+func (*PrEvaluationAssessments) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *PrEvaluationAssessments) GetItems() []*PrEvaluationAssessment {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrEvaluation struct {
+	state             protoimpl.MessageState   `protogen:"open.v1"`
+	Findings          *PrEvaluationFindings    `protobuf:"bytes,1,opt,name=findings,proto3" json:"findings,omitempty"`
+	RequirementChecks *PrEvaluationAssessments `protobuf:"bytes,2,opt,name=requirement_checks,json=requirementChecks,proto3" json:"requirement_checks,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *PrEvaluation) Reset() {
+	*x = PrEvaluation{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrEvaluation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrEvaluation) ProtoMessage() {}
+
+func (x *PrEvaluation) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrEvaluation.ProtoReflect.Descriptor instead.
+func (*PrEvaluation) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *PrEvaluation) GetFindings() *PrEvaluationFindings {
+	if x != nil {
+		return x.Findings
+	}
+	return nil
+}
+
+func (x *PrEvaluation) GetRequirementChecks() *PrEvaluationAssessments {
+	if x != nil {
+		return x.RequirementChecks
+	}
+	return nil
+}
+
+type PrStageOutput struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Value:
+	//
+	//	*PrStageOutput_Policy
+	//	*PrStageOutput_Change
+	//	*PrStageOutput_Writer
+	//	*PrStageOutput_Evaluator
+	//	*PrStageOutput_Malformed
+	Value         isPrStageOutput_Value `protobuf_oneof:"value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrStageOutput) Reset() {
+	*x = PrStageOutput{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrStageOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrStageOutput) ProtoMessage() {}
+
+func (x *PrStageOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrStageOutput.ProtoReflect.Descriptor instead.
+func (*PrStageOutput) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *PrStageOutput) GetValue() isPrStageOutput_Value {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *PrStageOutput) GetPolicy() *PrPolicyAnalysis {
+	if x != nil {
+		if x, ok := x.Value.(*PrStageOutput_Policy); ok {
+			return x.Policy
+		}
+	}
+	return nil
+}
+
+func (x *PrStageOutput) GetChange() *PrChangeAnalysis {
+	if x != nil {
+		if x, ok := x.Value.(*PrStageOutput_Change); ok {
+			return x.Change
+		}
+	}
+	return nil
+}
+
+func (x *PrStageOutput) GetWriter() *PrDescription {
+	if x != nil {
+		if x, ok := x.Value.(*PrStageOutput_Writer); ok {
+			return x.Writer
+		}
+	}
+	return nil
+}
+
+func (x *PrStageOutput) GetEvaluator() *PrEvaluation {
+	if x != nil {
+		if x, ok := x.Value.(*PrStageOutput_Evaluator); ok {
+			return x.Evaluator
+		}
+	}
+	return nil
+}
+
+func (x *PrStageOutput) GetMalformed() *structpb.Value {
+	if x != nil {
+		if x, ok := x.Value.(*PrStageOutput_Malformed); ok {
+			return x.Malformed
+		}
+	}
+	return nil
+}
+
+type isPrStageOutput_Value interface {
+	isPrStageOutput_Value()
+}
+
+type PrStageOutput_Policy struct {
+	Policy *PrPolicyAnalysis `protobuf:"bytes,1,opt,name=policy,proto3,oneof"`
+}
+
+type PrStageOutput_Change struct {
+	Change *PrChangeAnalysis `protobuf:"bytes,2,opt,name=change,proto3,oneof"`
+}
+
+type PrStageOutput_Writer struct {
+	Writer *PrDescription `protobuf:"bytes,3,opt,name=writer,proto3,oneof"`
+}
+
+type PrStageOutput_Evaluator struct {
+	Evaluator *PrEvaluation `protobuf:"bytes,4,opt,name=evaluator,proto3,oneof"`
+}
+
+type PrStageOutput_Malformed struct {
+	Malformed *structpb.Value `protobuf:"bytes,5,opt,name=malformed,proto3,oneof"`
+}
+
+func (*PrStageOutput_Policy) isPrStageOutput_Value() {}
+
+func (*PrStageOutput_Change) isPrStageOutput_Value() {}
+
+func (*PrStageOutput_Writer) isPrStageOutput_Value() {}
+
+func (*PrStageOutput_Evaluator) isPrStageOutput_Value() {}
+
+func (*PrStageOutput_Malformed) isPrStageOutput_Value() {}
+
+type PrStage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Invalidated   *bool                  `protobuf:"varint,1,opt,name=invalidated,proto3,oneof" json:"invalidated,omitempty"`
+	Role          *string                `protobuf:"bytes,2,opt,name=role,proto3,oneof" json:"role,omitempty"`
+	Model         *string                `protobuf:"bytes,3,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	PromptDigest  *string                `protobuf:"bytes,4,opt,name=prompt_digest,json=promptDigest,proto3,oneof" json:"prompt_digest,omitempty"`
+	Raw           *string                `protobuf:"bytes,5,opt,name=raw,proto3,oneof" json:"raw,omitempty"`
+	Result        *PrStageOutput         `protobuf:"bytes,6,opt,name=result,proto3" json:"result,omitempty"`
+	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrStage) Reset() {
+	*x = PrStage{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrStage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrStage) ProtoMessage() {}
+
+func (x *PrStage) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrStage.ProtoReflect.Descriptor instead.
+func (*PrStage) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *PrStage) GetInvalidated() bool {
+	if x != nil && x.Invalidated != nil {
+		return *x.Invalidated
+	}
+	return false
+}
+
+func (x *PrStage) GetRole() string {
+	if x != nil && x.Role != nil {
+		return *x.Role
+	}
+	return ""
+}
+
+func (x *PrStage) GetModel() string {
+	if x != nil && x.Model != nil {
+		return *x.Model
+	}
+	return ""
+}
+
+func (x *PrStage) GetPromptDigest() string {
+	if x != nil && x.PromptDigest != nil {
+		return *x.PromptDigest
+	}
+	return ""
+}
+
+func (x *PrStage) GetRaw() string {
+	if x != nil && x.Raw != nil {
+		return *x.Raw
+	}
+	return ""
+}
+
+func (x *PrStage) GetResult() *PrStageOutput {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
+func (x *PrStage) GetAt() int64 {
+	if x != nil && x.At != nil {
+		return *x.At
+	}
+	return 0
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrStages struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PrStage             `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrStages) Reset() {
+	*x = PrStages{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrStages) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrStages) ProtoMessage() {}
+
+func (x *PrStages) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrStages.ProtoReflect.Descriptor instead.
+func (*PrStages) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *PrStages) GetItems() []*PrStage {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrBrief struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SchemaVersion *uint32                `protobuf:"varint,1,opt,name=schema_version,json=schemaVersion,proto3,oneof" json:"schema_version,omitempty"`
+	Request       *PrSubmissionInput     `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`
+	BaseSha       *string                `protobuf:"bytes,3,opt,name=base_sha,json=baseSha,proto3,oneof" json:"base_sha,omitempty"`
+	PolicyVersion *int64                 `protobuf:"varint,4,opt,name=policy_version,json=policyVersion,proto3,oneof" json:"policy_version,omitempty"`
+	Change        *PrChangeAnalysis      `protobuf:"bytes,5,opt,name=change,proto3" json:"change,omitempty"`
+	Draft         *PrDescription         `protobuf:"bytes,6,opt,name=draft,proto3" json:"draft,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrBrief) Reset() {
+	*x = PrBrief{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrBrief) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrBrief) ProtoMessage() {}
+
+func (x *PrBrief) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrBrief.ProtoReflect.Descriptor instead.
+func (*PrBrief) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *PrBrief) GetSchemaVersion() uint32 {
+	if x != nil && x.SchemaVersion != nil {
+		return *x.SchemaVersion
+	}
+	return 0
+}
+
+func (x *PrBrief) GetRequest() *PrSubmissionInput {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *PrBrief) GetBaseSha() string {
+	if x != nil && x.BaseSha != nil {
+		return *x.BaseSha
+	}
+	return ""
+}
+
+func (x *PrBrief) GetPolicyVersion() int64 {
+	if x != nil && x.PolicyVersion != nil {
+		return *x.PolicyVersion
+	}
+	return 0
+}
+
+func (x *PrBrief) GetChange() *PrChangeAnalysis {
+	if x != nil {
+		return x.Change
+	}
+	return nil
+}
+
+func (x *PrBrief) GetDraft() *PrDescription {
+	if x != nil {
+		return x.Draft
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionDecisionBlockers struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionDecisionBlockers) Reset() {
+	*x = PrSubmissionDecisionBlockers{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionDecisionBlockers) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionDecisionBlockers) ProtoMessage() {}
+
+func (x *PrSubmissionDecisionBlockers) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionDecisionBlockers.ProtoReflect.Descriptor instead.
+func (*PrSubmissionDecisionBlockers) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *PrSubmissionDecisionBlockers) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrSubmissionDecision struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Status        *string                       `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Score         *int64                        `protobuf:"varint,2,opt,name=score,proto3,oneof" json:"score,omitempty"`
+	Tier          *string                       `protobuf:"bytes,3,opt,name=tier,proto3,oneof" json:"tier,omitempty"`
+	ProseWords    *int64                        `protobuf:"varint,4,opt,name=prose_words,json=proseWords,proto3,oneof" json:"prose_words,omitempty"`
+	Blockers      *PrSubmissionDecisionBlockers `protobuf:"bytes,5,opt,name=blockers,proto3" json:"blockers,omitempty"`
+	Findings      *PrEvaluationFindings         `protobuf:"bytes,6,opt,name=findings,proto3" json:"findings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionDecision) Reset() {
+	*x = PrSubmissionDecision{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionDecision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionDecision) ProtoMessage() {}
+
+func (x *PrSubmissionDecision) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionDecision.ProtoReflect.Descriptor instead.
+func (*PrSubmissionDecision) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *PrSubmissionDecision) GetStatus() string {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return ""
+}
+
+func (x *PrSubmissionDecision) GetScore() int64 {
+	if x != nil && x.Score != nil {
+		return *x.Score
+	}
+	return 0
+}
+
+func (x *PrSubmissionDecision) GetTier() string {
+	if x != nil && x.Tier != nil {
+		return *x.Tier
+	}
+	return ""
+}
+
+func (x *PrSubmissionDecision) GetProseWords() int64 {
+	if x != nil && x.ProseWords != nil {
+		return *x.ProseWords
+	}
+	return 0
+}
+
+func (x *PrSubmissionDecision) GetBlockers() *PrSubmissionDecisionBlockers {
+	if x != nil {
+		return x.Blockers
+	}
+	return nil
+}
+
+func (x *PrSubmissionDecision) GetFindings() *PrEvaluationFindings {
+	if x != nil {
+		return x.Findings
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionFlowNodes struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*structpb.Value      `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionFlowNodes) Reset() {
+	*x = PrSubmissionFlowNodes{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionFlowNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionFlowNodes) ProtoMessage() {}
+
+func (x *PrSubmissionFlowNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionFlowNodes.ProtoReflect.Descriptor instead.
+func (*PrSubmissionFlowNodes) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *PrSubmissionFlowNodes) GetItems() []*structpb.Value {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrSubmissionFlow struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Available           *bool                  `protobuf:"varint,1,opt,name=available,proto3,oneof" json:"available,omitempty"`
+	Scope               *string                `protobuf:"bytes,2,opt,name=scope,proto3,oneof" json:"scope,omitempty"`
+	AnalysisId          *string                `protobuf:"bytes,3,opt,name=analysis_id,json=analysisId,proto3,oneof" json:"analysis_id,omitempty"`
+	SchemaVersion       *int64                 `protobuf:"varint,4,opt,name=schema_version,json=schemaVersion,proto3,oneof" json:"schema_version,omitempty"`
+	Coverage            *PrFlowCoverage        `protobuf:"bytes,5,opt,name=coverage,proto3" json:"coverage,omitempty"`
+	NodeCount           *int64                 `protobuf:"varint,6,opt,name=node_count,json=nodeCount,proto3,oneof" json:"node_count,omitempty"`
+	EdgeCount           *int64                 `protobuf:"varint,7,opt,name=edge_count,json=edgeCount,proto3,oneof" json:"edge_count,omitempty"`
+	Nodes               *PrSubmissionFlowNodes `protobuf:"bytes,8,opt,name=nodes,proto3" json:"nodes,omitempty"`
+	Edges               *PrSubmissionFlowNodes `protobuf:"bytes,9,opt,name=edges,proto3" json:"edges,omitempty"`
+	Interactions        *PrSubmissionFlowNodes `protobuf:"bytes,10,opt,name=interactions,proto3" json:"interactions,omitempty"`
+	InteractionCount    *int64                 `protobuf:"varint,11,opt,name=interaction_count,json=interactionCount,proto3,oneof" json:"interaction_count,omitempty"`
+	Diagnostics         *PrSubmissionFlowNodes `protobuf:"bytes,12,opt,name=diagnostics,proto3" json:"diagnostics,omitempty"`
+	Limited             *bool                  `protobuf:"varint,13,opt,name=limited,proto3,oneof" json:"limited,omitempty"`
+	FullCaptureFailure  *string                `protobuf:"bytes,14,opt,name=full_capture_failure,json=fullCaptureFailure,proto3,oneof" json:"full_capture_failure,omitempty"`
+	Reason              *string                `protobuf:"bytes,15,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
+	AlternativeEvidence *string                `protobuf:"bytes,16,opt,name=alternative_evidence,json=alternativeEvidence,proto3,oneof" json:"alternative_evidence,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PrSubmissionFlow) Reset() {
+	*x = PrSubmissionFlow{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionFlow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionFlow) ProtoMessage() {}
+
+func (x *PrSubmissionFlow) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionFlow.ProtoReflect.Descriptor instead.
+func (*PrSubmissionFlow) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *PrSubmissionFlow) GetAvailable() bool {
+	if x != nil && x.Available != nil {
+		return *x.Available
+	}
+	return false
+}
+
+func (x *PrSubmissionFlow) GetScope() string {
+	if x != nil && x.Scope != nil {
+		return *x.Scope
+	}
+	return ""
+}
+
+func (x *PrSubmissionFlow) GetAnalysisId() string {
+	if x != nil && x.AnalysisId != nil {
+		return *x.AnalysisId
+	}
+	return ""
+}
+
+func (x *PrSubmissionFlow) GetSchemaVersion() int64 {
+	if x != nil && x.SchemaVersion != nil {
+		return *x.SchemaVersion
+	}
+	return 0
+}
+
+func (x *PrSubmissionFlow) GetCoverage() *PrFlowCoverage {
+	if x != nil {
+		return x.Coverage
+	}
+	return nil
+}
+
+func (x *PrSubmissionFlow) GetNodeCount() int64 {
+	if x != nil && x.NodeCount != nil {
+		return *x.NodeCount
+	}
+	return 0
+}
+
+func (x *PrSubmissionFlow) GetEdgeCount() int64 {
+	if x != nil && x.EdgeCount != nil {
+		return *x.EdgeCount
+	}
+	return 0
+}
+
+func (x *PrSubmissionFlow) GetNodes() *PrSubmissionFlowNodes {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *PrSubmissionFlow) GetEdges() *PrSubmissionFlowNodes {
+	if x != nil {
+		return x.Edges
+	}
+	return nil
+}
+
+func (x *PrSubmissionFlow) GetInteractions() *PrSubmissionFlowNodes {
+	if x != nil {
+		return x.Interactions
+	}
+	return nil
+}
+
+func (x *PrSubmissionFlow) GetInteractionCount() int64 {
+	if x != nil && x.InteractionCount != nil {
+		return *x.InteractionCount
+	}
+	return 0
+}
+
+func (x *PrSubmissionFlow) GetDiagnostics() *PrSubmissionFlowNodes {
+	if x != nil {
+		return x.Diagnostics
+	}
+	return nil
+}
+
+func (x *PrSubmissionFlow) GetLimited() bool {
+	if x != nil && x.Limited != nil {
+		return *x.Limited
+	}
+	return false
+}
+
+func (x *PrSubmissionFlow) GetFullCaptureFailure() string {
+	if x != nil && x.FullCaptureFailure != nil {
+		return *x.FullCaptureFailure
+	}
+	return ""
+}
+
+func (x *PrSubmissionFlow) GetReason() string {
+	if x != nil && x.Reason != nil {
+		return *x.Reason
+	}
+	return ""
+}
+
+func (x *PrSubmissionFlow) GetAlternativeEvidence() string {
+	if x != nil && x.AlternativeEvidence != nil {
+		return *x.AlternativeEvidence
+	}
+	return ""
+}
+
+type PrSubmissionImagesItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           *string                `protobuf:"bytes,1,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	Sha256        *string                `protobuf:"bytes,2,opt,name=sha256,proto3,oneof" json:"sha256,omitempty"`
+	ContentType   *string                `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3,oneof" json:"content_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionImagesItem) Reset() {
+	*x = PrSubmissionImagesItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionImagesItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionImagesItem) ProtoMessage() {}
+
+func (x *PrSubmissionImagesItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionImagesItem.ProtoReflect.Descriptor instead.
+func (*PrSubmissionImagesItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *PrSubmissionImagesItem) GetUrl() string {
+	if x != nil && x.Url != nil {
+		return *x.Url
+	}
+	return ""
+}
+
+func (x *PrSubmissionImagesItem) GetSha256() string {
+	if x != nil && x.Sha256 != nil {
+		return *x.Sha256
+	}
+	return ""
+}
+
+func (x *PrSubmissionImagesItem) GetContentType() string {
+	if x != nil && x.ContentType != nil {
+		return *x.ContentType
+	}
+	return ""
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionImages struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Items         []*PrSubmissionImagesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionImages) Reset() {
+	*x = PrSubmissionImages{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionImages) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionImages) ProtoMessage() {}
+
+func (x *PrSubmissionImages) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionImages.ProtoReflect.Descriptor instead.
+func (*PrSubmissionImages) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{74}
+}
+
+func (x *PrSubmissionImages) GetItems() []*PrSubmissionImagesItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrSubmissionWorkerPids struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []int64                `protobuf:"varint,1,rep,packed,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrSubmissionWorkerPids) Reset() {
+	*x = PrSubmissionWorkerPids{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[75]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmissionWorkerPids) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmissionWorkerPids) ProtoMessage() {}
+
+func (x *PrSubmissionWorkerPids) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[75]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmissionWorkerPids.ProtoReflect.Descriptor instead.
+func (*PrSubmissionWorkerPids) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{75}
+}
+
+func (x *PrSubmissionWorkerPids) GetItems() []int64 {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrSubmission struct {
+	state                protoimpl.MessageState  `protogen:"open.v1"`
+	Id                   *string                 `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Request              *PrSubmissionInput      `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`
+	State                *string                 `protobuf:"bytes,3,opt,name=state,proto3,oneof" json:"state,omitempty"`
+	Detail               *string                 `protobuf:"bytes,4,opt,name=detail,proto3,oneof" json:"detail,omitempty"`
+	CreatedAt            *int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3,oneof" json:"created_at,omitempty"`
+	UpdatedAt            *int64                  `protobuf:"varint,6,opt,name=updated_at,json=updatedAt,proto3,oneof" json:"updated_at,omitempty"`
+	Snapshot             *PrRepositorySnapshot   `protobuf:"bytes,7,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
+	PolicyVersion        *int64                  `protobuf:"varint,8,opt,name=policy_version,json=policyVersion,proto3,oneof" json:"policy_version,omitempty"`
+	PolicyDigest         *string                 `protobuf:"bytes,9,opt,name=policy_digest,json=policyDigest,proto3,oneof" json:"policy_digest,omitempty"`
+	Stages               *PrStages               `protobuf:"bytes,10,opt,name=stages,proto3" json:"stages,omitempty"`
+	Brief                *PrBrief                `protobuf:"bytes,11,opt,name=brief,proto3" json:"brief,omitempty"`
+	Contract             *PrContract             `protobuf:"bytes,12,opt,name=contract,proto3" json:"contract,omitempty"`
+	Evaluation           *PrEvaluation           `protobuf:"bytes,13,opt,name=evaluation,proto3" json:"evaluation,omitempty"`
+	Decision             *PrSubmissionDecision   `protobuf:"bytes,14,opt,name=decision,proto3" json:"decision,omitempty"`
+	PreparedDigest       *string                 `protobuf:"bytes,15,opt,name=prepared_digest,json=preparedDigest,proto3,oneof" json:"prepared_digest,omitempty"`
+	PublicationRequested *bool                   `protobuf:"varint,16,opt,name=publication_requested,json=publicationRequested,proto3,oneof" json:"publication_requested,omitempty"`
+	PublicationAttempted *bool                   `protobuf:"varint,17,opt,name=publication_attempted,json=publicationAttempted,proto3,oneof" json:"publication_attempted,omitempty"`
+	Flow                 *PrSubmissionFlow       `protobuf:"bytes,18,opt,name=flow,proto3" json:"flow,omitempty"`
+	Images               *PrSubmissionImages     `protobuf:"bytes,19,opt,name=images,proto3" json:"images,omitempty"`
+	PrUrl                *string                 `protobuf:"bytes,20,opt,name=pr_url,json=prUrl,proto3,oneof" json:"pr_url,omitempty"`
+	PrId                 *string                 `protobuf:"bytes,21,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
+	WorkerPids           *PrSubmissionWorkerPids `protobuf:"bytes,22,opt,name=worker_pids,json=workerPids,proto3" json:"worker_pids,omitempty"`
+	NotificationRevision *int64                  `protobuf:"varint,23,opt,name=notification_revision,json=notificationRevision,proto3,oneof" json:"notification_revision,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *PrSubmission) Reset() {
+	*x = PrSubmission{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrSubmission) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrSubmission) ProtoMessage() {}
+
+func (x *PrSubmission) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrSubmission.ProtoReflect.Descriptor instead.
+func (*PrSubmission) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *PrSubmission) GetId() string {
+	if x != nil && x.Id != nil {
+		return *x.Id
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetRequest() *PrSubmissionInput {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetState() string {
+	if x != nil && x.State != nil {
+		return *x.State
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetDetail() string {
+	if x != nil && x.Detail != nil {
+		return *x.Detail
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetCreatedAt() int64 {
+	if x != nil && x.CreatedAt != nil {
+		return *x.CreatedAt
+	}
+	return 0
+}
+
+func (x *PrSubmission) GetUpdatedAt() int64 {
+	if x != nil && x.UpdatedAt != nil {
+		return *x.UpdatedAt
+	}
+	return 0
+}
+
+func (x *PrSubmission) GetSnapshot() *PrRepositorySnapshot {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetPolicyVersion() int64 {
+	if x != nil && x.PolicyVersion != nil {
+		return *x.PolicyVersion
+	}
+	return 0
+}
+
+func (x *PrSubmission) GetPolicyDigest() string {
+	if x != nil && x.PolicyDigest != nil {
+		return *x.PolicyDigest
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetStages() *PrStages {
+	if x != nil {
+		return x.Stages
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetBrief() *PrBrief {
+	if x != nil {
+		return x.Brief
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetContract() *PrContract {
+	if x != nil {
+		return x.Contract
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetEvaluation() *PrEvaluation {
+	if x != nil {
+		return x.Evaluation
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetDecision() *PrSubmissionDecision {
+	if x != nil {
+		return x.Decision
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetPreparedDigest() string {
+	if x != nil && x.PreparedDigest != nil {
+		return *x.PreparedDigest
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetPublicationRequested() bool {
+	if x != nil && x.PublicationRequested != nil {
+		return *x.PublicationRequested
+	}
+	return false
+}
+
+func (x *PrSubmission) GetPublicationAttempted() bool {
+	if x != nil && x.PublicationAttempted != nil {
+		return *x.PublicationAttempted
+	}
+	return false
+}
+
+func (x *PrSubmission) GetFlow() *PrSubmissionFlow {
+	if x != nil {
+		return x.Flow
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetImages() *PrSubmissionImages {
+	if x != nil {
+		return x.Images
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetPrUrl() string {
+	if x != nil && x.PrUrl != nil {
+		return *x.PrUrl
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetPrId() string {
+	if x != nil && x.PrId != nil {
+		return *x.PrId
+	}
+	return ""
+}
+
+func (x *PrSubmission) GetWorkerPids() *PrSubmissionWorkerPids {
+	if x != nil {
+		return x.WorkerPids
+	}
+	return nil
+}
+
+func (x *PrSubmission) GetNotificationRevision() int64 {
+	if x != nil && x.NotificationRevision != nil {
+		return *x.NotificationRevision
+	}
+	return 0
+}
+
+type PrRepositoryPolicyComplexityProfilesRoutine struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MinWords      *int64                 `protobuf:"varint,1,opt,name=min_words,json=minWords,proto3,oneof" json:"min_words,omitempty"`
+	MaxWords      *int64                 `protobuf:"varint,2,opt,name=max_words,json=maxWords,proto3,oneof" json:"max_words,omitempty"`
+	Guidance      *string                `protobuf:"bytes,3,opt,name=guidance,proto3,oneof" json:"guidance,omitempty"`
+	Advisory      *bool                  `protobuf:"varint,4,opt,name=advisory,proto3,oneof" json:"advisory,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) Reset() {
+	*x = PrRepositoryPolicyComplexityProfilesRoutine{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositoryPolicyComplexityProfilesRoutine) ProtoMessage() {}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositoryPolicyComplexityProfilesRoutine.ProtoReflect.Descriptor instead.
+func (*PrRepositoryPolicyComplexityProfilesRoutine) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) GetMinWords() int64 {
+	if x != nil && x.MinWords != nil {
+		return *x.MinWords
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) GetMaxWords() int64 {
+	if x != nil && x.MaxWords != nil {
+		return *x.MaxWords
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) GetGuidance() string {
+	if x != nil && x.Guidance != nil {
+		return *x.Guidance
+	}
+	return ""
+}
+
+func (x *PrRepositoryPolicyComplexityProfilesRoutine) GetAdvisory() bool {
+	if x != nil && x.Advisory != nil {
+		return *x.Advisory
+	}
+	return false
+}
+
+type PrRepositoryPolicyComplexityProfiles struct {
+	state         protoimpl.MessageState                       `protogen:"open.v1"`
+	Routine       *PrRepositoryPolicyComplexityProfilesRoutine `protobuf:"bytes,1,opt,name=routine,proto3" json:"routine,omitempty"`
+	Standard      *PrRepositoryPolicyComplexityProfilesRoutine `protobuf:"bytes,2,opt,name=standard,proto3" json:"standard,omitempty"`
+	Complex       *PrRepositoryPolicyComplexityProfilesRoutine `protobuf:"bytes,3,opt,name=complex,proto3" json:"complex,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositoryPolicyComplexityProfiles) Reset() {
+	*x = PrRepositoryPolicyComplexityProfiles{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositoryPolicyComplexityProfiles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositoryPolicyComplexityProfiles) ProtoMessage() {}
+
+func (x *PrRepositoryPolicyComplexityProfiles) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositoryPolicyComplexityProfiles.ProtoReflect.Descriptor instead.
+func (*PrRepositoryPolicyComplexityProfiles) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *PrRepositoryPolicyComplexityProfiles) GetRoutine() *PrRepositoryPolicyComplexityProfilesRoutine {
+	if x != nil {
+		return x.Routine
+	}
+	return nil
+}
+
+func (x *PrRepositoryPolicyComplexityProfiles) GetStandard() *PrRepositoryPolicyComplexityProfilesRoutine {
+	if x != nil {
+		return x.Standard
+	}
+	return nil
+}
+
+func (x *PrRepositoryPolicyComplexityProfiles) GetComplex() *PrRepositoryPolicyComplexityProfilesRoutine {
+	if x != nil {
+		return x.Complex
+	}
+	return nil
+}
+
+type PrRepositoryPolicyCitationCorrectionsItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
+	ReportedLine  *int64                 `protobuf:"varint,2,opt,name=reported_line,json=reportedLine,proto3,oneof" json:"reported_line,omitempty"`
+	VerifiedLine  *int64                 `protobuf:"varint,3,opt,name=verified_line,json=verifiedLine,proto3,oneof" json:"verified_line,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) Reset() {
+	*x = PrRepositoryPolicyCitationCorrectionsItem{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositoryPolicyCitationCorrectionsItem) ProtoMessage() {}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[79]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositoryPolicyCitationCorrectionsItem.ProtoReflect.Descriptor instead.
+func (*PrRepositoryPolicyCitationCorrectionsItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) GetRuleId() string {
+	if x != nil && x.RuleId != nil {
+		return *x.RuleId
+	}
+	return ""
+}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) GetReportedLine() int64 {
+	if x != nil && x.ReportedLine != nil {
+		return *x.ReportedLine
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicyCitationCorrectionsItem) GetVerifiedLine() int64 {
+	if x != nil && x.VerifiedLine != nil {
+		return *x.VerifiedLine
+	}
+	return 0
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+type PrRepositoryPolicyCitationCorrections struct {
+	state         protoimpl.MessageState                       `protogen:"open.v1"`
+	Items         []*PrRepositoryPolicyCitationCorrectionsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrRepositoryPolicyCitationCorrections) Reset() {
+	*x = PrRepositoryPolicyCitationCorrections{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositoryPolicyCitationCorrections) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositoryPolicyCitationCorrections) ProtoMessage() {}
+
+func (x *PrRepositoryPolicyCitationCorrections) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositoryPolicyCitationCorrections.ProtoReflect.Descriptor instead.
+func (*PrRepositoryPolicyCitationCorrections) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *PrRepositoryPolicyCitationCorrections) GetItems() []*PrRepositoryPolicyCitationCorrectionsItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type PrRepositoryPolicy struct {
+	state               protoimpl.MessageState                 `protogen:"open.v1"`
+	ComplexityProfiles  *PrRepositoryPolicyComplexityProfiles  `protobuf:"bytes,1,opt,name=complexity_profiles,json=complexityProfiles,proto3" json:"complexity_profiles,omitempty"`
+	SchemaVersion       *uint32                                `protobuf:"varint,2,opt,name=schema_version,json=schemaVersion,proto3,oneof" json:"schema_version,omitempty"`
+	Repository          *string                                `protobuf:"bytes,3,opt,name=repository,proto3,oneof" json:"repository,omitempty"`
+	Version             *int64                                 `protobuf:"varint,4,opt,name=version,proto3,oneof" json:"version,omitempty"`
+	SourceDigest        *string                                `protobuf:"bytes,5,opt,name=source_digest,json=sourceDigest,proto3,oneof" json:"source_digest,omitempty"`
+	AnalystVersion      *uint32                                `protobuf:"varint,6,opt,name=analyst_version,json=analystVersion,proto3,oneof" json:"analyst_version,omitempty"`
+	StockVersion        *uint32                                `protobuf:"varint,7,opt,name=stock_version,json=stockVersion,proto3,oneof" json:"stock_version,omitempty"`
+	CreatedAtMs         *int64                                 `protobuf:"varint,8,opt,name=created_at_ms,json=createdAtMs,proto3,oneof" json:"created_at_ms,omitempty"`
+	CitationCorrections *PrRepositoryPolicyCitationCorrections `protobuf:"bytes,9,opt,name=citation_corrections,json=citationCorrections,proto3" json:"citation_corrections,omitempty"`
+	Sources             *PrRepositorySnapshotSources           `protobuf:"bytes,10,opt,name=sources,proto3" json:"sources,omitempty"`
+	Analysis            *PrPolicyAnalysis                      `protobuf:"bytes,11,opt,name=analysis,proto3" json:"analysis,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PrRepositoryPolicy) Reset() {
+	*x = PrRepositoryPolicy{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrRepositoryPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrRepositoryPolicy) ProtoMessage() {}
+
+func (x *PrRepositoryPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrRepositoryPolicy.ProtoReflect.Descriptor instead.
+func (*PrRepositoryPolicy) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *PrRepositoryPolicy) GetComplexityProfiles() *PrRepositoryPolicyComplexityProfiles {
+	if x != nil {
+		return x.ComplexityProfiles
+	}
+	return nil
+}
+
+func (x *PrRepositoryPolicy) GetSchemaVersion() uint32 {
+	if x != nil && x.SchemaVersion != nil {
+		return *x.SchemaVersion
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicy) GetRepository() string {
+	if x != nil && x.Repository != nil {
+		return *x.Repository
+	}
+	return ""
+}
+
+func (x *PrRepositoryPolicy) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicy) GetSourceDigest() string {
+	if x != nil && x.SourceDigest != nil {
+		return *x.SourceDigest
+	}
+	return ""
+}
+
+func (x *PrRepositoryPolicy) GetAnalystVersion() uint32 {
+	if x != nil && x.AnalystVersion != nil {
+		return *x.AnalystVersion
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicy) GetStockVersion() uint32 {
+	if x != nil && x.StockVersion != nil {
+		return *x.StockVersion
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicy) GetCreatedAtMs() int64 {
+	if x != nil && x.CreatedAtMs != nil {
+		return *x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *PrRepositoryPolicy) GetCitationCorrections() *PrRepositoryPolicyCitationCorrections {
+	if x != nil {
+		return x.CitationCorrections
+	}
+	return nil
+}
+
+func (x *PrRepositoryPolicy) GetSources() *PrRepositorySnapshotSources {
+	if x != nil {
+		return x.Sources
+	}
+	return nil
+}
+
+func (x *PrRepositoryPolicy) GetAnalysis() *PrPolicyAnalysis {
+	if x != nil {
+		return x.Analysis
+	}
+	return nil
+}
+
+// PR Flow schema-4 coverage counts; heterogeneous graph records remain Value.
+type PrFlowCoverage struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TotalNodes           *int64                 `protobuf:"varint,1,opt,name=total_nodes,proto3,oneof" json:"total_nodes,omitempty"`
+	ShownNodes           *int64                 `protobuf:"varint,2,opt,name=shown_nodes,proto3,oneof" json:"shown_nodes,omitempty"`
+	OmittedContextNodes  *int64                 `protobuf:"varint,3,opt,name=omitted_context_nodes,proto3,oneof" json:"omitted_context_nodes,omitempty"`
+	CollapsedDetailNodes *int64                 `protobuf:"varint,4,opt,name=collapsed_detail_nodes,proto3,oneof" json:"collapsed_detail_nodes,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *PrFlowCoverage) Reset() {
+	*x = PrFlowCoverage{}
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrFlowCoverage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrFlowCoverage) ProtoMessage() {}
+
+func (x *PrFlowCoverage) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v1_submissions_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrFlowCoverage.ProtoReflect.Descriptor instead.
+func (*PrFlowCoverage) Descriptor() ([]byte, []int) {
+	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *PrFlowCoverage) GetTotalNodes() int64 {
+	if x != nil && x.TotalNodes != nil {
+		return *x.TotalNodes
+	}
+	return 0
+}
+
+func (x *PrFlowCoverage) GetShownNodes() int64 {
+	if x != nil && x.ShownNodes != nil {
+		return *x.ShownNodes
+	}
+	return 0
+}
+
+func (x *PrFlowCoverage) GetOmittedContextNodes() int64 {
+	if x != nil && x.OmittedContextNodes != nil {
+		return *x.OmittedContextNodes
+	}
+	return 0
+}
+
+func (x *PrFlowCoverage) GetCollapsedDetailNodes() int64 {
+	if x != nil && x.CollapsedDetailNodes != nil {
+		return *x.CollapsedDetailNodes
+	}
+	return 0
 }
 
 var File_octomanager_v1_submissions_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_submissions_proto_rawDesc = "" +
 	"\n" +
-	" octomanager/v1/submissions.proto\x12\x0eoctomanager.v1\"9\n" +
-	"\x18SubmitPullRequestRequest\x12\x1d\n" +
+	" octomanager/v1/submissions.proto\x12\x0eoctomanager.v1\x1a\x1cgoogle/protobuf/struct.proto\"e\n" +
+	"\x18SubmitPullRequestRequest\x127\n" +
+	"\x05input\x18\x02 \x01(\v2!.octomanager.v1.PrSubmissionInputR\x05inputJ\x04\b\x01\x10\x02R\n" +
+	"input_json\"p\n" +
+	"\x19SubmitPullRequestResponse\x12<\n" +
 	"\n" +
-	"input_json\x18\x01 \x01(\tR\tinputJson\"D\n" +
-	"\x19SubmitPullRequestResponse\x12'\n" +
-	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJson\"@\n" +
-	"\x15GetSubmissionResponse\x12'\n" +
-	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJson\"B\n" +
-	"\x17RetrySubmissionResponse\x12'\n" +
-	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJson\"C\n" +
-	"\x18CancelSubmissionResponse\x12'\n" +
-	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJson\"&\n" +
+	"submission\x18\x02 \x01(\v2\x1c.octomanager.v1.PrSubmissionR\n" +
+	"submissionJ\x04\b\x01\x10\x02R\x0fsubmission_json\"l\n" +
+	"\x15GetSubmissionResponse\x12<\n" +
+	"\n" +
+	"submission\x18\x02 \x01(\v2\x1c.octomanager.v1.PrSubmissionR\n" +
+	"submissionJ\x04\b\x01\x10\x02R\x0fsubmission_json\"n\n" +
+	"\x17RetrySubmissionResponse\x12<\n" +
+	"\n" +
+	"submission\x18\x02 \x01(\v2\x1c.octomanager.v1.PrSubmissionR\n" +
+	"submissionJ\x04\b\x01\x10\x02R\x0fsubmission_json\"o\n" +
+	"\x18CancelSubmissionResponse\x12<\n" +
+	"\n" +
+	"submission\x18\x02 \x01(\v2\x1c.octomanager.v1.PrSubmissionR\n" +
+	"submissionJ\x04\b\x01\x10\x02R\x0fsubmission_json\"&\n" +
 	"\x14GetSubmissionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x18\n" +
-	"\x16ListSubmissionsRequest\"D\n" +
-	"\x17ListSubmissionsResponse\x12)\n" +
-	"\x10submissions_json\x18\x01 \x03(\tR\x0fsubmissionsJson\"(\n" +
+	"\x16ListSubmissionsRequest\"q\n" +
+	"\x17ListSubmissionsResponse\x12>\n" +
+	"\vsubmissions\x18\x02 \x03(\v2\x1c.octomanager.v1.PrSubmissionR\vsubmissionsJ\x04\b\x01\x10\x02R\x10submissions_json\"(\n" +
 	"\x16RetrySubmissionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\")\n" +
 	"\x17CancelSubmissionRequest\x12\x0e\n" +
@@ -686,15 +5362,573 @@ const file_octomanager_v1_submissions_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\rH\x00R\aversion\x88\x01\x01\x12\x12\n" +
 	"\x04tier\x18\x03 \x01(\tR\x04tierB\n" +
 	"\n" +
-	"\b_version\"Z\n" +
-	"\x1bGetRepositoryPolicyResponse\x12\x1f\n" +
-	"\vpolicy_json\x18\x01 \x01(\tR\n" +
-	"policyJson\x12\x1a\n" +
-	"\btemplate\x18\x02 \x01(\tR\btemplate\"3\n" +
+	"\b_version\"\x88\x01\n" +
+	"\x1bGetRepositoryPolicyResponse\x12\x1a\n" +
+	"\btemplate\x18\x02 \x01(\tR\btemplate\x12:\n" +
+	"\x06policy\x18\x03 \x01(\v2\".octomanager.v1.PrRepositoryPolicyR\x06policyJ\x04\b\x01\x10\x02R\vpolicy_json\"3\n" +
 	"!PublishPreparedPullRequestRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"M\n" +
-	"\"PublishPreparedPullRequestResponse\x12'\n" +
-	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJsonB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
+	"\x02id\x18\x01 \x01(\tR\x02id\"y\n" +
+	"\"PublishPreparedPullRequestResponse\x12<\n" +
+	"\n" +
+	"submission\x18\x02 \x01(\v2\x1c.octomanager.v1.PrSubmissionR\n" +
+	"submissionJ\x04\b\x01\x10\x02R\x0fsubmission_json\"\xec\x01\n" +
+	"\x18PrContractPrPresentation\x12\x1b\n" +
+	"\x06layout\x18\x01 \x01(\tH\x00R\x06layout\x88\x01\x01\x12G\n" +
+	"\x1cfirst_artifact_by_prose_word\x18\x02 \x01(\x03H\x01R\x1cfirst_artifact_by_prose_word\x88\x01\x01\x12+\n" +
+	"\x0ediagram_format\x18\x03 \x01(\tH\x02R\x0ediagram_format\x88\x01\x01B\t\n" +
+	"\a_layoutB\x1f\n" +
+	"\x1d_first_artifact_by_prose_wordB\x11\n" +
+	"\x0f_diagram_format\"\x97\x02\n" +
+	"\x1dPrContractPrComplexityWeights\x12\x1d\n" +
+	"\abreadth\x18\x01 \x01(\x03H\x00R\abreadth\x88\x01\x01\x12\x1f\n" +
+	"\bbehavior\x18\x02 \x01(\x03H\x01R\bbehavior\x88\x01\x01\x12\x1f\n" +
+	"\bcoupling\x18\x03 \x01(\x03H\x02R\bcoupling\x88\x01\x01\x12)\n" +
+	"\rcompatibility\x18\x04 \x01(\x03H\x03R\rcompatibility\x88\x01\x01\x12#\n" +
+	"\n" +
+	"state_risk\x18\x05 \x01(\x03H\x04R\n" +
+	"state_risk\x88\x01\x01B\n" +
+	"\n" +
+	"\b_breadthB\v\n" +
+	"\t_behaviorB\v\n" +
+	"\t_couplingB\x10\n" +
+	"\x0e_compatibilityB\r\n" +
+	"\v_state_risk\"\xd2\x01\n" +
+	"\x16PrContractPrComplexity\x12G\n" +
+	"\aweights\x18\x01 \x01(\v2-.octomanager.v1.PrContractPrComplexityWeightsR\aweights\x12%\n" +
+	"\vroutine_max\x18\x02 \x01(\x03H\x00R\vroutine_max\x88\x01\x01\x12'\n" +
+	"\fstandard_max\x18\x03 \x01(\x03H\x01R\fstandard_max\x88\x01\x01B\x0e\n" +
+	"\f_routine_maxB\x0f\n" +
+	"\r_standard_max\"\xa3\x01\n" +
+	"\x1bPrContractPrProfilesRoutine\x12-\n" +
+	"\x0fmax_prose_words\x18\x01 \x01(\x03H\x00R\x0fmax_prose_words\x88\x01\x01\x12-\n" +
+	"\x0frequire_diagram\x18\x02 \x01(\bH\x01R\x0frequire_diagram\x88\x01\x01B\x12\n" +
+	"\x10_max_prose_wordsB\x12\n" +
+	"\x10_require_diagram\"\xed\x01\n" +
+	"\x14PrContractPrProfiles\x12E\n" +
+	"\aroutine\x18\x01 \x01(\v2+.octomanager.v1.PrContractPrProfilesRoutineR\aroutine\x12G\n" +
+	"\bstandard\x18\x02 \x01(\v2+.octomanager.v1.PrContractPrProfilesRoutineR\bstandard\x12E\n" +
+	"\acomplex\x18\x03 \x01(\v2+.octomanager.v1.PrContractPrProfilesRoutineR\acomplex\"n\n" +
+	"\x19PrContractPrOverridesItem\x12\x1d\n" +
+	"\arule_id\x18\x01 \x01(\tH\x00R\arule_id\x88\x01\x01\x12\x1b\n" +
+	"\x06reason\x18\x02 \x01(\tH\x01R\x06reason\x88\x01\x01B\n" +
+	"\n" +
+	"\b_rule_idB\t\n" +
+	"\a_reason\"X\n" +
+	"\x15PrContractPrOverrides\x12?\n" +
+	"\x05items\x18\x01 \x03(\v2).octomanager.v1.PrContractPrOverridesItemR\x05items\"\xab\x02\n" +
+	"\fPrContractPr\x12L\n" +
+	"\fpresentation\x18\x01 \x01(\v2(.octomanager.v1.PrContractPrPresentationR\fpresentation\x12F\n" +
+	"\n" +
+	"complexity\x18\x02 \x01(\v2&.octomanager.v1.PrContractPrComplexityR\n" +
+	"complexity\x12@\n" +
+	"\bprofiles\x18\x03 \x01(\v2$.octomanager.v1.PrContractPrProfilesR\bprofiles\x12C\n" +
+	"\toverrides\x18\x04 \x01(\v2%.octomanager.v1.PrContractPrOverridesR\toverrides\"z\n" +
+	"\n" +
+	"PrContract\x12+\n" +
+	"\x0eschema_version\x18\x01 \x01(\rH\x00R\x0eschema_version\x88\x01\x01\x12,\n" +
+	"\x02pr\x18\x02 \x01(\v2\x1c.octomanager.v1.PrContractPrR\x02prB\x11\n" +
+	"\x0f_schema_version\"5\n" +
+	"\x1dPrContractSourceAuthoredPaths\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\x95\x02\n" +
+	"\x10PrContractSource\x12\x1b\n" +
+	"\x06sha256\x18\x01 \x01(\tH\x00R\x06sha256\x88\x01\x01\x12\x17\n" +
+	"\x04path\x18\x02 \x01(\tH\x01R\x04path\x88\x01\x01\x12\x1e\n" +
+	"\bblob_sha\x18\x03 \x01(\tH\x02R\ablobSha\x88\x01\x01\x12T\n" +
+	"\x0eauthored_paths\x18\x04 \x01(\v2-.octomanager.v1.PrContractSourceAuthoredPathsR\rauthoredPaths\x12$\n" +
+	"\vparse_error\x18\x05 \x01(\tH\x03R\n" +
+	"parseError\x88\x01\x01B\t\n" +
+	"\a_sha256B\a\n" +
+	"\x05_pathB\v\n" +
+	"\t_blob_shaB\x0e\n" +
+	"\f_parse_error\"3\n" +
+	"\x1bPrSubmissionInputReferences\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"e\n" +
+	"\x1cPrSubmissionInputDescription\x12\x19\n" +
+	"\x05title\x18\x01 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04body\x18\x02 \x01(\tH\x01R\x04body\x88\x01\x01B\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_body\"\xcf\x01\n" +
+	"\x1fPrSubmissionInputValidationItem\x12\x1d\n" +
+	"\acommand\x18\x01 \x01(\tH\x00R\acommand\x88\x01\x01\x12\x1b\n" +
+	"\x06result\x18\x02 \x01(\tH\x01R\x06result\x88\x01\x01\x12\x17\n" +
+	"\x04note\x18\x03 \x01(\tH\x02R\x04note\x88\x01\x01\x12&\n" +
+	"\fevidence_url\x18\x04 \x01(\tH\x03R\vevidenceUrl\x88\x01\x01B\n" +
+	"\n" +
+	"\b_commandB\t\n" +
+	"\a_resultB\a\n" +
+	"\x05_noteB\x0f\n" +
+	"\r_evidence_url\"d\n" +
+	"\x1bPrSubmissionInputValidation\x12E\n" +
+	"\x05items\x18\x01 \x03(\v2/.octomanager.v1.PrSubmissionInputValidationItemR\x05items\"\xc9\x01\n" +
+	"\x16PrSubmissionInputOwner\x12\x1d\n" +
+	"\aharness\x18\x01 \x01(\tH\x00R\aharness\x88\x01\x01\x12\x1f\n" +
+	"\bendpoint\x18\x02 \x01(\tH\x01R\bendpoint\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"session_id\x18\x03 \x01(\tH\x02R\tsessionId\x88\x01\x01\x12\x19\n" +
+	"\x05label\x18\x04 \x01(\tH\x03R\x05label\x88\x01\x01B\n" +
+	"\n" +
+	"\b_harnessB\v\n" +
+	"\t_endpointB\r\n" +
+	"\v_session_idB\b\n" +
+	"\x06_label\"\xe9\a\n" +
+	"\x11PrSubmissionInput\x12\x17\n" +
+	"\x04mode\x18\x01 \x01(\tH\x00R\x04mode\x88\x01\x01\x12,\n" +
+	"\x0fhead_repository\x18\x02 \x01(\tH\x01R\x0eheadRepository\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"update_url\x18\x03 \x01(\tH\x02R\tupdateUrl\x88\x01\x01\x126\n" +
+	"\bcontract\x18\x04 \x01(\v2\x1a.octomanager.v1.PrContractR\bcontract\x12I\n" +
+	"\x0fcontract_source\x18\x05 \x01(\v2 .octomanager.v1.PrContractSourceR\x0econtractSource\x12K\n" +
+	"\n" +
+	"references\x18\x06 \x01(\v2+.octomanager.v1.PrSubmissionInputReferencesR\n" +
+	"references\x12N\n" +
+	"\vdescription\x18\a \x01(\v2,.octomanager.v1.PrSubmissionInputDescriptionR\vdescription\x12\"\n" +
+	"\n" +
+	"request_id\x18\b \x01(\tH\x03R\trequestId\x88\x01\x01\x12#\n" +
+	"\n" +
+	"repository\x18\t \x01(\tH\x04R\n" +
+	"repository\x88\x01\x01\x12\x1e\n" +
+	"\bhead_ref\x18\n" +
+	" \x01(\tH\x05R\aheadRef\x88\x01\x01\x12\x1e\n" +
+	"\bhead_sha\x18\v \x01(\tH\x06R\aheadSha\x88\x01\x01\x12\x1e\n" +
+	"\bbase_ref\x18\f \x01(\tH\aR\abaseRef\x88\x01\x01\x12\x1d\n" +
+	"\apurpose\x18\r \x01(\tH\bR\apurpose\x88\x01\x01\x12\x1d\n" +
+	"\aproblem\x18\x0e \x01(\tH\tR\aproblem\x88\x01\x01\x12\x1d\n" +
+	"\aoutcome\x18\x0f \x01(\tH\n" +
+	"R\aoutcome\x88\x01\x01\x12K\n" +
+	"\n" +
+	"validation\x18\x10 \x01(\v2+.octomanager.v1.PrSubmissionInputValidationR\n" +
+	"validation\x12\x19\n" +
+	"\x05draft\x18\x11 \x01(\bH\vR\x05draft\x88\x01\x01\x12<\n" +
+	"\x05owner\x18\x12 \x01(\v2&.octomanager.v1.PrSubmissionInputOwnerR\x05ownerB\a\n" +
+	"\x05_modeB\x12\n" +
+	"\x10_head_repositoryB\r\n" +
+	"\v_update_urlB\r\n" +
+	"\v_request_idB\r\n" +
+	"\v_repositoryB\v\n" +
+	"\t_head_refB\v\n" +
+	"\t_head_shaB\v\n" +
+	"\t_base_refB\n" +
+	"\n" +
+	"\b_purposeB\n" +
+	"\n" +
+	"\b_problemB\n" +
+	"\n" +
+	"\b_outcomeB\b\n" +
+	"\x06_draft\"\xe6\x02\n" +
+	"\"PrRepositorySnapshotReferencesItem\x12#\n" +
+	"\n" +
+	"repository\x18\x01 \x01(\tH\x00R\n" +
+	"repository\x88\x01\x01\x12\x1b\n" +
+	"\x06number\x18\x02 \x01(\x03H\x01R\x06number\x88\x01\x01\x12\x17\n" +
+	"\x04kind\x18\x03 \x01(\tH\x02R\x04kind\x88\x01\x01\x12\x1d\n" +
+	"\aprivate\x18\x04 \x01(\bH\x03R\aprivate\x88\x01\x01\x12\x19\n" +
+	"\x05title\x18\x05 \x01(\tH\x04R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04body\x18\x06 \x01(\tH\x05R\x04body\x88\x01\x01\x12\x15\n" +
+	"\x03url\x18\a \x01(\tH\x06R\x03url\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"updated_at\x18\b \x01(\tH\aR\tupdatedAt\x88\x01\x01B\r\n" +
+	"\v_repositoryB\t\n" +
+	"\a_numberB\a\n" +
+	"\x05_kindB\n" +
+	"\n" +
+	"\b_privateB\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_bodyB\x06\n" +
+	"\x04_urlB\r\n" +
+	"\v_updated_at\"j\n" +
+	"\x1ePrRepositorySnapshotReferences\x12H\n" +
+	"\x05items\x18\x01 \x03(\v22.octomanager.v1.PrRepositorySnapshotReferencesItemR\x05items\"\xfa\x02\n" +
+	"\x1cPrRepositorySnapshotExisting\x12\x15\n" +
+	"\x03url\x18\x01 \x01(\tH\x00R\x03url\x88\x01\x01\x12\x19\n" +
+	"\x05title\x18\x02 \x01(\tH\x01R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04body\x18\x03 \x01(\tH\x02R\x04body\x88\x01\x01\x12\x1e\n" +
+	"\bhead_sha\x18\x04 \x01(\tH\x03R\aheadSha\x88\x01\x01\x12,\n" +
+	"\x0fhead_repository\x18\x05 \x01(\tH\x04R\x0eheadRepository\x88\x01\x01\x12\x1e\n" +
+	"\bhead_ref\x18\x06 \x01(\tH\x05R\aheadRef\x88\x01\x01\x12\x1e\n" +
+	"\bbase_ref\x18\a \x01(\tH\x06R\abaseRef\x88\x01\x01\x12\x1e\n" +
+	"\bbase_sha\x18\b \x01(\tH\aR\abaseSha\x88\x01\x01B\x06\n" +
+	"\x04_urlB\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_bodyB\v\n" +
+	"\t_head_shaB\x12\n" +
+	"\x10_head_repositoryB\v\n" +
+	"\t_head_refB\v\n" +
+	"\t_base_refB\v\n" +
+	"\t_base_sha\"1\n" +
+	"\x19PrRepositorySnapshotFiles\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\x84\x01\n" +
+	"\x1fPrRepositorySnapshotSourcesItem\x12\x17\n" +
+	"\x04path\x18\x01 \x01(\tH\x00R\x04path\x88\x01\x01\x12\x15\n" +
+	"\x03sha\x18\x02 \x01(\tH\x01R\x03sha\x88\x01\x01\x12\x17\n" +
+	"\x04text\x18\x03 \x01(\tH\x02R\x04text\x88\x01\x01B\a\n" +
+	"\x05_pathB\x06\n" +
+	"\x04_shaB\a\n" +
+	"\x05_text\"d\n" +
+	"\x1bPrRepositorySnapshotSources\x12E\n" +
+	"\x05items\x18\x01 \x03(\v2/.octomanager.v1.PrRepositorySnapshotSourcesItemR\x05items\"\xd2\x05\n" +
+	"\x14PrRepositorySnapshot\x12#\n" +
+	"\n" +
+	"repository\x18\x01 \x01(\tH\x00R\n" +
+	"repository\x88\x01\x01\x12\x1e\n" +
+	"\bhead_sha\x18\x02 \x01(\tH\x01R\aheadSha\x88\x01\x01\x12\x1e\n" +
+	"\bbase_sha\x18\x03 \x01(\tH\x02R\abaseSha\x88\x01\x01\x12\x1d\n" +
+	"\aprivate\x18\x04 \x01(\bH\x03R\aprivate\x88\x01\x01\x126\n" +
+	"\bcontract\x18\x05 \x01(\v2\x1a.octomanager.v1.PrContractR\bcontract\x12I\n" +
+	"\x0fcontract_source\x18\x06 \x01(\v2 .octomanager.v1.PrContractSourceR\x0econtractSource\x12N\n" +
+	"\n" +
+	"references\x18\a \x01(\v2..octomanager.v1.PrRepositorySnapshotReferencesR\n" +
+	"references\x12H\n" +
+	"\bexisting\x18\b \x01(\v2,.octomanager.v1.PrRepositorySnapshotExistingR\bexisting\x12?\n" +
+	"\x05files\x18\t \x01(\v2).octomanager.v1.PrRepositorySnapshotFilesR\x05files\x12\x17\n" +
+	"\x04diff\x18\n" +
+	" \x01(\tH\x04R\x04diff\x88\x01\x01\x12E\n" +
+	"\asources\x18\v \x01(\v2+.octomanager.v1.PrRepositorySnapshotSourcesR\asources\x12(\n" +
+	"\rsource_digest\x18\f \x01(\tH\x05R\fsourceDigest\x88\x01\x01B\r\n" +
+	"\v_repositoryB\v\n" +
+	"\t_head_shaB\v\n" +
+	"\t_base_shaB\n" +
+	"\n" +
+	"\b_privateB\a\n" +
+	"\x05_diffB\x10\n" +
+	"\x0e_source_digest\"'\n" +
+	"\x0fPrTitlePrefixes\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"5\n" +
+	"\x0ePrBodyContains\x12\x19\n" +
+	"\x05value\x18\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"L\n" +
+	"\rPrTitlePrefix\x12;\n" +
+	"\bprefixes\x18\x01 \x01(\v2\x1f.octomanager.v1.PrTitlePrefixesR\bprefixes\"=\n" +
+	"\x10PrTitleMaxLength\x12\x1d\n" +
+	"\amaximum\x18\x01 \x01(\x03H\x00R\amaximum\x88\x01\x01B\n" +
+	"\n" +
+	"\b_maximum\"\x14\n" +
+	"\x12PrEvidenceRequired\"\x17\n" +
+	"\x15PrSemanticRequirement\"\x92\x03\n" +
+	"\x12PrRequirementCheck\x12F\n" +
+	"\rbody_contains\x18\x01 \x01(\v2\x1e.octomanager.v1.PrBodyContainsH\x00R\rbody_contains\x12C\n" +
+	"\ftitle_prefix\x18\x02 \x01(\v2\x1d.octomanager.v1.PrTitlePrefixH\x00R\ftitle_prefix\x12N\n" +
+	"\x10title_max_length\x18\x03 \x01(\v2 .octomanager.v1.PrTitleMaxLengthH\x00R\x10title_max_length\x12R\n" +
+	"\x11evidence_required\x18\x04 \x01(\v2\".octomanager.v1.PrEvidenceRequiredH\x00R\x11evidence_required\x12C\n" +
+	"\bsemantic\x18\x05 \x01(\v2%.octomanager.v1.PrSemanticRequirementH\x00R\bsemanticB\x06\n" +
+	"\x04rule\"\xfe\x03\n" +
+	"\rPrRequirement\x12\x13\n" +
+	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1f\n" +
+	"\bstrength\x18\x02 \x01(\tH\x01R\bstrength\x88\x01\x01\x12\x1f\n" +
+	"\bcategory\x18\x03 \x01(\tH\x02R\bcategory\x88\x01\x01\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x03R\vdescription\x88\x01\x01\x12$\n" +
+	"\vsource_path\x18\x05 \x01(\tH\x04R\n" +
+	"sourcePath\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"source_sha\x18\x06 \x01(\tH\x05R\tsourceSha\x88\x01\x01\x12\x17\n" +
+	"\x04line\x18\a \x01(\x03H\x06R\x04line\x88\x01\x01\x12\x19\n" +
+	"\x05quote\x18\b \x01(\tH\aR\x05quote\x88\x01\x01\x12!\n" +
+	"\tcondition\x18\t \x01(\tH\bR\tcondition\x88\x01\x01\x12\x19\n" +
+	"\x05scope\x18\n" +
+	" \x01(\tH\tR\x05scope\x88\x01\x01\x128\n" +
+	"\x05check\x18\v \x01(\v2\".octomanager.v1.PrRequirementCheckR\x05checkB\x05\n" +
+	"\x03_idB\v\n" +
+	"\t_strengthB\v\n" +
+	"\t_categoryB\x0e\n" +
+	"\f_descriptionB\x0e\n" +
+	"\f_source_pathB\r\n" +
+	"\v_source_shaB\a\n" +
+	"\x05_lineB\b\n" +
+	"\x06_quoteB\f\n" +
+	"\n" +
+	"_conditionB\b\n" +
+	"\x06_scope\"E\n" +
+	"\x0ePrRequirements\x123\n" +
+	"\x05items\x18\x01 \x03(\v2\x1d.octomanager.v1.PrRequirementR\x05items\"\"\n" +
+	"\n" +
+	"PrTextList\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xbc\x01\n" +
+	"\x10PrPolicyAnalysis\x12B\n" +
+	"\frequirements\x18\x01 \x01(\v2\x1e.octomanager.v1.PrRequirementsR\frequirements\x12\x1f\n" +
+	"\btemplate\x18\x02 \x01(\tH\x00R\btemplate\x88\x01\x01\x126\n" +
+	"\bblockers\x18\x03 \x01(\v2\x1a.octomanager.v1.PrTextListR\bblockersB\v\n" +
+	"\t_template\",\n" +
+	"\x14PrFactorEvidenceRefs\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xe0\x01\n" +
+	"\x12PrComplexityFactor\x12\x1b\n" +
+	"\x06factor\x18\x01 \x01(\tH\x00R\x06factor\x88\x01\x01\x12\x1b\n" +
+	"\x06rating\x18\x02 \x01(\x03H\x01R\x06rating\x88\x01\x01\x12!\n" +
+	"\trationale\x18\x03 \x01(\tH\x02R\trationale\x88\x01\x01\x12I\n" +
+	"\revidence_refs\x18\x04 \x01(\v2$.octomanager.v1.PrFactorEvidenceRefsR\fevidenceRefsB\t\n" +
+	"\a_factorB\t\n" +
+	"\a_ratingB\f\n" +
+	"\n" +
+	"_rationale\"O\n" +
+	"\x13PrComplexityFactors\x128\n" +
+	"\x05items\x18\x01 \x03(\v2\".octomanager.v1.PrComplexityFactorR\x05items\"+\n" +
+	"\x13PrClaimEvidenceRefs\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xee\x01\n" +
+	"\x0fPrBehaviorClaim\x12!\n" +
+	"\tstatement\x18\x01 \x01(\tH\x00R\tstatement\x88\x01\x01\x12)\n" +
+	"\rfalsification\x18\x02 \x01(\tH\x01R\rfalsification\x88\x01\x01\x12H\n" +
+	"\revidence_refs\x18\x03 \x01(\v2#.octomanager.v1.PrClaimEvidenceRefsR\fevidenceRefs\x12\x19\n" +
+	"\x05basis\x18\x04 \x01(\tH\x02R\x05basis\x88\x01\x01B\f\n" +
+	"\n" +
+	"_statementB\x10\n" +
+	"\x0e_falsificationB\b\n" +
+	"\x06_basis\"I\n" +
+	"\x10PrBehaviorClaims\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.octomanager.v1.PrBehaviorClaimR\x05items\"\xff\x02\n" +
+	"\x10PrChangeAnalysis\x12=\n" +
+	"\afactors\x18\x01 \x01(\v2#.octomanager.v1.PrComplexityFactorsR\afactors\x12\x17\n" +
+	"\x04tier\x18\x02 \x01(\tH\x00R\x04tier\x88\x01\x01\x12!\n" +
+	"\trationale\x18\x03 \x01(\tH\x01R\trationale\x88\x01\x01\x12\x1d\n" +
+	"\aoutcome\x18\x04 \x01(\tH\x02R\aoutcome\x88\x01\x01\x128\n" +
+	"\x06claims\x18\x05 \x01(\v2 .octomanager.v1.PrBehaviorClaimsR\x06claims\x12<\n" +
+	"\vlimitations\x18\x06 \x01(\v2\x1a.octomanager.v1.PrTextListR\vlimitations\x126\n" +
+	"\bblockers\x18\a \x01(\v2\x1a.octomanager.v1.PrTextListR\bblockersB\a\n" +
+	"\x05_tierB\f\n" +
+	"\n" +
+	"_rationaleB\n" +
+	"\n" +
+	"\b_outcome\"\x9c\x01\n" +
+	"\x17PrRequirementAssessment\x12\x1c\n" +
+	"\arule_id\x18\x01 \x01(\tH\x00R\x06ruleId\x88\x01\x01\x12\x1b\n" +
+	"\x06status\x18\x02 \x01(\tH\x01R\x06status\x88\x01\x01\x12!\n" +
+	"\trationale\x18\x03 \x01(\tH\x02R\trationale\x88\x01\x01B\n" +
+	"\n" +
+	"\b_rule_idB\t\n" +
+	"\a_statusB\f\n" +
+	"\n" +
+	"_rationale\"Y\n" +
+	"\x18PrRequirementAssessments\x12=\n" +
+	"\x05items\x18\x01 \x03(\v2'.octomanager.v1.PrRequirementAssessmentR\x05items\"\xe7\x01\n" +
+	"\rPrDescription\x12\x19\n" +
+	"\x05title\x18\x01 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04body\x18\x02 \x01(\tH\x01R\x04body\x88\x01\x01\x12W\n" +
+	"\x12requirement_checks\x18\x03 \x01(\v2(.octomanager.v1.PrRequirementAssessmentsR\x11requirementChecks\x126\n" +
+	"\bblockers\x18\x04 \x01(\v2\x1a.octomanager.v1.PrTextListR\bblockersB\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_body\"-\n" +
+	"\x15PrFindingEvidenceRefs\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xde\x01\n" +
+	"\x13PrEvaluationFinding\x12\x1c\n" +
+	"\arule_id\x18\x01 \x01(\tH\x00R\x06ruleId\x88\x01\x01\x12\x1b\n" +
+	"\x06status\x18\x02 \x01(\tH\x01R\x06status\x88\x01\x01\x12\x1d\n" +
+	"\amessage\x18\x03 \x01(\tH\x02R\amessage\x88\x01\x01\x12J\n" +
+	"\revidence_refs\x18\x04 \x01(\v2%.octomanager.v1.PrFindingEvidenceRefsR\fevidenceRefsB\n" +
+	"\n" +
+	"\b_rule_idB\t\n" +
+	"\a_statusB\n" +
+	"\n" +
+	"\b_message\"Q\n" +
+	"\x14PrEvaluationFindings\x129\n" +
+	"\x05items\x18\x01 \x03(\v2#.octomanager.v1.PrEvaluationFindingR\x05items\"\x9b\x01\n" +
+	"\x16PrEvaluationAssessment\x12\x1c\n" +
+	"\arule_id\x18\x01 \x01(\tH\x00R\x06ruleId\x88\x01\x01\x12\x1b\n" +
+	"\x06status\x18\x02 \x01(\tH\x01R\x06status\x88\x01\x01\x12!\n" +
+	"\trationale\x18\x03 \x01(\tH\x02R\trationale\x88\x01\x01B\n" +
+	"\n" +
+	"\b_rule_idB\t\n" +
+	"\a_statusB\f\n" +
+	"\n" +
+	"_rationale\"W\n" +
+	"\x17PrEvaluationAssessments\x12<\n" +
+	"\x05items\x18\x01 \x03(\v2&.octomanager.v1.PrEvaluationAssessmentR\x05items\"\xa8\x01\n" +
+	"\fPrEvaluation\x12@\n" +
+	"\bfindings\x18\x01 \x01(\v2$.octomanager.v1.PrEvaluationFindingsR\bfindings\x12V\n" +
+	"\x12requirement_checks\x18\x02 \x01(\v2'.octomanager.v1.PrEvaluationAssessmentsR\x11requirementChecks\"\xbf\x02\n" +
+	"\rPrStageOutput\x12:\n" +
+	"\x06policy\x18\x01 \x01(\v2 .octomanager.v1.PrPolicyAnalysisH\x00R\x06policy\x12:\n" +
+	"\x06change\x18\x02 \x01(\v2 .octomanager.v1.PrChangeAnalysisH\x00R\x06change\x127\n" +
+	"\x06writer\x18\x03 \x01(\v2\x1d.octomanager.v1.PrDescriptionH\x00R\x06writer\x12<\n" +
+	"\tevaluator\x18\x04 \x01(\v2\x1c.octomanager.v1.PrEvaluationH\x00R\tevaluator\x126\n" +
+	"\tmalformed\x18\x05 \x01(\v2\x16.google.protobuf.ValueH\x00R\tmalformedB\a\n" +
+	"\x05value\"\xb5\x02\n" +
+	"\aPrStage\x12%\n" +
+	"\vinvalidated\x18\x01 \x01(\bH\x00R\vinvalidated\x88\x01\x01\x12\x17\n" +
+	"\x04role\x18\x02 \x01(\tH\x01R\x04role\x88\x01\x01\x12\x19\n" +
+	"\x05model\x18\x03 \x01(\tH\x02R\x05model\x88\x01\x01\x12(\n" +
+	"\rprompt_digest\x18\x04 \x01(\tH\x03R\fpromptDigest\x88\x01\x01\x12\x15\n" +
+	"\x03raw\x18\x05 \x01(\tH\x04R\x03raw\x88\x01\x01\x125\n" +
+	"\x06result\x18\x06 \x01(\v2\x1d.octomanager.v1.PrStageOutputR\x06result\x12\x13\n" +
+	"\x02at\x18\a \x01(\x03H\x05R\x02at\x88\x01\x01B\x0e\n" +
+	"\f_invalidatedB\a\n" +
+	"\x05_roleB\b\n" +
+	"\x06_modelB\x10\n" +
+	"\x0e_prompt_digestB\x06\n" +
+	"\x04_rawB\x05\n" +
+	"\x03_at\"9\n" +
+	"\bPrStages\x12-\n" +
+	"\x05items\x18\x01 \x03(\v2\x17.octomanager.v1.PrStageR\x05items\"\xe0\x02\n" +
+	"\aPrBrief\x12*\n" +
+	"\x0eschema_version\x18\x01 \x01(\rH\x00R\rschemaVersion\x88\x01\x01\x12;\n" +
+	"\arequest\x18\x02 \x01(\v2!.octomanager.v1.PrSubmissionInputR\arequest\x12\x1e\n" +
+	"\bbase_sha\x18\x03 \x01(\tH\x01R\abaseSha\x88\x01\x01\x12*\n" +
+	"\x0epolicy_version\x18\x04 \x01(\x03H\x02R\rpolicyVersion\x88\x01\x01\x128\n" +
+	"\x06change\x18\x05 \x01(\v2 .octomanager.v1.PrChangeAnalysisR\x06change\x123\n" +
+	"\x05draft\x18\x06 \x01(\v2\x1d.octomanager.v1.PrDescriptionR\x05draftB\x11\n" +
+	"\x0f_schema_versionB\v\n" +
+	"\t_base_shaB\x11\n" +
+	"\x0f_policy_version\"4\n" +
+	"\x1cPrSubmissionDecisionBlockers\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xc7\x02\n" +
+	"\x14PrSubmissionDecision\x12\x1b\n" +
+	"\x06status\x18\x01 \x01(\tH\x00R\x06status\x88\x01\x01\x12\x19\n" +
+	"\x05score\x18\x02 \x01(\x03H\x01R\x05score\x88\x01\x01\x12\x17\n" +
+	"\x04tier\x18\x03 \x01(\tH\x02R\x04tier\x88\x01\x01\x12$\n" +
+	"\vprose_words\x18\x04 \x01(\x03H\x03R\n" +
+	"proseWords\x88\x01\x01\x12H\n" +
+	"\bblockers\x18\x05 \x01(\v2,.octomanager.v1.PrSubmissionDecisionBlockersR\bblockers\x12@\n" +
+	"\bfindings\x18\x06 \x01(\v2$.octomanager.v1.PrEvaluationFindingsR\bfindingsB\t\n" +
+	"\a_statusB\b\n" +
+	"\x06_scoreB\a\n" +
+	"\x05_tierB\x0e\n" +
+	"\f_prose_words\"E\n" +
+	"\x15PrSubmissionFlowNodes\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.google.protobuf.ValueR\x05items\"\xc9\a\n" +
+	"\x10PrSubmissionFlow\x12!\n" +
+	"\tavailable\x18\x01 \x01(\bH\x00R\tavailable\x88\x01\x01\x12\x19\n" +
+	"\x05scope\x18\x02 \x01(\tH\x01R\x05scope\x88\x01\x01\x12$\n" +
+	"\vanalysis_id\x18\x03 \x01(\tH\x02R\n" +
+	"analysisId\x88\x01\x01\x12*\n" +
+	"\x0eschema_version\x18\x04 \x01(\x03H\x03R\rschemaVersion\x88\x01\x01\x12:\n" +
+	"\bcoverage\x18\x05 \x01(\v2\x1e.octomanager.v1.PrFlowCoverageR\bcoverage\x12\"\n" +
+	"\n" +
+	"node_count\x18\x06 \x01(\x03H\x04R\tnodeCount\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"edge_count\x18\a \x01(\x03H\x05R\tedgeCount\x88\x01\x01\x12;\n" +
+	"\x05nodes\x18\b \x01(\v2%.octomanager.v1.PrSubmissionFlowNodesR\x05nodes\x12;\n" +
+	"\x05edges\x18\t \x01(\v2%.octomanager.v1.PrSubmissionFlowNodesR\x05edges\x12I\n" +
+	"\finteractions\x18\n" +
+	" \x01(\v2%.octomanager.v1.PrSubmissionFlowNodesR\finteractions\x120\n" +
+	"\x11interaction_count\x18\v \x01(\x03H\x06R\x10interactionCount\x88\x01\x01\x12G\n" +
+	"\vdiagnostics\x18\f \x01(\v2%.octomanager.v1.PrSubmissionFlowNodesR\vdiagnostics\x12\x1d\n" +
+	"\alimited\x18\r \x01(\bH\aR\alimited\x88\x01\x01\x125\n" +
+	"\x14full_capture_failure\x18\x0e \x01(\tH\bR\x12fullCaptureFailure\x88\x01\x01\x12\x1b\n" +
+	"\x06reason\x18\x0f \x01(\tH\tR\x06reason\x88\x01\x01\x126\n" +
+	"\x14alternative_evidence\x18\x10 \x01(\tH\n" +
+	"R\x13alternativeEvidence\x88\x01\x01B\f\n" +
+	"\n" +
+	"_availableB\b\n" +
+	"\x06_scopeB\x0e\n" +
+	"\f_analysis_idB\x11\n" +
+	"\x0f_schema_versionB\r\n" +
+	"\v_node_countB\r\n" +
+	"\v_edge_countB\x14\n" +
+	"\x12_interaction_countB\n" +
+	"\n" +
+	"\b_limitedB\x17\n" +
+	"\x15_full_capture_failureB\t\n" +
+	"\a_reasonB\x17\n" +
+	"\x15_alternative_evidence\"\x98\x01\n" +
+	"\x16PrSubmissionImagesItem\x12\x15\n" +
+	"\x03url\x18\x01 \x01(\tH\x00R\x03url\x88\x01\x01\x12\x1b\n" +
+	"\x06sha256\x18\x02 \x01(\tH\x01R\x06sha256\x88\x01\x01\x12&\n" +
+	"\fcontent_type\x18\x03 \x01(\tH\x02R\vcontentType\x88\x01\x01B\x06\n" +
+	"\x04_urlB\t\n" +
+	"\a_sha256B\x0f\n" +
+	"\r_content_type\"R\n" +
+	"\x12PrSubmissionImages\x12<\n" +
+	"\x05items\x18\x01 \x03(\v2&.octomanager.v1.PrSubmissionImagesItemR\x05items\".\n" +
+	"\x16PrSubmissionWorkerPids\x12\x14\n" +
+	"\x05items\x18\x01 \x03(\x03R\x05items\"\xb4\n" +
+	"\n" +
+	"\fPrSubmission\x12\x13\n" +
+	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12;\n" +
+	"\arequest\x18\x02 \x01(\v2!.octomanager.v1.PrSubmissionInputR\arequest\x12\x19\n" +
+	"\x05state\x18\x03 \x01(\tH\x01R\x05state\x88\x01\x01\x12\x1b\n" +
+	"\x06detail\x18\x04 \x01(\tH\x02R\x06detail\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\x03H\x03R\tcreatedAt\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\x03H\x04R\tupdatedAt\x88\x01\x01\x12@\n" +
+	"\bsnapshot\x18\a \x01(\v2$.octomanager.v1.PrRepositorySnapshotR\bsnapshot\x12*\n" +
+	"\x0epolicy_version\x18\b \x01(\x03H\x05R\rpolicyVersion\x88\x01\x01\x12(\n" +
+	"\rpolicy_digest\x18\t \x01(\tH\x06R\fpolicyDigest\x88\x01\x01\x120\n" +
+	"\x06stages\x18\n" +
+	" \x01(\v2\x18.octomanager.v1.PrStagesR\x06stages\x12-\n" +
+	"\x05brief\x18\v \x01(\v2\x17.octomanager.v1.PrBriefR\x05brief\x126\n" +
+	"\bcontract\x18\f \x01(\v2\x1a.octomanager.v1.PrContractR\bcontract\x12<\n" +
+	"\n" +
+	"evaluation\x18\r \x01(\v2\x1c.octomanager.v1.PrEvaluationR\n" +
+	"evaluation\x12@\n" +
+	"\bdecision\x18\x0e \x01(\v2$.octomanager.v1.PrSubmissionDecisionR\bdecision\x12,\n" +
+	"\x0fprepared_digest\x18\x0f \x01(\tH\aR\x0epreparedDigest\x88\x01\x01\x128\n" +
+	"\x15publication_requested\x18\x10 \x01(\bH\bR\x14publicationRequested\x88\x01\x01\x128\n" +
+	"\x15publication_attempted\x18\x11 \x01(\bH\tR\x14publicationAttempted\x88\x01\x01\x124\n" +
+	"\x04flow\x18\x12 \x01(\v2 .octomanager.v1.PrSubmissionFlowR\x04flow\x12:\n" +
+	"\x06images\x18\x13 \x01(\v2\".octomanager.v1.PrSubmissionImagesR\x06images\x12\x1a\n" +
+	"\x06pr_url\x18\x14 \x01(\tH\n" +
+	"R\x05prUrl\x88\x01\x01\x12\x18\n" +
+	"\x05pr_id\x18\x15 \x01(\tH\vR\x04prId\x88\x01\x01\x12G\n" +
+	"\vworker_pids\x18\x16 \x01(\v2&.octomanager.v1.PrSubmissionWorkerPidsR\n" +
+	"workerPids\x128\n" +
+	"\x15notification_revision\x18\x17 \x01(\x03H\fR\x14notificationRevision\x88\x01\x01B\x05\n" +
+	"\x03_idB\b\n" +
+	"\x06_stateB\t\n" +
+	"\a_detailB\r\n" +
+	"\v_created_atB\r\n" +
+	"\v_updated_atB\x11\n" +
+	"\x0f_policy_versionB\x10\n" +
+	"\x0e_policy_digestB\x12\n" +
+	"\x10_prepared_digestB\x18\n" +
+	"\x16_publication_requestedB\x18\n" +
+	"\x16_publication_attemptedB\t\n" +
+	"\a_pr_urlB\b\n" +
+	"\x06_pr_idB\x18\n" +
+	"\x16_notification_revision\"\xe9\x01\n" +
+	"+PrRepositoryPolicyComplexityProfilesRoutine\x12 \n" +
+	"\tmin_words\x18\x01 \x01(\x03H\x00R\bminWords\x88\x01\x01\x12 \n" +
+	"\tmax_words\x18\x02 \x01(\x03H\x01R\bmaxWords\x88\x01\x01\x12\x1f\n" +
+	"\bguidance\x18\x03 \x01(\tH\x02R\bguidance\x88\x01\x01\x12\x1f\n" +
+	"\badvisory\x18\x04 \x01(\bH\x03R\badvisory\x88\x01\x01B\f\n" +
+	"\n" +
+	"_min_wordsB\f\n" +
+	"\n" +
+	"_max_wordsB\v\n" +
+	"\t_guidanceB\v\n" +
+	"\t_advisory\"\xad\x02\n" +
+	"$PrRepositoryPolicyComplexityProfiles\x12U\n" +
+	"\aroutine\x18\x01 \x01(\v2;.octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutineR\aroutine\x12W\n" +
+	"\bstandard\x18\x02 \x01(\v2;.octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutineR\bstandard\x12U\n" +
+	"\acomplex\x18\x03 \x01(\v2;.octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutineR\acomplex\"\xcd\x01\n" +
+	")PrRepositoryPolicyCitationCorrectionsItem\x12\x1c\n" +
+	"\arule_id\x18\x01 \x01(\tH\x00R\x06ruleId\x88\x01\x01\x12(\n" +
+	"\rreported_line\x18\x02 \x01(\x03H\x01R\freportedLine\x88\x01\x01\x12(\n" +
+	"\rverified_line\x18\x03 \x01(\x03H\x02R\fverifiedLine\x88\x01\x01B\n" +
+	"\n" +
+	"\b_rule_idB\x10\n" +
+	"\x0e_reported_lineB\x10\n" +
+	"\x0e_verified_line\"x\n" +
+	"%PrRepositoryPolicyCitationCorrections\x12O\n" +
+	"\x05items\x18\x01 \x03(\v29.octomanager.v1.PrRepositoryPolicyCitationCorrectionsItemR\x05items\"\xfd\x05\n" +
+	"\x12PrRepositoryPolicy\x12e\n" +
+	"\x13complexity_profiles\x18\x01 \x01(\v24.octomanager.v1.PrRepositoryPolicyComplexityProfilesR\x12complexityProfiles\x12*\n" +
+	"\x0eschema_version\x18\x02 \x01(\rH\x00R\rschemaVersion\x88\x01\x01\x12#\n" +
+	"\n" +
+	"repository\x18\x03 \x01(\tH\x01R\n" +
+	"repository\x88\x01\x01\x12\x1d\n" +
+	"\aversion\x18\x04 \x01(\x03H\x02R\aversion\x88\x01\x01\x12(\n" +
+	"\rsource_digest\x18\x05 \x01(\tH\x03R\fsourceDigest\x88\x01\x01\x12,\n" +
+	"\x0fanalyst_version\x18\x06 \x01(\rH\x04R\x0eanalystVersion\x88\x01\x01\x12(\n" +
+	"\rstock_version\x18\a \x01(\rH\x05R\fstockVersion\x88\x01\x01\x12'\n" +
+	"\rcreated_at_ms\x18\b \x01(\x03H\x06R\vcreatedAtMs\x88\x01\x01\x12h\n" +
+	"\x14citation_corrections\x18\t \x01(\v25.octomanager.v1.PrRepositoryPolicyCitationCorrectionsR\x13citationCorrections\x12E\n" +
+	"\asources\x18\n" +
+	" \x01(\v2+.octomanager.v1.PrRepositorySnapshotSourcesR\asources\x12<\n" +
+	"\banalysis\x18\v \x01(\v2 .octomanager.v1.PrPolicyAnalysisR\banalysisB\x11\n" +
+	"\x0f_schema_versionB\r\n" +
+	"\v_repositoryB\n" +
+	"\n" +
+	"\b_versionB\x10\n" +
+	"\x0e_source_digestB\x12\n" +
+	"\x10_analyst_versionB\x10\n" +
+	"\x0e_stock_versionB\x10\n" +
+	"\x0e_created_at_ms\"\xab\x02\n" +
+	"\x0ePrFlowCoverage\x12%\n" +
+	"\vtotal_nodes\x18\x01 \x01(\x03H\x00R\vtotal_nodes\x88\x01\x01\x12%\n" +
+	"\vshown_nodes\x18\x02 \x01(\x03H\x01R\vshown_nodes\x88\x01\x01\x129\n" +
+	"\x15omitted_context_nodes\x18\x03 \x01(\x03H\x02R\x15omitted_context_nodes\x88\x01\x01\x12;\n" +
+	"\x16collapsed_detail_nodes\x18\x04 \x01(\x03H\x03R\x16collapsed_detail_nodes\x88\x01\x01B\x0e\n" +
+	"\f_total_nodesB\x0e\n" +
+	"\f_shown_nodesB\x18\n" +
+	"\x16_omitted_context_nodesB\x19\n" +
+	"\x17_collapsed_detail_nodesB@Z>github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1b\x06proto3"
 
 var (
 	file_octomanager_v1_submissions_proto_rawDescOnce sync.Once
@@ -708,29 +5942,196 @@ func file_octomanager_v1_submissions_proto_rawDescGZIP() []byte {
 	return file_octomanager_v1_submissions_proto_rawDescData
 }
 
-var file_octomanager_v1_submissions_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_octomanager_v1_submissions_proto_msgTypes = make([]protoimpl.MessageInfo, 83)
 var file_octomanager_v1_submissions_proto_goTypes = []any{
-	(*SubmitPullRequestRequest)(nil),           // 0: octomanager.v1.SubmitPullRequestRequest
-	(*SubmitPullRequestResponse)(nil),          // 1: octomanager.v1.SubmitPullRequestResponse
-	(*GetSubmissionResponse)(nil),              // 2: octomanager.v1.GetSubmissionResponse
-	(*RetrySubmissionResponse)(nil),            // 3: octomanager.v1.RetrySubmissionResponse
-	(*CancelSubmissionResponse)(nil),           // 4: octomanager.v1.CancelSubmissionResponse
-	(*GetSubmissionRequest)(nil),               // 5: octomanager.v1.GetSubmissionRequest
-	(*ListSubmissionsRequest)(nil),             // 6: octomanager.v1.ListSubmissionsRequest
-	(*ListSubmissionsResponse)(nil),            // 7: octomanager.v1.ListSubmissionsResponse
-	(*RetrySubmissionRequest)(nil),             // 8: octomanager.v1.RetrySubmissionRequest
-	(*CancelSubmissionRequest)(nil),            // 9: octomanager.v1.CancelSubmissionRequest
-	(*GetRepositoryPolicyRequest)(nil),         // 10: octomanager.v1.GetRepositoryPolicyRequest
-	(*GetRepositoryPolicyResponse)(nil),        // 11: octomanager.v1.GetRepositoryPolicyResponse
-	(*PublishPreparedPullRequestRequest)(nil),  // 12: octomanager.v1.PublishPreparedPullRequestRequest
-	(*PublishPreparedPullRequestResponse)(nil), // 13: octomanager.v1.PublishPreparedPullRequestResponse
+	(*SubmitPullRequestRequest)(nil),                    // 0: octomanager.v1.SubmitPullRequestRequest
+	(*SubmitPullRequestResponse)(nil),                   // 1: octomanager.v1.SubmitPullRequestResponse
+	(*GetSubmissionResponse)(nil),                       // 2: octomanager.v1.GetSubmissionResponse
+	(*RetrySubmissionResponse)(nil),                     // 3: octomanager.v1.RetrySubmissionResponse
+	(*CancelSubmissionResponse)(nil),                    // 4: octomanager.v1.CancelSubmissionResponse
+	(*GetSubmissionRequest)(nil),                        // 5: octomanager.v1.GetSubmissionRequest
+	(*ListSubmissionsRequest)(nil),                      // 6: octomanager.v1.ListSubmissionsRequest
+	(*ListSubmissionsResponse)(nil),                     // 7: octomanager.v1.ListSubmissionsResponse
+	(*RetrySubmissionRequest)(nil),                      // 8: octomanager.v1.RetrySubmissionRequest
+	(*CancelSubmissionRequest)(nil),                     // 9: octomanager.v1.CancelSubmissionRequest
+	(*GetRepositoryPolicyRequest)(nil),                  // 10: octomanager.v1.GetRepositoryPolicyRequest
+	(*GetRepositoryPolicyResponse)(nil),                 // 11: octomanager.v1.GetRepositoryPolicyResponse
+	(*PublishPreparedPullRequestRequest)(nil),           // 12: octomanager.v1.PublishPreparedPullRequestRequest
+	(*PublishPreparedPullRequestResponse)(nil),          // 13: octomanager.v1.PublishPreparedPullRequestResponse
+	(*PrContractPrPresentation)(nil),                    // 14: octomanager.v1.PrContractPrPresentation
+	(*PrContractPrComplexityWeights)(nil),               // 15: octomanager.v1.PrContractPrComplexityWeights
+	(*PrContractPrComplexity)(nil),                      // 16: octomanager.v1.PrContractPrComplexity
+	(*PrContractPrProfilesRoutine)(nil),                 // 17: octomanager.v1.PrContractPrProfilesRoutine
+	(*PrContractPrProfiles)(nil),                        // 18: octomanager.v1.PrContractPrProfiles
+	(*PrContractPrOverridesItem)(nil),                   // 19: octomanager.v1.PrContractPrOverridesItem
+	(*PrContractPrOverrides)(nil),                       // 20: octomanager.v1.PrContractPrOverrides
+	(*PrContractPr)(nil),                                // 21: octomanager.v1.PrContractPr
+	(*PrContract)(nil),                                  // 22: octomanager.v1.PrContract
+	(*PrContractSourceAuthoredPaths)(nil),               // 23: octomanager.v1.PrContractSourceAuthoredPaths
+	(*PrContractSource)(nil),                            // 24: octomanager.v1.PrContractSource
+	(*PrSubmissionInputReferences)(nil),                 // 25: octomanager.v1.PrSubmissionInputReferences
+	(*PrSubmissionInputDescription)(nil),                // 26: octomanager.v1.PrSubmissionInputDescription
+	(*PrSubmissionInputValidationItem)(nil),             // 27: octomanager.v1.PrSubmissionInputValidationItem
+	(*PrSubmissionInputValidation)(nil),                 // 28: octomanager.v1.PrSubmissionInputValidation
+	(*PrSubmissionInputOwner)(nil),                      // 29: octomanager.v1.PrSubmissionInputOwner
+	(*PrSubmissionInput)(nil),                           // 30: octomanager.v1.PrSubmissionInput
+	(*PrRepositorySnapshotReferencesItem)(nil),          // 31: octomanager.v1.PrRepositorySnapshotReferencesItem
+	(*PrRepositorySnapshotReferences)(nil),              // 32: octomanager.v1.PrRepositorySnapshotReferences
+	(*PrRepositorySnapshotExisting)(nil),                // 33: octomanager.v1.PrRepositorySnapshotExisting
+	(*PrRepositorySnapshotFiles)(nil),                   // 34: octomanager.v1.PrRepositorySnapshotFiles
+	(*PrRepositorySnapshotSourcesItem)(nil),             // 35: octomanager.v1.PrRepositorySnapshotSourcesItem
+	(*PrRepositorySnapshotSources)(nil),                 // 36: octomanager.v1.PrRepositorySnapshotSources
+	(*PrRepositorySnapshot)(nil),                        // 37: octomanager.v1.PrRepositorySnapshot
+	(*PrTitlePrefixes)(nil),                             // 38: octomanager.v1.PrTitlePrefixes
+	(*PrBodyContains)(nil),                              // 39: octomanager.v1.PrBodyContains
+	(*PrTitlePrefix)(nil),                               // 40: octomanager.v1.PrTitlePrefix
+	(*PrTitleMaxLength)(nil),                            // 41: octomanager.v1.PrTitleMaxLength
+	(*PrEvidenceRequired)(nil),                          // 42: octomanager.v1.PrEvidenceRequired
+	(*PrSemanticRequirement)(nil),                       // 43: octomanager.v1.PrSemanticRequirement
+	(*PrRequirementCheck)(nil),                          // 44: octomanager.v1.PrRequirementCheck
+	(*PrRequirement)(nil),                               // 45: octomanager.v1.PrRequirement
+	(*PrRequirements)(nil),                              // 46: octomanager.v1.PrRequirements
+	(*PrTextList)(nil),                                  // 47: octomanager.v1.PrTextList
+	(*PrPolicyAnalysis)(nil),                            // 48: octomanager.v1.PrPolicyAnalysis
+	(*PrFactorEvidenceRefs)(nil),                        // 49: octomanager.v1.PrFactorEvidenceRefs
+	(*PrComplexityFactor)(nil),                          // 50: octomanager.v1.PrComplexityFactor
+	(*PrComplexityFactors)(nil),                         // 51: octomanager.v1.PrComplexityFactors
+	(*PrClaimEvidenceRefs)(nil),                         // 52: octomanager.v1.PrClaimEvidenceRefs
+	(*PrBehaviorClaim)(nil),                             // 53: octomanager.v1.PrBehaviorClaim
+	(*PrBehaviorClaims)(nil),                            // 54: octomanager.v1.PrBehaviorClaims
+	(*PrChangeAnalysis)(nil),                            // 55: octomanager.v1.PrChangeAnalysis
+	(*PrRequirementAssessment)(nil),                     // 56: octomanager.v1.PrRequirementAssessment
+	(*PrRequirementAssessments)(nil),                    // 57: octomanager.v1.PrRequirementAssessments
+	(*PrDescription)(nil),                               // 58: octomanager.v1.PrDescription
+	(*PrFindingEvidenceRefs)(nil),                       // 59: octomanager.v1.PrFindingEvidenceRefs
+	(*PrEvaluationFinding)(nil),                         // 60: octomanager.v1.PrEvaluationFinding
+	(*PrEvaluationFindings)(nil),                        // 61: octomanager.v1.PrEvaluationFindings
+	(*PrEvaluationAssessment)(nil),                      // 62: octomanager.v1.PrEvaluationAssessment
+	(*PrEvaluationAssessments)(nil),                     // 63: octomanager.v1.PrEvaluationAssessments
+	(*PrEvaluation)(nil),                                // 64: octomanager.v1.PrEvaluation
+	(*PrStageOutput)(nil),                               // 65: octomanager.v1.PrStageOutput
+	(*PrStage)(nil),                                     // 66: octomanager.v1.PrStage
+	(*PrStages)(nil),                                    // 67: octomanager.v1.PrStages
+	(*PrBrief)(nil),                                     // 68: octomanager.v1.PrBrief
+	(*PrSubmissionDecisionBlockers)(nil),                // 69: octomanager.v1.PrSubmissionDecisionBlockers
+	(*PrSubmissionDecision)(nil),                        // 70: octomanager.v1.PrSubmissionDecision
+	(*PrSubmissionFlowNodes)(nil),                       // 71: octomanager.v1.PrSubmissionFlowNodes
+	(*PrSubmissionFlow)(nil),                            // 72: octomanager.v1.PrSubmissionFlow
+	(*PrSubmissionImagesItem)(nil),                      // 73: octomanager.v1.PrSubmissionImagesItem
+	(*PrSubmissionImages)(nil),                          // 74: octomanager.v1.PrSubmissionImages
+	(*PrSubmissionWorkerPids)(nil),                      // 75: octomanager.v1.PrSubmissionWorkerPids
+	(*PrSubmission)(nil),                                // 76: octomanager.v1.PrSubmission
+	(*PrRepositoryPolicyComplexityProfilesRoutine)(nil), // 77: octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine
+	(*PrRepositoryPolicyComplexityProfiles)(nil),        // 78: octomanager.v1.PrRepositoryPolicyComplexityProfiles
+	(*PrRepositoryPolicyCitationCorrectionsItem)(nil),   // 79: octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem
+	(*PrRepositoryPolicyCitationCorrections)(nil),       // 80: octomanager.v1.PrRepositoryPolicyCitationCorrections
+	(*PrRepositoryPolicy)(nil),                          // 81: octomanager.v1.PrRepositoryPolicy
+	(*PrFlowCoverage)(nil),                              // 82: octomanager.v1.PrFlowCoverage
+	(*structpb.Value)(nil),                              // 83: google.protobuf.Value
 }
 var file_octomanager_v1_submissions_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	30, // 0: octomanager.v1.SubmitPullRequestRequest.input:type_name -> octomanager.v1.PrSubmissionInput
+	76, // 1: octomanager.v1.SubmitPullRequestResponse.submission:type_name -> octomanager.v1.PrSubmission
+	76, // 2: octomanager.v1.GetSubmissionResponse.submission:type_name -> octomanager.v1.PrSubmission
+	76, // 3: octomanager.v1.RetrySubmissionResponse.submission:type_name -> octomanager.v1.PrSubmission
+	76, // 4: octomanager.v1.CancelSubmissionResponse.submission:type_name -> octomanager.v1.PrSubmission
+	76, // 5: octomanager.v1.ListSubmissionsResponse.submissions:type_name -> octomanager.v1.PrSubmission
+	81, // 6: octomanager.v1.GetRepositoryPolicyResponse.policy:type_name -> octomanager.v1.PrRepositoryPolicy
+	76, // 7: octomanager.v1.PublishPreparedPullRequestResponse.submission:type_name -> octomanager.v1.PrSubmission
+	15, // 8: octomanager.v1.PrContractPrComplexity.weights:type_name -> octomanager.v1.PrContractPrComplexityWeights
+	17, // 9: octomanager.v1.PrContractPrProfiles.routine:type_name -> octomanager.v1.PrContractPrProfilesRoutine
+	17, // 10: octomanager.v1.PrContractPrProfiles.standard:type_name -> octomanager.v1.PrContractPrProfilesRoutine
+	17, // 11: octomanager.v1.PrContractPrProfiles.complex:type_name -> octomanager.v1.PrContractPrProfilesRoutine
+	19, // 12: octomanager.v1.PrContractPrOverrides.items:type_name -> octomanager.v1.PrContractPrOverridesItem
+	14, // 13: octomanager.v1.PrContractPr.presentation:type_name -> octomanager.v1.PrContractPrPresentation
+	16, // 14: octomanager.v1.PrContractPr.complexity:type_name -> octomanager.v1.PrContractPrComplexity
+	18, // 15: octomanager.v1.PrContractPr.profiles:type_name -> octomanager.v1.PrContractPrProfiles
+	20, // 16: octomanager.v1.PrContractPr.overrides:type_name -> octomanager.v1.PrContractPrOverrides
+	21, // 17: octomanager.v1.PrContract.pr:type_name -> octomanager.v1.PrContractPr
+	23, // 18: octomanager.v1.PrContractSource.authored_paths:type_name -> octomanager.v1.PrContractSourceAuthoredPaths
+	27, // 19: octomanager.v1.PrSubmissionInputValidation.items:type_name -> octomanager.v1.PrSubmissionInputValidationItem
+	22, // 20: octomanager.v1.PrSubmissionInput.contract:type_name -> octomanager.v1.PrContract
+	24, // 21: octomanager.v1.PrSubmissionInput.contract_source:type_name -> octomanager.v1.PrContractSource
+	25, // 22: octomanager.v1.PrSubmissionInput.references:type_name -> octomanager.v1.PrSubmissionInputReferences
+	26, // 23: octomanager.v1.PrSubmissionInput.description:type_name -> octomanager.v1.PrSubmissionInputDescription
+	28, // 24: octomanager.v1.PrSubmissionInput.validation:type_name -> octomanager.v1.PrSubmissionInputValidation
+	29, // 25: octomanager.v1.PrSubmissionInput.owner:type_name -> octomanager.v1.PrSubmissionInputOwner
+	31, // 26: octomanager.v1.PrRepositorySnapshotReferences.items:type_name -> octomanager.v1.PrRepositorySnapshotReferencesItem
+	35, // 27: octomanager.v1.PrRepositorySnapshotSources.items:type_name -> octomanager.v1.PrRepositorySnapshotSourcesItem
+	22, // 28: octomanager.v1.PrRepositorySnapshot.contract:type_name -> octomanager.v1.PrContract
+	24, // 29: octomanager.v1.PrRepositorySnapshot.contract_source:type_name -> octomanager.v1.PrContractSource
+	32, // 30: octomanager.v1.PrRepositorySnapshot.references:type_name -> octomanager.v1.PrRepositorySnapshotReferences
+	33, // 31: octomanager.v1.PrRepositorySnapshot.existing:type_name -> octomanager.v1.PrRepositorySnapshotExisting
+	34, // 32: octomanager.v1.PrRepositorySnapshot.files:type_name -> octomanager.v1.PrRepositorySnapshotFiles
+	36, // 33: octomanager.v1.PrRepositorySnapshot.sources:type_name -> octomanager.v1.PrRepositorySnapshotSources
+	38, // 34: octomanager.v1.PrTitlePrefix.prefixes:type_name -> octomanager.v1.PrTitlePrefixes
+	39, // 35: octomanager.v1.PrRequirementCheck.body_contains:type_name -> octomanager.v1.PrBodyContains
+	40, // 36: octomanager.v1.PrRequirementCheck.title_prefix:type_name -> octomanager.v1.PrTitlePrefix
+	41, // 37: octomanager.v1.PrRequirementCheck.title_max_length:type_name -> octomanager.v1.PrTitleMaxLength
+	42, // 38: octomanager.v1.PrRequirementCheck.evidence_required:type_name -> octomanager.v1.PrEvidenceRequired
+	43, // 39: octomanager.v1.PrRequirementCheck.semantic:type_name -> octomanager.v1.PrSemanticRequirement
+	44, // 40: octomanager.v1.PrRequirement.check:type_name -> octomanager.v1.PrRequirementCheck
+	45, // 41: octomanager.v1.PrRequirements.items:type_name -> octomanager.v1.PrRequirement
+	46, // 42: octomanager.v1.PrPolicyAnalysis.requirements:type_name -> octomanager.v1.PrRequirements
+	47, // 43: octomanager.v1.PrPolicyAnalysis.blockers:type_name -> octomanager.v1.PrTextList
+	49, // 44: octomanager.v1.PrComplexityFactor.evidence_refs:type_name -> octomanager.v1.PrFactorEvidenceRefs
+	50, // 45: octomanager.v1.PrComplexityFactors.items:type_name -> octomanager.v1.PrComplexityFactor
+	52, // 46: octomanager.v1.PrBehaviorClaim.evidence_refs:type_name -> octomanager.v1.PrClaimEvidenceRefs
+	53, // 47: octomanager.v1.PrBehaviorClaims.items:type_name -> octomanager.v1.PrBehaviorClaim
+	51, // 48: octomanager.v1.PrChangeAnalysis.factors:type_name -> octomanager.v1.PrComplexityFactors
+	54, // 49: octomanager.v1.PrChangeAnalysis.claims:type_name -> octomanager.v1.PrBehaviorClaims
+	47, // 50: octomanager.v1.PrChangeAnalysis.limitations:type_name -> octomanager.v1.PrTextList
+	47, // 51: octomanager.v1.PrChangeAnalysis.blockers:type_name -> octomanager.v1.PrTextList
+	56, // 52: octomanager.v1.PrRequirementAssessments.items:type_name -> octomanager.v1.PrRequirementAssessment
+	57, // 53: octomanager.v1.PrDescription.requirement_checks:type_name -> octomanager.v1.PrRequirementAssessments
+	47, // 54: octomanager.v1.PrDescription.blockers:type_name -> octomanager.v1.PrTextList
+	59, // 55: octomanager.v1.PrEvaluationFinding.evidence_refs:type_name -> octomanager.v1.PrFindingEvidenceRefs
+	60, // 56: octomanager.v1.PrEvaluationFindings.items:type_name -> octomanager.v1.PrEvaluationFinding
+	62, // 57: octomanager.v1.PrEvaluationAssessments.items:type_name -> octomanager.v1.PrEvaluationAssessment
+	61, // 58: octomanager.v1.PrEvaluation.findings:type_name -> octomanager.v1.PrEvaluationFindings
+	63, // 59: octomanager.v1.PrEvaluation.requirement_checks:type_name -> octomanager.v1.PrEvaluationAssessments
+	48, // 60: octomanager.v1.PrStageOutput.policy:type_name -> octomanager.v1.PrPolicyAnalysis
+	55, // 61: octomanager.v1.PrStageOutput.change:type_name -> octomanager.v1.PrChangeAnalysis
+	58, // 62: octomanager.v1.PrStageOutput.writer:type_name -> octomanager.v1.PrDescription
+	64, // 63: octomanager.v1.PrStageOutput.evaluator:type_name -> octomanager.v1.PrEvaluation
+	83, // 64: octomanager.v1.PrStageOutput.malformed:type_name -> google.protobuf.Value
+	65, // 65: octomanager.v1.PrStage.result:type_name -> octomanager.v1.PrStageOutput
+	66, // 66: octomanager.v1.PrStages.items:type_name -> octomanager.v1.PrStage
+	30, // 67: octomanager.v1.PrBrief.request:type_name -> octomanager.v1.PrSubmissionInput
+	55, // 68: octomanager.v1.PrBrief.change:type_name -> octomanager.v1.PrChangeAnalysis
+	58, // 69: octomanager.v1.PrBrief.draft:type_name -> octomanager.v1.PrDescription
+	69, // 70: octomanager.v1.PrSubmissionDecision.blockers:type_name -> octomanager.v1.PrSubmissionDecisionBlockers
+	61, // 71: octomanager.v1.PrSubmissionDecision.findings:type_name -> octomanager.v1.PrEvaluationFindings
+	83, // 72: octomanager.v1.PrSubmissionFlowNodes.items:type_name -> google.protobuf.Value
+	82, // 73: octomanager.v1.PrSubmissionFlow.coverage:type_name -> octomanager.v1.PrFlowCoverage
+	71, // 74: octomanager.v1.PrSubmissionFlow.nodes:type_name -> octomanager.v1.PrSubmissionFlowNodes
+	71, // 75: octomanager.v1.PrSubmissionFlow.edges:type_name -> octomanager.v1.PrSubmissionFlowNodes
+	71, // 76: octomanager.v1.PrSubmissionFlow.interactions:type_name -> octomanager.v1.PrSubmissionFlowNodes
+	71, // 77: octomanager.v1.PrSubmissionFlow.diagnostics:type_name -> octomanager.v1.PrSubmissionFlowNodes
+	73, // 78: octomanager.v1.PrSubmissionImages.items:type_name -> octomanager.v1.PrSubmissionImagesItem
+	30, // 79: octomanager.v1.PrSubmission.request:type_name -> octomanager.v1.PrSubmissionInput
+	37, // 80: octomanager.v1.PrSubmission.snapshot:type_name -> octomanager.v1.PrRepositorySnapshot
+	67, // 81: octomanager.v1.PrSubmission.stages:type_name -> octomanager.v1.PrStages
+	68, // 82: octomanager.v1.PrSubmission.brief:type_name -> octomanager.v1.PrBrief
+	22, // 83: octomanager.v1.PrSubmission.contract:type_name -> octomanager.v1.PrContract
+	64, // 84: octomanager.v1.PrSubmission.evaluation:type_name -> octomanager.v1.PrEvaluation
+	70, // 85: octomanager.v1.PrSubmission.decision:type_name -> octomanager.v1.PrSubmissionDecision
+	72, // 86: octomanager.v1.PrSubmission.flow:type_name -> octomanager.v1.PrSubmissionFlow
+	74, // 87: octomanager.v1.PrSubmission.images:type_name -> octomanager.v1.PrSubmissionImages
+	75, // 88: octomanager.v1.PrSubmission.worker_pids:type_name -> octomanager.v1.PrSubmissionWorkerPids
+	77, // 89: octomanager.v1.PrRepositoryPolicyComplexityProfiles.routine:type_name -> octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine
+	77, // 90: octomanager.v1.PrRepositoryPolicyComplexityProfiles.standard:type_name -> octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine
+	77, // 91: octomanager.v1.PrRepositoryPolicyComplexityProfiles.complex:type_name -> octomanager.v1.PrRepositoryPolicyComplexityProfilesRoutine
+	79, // 92: octomanager.v1.PrRepositoryPolicyCitationCorrections.items:type_name -> octomanager.v1.PrRepositoryPolicyCitationCorrectionsItem
+	78, // 93: octomanager.v1.PrRepositoryPolicy.complexity_profiles:type_name -> octomanager.v1.PrRepositoryPolicyComplexityProfiles
+	80, // 94: octomanager.v1.PrRepositoryPolicy.citation_corrections:type_name -> octomanager.v1.PrRepositoryPolicyCitationCorrections
+	36, // 95: octomanager.v1.PrRepositoryPolicy.sources:type_name -> octomanager.v1.PrRepositorySnapshotSources
+	48, // 96: octomanager.v1.PrRepositoryPolicy.analysis:type_name -> octomanager.v1.PrPolicyAnalysis
+	97, // [97:97] is the sub-list for method output_type
+	97, // [97:97] is the sub-list for method input_type
+	97, // [97:97] is the sub-list for extension type_name
+	97, // [97:97] is the sub-list for extension extendee
+	0,  // [0:97] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_submissions_proto_init() }
@@ -739,13 +6140,63 @@ func file_octomanager_v1_submissions_proto_init() {
 		return
 	}
 	file_octomanager_v1_submissions_proto_msgTypes[10].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[14].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[15].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[16].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[17].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[19].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[22].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[24].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[26].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[27].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[29].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[30].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[31].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[33].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[35].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[37].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[39].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[41].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[44].OneofWrappers = []any{
+		(*PrRequirementCheck_BodyContains)(nil),
+		(*PrRequirementCheck_TitlePrefix)(nil),
+		(*PrRequirementCheck_TitleMaxLength)(nil),
+		(*PrRequirementCheck_EvidenceRequired)(nil),
+		(*PrRequirementCheck_Semantic)(nil),
+	}
+	file_octomanager_v1_submissions_proto_msgTypes[45].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[48].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[50].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[53].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[55].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[56].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[58].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[60].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[62].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[65].OneofWrappers = []any{
+		(*PrStageOutput_Policy)(nil),
+		(*PrStageOutput_Change)(nil),
+		(*PrStageOutput_Writer)(nil),
+		(*PrStageOutput_Evaluator)(nil),
+		(*PrStageOutput_Malformed)(nil),
+	}
+	file_octomanager_v1_submissions_proto_msgTypes[66].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[68].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[70].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[72].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[73].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[76].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[77].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[79].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[81].OneofWrappers = []any{}
+	file_octomanager_v1_submissions_proto_msgTypes[82].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v1_submissions_proto_rawDesc), len(file_octomanager_v1_submissions_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   83,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

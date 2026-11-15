@@ -1,3 +1,5 @@
+import { wireInput, submissionFromWire, policyFromWire } from "./wire.js";
+import { parsedConfig } from "./public-contracts.js";
 import { readContract, explainContract } from "./pr-contract.js";
 import { printResult } from "../cli-output.js";
 import { execFile } from "node:child_process";
@@ -10,8 +12,6 @@ import { schedulerClient } from "../client.js";
 import {
   SubmissionInputSchema,
   SubmissionState,
-  SubmissionSchema,
-  PolicySchema,
   parse,
   hash,
 } from "./contracts.js";
@@ -93,16 +93,13 @@ export async function submissionsCLI(
   const client = schedulerClient(directory);
   let result: unknown;
   if (command === "pr" && argument === "publish") {
-    result = parse(
-      SubmissionSchema,
-      JSON.parse(
-        (await client.publishPreparedPullRequest({ id: positionals[2] ?? "" }))
-          .submissionJson,
-      ),
+    result = submissionFromWire(
+      (await client.publishPreparedPullRequest({ id: positionals[2] ?? "" }))
+        .submission,
     );
   } else if (command === "submissions")
-    result = (await client.listSubmissions({})).submissionsJson.map((value) =>
-      parse(SubmissionSchema, JSON.parse(value)),
+    result = (await client.listSubmissions({})).submissions.map(
+      submissionFromWire,
     );
   else if (
     command === "submission" ||
@@ -116,7 +113,7 @@ export async function submissionsCLI(
         : command === "retry-submission"
           ? await client.retrySubmission(request)
           : await client.cancelSubmission(request);
-    result = parse(SubmissionSchema, JSON.parse(response.submissionJson));
+    result = submissionFromWire(response.submission);
   } else if (
     command === "repo-policy" &&
     (argument === "get" || argument === "template")
@@ -132,7 +129,7 @@ export async function submissionsCLI(
       else console.log(response.template);
       return true;
     }
-    result = parse(PolicySchema, JSON.parse(response.policyJson));
+    result = policyFromWire(response.policy);
   } else if (
     command === "submit-pr" ||
     command === "pr" ||
@@ -222,7 +219,15 @@ export async function submissionsCLI(
         ? {}
         : { headRepository: values["head-repo"] }),
       ...(values.url === undefined ? {} : { updateUrl: values.url }),
-      ...(contractToml === undefined ? {} : { contractToml }),
+      ...(contractToml === undefined
+        ? {}
+        : parsedConfig(
+            contractToml,
+            resolve(
+              values.cwd ?? process.cwd(),
+              values.config ?? "octo-manager.toml",
+            ),
+          )),
       ...(descriptionBody === undefined
         ? {}
         : {
@@ -257,12 +262,9 @@ export async function submissionsCLI(
         ),
       );
     }
-    let submitted = parse(
-      SubmissionSchema,
-      JSON.parse(
-        (await client.submitPullRequest({ inputJson: JSON.stringify(request) }))
-          .submissionJson,
-      ),
+    let submitted = submissionFromWire(
+      (await client.submitPullRequest({ input: wireInput(request) }))
+        .submission,
     );
     if (command === "pr" && values["no-wait"] !== true) {
       const deadline = Date.now() + 600000;
@@ -276,11 +278,8 @@ export async function submissionsCLI(
             "Operation still running; inspect submission " + submitted.id,
           );
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        submitted = parse(
-          SubmissionSchema,
-          JSON.parse(
-            (await client.getSubmission({ id: submitted.id })).submissionJson,
-          ),
+        submitted = submissionFromWire(
+          (await client.getSubmission({ id: submitted.id })).submission,
         );
       }
       if (submitted.state !== SubmissionState.Succeeded) process.exitCode = 1;

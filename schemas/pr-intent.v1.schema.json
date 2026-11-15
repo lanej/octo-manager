@@ -43,9 +43,241 @@
       "minLength": 1,
       "maxLength": 2000
     },
-    "contractToml": {
-      "type": "string",
-      "maxLength": 131072
+    "contract": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "pr"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "number",
+          "const": 1
+        },
+        "pr": {
+          "type": "object",
+          "required": [
+            "presentation",
+            "complexity",
+            "profiles",
+            "overrides"
+          ],
+          "properties": {
+            "presentation": {
+              "type": "object",
+              "required": [
+                "layout",
+                "first_artifact_by_prose_word",
+                "diagram_format"
+              ],
+              "properties": {
+                "layout": {
+                  "type": "string",
+                  "const": "f-pattern"
+                },
+                "first_artifact_by_prose_word": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "diagram_format": {
+                  "type": "string",
+                  "const": "mermaid"
+                }
+              },
+              "additionalProperties": false
+            },
+            "complexity": {
+              "type": "object",
+              "required": [
+                "weights",
+                "routine_max",
+                "standard_max"
+              ],
+              "properties": {
+                "weights": {
+                  "type": "object",
+                  "required": [
+                    "breadth",
+                    "behavior",
+                    "coupling",
+                    "compatibility",
+                    "state_risk"
+                  ],
+                  "properties": {
+                    "breadth": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "behavior": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "coupling": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "compatibility": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "state_risk": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "routine_max": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "standard_max": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                }
+              },
+              "additionalProperties": false
+            },
+            "profiles": {
+              "type": "object",
+              "required": [
+                "routine",
+                "standard",
+                "complex"
+              ],
+              "properties": {
+                "routine": {
+                  "type": "object",
+                  "required": [
+                    "max_prose_words",
+                    "require_diagram"
+                  ],
+                  "properties": {
+                    "max_prose_words": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "require_diagram": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "standard": {
+                  "type": "object",
+                  "required": [
+                    "max_prose_words",
+                    "require_diagram"
+                  ],
+                  "properties": {
+                    "max_prose_words": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "require_diagram": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "complex": {
+                  "type": "object",
+                  "required": [
+                    "max_prose_words",
+                    "require_diagram"
+                  ],
+                  "properties": {
+                    "max_prose_words": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "require_diagram": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "overrides": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "rule_id",
+                  "reason"
+                ],
+                "properties": {
+                  "rule_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "maxItems": 100
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "contractSource": {
+      "type": "object",
+      "required": [
+        "sha256",
+        "path"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "blobSha": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "authoredPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "maxItems": 200
+        },
+        "parseError": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        }
+      },
+      "additionalProperties": false
     },
     "references": {
       "type": "array",
@@ -197,6 +429,5 @@
       },
       "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

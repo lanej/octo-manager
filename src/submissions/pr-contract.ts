@@ -130,6 +130,11 @@ export function readContract(toml?: string): PrContract {
       overrides: p?.overrides ?? [],
     },
   };
+  return validateContract(value);
+}
+export function validateContract(value: unknown): PrContract {
+  if (!Check(ContractSchema, value))
+    throw new Error("Invalid structured PR contract");
   if (value.pr.complexity.routine_max >= value.pr.complexity.standard_max)
     throw new Error("Complexity thresholds must increase");
   if (

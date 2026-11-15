@@ -96,7 +96,7 @@ export class Coordinator extends EventEmitter {
         if (!lstatSync(this.socketPath).isSocket()) throw new Error("Refusing to replace a non-socket control path");
         unlinkSync(this.socketPath);
       }
-      this.server = createServer(connectNodeAdapter({ routes: router => schedulerRoutes(this, router), readMaxBytes: 16384, writeMaxBytes: 4 * 1024 * 1024, grpc: false, grpcWeb: false }));
+      this.server = createServer(connectNodeAdapter({ routes: router => { schedulerRoutes(this, router); }, readMaxBytes: 512 * 1024, writeMaxBytes: 4 * 1024 * 1024, grpc: false, grpcWeb: false }));
       this.server.headersTimeout = 5000;
       this.server.on("connection", socket => {
         this.sockets.add(socket); socket.on("close", () => this.sockets.delete(socket)); socket.on("error", () => {});

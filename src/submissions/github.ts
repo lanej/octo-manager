@@ -1,3 +1,4 @@
+import { parsedConfig } from "./public-contracts.js";
 import { posix } from "node:path";
 import { githubReads } from "../github-api.js";
 import { ghRead, type ReadGitHub, canonicalPR } from "../tracking/github.js";
@@ -309,7 +310,9 @@ export class GitHubSubmissions implements SubmissionGitHub {
     sources.sort((a, b) => a.path.localeCompare(b.path));
     return {
       repository,
-      ...(contractToml === undefined ? {} : { contractToml }),
+      ...(contractToml === undefined
+        ? {}
+        : parsedConfig(contractToml, "octo-manager.toml", configSha)),
       ...(existing === undefined ? {} : { existing }),
       references,
       headSha: head,

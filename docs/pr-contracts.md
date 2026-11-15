@@ -27,7 +27,7 @@ The original instruction and exception remain recorded. This does not establish 
 
 ## Prepare, validate, publish
 
-The existing [intent schema](../schemas/pr-intent.v1.schema.json) gains optional `problem`, `outcome`, `headRepository`, `references`, `updateUrl`, `contractToml`, and supplied `description` (`title` and `body`). Existing required fields remain request ID, repository, head ref/SHA, base ref, purpose, validation, draft flag, and owner. Changed facts require a new request ID. GitHub references resolve supplied issues/PRs as context without recursive crawling or automatic merge dependencies.
+The existing [intent schema](../schemas/pr-intent.v1.schema.json) gains optional `problem`, `outcome`, `headRepository`, `references`, `updateUrl`, structured `contract`/`contractSource`, and supplied `description` (`title` and `body`). Existing required fields remain request ID, repository, head ref/SHA, base ref, purpose, validation, draft flag, and owner. Changed facts require a new request ID. GitHub references resolve supplied issues/PRs as context without recursive crawling or automatic merge dependencies.
 
 ```sh
 octo-manager pr prepare --input change.json
@@ -53,3 +53,11 @@ The pinned Mermaid parser validates syntax. Actual rendered appearance remains s
 Issue/PR references render as plain `#123` within the target repository and `owner/repo#123` elsewhere, without backticks or Markdown links. Targets must resolve in captured context. Closing keywords require the same explicit resolution relationship in caller purpose.
 
 Decisions distinguish `invalid` from `needs_evidence`; both block publication. Contract, Git/context snapshot, draft, evaluation, image hashes, and title/body bytes are bound by a preparation digest. Changed inputs require fresh evaluation. Policy discovery works without a changed branch. Citation failures retain raw output and can be retried.
+
+## Typed API and configuration provenance
+
+Exported JSON Schemas describe CLI intent files and views; generated protobuf messages define the wire shapes, including presence wrappers and assessment variants. Submission RPCs carry typed protobuf messages for intent, preparation, contribution policy, decisions, and operation state. Requirement checks and worker assessments use declared variants. `google.protobuf.Value` is limited to malformed worker evidence and heterogeneous PR Flow graph records; coverage and operation metadata have typed fields. Presence-bearing list messages distinguish absent lists from explicit empty lists, and optional scalars retain false and zero values. Runtime domain validation still enforces constraints beyond protobuf field types.
+
+The CLI parses `--config` TOML before submission and sends structured `contract` settings with `contractSource` metadata: the original source SHA256, selected path, authored setting paths, and Git blob identity when repository-discovered. Authored paths distinguish selected settings from versioned defaults. Caller-selected and repository-discovered configuration stay in separate input/snapshot containers; source labels cannot grant disclosure authority. Raw source SHA256, Git blob identity, and the effective contract bound into a preparation establish different facts.
+
+Public intent, brief, and submission schemas omit raw `contractToml`. Historical durable records keep their original text and hash material; response projection exposes parsed contents and source provenance without rewriting those records. Invalid historical TOML remains readable with a parse error and source digest. Live imports parse configuration strictly; malformed legacy input, mixed legacy/structured configuration, and source metadata without parsed contents are rejected before submission. Protobuf JSON-string field numbers and names are reserved rather than reused. This is an intentional wire-breaking change: upgrade and restart the CLI and coordinator together. Requests lacking the new typed input fail with an explicit upgrade error.

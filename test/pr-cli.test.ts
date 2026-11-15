@@ -18,7 +18,7 @@ test("real CLI derives different operation identities for changed contract input
       },
     },
   });
-  const run = async (extra: string[]) => {
+  const run = async (extra: string[], fails = false) => {
     const child = Bun.spawn(
       [
         process.execPath,
@@ -52,8 +52,13 @@ test("real CLI derives different operation identities for changed contract input
       new Response(child.stderr).text(),
       new Response(child.stdout).text(),
     ]);
-    expect(stderr).toBe("");
-    expect(code).toBe(0);
+    if (fails) {
+      expect(stderr).toMatch(/TOML|parse|Expected/iu);
+      expect(code).toBe(1);
+    } else {
+      expect(stderr).toBe("");
+      expect(code).toBe(0);
+    }
   };
   try {
     await coordinator.start();
@@ -63,7 +68,20 @@ test("real CLI derives different operation identities for changed contract input
     expect(values).toHaveLength(2);
     expect(values[0]?.request.requestId).not.toBe(values[1]?.request.requestId);
     expect(values[0]?.request.contractToml).toBeUndefined();
-    expect(values[1]?.request.contractToml).toBe("schema_version = 1\n");
+    expect(values[1]?.request.contractToml).toBeUndefined();
+    expect(values[1]?.request.contract?.schema_version).toBe(1);
+    expect(values[1]?.request.contractSource?.path).toBe(config);
+    const invalid = join(directory, "invalid-legacy-input.json");
+    await writeFile(
+      invalid,
+      JSON.stringify({
+        ...values[0]?.request,
+        requestId: "invalid-selected-config",
+        contractToml: "not = [ valid",
+      }),
+    );
+    await run(["--input", invalid], true);
+    expect(coordinator.store.submissions.list()).toHaveLength(2);
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });

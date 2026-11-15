@@ -1,3 +1,4 @@
+import { validateContract } from "./pr-contract.js";
 import { captureImages } from "./artifacts.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -111,7 +112,7 @@ export class SubmissionService {
   submit(raw: unknown): Submission {
     if (this.stopped) throw new Error("Coordinator is stopping");
     if (Buffer.byteLength(JSON.stringify(raw)) > 240000)
-      throw new Error("Submission input exceeds 240000 bytes");
+      throw new Error("Invalid submission input: exceeds 240000 bytes");
     const request = parse(SubmissionInputSchema, raw);
     if (request.mode === "validate" && request.description === undefined)
       throw new Error("Validation requires supplied title and body");
@@ -378,11 +379,18 @@ export class SubmissionService {
       if (value.preparedDigest === undefined) {
         const contract =
           value.contract ??
-          readContract(value.request.contractToml ?? snapshot.contractToml);
+          validateContract(
+            value.request.contract ??
+              (value.request.contractToml === undefined
+                ? (snapshot.contract ?? readContract(snapshot.contractToml))
+                : readContract(value.request.contractToml)),
+          );
         if (
           !snapshot.private &&
           (snapshot.references ?? []).some((ref) => ref.private) &&
-          !readContract(value.request.contractToml).pr.overrides.some(
+          !(
+            value.request.contract ?? readContract(value.request.contractToml)
+          ).pr.overrides.some(
             (rule) => rule.rule_id === "context.private-to-public",
           )
         )

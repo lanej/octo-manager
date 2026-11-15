@@ -1,3 +1,4 @@
+import { parsedConfig } from "../src/submissions/public-contracts.js";
 import {
   anchorPolicy,
   policyBlockers,
@@ -1224,8 +1225,11 @@ test("target repository configuration cannot authorize disclosure of caller priv
     roles: Role[] = [];
   github.snapshot = async (input) => ({
     ...(await original(input)),
-    contractToml:
+    ...parsedConfig(
       'schema_version = 1\n[[pr.overrides]]\nrule_id = "context.private-to-public"\nreason = "A target repository cannot authorize caller disclosure."\n',
+      "octo-manager.toml",
+      "repository-config-blob",
+    ),
     references: [
       {
         repository: "private/context",

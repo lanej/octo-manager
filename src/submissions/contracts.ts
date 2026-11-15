@@ -62,7 +62,18 @@ export const SubmissionInputSchema = object({
   ),
   headRepository: Type.Optional(text(200)),
   updateUrl: Type.Optional(text(2000)),
+  // Legacy durable input only; public RPC and schemas project parsed contents.
   contractToml: Type.Optional(Type.String({ maxLength: 131072 })),
+  contract: Type.Optional(ContractSchema),
+  contractSource: Type.Optional(
+    object({
+      sha256: text(100),
+      path: text(4000),
+      blobSha: Type.Optional(text(100)),
+      authoredPaths: Type.Optional(strings(200)),
+      parseError: Type.Optional(text()),
+    }),
+  ),
   references: Type.Optional(Type.Array(text(2000), { maxItems: 20 })),
   description: Type.Optional(object({ title: text(500), body: text(60000) })),
   requestId: text(200),
@@ -254,7 +265,18 @@ export const SnapshotSchema = object({
   headSha: text(100),
   baseSha: text(100),
   private: Type.Boolean(),
+  // Legacy durable input only; public RPC and schemas project parsed contents.
   contractToml: Type.Optional(Type.String({ maxLength: 131072 })),
+  contract: Type.Optional(ContractSchema),
+  contractSource: Type.Optional(
+    object({
+      sha256: text(100),
+      path: text(4000),
+      blobSha: Type.Optional(text(100)),
+      authoredPaths: Type.Optional(strings(200)),
+      parseError: Type.Optional(text()),
+    }),
+  ),
   references: Type.Optional(
     Type.Array(
       object({
