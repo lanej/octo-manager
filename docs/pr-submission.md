@@ -1,39 +1,59 @@
 # PR submission
 
-Octo accepts purpose and observed validation from a calling Codex session, drafts through isolated Pi workers, publishes a new PR, then enrolls tracking to that session. Both public and private repositories are supported without allowlists. Existing PR edits remain outside this first submission workflow. The caller commits and pushes first; Octo does not change the source branch.
+The calling agent writes the title and description. Octo installs local writing guidance, validates declared format rules, accepts a durable request, and publishes the submitted draft. It does not generate, rewrite, or semantically judge the description. Publication does not require the Octo daemon; tracking is separate and opt-in.
 
-Use `submit-pr --intent-file FILE`. [The intent schema](../schemas/pr-intent.v1.schema.json) defines the request, including a stable request ID, repository, pushed head SHA and refs, purpose, validation, draft status, and caller target. Repeating a request ID with identical input returns its existing operation; changed facts require a new request ID. `submit-pr --purpose 'Problem and intended outcome' --thread-id SESSION` derives repository and branch facts from the current checkout. The paired dotfiles hook supplies session identity and working directory.
+## Prepare and validate
 
-`submission ID` retrieves the durable record, `submissions` lists operations, `retry-submission ID` reconciles failed or uncertain work, and `cancel-submission ID` stops work before a publication draft has entered recovery. A `needs_input` result requires a new request with corrected facts. Cancellation after publication may have begun is refused: retry reconciles the external effect instead. Success requires both publication and saved ownership/tracking, with the PR URL persisted before enrollment. Coordinator interruption never implies a remote create failed.
+Run `octo-manager pr init` in the repository. Octo preserves existing templates and authored instructions, installs `.agents/skills/pr-description/SKILL.md`, and records the selected template and mechanical rules in `.octo/pr-contract.json`. If several templates exist, choose one with `--template PATH`. Read that skill, the selected template, and the applicable repository contribution/development guidance before drafting.
 
-## Contribution policy and PR brief
+Optionally run `octo-manager pr init --derive` or `octo-manager pr refresh` to derive concise advisory guidance from bounded repository signal files and recent merged PRs. Choose `--sample-remote origin|upstream` and at most 20 samples with `--sample-count N`. Derivation may invoke one model; validation and submission never do. Historical medians and proposed rules remain advisory in `.octo/pr-style.json`; only rules explicitly configured in the active format contract block publication.
 
-Octo discovers base-revision AGENTS, CONTRIBUTING, PR templates, and linked local Markdown guidance, preserving source paths, blob SHAs, text and citations. Discovery has file-count and byte bounds; truncated trees, incomplete compare coverage and oversized inputs fail clearly. Relevant source hashes and explicit schema/analyst/stock versions identify reusable policy inputs. Ordinary commits do not invalidate policy. A complete discovery with no guidance uses the stock policy directly.
+Assess complexity from the actual diff and use only the detail a reviewer needs. PR Flow can provide evidence for an existing PR or revision; its current analysis interface requires a PR URL, so it is not a prerequisite for creating one. Do not turn a complexity assessment into a mandatory schema or word-count gate.
 
-On a policy miss, a contribution analyst and change analyst run concurrently. On a hit, only the change analyst runs before the dedicated GitHub PR writer. Workers have one model turn, a deadline, no tools or extensions, and use the existing Pi/Codex authentication. Caller-reported validation remains reported. Change claims retain evidence references and a way to falsify each claim. No worker can publish: only the coordinator holds that capability.
+Write a finished description file, then run:
 
-The [policy schema](../schemas/repository-pr-policy.v1.schema.json) captures immutable versioned requirements, source citations, required/recommended strength, category, directory scope and declarative or semantic checks. Unsupported semantic requirements need an explicit writer assessment. Conditional requirements retain a unique applicability quote from the same source; a `not_applicable` assessment requires this condition and a concrete rationale, while unconditional requirements cannot be skipped. Exact quotes that occur uniquely in their source are deterministically anchored to the actual line; raw analyst output and reported-to-verified line corrections are both retained. Missing quotes, ambiguous invalid anchors, required-rule failures and writer blockers stop publication. Semantic assessment remains model judgment, not a formal proof, including the relationship between a quoted condition and the requirement. [PR briefs](../schemas/pr-brief.v1.schema.json) pin policy and base revisions and retain change analysis plus title/body. [Submission records](../schemas/pr-submission.v1.schema.json) retain worker results and prompt digests, publication state, URL and enrollment identity. `bun run generate` regenerates these JSON Schemas from the same TypeBox definitions used for runtime validation and TypeScript types.
-
-Policy artifacts include structured `complexityProfiles` with guidance, word ranges and an explicit advisory flag. Older version-1 policy records resolve these from their pinned stock policy without rewriting historical storage. The stock description leads with outcome and why, adding examples, compatibility, limitations and rollout details when useful. Risk and semantic scope determine complexity alongside size. Advisory word ranges are routine 20–100, standard 100–250 and complex 250–600; they never justify padding or dropping required information. Empty sections and duplicate automated check inventories are omitted.
-
-Inspect cached policy with `repo-policy get --repo owner/repo [--version N]`; render its template with `repo-policy template --repo owner/repo --tier routine|standard|complex`. `repo-policy refresh` from a pushed change branch queues a policy-only operation and stores a new immutable version without publishing a PR.
-
-Model roles are independently configurable in the existing config; harness adaptation stays behind the stage-runner boundary. These settings do not change the calling thread's model.
-
-```json
-{"submissionModels":{"policy":"gpt-6.1-terra","change":"gpt-6.1-terra","writer":"gpt-6.1-terra"}}
+```sh
+octo-manager pr validate --title 'feat: explain the outcome' --body-file description.md
 ```
 
-## Publication and notifications
+Validation is offline: it does not contact GitHub, create a receipt, or start a worker. Empty drafts, invalid title lines, unfilled Octo template prompts, and violations of explicitly declared mechanical rules fail immediately with a short fix list. The agent owns factual accuracy, evidence, authorization, and semantic compliance with repository instructions. No separate drafting agent or process attestation is required.
 
-States are `queued`, `analyzing`, `writing`, `publishing`, `enrolling`, `succeeded`, `needs_input`, `failed`, `uncertain` and `cancelled`. SQLite schema 9 adds immutable repository policy versions, durable submissions and operation notifications. Times remain integer epoch milliseconds. Existing schema-8 databases migrate on coordinator startup; older binaries cannot reopen the upgraded database.
+## Submit and inspect
 
-Before publication, Octo verifies the frozen head and base refs. An immutable hidden submission marker lets a retry find a created PR after a lost response. Retries reuse valid completed worker results and never overwrite an unrelated existing PR. A created PR with changed identity stays uncertain for inspection. Publication and enrollment are separate saved steps.
+Commit and push the intended branch, then submit the exact finished draft when the user has authorized publication:
 
-Terminal outcomes enter the same caller inbox as PR notifications, with a shared monotonic sequence and exact-body receipt contract. Busy sessions defer delivery. Admission to an app-server queue remains distinct from receipt. Missing accepted messages are reconciled before replaying their original immutable ID/body. Receipt records do not discard a later transport result. Retry invalidates the prior operation notice and sends its own outcome, including when the prior notice was already acknowledged. Restart recovers terminal results whose callback had not yet been created.
+```sh
+octo-manager submit-pr --title 'feat: explain the outcome' --body-file description.md
+octo-manager submission REQUEST_ID
+```
 
-## Acceptance evidence
+Invalid drafts exit nonzero before acceptance. A valid request is saved before Octo returns a small pending receipt. Pending means accepted locally for publication; it does not mean GitHub accepted the PR. The short-lived publisher revalidates the contract and pushed revision, then records `published` with a URL, a known `failed` result, or `uncertain` when a remote effect cannot be confirmed.
 
-The real Pi/GitHub path published and enrolled [public fixture PR #5](https://github.com/lanej/octo-manager-acceptance-20261110/pull/5) and [private fixture PR #1](https://github.com/lanej/octo-manager-acceptance-private-20261112/pull/1). The private fixture required the phrase “acceptance behavior”; its pinned policy and published body satisfied that requirement. These are synthetic documentation changes; they establish publication and enrollment, not arbitrary semantic correctness. Controlled service tests additionally cover uncertain-create reconciliation, callbacks across restart, missing-message replay, receipt/send races, policy invalidation and cancellation.
+Use `retry-submission REQUEST_ID` to retry pre-publication failures or reconcile an uncertain create. Reuse the existing receipt after a timeout rather than submitting another request. A hidden marker binds recovery to the frozen title, body, repository, head, and base; Octo refuses to overwrite an unrelated PR. Purpose-only requests and legacy intent files receive migration guidance instead of starting analysis/writer jobs. Historical records remain inspectable.
 
-Malformed or schema-invalid worker results remain in the submission history. An explicit retry reruns those stages while reusing valid completed stages. Removing a configured recipient endpoint does not prevent callback recovery or starve other recipients; its durable messages remain available in the inbox while transport is unavailable.
+Use `--track --thread-id SESSION` only when daemon-backed tracking is wanted. Use the actual calling session identity; do not invent an owner for an unsupported harness. A tracking failure is reported separately and does not undo publication. Existing PR title/body revisions use the same local drafting and validation guidance, followed by the review platform's update command and verification of the saved result.
+
+Inspect the published title, rendered body, head/base, links, and any included images before reporting publication as verified. Creating a PR does not authorize merging it.
+
+## Hook integration
+
+The optional Codex submission hook translates supported standalone `gh pr create` commands to `octo-manager submit-pr`, preserving the caller's completed title and body. It supplies actual session context for optional tracking and never treats the draft as input to a separate writer. Unsupported flags and retired `gh-pr-create-from` calls return concise migration instructions.
+
+Enable the hook with `make codex-octo-hook`, then review/trust it through the host's native Hooks interface. Run publication separately from pipelines, redirections, variable expansion, or compound commands. Installation preserves other hooks and native trust; it does not grant publication authority or contain arbitrary shell execution. Remove only this adapter with `python3 bin/codex-octo-submit --uninstall`.
+
+## Active format contract
+
+The active repository contract is a small JSON file. Omitted rules introduce no restrictions beyond basic draft validity. Required headings are ATX Markdown headings outside fenced code blocks; matching ignores case. Required text and title prefixes match literally. No rule evaluates the meaning or truth of the content.
+
+```json
+{
+  "schemaVersion": 1,
+  "template": ".github/pull_request_template.md",
+  "title": { "maxLength": 72, "prefixes": ["feat:", "fix:"] },
+  "body": { "requiredHeadings": ["Outcome"], "requiredText": [] }
+}
+```
+
+This example adds explicit restrictions; initialization does not infer them from history. Review proposed rules in `.octo/pr-style.json` before adding any to the active contract. The generated skill is the concise entrypoint for the calling agent, and existing authored instructions retain authority.
+
+New receipts live under the state directory's separate `publications` journal. They do not acquire the daemon ownership lock. `submissions` returns a bounded page and a `next` cursor, accepted through `--after`; `submissions --legacy` inspects historical records without loading their full snapshots or model transcripts. Legacy uncertain publications remain inspectable; retry-submission imports their frozen draft as a reconciliation-only receipt that cannot create another PR. No new legacy drafting jobs start. Both public and private repositories use the existing GitHub authentication.
