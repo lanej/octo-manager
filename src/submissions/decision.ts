@@ -86,7 +86,18 @@ export function decide(
           message.startsWith("Required " + rule.id + ":"),
         )
       ) {
-        missingRequirements.push(message);
+        const rule = unknownRules.find((rule) =>
+          message.startsWith("Required " + rule.id + ":"),
+        );
+        const assessment = evaluation.requirementChecks.find(
+          (check) => check.ruleId === rule?.id,
+        );
+        missingRequirements.push(
+          message +
+            " Evidence needed: " +
+            (assessment?.rationale ??
+              "The evaluator did not assess this applicable requirement."),
+        );
         return false;
       }
       return true;

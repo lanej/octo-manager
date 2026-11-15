@@ -148,6 +148,17 @@ test("unknown required semantic evidence stays needs_evidence and a demonstrated
     decide(f.brief, f.policy, f.snapshot, readContract(), f.evaluation, [])
       .status,
   ).toBe("needs_evidence");
+  expect(
+    decide(
+      f.brief,
+      f.policy,
+      f.snapshot,
+      readContract(),
+      f.evaluation,
+      [],
+    ).blockers.join("\n"),
+  ).toContain("No test evidence was supplied.");
+
   f.evaluation.requirementChecks = [
     {
       ruleId: "tests",
