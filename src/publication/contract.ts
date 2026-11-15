@@ -268,20 +268,29 @@ export function initialize(
         templates.push(join(directory, name));
     }
   }
-  let template = selected ?? templates[0] ?? ".github/pull_request_template.md";
-  if (selected === undefined && templates.length > 1)
-    throw new PublicationError(
-      "template_selection",
-      "Multiple PR templates exist; rerun pr init --template PATH.",
-    );
+  let configured: string | undefined;
   try {
-    template = readContract(root).contract.template;
+    configured = readContract(root).contract.template;
   } catch (error) {
     if (
       !(error instanceof PublicationError && error.code === "contract_missing")
     )
       throw error;
   }
+  if (
+    configured === undefined &&
+    selected === undefined &&
+    templates.length > 1
+  )
+    throw new PublicationError(
+      "template_selection",
+      "Multiple PR templates exist; rerun pr init --template PATH.",
+    );
+  const template =
+    configured ??
+    selected ??
+    templates[0] ??
+    ".github/pull_request_template.md";
   safePath(root, template);
   install(root, template, stockTemplate);
   install(

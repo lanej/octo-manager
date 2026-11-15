@@ -136,6 +136,26 @@ test("local contract initialization preserves authored templates and validates e
     await rm(directory, { recursive: true, force: true });
   }
 });
+test("initialization reuses a saved choice among multiple authored templates", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-templates-"));
+  try {
+    const folder = ".github/PULL_REQUEST_TEMPLATE";
+    await mkdir(join(directory, folder), { recursive: true });
+    await writeFile(join(directory, folder, "feature.md"), "## Feature\n");
+    await writeFile(join(directory, folder, "fix.md"), "## Fix\n");
+    expect(() => initialize(directory)).toThrow("Multiple PR templates exist");
+    const selected = folder + "/feature.md";
+    expect(initialize(directory, selected).template).toBe(selected);
+    const saved = await readFile(join(directory, contractPath), "utf8");
+    expect(initialize(directory).template).toBe(selected);
+    expect(await readFile(join(directory, contractPath), "utf8")).toBe(saved);
+    expect(await readFile(join(directory, selected), "utf8")).toBe(
+      "## Feature\n",
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test("launch failure cannot erase another worker's attempted or published state; retries return pending", async () => {
   const h = await fixture(),
     duplicate = new PublicationStore(h.directory);
