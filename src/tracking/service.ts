@@ -30,6 +30,7 @@ import {
   type AgentConnection,
 } from "../agents/codex.js";
 export interface TrackingOptions {
+  repositoryEnrollment?: (prId: string, agentId: string, cwd?: string) => void;
   stateDirectory?: string;
   schedules?: ScheduleStore;
   interactive?: <T>(work: () => T) => T;
@@ -109,9 +110,14 @@ export class TrackingService {
     this.validateTarget(target);
     return this.store.registerAgent(target);
   }
-  track(url: string, target: AgentTarget) {
+  track(url: string, target: AgentTarget, cwd?: string) {
     this.validateTarget(target);
     const p = this.store.track(url, target);
+    this.options.repositoryEnrollment?.(
+      p.id,
+      this.store.registerAgent(target).id,
+      cwd,
+    );
     this.requestRefresh(p.id);
     return p;
   }
@@ -294,7 +300,7 @@ export class TrackingService {
                   "PR already belongs to another agent; explicit reassignment is required",
               };
           }
-          this.track(request.url, request.owner);
+          this.track(request.url, request.owner, request.cwd);
           return { accepted: true };
         })
         .catch(() => {})

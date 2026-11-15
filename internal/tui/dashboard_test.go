@@ -164,3 +164,13 @@ func TestQueuedReviewCacheMissIsPendingAndRetainsExistingContent(t *testing.T) {
 		t.Fatal("queued refresh discarded cached view or became an error")
 	}
 }
+
+func TestInheritedAutoMergeLabel(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "pr", AutoMerge: true, State: "waiting_owner", ChainState: "active", AutoMergeSource: "inherited", AutoMergeStage: "alpha"}}
+	if got := m.automationLabel("pr"); got != "Auto-merge ON · inherited (alpha)" {
+		t.Fatalf("unexpected inherited label: %s", got)
+	}
+}

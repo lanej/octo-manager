@@ -190,7 +190,7 @@ function type(name: string, s: SchemaNode): string {
         type: fieldType,
         number,
         required: (s.required ?? []).includes(key),
-        declaration: `${["string", "int64", "double", "bool"].includes(fieldType) || shapes[fieldType]?.kind === "enum" ? "optional " : ""}${fieldType} ${snake(key)} = ${String(number)};`,
+        declaration: `${["string", "int64", "double", "bool"].includes(fieldType) || shapes[fieldType]?.kind === "enum" ? "optional " : ""}${fieldType} ${snake(key)} = ${String(number)}${key.includes("_") ? ` [json_name = "${key}"]` : ""};`,
       };
     });
     definitions.push(

@@ -29,6 +29,9 @@ import {
 } from "./contracts.js";
 import { checkGate, fingerprint, graphKey, readyFor } from "./policy.js";
 export interface MergeOptions {
+  repositoryInstructions?: (
+    message: import("../tracking/inbox.js").AgentMessage,
+  ) => string | undefined;
   provider?: MergeProvider;
   prepare?: Preparer;
   intervalMs?: number;
@@ -65,6 +68,7 @@ export class MergeService {
           observation,
         ),
       now,
+      options.repositoryInstructions,
     );
   }
   readonly receipts: ReceiptMerges;
@@ -92,6 +96,13 @@ export class MergeService {
   private dispatch(input: MergeCommand): unknown {
     switch (input.op) {
       case "auto_merge":
+        if (input.inherit === true)
+          return this.store.useDefault(
+            input.pr,
+            input.actorId,
+            input.requestId,
+            input.instructions,
+          );
         return this.store.autoMerge(
           input.pr,
           input.actorId,

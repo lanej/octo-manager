@@ -51,6 +51,7 @@ export interface Options extends Record<string, string | boolean | undefined> {
   prerequisite?: string;
   reason?: string;
   on?: boolean;
+  inherit?: boolean;
   ci?: boolean;
   checks?: string;
   off?: boolean;

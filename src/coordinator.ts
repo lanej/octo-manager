@@ -65,13 +65,14 @@ export class Coordinator extends EventEmitter {
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
+      this.store.repositories.tick();
       this.tracking.tick();
       this.submissions.reconcileLegacy(this.now());
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
-    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,...options.digestOptions});

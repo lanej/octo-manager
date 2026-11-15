@@ -1,3 +1,4 @@
+import { AutomationPolicySchema } from "../repository/contracts.js";
 import { Type } from "typebox";
 import {
   ChainSchema,
@@ -150,6 +151,7 @@ export const roots = {
   DeliveryOutcome: outcome,
   MergeChain: ChainSchema,
   MergeEntry: EntrySchema,
+  RepositoryAutomationPolicy: AutomationPolicySchema,
   MergeOperation: OperationSchema,
   Dependency: DependencySchema,
   PRReference: ReferenceSchema,

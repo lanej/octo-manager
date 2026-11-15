@@ -184,6 +184,7 @@ export async function publishRequest(
       undefined,
       {
         url: value.url,
+        cwd: value.input.root,
         harness: "codex",
         endpoint: value.input.track.endpoint,
         sessionId: value.input.track.sessionId,

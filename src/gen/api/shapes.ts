@@ -1081,6 +1081,21 @@ export const shapes: Record<string, Shape> = {
       }
     ]
   },
+  "DomainMergeEntryAutoMergeSource": {
+    "kind": "enum",
+    "values": [
+      "explicit",
+      "inherited"
+    ],
+    "numbers": [
+      1,
+      2
+    ],
+    "wireNames": [
+      "DOMAIN_MERGE_ENTRY_AUTO_MERGE_SOURCE_EXPLICIT",
+      "DOMAIN_MERGE_ENTRY_AUTO_MERGE_SOURCE_INHERITED"
+    ]
+  },
   "DomainMergeEntryAgentInstructions": {
     "kind": "object",
     "fields": [
@@ -1221,6 +1236,21 @@ export const shapes: Record<string, Shape> = {
         "required": true
       },
       {
+        "key": "autoMergeSource",
+        "type": "DomainMergeEntryAutoMergeSource",
+        "required": false
+      },
+      {
+        "key": "autoMergeStage",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "trackingEpoch",
+        "type": "int64",
+        "required": false
+      },
+      {
         "key": "agentInstructions",
         "type": "DomainMergeEntryAgentInstructions",
         "required": false
@@ -1297,6 +1327,150 @@ export const shapes: Record<string, Shape> = {
       },
       {
         "key": "mergeCommit",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  "DomainRepositoryAutomationPolicyStatus": {
+    "kind": "enum",
+    "values": [
+      "valid",
+      "missing",
+      "invalid"
+    ],
+    "numbers": [
+      1,
+      2,
+      3
+    ],
+    "wireNames": [
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STATUS_VALID",
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STATUS_MISSING",
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STATUS_INVALID"
+    ]
+  },
+  "DomainRepositoryAutomationPolicyStage": {
+    "kind": "enum",
+    "values": [
+      "research",
+      "alpha",
+      "beta",
+      "production"
+    ],
+    "numbers": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "wireNames": [
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STAGE_RESEARCH",
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STAGE_ALPHA",
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STAGE_BETA",
+      "DOMAIN_REPOSITORY_AUTOMATION_POLICY_STAGE_PRODUCTION"
+    ]
+  },
+  "DomainRepositoryAutomationPolicyInstructions": {
+    "kind": "object",
+    "fields": [
+      {
+        "key": "review_feedback",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "checks_failed",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "merge_conflict",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "dependencies_pending",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "owner_review_required",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "ready",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "merged",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "merge_uncertain",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "merge_blocked",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  "DomainRepositoryAutomationPolicy": {
+    "kind": "object",
+    "fields": [
+      {
+        "key": "prId",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "root",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "ownerId",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "epoch",
+        "type": "int64",
+        "required": true
+      },
+      {
+        "key": "status",
+        "type": "DomainRepositoryAutomationPolicyStatus",
+        "required": true
+      },
+      {
+        "key": "hash",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "stage",
+        "type": "DomainRepositoryAutomationPolicyStage",
+        "required": false
+      },
+      {
+        "key": "autoMerge",
+        "type": "bool",
+        "required": true
+      },
+      {
+        "key": "instructions",
+        "type": "DomainRepositoryAutomationPolicyInstructions",
+        "required": true
+      },
+      {
+        "key": "error",
         "type": "string",
         "required": false
       }
@@ -2749,6 +2923,21 @@ export const shapes: Record<string, Shape> = {
     "kind": "list",
     "element": "DomainMergeOverviewChainsItem"
   },
+  "DomainMergeOverviewEntriesItemAutoMergeSource": {
+    "kind": "enum",
+    "values": [
+      "explicit",
+      "inherited"
+    ],
+    "numbers": [
+      1,
+      2
+    ],
+    "wireNames": [
+      "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_AUTO_MERGE_SOURCE_EXPLICIT",
+      "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_AUTO_MERGE_SOURCE_INHERITED"
+    ]
+  },
   "DomainMergeOverviewEntriesItemAgentInstructions": {
     "kind": "object",
     "fields": [
@@ -2887,6 +3076,21 @@ export const shapes: Record<string, Shape> = {
         "key": "autoMerge",
         "type": "bool",
         "required": true
+      },
+      {
+        "key": "autoMergeSource",
+        "type": "DomainMergeOverviewEntriesItemAutoMergeSource",
+        "required": false
+      },
+      {
+        "key": "autoMergeStage",
+        "type": "string",
+        "required": false
+      },
+      {
+        "key": "trackingEpoch",
+        "type": "int64",
+        "required": false
       },
       {
         "key": "agentInstructions",
@@ -5310,6 +5514,11 @@ export const shapes: Record<string, Shape> = {
       {
         "key": "instructions",
         "type": "string",
+        "required": false
+      },
+      {
+        "key": "inherit",
+        "type": "bool",
         "required": false
       },
       {

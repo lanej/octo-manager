@@ -108,6 +108,14 @@ export class MergeStore {
       ? instructions.text
       : undefined;
   }
+  noticeEntry(messageId: string): MergeEntry | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
+      )
+      .get(messageId);
+    return this.entries().find((entry) => entry.id === row?.["subject_id"]);
+  }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
     this.db.exec("BEGIN IMMEDIATE");
@@ -241,6 +249,12 @@ export class MergeStore {
       ...entry,
       ...patch,
       autoMerge: current?.autoMerge ?? entry.autoMerge,
+      ...(current?.autoMergeSource === undefined
+        ? {}
+        : { autoMergeSource: current.autoMergeSource }),
+      ...(current?.autoMergeStage === undefined
+        ? {}
+        : { autoMergeStage: current.autoMergeStage }),
       state,
       detail: compact(detail, 1000),
     };
@@ -316,6 +330,14 @@ export class MergeStore {
       input.entries.forEach((item, index) => {
         const pr = prs[index];
         if (pr === undefined) throw new Error("Missing merge target");
+        this.db
+          .prepare(
+            "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          )
+          .run(
+            `merge-setting:${pr.id}`,
+            JSON.stringify({ source: "explicit", epoch: pr.trackingEpoch }),
+          );
         if (item.noCi === true && (item.checks?.length ?? 0) > 0)
           throw new Error(
             "Choose expected checks or an explicit no-CI declaration",
@@ -323,6 +345,7 @@ export class MergeStore {
         this.saveEntry({
           id: randomUUID(),
           autoMerge: true,
+          trackingEpoch: pr.trackingEpoch,
           chainId: chain.id,
           prId: pr.id,
           method: item.method ?? "squash",
@@ -341,12 +364,78 @@ export class MergeStore {
       return chain;
     });
   }
+  settingSource(prId: string): "explicit" | "inherited" {
+    const pr = this.tracking.pr(prId);
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-setting:${pr.id}`);
+    if (row !== undefined) {
+      const value: unknown = JSON.parse(String(row["value"]));
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "source" in value &&
+        value.source === "explicit"
+      )
+        return "explicit";
+      return "inherited";
+    }
+    return this.entries().some(
+      (entry) =>
+        entry.prId === pr.id &&
+        !terminal(entry.state) &&
+        entry.autoMergeSource !== "inherited",
+    )
+      ? "explicit"
+      : "inherited";
+  }
+  useDefault(
+    prValue: string,
+    actorId: string,
+    requestId: string,
+    instructions?: string,
+  ) {
+    const pr = this.tracking.pr(prValue);
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`repository-policy:${pr.id}`);
+    const value: unknown =
+      row === undefined ? undefined : JSON.parse(String(row["value"]));
+    const enabled =
+      typeof value === "object" &&
+      value !== null &&
+      "autoMerge" in value &&
+      value.autoMerge === true &&
+      "ownerId" in value &&
+      value.ownerId === pr.ownerAgentId &&
+      "epoch" in value &&
+      value.epoch === pr.trackingEpoch;
+    return this.autoMerge(
+      pr.id,
+      actorId,
+      enabled,
+      requestId,
+      instructions,
+      "inherited",
+    );
+  }
+  policyStage(prId: string, stage?: string): void {
+    const entry = this.entries().find(
+      (value) => value.prId === prId && !terminal(value.state),
+    );
+    if (entry === undefined || entry.autoMergeSource !== "inherited") return;
+    const next = { ...entry };
+    if (stage === undefined) delete next.autoMergeStage;
+    else next.autoMergeStage = stage;
+    this.saveEntry(next);
+  }
   autoMerge(
     prValue: string,
     actorId: string,
     enabled: boolean,
     requestId: string,
     instructions?: string,
+    source: "explicit" | "inherited" = "explicit",
   ) {
     return this.transaction(() => {
       const pr = this.tracking.pr(prValue);
@@ -358,6 +447,14 @@ export class MergeStore {
       )
         throw new Error(
           "Instructions require auto-merge on and 1-1000 UTF-8 bytes",
+        );
+      this.db
+        .prepare(
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        )
+        .run(
+          `merge-setting:${pr.id}`,
+          JSON.stringify({ source, epoch: pr.trackingEpoch }),
         );
       let entry = this.entries().find(
         (value) => value.prId === pr.id && !terminal(value.state),
@@ -385,6 +482,14 @@ export class MergeStore {
         });
         entry = this.entry(pr.id);
       }
+      this.db
+        .prepare(
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        )
+        .run(
+          `merge-setting:${pr.id}`,
+          JSON.stringify({ source, epoch: pr.trackingEpoch }),
+        );
       if (instructions !== undefined) {
         entry = { ...entry };
         if (instructions === "") delete entry.agentInstructions;
@@ -396,6 +501,12 @@ export class MergeStore {
           };
         this.saveEntry(entry);
       }
+      entry = {
+        ...entry,
+        autoMergeSource: source,
+        trackingEpoch: pr.trackingEpoch,
+      };
+      this.saveEntry(entry);
       if (entry.autoMerge === enabled) return { prId: pr.id, enabled, entry };
       const next = { ...entry, autoMerge: enabled, nextAt: 0 };
       delete next.ready;

@@ -2308,6 +2308,8 @@ type MergeStatus struct {
 	PrerequisiteUrls []string               `protobuf:"bytes,5,rep,name=prerequisite_urls,json=prerequisiteUrls,proto3" json:"prerequisite_urls,omitempty"`
 	AutoMerge        bool                   `protobuf:"varint,6,opt,name=auto_merge,json=autoMerge,proto3" json:"auto_merge,omitempty"`
 	ChainState       string                 `protobuf:"bytes,7,opt,name=chain_state,json=chainState,proto3" json:"chain_state,omitempty"`
+	AutoMergeSource  string                 `protobuf:"bytes,8,opt,name=auto_merge_source,json=autoMergeSource,proto3" json:"auto_merge_source,omitempty"`
+	AutoMergeStage   string                 `protobuf:"bytes,9,opt,name=auto_merge_stage,json=autoMergeStage,proto3" json:"auto_merge_stage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2387,6 +2389,20 @@ func (x *MergeStatus) GetAutoMerge() bool {
 func (x *MergeStatus) GetChainState() string {
 	if x != nil {
 		return x.ChainState
+	}
+	return ""
+}
+
+func (x *MergeStatus) GetAutoMergeSource() string {
+	if x != nil {
+		return x.AutoMergeSource
+	}
+	return ""
+}
+
+func (x *MergeStatus) GetAutoMergeStage() string {
+	if x != nil {
+		return x.AutoMergeStage
 	}
 	return ""
 }
@@ -3283,7 +3299,7 @@ const file_octomanager_v2_scheduler_proto_rawDesc = "" +
 	"activities\x120\n" +
 	"\x06events\x18\x02 \x03(\v2\x18.octomanager.v2.JobEventR\x06events\x12#\n" +
 	"\rnext_sequence\x18\x03 \x01(\x04R\fnextSequence\x12\x19\n" +
-	"\bhas_more\x18\x04 \x01(\bR\ahasMore\"\xd8\x01\n" +
+	"\bhas_more\x18\x04 \x01(\bR\ahasMore\"\xae\x02\n" +
 	"\vMergeStatus\x12\x13\n" +
 	"\x05pr_id\x18\x01 \x01(\tR\x04prId\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x14\n" +
@@ -3293,7 +3309,9 @@ const file_octomanager_v2_scheduler_proto_rawDesc = "" +
 	"\n" +
 	"auto_merge\x18\x06 \x01(\bR\tautoMerge\x12\x1f\n" +
 	"\vchain_state\x18\a \x01(\tR\n" +
-	"chainState\"\x16\n" +
+	"chainState\x12*\n" +
+	"\x11auto_merge_source\x18\b \x01(\tR\x0fautoMergeSource\x12(\n" +
+	"\x10auto_merge_stage\x18\t \x01(\tR\x0eautoMergeStage\"\x16\n" +
 	"\x14GetServerInfoRequest\"8\n" +
 	"\x15GetServerInfoResponse\x12\x1f\n" +
 	"\vapi_version\x18\x01 \x01(\rR\n" +

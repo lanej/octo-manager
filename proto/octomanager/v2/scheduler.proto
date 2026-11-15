@@ -219,7 +219,7 @@ message ListActivityResponse {
   bool has_more = 4;
 }
 
-message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; bool auto_merge = 6; string chain_state = 7; }
+message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; bool auto_merge = 6; string chain_state = 7; string auto_merge_source = 8; string auto_merge_stage = 9; }
 
 message GetServerInfoRequest {}
 message GetServerInfoResponse { uint32 api_version = 1; }

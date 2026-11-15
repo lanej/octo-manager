@@ -41,10 +41,15 @@ export async function mergingCLI(
         throw new Error("Choose expected checks or --no-ci");
       break;
     case "auto-merge":
-      if ((values.on === true) === (values.off === true))
-        throw new Error("Choose --on or --off");
+      if (
+        [values.on, values.off, values.inherit].filter(
+          (value) => value === true,
+        ).length !== 1
+      )
+        throw new Error("Choose --on, --off, or --inherit");
       input = {
         op: "auto_merge",
+        ...(values.inherit === true ? { inherit: true } : {}),
         ...(values.instructions === undefined
           ? {}
           : { instructions: values.instructions }),

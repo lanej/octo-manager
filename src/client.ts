@@ -58,13 +58,13 @@ export async function request(directory: string, command: object): Promise<any> 
   throw new Error("Unsupported command");
 }
 
-export async function trackingRequest(directory:string,command:string,id?:string,options:{url?:string;harness?:string;endpoint?:string;sessionId?:string;agentId?:string;label?:string;after?:string;includeAcknowledged?:boolean;applicableOnly?:boolean}={}):Promise<unknown>{
+export async function trackingRequest(directory:string,command:string,id?:string,options:{cwd?:string;url?:string;harness?:string;endpoint?:string;sessionId?:string;agentId?:string;label?:string;after?:string;includeAcknowledged?:boolean;applicableOnly?:boolean}={}):Promise<unknown>{
  const client=schedulerClient(directory);
  const owner={harness:options.harness??'codex',endpoint:options.endpoint??'local',sessionId:options.sessionId??'',label:options.label};
  switch(command){
   case 'agents':return (await client.getSnapshot({})).snapshot?.tracking?.agents;
   case 'register-agent':return client.registerAgent({target:owner});
-  case 'track':return client.trackPullRequest({url:options.url??'',owner});
+  case 'track':return client.trackPullRequest({url:options.url??'',owner,cwd:options.cwd??process.cwd()});
   case 'tracked':return client.listTrackedPullRequests({});
   case 'pr':return client.getTrackedPullRequest({id:id??''});
   case 'refresh':return client.refreshTrackedPullRequest({id:id??''});
