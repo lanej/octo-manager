@@ -31,7 +31,13 @@ const reads = new Set([
 export function readOnlyCommand(positionals: string[]): boolean {
   const command = positionals[0] ?? "";
   return (
-    reads.has(command) ||
+    (reads.has(command) &&
+      !(
+        command === "pr" &&
+        ["prepare", "validate", "publish"].includes(positionals[1] ?? "")
+      )) ||
+    (command === "config" &&
+      ["validate", "explain"].includes(positionals[1] ?? "")) ||
     (command === "repo-policy" &&
       (positionals[1] === "get" || positionals[1] === "template"))
   );

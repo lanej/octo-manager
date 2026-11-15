@@ -1,3 +1,4 @@
+import { inputFromWire, wireSubmission, wirePolicy } from "./submissions/wire.js";
 import {dashboardRoutes,wireScheduler,wireRefresh,wireDetails} from "./scheduling/rpc.js";
 import {digestReceipt} from "./notifications/receipt.js";
 import { complexity, renderTemplate } from "./submissions/contracts.js";
@@ -82,28 +83,27 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       return digestReceipt(coordinator.digests,tracking.store,r.id,r.revision,messages);
     });},
     submitPullRequest(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(
-          coordinator.submissions.submit(JSON.parse(r.inputJson)),
-        ),
+        submission: wireSubmission(coordinator.submissions.submit(inputFromWire(r.input))),
       }));
     },
+    publishPreparedPullRequest(r){return trackingOperation(()=>({submission:wireSubmission(coordinator.submissions.publishPrepared(r.id))}));},
     getSubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),
+        submission: wireSubmission(coordinator.store.submissions.get(r.id)),
       }));
     },
     listSubmissions() {
       return {
-        submissionsJson: coordinator.store.submissions
+        submissions: coordinator.store.submissions
           .list()
-          .map((value) => JSON.stringify(value)),
+          .map(wireSubmission),
       };
     },
     retrySubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.submissions.retry(r.id)),
+        submission: wireSubmission(coordinator.submissions.retry(r.id)),
       }));
     },
     cancelSubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.submissions.cancel(r.id)),
+        submission: wireSubmission(coordinator.submissions.cancel(r.id)),
       }));
     },
     getRepositoryPolicy(r){return trackingOperation(()=> {
@@ -118,7 +118,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
           );
         const tier = complexity(r.tier === "" ? "standard" : r.tier);
         return {
-          policyJson: JSON.stringify(policy),
+          policy: wirePolicy(policy),
           template: renderTemplate(policy, tier),
         };
       });

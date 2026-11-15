@@ -1,17 +1,453 @@
 syntax = "proto3";
 package octomanager.v1;
+import "google/protobuf/struct.proto";
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v1;octomanagerv1";
 
-// Structured JSON is validated with the exported versioned JSON Schemas.
-message SubmitPullRequestRequest { string input_json = 1; }
-message SubmitPullRequestResponse { string submission_json = 1; }
-message GetSubmissionResponse { string submission_json = 1; }
-message RetrySubmissionResponse { string submission_json = 1; }
-message CancelSubmissionResponse { string submission_json = 1; }
+// Known structures use typed fields. Domain string variants are validated at the
+// coordinator boundary. Value is reserved for heterogeneous provider evidence or
+// malformed output, whose original shape must remain inspectable.
+message SubmitPullRequestRequest { reserved 1; reserved "input_json"; PrSubmissionInput input = 2; }
+message SubmitPullRequestResponse { reserved 1; reserved "submission_json"; PrSubmission submission = 2; }
+message GetSubmissionResponse { reserved 1; reserved "submission_json"; PrSubmission submission = 2; }
+message RetrySubmissionResponse { reserved 1; reserved "submission_json"; PrSubmission submission = 2; }
+message CancelSubmissionResponse { reserved 1; reserved "submission_json"; PrSubmission submission = 2; }
 message GetSubmissionRequest { string id = 1; }
 message ListSubmissionsRequest {}
-message ListSubmissionsResponse { repeated string submissions_json = 1; }
+message ListSubmissionsResponse { reserved 1; reserved "submissions_json"; repeated PrSubmission submissions = 2; }
 message RetrySubmissionRequest { string id = 1; }
 message CancelSubmissionRequest { string id = 1; }
 message GetRepositoryPolicyRequest { string repository = 1; optional uint32 version = 2; string tier = 3; }
-message GetRepositoryPolicyResponse { string policy_json = 1; string template = 2; }
+message GetRepositoryPolicyResponse { reserved 1; reserved "policy_json"; string template = 2; PrRepositoryPolicy policy = 3; }
+message PublishPreparedPullRequestRequest { string id = 1; }
+message PublishPreparedPullRequestResponse { reserved 1; reserved "submission_json"; PrSubmission submission = 2; }
+
+message PrContractPrPresentation {
+  optional string layout = 1 [json_name = "layout"];
+  optional int64 first_artifact_by_prose_word = 2 [json_name = "first_artifact_by_prose_word"];
+  optional string diagram_format = 3 [json_name = "diagram_format"];
+}
+
+message PrContractPrComplexityWeights {
+  optional int64 breadth = 1 [json_name = "breadth"];
+  optional int64 behavior = 2 [json_name = "behavior"];
+  optional int64 coupling = 3 [json_name = "coupling"];
+  optional int64 compatibility = 4 [json_name = "compatibility"];
+  optional int64 state_risk = 5 [json_name = "state_risk"];
+}
+
+message PrContractPrComplexity {
+  PrContractPrComplexityWeights weights = 1 [json_name = "weights"];
+  optional int64 routine_max = 2 [json_name = "routine_max"];
+  optional int64 standard_max = 3 [json_name = "standard_max"];
+}
+
+message PrContractPrProfilesRoutine {
+  optional int64 max_prose_words = 1 [json_name = "max_prose_words"];
+  optional bool require_diagram = 2 [json_name = "require_diagram"];
+}
+
+message PrContractPrProfiles {
+  PrContractPrProfilesRoutine routine = 1 [json_name = "routine"];
+  PrContractPrProfilesRoutine standard = 2 [json_name = "standard"];
+  PrContractPrProfilesRoutine complex = 3 [json_name = "complex"];
+}
+
+message PrContractPrOverridesItem {
+  optional string rule_id = 1 [json_name = "rule_id"];
+  optional string reason = 2 [json_name = "reason"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrContractPrOverrides { repeated PrContractPrOverridesItem items = 1; }
+
+message PrContractPr {
+  PrContractPrPresentation presentation = 1 [json_name = "presentation"];
+  PrContractPrComplexity complexity = 2 [json_name = "complexity"];
+  PrContractPrProfiles profiles = 3 [json_name = "profiles"];
+  PrContractPrOverrides overrides = 4 [json_name = "overrides"];
+}
+
+message PrContract {
+  optional uint32 schema_version = 1 [json_name = "schema_version"];
+  PrContractPr pr = 2 [json_name = "pr"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrContractSourceAuthoredPaths { repeated string items = 1; }
+
+message PrContractSource {
+  optional string sha256 = 1 [json_name = "sha256"];
+  optional string path = 2 [json_name = "path"];
+  optional string blob_sha = 3 [json_name = "blobSha"];
+  PrContractSourceAuthoredPaths authored_paths = 4 [json_name = "authoredPaths"];
+  optional string parse_error = 5 [json_name = "parseError"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionInputReferences { repeated string items = 1; }
+
+message PrSubmissionInputDescription {
+  optional string title = 1 [json_name = "title"];
+  optional string body = 2 [json_name = "body"];
+}
+
+message PrSubmissionInputValidationItem {
+  optional string command = 1 [json_name = "command"];
+  optional string result = 2 [json_name = "result"];
+  optional string note = 3 [json_name = "note"];
+  optional string evidence_url = 4 [json_name = "evidenceUrl"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionInputValidation { repeated PrSubmissionInputValidationItem items = 1; }
+
+message PrSubmissionInputOwner {
+  optional string harness = 1 [json_name = "harness"];
+  optional string endpoint = 2 [json_name = "endpoint"];
+  optional string session_id = 3 [json_name = "sessionId"];
+  optional string label = 4 [json_name = "label"];
+}
+
+message PrSubmissionInput {
+  optional string mode = 1 [json_name = "mode"];
+  optional string head_repository = 2 [json_name = "headRepository"];
+  optional string update_url = 3 [json_name = "updateUrl"];
+  PrContract contract = 4 [json_name = "contract"];
+  PrContractSource contract_source = 5 [json_name = "contractSource"];
+  PrSubmissionInputReferences references = 6 [json_name = "references"];
+  PrSubmissionInputDescription description = 7 [json_name = "description"];
+  optional string request_id = 8 [json_name = "requestId"];
+  optional string repository = 9 [json_name = "repository"];
+  optional string head_ref = 10 [json_name = "headRef"];
+  optional string head_sha = 11 [json_name = "headSha"];
+  optional string base_ref = 12 [json_name = "baseRef"];
+  optional string purpose = 13 [json_name = "purpose"];
+  optional string problem = 14 [json_name = "problem"];
+  optional string outcome = 15 [json_name = "outcome"];
+  PrSubmissionInputValidation validation = 16 [json_name = "validation"];
+  optional bool draft = 17 [json_name = "draft"];
+  PrSubmissionInputOwner owner = 18 [json_name = "owner"];
+}
+
+message PrRepositorySnapshotReferencesItem {
+  optional string repository = 1 [json_name = "repository"];
+  optional int64 number = 2 [json_name = "number"];
+  optional string kind = 3 [json_name = "kind"];
+  optional bool private = 4 [json_name = "private"];
+  optional string title = 5 [json_name = "title"];
+  optional string body = 6 [json_name = "body"];
+  optional string url = 7 [json_name = "url"];
+  optional string updated_at = 8 [json_name = "updatedAt"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRepositorySnapshotReferences { repeated PrRepositorySnapshotReferencesItem items = 1; }
+
+message PrRepositorySnapshotExisting {
+  optional string url = 1 [json_name = "url"];
+  optional string title = 2 [json_name = "title"];
+  optional string body = 3 [json_name = "body"];
+  optional string head_sha = 4 [json_name = "headSha"];
+  optional string head_repository = 5 [json_name = "headRepository"];
+  optional string head_ref = 6 [json_name = "headRef"];
+  optional string base_ref = 7 [json_name = "baseRef"];
+  optional string base_sha = 8 [json_name = "baseSha"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRepositorySnapshotFiles { repeated string items = 1; }
+
+message PrRepositorySnapshotSourcesItem {
+  optional string path = 1 [json_name = "path"];
+  optional string sha = 2 [json_name = "sha"];
+  optional string text = 3 [json_name = "text"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRepositorySnapshotSources { repeated PrRepositorySnapshotSourcesItem items = 1; }
+
+message PrRepositorySnapshot {
+  optional string repository = 1 [json_name = "repository"];
+  optional string head_sha = 2 [json_name = "headSha"];
+  optional string base_sha = 3 [json_name = "baseSha"];
+  optional bool private = 4 [json_name = "private"];
+  PrContract contract = 5 [json_name = "contract"];
+  PrContractSource contract_source = 6 [json_name = "contractSource"];
+  PrRepositorySnapshotReferences references = 7 [json_name = "references"];
+  PrRepositorySnapshotExisting existing = 8 [json_name = "existing"];
+  PrRepositorySnapshotFiles files = 9 [json_name = "files"];
+  optional string diff = 10 [json_name = "diff"];
+  PrRepositorySnapshotSources sources = 11 [json_name = "sources"];
+  optional string source_digest = 12 [json_name = "sourceDigest"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrTitlePrefixes { repeated string items = 1; }
+
+message PrBodyContains { optional string value = 1; }
+message PrTitlePrefix { PrTitlePrefixes prefixes = 1; }
+message PrTitleMaxLength { optional int64 maximum = 1; }
+message PrEvidenceRequired {}
+message PrSemanticRequirement {}
+message PrRequirementCheck {
+  oneof rule {
+    PrBodyContains body_contains = 1 [json_name = "body_contains"];
+    PrTitlePrefix title_prefix = 2 [json_name = "title_prefix"];
+    PrTitleMaxLength title_max_length = 3 [json_name = "title_max_length"];
+    PrEvidenceRequired evidence_required = 4 [json_name = "evidence_required"];
+    PrSemanticRequirement semantic = 5 [json_name = "semantic"];
+  }
+}
+
+message PrRequirement {
+  optional string id = 1 [json_name = "id"];
+  optional string strength = 2 [json_name = "strength"];
+  optional string category = 3 [json_name = "category"];
+  optional string description = 4 [json_name = "description"];
+  optional string source_path = 5 [json_name = "sourcePath"];
+  optional string source_sha = 6 [json_name = "sourceSha"];
+  optional int64 line = 7 [json_name = "line"];
+  optional string quote = 8 [json_name = "quote"];
+  optional string condition = 9 [json_name = "condition"];
+  optional string scope = 10 [json_name = "scope"];
+  PrRequirementCheck check = 11 [json_name = "check"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRequirements { repeated PrRequirement items = 1; }
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrTextList { repeated string items = 1; }
+
+message PrPolicyAnalysis {
+  PrRequirements requirements = 1 [json_name = "requirements"];
+  optional string template = 2 [json_name = "template"];
+  PrTextList blockers = 3 [json_name = "blockers"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrFactorEvidenceRefs { repeated string items = 1; }
+
+message PrComplexityFactor {
+  optional string factor = 1 [json_name = "factor"];
+  optional int64 rating = 2 [json_name = "rating"];
+  optional string rationale = 3 [json_name = "rationale"];
+  PrFactorEvidenceRefs evidence_refs = 4 [json_name = "evidenceRefs"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrComplexityFactors { repeated PrComplexityFactor items = 1; }
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrClaimEvidenceRefs { repeated string items = 1; }
+
+message PrBehaviorClaim {
+  optional string statement = 1 [json_name = "statement"];
+  optional string falsification = 2 [json_name = "falsification"];
+  PrClaimEvidenceRefs evidence_refs = 3 [json_name = "evidenceRefs"];
+  optional string basis = 4 [json_name = "basis"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrBehaviorClaims { repeated PrBehaviorClaim items = 1; }
+
+message PrChangeAnalysis {
+  PrComplexityFactors factors = 1 [json_name = "factors"];
+  optional string tier = 2 [json_name = "tier"];
+  optional string rationale = 3 [json_name = "rationale"];
+  optional string outcome = 4 [json_name = "outcome"];
+  PrBehaviorClaims claims = 5 [json_name = "claims"];
+  PrTextList limitations = 6 [json_name = "limitations"];
+  PrTextList blockers = 7 [json_name = "blockers"];
+}
+
+message PrRequirementAssessment {
+  optional string rule_id = 1 [json_name = "ruleId"];
+  optional string status = 2 [json_name = "status"];
+  optional string rationale = 3 [json_name = "rationale"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRequirementAssessments { repeated PrRequirementAssessment items = 1; }
+
+message PrDescription {
+  optional string title = 1 [json_name = "title"];
+  optional string body = 2 [json_name = "body"];
+  PrRequirementAssessments requirement_checks = 3 [json_name = "requirementChecks"];
+  PrTextList blockers = 4 [json_name = "blockers"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrFindingEvidenceRefs { repeated string items = 1; }
+
+message PrEvaluationFinding {
+  optional string rule_id = 1 [json_name = "ruleId"];
+  optional string status = 2 [json_name = "status"];
+  optional string message = 3 [json_name = "message"];
+  PrFindingEvidenceRefs evidence_refs = 4 [json_name = "evidenceRefs"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrEvaluationFindings { repeated PrEvaluationFinding items = 1; }
+
+message PrEvaluationAssessment {
+  optional string rule_id = 1 [json_name = "ruleId"];
+  optional string status = 2 [json_name = "status"];
+  optional string rationale = 3 [json_name = "rationale"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrEvaluationAssessments { repeated PrEvaluationAssessment items = 1; }
+
+message PrEvaluation {
+  PrEvaluationFindings findings = 1 [json_name = "findings"];
+  PrEvaluationAssessments requirement_checks = 2 [json_name = "requirementChecks"];
+}
+
+message PrStageOutput {
+  oneof value {
+    PrPolicyAnalysis policy = 1 [json_name = "policy"];
+    PrChangeAnalysis change = 2 [json_name = "change"];
+    PrDescription writer = 3 [json_name = "writer"];
+    PrEvaluation evaluator = 4 [json_name = "evaluator"];
+    google.protobuf.Value malformed = 5 [json_name = "malformed"];
+  }
+}
+
+message PrStage {
+  optional bool invalidated = 1 [json_name = "invalidated"];
+  optional string role = 2 [json_name = "role"];
+  optional string model = 3 [json_name = "model"];
+  optional string prompt_digest = 4 [json_name = "promptDigest"];
+  optional string raw = 5 [json_name = "raw"];
+  PrStageOutput result = 6 [json_name = "result"];
+  optional int64 at = 7 [json_name = "at"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrStages { repeated PrStage items = 1; }
+
+message PrBrief {
+  optional uint32 schema_version = 1 [json_name = "schemaVersion"];
+  PrSubmissionInput request = 2 [json_name = "request"];
+  optional string base_sha = 3 [json_name = "baseSha"];
+  optional int64 policy_version = 4 [json_name = "policyVersion"];
+  PrChangeAnalysis change = 5 [json_name = "change"];
+  PrDescription draft = 6 [json_name = "draft"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionDecisionBlockers { repeated string items = 1; }
+
+message PrSubmissionDecision {
+  optional string status = 1 [json_name = "status"];
+  optional int64 score = 2 [json_name = "score"];
+  optional string tier = 3 [json_name = "tier"];
+  optional int64 prose_words = 4 [json_name = "proseWords"];
+  PrSubmissionDecisionBlockers blockers = 5 [json_name = "blockers"];
+  PrEvaluationFindings findings = 6 [json_name = "findings"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionFlowNodes { repeated google.protobuf.Value items = 1; }
+
+message PrSubmissionFlow {
+  optional bool available = 1 [json_name = "available"];
+  optional string scope = 2 [json_name = "scope"];
+  optional string analysis_id = 3 [json_name = "analysisId"];
+  optional int64 schema_version = 4 [json_name = "schemaVersion"];
+  PrFlowCoverage coverage = 5 [json_name = "coverage"];
+  optional int64 node_count = 6 [json_name = "nodeCount"];
+  optional int64 edge_count = 7 [json_name = "edgeCount"];
+  PrSubmissionFlowNodes nodes = 8 [json_name = "nodes"];
+  PrSubmissionFlowNodes edges = 9 [json_name = "edges"];
+  PrSubmissionFlowNodes interactions = 10 [json_name = "interactions"];
+  optional int64 interaction_count = 11 [json_name = "interactionCount"];
+  PrSubmissionFlowNodes diagnostics = 12 [json_name = "diagnostics"];
+  optional bool limited = 13 [json_name = "limited"];
+  optional string full_capture_failure = 14 [json_name = "fullCaptureFailure"];
+  optional string reason = 15 [json_name = "reason"];
+  optional string alternative_evidence = 16 [json_name = "alternativeEvidence"];
+}
+
+message PrSubmissionImagesItem {
+  optional string url = 1 [json_name = "url"];
+  optional string sha256 = 2 [json_name = "sha256"];
+  optional string content_type = 3 [json_name = "contentType"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionImages { repeated PrSubmissionImagesItem items = 1; }
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrSubmissionWorkerPids { repeated int64 items = 1; }
+
+message PrSubmission {
+  optional string id = 1 [json_name = "id"];
+  PrSubmissionInput request = 2 [json_name = "request"];
+  optional string state = 3 [json_name = "state"];
+  optional string detail = 4 [json_name = "detail"];
+  optional int64 created_at = 5 [json_name = "createdAt"];
+  optional int64 updated_at = 6 [json_name = "updatedAt"];
+  PrRepositorySnapshot snapshot = 7 [json_name = "snapshot"];
+  optional int64 policy_version = 8 [json_name = "policyVersion"];
+  optional string policy_digest = 9 [json_name = "policyDigest"];
+  PrStages stages = 10 [json_name = "stages"];
+  PrBrief brief = 11 [json_name = "brief"];
+  PrContract contract = 12 [json_name = "contract"];
+  PrEvaluation evaluation = 13 [json_name = "evaluation"];
+  PrSubmissionDecision decision = 14 [json_name = "decision"];
+  optional string prepared_digest = 15 [json_name = "preparedDigest"];
+  optional bool publication_requested = 16 [json_name = "publicationRequested"];
+  optional bool publication_attempted = 17 [json_name = "publicationAttempted"];
+  PrSubmissionFlow flow = 18 [json_name = "flow"];
+  PrSubmissionImages images = 19 [json_name = "images"];
+  optional string pr_url = 20 [json_name = "prUrl"];
+  optional string pr_id = 21 [json_name = "prId"];
+  PrSubmissionWorkerPids worker_pids = 22 [json_name = "workerPids"];
+  optional int64 notification_revision = 23 [json_name = "notificationRevision"];
+}
+
+message PrRepositoryPolicyComplexityProfilesRoutine {
+  optional int64 min_words = 1 [json_name = "minWords"];
+  optional int64 max_words = 2 [json_name = "maxWords"];
+  optional string guidance = 3 [json_name = "guidance"];
+  optional bool advisory = 4 [json_name = "advisory"];
+}
+
+message PrRepositoryPolicyComplexityProfiles {
+  PrRepositoryPolicyComplexityProfilesRoutine routine = 1 [json_name = "routine"];
+  PrRepositoryPolicyComplexityProfilesRoutine standard = 2 [json_name = "standard"];
+  PrRepositoryPolicyComplexityProfilesRoutine complex = 3 [json_name = "complex"];
+}
+
+message PrRepositoryPolicyCitationCorrectionsItem {
+  optional string rule_id = 1 [json_name = "ruleId"];
+  optional int64 reported_line = 2 [json_name = "reportedLine"];
+  optional int64 verified_line = 3 [json_name = "verifiedLine"];
+}
+
+// Wrapper preserves an absent list versus a present empty list.
+message PrRepositoryPolicyCitationCorrections { repeated PrRepositoryPolicyCitationCorrectionsItem items = 1; }
+
+message PrRepositoryPolicy {
+  PrRepositoryPolicyComplexityProfiles complexity_profiles = 1 [json_name = "complexityProfiles"];
+  optional uint32 schema_version = 2 [json_name = "schemaVersion"];
+  optional string repository = 3 [json_name = "repository"];
+  optional int64 version = 4 [json_name = "version"];
+  optional string source_digest = 5 [json_name = "sourceDigest"];
+  optional uint32 analyst_version = 6 [json_name = "analystVersion"];
+  optional uint32 stock_version = 7 [json_name = "stockVersion"];
+  optional int64 created_at_ms = 8 [json_name = "createdAtMs"];
+  PrRepositoryPolicyCitationCorrections citation_corrections = 9 [json_name = "citationCorrections"];
+  PrRepositorySnapshotSources sources = 10 [json_name = "sources"];
+  PrPolicyAnalysis analysis = 11 [json_name = "analysis"];
+}
+
+// PR Flow schema-4 coverage counts; heterogeneous graph records remain Value.
+message PrFlowCoverage {
+  optional int64 total_nodes = 1 [json_name = "total_nodes"];
+  optional int64 shown_nodes = 2 [json_name = "shown_nodes"];
+  optional int64 omitted_context_nodes = 3 [json_name = "omitted_context_nodes"];
+  optional int64 collapsed_detail_nodes = 4 [json_name = "collapsed_detail_nodes"];
+}

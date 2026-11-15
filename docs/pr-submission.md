@@ -1,6 +1,6 @@
 # PR submission
 
-Octo accepts purpose and observed validation from a calling Codex session, drafts through isolated Pi workers, publishes a new PR, then enrolls tracking to that session. Both public and private repositories are supported without allowlists. Existing PR edits remain outside this first submission workflow. The caller commits and pushes first; Octo does not change the source branch.
+Octo accepts purpose and observed validation from a calling Codex session, drafts through isolated Pi workers, publishes a new PR, then enrolls tracking to that session. Both public and private repositories are supported without allowlists. Existing PR descriptions can also be regenerated through the executable contract workflow. The caller commits and pushes first; Octo does not change the source branch.
 
 Use `submit-pr --intent-file FILE`. [The intent schema](../schemas/pr-intent.v1.schema.json) defines the request, including a stable request ID, repository, pushed head SHA and refs, purpose, validation, draft status, and caller target. Repeating a request ID with identical input returns its existing operation; changed facts require a new request ID. `submit-pr --purpose 'Problem and intended outcome' --thread-id SESSION` derives repository and branch facts from the current checkout. The paired dotfiles hook supplies session identity and working directory.
 

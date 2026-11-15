@@ -1,3 +1,4 @@
+import { parsedConfig } from "./public-contracts.js";
 import { posix } from "node:path";
 import { githubReads } from "../github-api.js";
 import { ghRead, type ReadGitHub, canonicalPR } from "../tracking/github.js";
@@ -30,6 +31,12 @@ export interface PublishedPR {
   headSha: string;
   body: string;
   state: string;
+  title?: string;
+  baseRef?: string;
+  baseSha?: string;
+  targetBaseSha?: string;
+  headRepository?: string;
+  headRef?: string;
 }
 export interface SubmissionGitHub {
   snapshot(
@@ -40,6 +47,7 @@ export interface SubmissionGitHub {
     request: SubmissionInput,
     baseSha: string,
     signal: AbortSignal,
+    snapshot?: RepositorySnapshot,
   ): Promise<void>;
   find(
     request: SubmissionInput,
@@ -53,8 +61,20 @@ export interface SubmissionGitHub {
     signal: AbortSignal,
   ): Promise<PublishedPR>;
 }
+export type WriteSubmissionGitHub = (
+  path: string,
+  fields: Record<string, string | boolean>,
+  method: "POST" | "PATCH",
+  signal: AbortSignal,
+) => Promise<unknown>;
 export class GitHubSubmissions implements SubmissionGitHub {
-  constructor(private read: ReadGitHub = ghRead) {}
+  constructor(
+    private read: ReadGitHub = ghRead,
+    private write: WriteSubmissionGitHub = (path, fields, method, signal) =>
+      method === "POST"
+        ? githubReads.post(path, fields, signal)
+        : githubReads.patch(path, fields, signal),
+  ) {}
   private async ref(
     repository: string,
     ref: string,
@@ -72,19 +92,65 @@ export class GitHubSubmissions implements SubmissionGitHub {
     request: SubmissionInput,
     baseSha: string,
     signal: AbortSignal,
+    snapshot?: RepositorySnapshot,
   ): Promise<void> {
     const [head, base] = await Promise.all([
-      this.ref(request.repository, request.headRef, signal),
+      this.ref(
+        request.headRepository ?? request.repository,
+        request.headRef,
+        signal,
+      ),
       this.ref(request.repository, request.baseRef, signal),
     ]);
     if (head !== request.headSha)
-      throw new Error(
-        "Head branch changed; submit a new request for its new revision",
-      );
+      throw new Error("Head branch changed; prepare its new revision");
     if (base !== baseSha)
-      throw new Error(
-        "Base branch changed; submit a new request with fresh analysis",
-      );
+      throw new Error("Base branch changed; prepare with fresh analysis");
+    if (request.updateUrl !== undefined) {
+      if (snapshot?.existing === undefined)
+        throw new Error("Missing original PR description for update");
+      const current = await this.existing(request, signal);
+      if (
+        current.title !== snapshot.existing.title ||
+        current.body !== snapshot.existing.body ||
+        current.headSha !== snapshot.existing.headSha ||
+        current.headRepository !== snapshot.existing.headRepository ||
+        current.headRef !== snapshot.existing.headRef ||
+        current.baseRef !== snapshot.existing.baseRef
+      )
+        throw new Error(
+          "PR title, body, head, or base changed after preparation; prepare again",
+        );
+    }
+  }
+  private updatePath(request: SubmissionInput): string {
+    const url = canonicalPR(request.updateUrl ?? "");
+    if (
+      !url
+        .toLowerCase()
+        .startsWith(
+          `https://github.com/${request.repository.toLowerCase()}/pull/`,
+        )
+    )
+      throw new Error("Update PR belongs to a different repository");
+    return `repos/${request.repository}/pulls/${url.split("/").at(-1) ?? ""}`;
+  }
+  private async existing(request: SubmissionInput, signal: AbortSignal) {
+    const item = record(await this.read(this.updatePath(request), signal)),
+      head = record(item["head"]),
+      base = record(item["base"]);
+    if (item["state"] !== "open")
+      throw new Error("Only open PR descriptions can be updated");
+    return {
+      url: canonicalPR(string(item["html_url"])),
+      title: string(item["title"]),
+      body: typeof item["body"] === "string" ? item["body"] : "",
+      headSha: string(head["sha"]),
+      headRepository: string(record(head["repo"])["full_name"]),
+      headRef: string(head["ref"]),
+      baseRef: string(base["ref"]),
+      baseSha: string(base["sha"]),
+    };
   }
   async snapshot(
     request: SubmissionInput,
@@ -95,19 +161,35 @@ export class GitHubSubmissions implements SubmissionGitHub {
     if (typeof info["private"] !== "boolean")
       throw new Error("Repository visibility is unavailable");
     const [head, baseSha] = await Promise.all([
-      this.ref(repository, request.headRef, signal),
+      this.ref(request.headRepository ?? repository, request.headRef, signal),
       this.ref(repository, request.baseRef, signal),
     ]);
     if (head !== request.headSha)
       throw new Error("Push the selected head revision before submitting");
+    const existing =
+      request.updateUrl === undefined
+        ? undefined
+        : await this.existing(request, signal);
+    if (
+      existing !== undefined &&
+      (existing.headSha !== head ||
+        existing.headRepository.toLowerCase() !==
+          (request.headRepository ?? repository).toLowerCase() ||
+        existing.headRef !== request.headRef ||
+        existing.baseRef !== request.baseRef)
+    )
+      throw new Error("Update PR identity disagrees with selected refs");
+    const headOwner =
+      (request.headRepository ?? repository).split("/")[0] ?? "";
     const comparison = record(
       await this.read(
-        `repos/${repository}/compare/${baseSha}...${head}`,
+        `repos/${repository}/compare/${baseSha}...${encodeURIComponent(`${headOwner}:${head}`)}`,
         signal,
       ),
     );
     const files = list(comparison["files"]).map(record);
-    if (files.length === 0) throw new Error("No change against selected base");
+    if (files.length === 0 && request.mode !== "policy")
+      throw new Error("No change against selected base");
     if (files.length >= 300)
       throw new Error(
         "Compare file coverage may be incomplete; split this submission",
@@ -177,9 +259,62 @@ export class GitHubSubmissions implements SubmissionGitHub {
           pending.push(linked);
       }
     }
+    const configSha = blobs.get("octo-manager.toml");
+    let contractToml: string | undefined;
+    if (configSha !== undefined) {
+      const config = record(
+        await this.read(`repos/${repository}/git/blobs/${configSha}`, signal),
+      );
+      if (config["encoding"] !== "base64")
+        throw new Error("Unsupported Octo config encoding");
+      contractToml = Buffer.from(string(config["content"]), "base64").toString(
+        "utf8",
+      );
+    }
+    const referenceVisibility = new Map([[repository, info["private"]]]);
+    const references: NonNullable<RepositorySnapshot["references"]> = [];
+    for (const reference of request.references ?? []) {
+      const match =
+        /^(?:https:\/\/github\.com\/([^/]+\/[^/]+)\/(?:pull|issues)\/|([\w.-]+\/[\w.-]+)?#)([1-9]\d*)$/u.exec(
+          reference,
+        );
+      if (match === null)
+        throw new Error(`Invalid GitHub reference: ${reference}`);
+      const refRepo = match[1] ?? match[2] ?? repository,
+        number = Number(match[3]);
+      const item = record(
+        await this.read(`repos/${refRepo}/issues/${String(number)}`, signal),
+      );
+      let refPrivate = referenceVisibility.get(refRepo);
+      if (refPrivate === undefined) {
+        const refInfo = record(await this.read("repos/" + refRepo, signal));
+        if (typeof refInfo["private"] !== "boolean")
+          throw new Error("Reference visibility is unavailable");
+        refPrivate = refInfo["private"];
+        referenceVisibility.set(refRepo, refPrivate);
+      }
+      const body = typeof item["body"] === "string" ? item["body"] : "";
+      if (Buffer.byteLength(body) > 32000)
+        throw new Error(`Reference body exceeds context bound: ${reference}`);
+      references.push({
+        repository: refRepo,
+        private: refPrivate,
+        number,
+        kind: item["pull_request"] === undefined ? "issue" : "pr",
+        title: string(item["title"]),
+        body,
+        url: string(item["html_url"]),
+        updatedAt: string(item["updated_at"]),
+      });
+    }
     sources.sort((a, b) => a.path.localeCompare(b.path));
     return {
       repository,
+      ...(contractToml === undefined
+        ? {}
+        : parsedConfig(contractToml, "octo-manager.toml", configSha)),
+      ...(existing === undefined ? {} : { existing }),
+      references,
       headSha: head,
       baseSha,
       private: info["private"],
@@ -199,7 +334,29 @@ export class GitHubSubmissions implements SubmissionGitHub {
     marker: string,
     signal: AbortSignal,
   ): Promise<PublishedPR | undefined> {
-    const owner = request.repository.split("/")[0] ?? "";
+    if (request.updateUrl !== undefined) {
+      const item = await this.existing(request, signal);
+      return item.body.includes(marker)
+        ? {
+            url: item.url,
+            headSha: item.headSha,
+            body: item.body,
+            title: item.title,
+            baseRef: item.baseRef,
+            baseSha: item.baseSha,
+            targetBaseSha: await this.ref(
+              request.repository,
+              item.baseRef,
+              signal,
+            ),
+            headRepository: item.headRepository,
+            headRef: item.headRef,
+            state: "open",
+          }
+        : undefined;
+    }
+    const owner =
+      (request.headRepository ?? request.repository).split("/")[0] ?? "";
     for (let page = 1; page <= 10; page++) {
       const items = list(
         await this.read(
@@ -213,6 +370,18 @@ export class GitHubSubmissions implements SubmissionGitHub {
         if (body.includes(marker))
           return {
             url: canonicalPR(string(item["html_url"])),
+            title: string(item["title"]),
+            baseRef: string(record(item["base"])["ref"]),
+            baseSha: string(record(item["base"])["sha"]),
+            targetBaseSha: await this.ref(
+              request.repository,
+              string(record(item["base"])["ref"]),
+              signal,
+            ),
+            headRepository: string(
+              record(record(item["head"])["repo"])["full_name"],
+            ),
+            headRef: string(record(item["head"])["ref"]),
             headSha: string(record(item["head"])["sha"]),
             body,
             state: string(item["state"]),
@@ -234,23 +403,55 @@ export class GitHubSubmissions implements SubmissionGitHub {
     marker: string,
     signal: AbortSignal,
   ): Promise<PublishedPR> {
-    const item = record(
-      await githubReads.post(
-        `repos/${request.repository}/pulls`,
+    const written = record(
+      await this.write(
+        request.updateUrl === undefined
+          ? `repos/${request.repository}/pulls`
+          : this.updatePath(request),
         {
           title: draft.title,
           body: `${draft.body}\n\n${marker}`,
-          head: request.headRef,
-          base: request.baseRef,
-          draft: request.draft,
+          ...(request.updateUrl === undefined
+            ? {
+                head: `${(request.headRepository ?? request.repository).split("/")[0] ?? ""}:${request.headRef}`,
+                base: request.baseRef,
+                draft: request.draft,
+              }
+            : {}),
         },
+        request.updateUrl === undefined ? "POST" : "PATCH",
+        signal,
+      ),
+    );
+    const url = canonicalPR(string(written["html_url"]));
+    if (
+      !url
+        .toLowerCase()
+        .startsWith(
+          `https://github.com/${request.repository.toLowerCase()}/pull/`,
+        )
+    )
+      throw new Error("Published PR belongs to another repository");
+    const item = record(
+      await this.read(
+        `repos/${request.repository}/pulls/${url.split("/").at(-1) ?? ""}`,
         signal,
       ),
     );
     return {
       url: canonicalPR(string(item["html_url"])),
+      baseRef: string(record(item["base"])["ref"]),
+      baseSha: string(record(item["base"])["sha"]),
+      targetBaseSha: await this.ref(
+        request.repository,
+        string(record(item["base"])["ref"]),
+        signal,
+      ),
+      headRepository: string(record(record(item["head"])["repo"])["full_name"]),
+      headRef: string(record(item["head"])["ref"]),
       headSha: string(record(item["head"])["sha"]),
       body: string(item["body"]),
+      title: string(item["title"]),
       state: string(item["state"]),
     };
   }

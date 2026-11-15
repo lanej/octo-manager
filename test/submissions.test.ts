@@ -1,3 +1,4 @@
+import { parsedConfig } from "../src/submissions/public-contracts.js";
 import {
   anchorPolicy,
   policyBlockers,
@@ -5,7 +6,6 @@ import {
   parse,
   PolicyAnalysisSchema,
   ChangeAnalysisSchema,
-  WriterSchema,
 } from "../src/submissions/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -89,14 +89,20 @@ class GitHub implements SubmissionGitHub {
   }
   publish(
     input: SubmissionInput,
-    draft: { body: string },
+    draft: { title: string; body: string },
     marker: string,
   ): Promise<PublishedPR> {
     this.writes++;
     const value = {
       url: `https://github.com/owner/repo/pull/${String(this.writes)}`,
       headSha: input.headSha,
-      body: draft.body + marker,
+      title: draft.title,
+      baseRef: input.baseRef,
+      baseSha: "b".repeat(40),
+      targetBaseSha: "b".repeat(40),
+      headRepository: input.headRepository ?? input.repository,
+      headRef: input.headRef,
+      body: `${draft.body}\n\n${marker}`,
       state: "open",
     };
     this.published.set(input.requestId, value);
@@ -134,6 +140,18 @@ function runner(
           }
         : role === "change"
           ? {
+              factors: [
+                "breadth",
+                "behavior",
+                "coupling",
+                "compatibility",
+                "state_risk",
+              ].map((factor) => ({
+                factor,
+                rating: 0,
+                rationale: "Documentation-only fixture",
+                evidenceRefs: ["diff"],
+              })),
               tier: "routine",
               rationale: "One local documentation change.",
               outcome: "Explains behavior.",
@@ -149,15 +167,30 @@ function runner(
               limitations: [],
               blockers: [],
             }
-          : {
-              title: "docs: explain example behavior",
-              body: block
-                ? "Explains the example."
-                : "Explains behavior in the example so readers can follow its purpose.",
-              requirementChecks: [],
-              blockers: [],
-              ...draft,
-            };
+          : role === "evaluator"
+            ? {
+                findings: [
+                  "problem-fidelity",
+                  "claim-support",
+                  "scanability",
+                  "artifact-quality",
+                ].map((ruleId) => ({
+                  ruleId,
+                  status: "valid",
+                  message: "Fixture satisfies this criterion",
+                  evidenceRefs: ["diff"],
+                })),
+                requirementChecks: [],
+              }
+            : {
+                title: "docs: explain example behavior",
+                body: block
+                  ? "Explains the example."
+                  : "Explains behavior in the example so readers can follow its purpose.",
+                requirementChecks: [],
+                blockers: [],
+                ...draft,
+              };
     return Promise.resolve({
       role,
       model,
@@ -179,6 +212,9 @@ async function harness(run: RunStage, github = new GitHub()) {
     );
   let service = new SubmissionService(store.submissions, tracking, {
     github,
+    directory,
+    flow: () =>
+      Promise.resolve({ available: false, reason: "Controlled test" }),
     run,
     instructions: (role) => Promise.resolve(`Bounded ${role}`),
   });
@@ -207,6 +243,9 @@ async function harness(run: RunStage, github = new GitHub()) {
       );
       service = new SubmissionService(store.submissions, tracking, {
         github,
+        directory,
+        flow: () =>
+          Promise.resolve({ available: false, reason: "Controlled test" }),
         run,
         instructions: (role) => Promise.resolve(`Bounded ${role}`),
       });
@@ -231,7 +270,7 @@ test("publishes once, enrolls, reuses policy, and keeps private submissions supp
       () => h.store.submissions.get(value.id).state === State.Succeeded,
     );
     expect(h.github.writes).toBe(1);
-    expect(roles.sort()).toEqual(["change", "policy", "writer"]);
+    expect(roles.sort()).toEqual(["change", "evaluator", "policy", "writer"]);
     const agent = h.store.tracking.agents()[0];
     if (agent === undefined) throw new Error("Missing caller");
     const page = h.store.tracking.inbox.list(agent.id);
@@ -401,8 +440,10 @@ test("conditional requirements need source-backed not-applicable assessments", a
         };
         return { ...stage, result, raw: JSON.stringify(result) };
       }
-      if (role === "writer") {
-        const draft = parse(WriterSchema, stage.result);
+      if (role === "evaluator") {
+        const draft = stage.result;
+        if (typeof draft !== "object" || draft === null)
+          throw new Error("Missing evaluation");
         const result = {
           ...draft,
           requirementChecks: [
@@ -428,12 +469,14 @@ test("conditional requirements need source-backed not-applicable assessments", a
       const saved = h.store.submissions.get(value.id);
       if (condition === "When changing keybindings:") {
         expect(saved.state).toBe(State.Succeeded);
-        expect(saved.brief?.draft.requirementChecks[0]?.status).toBe(
+        expect(saved.evaluation?.requirementChecks[0]?.status).toBe(
           "not_applicable",
         );
         expect(h.github.writes).toBe(1);
       } else {
-        expect(saved.state).toBe(State.NeedsInput);
+        expect(saved.state).toBe(
+          condition === undefined ? State.NeedsInput : State.Failed,
+        );
         expect(saved.detail).toContain(
           condition === undefined
             ? "verified source condition"
@@ -582,7 +625,7 @@ test("recovers uncertain publication without repeating workers or creating anoth
       () => h.store.submissions.get(value.id).state === State.Succeeded,
     );
     expect(h.github.writes).toBe(1);
-    expect(roles).toHaveLength(3);
+    expect(roles).toHaveLength(4);
     const messages = h.store.tracking.inbox.list(agent.id, 0, true).messages;
     expect(messages).toHaveLength(2);
     expect(messages[0]?.applicable).toBe(false);
@@ -718,7 +761,7 @@ test("a changed policy source invalidates the cache and unverified citations blo
     h.github.revision = "policy-v2";
     const second = h.service.submit(request("changed-policy"));
     await until(
-      () => h.store.submissions.get(second.id).state === State.NeedsInput,
+      () => h.store.submissions.get(second.id).state === State.Failed,
     );
     expect(roles.filter((role) => role === "policy")).toHaveLength(2);
     expect(h.github.writes).toBe(1);
@@ -858,7 +901,11 @@ test("ambiguous exact quotes cannot repair an invalid citation anchor", async ()
 });
 
 test("retry reruns invalid worker results without discarding failed output or repeating valid stages", async () => {
-  for (const invalid of [null, { title: "Missing required draft fields" }]) {
+  for (const invalid of [
+    null,
+    "",
+    { title: "Missing required draft fields" },
+  ]) {
     const roles: Role[] = [],
       good = runner(roles);
     let fail = true;
@@ -884,7 +931,12 @@ test("retry reruns invalid worker results without discarding failed output or re
         fail = false;
         return {
           ...value,
-          raw: invalid === null ? "{malformed" : JSON.stringify(invalid),
+          raw:
+            invalid === null
+              ? "{malformed"
+              : invalid === ""
+                ? ""
+                : JSON.stringify(invalid),
           result: invalid,
         };
       }
@@ -983,6 +1035,223 @@ test("a removed endpoint cannot starve healthy submission recipients", async () 
     expect(unavailable?.nextCheckAt).toBeGreaterThan(Date.now());
   } finally {
     await delivery?.close();
+    await h.close();
+  }
+});
+
+test("prepare stores a valid immutable result and publishes only on explicit request", async () => {
+  const roles: Role[] = [],
+    h = await harness(runner(roles));
+  try {
+    const value = h.service.submit({ ...request("prepared"), mode: "prepare" });
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    const saved = h.store.submissions.get(value.id);
+    expect(saved.decision?.status).toBe("valid");
+    expect(saved.preparedDigest).toBeDefined();
+    expect(h.github.writes).toBe(0);
+    h.service.publishPrepared(value.id);
+    h.service.publishPrepared(value.id);
+    await until(() => h.store.submissions.get(value.id).prUrl !== undefined);
+    expect(h.github.writes).toBe(1);
+    expect(roles.filter((role) => role === "evaluator")).toHaveLength(1);
+  } finally {
+    await h.close();
+  }
+});
+test("validation accepts caller text without a writer and independent rejection prevents publication", async () => {
+  const roles: Role[] = [],
+    base = runner(roles);
+  const run: RunStage = async (role, ...args) => {
+    const value = await base(role, ...args);
+    if (role !== "evaluator") return value;
+    return {
+      ...value,
+      result: {
+        findings: [
+          "problem-fidelity",
+          "claim-support",
+          "scanability",
+          "artifact-quality",
+        ].map((ruleId) => ({
+          ruleId,
+          status: ruleId === "problem-fidelity" ? "invalid" : "valid",
+          message: "Description contradicts the supplied problem",
+          evidenceRefs: ["diff"],
+        })),
+        requirementChecks: [],
+      },
+    };
+  };
+  const h = await harness(run);
+  try {
+    const value = h.service.submit({
+      ...request("validate-existing-text"),
+      mode: "validate",
+      description: {
+        title: "docs: behavior",
+        body: "Explains behavior incorrectly.",
+      },
+    });
+    await until(
+      () => h.store.submissions.get(value.id).state === State.NeedsInput,
+    );
+    expect(h.store.submissions.get(value.id).decision?.status).toBe("invalid");
+    expect(roles).not.toContain("writer");
+    expect(h.github.writes).toBe(0);
+    expect(() => h.service.publishPrepared(value.id)).toThrow();
+  } finally {
+    await h.close();
+  }
+});
+test("edited prepared bytes fail their binding before any remote write", async () => {
+  const h = await harness(runner([]));
+  try {
+    const value = h.service.submit({
+      ...request("edited-preparation"),
+      mode: "prepare",
+    });
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    const saved = h.store.submissions.get(value.id);
+    if (saved.brief === undefined) throw new Error("Missing preparation");
+    saved.brief.draft.body = "A replacement that was never evaluated.";
+    h.store.submissions.save(saved);
+    h.service.publishPrepared(value.id);
+    await until(() => h.store.submissions.get(value.id).state === State.Failed);
+    expect(h.store.submissions.get(value.id).detail).toContain(
+      "changed after validation",
+    );
+    expect(h.github.writes).toBe(0);
+  } finally {
+    await h.close();
+  }
+});
+
+test("malformed live complexity output is retained but rerun on retry", async () => {
+  let malformed = true;
+  const roles: Role[] = [],
+    base = runner(roles);
+  const run: RunStage = async (role, ...args) => {
+    const stage = await base(role, ...args);
+    if (role !== "change" || !malformed) return stage;
+    const result = parse(ChangeAnalysisSchema, stage.result);
+    delete result.factors;
+    return { ...stage, result, raw: JSON.stringify(result) };
+  };
+  const h = await harness(run);
+  try {
+    const value = h.service.submit(request("missing-factor"));
+    await until(() => h.store.submissions.get(value.id).state === State.Failed);
+    malformed = false;
+    h.service.retry(value.id);
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    expect(roles.filter((role) => role === "change")).toHaveLength(2);
+    expect(
+      h.store.submissions
+        .get(value.id)
+        .stages.some(
+          (stage) => stage.role === "change" && stage.invalidated === true,
+        ),
+    ).toBe(true);
+  } finally {
+    await h.close();
+  }
+});
+test("lost-write recovery retains uncertainty when a collaborator changes the saved title", async () => {
+  const h = await harness(runner([]));
+  try {
+    h.github.loseResponse = true;
+    const input = request("lost-edited-title"),
+      value = h.service.submit(input);
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Uncertain,
+    );
+    const published = h.github.published.get(input.requestId);
+    if (published === undefined)
+      throw new Error("Missing simulated remote write");
+    published.title = "Collaborator edit";
+    h.service.retry(value.id);
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Uncertain,
+    );
+    expect(h.github.writes).toBe(1);
+    expect(h.store.submissions.get(value.id).detail).toContain(
+      "identity changed",
+    );
+  } finally {
+    await h.close();
+  }
+});
+test("private GitHub context is stopped before any public-target worker receives it", async () => {
+  const github = new GitHub(),
+    original = github.snapshot.bind(github),
+    roles: Role[] = [];
+  github.snapshot = async (input) => ({
+    ...(await original(input)),
+    references: [
+      {
+        repository: "private/context",
+        private: true,
+        number: 1,
+        kind: "issue",
+        title: "Private issue",
+        body: "Private details",
+        url: "https://github.com/private/context/issues/1",
+        updatedAt: "2026-11-14T00:00:00Z",
+      },
+    ],
+  });
+  const h = await harness(runner(roles), github);
+  try {
+    const value = h.service.submit(request("private-context"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.NeedsInput,
+    );
+    expect(roles).toEqual([]);
+    expect(h.github.writes).toBe(0);
+  } finally {
+    await h.close();
+  }
+});
+
+test("target repository configuration cannot authorize disclosure of caller private context", async () => {
+  const github = new GitHub(),
+    original = github.snapshot.bind(github),
+    roles: Role[] = [];
+  github.snapshot = async (input) => ({
+    ...(await original(input)),
+    ...parsedConfig(
+      'schema_version = 1\n[[pr.overrides]]\nrule_id = "context.private-to-public"\nreason = "A target repository cannot authorize caller disclosure."\n',
+      "octo-manager.toml",
+      "repository-config-blob",
+    ),
+    references: [
+      {
+        repository: "private/context",
+        private: true,
+        number: 1,
+        kind: "issue",
+        title: "Private issue",
+        body: "Private details",
+        url: "https://github.com/private/context/issues/1",
+        updatedAt: "2026-11-14T00:00:00Z",
+      },
+    ],
+  });
+  const h = await harness(runner(roles), github);
+  try {
+    const value = h.service.submit(request("repo-cannot-authorize-disclosure"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.NeedsInput,
+    );
+    expect(roles).toEqual([]);
+    expect(h.github.writes).toBe(0);
+  } finally {
     await h.close();
   }
 });

@@ -1,3 +1,9 @@
+import {
+  ContractSchema,
+  FactorsSchema,
+  EvaluationSchema,
+  DecisionSchema,
+} from "./pr-contract.js";
 import { Type, type Static, type TSchema } from "typebox";
 import { Check } from "typebox/value";
 import { createHash } from "node:crypto";
@@ -47,8 +53,29 @@ export const ValidationSchema = object({
 });
 export const SubmissionInputSchema = object({
   mode: Type.Optional(
-    Type.Union([Type.Literal("publish"), Type.Literal("policy")]),
+    Type.Union([
+      Type.Literal("publish"),
+      Type.Literal("policy"),
+      Type.Literal("prepare"),
+      Type.Literal("validate"),
+    ]),
   ),
+  headRepository: Type.Optional(text(200)),
+  updateUrl: Type.Optional(text(2000)),
+  // Legacy durable input only; public RPC and schemas project parsed contents.
+  contractToml: Type.Optional(Type.String({ maxLength: 131072 })),
+  contract: Type.Optional(ContractSchema),
+  contractSource: Type.Optional(
+    object({
+      sha256: text(100),
+      path: text(4000),
+      blobSha: Type.Optional(text(100)),
+      authoredPaths: Type.Optional(strings(200)),
+      parseError: Type.Optional(text()),
+    }),
+  ),
+  references: Type.Optional(Type.Array(text(2000), { maxItems: 20 })),
+  description: Type.Optional(object({ title: text(500), body: text(60000) })),
   requestId: text(200),
   repository: Type.String({
     pattern: "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
@@ -58,6 +85,8 @@ export const SubmissionInputSchema = object({
   headSha: Type.String({ pattern: "^[a-f0-9]{40}$" }),
   baseRef: text(300),
   purpose: text(16000),
+  problem: Type.Optional(text(16000)),
+  outcome: Type.Optional(text(16000)),
   validation: Type.Array(ValidationSchema, { maxItems: 100 }),
   draft: Type.Boolean(),
   owner: OwnerSchema,
@@ -163,6 +192,7 @@ export const PolicySchema = object({
   analysis: PolicyAnalysisSchema,
 });
 export const ChangeAnalysisSchema = object({
+  factors: Type.Optional(FactorsSchema),
   tier: Type.Enum(Complexity),
   rationale: text(),
   outcome: text(16000),
@@ -229,26 +259,67 @@ export function normalizeChangeEvidence(
 }
 export type WriterDraft = Static<typeof WriterSchema>;
 export type PrBrief = Static<typeof BriefSchema>;
-export type Role = "policy" | "change" | "writer";
+export type Role = "policy" | "change" | "writer" | "evaluator";
 export const SnapshotSchema = object({
   repository: text(200),
   headSha: text(100),
   baseSha: text(100),
   private: Type.Boolean(),
+  // Legacy durable input only; public RPC and schemas project parsed contents.
+  contractToml: Type.Optional(Type.String({ maxLength: 131072 })),
+  contract: Type.Optional(ContractSchema),
+  contractSource: Type.Optional(
+    object({
+      sha256: text(100),
+      path: text(4000),
+      blobSha: Type.Optional(text(100)),
+      authoredPaths: Type.Optional(strings(200)),
+      parseError: Type.Optional(text()),
+    }),
+  ),
+  references: Type.Optional(
+    Type.Array(
+      object({
+        repository: text(200),
+        number: Type.Integer({ minimum: 1 }),
+        kind: Type.Union([Type.Literal("issue"), Type.Literal("pr")]),
+        private: Type.Boolean(),
+        title: text(),
+        body: Type.String({ maxLength: 32000 }),
+        url: text(2000),
+        updatedAt: text(100),
+      }),
+      { maxItems: 20 },
+    ),
+  ),
+  existing: Type.Optional(
+    object({
+      url: text(2000),
+      title: text(500),
+      body: Type.String({ maxLength: 65536 }),
+      headSha: text(100),
+      headRepository: text(200),
+      headRef: text(300),
+      baseRef: text(300),
+      baseSha: Type.Optional(text(100)),
+    }),
+  ),
   files: strings(300),
   diff: Type.String({ maxLength: 524288 }),
   sources: Type.Array(SourceSchema, { maxItems: 100 }),
   sourceDigest: text(100),
 });
 export const StageResultSchema = object({
+  invalidated: Type.Optional(Type.Boolean()),
   role: Type.Union([
     Type.Literal("policy"),
     Type.Literal("change"),
     Type.Literal("writer"),
+    Type.Literal("evaluator"),
   ]),
   model: text(200),
   promptDigest: text(100),
-  raw: text(65536),
+  raw: Type.String({ maxLength: 65536 }),
   result: Type.Unknown(),
   at: Type.Integer(),
 });
@@ -264,6 +335,19 @@ export const SubmissionSchema = object({
   policyDigest: Type.Optional(text(100)),
   stages: Type.Array(StageResultSchema),
   brief: Type.Optional(BriefSchema),
+  contract: Type.Optional(ContractSchema),
+  evaluation: Type.Optional(EvaluationSchema),
+  decision: Type.Optional(DecisionSchema),
+  preparedDigest: Type.Optional(text(100)),
+  publicationRequested: Type.Optional(Type.Boolean()),
+  publicationAttempted: Type.Optional(Type.Boolean()),
+  flow: Type.Optional(Type.Unknown()),
+  images: Type.Optional(
+    Type.Array(
+      object({ url: text(2000), sha256: text(100), contentType: text(200) }),
+      { maxItems: 10 },
+    ),
+  ),
   prUrl: Type.Optional(text(2000)),
   prId: Type.Optional(text(100)),
   workerPids: Type.Array(Type.Integer()),
@@ -420,6 +504,7 @@ export function publicationBlockers(
   brief: PrBrief,
   policy: RepositoryPolicy,
   files: string[],
+  additionalEvidence: readonly string[] = [],
 ): string[] {
   const checks = brief.draft.requirementChecks;
   const blockers = [
@@ -466,6 +551,7 @@ export function publicationBlockers(
       "Replace local-only links with durable evidence or describe the gap",
     );
   const evidence = new Set([
+    ...additionalEvidence,
     "diff",
     ...brief.request.validation.map(
       (_, index) => `validation:${String(index)}`,
