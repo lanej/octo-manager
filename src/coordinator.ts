@@ -212,7 +212,7 @@ export class Coordinator extends EventEmitter {
       const pendingTools = new Set<Promise<void>>();
       let outputBytes = 0;
       const deadline = setTimeout(() => { failure = "Attempt deadline exceeded"; this.abort(active); }, 180000);
-      const exit = new Promise<void>((resolve, reject) => { child.once("error", reject); child.once("exit", (code, signal) => { active.childExited = true; if (!done && !active.abort.signal.aborted) failure = `Worker exited before completion (${signal ?? code})`; resolve(); }); });
+      const exit = new Promise<void>((resolve, reject) => { child.once("error", reject); child.once("exit", (code, signal) => { active.childExited = true; if ((!done || code !== 0) && !active.abort.signal.aborted && failure === undefined) failure = `Worker exited before completion (${String(signal ?? code)})`; resolve(); }); });
       child.stderr?.on("data", () => { /* WHY: SDK diagnostics can contain provider responses; the structured failure channel is authoritative. */ });
       child.on("message", (message: unknown) => {
         if (!message || typeof message !== "object") return;
@@ -221,8 +221,8 @@ export class Coordinator extends EventEmitter {
         if (m.type === "progress" && typeof m.text === "string" && outputBytes < 32000) {
           const text = cleanText(m.text, Math.min(2000, 32000 - outputBytes)); outputBytes += text.length;
           this.store.event(job.id, "progress", text); this.notify();
-        } else if (m.type === "done" && typeof m.text === "string" && !done) { done = true; result = cleanText(m.text); }
-        else if (m.type === "failure" && typeof m.error === "string" && !done) { done = true; failure = cleanText(m.error, 2000); }
+        } else if (m["type"] === "done" && typeof m["text"] === "string" && !done) { done = true; result = cleanText(m["text"]); if (child.connected) child.send({ type: "result_ack", attempt: active.attempt }, () => {}); }
+        else if (m["type"] === "failure" && typeof m["error"] === "string" && !done) { done = true; failure = cleanText(m["error"], 2000); if (child.connected) child.send({ type: "result_ack", attempt: active.attempt }, () => {}); }
         else if (m.type === "tool" && typeof m.id === "string" && typeof m.name === "string") {
           const work = (async () => {
             try {

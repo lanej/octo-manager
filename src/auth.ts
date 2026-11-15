@@ -4,6 +4,14 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { getAgentDir, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { CredentialStore, Credential, CredentialInfo, AuthOperationOptions } from "@earendil-works/pi-ai";
+import type { WorkerProvider } from "./worker-model.js";
+
+const noStoredCredentials: CredentialStore = {
+  read: () => Promise.resolve(undefined),
+  list: () => Promise.resolve([]),
+  modify: () => Promise.reject(new Error("AWS credentials remain owned by the existing credential source")),
+  delete: () => Promise.reject(new Error("AWS credentials remain owned by the existing credential source")),
+};
 
 export class CodexSessionReference implements CredentialStore {
   constructor(private directory: string, private now: () => number = Date.now) {}
@@ -40,9 +48,15 @@ export class CodexSessionReference implements CredentialStore {
   async delete(): Promise<never> { throw new Error("Codex authentication is read-only; sign out through Codex"); }
 }
 
-export async function createWorkerRuntime(options: { piAgentDir?: string; codexHome?: string; now?: () => number } = {}): Promise<{ runtime: ModelRuntime; source: "pi" | "codex" }> {
+export async function createWorkerRuntime(options: { provider?: WorkerProvider; piAgentDir?: string; codexHome?: string; now?: () => number } = {}): Promise<{ runtime: ModelRuntime; source: "pi" | "codex" | "aws" }> {
   const piAgentDir = options.piAgentDir ?? getAgentDir();
   const piPath = join(piAgentDir, "auth.json");
+  if (options.provider === "amazon-bedrock") {
+    // WHY: Native Bedrock resolves ambient AWS credentials; an empty read-only store prevents Pi from creating an auth file.
+    const runtime = await ModelRuntime.create({ credentials: noStoredCredentials, modelsPath: null, allowModelNetwork: false });
+    if (!runtime.hasConfiguredAuth("amazon-bedrock")) throw new Error("Amazon Bedrock authentication is unavailable; configure existing AWS credentials or a Bedrock bearer token");
+    return { runtime, source: "aws" };
+  }
   if (existsSync(piPath)) {
     const runtime = await ModelRuntime.create({ authPath: piPath, modelsPath: null, allowModelNetwork: false });
     if (runtime.hasConfiguredAuth("openai-codex")) return { runtime, source: "pi" };
