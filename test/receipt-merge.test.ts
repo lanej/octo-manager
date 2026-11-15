@@ -1146,3 +1146,20 @@ test("instruction updates and clearing do not change readiness, and invalid or n
     await f.close();
   }
 });
+
+test("a squash receipt cannot authorize a replacement rebase chain for the same head", async () => {
+  const f = await fixture();
+  try {
+    expect(f.notice.mergeTarget?.method).toBe("squash");
+    f.coordinator.store.merging.queue({
+      requestId: "replacement-rebase-policy",
+      actorId: f.pr.ownerAgentId,
+      entries: [{ prUrl: url, method: "rebase", checks: ["CI"] }],
+    });
+    expect((await f.merge()).resultText).toContain("blocked");
+    expect(f.coordinator.store.merging.entry(url).ready).toBeUndefined();
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
