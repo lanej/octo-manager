@@ -1,3 +1,4 @@
+import { linkPRReferences } from "../src/notifications/links.js";
 import { DeliveryState } from "../src/tracking/types.js";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
@@ -805,6 +806,60 @@ test("readiness returning to an earlier state creates a fresh decision instead o
     expect(
       f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation,
     ).toBe(3);
+  } finally {
+    await f.close();
+  }
+});
+
+test("agent presentation links native GitHub references while preserving existing links and code", () => {
+  const parent = "https://github.com/owner/repo/pull/13";
+  const text = linkPRReferences(
+    "Parent PR #13; other/repo#14; `#15`; [PR #16](https://github.com/owner/repo/pull/16)",
+    url,
+    parent,
+  );
+  expect(text).toContain(
+    "PR [owner/repo#13](https://github.com/owner/repo/pull/13)",
+  );
+  expect(text).toContain(
+    "[other/repo#14](https://github.com/other/repo/issues/14)",
+  );
+  expect(text).toContain("`#15`");
+  expect(text).toContain("[PR #16](https://github.com/owner/repo/pull/16)");
+  const bounded = linkPRReferences(
+    Array.from({ length: 40 }, (_, index) => `#${String(index + 1)}`).join(" "),
+    url,
+    undefined,
+    180,
+  );
+  expect(Buffer.byteLength(bounded)).toBeLessThanOrEqual(180);
+  expect(bounded.endsWith("…")).toBe(true);
+  expect(bounded.replace(/\[[^\]]*\]\([^)]*\)/gu, "")).not.toMatch(/#[0-9]/u);
+});
+
+test("rendered excerpts preserve complete existing links beyond the old plain-text cutoff", async () => {
+  const f = await fixture();
+  try {
+    const message = f.coordinator.store.tracking.inbox.get(
+      f.notice.messageIds[0] ?? "",
+    );
+    if (message === undefined) throw new Error("No source message");
+    const target = `https://github.com/owner/${"repository".repeat(6)}/pull/13?diff=split#discussion_r123`;
+    const link = `[parent review](${target})`;
+    const rendered = renderDigest(
+      [
+        {
+          ...message,
+          body: `[PR #38](${url}) · Review\n> ${"Context ".repeat(18)}${link}\n[Evidence](${url})`,
+        },
+      ],
+      f.directory,
+      "12345678-1234-4123-8123-123456789abc",
+    );
+    expect(rendered.body).toContain(link);
+    const plain = linkPRReferences(`See ${target}`, url);
+    expect(plain).toContain(`](${target})`);
+    expect(plain).not.toContain(")?diff=");
   } finally {
     await f.close();
   }
