@@ -17,6 +17,8 @@ export const file_octomanager_v2_tracking: GenFile = /*@__PURE__*/
   fileDesc("Ch1vY3RvbWFuYWdlci92Mi90cmFja2luZy5wcm90bxIOb2N0b21hbmFnZXIudjIiYgoLQWdlbnRUYXJnZXQSDwoHaGFybmVzcxgBIAEoCRIQCghlbmRwb2ludBgCIAEoCRISCgpzZXNzaW9uX2lkGAMgASgJEhIKBWxhYmVsGAQgASgJSACIAQFCCAoGX2xhYmVsIrsBCg5BZ2VudFJlZmVyZW5jZRIKCgJpZBgBIAEoCRIrCgZ0YXJnZXQYAiABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldBIcCg9oYXJuZXNzX3ZlcnNpb24YAyABKAlIAIgBARIjChZ2ZXJzaW9uX29ic2VydmVkX2F0X21zGAQgASgDSAGIAQFCEgoQX2hhcm5lc3NfdmVyc2lvbkIZChdfdmVyc2lvbl9vYnNlcnZlZF9hdF9tcyImCgpUYXJnZXRCYXNlEgsKA3JlZhgBIAEoCRILCgNzaGEYAiABKAkilQMKE1RyYWNraW5nT2JzZXJ2YXRpb24SCgoCaWQYASABKAQSFgoOb2JzZXJ2ZWRfYXRfbXMYAiABKAMSEAoIaGVhZF9zaGEYAyABKAkSEAoIYmFzZV9zaGEYBCABKAkSEQoJbGlmZWN5Y2xlGAUgASgJEhQKDG1lcmdlYWJpbGl0eRgGIAEoCRIzCgZjaGVja3MYByABKAsyIy5vY3RvbWFuYWdlci52Mi5Eb21haW5DaGVja0V2aWRlbmNlEjUKB3Jldmlld3MYCCABKAsyJC5vY3RvbWFuYWdlci52Mi5Eb21haW5SZXZpZXdFdmlkZW5jZRIvCgt0YXJnZXRfYmFzZRgJIAEoCzIaLm9jdG9tYW5hZ2VyLnYyLlRhcmdldEJhc2USOAoIZmVlZGJhY2sYCiABKAsyJi5vY3RvbWFuYWdlci52Mi5Eb21haW5GZWVkYmFja0V2aWRlbmNlEjYKCXdvcmtmbG93cxgLIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkNoZWNrRXZpZGVuY2UikgQKElRyYWNrZWRQdWxsUmVxdWVzdBIKCgJpZBgBIAEoCRILCgN1cmwYAiABKAkSFwoPb3JpZ2luX2FnZW50X2lkGAMgASgJEhYKDm93bmVyX2FnZW50X2lkGAQgASgJEg8KB2VuYWJsZWQYBSABKAgSFQoNY3JlYXRlZF9hdF9tcxgGIAEoAxIVCg11cGRhdGVkX2F0X21zGAcgASgDEhoKDXJlZnJlc2hfZXJyb3IYCCABKAlIAIgBARIgChNyZWZyZXNoX2Vycm9yX2F0X21zGAkgASgDSAGIAQESOAoLb2JzZXJ2YXRpb24YCiABKAsyIy5vY3RvbWFuYWdlci52Mi5UcmFja2luZ09ic2VydmF0aW9uEjUKDnRyYWNraW5nX3N0YXRlGAsgASgOMh0ub2N0b21hbmFnZXIudjIuVHJhY2tpbmdTdGF0ZRIhChRkcmFpbl9kZWFkbGluZV9hdF9tcxgMIAEoA0gCiAEBEhsKDmFyY2hpdmVkX2F0X21zGA0gASgDSAOIAQESGwoOYXJjaGl2ZV9yZWFzb24YDiABKAlIBIgBAUIQCg5fcmVmcmVzaF9lcnJvckIWChRfcmVmcmVzaF9lcnJvcl9hdF9tc0IXChVfZHJhaW5fZGVhZGxpbmVfYXRfbXNCEQoPX2FyY2hpdmVkX2F0X21zQhEKD19hcmNoaXZlX3JlYXNvbiJ2ChBFeGVjdXRpb25Qcm9maWxlEgwKBG5hbWUYASABKAkSFAoMaW5zdHJ1Y3Rpb25zGAIgASgJEhQKB2hhcm5lc3MYAyABKAlIAIgBARISCgVtb2RlbBgEIAEoCUgBiAEBQgoKCF9oYXJuZXNzQggKBl9tb2RlbCJZCg9Db25mbGljdEJsb2NrZXISEAoIaGVhZF9zaGEYASABKAkSEAoIYmFzZV9zaGEYAiABKAkSFQoIYmFzZV9yZWYYAyABKAlIAIgBAUILCglfYmFzZV9yZWYiWgoMQ2hlY2tCbG9ja2VyEhEKCXNvdXJjZV9pZBgBIAEoCRISCgpjaGVja19uYW1lGAIgASgJEhAKCGhlYWRfc2hhGAMgASgJEhEKCWNoZWNrX2tleRgEIAEoCSJPCg1SZXZpZXdCbG9ja2VyEhEKCXJldmlld19pZBgBIAEoCRIQCghyZXZpZXdlchgCIAEoCRIZChFyZXZpZXdlZF9oZWFkX3NoYRgDIAEoCSLrAQoOUmV2aWV3RmVlZGJhY2sSDgoGc291cmNlGAEgASgJEgoKAmlkGAIgASgJEhAKCHJldmlzaW9uGAMgASgJEg4KBmF1dGhvchgEIAEoCRIMCgRib2R5GAUgASgJEgsKA3VybBgGIAEoCRIVCghoZWFkX3NoYRgHIAEoCUgAiAEBEhEKBHBhdGgYCCABKAlIAYgBARIRCgRsaW5lGAkgASgNSAKIAQESFgoJcmV2aWV3X2lkGAogASgJSAOIAQFCCwoJX2hlYWRfc2hhQgcKBV9wYXRoQgcKBV9saW5lQgwKCl9yZXZpZXdfaWQingIKCkNoZWNrV2F0Y2gSCgoCaWQYASABKAkSDQoFcHJfaWQYAiABKAkSEAoIaGVhZF9zaGEYAyABKAkSEgoKZ2VuZXJhdGlvbhgEIAEoDRIuCgVzdGF0ZRgFIAEoDjIfLm9jdG9tYW5hZ2VyLnYyLkNoZWNrV2F0Y2hTdGF0ZRI1CghldmlkZW5jZRgGIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkNoZWNrRXZpZGVuY2USFQoNY3JlYXRlZF9hdF9tcxgHIAEoAxIVCg11cGRhdGVkX2F0X21zGAggASgDEiEKFHJlcGxhY2VtZW50X2hlYWRfc2hhGAkgASgJSACIAQFCFwoVX3JlcGxhY2VtZW50X2hlYWRfc2hhItEBCgxDaGVja1Jlc3VsdHMSEAoId2F0Y2hfaWQYASABKAkSEAoIaGVhZF9zaGEYAiABKAkSLgoFc3RhdGUYAyABKA4yHy5vY3RvbWFuYWdlci52Mi5DaGVja1dhdGNoU3RhdGUSMQoGY2hlY2tzGAQgAygLMiEub2N0b21hbmFnZXIudjIuRG9tYWluQ2hlY2tSZWNvcmQSIQoUcmVwbGFjZW1lbnRfaGVhZF9zaGEYBSABKAlIAIgBAUIXChVfcmVwbGFjZW1lbnRfaGVhZF9zaGEioQYKDVBlbmRpbmdBY3Rpb24SCgoCaWQYASABKAkSDQoFcHJfaWQYAiABKAkSHQoVb3BlbmVkX29ic2VydmF0aW9uX2lkGAMgASgEEhIKCnNvdXJjZV9rZXkYBCABKAkSFgoOb3duZXJfYWdlbnRfaWQYBSABKAkSMwoIY29uZmxpY3QYBiABKAsyHy5vY3RvbWFuYWdlci52Mi5Db25mbGljdEJsb2NrZXJIABI0CgxjaGVja19mYWlsZWQYByABKAsyHC5vY3RvbWFuYWdlci52Mi5DaGVja0Jsb2NrZXJIABI6ChFjaGFuZ2VzX3JlcXVlc3RlZBgIIAEoCzIdLm9jdG9tYW5hZ2VyLnYyLlJldmlld0Jsb2NrZXJIABI5Cg9yZXZpZXdfZmVlZGJhY2sYFCABKAsyHi5vY3RvbWFuYWdlci52Mi5SZXZpZXdGZWVkYmFja0gAEjUKDWNoZWNrX3Jlc3VsdHMYFSABKAsyHC5vY3RvbWFuYWdlci52Mi5DaGVja1Jlc3VsdHNIABIPCgdzdW1tYXJ5GAkgASgJEhQKDGV2aWRlbmNlX3VybBgKIAEoCRIxCgdwcm9maWxlGAsgASgLMiAub2N0b21hbmFnZXIudjIuRXhlY3V0aW9uUHJvZmlsZRIqCgVzdGF0ZRgMIAEoDjIbLm9jdG9tYW5hZ2VyLnYyLkFjdGlvblN0YXRlEhsKDnByb2dyZXNzX2F0X21zGA0gASgDSAGIAQESHgoRcHJvZ3Jlc3NfYWdlbnRfaWQYDiABKAlIAogBARIkChdyZXNvbHZlZF9vYnNlcnZhdGlvbl9pZBgPIAEoBEgDiAEBEhkKDGNsb3NlX3JlYXNvbhgQIAEoCUgEiAEBEhUKDWNyZWF0ZWRfYXRfbXMYESABKAMSFQoNdXBkYXRlZF9hdF9tcxgSIAEoA0IJCgdibG9ja2VyQhEKD19wcm9ncmVzc19hdF9tc0IUChJfcHJvZ3Jlc3NfYWdlbnRfaWRCGgoYX3Jlc29sdmVkX29ic2VydmF0aW9uX2lkQg8KDV9jbG9zZV9yZWFzb24izQIKDkFjdGlvbkRlbGl2ZXJ5EgoKAmlkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaChJyZWNpcGllbnRfYWdlbnRfaWQYAyABKAkSLAoFc3RhdGUYBCABKA4yHS5vY3RvbWFuYWdlci52Mi5EZWxpdmVyeVN0YXRlEjgKCHByb2dyZXNzGAUgASgLMiYub2N0b21hbmFnZXIudjIuRG9tYWluRGVsaXZlcnlQcm9ncmVzcxIVCg1jcmVhdGVkX2F0X21zGAYgASgDEhUKDXVwZGF0ZWRfYXRfbXMYByABKAMSHQoQbWVzc2FnZV9zZXF1ZW5jZRgIIAEoBEgAiAEBEh8KEmFja25vd2xlZGdlZF9hdF9tcxgJIAEoA0gBiAEBQhMKEV9tZXNzYWdlX3NlcXVlbmNlQhUKE19hY2tub3dsZWRnZWRfYXRfbXMitwEKD0RlbGl2ZXJ5QXR0ZW1wdBITCgtkZWxpdmVyeV9pZBgBIAEoCRIOCgZudW1iZXIYAiABKA0SFQoNc3RhcnRlZF9hdF9tcxgDIAEoAxIcCg9oYXJuZXNzX3ZlcnNpb24YBCABKAlIAIgBARI2CgdvdXRjb21lGAUgASgLMiUub2N0b21hbmFnZXIudjIuRG9tYWluRGVsaXZlcnlPdXRjb21lQhIKEF9oYXJuZXNzX3ZlcnNpb24ivQIKEFRyYWNraW5nU25hcHNob3QSLwoDcHJzGAEgAygLMiIub2N0b21hbmFnZXIudjIuVHJhY2tlZFB1bGxSZXF1ZXN0Ei4KBmFnZW50cxgCIAMoCzIeLm9jdG9tYW5hZ2VyLnYyLkFnZW50UmVmZXJlbmNlEi4KB2FjdGlvbnMYAyADKAsyHS5vY3RvbWFuYWdlci52Mi5QZW5kaW5nQWN0aW9uEjIKCmRlbGl2ZXJpZXMYBCADKAsyHi5vY3RvbWFuYWdlci52Mi5BY3Rpb25EZWxpdmVyeRIxCghhdHRlbXB0cxgFIAMoCzIfLm9jdG9tYW5hZ2VyLnYyLkRlbGl2ZXJ5QXR0ZW1wdBIxCg1jaGVja193YXRjaGVzGAYgAygLMhoub2N0b21hbmFnZXIudjIuQ2hlY2tXYXRjaCJsChdUcmFja1B1bGxSZXF1ZXN0UmVxdWVzdBILCgN1cmwYASABKAkSKgoFb3duZXIYAiABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldBIQCgNjd2QYAyABKAlIAIgBAUIGCgRfY3dkIiAKHkxpc3RUcmFja2VkUHVsbFJlcXVlc3RzUmVxdWVzdCJSCh9MaXN0VHJhY2tlZFB1bGxSZXF1ZXN0c1Jlc3BvbnNlEi8KA3BycxgBIAMoCzIiLm9jdG9tYW5hZ2VyLnYyLlRyYWNrZWRQdWxsUmVxdWVzdCJSChhBc3NpZ25QdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkSKgoFb3duZXIYAiABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCIyChJMaXN0QWN0aW9uc1JlcXVlc3QSEgoFcHJfaWQYASABKAlIAIgBAUIICgZfcHJfaWQiRQoTTGlzdEFjdGlvbnNSZXNwb25zZRIuCgdhY3Rpb25zGAEgAygLMh0ub2N0b21hbmFnZXIudjIuUGVuZGluZ0FjdGlvbiIiChRSZXRyeURlbGl2ZXJ5UmVxdWVzdBIKCgJpZBgBIAEoCSJJChVSZXRyeURlbGl2ZXJ5UmVzcG9uc2USMAoIZGVsaXZlcnkYASABKAsyHi5vY3RvbWFuYWdlci52Mi5BY3Rpb25EZWxpdmVyeSJKChhUcmFja1B1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52Mi5UcmFja2VkUHVsbFJlcXVlc3QiKgocR2V0VHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSKcAQodR2V0VHJhY2tlZFB1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52Mi5UcmFja2VkUHVsbFJlcXVlc3QSSwoRcmVwb3NpdG9yeV9wb2xpY3kYAiABKAsyMC5vY3RvbWFuYWdlci52Mi5Eb21haW5SZXBvc2l0b3J5QXV0b21hdGlvblBvbGljeSIuCiBSZWZyZXNoVHJhY2tlZFB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSKDAQohUmVmcmVzaFRyYWNrZWRQdWxsUmVxdWVzdFJlc3BvbnNlEi4KAnByGAEgASgLMiIub2N0b21hbmFnZXIudjIuVHJhY2tlZFB1bGxSZXF1ZXN0Ei4KB3JlZnJlc2gYAiABKAsyHS5vY3RvbWFuYWdlci52Mi5SZWZyZXNoU3RhdHVzIksKGUFzc2lnblB1bGxSZXF1ZXN0UmVzcG9uc2USLgoCcHIYASABKAsyIi5vY3RvbWFuYWdlci52Mi5UcmFja2VkUHVsbFJlcXVlc3QiJwoZVW50cmFja1B1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCSJMChpVbnRyYWNrUHVsbFJlcXVlc3RSZXNwb25zZRIuCgJwchgBIAEoCzIiLm9jdG9tYW5hZ2VyLnYyLlRyYWNrZWRQdWxsUmVxdWVzdCIeChBHZXRBY3Rpb25SZXF1ZXN0EgoKAmlkGAEgASgJIkIKEUdldEFjdGlvblJlc3BvbnNlEi0KBmFjdGlvbhgBIAEoCzIdLm9jdG9tYW5hZ2VyLnYyLlBlbmRpbmdBY3Rpb24iOAoYQWNrbm93bGVkZ2VBY3Rpb25SZXF1ZXN0EgoKAmlkGAEgASgJEhAKCGFnZW50X2lkGAIgASgJIkoKGUFja25vd2xlZGdlQWN0aW9uUmVzcG9uc2USLQoGYWN0aW9uGAEgASgLMh0ub2N0b21hbmFnZXIudjIuUGVuZGluZ0FjdGlvbiIyChJTdGFydEFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkSEAoIYWdlbnRfaWQYAiABKAkiRAoTU3RhcnRBY3Rpb25SZXNwb25zZRItCgZhY3Rpb24YASABKAsyHS5vY3RvbWFuYWdlci52Mi5QZW5kaW5nQWN0aW9uIiQKFlJlcHJvZmlsZUFjdGlvblJlcXVlc3QSCgoCaWQYASABKAkiSAoXUmVwcm9maWxlQWN0aW9uUmVzcG9uc2USLQoGYWN0aW9uGAEgASgLMh0ub2N0b21hbmFnZXIudjIuUGVuZGluZ0FjdGlvbiL6AQoMQWdlbnRNZXNzYWdlEhAKCHNlcXVlbmNlGAEgASgEEgoKAmlkGAIgASgJEhEKCWFjdGlvbl9pZBgDIAEoCRIaChJyZWNpcGllbnRfYWdlbnRfaWQYBCABKAkSDAoEYm9keRgFIAEoCRIVCg1jcmVhdGVkX2F0X21zGAYgASgDEh8KEmFja25vd2xlZGdlZF9hdF9tcxgHIAEoA0gAiAEBEhIKCmFwcGxpY2FibGUYCCABKAgSGgoNc3VibWlzc2lvbl9pZBgJIAEoCUgBiAEBQhUKE19hY2tub3dsZWRnZWRfYXRfbXNCEAoOX3N1Ym1pc3Npb25faWQiewoYTGlzdEFnZW50TWVzc2FnZXNSZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJEhYKDmFmdGVyX3NlcXVlbmNlGAIgASgEEhwKFGluY2x1ZGVfYWNrbm93bGVkZ2VkGAMgASgIEhcKD2FwcGxpY2FibGVfb25seRgEIAEoCCJ0ChlMaXN0QWdlbnRNZXNzYWdlc1Jlc3BvbnNlEi4KCG1lc3NhZ2VzGAEgAygLMhwub2N0b21hbmFnZXIudjIuQWdlbnRNZXNzYWdlEhUKDW5leHRfc2VxdWVuY2UYAiABKAQSEAoIaGFzX21vcmUYAyABKAgiZwoZQWNrbm93bGVkZ2VNZXNzYWdlUmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIaCg1leHBlY3RlZF9ib2R5GAMgASgJSACIAQFCEAoOX2V4cGVjdGVkX2JvZHkiSwoaQWNrbm93bGVkZ2VNZXNzYWdlUmVzcG9uc2USLQoHbWVzc2FnZRgBIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLkFnZW50TWVzc2FnZSJDChRSZWdpc3RlckFnZW50UmVxdWVzdBIrCgZ0YXJnZXQYASABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCJGChVSZWdpc3RlckFnZW50UmVzcG9uc2USLQoFYWdlbnQYASABKAsyHi5vY3RvbWFuYWdlci52Mi5BZ2VudFJlZmVyZW5jZSJPCg1QUlBhcnRpY2lwYW50EhAKCGFnZW50X2lkGAEgASgJEgwKBHJvbGUYAiABKAkSDQoFbGFiZWwYAyABKAkSDwoHaGFybmVzcxgEIAEoCSJVChtTdWJzY3JpYmVQdWxsUmVxdWVzdFJlcXVlc3QSCgoCaWQYASABKAkSKgoFYWdlbnQYAiABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCI9Ch1VbnN1YnNjcmliZVB1bGxSZXF1ZXN0UmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCSI3ChlMaXN0UFJQYXJ0aWNpcGFudHNSZXF1ZXN0EgoKAmlkGAEgASgJEg4KBm9mZnNldBgCIAEoDSJyChpMaXN0UFJQYXJ0aWNpcGFudHNSZXNwb25zZRIzCgxwYXJ0aWNpcGFudHMYASADKAsyHS5vY3RvbWFuYWdlci52Mi5QUlBhcnRpY2lwYW50Eg0KBXRvdGFsGAIgASgNEhAKCGhhc19tb3JlGAMgASgIInQKHFN1YnNjcmliZVB1bGxSZXF1ZXN0UmVzcG9uc2USMwoMcGFydGljaXBhbnRzGAEgAygLMh0ub2N0b21hbmFnZXIudjIuUFJQYXJ0aWNpcGFudBINCgV0b3RhbBgCIAEoDRIQCghoYXNfbW9yZRgDIAEoCCJ2Ch5VbnN1YnNjcmliZVB1bGxSZXF1ZXN0UmVzcG9uc2USMwoMcGFydGljaXBhbnRzGAEgAygLMh0ub2N0b21hbmFnZXIudjIuUFJQYXJ0aWNpcGFudBINCgV0b3RhbBgCIAEoDRIQCghoYXNfbW9yZRgDIAEoCCqzAQoLQWN0aW9uU3RhdGUSHAoYQUNUSU9OX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRQUNUSU9OX1NUQVRFX09QRU4QARIdChlBQ1RJT05fU1RBVEVfQUNLTk9XTEVER0VEEAISGAoUQUNUSU9OX1NUQVRFX1dPUktJTkcQAxIZChVBQ1RJT05fU1RBVEVfUkVTT0xWRUQQBBIbChdBQ1RJT05fU1RBVEVfU1VQRVJTRURFRBAFKuEBCg1EZWxpdmVyeVN0YXRlEh4KGkRFTElWRVJZX1NUQVRFX1VOU1BFQ0lGSUVEEAASGgoWREVMSVZFUllfU1RBVEVfUEVORElORxABEhoKFkRFTElWRVJZX1NUQVRFX1NFTkRJTkcQAhIcChhERUxJVkVSWV9TVEFURV9ERUxJVkVSRUQQAxIcChhERUxJVkVSWV9TVEFURV9VTkNFUlRBSU4QBBIeChpERUxJVkVSWV9TVEFURV9VTkFWQUlMQUJMRRAFEhwKGERFTElWRVJZX1NUQVRFX0NBTkNFTExFRBAGKqMBCg1UcmFja2luZ1N0YXRlEh4KGlRSQUNLSU5HX1NUQVRFX1VOU1BFQ0lGSUVEEAASGwoXVFJBQ0tJTkdfU1RBVEVfV0FUQ0hJTkcQARIbChdUUkFDS0lOR19TVEFURV9EUkFJTklORxACEhsKF1RSQUNLSU5HX1NUQVRFX0FSQ0hJVkVEEAMSGwoXVFJBQ0tJTkdfU1RBVEVfRElTQUJMRUQQBCrWAQoPQ2hlY2tXYXRjaFN0YXRlEiEKHUNIRUNLX1dBVENIX1NUQVRFX1VOU1BFQ0lGSUVEEAASHQoZQ0hFQ0tfV0FUQ0hfU1RBVEVfV0FJVElORxABEh8KG0NIRUNLX1dBVENIX1NUQVRFX0NPTVBMRVRFRBACEiAKHENIRUNLX1dBVENIX1NUQVRFX1NVUEVSU0VERUQQAxIfChtDSEVDS19XQVRDSF9TVEFURV9DQU5DRUxMRUQQBBIdChlDSEVDS19XQVRDSF9TVEFURV9FWFBJUkVEEAVCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YyO29jdG9tYW5hZ2VydjJiBnByb3RvMw", [file_octomanager_v2_domain, file_octomanager_v2_github]);
 
 /**
+ * AgentTarget identifies a harness session and delivery endpoint; it does not grant authority.
+ *
  * @generated from message octomanager.v2.AgentTarget
  */
 export type AgentTarget = Message<"octomanager.v2.AgentTarget"> & {
@@ -49,6 +51,8 @@ export const AgentTargetSchema: GenMessage<AgentTarget> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 0);
 
 /**
+ * AgentReference records a registered target and any separately observed harness version.
+ *
  * @generated from message octomanager.v2.AgentReference
  */
 export type AgentReference = Message<"octomanager.v2.AgentReference"> & {
@@ -81,6 +85,8 @@ export const AgentReferenceSchema: GenMessage<AgentReference> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 1);
 
 /**
+ * TargetBase identifies the target branch and the observed commit at that branch.
+ *
  * @generated from message octomanager.v2.TargetBase
  */
 export type TargetBase = Message<"octomanager.v2.TargetBase"> & {
@@ -103,6 +109,8 @@ export const TargetBaseSchema: GenMessage<TargetBase> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 2);
 
 /**
+ * TrackingObservation freezes PR identity, lifecycle, and evidence with their completeness states.
+ *
  * @generated from message octomanager.v2.TrackingObservation
  */
 export type TrackingObservation = Message<"octomanager.v2.TrackingObservation"> & {
@@ -170,6 +178,8 @@ export const TrackingObservationSchema: GenMessage<TrackingObservation> = /*@__P
   messageDesc(file_octomanager_v2_tracking, 3);
 
 /**
+ * TrackedPullRequest retains enrollment, ownership, cached observations, and retirement state.
+ *
  * @generated from message octomanager.v2.TrackedPullRequest
  */
 export type TrackedPullRequest = Message<"octomanager.v2.TrackedPullRequest"> & {
@@ -252,6 +262,8 @@ export const TrackedPullRequestSchema: GenMessage<TrackedPullRequest> = /*@__PUR
   messageDesc(file_octomanager_v2_tracking, 4);
 
 /**
+ * ExecutionProfile selects bounded instructions and optional worker harness/model settings.
+ *
  * @generated from message octomanager.v2.ExecutionProfile
  */
 export type ExecutionProfile = Message<"octomanager.v2.ExecutionProfile"> & {
@@ -284,6 +296,8 @@ export const ExecutionProfileSchema: GenMessage<ExecutionProfile> = /*@__PURE__*
   messageDesc(file_octomanager_v2_tracking, 5);
 
 /**
+ * ConflictBlocker pins the head and target-base revisions that could not merge cleanly.
+ *
  * @generated from message octomanager.v2.ConflictBlocker
  */
 export type ConflictBlocker = Message<"octomanager.v2.ConflictBlocker"> & {
@@ -311,6 +325,8 @@ export const ConflictBlockerSchema: GenMessage<ConflictBlocker> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 6);
 
 /**
+ * CheckBlocker identifies a failing check execution at an exact PR head.
+ *
  * @generated from message octomanager.v2.CheckBlocker
  */
 export type CheckBlocker = Message<"octomanager.v2.CheckBlocker"> & {
@@ -343,6 +359,8 @@ export const CheckBlockerSchema: GenMessage<CheckBlocker> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 7);
 
 /**
+ * ReviewBlocker identifies a change-requesting review and its reviewed revision.
+ *
  * @generated from message octomanager.v2.ReviewBlocker
  */
 export type ReviewBlocker = Message<"octomanager.v2.ReviewBlocker"> & {
@@ -370,6 +388,8 @@ export const ReviewBlockerSchema: GenMessage<ReviewBlocker> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 8);
 
 /**
+ * ReviewFeedback retains the source identity, location, revision, and text of review feedback.
+ *
  * @generated from message octomanager.v2.ReviewFeedback
  */
 export type ReviewFeedback = Message<"octomanager.v2.ReviewFeedback"> & {
@@ -432,6 +452,8 @@ export const ReviewFeedbackSchema: GenMessage<ReviewFeedback> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 9);
 
 /**
+ * CheckWatch tracks one generation of check observation for a fixed PR head.
+ *
  * @generated from message octomanager.v2.CheckWatch
  */
 export type CheckWatch = Message<"octomanager.v2.CheckWatch"> & {
@@ -489,6 +511,8 @@ export const CheckWatchSchema: GenMessage<CheckWatch> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 10);
 
 /**
+ * CheckResults reports settled check executions or the head that superseded them.
+ *
  * @generated from message octomanager.v2.CheckResults
  */
 export type CheckResults = Message<"octomanager.v2.CheckResults"> & {
@@ -526,6 +550,8 @@ export const CheckResultsSchema: GenMessage<CheckResults> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 11);
 
 /**
+ * PendingAction records an owner’s actionable blocker separately from message delivery.
+ *
  * @generated from message octomanager.v2.PendingAction
  */
 export type PendingAction = Message<"octomanager.v2.PendingAction"> & {
@@ -648,6 +674,8 @@ export const PendingActionSchema: GenMessage<PendingAction> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 12);
 
 /**
+ * ActionDelivery tracks one recipient’s delivery lifecycle and retained transport progress.
+ *
  * @generated from message octomanager.v2.ActionDelivery
  */
 export type ActionDelivery = Message<"octomanager.v2.ActionDelivery"> & {
@@ -705,6 +733,8 @@ export const ActionDeliverySchema: GenMessage<ActionDelivery> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 13);
 
 /**
+ * DeliveryAttempt records a single transport attempt and its observed outcome.
+ *
  * @generated from message octomanager.v2.DeliveryAttempt
  */
 export type DeliveryAttempt = Message<"octomanager.v2.DeliveryAttempt"> & {
@@ -742,6 +772,8 @@ export const DeliveryAttemptSchema: GenMessage<DeliveryAttempt> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 14);
 
 /**
+ * TrackingSnapshot combines registered agents, tracked PRs, actions, and deliveries.
+ *
  * @generated from message octomanager.v2.TrackingSnapshot
  */
 export type TrackingSnapshot = Message<"octomanager.v2.TrackingSnapshot"> & {
@@ -784,6 +816,8 @@ export const TrackingSnapshotSchema: GenMessage<TrackingSnapshot> = /*@__PURE__*
   messageDesc(file_octomanager_v2_tracking, 15);
 
 /**
+ * TrackPullRequestRequest supplies arguments for the following operation: Enrolls a PR for observation with an explicit responsible owner.
+ *
  * @generated from message octomanager.v2.TrackPullRequestRequest
  */
 export type TrackPullRequestRequest = Message<"octomanager.v2.TrackPullRequestRequest"> & {
@@ -811,6 +845,8 @@ export const TrackPullRequestRequestSchema: GenMessage<TrackPullRequestRequest> 
   messageDesc(file_octomanager_v2_tracking, 16);
 
 /**
+ * ListTrackedPullRequestsRequest supplies arguments for the following operation: Lists retained PR enrollments and their cached observations.
+ *
  * @generated from message octomanager.v2.ListTrackedPullRequestsRequest
  */
 export type ListTrackedPullRequestsRequest = Message<"octomanager.v2.ListTrackedPullRequestsRequest"> & {
@@ -824,6 +860,8 @@ export const ListTrackedPullRequestsRequestSchema: GenMessage<ListTrackedPullReq
   messageDesc(file_octomanager_v2_tracking, 17);
 
 /**
+ * ListTrackedPullRequestsResponse returns the result for the following operation: Lists retained PR enrollments and their cached observations.
+ *
  * @generated from message octomanager.v2.ListTrackedPullRequestsResponse
  */
 export type ListTrackedPullRequestsResponse = Message<"octomanager.v2.ListTrackedPullRequestsResponse"> & {
@@ -841,6 +879,8 @@ export const ListTrackedPullRequestsResponseSchema: GenMessage<ListTrackedPullRe
   messageDesc(file_octomanager_v2_tracking, 18);
 
 /**
+ * AssignPullRequestRequest supplies arguments for the following operation: Transfers responsibility while preserving explicit observer subscriptions.
+ *
  * @generated from message octomanager.v2.AssignPullRequestRequest
  */
 export type AssignPullRequestRequest = Message<"octomanager.v2.AssignPullRequestRequest"> & {
@@ -863,6 +903,8 @@ export const AssignPullRequestRequestSchema: GenMessage<AssignPullRequestRequest
   messageDesc(file_octomanager_v2_tracking, 19);
 
 /**
+ * ListActionsRequest supplies arguments for the following operation: Lists PR actions whose ownership is separate from notification receipt.
+ *
  * @generated from message octomanager.v2.ListActionsRequest
  */
 export type ListActionsRequest = Message<"octomanager.v2.ListActionsRequest"> & {
@@ -880,6 +922,8 @@ export const ListActionsRequestSchema: GenMessage<ListActionsRequest> = /*@__PUR
   messageDesc(file_octomanager_v2_tracking, 20);
 
 /**
+ * ListActionsResponse returns the result for the following operation: Lists PR actions whose ownership is separate from notification receipt.
+ *
  * @generated from message octomanager.v2.ListActionsResponse
  */
 export type ListActionsResponse = Message<"octomanager.v2.ListActionsResponse"> & {
@@ -897,6 +941,8 @@ export const ListActionsResponseSchema: GenMessage<ListActionsResponse> = /*@__P
   messageDesc(file_octomanager_v2_tracking, 21);
 
 /**
+ * RetryDeliveryRequest supplies arguments for the following operation: Explicitly retries notification delivery while retaining previous attempts.
+ *
  * @generated from message octomanager.v2.RetryDeliveryRequest
  */
 export type RetryDeliveryRequest = Message<"octomanager.v2.RetryDeliveryRequest"> & {
@@ -914,6 +960,8 @@ export const RetryDeliveryRequestSchema: GenMessage<RetryDeliveryRequest> = /*@_
   messageDesc(file_octomanager_v2_tracking, 22);
 
 /**
+ * RetryDeliveryResponse returns the result for the following operation: Explicitly retries notification delivery while retaining previous attempts.
+ *
  * @generated from message octomanager.v2.RetryDeliveryResponse
  */
 export type RetryDeliveryResponse = Message<"octomanager.v2.RetryDeliveryResponse"> & {
@@ -931,6 +979,8 @@ export const RetryDeliveryResponseSchema: GenMessage<RetryDeliveryResponse> = /*
   messageDesc(file_octomanager_v2_tracking, 23);
 
 /**
+ * TrackPullRequestResponse returns the result for the following operation: Enrolls a PR for observation with an explicit responsible owner.
+ *
  * @generated from message octomanager.v2.TrackPullRequestResponse
  */
 export type TrackPullRequestResponse = Message<"octomanager.v2.TrackPullRequestResponse"> & {
@@ -948,6 +998,8 @@ export const TrackPullRequestResponseSchema: GenMessage<TrackPullRequestResponse
   messageDesc(file_octomanager_v2_tracking, 24);
 
 /**
+ * GetTrackedPullRequestRequest supplies arguments for the following operation: Reads one tracked PR and its current cached evidence.
+ *
  * @generated from message octomanager.v2.GetTrackedPullRequestRequest
  */
 export type GetTrackedPullRequestRequest = Message<"octomanager.v2.GetTrackedPullRequestRequest"> & {
@@ -965,6 +1017,8 @@ export const GetTrackedPullRequestRequestSchema: GenMessage<GetTrackedPullReques
   messageDesc(file_octomanager_v2_tracking, 25);
 
 /**
+ * GetTrackedPullRequestResponse returns the result for the following operation: Reads one tracked PR and its current cached evidence.
+ *
  * @generated from message octomanager.v2.GetTrackedPullRequestResponse
  */
 export type GetTrackedPullRequestResponse = Message<"octomanager.v2.GetTrackedPullRequestResponse"> & {
@@ -987,6 +1041,8 @@ export const GetTrackedPullRequestResponseSchema: GenMessage<GetTrackedPullReque
   messageDesc(file_octomanager_v2_tracking, 26);
 
 /**
+ * RefreshTrackedPullRequestRequest supplies arguments for the following operation: Requests a scheduled refresh rather than bypassing GitHub rate coordination.
+ *
  * @generated from message octomanager.v2.RefreshTrackedPullRequestRequest
  */
 export type RefreshTrackedPullRequestRequest = Message<"octomanager.v2.RefreshTrackedPullRequestRequest"> & {
@@ -1004,6 +1060,8 @@ export const RefreshTrackedPullRequestRequestSchema: GenMessage<RefreshTrackedPu
   messageDesc(file_octomanager_v2_tracking, 27);
 
 /**
+ * RefreshTrackedPullRequestResponse returns the result for the following operation: Requests a scheduled refresh rather than bypassing GitHub rate coordination.
+ *
  * @generated from message octomanager.v2.RefreshTrackedPullRequestResponse
  */
 export type RefreshTrackedPullRequestResponse = Message<"octomanager.v2.RefreshTrackedPullRequestResponse"> & {
@@ -1026,6 +1084,8 @@ export const RefreshTrackedPullRequestResponseSchema: GenMessage<RefreshTrackedP
   messageDesc(file_octomanager_v2_tracking, 28);
 
 /**
+ * AssignPullRequestResponse returns the result for the following operation: Transfers responsibility while preserving explicit observer subscriptions.
+ *
  * @generated from message octomanager.v2.AssignPullRequestResponse
  */
 export type AssignPullRequestResponse = Message<"octomanager.v2.AssignPullRequestResponse"> & {
@@ -1043,6 +1103,8 @@ export const AssignPullRequestResponseSchema: GenMessage<AssignPullRequestRespon
   messageDesc(file_octomanager_v2_tracking, 29);
 
 /**
+ * UntrackPullRequestRequest supplies arguments for the following operation: Disables observation and delivery without deleting retained evidence.
+ *
  * @generated from message octomanager.v2.UntrackPullRequestRequest
  */
 export type UntrackPullRequestRequest = Message<"octomanager.v2.UntrackPullRequestRequest"> & {
@@ -1060,6 +1122,8 @@ export const UntrackPullRequestRequestSchema: GenMessage<UntrackPullRequestReque
   messageDesc(file_octomanager_v2_tracking, 30);
 
 /**
+ * UntrackPullRequestResponse returns the result for the following operation: Disables observation and delivery without deleting retained evidence.
+ *
  * @generated from message octomanager.v2.UntrackPullRequestResponse
  */
 export type UntrackPullRequestResponse = Message<"octomanager.v2.UntrackPullRequestResponse"> & {
@@ -1077,6 +1141,8 @@ export const UntrackPullRequestResponseSchema: GenMessage<UntrackPullRequestResp
   messageDesc(file_octomanager_v2_tracking, 31);
 
 /**
+ * GetActionRequest supplies arguments for the following operation: Reads a durable action, its progress, and related delivery evidence.
+ *
  * @generated from message octomanager.v2.GetActionRequest
  */
 export type GetActionRequest = Message<"octomanager.v2.GetActionRequest"> & {
@@ -1094,6 +1160,8 @@ export const GetActionRequestSchema: GenMessage<GetActionRequest> = /*@__PURE__*
   messageDesc(file_octomanager_v2_tracking, 32);
 
 /**
+ * GetActionResponse returns the result for the following operation: Reads a durable action, its progress, and related delivery evidence.
+ *
  * @generated from message octomanager.v2.GetActionResponse
  */
 export type GetActionResponse = Message<"octomanager.v2.GetActionResponse"> & {
@@ -1111,6 +1179,8 @@ export const GetActionResponseSchema: GenMessage<GetActionResponse> = /*@__PURE_
   messageDesc(file_octomanager_v2_tracking, 33);
 
 /**
+ * AcknowledgeActionRequest supplies arguments for the following operation: Records the current owner’s acceptance of an applicable action.
+ *
  * @generated from message octomanager.v2.AcknowledgeActionRequest
  */
 export type AcknowledgeActionRequest = Message<"octomanager.v2.AcknowledgeActionRequest"> & {
@@ -1133,6 +1203,8 @@ export const AcknowledgeActionRequestSchema: GenMessage<AcknowledgeActionRequest
   messageDesc(file_octomanager_v2_tracking, 34);
 
 /**
+ * AcknowledgeActionResponse returns the result for the following operation: Records the current owner’s acceptance of an applicable action.
+ *
  * @generated from message octomanager.v2.AcknowledgeActionResponse
  */
 export type AcknowledgeActionResponse = Message<"octomanager.v2.AcknowledgeActionResponse"> & {
@@ -1150,6 +1222,8 @@ export const AcknowledgeActionResponseSchema: GenMessage<AcknowledgeActionRespon
   messageDesc(file_octomanager_v2_tracking, 35);
 
 /**
+ * StartActionRequest supplies arguments for the following operation: Records that the current owner has started work on an applicable action.
+ *
  * @generated from message octomanager.v2.StartActionRequest
  */
 export type StartActionRequest = Message<"octomanager.v2.StartActionRequest"> & {
@@ -1172,6 +1246,8 @@ export const StartActionRequestSchema: GenMessage<StartActionRequest> = /*@__PUR
   messageDesc(file_octomanager_v2_tracking, 36);
 
 /**
+ * StartActionResponse returns the result for the following operation: Records that the current owner has started work on an applicable action.
+ *
  * @generated from message octomanager.v2.StartActionResponse
  */
 export type StartActionResponse = Message<"octomanager.v2.StartActionResponse"> & {
@@ -1189,6 +1265,8 @@ export const StartActionResponseSchema: GenMessage<StartActionResponse> = /*@__P
   messageDesc(file_octomanager_v2_tracking, 37);
 
 /**
+ * ReprofileActionRequest supplies arguments for the following operation: Changes the selected execution profile for an owner-authorized action.
+ *
  * @generated from message octomanager.v2.ReprofileActionRequest
  */
 export type ReprofileActionRequest = Message<"octomanager.v2.ReprofileActionRequest"> & {
@@ -1206,6 +1284,8 @@ export const ReprofileActionRequestSchema: GenMessage<ReprofileActionRequest> = 
   messageDesc(file_octomanager_v2_tracking, 38);
 
 /**
+ * ReprofileActionResponse returns the result for the following operation: Changes the selected execution profile for an owner-authorized action.
+ *
  * @generated from message octomanager.v2.ReprofileActionResponse
  */
 export type ReprofileActionResponse = Message<"octomanager.v2.ReprofileActionResponse"> & {
@@ -1223,6 +1303,8 @@ export const ReprofileActionResponseSchema: GenMessage<ReprofileActionResponse> 
   messageDesc(file_octomanager_v2_tracking, 39);
 
 /**
+ * AgentMessage retains one recipient’s immutable action notification and receipt state.
+ *
  * @generated from message octomanager.v2.AgentMessage
  */
 export type AgentMessage = Message<"octomanager.v2.AgentMessage"> & {
@@ -1280,6 +1362,8 @@ export const AgentMessageSchema: GenMessage<AgentMessage> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 40);
 
 /**
+ * ListAgentMessagesRequest supplies arguments for the following operation: Pages recipient-specific messages and independent receipt state.
+ *
  * @generated from message octomanager.v2.ListAgentMessagesRequest
  */
 export type ListAgentMessagesRequest = Message<"octomanager.v2.ListAgentMessagesRequest"> & {
@@ -1312,6 +1396,8 @@ export const ListAgentMessagesRequestSchema: GenMessage<ListAgentMessagesRequest
   messageDesc(file_octomanager_v2_tracking, 41);
 
 /**
+ * ListAgentMessagesResponse returns the result for the following operation: Pages recipient-specific messages and independent receipt state.
+ *
  * @generated from message octomanager.v2.ListAgentMessagesResponse
  */
 export type ListAgentMessagesResponse = Message<"octomanager.v2.ListAgentMessagesResponse"> & {
@@ -1339,6 +1425,8 @@ export const ListAgentMessagesResponseSchema: GenMessage<ListAgentMessagesRespon
   messageDesc(file_octomanager_v2_tracking, 42);
 
 /**
+ * AcknowledgeMessageRequest supplies arguments for the following operation: Receipts one recipient’s message without clearing another recipient’s copy.
+ *
  * @generated from message octomanager.v2.AcknowledgeMessageRequest
  */
 export type AcknowledgeMessageRequest = Message<"octomanager.v2.AcknowledgeMessageRequest"> & {
@@ -1366,6 +1454,8 @@ export const AcknowledgeMessageRequestSchema: GenMessage<AcknowledgeMessageReque
   messageDesc(file_octomanager_v2_tracking, 43);
 
 /**
+ * AcknowledgeMessageResponse returns the result for the following operation: Receipts one recipient’s message without clearing another recipient’s copy.
+ *
  * @generated from message octomanager.v2.AcknowledgeMessageResponse
  */
 export type AcknowledgeMessageResponse = Message<"octomanager.v2.AcknowledgeMessageResponse"> & {
@@ -1383,6 +1473,8 @@ export const AcknowledgeMessageResponseSchema: GenMessage<AcknowledgeMessageResp
   messageDesc(file_octomanager_v2_tracking, 44);
 
 /**
+ * RegisterAgentRequest supplies arguments for the following operation: Registers a session target without granting PR ownership or repair authority.
+ *
  * @generated from message octomanager.v2.RegisterAgentRequest
  */
 export type RegisterAgentRequest = Message<"octomanager.v2.RegisterAgentRequest"> & {
@@ -1400,6 +1492,8 @@ export const RegisterAgentRequestSchema: GenMessage<RegisterAgentRequest> = /*@_
   messageDesc(file_octomanager_v2_tracking, 45);
 
 /**
+ * RegisterAgentResponse returns the result for the following operation: Registers a session target without granting PR ownership or repair authority.
+ *
  * @generated from message octomanager.v2.RegisterAgentResponse
  */
 export type RegisterAgentResponse = Message<"octomanager.v2.RegisterAgentResponse"> & {
@@ -1417,6 +1511,8 @@ export const RegisterAgentResponseSchema: GenMessage<RegisterAgentResponse> = /*
   messageDesc(file_octomanager_v2_tracking, 46);
 
 /**
+ * PRParticipant identifies an owner or observer without implying session availability.
+ *
  * @generated from message octomanager.v2.PRParticipant
  */
 export type PRParticipant = Message<"octomanager.v2.PRParticipant"> & {
@@ -1449,6 +1545,8 @@ export const PRParticipantSchema: GenMessage<PRParticipant> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_tracking, 47);
 
 /**
+ * SubscribePullRequestRequest supplies arguments for the following operation: Adds an observer to an already enrolled PR without transferring ownership.
+ *
  * @generated from message octomanager.v2.SubscribePullRequestRequest
  */
 export type SubscribePullRequestRequest = Message<"octomanager.v2.SubscribePullRequestRequest"> & {
@@ -1471,6 +1569,8 @@ export const SubscribePullRequestRequestSchema: GenMessage<SubscribePullRequestR
   messageDesc(file_octomanager_v2_tracking, 48);
 
 /**
+ * UnsubscribePullRequestRequest supplies arguments for the following operation: Removes one observer’s subscription and cancels only its applicable deliveries.
+ *
  * @generated from message octomanager.v2.UnsubscribePullRequestRequest
  */
 export type UnsubscribePullRequestRequest = Message<"octomanager.v2.UnsubscribePullRequestRequest"> & {
@@ -1493,6 +1593,8 @@ export const UnsubscribePullRequestRequestSchema: GenMessage<UnsubscribePullRequ
   messageDesc(file_octomanager_v2_tracking, 49);
 
 /**
+ * ListPRParticipantsRequest supplies arguments for the following operation: Pages the owner and observers without claiming that their sessions are online.
+ *
  * @generated from message octomanager.v2.ListPRParticipantsRequest
  */
 export type ListPRParticipantsRequest = Message<"octomanager.v2.ListPRParticipantsRequest"> & {
@@ -1515,6 +1617,8 @@ export const ListPRParticipantsRequestSchema: GenMessage<ListPRParticipantsReque
   messageDesc(file_octomanager_v2_tracking, 50);
 
 /**
+ * ListPRParticipantsResponse returns the result for the following operation: Pages the owner and observers without claiming that their sessions are online.
+ *
  * @generated from message octomanager.v2.ListPRParticipantsResponse
  */
 export type ListPRParticipantsResponse = Message<"octomanager.v2.ListPRParticipantsResponse"> & {
@@ -1542,6 +1646,8 @@ export const ListPRParticipantsResponseSchema: GenMessage<ListPRParticipantsResp
   messageDesc(file_octomanager_v2_tracking, 51);
 
 /**
+ * SubscribePullRequestResponse returns the result for the following operation: Adds an observer to an already enrolled PR without transferring ownership.
+ *
  * @generated from message octomanager.v2.SubscribePullRequestResponse
  */
 export type SubscribePullRequestResponse = Message<"octomanager.v2.SubscribePullRequestResponse"> & {
@@ -1569,6 +1675,8 @@ export const SubscribePullRequestResponseSchema: GenMessage<SubscribePullRequest
   messageDesc(file_octomanager_v2_tracking, 52);
 
 /**
+ * UnsubscribePullRequestResponse returns the result for the following operation: Removes one observer’s subscription and cancels only its applicable deliveries.
+ *
  * @generated from message octomanager.v2.UnsubscribePullRequestResponse
  */
 export type UnsubscribePullRequestResponse = Message<"octomanager.v2.UnsubscribePullRequestResponse"> & {

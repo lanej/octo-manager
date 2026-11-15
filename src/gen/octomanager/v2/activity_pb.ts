@@ -13,6 +13,8 @@ export const file_octomanager_v2_activity: GenFile = /*@__PURE__*/
   fileDesc("Ch1vY3RvbWFuYWdlci92Mi9hY3Rpdml0eS5wcm90bxIOb2N0b21hbmFnZXIudjIirAEKDUFjdGl2aXR5QWN0b3ISDwoHaGFybmVzcxgBIAEoCRISCgpzZXNzaW9uX2lkGAIgASgJEhQKB3ZlcnNpb24YAyABKAlIAIgBARISCgVtb2RlbBgEIAEoCUgBiAEBEhIKBWxhYmVsGAUgASgJSAKIAQESEAoDY3dkGAYgASgJSAOIAQFCCgoIX3ZlcnNpb25CCAoGX21vZGVsQggKBl9sYWJlbEIGCgRfY3dkIqECCg1BY3Rpdml0eUlucHV0EhIKCnJlcXVlc3RfaWQYASABKAkSFAoMb3BlcmF0aW9uX2lkGAIgASgJEioKBG5hbWUYAyABKA4yHC5vY3RvbWFuYWdlci52Mi5BY3Rpdml0eU5hbWUSMAoHb3V0Y29tZRgEIAEoDjIfLm9jdG9tYW5hZ2VyLnYyLkFjdGl2aXR5T3V0Y29tZRIsCgVhY3RvchgFIAEoCzIdLm9jdG9tYW5hZ2VyLnYyLkFjdGl2aXR5QWN0b3ISDgoGZGV0YWlsGAYgASgJEhMKBnByX3VybBgHIAEoCUgAiAEBEhkKDGV2aWRlbmNlX3VybBgIIAEoCUgBiAEBQgkKB19wcl91cmxCDwoNX2V2aWRlbmNlX3VybCJpCg5BY3Rpdml0eVJlcG9ydBIQCghzZXF1ZW5jZRgBIAEoBBIWCg5yZWNvcmRlZF9hdF9tcxgCIAEoAxItCgZyZXBvcnQYAyABKAsyHS5vY3RvbWFuYWdlci52Mi5BY3Rpdml0eUlucHV0IkYKFVJlY29yZEFjdGl2aXR5UmVxdWVzdBItCgZyZXBvcnQYASABKAsyHS5vY3RvbWFuYWdlci52Mi5BY3Rpdml0eUlucHV0IkoKFlJlY29yZEFjdGl2aXR5UmVzcG9uc2USMAoIYWN0aXZpdHkYASABKAsyHi5vY3RvbWFuYWdlci52Mi5BY3Rpdml0eVJlcG9ydCJuChNMaXN0QWN0aXZpdHlSZXF1ZXN0EhYKDmFmdGVyX3NlcXVlbmNlGAEgASgEEhwKD2JlZm9yZV9zZXF1ZW5jZRgCIAEoBEgAiAEBEg0KBWxpbWl0GAMgASgNQhIKEF9iZWZvcmVfc2VxdWVuY2UqywEKDEFjdGl2aXR5TmFtZRIdChlBQ1RJVklUWV9OQU1FX1VOU1BFQ0lGSUVEEAASGgoWQUNUSVZJVFlfTkFNRV9NRVJHRV9QUhABEhwKGEFDVElWSVRZX05BTUVfUlVOX0NIRUNLUxACEiIKHkFDVElWSVRZX05BTUVfUkVTT0xWRV9DT05GTElDVBADEh4KGkFDVElWSVRZX05BTUVfU1VNTUFSSVpFX1BSEAQSHgoaQUNUSVZJVFlfTkFNRV9OT1RJRllfQUdFTlQQBSqwAQoPQWN0aXZpdHlPdXRjb21lEiAKHEFDVElWSVRZX09VVENPTUVfVU5TUEVDSUZJRUQQABIeChpBQ1RJVklUWV9PVVRDT01FX0FUVEVNUFRFRBABEh4KGkFDVElWSVRZX09VVENPTUVfU1VDQ0VFREVEEAISGwoXQUNUSVZJVFlfT1VUQ09NRV9GQUlMRUQQAxIeChpBQ1RJVklUWV9PVVRDT01FX1VOQ0VSVEFJThAEQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MjtvY3RvbWFuYWdlcnYyYgZwcm90bzM");
 
 /**
+ * ActivityActor contains caller-supplied agent metadata rather than an authenticated identity claim.
+ *
  * @generated from message octomanager.v2.ActivityActor
  */
 export type ActivityActor = Message<"octomanager.v2.ActivityActor"> & {
@@ -55,6 +57,8 @@ export const ActivityActorSchema: GenMessage<ActivityActor> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_activity, 0);
 
 /**
+ * ActivityInput reports one named operation outcome with an idempotent request identity.
+ *
  * @generated from message octomanager.v2.ActivityInput
  */
 export type ActivityInput = Message<"octomanager.v2.ActivityInput"> & {
@@ -107,6 +111,8 @@ export const ActivityInputSchema: GenMessage<ActivityInput> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_activity, 1);
 
 /**
+ * ActivityReport adds coordinator sequence and ingestion time to a caller’s operation report.
+ *
  * @generated from message octomanager.v2.ActivityReport
  */
 export type ActivityReport = Message<"octomanager.v2.ActivityReport"> & {
@@ -134,6 +140,8 @@ export const ActivityReportSchema: GenMessage<ActivityReport> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_activity, 2);
 
 /**
+ * RecordActivityRequest supplies arguments for the following operation: Records a caller-reported operation outcome without independently verifying it.
+ *
  * @generated from message octomanager.v2.RecordActivityRequest
  */
 export type RecordActivityRequest = Message<"octomanager.v2.RecordActivityRequest"> & {
@@ -151,6 +159,8 @@ export const RecordActivityRequestSchema: GenMessage<RecordActivityRequest> = /*
   messageDesc(file_octomanager_v2_activity, 3);
 
 /**
+ * RecordActivityResponse returns the result for the following operation: Records a caller-reported operation outcome without independently verifying it.
+ *
  * @generated from message octomanager.v2.RecordActivityResponse
  */
 export type RecordActivityResponse = Message<"octomanager.v2.RecordActivityResponse"> & {
@@ -168,6 +178,8 @@ export const RecordActivityResponseSchema: GenMessage<RecordActivityResponse> = 
   messageDesc(file_octomanager_v2_activity, 4);
 
 /**
+ * ListActivityRequest supplies arguments for the following operation: Pages recorded agent activity and coordinator events.
+ *
  * @generated from message octomanager.v2.ListActivityRequest
  */
 export type ListActivityRequest = Message<"octomanager.v2.ListActivityRequest"> & {

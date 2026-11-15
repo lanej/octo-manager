@@ -4,17 +4,17 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { AgentTarget } from "./tracking_pb.js";
-import { file_octomanager_v2_tracking } from "./tracking_pb.js";
 import type { DomainAgentDigest, DomainDigestInspection, DomainDigestReceipt, DomainMergeReceiptResult } from "./domain_pb.js";
 import { file_octomanager_v2_domain } from "./domain_pb.js";
+import type { AgentTarget } from "./tracking_pb.js";
+import { file_octomanager_v2_tracking } from "./tracking_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file octomanager/v2/notifications.proto.
  */
 export const file_octomanager_v2_notifications: GenFile = /*@__PURE__*/
-  fileDesc("CiJvY3RvbWFuYWdlci92Mi9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MiJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiJUChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEjoKCmluc3BlY3Rpb24YASABKAsyJi5vY3RvbWFuYWdlci52Mi5Eb21haW5EaWdlc3RJbnNwZWN0aW9uIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIk4KGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIyCgdkaWdlc3RzGAEgAygLMiEub2N0b21hbmFnZXIudjIuRG9tYWluQWdlbnREaWdlc3QixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYyLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zIosBCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USNAoHcmVjZWlwdBgBIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkRpZ2VzdFJlY2VpcHQSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52Mi5BZ2VudERpZ2VzdE1lbWJlciJzChhNZXJnZUFnZW50TWVzc2FnZVJlcXVlc3QSEgoKcmVjZWlwdF9pZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIxCgxhZ2VudF90YXJnZXQYAyABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCJVChlNZXJnZUFnZW50TWVzc2FnZVJlc3BvbnNlEjgKBnJlc3VsdBgBIAEoCzIoLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbk1lcmdlUmVjZWlwdFJlc3VsdEJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjI7b2N0b21hbmFnZXJ2MmIGcHJvdG8z", [file_octomanager_v2_tracking, file_octomanager_v2_domain]);
+  fileDesc("CiJvY3RvbWFuYWdlci92Mi9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MiJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiJUChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEjoKCmluc3BlY3Rpb24YASABKAsyJi5vY3RvbWFuYWdlci52Mi5Eb21haW5EaWdlc3RJbnNwZWN0aW9uIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIk4KGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIyCgdkaWdlc3RzGAEgAygLMiEub2N0b21hbmFnZXIudjIuRG9tYWluQWdlbnREaWdlc3QixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYyLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zIosBCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USNAoHcmVjZWlwdBgBIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkRpZ2VzdFJlY2VpcHQSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52Mi5BZ2VudERpZ2VzdE1lbWJlciJzChhNZXJnZUFnZW50TWVzc2FnZVJlcXVlc3QSEgoKcmVjZWlwdF9pZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIxCgxhZ2VudF90YXJnZXQYAyABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCJVChlNZXJnZUFnZW50TWVzc2FnZVJlc3BvbnNlEjgKBnJlc3VsdBgBIAEoCzIoLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbk1lcmdlUmVjZWlwdFJlc3VsdEJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjI7b2N0b21hbmFnZXJ2MmIGcHJvdG8z", [file_octomanager_v2_domain, file_octomanager_v2_tracking]);
 
 /**
  * Frozen content and exact receipts are separate typed records.
@@ -46,6 +46,8 @@ export const GetAgentDigestRequestSchema: GenMessage<GetAgentDigestRequest> = /*
   messageDesc(file_octomanager_v2_notifications, 0);
 
 /**
+ * GetAgentDigestResponse returns the result for the following operation: Inspects a digest or frozen receipt without acknowledging its messages.
+ *
  * @generated from message octomanager.v2.GetAgentDigestResponse
  */
 export type GetAgentDigestResponse = Message<"octomanager.v2.GetAgentDigestResponse"> & {
@@ -63,6 +65,8 @@ export const GetAgentDigestResponseSchema: GenMessage<GetAgentDigestResponse> = 
   messageDesc(file_octomanager_v2_notifications, 1);
 
 /**
+ * ListAgentDigestsRequest supplies arguments for the following operation: Lists retained notification digests for a recipient.
+ *
  * @generated from message octomanager.v2.ListAgentDigestsRequest
  */
 export type ListAgentDigestsRequest = Message<"octomanager.v2.ListAgentDigestsRequest"> & {
@@ -80,6 +84,8 @@ export const ListAgentDigestsRequestSchema: GenMessage<ListAgentDigestsRequest> 
   messageDesc(file_octomanager_v2_notifications, 2);
 
 /**
+ * ListAgentDigestsResponse returns the result for the following operation: Lists retained notification digests for a recipient.
+ *
  * @generated from message octomanager.v2.ListAgentDigestsResponse
  */
 export type ListAgentDigestsResponse = Message<"octomanager.v2.ListAgentDigestsResponse"> & {
@@ -97,6 +103,8 @@ export const ListAgentDigestsResponseSchema: GenMessage<ListAgentDigestsResponse
   messageDesc(file_octomanager_v2_notifications, 3);
 
 /**
+ * AcknowledgeAgentDigestRequest supplies arguments for the following operation: Receipts an exact digest revision without accepting the underlying actions.
+ *
  * @generated from message octomanager.v2.AcknowledgeAgentDigestRequest
  */
 export type AcknowledgeAgentDigestRequest = Message<"octomanager.v2.AcknowledgeAgentDigestRequest"> & {
@@ -139,6 +147,8 @@ export const AcknowledgeAgentDigestRequestSchema: GenMessage<AcknowledgeAgentDig
   messageDesc(file_octomanager_v2_notifications, 4);
 
 /**
+ * AgentDigestMember identifies a frozen notification member and its recipient-specific applicability.
+ *
  * @generated from message octomanager.v2.AgentDigestMember
  */
 export type AgentDigestMember = Message<"octomanager.v2.AgentDigestMember"> & {
@@ -196,6 +206,8 @@ export const AgentDigestMemberSchema: GenMessage<AgentDigestMember> = /*@__PURE_
   messageDesc(file_octomanager_v2_notifications, 5);
 
 /**
+ * AcknowledgeAgentDigestResponse returns the result for the following operation: Receipts an exact digest revision without accepting the underlying actions.
+ *
  * @generated from message octomanager.v2.AcknowledgeAgentDigestResponse
  */
 export type AcknowledgeAgentDigestResponse = Message<"octomanager.v2.AcknowledgeAgentDigestResponse"> & {
@@ -218,6 +230,8 @@ export const AcknowledgeAgentDigestResponseSchema: GenMessage<AcknowledgeAgentDi
   messageDesc(file_octomanager_v2_notifications, 6);
 
 /**
+ * MergeAgentMessageRequest supplies arguments for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
+ *
  * @generated from message octomanager.v2.MergeAgentMessageRequest
  */
 export type MergeAgentMessageRequest = Message<"octomanager.v2.MergeAgentMessageRequest"> & {
@@ -245,6 +259,8 @@ export const MergeAgentMessageRequestSchema: GenMessage<MergeAgentMessageRequest
   messageDesc(file_octomanager_v2_notifications, 7);
 
 /**
+ * MergeAgentMessageResponse returns the result for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
+ *
  * @generated from message octomanager.v2.MergeAgentMessageResponse
  */
 export type MergeAgentMessageResponse = Message<"octomanager.v2.MergeAgentMessageResponse"> & {

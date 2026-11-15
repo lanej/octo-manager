@@ -203,61 +203,117 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v2.SchedulerService service.
 type SchedulerServiceClient interface {
+	// Reports the wire API version before clients perform coordinator operations.
 	GetServerInfo(context.Context, *connect.Request[v2.GetServerInfoRequest]) (*connect.Response[v2.GetServerInfoResponse], error)
+	// Sets an owner-authorized per-PR automatic merge override.
 	SetAutoMerge(context.Context, *connect.Request[v2.SetAutoMergeRequest]) (*connect.Response[v2.SetAutoMergeResponse], error)
+	// Records ordered merge intents; acceptance does not confirm a GitHub merge.
 	QueueMergeChain(context.Context, *connect.Request[v2.QueueMergeChainRequest]) (*connect.Response[v2.QueueMergeChainResponse], error)
+	// Inspects retained merge chains, entries, and in-flight operations.
 	InspectMergeChains(context.Context, *connect.Request[v2.InspectMergeChainsRequest]) (*connect.Response[v2.InspectMergeChainsResponse], error)
+	// Lists discovered references without treating them as confirmed dependencies.
 	ListPRReferences(context.Context, *connect.Request[v2.ListPRReferencesRequest]) (*connect.Response[v2.ListPRReferencesResponse], error)
+	// Lists explicitly confirmed prerequisites for tracked PRs.
 	ListPRDependencies(context.Context, *connect.Request[v2.ListPRDependenciesRequest]) (*connect.Response[v2.ListPRDependenciesResponse], error)
+	// Confirms an owner-authorized prerequisite and rejects dependency cycles.
 	ConfirmPRDependency(context.Context, *connect.Request[v2.ConfirmPRDependencyRequest]) (*connect.Response[v2.ConfirmPRDependencyResponse], error)
+	// Removes a confirmed prerequisite under the dependent PR owner’s authority.
 	RemovePRDependency(context.Context, *connect.Request[v2.RemovePRDependencyRequest]) (*connect.Response[v2.RemovePRDependencyResponse], error)
+	// Records whether a discovered reference is related or dismissed.
 	DecidePRReference(context.Context, *connect.Request[v2.DecidePRReferenceRequest]) (*connect.Response[v2.DecidePRReferenceResponse], error)
+	// Sets the expected checks or explicit no-CI policy for a tracked PR.
 	SetMergePolicy(context.Context, *connect.Request[v2.SetMergePolicyRequest]) (*connect.Response[v2.SetMergePolicyResponse], error)
+	// Records the owner’s assessment for an exact PR head and current evidence.
 	SetMergeReady(context.Context, *connect.Request[v2.SetMergeReadyRequest]) (*connect.Response[v2.SetMergeReadyResponse], error)
+	// Pauses future merge dispatch for a chain without undoing prior effects.
 	PauseMergeChain(context.Context, *connect.Request[v2.PauseMergeChainRequest]) (*connect.Response[v2.PauseMergeChainResponse], error)
+	// Resumes eligibility evaluation for a paused merge chain.
 	ResumeMergeChain(context.Context, *connect.Request[v2.ResumeMergeChainRequest]) (*connect.Response[v2.ResumeMergeChainResponse], error)
+	// Cancels unfinished chain entries while preserving operation history.
 	CancelMergeChain(context.Context, *connect.Request[v2.CancelMergeChainRequest]) (*connect.Response[v2.CancelMergeChainResponse], error)
+	// Rechecks an uncertain GitHub operation without blindly repeating its mutation.
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
+	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
+	// Inspects a digest or frozen receipt without acknowledging its messages.
 	GetAgentDigest(context.Context, *connect.Request[v2.GetAgentDigestRequest]) (*connect.Response[v2.GetAgentDigestResponse], error)
+	// Lists retained notification digests for a recipient.
 	ListAgentDigests(context.Context, *connect.Request[v2.ListAgentDigestsRequest]) (*connect.Response[v2.ListAgentDigestsResponse], error)
+	// Receipts an exact digest revision without accepting the underlying actions.
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v2.AcknowledgeAgentDigestRequest]) (*connect.Response[v2.AcknowledgeAgentDigestResponse], error)
+	// Reads archived submission evidence; it does not resume legacy drafting.
 	GetSubmission(context.Context, *connect.Request[v2.GetSubmissionRequest]) (*connect.Response[v2.GetSubmissionResponse], error)
+	// Pages archived submission summaries without loading full worker evidence.
 	ListSubmissions(context.Context, *connect.Request[v2.ListSubmissionsRequest]) (*connect.Response[v2.ListSubmissionsResponse], error)
+	// Reads a retained repository publication policy and its rendered template.
 	GetRepositoryPolicy(context.Context, *connect.Request[v2.GetRepositoryPolicyRequest]) (*connect.Response[v2.GetRepositoryPolicyResponse], error)
+	// Lists retained mechanical conflict decisions for repair inspection.
 	ListConflictCases(context.Context, *connect.Request[v2.ListConflictCasesRequest]) (*connect.Response[v2.ListConflictCasesResponse], error)
+	// Reads one conflict case and its recorded source and candidate evidence.
 	GetConflictCase(context.Context, *connect.Request[v2.GetConflictCaseRequest]) (*connect.Response[v2.GetConflictCaseResponse], error)
+	// Queues an explicitly requested, bounded PR rebase repair.
 	RequestRebase(context.Context, *connect.Request[v2.RequestRebaseRequest]) (*connect.Response[v2.RequestRebaseResponse], error)
+	// Lists durable repair attempts and their current outcomes.
 	ListRepairs(context.Context, *connect.Request[v2.ListRepairsRequest]) (*connect.Response[v2.ListRepairsResponse], error)
+	// Records a caller-reported operation outcome without independently verifying it.
 	RecordActivity(context.Context, *connect.Request[v2.RecordActivityRequest]) (*connect.Response[v2.RecordActivityResponse], error)
+	// Pages recorded agent activity and coordinator events.
 	ListActivity(context.Context, *connect.Request[v2.ListActivityRequest]) (*connect.Response[v2.ListActivityResponse], error)
+	// Registers a session target without granting PR ownership or repair authority.
 	RegisterAgent(context.Context, *connect.Request[v2.RegisterAgentRequest]) (*connect.Response[v2.RegisterAgentResponse], error)
+	// Adds an observer to an already enrolled PR without transferring ownership.
 	SubscribePullRequest(context.Context, *connect.Request[v2.SubscribePullRequestRequest]) (*connect.Response[v2.SubscribePullRequestResponse], error)
+	// Removes one observer’s subscription and cancels only its applicable deliveries.
 	UnsubscribePullRequest(context.Context, *connect.Request[v2.UnsubscribePullRequestRequest]) (*connect.Response[v2.UnsubscribePullRequestResponse], error)
+	// Pages the owner and observers without claiming that their sessions are online.
 	ListPRParticipants(context.Context, *connect.Request[v2.ListPRParticipantsRequest]) (*connect.Response[v2.ListPRParticipantsResponse], error)
+	// Enrolls a PR for observation with an explicit responsible owner.
 	TrackPullRequest(context.Context, *connect.Request[v2.TrackPullRequestRequest]) (*connect.Response[v2.TrackPullRequestResponse], error)
+	// Lists retained PR enrollments and their cached observations.
 	ListTrackedPullRequests(context.Context, *connect.Request[v2.ListTrackedPullRequestsRequest]) (*connect.Response[v2.ListTrackedPullRequestsResponse], error)
+	// Reads one tracked PR and its current cached evidence.
 	GetTrackedPullRequest(context.Context, *connect.Request[v2.GetTrackedPullRequestRequest]) (*connect.Response[v2.GetTrackedPullRequestResponse], error)
+	// Requests a scheduled refresh rather than bypassing GitHub rate coordination.
 	RefreshTrackedPullRequest(context.Context, *connect.Request[v2.RefreshTrackedPullRequestRequest]) (*connect.Response[v2.RefreshTrackedPullRequestResponse], error)
+	// Transfers responsibility while preserving explicit observer subscriptions.
 	AssignPullRequest(context.Context, *connect.Request[v2.AssignPullRequestRequest]) (*connect.Response[v2.AssignPullRequestResponse], error)
+	// Disables observation and delivery without deleting retained evidence.
 	UntrackPullRequest(context.Context, *connect.Request[v2.UntrackPullRequestRequest]) (*connect.Response[v2.UntrackPullRequestResponse], error)
+	// Lists PR actions whose ownership is separate from notification receipt.
 	ListActions(context.Context, *connect.Request[v2.ListActionsRequest]) (*connect.Response[v2.ListActionsResponse], error)
+	// Reads a durable action, its progress, and related delivery evidence.
 	GetAction(context.Context, *connect.Request[v2.GetActionRequest]) (*connect.Response[v2.GetActionResponse], error)
+	// Records the current owner’s acceptance of an applicable action.
 	AcknowledgeAction(context.Context, *connect.Request[v2.AcknowledgeActionRequest]) (*connect.Response[v2.AcknowledgeActionResponse], error)
+	// Records that the current owner has started work on an applicable action.
 	StartAction(context.Context, *connect.Request[v2.StartActionRequest]) (*connect.Response[v2.StartActionResponse], error)
+	// Explicitly retries notification delivery while retaining previous attempts.
 	RetryDelivery(context.Context, *connect.Request[v2.RetryDeliveryRequest]) (*connect.Response[v2.RetryDeliveryResponse], error)
+	// Pages recipient-specific messages and independent receipt state.
 	ListAgentMessages(context.Context, *connect.Request[v2.ListAgentMessagesRequest]) (*connect.Response[v2.ListAgentMessagesResponse], error)
+	// Receipts one recipient’s message without clearing another recipient’s copy.
 	AcknowledgeMessage(context.Context, *connect.Request[v2.AcknowledgeMessageRequest]) (*connect.Response[v2.AcknowledgeMessageResponse], error)
+	// Changes the selected execution profile for an owner-authorized action.
 	ReprofileAction(context.Context, *connect.Request[v2.ReprofileActionRequest]) (*connect.Response[v2.ReprofileActionResponse], error)
+	// Accepts an idempotent, scoped worker task into the scheduler queue.
 	SubmitJob(context.Context, *connect.Request[v2.SubmitJobRequest]) (*connect.Response[v2.SubmitJobResponse], error)
+	// Reads a job and its attempts without changing execution state.
 	GetJob(context.Context, *connect.Request[v2.GetJobRequest]) (*connect.Response[v2.GetJobResponse], error)
+	// Reads PR details through the coordinated GitHub request boundary.
 	GetPullRequest(context.Context, *connect.Request[v2.GetPullRequestRequest]) (*connect.Response[v2.GetPullRequestResponse], error)
+	// Reads a combined scheduler and PR view for dashboard refresh.
 	WatchDashboard(context.Context, *connect.Request[v2.WatchDashboardRequest]) (*connect.ServerStreamForClient[v2.WatchDashboardResponse], error)
+	// Reads current scheduler, worker, job, and event state.
 	GetSnapshot(context.Context, *connect.Request[v2.GetSnapshotRequest]) (*connect.Response[v2.GetSnapshotResponse], error)
+	// Reads sequenced scheduler events after the caller’s cursor.
 	ListEvents(context.Context, *connect.Request[v2.ListEventsRequest]) (*connect.Response[v2.ListEventsResponse], error)
+	// Streams job updates; disconnecting the client does not cancel the job.
 	Watch(context.Context, *connect.Request[v2.WatchRequest]) (*connect.ServerStreamForClient[v2.WatchResponse], error)
+	// Requests cancellation and retains the asynchronous worker-exit transition.
 	CancelJob(context.Context, *connect.Request[v2.CancelJobRequest]) (*connect.Response[v2.CancelJobResponse], error)
+	// Explicitly requeues a failed or interrupted job while preserving its attempts.
 	RetryJob(context.Context, *connect.Request[v2.RetryJobRequest]) (*connect.Response[v2.RetryJobResponse], error)
+	// Controls future worker dispatch without cancelling an already running job.
 	SetPaused(context.Context, *connect.Request[v2.SetPausedRequest]) (*connect.Response[v2.SetPausedResponse], error)
 }
 
@@ -953,61 +1009,117 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v2.SchedulerService service.
 type SchedulerServiceHandler interface {
+	// Reports the wire API version before clients perform coordinator operations.
 	GetServerInfo(context.Context, *connect.Request[v2.GetServerInfoRequest]) (*connect.Response[v2.GetServerInfoResponse], error)
+	// Sets an owner-authorized per-PR automatic merge override.
 	SetAutoMerge(context.Context, *connect.Request[v2.SetAutoMergeRequest]) (*connect.Response[v2.SetAutoMergeResponse], error)
+	// Records ordered merge intents; acceptance does not confirm a GitHub merge.
 	QueueMergeChain(context.Context, *connect.Request[v2.QueueMergeChainRequest]) (*connect.Response[v2.QueueMergeChainResponse], error)
+	// Inspects retained merge chains, entries, and in-flight operations.
 	InspectMergeChains(context.Context, *connect.Request[v2.InspectMergeChainsRequest]) (*connect.Response[v2.InspectMergeChainsResponse], error)
+	// Lists discovered references without treating them as confirmed dependencies.
 	ListPRReferences(context.Context, *connect.Request[v2.ListPRReferencesRequest]) (*connect.Response[v2.ListPRReferencesResponse], error)
+	// Lists explicitly confirmed prerequisites for tracked PRs.
 	ListPRDependencies(context.Context, *connect.Request[v2.ListPRDependenciesRequest]) (*connect.Response[v2.ListPRDependenciesResponse], error)
+	// Confirms an owner-authorized prerequisite and rejects dependency cycles.
 	ConfirmPRDependency(context.Context, *connect.Request[v2.ConfirmPRDependencyRequest]) (*connect.Response[v2.ConfirmPRDependencyResponse], error)
+	// Removes a confirmed prerequisite under the dependent PR owner’s authority.
 	RemovePRDependency(context.Context, *connect.Request[v2.RemovePRDependencyRequest]) (*connect.Response[v2.RemovePRDependencyResponse], error)
+	// Records whether a discovered reference is related or dismissed.
 	DecidePRReference(context.Context, *connect.Request[v2.DecidePRReferenceRequest]) (*connect.Response[v2.DecidePRReferenceResponse], error)
+	// Sets the expected checks or explicit no-CI policy for a tracked PR.
 	SetMergePolicy(context.Context, *connect.Request[v2.SetMergePolicyRequest]) (*connect.Response[v2.SetMergePolicyResponse], error)
+	// Records the owner’s assessment for an exact PR head and current evidence.
 	SetMergeReady(context.Context, *connect.Request[v2.SetMergeReadyRequest]) (*connect.Response[v2.SetMergeReadyResponse], error)
+	// Pauses future merge dispatch for a chain without undoing prior effects.
 	PauseMergeChain(context.Context, *connect.Request[v2.PauseMergeChainRequest]) (*connect.Response[v2.PauseMergeChainResponse], error)
+	// Resumes eligibility evaluation for a paused merge chain.
 	ResumeMergeChain(context.Context, *connect.Request[v2.ResumeMergeChainRequest]) (*connect.Response[v2.ResumeMergeChainResponse], error)
+	// Cancels unfinished chain entries while preserving operation history.
 	CancelMergeChain(context.Context, *connect.Request[v2.CancelMergeChainRequest]) (*connect.Response[v2.CancelMergeChainResponse], error)
+	// Rechecks an uncertain GitHub operation without blindly repeating its mutation.
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
+	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
+	// Inspects a digest or frozen receipt without acknowledging its messages.
 	GetAgentDigest(context.Context, *connect.Request[v2.GetAgentDigestRequest]) (*connect.Response[v2.GetAgentDigestResponse], error)
+	// Lists retained notification digests for a recipient.
 	ListAgentDigests(context.Context, *connect.Request[v2.ListAgentDigestsRequest]) (*connect.Response[v2.ListAgentDigestsResponse], error)
+	// Receipts an exact digest revision without accepting the underlying actions.
 	AcknowledgeAgentDigest(context.Context, *connect.Request[v2.AcknowledgeAgentDigestRequest]) (*connect.Response[v2.AcknowledgeAgentDigestResponse], error)
+	// Reads archived submission evidence; it does not resume legacy drafting.
 	GetSubmission(context.Context, *connect.Request[v2.GetSubmissionRequest]) (*connect.Response[v2.GetSubmissionResponse], error)
+	// Pages archived submission summaries without loading full worker evidence.
 	ListSubmissions(context.Context, *connect.Request[v2.ListSubmissionsRequest]) (*connect.Response[v2.ListSubmissionsResponse], error)
+	// Reads a retained repository publication policy and its rendered template.
 	GetRepositoryPolicy(context.Context, *connect.Request[v2.GetRepositoryPolicyRequest]) (*connect.Response[v2.GetRepositoryPolicyResponse], error)
+	// Lists retained mechanical conflict decisions for repair inspection.
 	ListConflictCases(context.Context, *connect.Request[v2.ListConflictCasesRequest]) (*connect.Response[v2.ListConflictCasesResponse], error)
+	// Reads one conflict case and its recorded source and candidate evidence.
 	GetConflictCase(context.Context, *connect.Request[v2.GetConflictCaseRequest]) (*connect.Response[v2.GetConflictCaseResponse], error)
+	// Queues an explicitly requested, bounded PR rebase repair.
 	RequestRebase(context.Context, *connect.Request[v2.RequestRebaseRequest]) (*connect.Response[v2.RequestRebaseResponse], error)
+	// Lists durable repair attempts and their current outcomes.
 	ListRepairs(context.Context, *connect.Request[v2.ListRepairsRequest]) (*connect.Response[v2.ListRepairsResponse], error)
+	// Records a caller-reported operation outcome without independently verifying it.
 	RecordActivity(context.Context, *connect.Request[v2.RecordActivityRequest]) (*connect.Response[v2.RecordActivityResponse], error)
+	// Pages recorded agent activity and coordinator events.
 	ListActivity(context.Context, *connect.Request[v2.ListActivityRequest]) (*connect.Response[v2.ListActivityResponse], error)
+	// Registers a session target without granting PR ownership or repair authority.
 	RegisterAgent(context.Context, *connect.Request[v2.RegisterAgentRequest]) (*connect.Response[v2.RegisterAgentResponse], error)
+	// Adds an observer to an already enrolled PR without transferring ownership.
 	SubscribePullRequest(context.Context, *connect.Request[v2.SubscribePullRequestRequest]) (*connect.Response[v2.SubscribePullRequestResponse], error)
+	// Removes one observer’s subscription and cancels only its applicable deliveries.
 	UnsubscribePullRequest(context.Context, *connect.Request[v2.UnsubscribePullRequestRequest]) (*connect.Response[v2.UnsubscribePullRequestResponse], error)
+	// Pages the owner and observers without claiming that their sessions are online.
 	ListPRParticipants(context.Context, *connect.Request[v2.ListPRParticipantsRequest]) (*connect.Response[v2.ListPRParticipantsResponse], error)
+	// Enrolls a PR for observation with an explicit responsible owner.
 	TrackPullRequest(context.Context, *connect.Request[v2.TrackPullRequestRequest]) (*connect.Response[v2.TrackPullRequestResponse], error)
+	// Lists retained PR enrollments and their cached observations.
 	ListTrackedPullRequests(context.Context, *connect.Request[v2.ListTrackedPullRequestsRequest]) (*connect.Response[v2.ListTrackedPullRequestsResponse], error)
+	// Reads one tracked PR and its current cached evidence.
 	GetTrackedPullRequest(context.Context, *connect.Request[v2.GetTrackedPullRequestRequest]) (*connect.Response[v2.GetTrackedPullRequestResponse], error)
+	// Requests a scheduled refresh rather than bypassing GitHub rate coordination.
 	RefreshTrackedPullRequest(context.Context, *connect.Request[v2.RefreshTrackedPullRequestRequest]) (*connect.Response[v2.RefreshTrackedPullRequestResponse], error)
+	// Transfers responsibility while preserving explicit observer subscriptions.
 	AssignPullRequest(context.Context, *connect.Request[v2.AssignPullRequestRequest]) (*connect.Response[v2.AssignPullRequestResponse], error)
+	// Disables observation and delivery without deleting retained evidence.
 	UntrackPullRequest(context.Context, *connect.Request[v2.UntrackPullRequestRequest]) (*connect.Response[v2.UntrackPullRequestResponse], error)
+	// Lists PR actions whose ownership is separate from notification receipt.
 	ListActions(context.Context, *connect.Request[v2.ListActionsRequest]) (*connect.Response[v2.ListActionsResponse], error)
+	// Reads a durable action, its progress, and related delivery evidence.
 	GetAction(context.Context, *connect.Request[v2.GetActionRequest]) (*connect.Response[v2.GetActionResponse], error)
+	// Records the current owner’s acceptance of an applicable action.
 	AcknowledgeAction(context.Context, *connect.Request[v2.AcknowledgeActionRequest]) (*connect.Response[v2.AcknowledgeActionResponse], error)
+	// Records that the current owner has started work on an applicable action.
 	StartAction(context.Context, *connect.Request[v2.StartActionRequest]) (*connect.Response[v2.StartActionResponse], error)
+	// Explicitly retries notification delivery while retaining previous attempts.
 	RetryDelivery(context.Context, *connect.Request[v2.RetryDeliveryRequest]) (*connect.Response[v2.RetryDeliveryResponse], error)
+	// Pages recipient-specific messages and independent receipt state.
 	ListAgentMessages(context.Context, *connect.Request[v2.ListAgentMessagesRequest]) (*connect.Response[v2.ListAgentMessagesResponse], error)
+	// Receipts one recipient’s message without clearing another recipient’s copy.
 	AcknowledgeMessage(context.Context, *connect.Request[v2.AcknowledgeMessageRequest]) (*connect.Response[v2.AcknowledgeMessageResponse], error)
+	// Changes the selected execution profile for an owner-authorized action.
 	ReprofileAction(context.Context, *connect.Request[v2.ReprofileActionRequest]) (*connect.Response[v2.ReprofileActionResponse], error)
+	// Accepts an idempotent, scoped worker task into the scheduler queue.
 	SubmitJob(context.Context, *connect.Request[v2.SubmitJobRequest]) (*connect.Response[v2.SubmitJobResponse], error)
+	// Reads a job and its attempts without changing execution state.
 	GetJob(context.Context, *connect.Request[v2.GetJobRequest]) (*connect.Response[v2.GetJobResponse], error)
+	// Reads PR details through the coordinated GitHub request boundary.
 	GetPullRequest(context.Context, *connect.Request[v2.GetPullRequestRequest]) (*connect.Response[v2.GetPullRequestResponse], error)
+	// Reads a combined scheduler and PR view for dashboard refresh.
 	WatchDashboard(context.Context, *connect.Request[v2.WatchDashboardRequest], *connect.ServerStream[v2.WatchDashboardResponse]) error
+	// Reads current scheduler, worker, job, and event state.
 	GetSnapshot(context.Context, *connect.Request[v2.GetSnapshotRequest]) (*connect.Response[v2.GetSnapshotResponse], error)
+	// Reads sequenced scheduler events after the caller’s cursor.
 	ListEvents(context.Context, *connect.Request[v2.ListEventsRequest]) (*connect.Response[v2.ListEventsResponse], error)
+	// Streams job updates; disconnecting the client does not cancel the job.
 	Watch(context.Context, *connect.Request[v2.WatchRequest], *connect.ServerStream[v2.WatchResponse]) error
+	// Requests cancellation and retains the asynchronous worker-exit transition.
 	CancelJob(context.Context, *connect.Request[v2.CancelJobRequest]) (*connect.Response[v2.CancelJobResponse], error)
+	// Explicitly requeues a failed or interrupted job while preserving its attempts.
 	RetryJob(context.Context, *connect.Request[v2.RetryJobRequest]) (*connect.Response[v2.RetryJobResponse], error)
+	// Controls future worker dispatch without cancelling an already running job.
 	SetPaused(context.Context, *connect.Request[v2.SetPausedRequest]) (*connect.Response[v2.SetPausedResponse], error)
 }
 

@@ -201,6 +201,7 @@ func (WorkerState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_scheduler_proto_rawDescGZIP(), []int{2}
 }
 
+// SummarizePullRequestTask selects the public PR to read through bounded summary tools.
 type SummarizePullRequestTask struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -245,6 +246,7 @@ func (x *SummarizePullRequestTask) GetUrl() string {
 	return ""
 }
 
+// ResolveConflictTask selects the generated disposable conflict fixture used by the demonstration.
 type ResolveConflictTask struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -281,6 +283,7 @@ func (*ResolveConflictTask) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_scheduler_proto_rawDescGZIP(), []int{1}
 }
 
+// Task selects exactly one supported worker capability.
 type Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Kind:
@@ -363,6 +366,7 @@ func (*Task_SummarizePullRequest) isTask_Kind() {}
 
 func (*Task_ResolveConflict) isTask_Kind() {}
 
+// Attempt retains a worker execution’s timing, process identity, and failure evidence.
 type Attempt struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Number           uint32                 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
@@ -447,6 +451,7 @@ func (x *Attempt) GetError() string {
 	return ""
 }
 
+// Job records durable scheduling state, attempts, and any resulting output.
 type Job struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -571,6 +576,7 @@ func (x *Job) GetError() string {
 	return ""
 }
 
+// ActionEventContext attaches action ownership and blocker context to a scheduler event.
 type ActionEventContext struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	State          ActionState            `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.ActionState" json:"state,omitempty"`
@@ -655,6 +661,7 @@ func (x *ActionEventContext) GetActorLabel() string {
 	return ""
 }
 
+// JobEvent records a sequenced scheduler transition with optional PR/action context.
 type JobEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
@@ -755,6 +762,7 @@ func (x *JobEvent) GetActionContext() *ActionEventContext {
 	return nil
 }
 
+// Snapshot captures scheduler and worker state with retained jobs and recent events.
 type Snapshot struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	InstanceId         string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
@@ -895,6 +903,7 @@ func (x *Snapshot) GetGithubScheduler() *GitHubSchedulerStatus {
 	return nil
 }
 
+// SubmitJobRequest supplies arguments for the following operation: Accepts an idempotent, scoped worker task into the scheduler queue.
 type SubmitJobRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -947,6 +956,7 @@ func (x *SubmitJobRequest) GetTask() *Task {
 	return nil
 }
 
+// SubmitJobResponse returns the result for the following operation: Accepts an idempotent, scoped worker task into the scheduler queue.
 type SubmitJobResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Job           *Job                   `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
@@ -991,6 +1001,7 @@ func (x *SubmitJobResponse) GetJob() *Job {
 	return nil
 }
 
+// GetJobRequest supplies arguments for the following operation: Reads a job and its attempts without changing execution state.
 type GetJobRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1035,6 +1046,7 @@ func (x *GetJobRequest) GetId() string {
 	return ""
 }
 
+// GetJobResponse returns the result for the following operation: Reads a job and its attempts without changing execution state.
 type GetJobResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Job           *Job                   `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
@@ -1079,6 +1091,7 @@ func (x *GetJobResponse) GetJob() *Job {
 	return nil
 }
 
+// GetSnapshotRequest supplies arguments for the following operation: Reads current scheduler, worker, job, and event state.
 type GetSnapshotRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1115,6 +1128,7 @@ func (*GetSnapshotRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_scheduler_proto_rawDescGZIP(), []int{12}
 }
 
+// GetSnapshotResponse returns the result for the following operation: Reads current scheduler, worker, job, and event state.
 type GetSnapshotResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Snapshot      *Snapshot              `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
@@ -1159,6 +1173,7 @@ func (x *GetSnapshotResponse) GetSnapshot() *Snapshot {
 	return nil
 }
 
+// WatchRequest supplies arguments for the following operation: Streams job updates; disconnecting the client does not cancel the job.
 type WatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	InstanceId    string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
@@ -1227,6 +1242,7 @@ func (x *WatchRequest) GetPrId() string {
 	return ""
 }
 
+// WatchResponse returns the result for the following operation: Streams job updates; disconnecting the client does not cancel the job.
 type WatchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Event         *JobEvent              `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
@@ -1271,6 +1287,7 @@ func (x *WatchResponse) GetEvent() *JobEvent {
 	return nil
 }
 
+// CancelJobRequest supplies arguments for the following operation: Requests cancellation and retains the asynchronous worker-exit transition.
 type CancelJobRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1315,6 +1332,7 @@ func (x *CancelJobRequest) GetId() string {
 	return ""
 }
 
+// CancelJobResponse returns the result for the following operation: Requests cancellation and retains the asynchronous worker-exit transition.
 type CancelJobResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Job           *Job                   `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
@@ -1359,6 +1377,7 @@ func (x *CancelJobResponse) GetJob() *Job {
 	return nil
 }
 
+// RetryJobRequest supplies arguments for the following operation: Explicitly requeues a failed or interrupted job while preserving its attempts.
 type RetryJobRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1403,6 +1422,7 @@ func (x *RetryJobRequest) GetId() string {
 	return ""
 }
 
+// RetryJobResponse returns the result for the following operation: Explicitly requeues a failed or interrupted job while preserving its attempts.
 type RetryJobResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Job           *Job                   `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
@@ -1447,6 +1467,7 @@ func (x *RetryJobResponse) GetJob() *Job {
 	return nil
 }
 
+// SetPausedRequest supplies arguments for the following operation: Controls future worker dispatch without cancelling an already running job.
 type SetPausedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Paused        bool                   `protobuf:"varint,1,opt,name=paused,proto3" json:"paused,omitempty"`
@@ -1491,6 +1512,7 @@ func (x *SetPausedRequest) GetPaused() bool {
 	return false
 }
 
+// SetPausedResponse returns the result for the following operation: Controls future worker dispatch without cancelling an already running job.
 type SetPausedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Snapshot      *Snapshot              `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
@@ -1535,6 +1557,7 @@ func (x *SetPausedResponse) GetSnapshot() *Snapshot {
 	return nil
 }
 
+// ListEventsRequest supplies arguments for the following operation: Reads sequenced scheduler events after the caller’s cursor.
 type ListEventsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AfterSequence uint64                 `protobuf:"varint,1,opt,name=after_sequence,json=afterSequence,proto3" json:"after_sequence,omitempty"`
@@ -1595,6 +1618,7 @@ func (x *ListEventsRequest) GetPrId() string {
 	return ""
 }
 
+// ListEventsResponse returns the result for the following operation: Reads sequenced scheduler events after the caller’s cursor.
 type ListEventsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*JobEvent            `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
@@ -1639,6 +1663,7 @@ func (x *ListEventsResponse) GetEvents() []*JobEvent {
 	return nil
 }
 
+// StateTransition describes a legal scheduler state transition and its trigger.
 type StateTransition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	From          JobStatus              `protobuf:"varint,1,opt,name=from,proto3,enum=octomanager.v2.JobStatus" json:"from,omitempty"`
@@ -1691,6 +1716,7 @@ func (x *StateTransition) GetTo() JobStatus {
 	return JobStatus_JOB_STATUS_UNSPECIFIED
 }
 
+// ReviewMessage retains PR review text, source location, and truncation evidence.
 type ReviewMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1815,6 +1841,7 @@ func (x *ReviewMessage) GetBodyTruncated() bool {
 	return false
 }
 
+// PullRequestDetails contains a cached PR read and the scope of its retained review messages.
 type PullRequestDetails struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Url                 string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -1907,6 +1934,7 @@ func (x *PullRequestDetails) GetMayHaveMoreMessages() bool {
 	return false
 }
 
+// GetPullRequestRequest supplies arguments for the following operation: Reads PR details through the coordinated GitHub request boundary.
 type GetPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -1959,6 +1987,7 @@ func (x *GetPullRequestRequest) GetRefresh() bool {
 	return false
 }
 
+// GetPullRequestResponse returns the result for the following operation: Reads PR details through the coordinated GitHub request boundary.
 type GetPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PullRequest   *PullRequestDetails    `protobuf:"bytes,1,opt,name=pull_request,json=pullRequest,proto3" json:"pull_request,omitempty"`
@@ -2011,6 +2040,7 @@ func (x *GetPullRequestResponse) GetRefresh() *RefreshStatus {
 	return nil
 }
 
+// GitHubSchedulerStatus reports coordinated request timing, queue depth, and rate backoff.
 type GitHubSchedulerStatus struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	TickMs           int64                  `protobuf:"varint,1,opt,name=tick_ms,json=tickMs,proto3" json:"tick_ms,omitempty"`
@@ -2119,6 +2149,7 @@ func (x *GitHubSchedulerStatus) GetGraphqlRetryAtMs() int64 {
 	return 0
 }
 
+// WatchDashboardRequest supplies arguments for the following operation: Reads a combined scheduler and PR view for dashboard refresh.
 type WatchDashboardRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -2171,6 +2202,7 @@ func (x *WatchDashboardRequest) GetReviews() bool {
 	return false
 }
 
+// WatchDashboardResponse returns the result for the following operation: Reads a combined scheduler and PR view for dashboard refresh.
 type WatchDashboardResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Snapshot      *Snapshot              `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
@@ -2231,6 +2263,7 @@ func (x *WatchDashboardResponse) GetRefresh() *RefreshStatus {
 	return nil
 }
 
+// ListActivityResponse returns the result for the following operation: Pages recorded agent activity and coordinator events.
 type ListActivityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Activities    []*ActivityReport      `protobuf:"bytes,1,rep,name=activities,proto3" json:"activities,omitempty"`
@@ -2299,6 +2332,7 @@ func (x *ListActivityResponse) GetHasMore() bool {
 	return false
 }
 
+// MergeStatus summarizes a PR’s merge-chain state and prerequisite URLs.
 type MergeStatus struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	PrId             string                 `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3" json:"pr_id,omitempty"`
@@ -2407,6 +2441,7 @@ func (x *MergeStatus) GetAutoMergeStage() string {
 	return ""
 }
 
+// GetServerInfoRequest supplies arguments for the following operation: Reports the wire API version before clients perform coordinator operations.
 type GetServerInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2443,6 +2478,7 @@ func (*GetServerInfoRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_scheduler_proto_rawDescGZIP(), []int{34}
 }
 
+// GetServerInfoResponse returns the result for the following operation: Reports the wire API version before clients perform coordinator operations.
 type GetServerInfoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ApiVersion    uint32                 `protobuf:"varint,1,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
@@ -2487,6 +2523,7 @@ func (x *GetServerInfoResponse) GetApiVersion() uint32 {
 	return 0
 }
 
+// SetAutoMergeResponse returns the result for the following operation: Sets an owner-authorized per-PR automatic merge override.
 type SetAutoMergeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entry         *DomainMergeEntry      `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
@@ -2547,6 +2584,7 @@ func (x *SetAutoMergeResponse) GetEnabled() bool {
 	return false
 }
 
+// QueueMergeChainResponse returns the result for the following operation: Records ordered merge intents; acceptance does not confirm a GitHub merge.
 type QueueMergeChainResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Chain         *DomainMergeChain      `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain,omitempty"`
@@ -2591,6 +2629,7 @@ func (x *QueueMergeChainResponse) GetChain() *DomainMergeChain {
 	return nil
 }
 
+// InspectMergeChainsResponse returns the result for the following operation: Inspects retained merge chains, entries, and in-flight operations.
 type InspectMergeChainsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Overview      *DomainMergeOverview   `protobuf:"bytes,1,opt,name=overview,proto3" json:"overview,omitempty"`
@@ -2635,6 +2674,7 @@ func (x *InspectMergeChainsResponse) GetOverview() *DomainMergeOverview {
 	return nil
 }
 
+// ListPRReferencesResponse returns the result for the following operation: Lists discovered references without treating them as confirmed dependencies.
 type ListPRReferencesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	References    []*DomainPRReference   `protobuf:"bytes,1,rep,name=references,proto3" json:"references,omitempty"`
@@ -2679,6 +2719,7 @@ func (x *ListPRReferencesResponse) GetReferences() []*DomainPRReference {
 	return nil
 }
 
+// ListPRDependenciesResponse returns the result for the following operation: Lists explicitly confirmed prerequisites for tracked PRs.
 type ListPRDependenciesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dependencies  []*DomainDependency    `protobuf:"bytes,1,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
@@ -2723,6 +2764,7 @@ func (x *ListPRDependenciesResponse) GetDependencies() []*DomainDependency {
 	return nil
 }
 
+// ConfirmPRDependencyResponse returns the result for the following operation: Confirms an owner-authorized prerequisite and rejects dependency cycles.
 type ConfirmPRDependencyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dependency    *DomainDependency      `protobuf:"bytes,1,opt,name=dependency,proto3" json:"dependency,omitempty"`
@@ -2767,6 +2809,7 @@ func (x *ConfirmPRDependencyResponse) GetDependency() *DomainDependency {
 	return nil
 }
 
+// RemovePRDependencyResponse returns the result for the following operation: Removes a confirmed prerequisite under the dependent PR owner’s authority.
 type RemovePRDependencyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dependency    *DomainDependency      `protobuf:"bytes,1,opt,name=dependency,proto3" json:"dependency,omitempty"`
@@ -2811,6 +2854,7 @@ func (x *RemovePRDependencyResponse) GetDependency() *DomainDependency {
 	return nil
 }
 
+// DecidePRReferenceResponse returns the result for the following operation: Records whether a discovered reference is related or dismissed.
 type DecidePRReferenceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reference     *DomainPRReference     `protobuf:"bytes,1,opt,name=reference,proto3" json:"reference,omitempty"`
@@ -2855,6 +2899,7 @@ func (x *DecidePRReferenceResponse) GetReference() *DomainPRReference {
 	return nil
 }
 
+// SetMergePolicyResponse returns the result for the following operation: Sets the expected checks or explicit no-CI policy for a tracked PR.
 type SetMergePolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entry         *DomainMergeEntry      `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
@@ -2899,6 +2944,7 @@ func (x *SetMergePolicyResponse) GetEntry() *DomainMergeEntry {
 	return nil
 }
 
+// SetMergeReadyResponse returns the result for the following operation: Records the owner’s assessment for an exact PR head and current evidence.
 type SetMergeReadyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entry         *DomainMergeEntry      `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
@@ -2943,6 +2989,7 @@ func (x *SetMergeReadyResponse) GetEntry() *DomainMergeEntry {
 	return nil
 }
 
+// PauseMergeChainResponse returns the result for the following operation: Pauses future merge dispatch for a chain without undoing prior effects.
 type PauseMergeChainResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Chain         *DomainMergeChain      `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain,omitempty"`
@@ -2987,6 +3034,7 @@ func (x *PauseMergeChainResponse) GetChain() *DomainMergeChain {
 	return nil
 }
 
+// ResumeMergeChainResponse returns the result for the following operation: Resumes eligibility evaluation for a paused merge chain.
 type ResumeMergeChainResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Chain         *DomainMergeChain      `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain,omitempty"`
@@ -3031,6 +3079,7 @@ func (x *ResumeMergeChainResponse) GetChain() *DomainMergeChain {
 	return nil
 }
 
+// CancelMergeChainResponse returns the result for the following operation: Cancels unfinished chain entries while preserving operation history.
 type CancelMergeChainResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Chain         *DomainMergeChain      `protobuf:"bytes,1,opt,name=chain,proto3" json:"chain,omitempty"`
@@ -3075,6 +3124,7 @@ func (x *CancelMergeChainResponse) GetChain() *DomainMergeChain {
 	return nil
 }
 
+// ReconcileMergeOperationResponse returns the result for the following operation: Rechecks an uncertain GitHub operation without blindly repeating its mutation.
 type ReconcileMergeOperationResponse struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	Operation     *DomainReconciliationResult `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
@@ -3123,7 +3173,7 @@ var File_octomanager_v2_scheduler_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_scheduler_proto_rawDesc = "" +
 	"\n" +
-	"\x1eoctomanager/v2/scheduler.proto\x12\x0eoctomanager.v2\x1a\x1doctomanager/v2/tracking.proto\x1a\x1boctomanager/v2/domain.proto\x1a\x1doctomanager/v2/activity.proto\x1a\x1coctomanager/v2/repairs.proto\x1a octomanager/v2/submissions.proto\x1a\"octomanager/v2/notifications.proto\x1a\x1boctomanager/v2/github.proto\",\n" +
+	"\x1eoctomanager/v2/scheduler.proto\x12\x0eoctomanager.v2\x1a\x1doctomanager/v2/activity.proto\x1a\x1boctomanager/v2/domain.proto\x1a\x1boctomanager/v2/github.proto\x1a\"octomanager/v2/notifications.proto\x1a\x1coctomanager/v2/repairs.proto\x1a octomanager/v2/submissions.proto\x1a\x1doctomanager/v2/tracking.proto\",\n" +
 	"\x18SummarizePullRequestTask\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\"\x15\n" +
 	"\x13ResolveConflictTask\"\xc2\x01\n" +
@@ -3766,13 +3816,13 @@ func file_octomanager_v2_scheduler_proto_init() {
 	if File_octomanager_v2_scheduler_proto != nil {
 		return
 	}
-	file_octomanager_v2_tracking_proto_init()
-	file_octomanager_v2_domain_proto_init()
 	file_octomanager_v2_activity_proto_init()
+	file_octomanager_v2_domain_proto_init()
+	file_octomanager_v2_github_proto_init()
+	file_octomanager_v2_notifications_proto_init()
 	file_octomanager_v2_repairs_proto_init()
 	file_octomanager_v2_submissions_proto_init()
-	file_octomanager_v2_notifications_proto_init()
-	file_octomanager_v2_github_proto_init()
+	file_octomanager_v2_tracking_proto_init()
 	file_octomanager_v2_scheduler_proto_msgTypes[2].OneofWrappers = []any{
 		(*Task_SummarizePullRequest)(nil),
 		(*Task_ResolveConflict)(nil),

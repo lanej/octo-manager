@@ -15,6 +15,8 @@ export const file_octomanager_v2_submissions: GenFile = /*@__PURE__*/
   fileDesc("CiBvY3RvbWFuYWdlci92Mi9zdWJtaXNzaW9ucy5wcm90bxIOb2N0b21hbmFnZXIudjIiIgoUR2V0U3VibWlzc2lvblJlcXVlc3QSCgoCaWQYASABKAkiVQoVR2V0U3VibWlzc2lvblJlc3BvbnNlEjwKCnN1Ym1pc3Npb24YASABKAsyKC5vY3RvbWFuYWdlci52Mi5Eb21haW5BcmNoaXZlZFN1Ym1pc3Npb24iPgoWTGlzdFN1Ym1pc3Npb25zUmVxdWVzdBIVCg1iZWZvcmVfcm93X2lkGAEgASgEEg0KBWxpbWl0GAIgASgNInsKF0xpc3RTdWJtaXNzaW9uc1Jlc3BvbnNlEkQKC3N1Ym1pc3Npb25zGAEgAygLMi8ub2N0b21hbmFnZXIudjIuRG9tYWluQXJjaGl2ZWRTdWJtaXNzaW9uU3VtbWFyeRIaChJuZXh0X2JlZm9yZV9yb3dfaWQYAiABKAQiYAoaR2V0UmVwb3NpdG9yeVBvbGljeVJlcXVlc3QSEgoKcmVwb3NpdG9yeRgBIAEoCRIUCgd2ZXJzaW9uGAIgASgNSACIAQESDAoEdGllchgDIAEoCUIKCghfdmVyc2lvbiJnChtHZXRSZXBvc2l0b3J5UG9saWN5UmVzcG9uc2USNgoGcG9saWN5GAEgASgLMiYub2N0b21hbmFnZXIudjIuRG9tYWluUmVwb3NpdG9yeVBvbGljeRIQCgh0ZW1wbGF0ZRgCIAEoCUJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjI7b2N0b21hbmFnZXJ2MmIGcHJvdG8z", [file_octomanager_v2_domain]);
 
 /**
+ * GetSubmissionRequest supplies arguments for the following operation: Reads archived submission evidence; it does not resume legacy drafting.
+ *
  * @generated from message octomanager.v2.GetSubmissionRequest
  */
 export type GetSubmissionRequest = Message<"octomanager.v2.GetSubmissionRequest"> & {
@@ -32,6 +34,8 @@ export const GetSubmissionRequestSchema: GenMessage<GetSubmissionRequest> = /*@_
   messageDesc(file_octomanager_v2_submissions, 0);
 
 /**
+ * GetSubmissionResponse returns the result for the following operation: Reads archived submission evidence; it does not resume legacy drafting.
+ *
  * @generated from message octomanager.v2.GetSubmissionResponse
  */
 export type GetSubmissionResponse = Message<"octomanager.v2.GetSubmissionResponse"> & {
@@ -49,6 +53,8 @@ export const GetSubmissionResponseSchema: GenMessage<GetSubmissionResponse> = /*
   messageDesc(file_octomanager_v2_submissions, 1);
 
 /**
+ * ListSubmissionsRequest supplies arguments for the following operation: Pages archived submission summaries without loading full worker evidence.
+ *
  * @generated from message octomanager.v2.ListSubmissionsRequest
  */
 export type ListSubmissionsRequest = Message<"octomanager.v2.ListSubmissionsRequest"> & {
@@ -71,6 +77,8 @@ export const ListSubmissionsRequestSchema: GenMessage<ListSubmissionsRequest> = 
   messageDesc(file_octomanager_v2_submissions, 2);
 
 /**
+ * ListSubmissionsResponse returns the result for the following operation: Pages archived submission summaries without loading full worker evidence.
+ *
  * @generated from message octomanager.v2.ListSubmissionsResponse
  */
 export type ListSubmissionsResponse = Message<"octomanager.v2.ListSubmissionsResponse"> & {
@@ -93,6 +101,8 @@ export const ListSubmissionsResponseSchema: GenMessage<ListSubmissionsResponse> 
   messageDesc(file_octomanager_v2_submissions, 3);
 
 /**
+ * GetRepositoryPolicyRequest supplies arguments for the following operation: Reads a retained repository publication policy and its rendered template.
+ *
  * @generated from message octomanager.v2.GetRepositoryPolicyRequest
  */
 export type GetRepositoryPolicyRequest = Message<"octomanager.v2.GetRepositoryPolicyRequest"> & {
@@ -120,6 +130,8 @@ export const GetRepositoryPolicyRequestSchema: GenMessage<GetRepositoryPolicyReq
   messageDesc(file_octomanager_v2_submissions, 4);
 
 /**
+ * GetRepositoryPolicyResponse returns the result for the following operation: Reads a retained repository publication policy and its rendered template.
+ *
  * @generated from message octomanager.v2.GetRepositoryPolicyResponse
  */
 export type GetRepositoryPolicyResponse = Message<"octomanager.v2.GetRepositoryPolicyResponse"> & {

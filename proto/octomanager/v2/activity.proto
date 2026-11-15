@@ -1,5 +1,6 @@
 syntax = "proto3";
 package octomanager.v2;
+
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
 
 enum ActivityName {
@@ -17,6 +18,7 @@ enum ActivityOutcome {
   ACTIVITY_OUTCOME_FAILED = 3;
   ACTIVITY_OUTCOME_UNCERTAIN = 4;
 }
+// ActivityActor contains caller-supplied agent metadata rather than an authenticated identity claim.
 message ActivityActor {
   string harness = 1;
   string session_id = 2;
@@ -25,6 +27,7 @@ message ActivityActor {
   optional string label = 5;
   optional string cwd = 6;
 }
+// ActivityInput reports one named operation outcome with an idempotent request identity.
 message ActivityInput {
   string request_id = 1;
   string operation_id = 2;
@@ -35,13 +38,21 @@ message ActivityInput {
   optional string pr_url = 7;
   optional string evidence_url = 8;
 }
+// ActivityReport adds coordinator sequence and ingestion time to a caller’s operation report.
 message ActivityReport {
   uint64 sequence = 1;
   int64 recorded_at_ms = 2;
   ActivityInput report = 3;
 }
-message RecordActivityRequest { ActivityInput report = 1; }
-message RecordActivityResponse { ActivityReport activity = 1; }
+// RecordActivityRequest supplies arguments for the following operation: Records a caller-reported operation outcome without independently verifying it.
+message RecordActivityRequest {
+  ActivityInput report = 1;
+}
+// RecordActivityResponse returns the result for the following operation: Records a caller-reported operation outcome without independently verifying it.
+message RecordActivityResponse {
+  ActivityReport activity = 1;
+}
+// ListActivityRequest supplies arguments for the following operation: Pages recorded agent activity and coordinator events.
 message ListActivityRequest {
   uint64 after_sequence = 1;
   // An exclusive upper bound selects a recent page in descending sequence order.

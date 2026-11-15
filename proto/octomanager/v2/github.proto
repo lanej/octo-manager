@@ -1,7 +1,9 @@
 syntax = "proto3";
 package octomanager.v2;
+
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
 
+// GitHubRateBudget records the last observed quota window and its usage forecast.
 message GitHubRateBudget {
   uint32 limit = 1;
   uint32 remaining = 2;
@@ -10,6 +12,7 @@ message GitHubRateBudget {
   GitHubQuotaForecast forecast = 5;
 }
 
+// GitHubReadMinute counts coordinated request and cache activity in one minute bucket.
 message GitHubReadMinute {
   int64 started_at_ms = 1;
   uint64 rest = 2;
@@ -25,6 +28,7 @@ message GitHubReadHour {
   uint64 cache_reuses = 4;
 }
 
+// GitHubReadUsage combines bounded request history, quota observations, and current backoff.
 message GitHubReadUsage {
   int64 started_at_ms = 1;
   int64 sampled_at_ms = 2;
@@ -41,21 +45,33 @@ message GitHubReadUsage {
 }
 
 enum GitHubForecastState {
- GIT_HUB_FORECAST_STATE_UNSPECIFIED = 0;
- GIT_HUB_FORECAST_STATE_UNKNOWN = 1;
- GIT_HUB_FORECAST_STATE_ON_TRACK = 2;
- GIT_HUB_FORECAST_STATE_AT_RISK = 3;
- GIT_HUB_FORECAST_STATE_EXHAUSTED = 4;
+  GIT_HUB_FORECAST_STATE_UNSPECIFIED = 0;
+  GIT_HUB_FORECAST_STATE_UNKNOWN = 1;
+  GIT_HUB_FORECAST_STATE_ON_TRACK = 2;
+  GIT_HUB_FORECAST_STATE_AT_RISK = 3;
+  GIT_HUB_FORECAST_STATE_EXHAUSTED = 4;
 }
+// GitHubQuotaForecast projects quota exhaustion with an explicit reason and observation window.
 message GitHubQuotaForecast {
- GitHubForecastState state = 1;
- string reason = 2;
- int64 window_ms = 3;
- int64 sampled_at_ms = 4;
- optional double units_per_hour = 5;
- optional double projected_remaining_at_reset = 6;
- optional int64 exhaust_at_ms = 7;
+  GitHubForecastState state = 1;
+  string reason = 2;
+  int64 window_ms = 3;
+  int64 sampled_at_ms = 4;
+  optional double units_per_hour = 5;
+  optional double projected_remaining_at_reset = 6;
+  optional int64 exhaust_at_ms = 7;
 }
 
-enum RefreshState { REFRESH_STATE_UNSPECIFIED = 0; REFRESH_STATE_QUEUED = 1; REFRESH_STATE_RUNNING = 2; REFRESH_STATE_DEFERRED = 3; }
-message RefreshStatus { RefreshState state = 1; int64 due_at_ms = 2; optional int64 last_attempt_at_ms = 3; string last_error = 4; }
+enum RefreshState {
+  REFRESH_STATE_UNSPECIFIED = 0;
+  REFRESH_STATE_QUEUED = 1;
+  REFRESH_STATE_RUNNING = 2;
+  REFRESH_STATE_DEFERRED = 3;
+}
+// RefreshStatus distinguishes a requested refresh from a completed observation.
+message RefreshStatus {
+  RefreshState state = 1;
+  int64 due_at_ms = 2;
+  optional int64 last_attempt_at_ms = 3;
+  string last_error = 4;
+}

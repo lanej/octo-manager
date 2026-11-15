@@ -13,6 +13,8 @@ export const file_octomanager_v2_github: GenFile = /*@__PURE__*/
   fileDesc("ChtvY3RvbWFuYWdlci92Mi9naXRodWIucHJvdG8SDm9jdG9tYW5hZ2VyLnYyIpgBChBHaXRIdWJSYXRlQnVkZ2V0Eg0KBWxpbWl0GAEgASgNEhEKCXJlbWFpbmluZxgCIAEoDRITCgtyZXNldF9hdF9tcxgDIAEoAxIWCg5vYnNlcnZlZF9hdF9tcxgEIAEoAxI1Cghmb3JlY2FzdBgFIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkdpdEh1YlF1b3RhRm9yZWNhc3QiXgoQR2l0SHViUmVhZE1pbnV0ZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEgwKBHJlc3QYAiABKAQSDwoHZ3JhcGhxbBgDIAEoBBIUCgxjYWNoZV9yZXVzZXMYBCABKAQiXAoOR2l0SHViUmVhZEhvdXISFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIMCgRyZXN0GAIgASgEEg8KB2dyYXBocWwYAyABKAQSFAoMY2FjaGVfcmV1c2VzGAQgASgEIvgCCg9HaXRIdWJSZWFkVXNhZ2USFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIVCg1zYW1wbGVkX2F0X21zGAIgASgDEhAKCHJlcXVlc3RzGAMgASgEEhQKDGNhY2hlX3JldXNlcxgEIAEoBBITCgtyYXRlX2xpbWl0cxgFIAEoBBIxCgdtaW51dGVzGAYgAygLMiAub2N0b21hbmFnZXIudjIuR2l0SHViUmVhZE1pbnV0ZRIuCgRyZXN0GAcgASgLMiAub2N0b21hbmFnZXIudjIuR2l0SHViUmF0ZUJ1ZGdldBIxCgdncmFwaHFsGAggASgLMiAub2N0b21hbmFnZXIudjIuR2l0SHViUmF0ZUJ1ZGdldBIYChByZXN0X3JldHJ5X2F0X21zGAkgASgDEhsKE2dyYXBocWxfcmV0cnlfYXRfbXMYCiABKAMSLQoFaG91cnMYCyADKAsyHi5vY3RvbWFuYWdlci52Mi5HaXRIdWJSZWFkSG91ciKtAgoTR2l0SHViUXVvdGFGb3JlY2FzdBIyCgVzdGF0ZRgBIAEoDjIjLm9jdG9tYW5hZ2VyLnYyLkdpdEh1YkZvcmVjYXN0U3RhdGUSDgoGcmVhc29uGAIgASgJEhEKCXdpbmRvd19tcxgDIAEoAxIVCg1zYW1wbGVkX2F0X21zGAQgASgDEhsKDnVuaXRzX3Blcl9ob3VyGAUgASgBSACIAQESKQoccHJvamVjdGVkX3JlbWFpbmluZ19hdF9yZXNldBgGIAEoAUgBiAEBEhoKDWV4aGF1c3RfYXRfbXMYByABKANIAogBAUIRCg9fdW5pdHNfcGVyX2hvdXJCHwodX3Byb2plY3RlZF9yZW1haW5pbmdfYXRfcmVzZXRCEAoOX2V4aGF1c3RfYXRfbXMimwEKDVJlZnJlc2hTdGF0dXMSKwoFc3RhdGUYASABKA4yHC5vY3RvbWFuYWdlci52Mi5SZWZyZXNoU3RhdGUSEQoJZHVlX2F0X21zGAIgASgDEh8KEmxhc3RfYXR0ZW1wdF9hdF9tcxgDIAEoA0gAiAEBEhIKCmxhc3RfZXJyb3IYBCABKAlCFQoTX2xhc3RfYXR0ZW1wdF9hdF9tcyrQAQoTR2l0SHViRm9yZWNhc3RTdGF0ZRImCiJHSVRfSFVCX0ZPUkVDQVNUX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9VTktOT1dOEAESIwofR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9PTl9UUkFDSxACEiIKHkdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfQVRfUklTSxADEiQKIEdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfRVhIQVVTVEVEEAQqfgoMUmVmcmVzaFN0YXRlEh0KGVJFRlJFU0hfU1RBVEVfVU5TUEVDSUZJRUQQABIYChRSRUZSRVNIX1NUQVRFX1FVRVVFRBABEhkKFVJFRlJFU0hfU1RBVEVfUlVOTklORxACEhoKFlJFRlJFU0hfU1RBVEVfREVGRVJSRUQQA0JAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjI7b2N0b21hbmFnZXJ2MmIGcHJvdG8z");
 
 /**
+ * GitHubRateBudget records the last observed quota window and its usage forecast.
+ *
  * @generated from message octomanager.v2.GitHubRateBudget
  */
 export type GitHubRateBudget = Message<"octomanager.v2.GitHubRateBudget"> & {
@@ -50,6 +52,8 @@ export const GitHubRateBudgetSchema: GenMessage<GitHubRateBudget> = /*@__PURE__*
   messageDesc(file_octomanager_v2_github, 0);
 
 /**
+ * GitHubReadMinute counts coordinated request and cache activity in one minute bucket.
+ *
  * @generated from message octomanager.v2.GitHubReadMinute
  */
 export type GitHubReadMinute = Message<"octomanager.v2.GitHubReadMinute"> & {
@@ -116,6 +120,8 @@ export const GitHubReadHourSchema: GenMessage<GitHubReadHour> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_github, 2);
 
 /**
+ * GitHubReadUsage combines bounded request history, quota observations, and current backoff.
+ *
  * @generated from message octomanager.v2.GitHubReadUsage
  */
 export type GitHubReadUsage = Message<"octomanager.v2.GitHubReadUsage"> & {
@@ -185,6 +191,8 @@ export const GitHubReadUsageSchema: GenMessage<GitHubReadUsage> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_github, 3);
 
 /**
+ * GitHubQuotaForecast projects quota exhaustion with an explicit reason and observation window.
+ *
  * @generated from message octomanager.v2.GitHubQuotaForecast
  */
 export type GitHubQuotaForecast = Message<"octomanager.v2.GitHubQuotaForecast"> & {
@@ -232,6 +240,8 @@ export const GitHubQuotaForecastSchema: GenMessage<GitHubQuotaForecast> = /*@__P
   messageDesc(file_octomanager_v2_github, 4);
 
 /**
+ * RefreshStatus distinguishes a requested refresh from a completed observation.
+ *
  * @generated from message octomanager.v2.RefreshStatus
  */
 export type RefreshStatus = Message<"octomanager.v2.RefreshStatus"> & {
