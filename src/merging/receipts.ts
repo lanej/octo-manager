@@ -51,6 +51,9 @@ export class ReceiptMerges {
       observation: PRObservation,
     ) => Promise<MergeSnapshot>,
     private now: () => number,
+    private repositoryInstructions?: (
+      message: AgentMessage,
+    ) => string | undefined,
   ) {}
   private selection(message: AgentMessage) {
     if (!message.applicable) return undefined;
@@ -109,13 +112,19 @@ export class ReceiptMerges {
       (message.actionId === ""
         ? undefined
         : this.tracking.store.action(message.actionId).prId);
-    const instructions =
+    const taskInstructions =
       prId === undefined
         ? undefined
         : this.store.agentInstructions(prId, message.recipientAgentId);
+    const instructions = [
+      this.repositoryInstructions?.(message),
+      taskInstructions,
+    ]
+      .filter((value) => value !== undefined && value !== "")
+      .join("\n");
     return {
       ...this.readinessPresentation(message),
-      ...(instructions === undefined ? {} : { instructions }),
+      ...(instructions === "" ? {} : { instructions }),
     };
   };
   private readinessPresentation(message: AgentMessage): MessagePresentation {

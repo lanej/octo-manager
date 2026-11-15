@@ -1,3 +1,4 @@
+import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
 import {mergeRoutes} from "./api/merge-routes.js";
 import {wire} from "./api/codec.js";
 import {DomainAgentDigestSchema,DomainDigestInspectionSchema,DomainMergeReceiptResultSchema,DomainArchivedSubmissionSchema,DomainArchivedSubmissionSummarySchema,DomainRepositoryPolicySchema} from "./gen/octomanager/v2/domain_pb.js";
@@ -43,7 +44,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     tracking: wireTracking(coordinator.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
     githubScheduler:wireScheduler(coordinator.githubScheduler),
-    mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,chainState:coordinator.store.merging.chain(entry.chainId).state,autoMerge:entry.autoMerge,state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
+    mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,chainState:coordinator.store.merging.chain(entry.chainId).state,autoMerge:entry.autoMerge,autoMergeSource:entry.autoMergeSource??"explicit",autoMergeStage:entry.autoMergeStage??"",state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
     repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
@@ -136,9 +137,9 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),
     ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent), (before) => coordinator.store.activityBefore(before).map(wireEvent)),
-    async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
+    async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner),r.cwd))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
-    async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},
+    async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id)),...(coordinator.store.repositories.get(tracking.store.pr(r.id).id)===undefined?{}:{repositoryPolicy:wire(DomainRepositoryAutomationPolicySchema,coordinator.store.repositories.get(tracking.store.pr(r.id).id))})}));},
     refreshTrackedPullRequest(r){return trackingOperation(()=>{tracking.requestRefresh(r.id);return {pr:wirePR(tracking.store.pr(r.id)),refresh:wireRefresh(coordinator.store.schedules.get(`tracking:${tracking.store.pr(r.id).id}`))};});},
     async assignPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.assign(r.id,owner(r.owner)))}));},
     async untrackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.untrack(r.id))}));},

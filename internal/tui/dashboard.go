@@ -291,11 +291,23 @@ func (m *Model) automationLabel(id string) string {
 	}
 
 	if !merge.GetAutoMerge() {
+		if merge.GetAutoMergeSource() == "inherited" {
+			return "Manual merge · inherited"
+		}
+
 		return "Manual merge"
 	}
 
 	if merge.GetChainState() == "paused" {
 		return "Auto-merge paused"
+	}
+
+	if merge.GetAutoMergeSource() == "inherited" {
+		if merge.GetAutoMergeStage() != "" {
+			return "Auto-merge ON · inherited (" + merge.GetAutoMergeStage() + ")"
+		}
+
+		return "Auto-merge ON · inherited"
 	}
 
 	return "Auto-merge ON"

@@ -5,6 +5,10 @@ import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
   "autoMerge",
+  "autoMergeSource",
+  "autoMergeStage",
+  "stage",
+  "root",
   "chainId",
   "entryId",
   "dependentId",
@@ -87,6 +91,7 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "repositoryPolicy",
   "refresh",
   "chains",
   "entries",

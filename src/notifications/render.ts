@@ -155,7 +155,7 @@ export function renderDigest(
       if (text === undefined) continue;
       const group = entry(row, presentations.get(row.id)).group;
       const texts = instructions.get(group) ?? new Set<string>();
-      texts.add(text);
+      for (const line of text.split("\n")) texts.add(line);
       instructions.set(group, texts);
     }
     for (const item of compactEntries(

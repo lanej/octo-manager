@@ -823,6 +823,18 @@
     "agentInstructions": {
       "number": 19,
       "type": "DomainMergeEntryAgentInstructions"
+    },
+    "autoMergeSource": {
+      "number": 20,
+      "type": "DomainMergeEntryAutoMergeSource"
+    },
+    "autoMergeStage": {
+      "number": 21,
+      "type": "string"
+    },
+    "trackingEpoch": {
+      "number": 22,
+      "type": "int64"
     }
   },
   "DomainMergeEntryMethod": {
@@ -2079,6 +2091,18 @@
     "agentInstructions": {
       "number": 19,
       "type": "DomainMergeOverviewEntriesItemAgentInstructions"
+    },
+    "autoMergeSource": {
+      "number": 20,
+      "type": "DomainMergeOverviewEntriesItemAutoMergeSource"
+    },
+    "autoMergeStage": {
+      "number": 21,
+      "type": "string"
+    },
+    "trackingEpoch": {
+      "number": 22,
+      "type": "int64"
     }
   },
   "DomainMergeOverviewEntriesItemMethod": {
@@ -3681,6 +3705,10 @@
     "instructions": {
       "number": 5,
       "type": "string"
+    },
+    "inherit": {
+      "number": 6,
+      "type": "bool"
     }
   },
   "QueueMergeChainRequestInput": {
@@ -3991,6 +4019,138 @@
     "text": {
       "number": 3,
       "type": "string"
+    }
+  },
+  "DomainMergeEntryAutoMergeSource": {
+    "explicit": {
+      "number": 1,
+      "type": "enum"
+    },
+    "inherited": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryAutomationPolicy": {
+    "prId": {
+      "number": 1,
+      "type": "string"
+    },
+    "root": {
+      "number": 2,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 3,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 4,
+      "type": "int64"
+    },
+    "status": {
+      "number": 5,
+      "type": "DomainRepositoryAutomationPolicyStatus"
+    },
+    "hash": {
+      "number": 6,
+      "type": "string"
+    },
+    "stage": {
+      "number": 7,
+      "type": "DomainRepositoryAutomationPolicyStage"
+    },
+    "autoMerge": {
+      "number": 8,
+      "type": "bool"
+    },
+    "instructions": {
+      "number": 9,
+      "type": "DomainRepositoryAutomationPolicyInstructions"
+    },
+    "error": {
+      "number": 10,
+      "type": "string"
+    }
+  },
+  "DomainRepositoryAutomationPolicyStatus": {
+    "valid": {
+      "number": 1,
+      "type": "enum"
+    },
+    "missing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "invalid": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryAutomationPolicyStage": {
+    "research": {
+      "number": 1,
+      "type": "enum"
+    },
+    "alpha": {
+      "number": 2,
+      "type": "enum"
+    },
+    "beta": {
+      "number": 3,
+      "type": "enum"
+    },
+    "production": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryAutomationPolicyInstructions": {
+    "review_feedback": {
+      "number": 1,
+      "type": "string"
+    },
+    "checks_failed": {
+      "number": 2,
+      "type": "string"
+    },
+    "merge_conflict": {
+      "number": 3,
+      "type": "string"
+    },
+    "dependencies_pending": {
+      "number": 4,
+      "type": "string"
+    },
+    "owner_review_required": {
+      "number": 5,
+      "type": "string"
+    },
+    "ready": {
+      "number": 6,
+      "type": "string"
+    },
+    "merged": {
+      "number": 7,
+      "type": "string"
+    },
+    "merge_uncertain": {
+      "number": 8,
+      "type": "string"
+    },
+    "merge_blocked": {
+      "number": 9,
+      "type": "string"
+    }
+  },
+  "DomainMergeOverviewEntriesItemAutoMergeSource": {
+    "explicit": {
+      "number": 1,
+      "type": "enum"
+    },
+    "inherited": {
+      "number": 2,
+      "type": "enum"
     }
   }
 }

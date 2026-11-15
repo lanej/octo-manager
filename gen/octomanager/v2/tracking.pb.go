@@ -1791,6 +1791,7 @@ type TrackPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Owner         *AgentTarget           `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty"`
+	Cwd           *string                `protobuf:"bytes,3,opt,name=cwd,proto3,oneof" json:"cwd,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1837,6 +1838,13 @@ func (x *TrackPullRequestRequest) GetOwner() *AgentTarget {
 		return x.Owner
 	}
 	return nil
+}
+
+func (x *TrackPullRequestRequest) GetCwd() string {
+	if x != nil && x.Cwd != nil {
+		return *x.Cwd
+	}
+	return ""
 }
 
 type ListTrackedPullRequestsRequest struct {
@@ -2236,10 +2244,11 @@ func (x *GetTrackedPullRequestRequest) GetId() string {
 }
 
 type GetTrackedPullRequestResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState            `protogen:"open.v1"`
+	Pr               *TrackedPullRequest               `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
+	RepositoryPolicy *DomainRepositoryAutomationPolicy `protobuf:"bytes,2,opt,name=repository_policy,json=repositoryPolicy,proto3" json:"repository_policy,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetTrackedPullRequestResponse) Reset() {
@@ -2275,6 +2284,13 @@ func (*GetTrackedPullRequestResponse) Descriptor() ([]byte, []int) {
 func (x *GetTrackedPullRequestResponse) GetPr() *TrackedPullRequest {
 	if x != nil {
 		return x.Pr
+	}
+	return nil
+}
+
+func (x *GetTrackedPullRequestResponse) GetRepositoryPolicy() *DomainRepositoryAutomationPolicy {
+	if x != nil {
+		return x.RepositoryPolicy
 	}
 	return nil
 }
@@ -3882,10 +3898,12 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"deliveries\x18\x04 \x03(\v2\x1e.octomanager.v2.ActionDeliveryR\n" +
 	"deliveries\x12;\n" +
 	"\battempts\x18\x05 \x03(\v2\x1f.octomanager.v2.DeliveryAttemptR\battempts\x12?\n" +
-	"\rcheck_watches\x18\x06 \x03(\v2\x1a.octomanager.v2.CheckWatchR\fcheckWatches\"^\n" +
+	"\rcheck_watches\x18\x06 \x03(\v2\x1a.octomanager.v2.CheckWatchR\fcheckWatches\"}\n" +
 	"\x17TrackPullRequestRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x121\n" +
-	"\x05owner\x18\x02 \x01(\v2\x1b.octomanager.v2.AgentTargetR\x05owner\" \n" +
+	"\x05owner\x18\x02 \x01(\v2\x1b.octomanager.v2.AgentTargetR\x05owner\x12\x15\n" +
+	"\x03cwd\x18\x03 \x01(\tH\x00R\x03cwd\x88\x01\x01B\x06\n" +
+	"\x04_cwd\" \n" +
 	"\x1eListTrackedPullRequestsRequest\"W\n" +
 	"\x1fListTrackedPullRequestsResponse\x124\n" +
 	"\x03prs\x18\x01 \x03(\v2\".octomanager.v2.TrackedPullRequestR\x03prs\"]\n" +
@@ -3904,9 +3922,10 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x18TrackPullRequestResponse\x122\n" +
 	"\x02pr\x18\x01 \x01(\v2\".octomanager.v2.TrackedPullRequestR\x02pr\".\n" +
 	"\x1cGetTrackedPullRequestRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"S\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xb2\x01\n" +
 	"\x1dGetTrackedPullRequestResponse\x122\n" +
-	"\x02pr\x18\x01 \x01(\v2\".octomanager.v2.TrackedPullRequestR\x02pr\"2\n" +
+	"\x02pr\x18\x01 \x01(\v2\".octomanager.v2.TrackedPullRequestR\x02pr\x12]\n" +
+	"\x11repository_policy\x18\x02 \x01(\v20.octomanager.v2.DomainRepositoryAutomationPolicyR\x10repositoryPolicy\"2\n" +
 	" RefreshTrackedPullRequestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x90\x01\n" +
 	"!RefreshTrackedPullRequestResponse\x122\n" +
@@ -4104,7 +4123,8 @@ var file_octomanager_v2_tracking_proto_goTypes = []any{
 	(*DomainCheckRecord)(nil),                 // 61: octomanager.v2.DomainCheckRecord
 	(*DomainDeliveryProgress)(nil),            // 62: octomanager.v2.DomainDeliveryProgress
 	(*DomainDeliveryOutcome)(nil),             // 63: octomanager.v2.DomainDeliveryOutcome
-	(*RefreshStatus)(nil),                     // 64: octomanager.v2.RefreshStatus
+	(*DomainRepositoryAutomationPolicy)(nil),  // 64: octomanager.v2.DomainRepositoryAutomationPolicy
+	(*RefreshStatus)(nil),                     // 65: octomanager.v2.RefreshStatus
 }
 var file_octomanager_v2_tracking_proto_depIdxs = []int32{
 	4,  // 0: octomanager.v2.AgentReference.target:type_name -> octomanager.v2.AgentTarget
@@ -4142,27 +4162,28 @@ var file_octomanager_v2_tracking_proto_depIdxs = []int32{
 	17, // 32: octomanager.v2.RetryDeliveryResponse.delivery:type_name -> octomanager.v2.ActionDelivery
 	8,  // 33: octomanager.v2.TrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
 	8,  // 34: octomanager.v2.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	8,  // 35: octomanager.v2.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	64, // 36: octomanager.v2.RefreshTrackedPullRequestResponse.refresh:type_name -> octomanager.v2.RefreshStatus
-	8,  // 37: octomanager.v2.AssignPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	8,  // 38: octomanager.v2.UntrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	16, // 39: octomanager.v2.GetActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 40: octomanager.v2.AcknowledgeActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 41: octomanager.v2.StartActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 42: octomanager.v2.ReprofileActionResponse.action:type_name -> octomanager.v2.PendingAction
-	44, // 43: octomanager.v2.ListAgentMessagesResponse.messages:type_name -> octomanager.v2.AgentMessage
-	44, // 44: octomanager.v2.AcknowledgeMessageResponse.message:type_name -> octomanager.v2.AgentMessage
-	4,  // 45: octomanager.v2.RegisterAgentRequest.target:type_name -> octomanager.v2.AgentTarget
-	5,  // 46: octomanager.v2.RegisterAgentResponse.agent:type_name -> octomanager.v2.AgentReference
-	4,  // 47: octomanager.v2.SubscribePullRequestRequest.agent:type_name -> octomanager.v2.AgentTarget
-	51, // 48: octomanager.v2.ListPRParticipantsResponse.participants:type_name -> octomanager.v2.PRParticipant
-	51, // 49: octomanager.v2.SubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
-	51, // 50: octomanager.v2.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
-	51, // [51:51] is the sub-list for method output_type
-	51, // [51:51] is the sub-list for method input_type
-	51, // [51:51] is the sub-list for extension type_name
-	51, // [51:51] is the sub-list for extension extendee
-	0,  // [0:51] is the sub-list for field type_name
+	64, // 35: octomanager.v2.GetTrackedPullRequestResponse.repository_policy:type_name -> octomanager.v2.DomainRepositoryAutomationPolicy
+	8,  // 36: octomanager.v2.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	65, // 37: octomanager.v2.RefreshTrackedPullRequestResponse.refresh:type_name -> octomanager.v2.RefreshStatus
+	8,  // 38: octomanager.v2.AssignPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	8,  // 39: octomanager.v2.UntrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	16, // 40: octomanager.v2.GetActionResponse.action:type_name -> octomanager.v2.PendingAction
+	16, // 41: octomanager.v2.AcknowledgeActionResponse.action:type_name -> octomanager.v2.PendingAction
+	16, // 42: octomanager.v2.StartActionResponse.action:type_name -> octomanager.v2.PendingAction
+	16, // 43: octomanager.v2.ReprofileActionResponse.action:type_name -> octomanager.v2.PendingAction
+	44, // 44: octomanager.v2.ListAgentMessagesResponse.messages:type_name -> octomanager.v2.AgentMessage
+	44, // 45: octomanager.v2.AcknowledgeMessageResponse.message:type_name -> octomanager.v2.AgentMessage
+	4,  // 46: octomanager.v2.RegisterAgentRequest.target:type_name -> octomanager.v2.AgentTarget
+	5,  // 47: octomanager.v2.RegisterAgentResponse.agent:type_name -> octomanager.v2.AgentReference
+	4,  // 48: octomanager.v2.SubscribePullRequestRequest.agent:type_name -> octomanager.v2.AgentTarget
+	51, // 49: octomanager.v2.ListPRParticipantsResponse.participants:type_name -> octomanager.v2.PRParticipant
+	51, // 50: octomanager.v2.SubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
+	51, // 51: octomanager.v2.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
+	52, // [52:52] is the sub-list for method output_type
+	52, // [52:52] is the sub-list for method input_type
+	52, // [52:52] is the sub-list for extension type_name
+	52, // [52:52] is the sub-list for extension extendee
+	0,  // [0:52] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_tracking_proto_init() }
@@ -4189,6 +4210,7 @@ func file_octomanager_v2_tracking_proto_init() {
 	}
 	file_octomanager_v2_tracking_proto_msgTypes[13].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[14].OneofWrappers = []any{}
+	file_octomanager_v2_tracking_proto_msgTypes[16].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[20].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[40].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[43].OneofWrappers = []any{}

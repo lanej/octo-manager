@@ -151,7 +151,7 @@ message TrackingSnapshot {
   repeated DeliveryAttempt attempts = 5;
   repeated CheckWatch check_watches = 6;
 }
-message TrackPullRequestRequest { string url = 1; AgentTarget owner = 2; }
+message TrackPullRequestRequest { string url = 1; AgentTarget owner = 2; optional string cwd = 3; }
 message ListTrackedPullRequestsRequest {}
 message ListTrackedPullRequestsResponse { repeated TrackedPullRequest prs = 1; }
 message AssignPullRequestRequest { string id = 1; AgentTarget owner = 2; }
@@ -162,7 +162,7 @@ message RetryDeliveryResponse { ActionDelivery delivery = 1; }
 
 message TrackPullRequestResponse { TrackedPullRequest pr = 1; }
 message GetTrackedPullRequestRequest { string id = 1; }
-message GetTrackedPullRequestResponse { TrackedPullRequest pr = 1; }
+message GetTrackedPullRequestResponse { TrackedPullRequest pr = 1; DomainRepositoryAutomationPolicy repository_policy = 2; }
 message RefreshTrackedPullRequestRequest { string id = 1; }
 message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; RefreshStatus refresh = 2; }
 message AssignPullRequestResponse { TrackedPullRequest pr = 1; }

@@ -1,3 +1,4 @@
+import { RepositoryPolicies } from "./repository/policy.js";
 import {migrateScheduling,ScheduleStore} from "./scheduling/store.js";
 import {migrateAutoMerge} from "./merging/upgrade.js";
 import {migrateMerging} from "./merging/schema.js";
@@ -32,6 +33,7 @@ export function privateDirectory(path: string): void {
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
+  readonly repositories: RepositoryPolicies;
   readonly schedules: ScheduleStore;
   readonly merging: MergeStore;
   readonly activity: ActivityStore;
@@ -76,6 +78,7 @@ export class Store {
       this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
+      this.repositories=new RepositoryPolicies(this.db,this.tracking,this.merging,(kind,detail,prId)=>this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null));
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); });
