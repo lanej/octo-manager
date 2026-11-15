@@ -15,12 +15,12 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
-	"github.com/lanej/octo-manager/gen/octomanager/v1/octomanagerv1connect"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/gen/octomanager/v2/octomanagerv2connect"
 )
 
 type activityService struct {
-	octomanagerv1connect.UnimplementedSchedulerServiceHandler
+	octomanagerv2connect.UnimplementedSchedulerServiceHandler
 	cursors chan uint64
 	total   uint64
 }
@@ -82,11 +82,11 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	m.instance = "fixture"
 	m.snapshot.Sequence = 201
 	service := activityService{cursors: make(chan uint64, 4)}
-	_, handler := octomanagerv1connect.NewSchedulerServiceHandler(service)
+	_, handler := octomanagerv2connect.NewSchedulerServiceHandler(service)
 	server := httptest.NewServer(handler)
 
 	t.Cleanup(server.Close)
-	m.api.RPC = octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
+	m.api.RPC = octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
 	command := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	if command == nil {
@@ -175,10 +175,10 @@ func TestActivityOpensLatestLargeHistoryWithoutAutomaticReplay(t *testing.T) {
 	m.instance = "large-history"
 	m.snapshot.Sequence = 120000
 	service := activityService{cursors: make(chan uint64, 4), total: 120000}
-	_, handler := octomanagerv1connect.NewSchedulerServiceHandler(service)
+	_, handler := octomanagerv2connect.NewSchedulerServiceHandler(service)
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
-	m.api.RPC = octomanagerv1connect.NewSchedulerServiceClient(server.Client(), server.URL)
+	m.api.RPC = octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
 	command := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	if command == nil {

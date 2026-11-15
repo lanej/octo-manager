@@ -10,7 +10,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/runtime"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 	"github.com/lanej/octo-manager/internal/client"
 	"google.golang.org/protobuf/proto"
 )

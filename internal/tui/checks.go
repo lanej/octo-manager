@@ -1,11 +1,10 @@
 package tui
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func (m *Model) checkWatchContent(pr *v1.TrackedPullRequest) string {
@@ -16,7 +15,7 @@ func (m *Model) checkWatchContent(pr *v1.TrackedPullRequest) string {
 			continue
 		}
 
-		parts = append(parts, text.Pill(stateName(watch.GetState().String(), "CHECK_WATCH_STATE_"), text.Neutral, m.theme, text.Normal)+" "+m.commitLink(pr.GetUrl(), watch.GetHeadSha()), m.field("Check coverage", observationStatus(watch.GetEvidenceJson())))
+		parts = append(parts, text.Pill(stateName(watch.GetState().String(), "CHECK_WATCH_STATE_"), text.Neutral, m.theme, text.Normal)+" "+m.commitLink(pr.GetUrl(), watch.GetHeadSha()), m.field("Check coverage", observationStatus(watch.GetEvidence())))
 	}
 
 	if len(parts) == 0 {
@@ -32,14 +31,8 @@ func (m *Model) checkResultsContent(result *v1.CheckResults, pr *v1.TrackedPullR
 		parts = append(parts, m.muted("New head: ")+m.commitLink(pr.GetUrl(), result.GetReplacementHeadSha()))
 	}
 
-	var checks []struct{ Name, Status, Conclusion, URL string }
-
-	if err := json.Unmarshal([]byte(result.GetChecksJson()), &checks); err != nil {
-		return strings.Join(append(parts, m.muted("Check details unavailable.")), "\n")
-	}
-
-	for _, check := range checks {
-		parts = append(parts, text.Label(safe(check.Name), m.theme)+" · "+text.Label(safe(check.Conclusion), m.theme)+" "+m.link(check.URL))
+	for _, check := range result.GetChecks() {
+		parts = append(parts, text.Label(safe(check.GetName()), m.theme)+" · "+text.Label(safe(check.GetConclusion()), m.theme)+" "+m.link(check.GetUrl()))
 	}
 
 	return strings.Join(parts, "\n")

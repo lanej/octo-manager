@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func TestSessionContextIsShortAndRecognizable(t *testing.T) {
@@ -169,7 +169,7 @@ func TestCharmedTrackingLinksKeepTargetsAcrossResize(t *testing.T) {
 func TestTrackingPresentsReviewFeedbackAndLocation(t *testing.T) {
 	t.Parallel()
 	m := model(t, theme.Dark)
-	pr := &v1.TrackedPullRequest{Id: "feedback-pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true, Observation: &v1.TrackingObservation{FeedbackJson: new(`{"state":"partial","reason":"Comments unavailable"}`)}}
+	pr := &v1.TrackedPullRequest{Id: "feedback-pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true, Observation: &v1.TrackingObservation{Feedback: &v1.DomainFeedbackEvidence{Variant: &v1.DomainFeedbackEvidence_Variant_2{Variant_2: &v1.DomainFeedbackEvidenceVariant2{State: new(v1.DomainFeedbackEvidenceVariant2State(1)), Reason: new("Comments unavailable")}}}}}
 	m.snapshot.Tracking = &v1.TrackingSnapshot{
 		Prs: []*v1.TrackedPullRequest{pr},
 		Actions: []*v1.PendingAction{{
@@ -218,14 +218,14 @@ func TestCheckWatchPresentsPendingCoverageAndLinkedResults(t *testing.T) {
 	m := model(t, theme.Dark)
 	pr := &v1.TrackedPullRequest{Id: "pr", Url: "https://github.com/owner/repo/pull/42", Enabled: true}
 	sha := strings.Repeat("a", 40)
-	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}, CheckWatches: []*v1.CheckWatch{{Id: "opaque-watch-id", PrId: "pr", HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, EvidenceJson: `{"state":"partial","reason":"Workflow still queued"}`}}}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}, CheckWatches: []*v1.CheckWatch{{Id: "opaque-watch-id", PrId: "pr", HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_WAITING, Evidence: &v1.DomainCheckEvidence{Variant: &v1.DomainCheckEvidence_Variant_2{Variant_2: &v1.DomainCheckEvidenceVariant2{State: new(v1.DomainCheckEvidenceVariant2State(1)), Reason: new("Workflow still queued")}}}}}}
 	pending := ansi.Strip(m.checkWatchContent(pr))
 
 	if !strings.Contains(pending, "waiting") || !strings.Contains(pending, "Workflow still queued") || strings.Contains(pending, "opaque-watch-id") {
 		t.Fatal("check watch did not present human-readable pending state")
 	}
 
-	result := m.checkResultsContent(&v1.CheckResults{HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_COMPLETED, ChecksJson: `[{"name":"Linux checks","conclusion":"success","url":"https://github.com/owner/repo/actions/runs/123"}]`}, pr)
+	result := m.checkResultsContent(&v1.CheckResults{HeadSha: sha, State: v1.CheckWatchState_CHECK_WATCH_STATE_COMPLETED, Checks: []*v1.DomainCheckRecord{{Name: new("Linux checks"), Conclusion: new("success"), Url: new("https://github.com/owner/repo/actions/runs/123")}}}, pr)
 	if !strings.Contains(ansi.Strip(result), "Linux checks") || !strings.Contains(ansi.Strip(result), "success") {
 		t.Fatal("check completion lost its individual conclusions")
 	}

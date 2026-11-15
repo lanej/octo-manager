@@ -10,7 +10,7 @@ import {
   RepairState,
   RequestRebaseResponseSchema,
   ListRepairsResponseSchema,
-} from "../gen/octomanager/v1/repairs_pb.js";
+} from "../gen/octomanager/v2/repairs_pb.js";
 import type { parseCommand } from "../arguments.js";
 export async function repairsCLI(
   parsed: ReturnType<typeof parseCommand>,
@@ -45,7 +45,7 @@ export async function repairsCLI(
     const after = values.after ?? "0";
     if (!/^\d+$/u.test(after)) throw new Error("Invalid case cursor");
     const response = await client.listConflictCases({ afterId: BigInt(after) });
-    if (values.json)
+    if (values.json === true)
       printResult(parsed, toJson(ListConflictCasesResponseSchema, response));
     else {
       for (const c of response.cases)
@@ -61,7 +61,7 @@ export async function repairsCLI(
     const id = positionals[1] ?? "";
     if (!/^\d+$/u.test(id)) throw new Error("Invalid case ID");
     const response = await client.getConflictCase({ id: BigInt(id) });
-    if (values.json)
+    if (values.json === true)
       printResult(parsed, toJson(GetConflictCaseResponseSchema, response));
     else {
       const c = response.conflictCase;
@@ -78,7 +78,7 @@ export async function repairsCLI(
       profile: values.profile ?? "",
       requestId: values["request-id"] ?? "",
     });
-    if (values.json)
+    if (values.json === true)
       printResult(parsed, toJson(RequestRebaseResponseSchema, response));
     else
       console.log(
@@ -86,7 +86,7 @@ export async function repairsCLI(
       );
   } else {
     const response = await client.listRepairs({});
-    if (values.json)
+    if (values.json === true)
       printResult(parsed, toJson(ListRepairsResponseSchema, response));
     else {
       for (const repair of response.repairs)

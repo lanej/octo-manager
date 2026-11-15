@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 	"google.golang.org/protobuf/proto"
 )
 

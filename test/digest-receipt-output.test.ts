@@ -1,10 +1,12 @@
+import { wire } from "../src/api/codec.js";
+import { DomainDigestReceiptSchema } from "../src/gen/octomanager/v2/domain_pb.js";
 import { test, expect } from "bun:test";
 import { create } from "@bufbuild/protobuf";
-import { AcknowledgeAgentDigestResponseSchema } from "../src/gen/octomanager/v1/notifications_pb.js";
+import { AcknowledgeAgentDigestResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
 import { receiptOutput } from "../src/notifications/receipt-output.js";
 test("receipt output bounds dense revision metadata and exposes omitted item retrieval without history", () => {
   const response = create(AcknowledgeAgentDigestResponseSchema, {
-    recordJson: JSON.stringify({
+    receipt: wire(DomainDigestReceiptSchema, {
       id: "a".repeat(32),
       revision: 2,
       currentRevision: 4,
@@ -38,7 +40,7 @@ test("receipt output bounds dense revision metadata and exposes omitted item ret
   expect(result.receipt.currentRevision).toBe(4);
   expect(result.items.some((item) => !item.applicable)).toBe(true);
   expect(result.inspect).toContain("--revision 2 --state");
-  expect(() =>
-    receiptOutput({ ...response, recordJson: '{"events":[]}' }),
-  ).toThrow("Invalid digest receipt");
+  expect(() => receiptOutput({ ...response, receipt: undefined })).toThrow(
+    "Missing digest receipt",
+  );
 });

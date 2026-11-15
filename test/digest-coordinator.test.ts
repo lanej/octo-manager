@@ -1,3 +1,4 @@
+import { cliJSON } from "../src/client.js";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { messageReceiptId } from "../src/notifications/render.js";
@@ -111,7 +112,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     expect(directCalls).toBe(0);
     const client = schedulerClient(directory),
       record = await client.getAgentDigest({ id: digest.id, revision: 1 });
-    expect(record.recordJson).toContain(digest.id);
+    expect(JSON.stringify(record.inspection, cliJSON)).toContain(digest.id);
     const altered = codexHook(
       {
         hook_event_name: "UserPromptSubmit",
@@ -157,10 +158,16 @@ test("coordinator combines both producers and atomically receipts exact members 
       receipt.messages.find((message) => message.submissionId === submission.id)
         ?.summary,
     ).toBe("PR submission needs_input: Synthetic request");
-    expect(Buffer.byteLength(receipt.recordJson)).toBeLessThan(300);
-    expect(receipt.recordJson).not.toContain("synthetic_history");
-    expect(receipt.recordJson).not.toContain("messageIds");
-    expect(receipt.recordJson).not.toContain("events");
+    expect(
+      Buffer.byteLength(JSON.stringify(receipt.receipt, cliJSON)),
+    ).toBeLessThan(300);
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
+      "synthetic_history",
+    );
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
+      "messageIds",
+    );
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain("events");
     expect(
       receipt.messages.every(
         (message) => message.acknowledgedAtMs !== undefined,

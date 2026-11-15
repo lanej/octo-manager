@@ -66,6 +66,7 @@ export class Coordinator extends EventEmitter {
     this.store = new Store(directory, this.now);
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
       this.tracking.tick();
+      this.submissions.reconcileLegacy(this.now());
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });

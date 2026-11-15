@@ -1,14 +1,30 @@
+import {isMessage} from "@bufbuild/protobuf";
+import {file_octomanager_v2_domain} from "./gen/octomanager/v2/domain_pb.js";
+import {unwire} from "./api/codec.js";
 import { actionContext } from "./tracking/evidence.js";
-import { ActionState as TrackingActionState, DeliveryState as TrackingDeliveryState } from "./gen/octomanager/v1/tracking_pb.js";
-import { createClient } from "@connectrpc/connect";
+import { ActionState as TrackingActionState, DeliveryState as TrackingDeliveryState } from "./gen/octomanager/v2/tracking_pb.js";
+import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
 import { join } from "node:path";
-import { SchedulerService, JobStatus, SchedulerState, WorkerState, type Job as WireJob, type Snapshot as WireSnapshot, type JobEvent as WireEvent } from "./gen/octomanager/v1/scheduler_pb.js";
+import { SchedulerService, JobStatus, SchedulerState, WorkerState, type Job as WireJob, type Snapshot as WireSnapshot, type JobEvent as WireEvent } from "./gen/octomanager/v2/scheduler_pb.js";
 import { digest, parseTask, type Job, type JobEvent, type Snapshot, type Status } from "./domain.js";
 
 export function schedulerClient(directory: string) {
   // WHY: Isolate Unix-socket requests so stream cancellation or coordinator restart cannot reuse a stale Bun HTTP connection.
-  return createClient(SchedulerService, createConnectTransport({ httpVersion: "1.1", baseUrl: "http://localhost", nodeOptions: { socketPath: join(directory, "run.sock"), agent: false }, defaultTimeoutMs: 10000 }));
+  const options={httpVersion:"1.1" as const,baseUrl:"http://localhost",nodeOptions:{socketPath:join(directory,"run.sock"),agent:false as const},defaultTimeoutMs:10000};
+  const raw=createClient(SchedulerService,createConnectTransport(options));
+  let ready:Promise<void>|undefined;
+  return createClient(SchedulerService,createConnectTransport({...options,interceptors:[next=>async request=>{
+    if(request.method.name!=="GetServerInfo"){
+      ready??=raw.getServerInfo({}).then(info=>{if(info.apiVersion!==2)throw new ConnectError("Incompatible Octo API; update the server, CLI, and dashboard together",Code.FailedPrecondition);}).catch((error:unknown)=>{
+        ready=undefined;
+        if(error instanceof ConnectError&&(error.code===Code.Unimplemented||error.code===Code.NotFound))throw new ConnectError("Incompatible Octo API; update the server, CLI, and dashboard together",Code.FailedPrecondition);
+        throw error;
+      });
+      await ready;
+    }
+    return next(request);
+  }]}));
 }
 function job(value?: WireJob): Job {
   if (!value?.task) throw new Error("Server returned no job task");
@@ -46,6 +62,8 @@ export async function trackingRequest(directory:string,command:string,id?:string
  const client=schedulerClient(directory);
  const owner={harness:options.harness??'codex',endpoint:options.endpoint??'local',sessionId:options.sessionId??'',label:options.label};
  switch(command){
+  case 'agents':return (await client.getSnapshot({})).snapshot?.tracking?.agents;
+  case 'register-agent':return client.registerAgent({target:owner});
   case 'track':return client.trackPullRequest({url:options.url??'',owner});
   case 'tracked':return client.listTrackedPullRequests({});
   case 'pr':return client.getTrackedPullRequest({id:id??''});
@@ -67,11 +85,13 @@ export async function trackingRequest(directory:string,command:string,id?:string
 
 export function cliJSON(key:string,value:unknown):unknown {
  if(key==="$typeName")return undefined;
+ if(isMessage(value)){const schema=file_octomanager_v2_domain.messages.find(schema=>schema.typeName===value.$typeName);if(schema!==undefined)return unwire(schema,value);}
  if(typeof value==="bigint")return Number(value);
- if(value && typeof value==="object" && "$typeName" in value){
-  const v=value as Record<string,unknown>;
-  if(v.$typeName==="octomanager.v1.PendingAction")return {...v,$typeName:undefined,state:TrackingActionState[v.state as number]?.toLowerCase()??"unknown"};
-  if(v.$typeName==="octomanager.v1.ActionDelivery")return {...v,$typeName:undefined,state:TrackingDeliveryState[v.state as number]?.toLowerCase()??"unknown"};
+ if(value!==null&&typeof value==="object"&&"$typeName" in value){
+  const data:Record<string,unknown>=Object.fromEntries(Object.entries(value));
+  const state=typeof data["state"]==="number"?data["state"]:0;
+  if(data["$typeName"]==="octomanager.v2.PendingAction")return {...data,$typeName:undefined,state:TrackingActionState[state]?.toLowerCase()??"unknown"};
+  if(data["$typeName"]==="octomanager.v2.ActionDelivery")return {...data,$typeName:undefined,state:TrackingDeliveryState[state]?.toLowerCase()??"unknown"};
  }
  return value;
 }

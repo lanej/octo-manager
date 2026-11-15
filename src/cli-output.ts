@@ -1,3 +1,4 @@
+import { displayArguments } from "./command-tree.js";
 import type { parseCommand } from "./arguments.js";
 import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
@@ -262,6 +263,7 @@ function inspectArgs(
       ["after", values.after],
       ["revision", values.revision],
       ["version", values.version],
+      ["policy-version", values["policy-version"]],
       ["tier", values.tier],
       ["repo", values.repo],
       ["url", values.url],
@@ -342,7 +344,7 @@ export function agentResponse(
       JSON.stringify(raw === undefined ? null : raw, cliJSON),
     ),
     omission: Omission = { remaining: 8, items: 0, details: false };
-  const args = inspectArgs(parsed, normalized);
+  const args = displayArguments(inspectArgs(parsed, normalized));
   if (parsed.values.state !== undefined && !args.includes("--state"))
     args.push("--state", parsed.values.state);
 
@@ -397,7 +399,7 @@ export function printResult(
       : JSON.stringify(
           result,
           cliJSON,
-          parsed.values.json ||
+          parsed.values.json === true ||
             [
               "ack",
               "merge",

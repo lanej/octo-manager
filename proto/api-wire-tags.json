@@ -1,0 +1,3956 @@
+{
+  "DomainCheckRecord": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "key": {
+      "number": 2,
+      "type": "string"
+    },
+    "name": {
+      "number": 3,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 4,
+      "type": "string"
+    },
+    "status": {
+      "number": 5,
+      "type": "string"
+    },
+    "conclusion": {
+      "number": 6,
+      "type": "string"
+    },
+    "at": {
+      "number": 7,
+      "type": "int64"
+    },
+    "url": {
+      "number": 8,
+      "type": "string"
+    },
+    "suiteId": {
+      "number": 9,
+      "type": "int64"
+    },
+    "workflowId": {
+      "number": 10,
+      "type": "int64"
+    },
+    "runNumber": {
+      "number": 11,
+      "type": "int64"
+    },
+    "event": {
+      "number": 12,
+      "type": "string"
+    }
+  },
+  "DomainCheckEvidence": {
+    "state:complete": {
+      "number": 1,
+      "type": "variant"
+    },
+    "state:partial": {
+      "number": 2,
+      "type": "variant"
+    },
+    "state:unavailable": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainCheckEvidenceVariant1State": {
+    "complete": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainCheckEvidenceVariant1": {
+    "state": {
+      "number": 1,
+      "type": "DomainCheckEvidenceVariant1State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainCheckEvidenceVariant1Value"
+    }
+  },
+  "DomainCheckEvidenceVariant1ValueItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "key": {
+      "number": 2,
+      "type": "string"
+    },
+    "name": {
+      "number": 3,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 4,
+      "type": "string"
+    },
+    "status": {
+      "number": 5,
+      "type": "string"
+    },
+    "conclusion": {
+      "number": 6,
+      "type": "string"
+    },
+    "at": {
+      "number": 7,
+      "type": "int64"
+    },
+    "url": {
+      "number": 8,
+      "type": "string"
+    },
+    "suiteId": {
+      "number": 9,
+      "type": "int64"
+    },
+    "workflowId": {
+      "number": 10,
+      "type": "int64"
+    },
+    "runNumber": {
+      "number": 11,
+      "type": "int64"
+    },
+    "event": {
+      "number": 12,
+      "type": "string"
+    }
+  },
+  "DomainCheckEvidenceVariant2State": {
+    "partial": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainCheckEvidenceVariant2": {
+    "state": {
+      "number": 1,
+      "type": "DomainCheckEvidenceVariant2State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainCheckEvidenceVariant2Value"
+    },
+    "reason": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainCheckEvidenceVariant2ValueItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "key": {
+      "number": 2,
+      "type": "string"
+    },
+    "name": {
+      "number": 3,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 4,
+      "type": "string"
+    },
+    "status": {
+      "number": 5,
+      "type": "string"
+    },
+    "conclusion": {
+      "number": 6,
+      "type": "string"
+    },
+    "at": {
+      "number": 7,
+      "type": "int64"
+    },
+    "url": {
+      "number": 8,
+      "type": "string"
+    },
+    "suiteId": {
+      "number": 9,
+      "type": "int64"
+    },
+    "workflowId": {
+      "number": 10,
+      "type": "int64"
+    },
+    "runNumber": {
+      "number": 11,
+      "type": "int64"
+    },
+    "event": {
+      "number": 12,
+      "type": "string"
+    }
+  },
+  "DomainCheckEvidenceVariant3State": {
+    "unavailable": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainCheckEvidenceVariant3": {
+    "state": {
+      "number": 1,
+      "type": "DomainCheckEvidenceVariant3State"
+    },
+    "reason": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainReviewEvidence": {
+    "state:complete": {
+      "number": 1,
+      "type": "variant"
+    },
+    "state:partial": {
+      "number": 2,
+      "type": "variant"
+    },
+    "state:unavailable": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainReviewEvidenceVariant1State": {
+    "complete": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainReviewEvidenceVariant1": {
+    "state": {
+      "number": 1,
+      "type": "DomainReviewEvidenceVariant1State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainReviewEvidenceVariant1Value"
+    }
+  },
+  "DomainReviewEvidenceVariant1ValueItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "author": {
+      "number": 2,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 3,
+      "type": "string"
+    },
+    "state": {
+      "number": 4,
+      "type": "string"
+    },
+    "at": {
+      "number": 5,
+      "type": "int64"
+    },
+    "url": {
+      "number": 6,
+      "type": "string"
+    },
+    "body": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainReviewEvidenceVariant2State": {
+    "partial": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainReviewEvidenceVariant2": {
+    "state": {
+      "number": 1,
+      "type": "DomainReviewEvidenceVariant2State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainReviewEvidenceVariant2Value"
+    },
+    "reason": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainReviewEvidenceVariant2ValueItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "author": {
+      "number": 2,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 3,
+      "type": "string"
+    },
+    "state": {
+      "number": 4,
+      "type": "string"
+    },
+    "at": {
+      "number": 5,
+      "type": "int64"
+    },
+    "url": {
+      "number": 6,
+      "type": "string"
+    },
+    "body": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainReviewEvidenceVariant3State": {
+    "unavailable": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainReviewEvidenceVariant3": {
+    "state": {
+      "number": 1,
+      "type": "DomainReviewEvidenceVariant3State"
+    },
+    "reason": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainFeedbackEvidence": {
+    "state:complete": {
+      "number": 1,
+      "type": "variant"
+    },
+    "state:partial": {
+      "number": 2,
+      "type": "variant"
+    },
+    "state:unavailable": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainFeedbackEvidenceVariant1State": {
+    "complete": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainFeedbackEvidenceVariant1": {
+    "state": {
+      "number": 1,
+      "type": "DomainFeedbackEvidenceVariant1State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainFeedbackEvidenceVariant1Value"
+    }
+  },
+  "DomainFeedbackEvidenceVariant1ValueItemSource": {
+    "review": {
+      "number": 1,
+      "type": "enum"
+    },
+    "inline": {
+      "number": 2,
+      "type": "enum"
+    },
+    "conversation": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainFeedbackEvidenceVariant1ValueItem": {
+    "source": {
+      "number": 1,
+      "type": "DomainFeedbackEvidenceVariant1ValueItemSource"
+    },
+    "id": {
+      "number": 2,
+      "type": "string"
+    },
+    "revision": {
+      "number": 3,
+      "type": "string"
+    },
+    "author": {
+      "number": 4,
+      "type": "string"
+    },
+    "body": {
+      "number": 5,
+      "type": "string"
+    },
+    "url": {
+      "number": 6,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 7,
+      "type": "string"
+    },
+    "path": {
+      "number": 8,
+      "type": "string"
+    },
+    "line": {
+      "number": 9,
+      "type": "int64"
+    },
+    "reviewId": {
+      "number": 10,
+      "type": "string"
+    }
+  },
+  "DomainFeedbackEvidenceVariant2State": {
+    "partial": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainFeedbackEvidenceVariant2": {
+    "state": {
+      "number": 1,
+      "type": "DomainFeedbackEvidenceVariant2State"
+    },
+    "value": {
+      "number": 2,
+      "type": "DomainFeedbackEvidenceVariant2Value"
+    },
+    "reason": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainFeedbackEvidenceVariant2ValueItemSource": {
+    "review": {
+      "number": 1,
+      "type": "enum"
+    },
+    "inline": {
+      "number": 2,
+      "type": "enum"
+    },
+    "conversation": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainFeedbackEvidenceVariant2ValueItem": {
+    "source": {
+      "number": 1,
+      "type": "DomainFeedbackEvidenceVariant2ValueItemSource"
+    },
+    "id": {
+      "number": 2,
+      "type": "string"
+    },
+    "revision": {
+      "number": 3,
+      "type": "string"
+    },
+    "author": {
+      "number": 4,
+      "type": "string"
+    },
+    "body": {
+      "number": 5,
+      "type": "string"
+    },
+    "url": {
+      "number": 6,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 7,
+      "type": "string"
+    },
+    "path": {
+      "number": 8,
+      "type": "string"
+    },
+    "line": {
+      "number": 9,
+      "type": "int64"
+    },
+    "reviewId": {
+      "number": 10,
+      "type": "string"
+    }
+  },
+  "DomainFeedbackEvidenceVariant3State": {
+    "unavailable": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainFeedbackEvidenceVariant3": {
+    "state": {
+      "number": 1,
+      "type": "DomainFeedbackEvidenceVariant3State"
+    },
+    "reason": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainDeliveryProgress": {
+    "state:pending": {
+      "number": 1,
+      "type": "variant"
+    },
+    "state:sending": {
+      "number": 2,
+      "type": "variant"
+    },
+    "state:delivered": {
+      "number": 3,
+      "type": "variant"
+    },
+    "fields:at,reason,state": {
+      "number": 4,
+      "type": "variant"
+    }
+  },
+  "DomainDeliveryProgressVariant1State": {
+    "pending": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryProgressVariant1": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryProgressVariant1State"
+    },
+    "nextAttemptAt": {
+      "number": 2,
+      "type": "int64"
+    }
+  },
+  "DomainDeliveryProgressVariant2State": {
+    "sending": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryProgressVariant2": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryProgressVariant2State"
+    },
+    "startedAt": {
+      "number": 2,
+      "type": "int64"
+    }
+  },
+  "DomainDeliveryProgressVariant3State": {
+    "delivered": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryProgressVariant3": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryProgressVariant3State"
+    },
+    "at": {
+      "number": 2,
+      "type": "int64"
+    },
+    "turnId": {
+      "number": 3,
+      "type": "string"
+    },
+    "queueId": {
+      "number": 4,
+      "type": "string"
+    },
+    "note": {
+      "number": 5,
+      "type": "string"
+    }
+  },
+  "DomainDeliveryProgressVariant4State": {
+    "uncertain": {
+      "number": 1,
+      "type": "enum"
+    },
+    "unavailable": {
+      "number": 2,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryProgressVariant4": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryProgressVariant4State"
+    },
+    "at": {
+      "number": 2,
+      "type": "int64"
+    },
+    "reason": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainDeliveryOutcome": {
+    "state:sending": {
+      "number": 1,
+      "type": "variant"
+    },
+    "state:accepted": {
+      "number": 2,
+      "type": "variant"
+    },
+    "fields:at,reason,state": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainDeliveryOutcomeVariant1State": {
+    "sending": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryOutcomeVariant1": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryOutcomeVariant1State"
+    }
+  },
+  "DomainDeliveryOutcomeVariant2State": {
+    "accepted": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryOutcomeVariant2": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryOutcomeVariant2State"
+    },
+    "at": {
+      "number": 2,
+      "type": "int64"
+    },
+    "turnId": {
+      "number": 3,
+      "type": "string"
+    },
+    "queueId": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainDeliveryOutcomeVariant3State": {
+    "rejected": {
+      "number": 1,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainDeliveryOutcomeVariant3": {
+    "state": {
+      "number": 1,
+      "type": "DomainDeliveryOutcomeVariant3State"
+    },
+    "at": {
+      "number": 2,
+      "type": "int64"
+    },
+    "reason": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainMergeChain": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "requestId": {
+      "number": 2,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 3,
+      "type": "string"
+    },
+    "state": {
+      "number": 4,
+      "type": "DomainMergeChainState"
+    },
+    "inputDigest": {
+      "number": 5,
+      "type": "string"
+    },
+    "createdAt": {
+      "number": 6,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainMergeChainState": {
+    "active": {
+      "number": 1,
+      "type": "enum"
+    },
+    "paused": {
+      "number": 2,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 3,
+      "type": "enum"
+    },
+    "completed": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainMergeEntry": {
+    "receiptId": {
+      "number": 1,
+      "type": "string"
+    },
+    "receiptContext": {
+      "number": 2,
+      "type": "string"
+    },
+    "autoMerge": {
+      "number": 3,
+      "type": "bool"
+    },
+    "id": {
+      "number": 4,
+      "type": "string"
+    },
+    "chainId": {
+      "number": 5,
+      "type": "string"
+    },
+    "prId": {
+      "number": 6,
+      "type": "string"
+    },
+    "method": {
+      "number": 7,
+      "type": "DomainMergeEntryMethod"
+    },
+    "checks": {
+      "number": 8,
+      "type": "DomainMergeEntryChecks"
+    },
+    "noCi": {
+      "number": 9,
+      "type": "bool"
+    },
+    "state": {
+      "number": 10,
+      "type": "DomainMergeEntryState"
+    },
+    "detail": {
+      "number": 11,
+      "type": "string"
+    },
+    "version": {
+      "number": 12,
+      "type": "int64"
+    },
+    "nextAt": {
+      "number": 13,
+      "type": "int64"
+    },
+    "ready": {
+      "number": 14,
+      "type": "DomainMergeEntryReady"
+    },
+    "preparationHold": {
+      "number": 15,
+      "type": "bool"
+    },
+    "preparedKey": {
+      "number": 16,
+      "type": "string"
+    },
+    "preparedHead": {
+      "number": 17,
+      "type": "string"
+    },
+    "mergeCommit": {
+      "number": 18,
+      "type": "string"
+    }
+  },
+  "DomainMergeEntryMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainMergeEntryState": {
+    "waiting": {
+      "number": 1,
+      "type": "enum"
+    },
+    "preparing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "waiting_owner": {
+      "number": 3,
+      "type": "enum"
+    },
+    "waiting_checks": {
+      "number": 4,
+      "type": "enum"
+    },
+    "ready": {
+      "number": 5,
+      "type": "enum"
+    },
+    "merging": {
+      "number": 6,
+      "type": "enum"
+    },
+    "merged": {
+      "number": 7,
+      "type": "enum"
+    },
+    "blocked": {
+      "number": 8,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 9,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 10,
+      "type": "enum"
+    }
+  },
+  "DomainMergeEntryReady": {
+    "epoch": {
+      "number": 1,
+      "type": "int64"
+    },
+    "head": {
+      "number": 2,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 3,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 4,
+      "type": "string"
+    },
+    "feedback": {
+      "number": 5,
+      "type": "string"
+    },
+    "graph": {
+      "number": 6,
+      "type": "string"
+    },
+    "at": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainMergeOperation": {
+    "requestId": {
+      "number": 1,
+      "type": "string"
+    },
+    "nextCheckAt": {
+      "number": 2,
+      "type": "int64"
+    },
+    "epoch": {
+      "number": 3,
+      "type": "int64"
+    },
+    "id": {
+      "number": 4,
+      "type": "string"
+    },
+    "entryId": {
+      "number": 5,
+      "type": "string"
+    },
+    "prId": {
+      "number": 6,
+      "type": "string"
+    },
+    "kind": {
+      "number": 7,
+      "type": "DomainMergeOperationKind"
+    },
+    "state": {
+      "number": 8,
+      "type": "DomainMergeOperationState"
+    },
+    "phase": {
+      "number": 9,
+      "type": "DomainMergeOperationPhase"
+    },
+    "head": {
+      "number": 10,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 11,
+      "type": "string"
+    },
+    "baseSha": {
+      "number": 12,
+      "type": "string"
+    },
+    "graph": {
+      "number": 13,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 14,
+      "type": "string"
+    },
+    "createdAt": {
+      "number": 15,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 16,
+      "type": "int64"
+    },
+    "detail": {
+      "number": 17,
+      "type": "string"
+    },
+    "resultHead": {
+      "number": 18,
+      "type": "string"
+    },
+    "mergeCommit": {
+      "number": 19,
+      "type": "string"
+    },
+    "preparation": {
+      "number": 20,
+      "type": "DomainMergeOperationPreparation"
+    },
+    "prerequisiteCommit": {
+      "number": 21,
+      "type": "string"
+    },
+    "preparationKey": {
+      "number": 22,
+      "type": "string"
+    },
+    "workspace": {
+      "number": 23,
+      "type": "string"
+    }
+  },
+  "DomainMergeOperationKind": {
+    "prepare": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOperationState": {
+    "planned": {
+      "number": 1,
+      "type": "enum"
+    },
+    "running": {
+      "number": 2,
+      "type": "enum"
+    },
+    "succeeded": {
+      "number": 3,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 4,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 5,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOperationPhase": {
+    "local": {
+      "number": 1,
+      "type": "enum"
+    },
+    "pushing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "merging": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOperationPreparationKind": {
+    "rebase": {
+      "number": 1,
+      "type": "enum"
+    },
+    "toml_revision": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOperationPreparation": {
+    "kind": {
+      "number": 1,
+      "type": "DomainMergeOperationPreparationKind"
+    },
+    "repository": {
+      "number": 2,
+      "type": "string"
+    },
+    "checks": {
+      "number": 3,
+      "type": "DomainMergeOperationPreparationChecks"
+    },
+    "timeoutMs": {
+      "number": 4,
+      "type": "int64"
+    },
+    "path": {
+      "number": 5,
+      "type": "string"
+    },
+    "key": {
+      "number": 6,
+      "type": "DomainMergeOperationPreparationKey"
+    },
+    "expectedValue": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainDependency": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "dependentId": {
+      "number": 2,
+      "type": "string"
+    },
+    "prerequisiteId": {
+      "number": 3,
+      "type": "string"
+    },
+    "confirmedBy": {
+      "number": 4,
+      "type": "string"
+    },
+    "active": {
+      "number": 5,
+      "type": "bool"
+    },
+    "removedBy": {
+      "number": 6,
+      "type": "string"
+    },
+    "removedAt": {
+      "number": 7,
+      "type": "int64"
+    },
+    "reason": {
+      "number": 8,
+      "type": "string"
+    },
+    "referenceId": {
+      "number": 9,
+      "type": "string"
+    },
+    "preparation": {
+      "number": 10,
+      "type": "DomainDependencyPreparation"
+    }
+  },
+  "DomainDependencyPreparationKind": {
+    "rebase": {
+      "number": 1,
+      "type": "enum"
+    },
+    "toml_revision": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainDependencyPreparation": {
+    "kind": {
+      "number": 1,
+      "type": "DomainDependencyPreparationKind"
+    },
+    "repository": {
+      "number": 2,
+      "type": "string"
+    },
+    "checks": {
+      "number": 3,
+      "type": "DomainDependencyPreparationChecks"
+    },
+    "timeoutMs": {
+      "number": 4,
+      "type": "int64"
+    },
+    "path": {
+      "number": 5,
+      "type": "string"
+    },
+    "key": {
+      "number": 6,
+      "type": "DomainDependencyPreparationKey"
+    },
+    "expectedValue": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainPRReference": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "prId": {
+      "number": 2,
+      "type": "string"
+    },
+    "targetUrl": {
+      "number": 3,
+      "type": "string"
+    },
+    "targetKind": {
+      "number": 4,
+      "type": "DomainPRReferenceTargetKind"
+    },
+    "sourceKey": {
+      "number": 5,
+      "type": "string"
+    },
+    "revision": {
+      "number": 6,
+      "type": "string"
+    },
+    "evidenceUrl": {
+      "number": 7,
+      "type": "string"
+    },
+    "excerpt": {
+      "number": 8,
+      "type": "string"
+    },
+    "hint": {
+      "number": 9,
+      "type": "DomainPRReferenceHint"
+    },
+    "active": {
+      "number": 10,
+      "type": "bool"
+    },
+    "decision": {
+      "number": 11,
+      "type": "DomainPRReferenceDecision"
+    },
+    "createdAt": {
+      "number": 12,
+      "type": "int64"
+    },
+    "decidedBy": {
+      "number": 13,
+      "type": "string"
+    }
+  },
+  "DomainPRReferenceTargetKind": {
+    "pr": {
+      "number": 1,
+      "type": "enum"
+    },
+    "issue_or_pr": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainPRReferenceHint": {
+    "depends_on": {
+      "number": 1,
+      "type": "enum"
+    },
+    "mentioned": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainPRReferenceDecision": {
+    "suggested": {
+      "number": 1,
+      "type": "enum"
+    },
+    "confirmed": {
+      "number": 2,
+      "type": "enum"
+    },
+    "related": {
+      "number": 3,
+      "type": "enum"
+    },
+    "dismissed": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainQueueInput": {
+    "requestId": {
+      "number": 1,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 2,
+      "type": "string"
+    },
+    "entries": {
+      "number": 3,
+      "type": "DomainQueueInputEntries"
+    }
+  },
+  "DomainQueueInputEntriesItem": {
+    "prUrl": {
+      "number": 1,
+      "type": "string"
+    },
+    "method": {
+      "number": 2,
+      "type": "DomainQueueInputEntriesItemMethod"
+    },
+    "checks": {
+      "number": 3,
+      "type": "DomainQueueInputEntriesItemChecks"
+    },
+    "noCi": {
+      "number": 4,
+      "type": "bool"
+    }
+  },
+  "DomainQueueInputEntriesItemMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainReceiptTarget": {
+    "prId": {
+      "number": 1,
+      "type": "string"
+    },
+    "actionId": {
+      "number": 2,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 3,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 4,
+      "type": "int64"
+    },
+    "head": {
+      "number": 5,
+      "type": "string"
+    },
+    "context": {
+      "number": 6,
+      "type": "string"
+    },
+    "policy": {
+      "number": 7,
+      "type": "string"
+    },
+    "method": {
+      "number": 8,
+      "type": "DomainReceiptTargetMethod"
+    }
+  },
+  "DomainReceiptTargetMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainAgentDigestTransportKind": {
+    "codex_queue": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainAgentDigestTransport": {
+    "kind": {
+      "number": 1,
+      "type": "DomainAgentDigestTransportKind"
+    },
+    "socket": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainAgentDigest": {
+    "transport": {
+      "number": 1,
+      "type": "DomainAgentDigestTransport"
+    },
+    "cleanupPending": {
+      "number": 2,
+      "type": "bool"
+    },
+    "id": {
+      "number": 3,
+      "type": "string"
+    },
+    "agentId": {
+      "number": 4,
+      "type": "string"
+    },
+    "state": {
+      "number": 5,
+      "type": "DomainAgentDigestState"
+    },
+    "revision": {
+      "number": 6,
+      "type": "int64"
+    },
+    "createdAt": {
+      "number": 7,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 8,
+      "type": "int64"
+    },
+    "nextCheckAt": {
+      "number": 9,
+      "type": "int64"
+    },
+    "queueId": {
+      "number": 10,
+      "type": "string"
+    },
+    "error": {
+      "number": 11,
+      "type": "string"
+    }
+  },
+  "DomainAgentDigestState": {
+    "ready": {
+      "number": 1,
+      "type": "enum"
+    },
+    "queued": {
+      "number": 2,
+      "type": "enum"
+    },
+    "withdrawing": {
+      "number": 3,
+      "type": "enum"
+    },
+    "enqueueing": {
+      "number": 4,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 5,
+      "type": "enum"
+    },
+    "received": {
+      "number": 6,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 7,
+      "type": "enum"
+    },
+    "unavailable": {
+      "number": 8,
+      "type": "enum"
+    }
+  },
+  "DomainDigestRevision": {
+    "dispatchId": {
+      "number": 1,
+      "type": "string"
+    },
+    "mergeTarget": {
+      "number": 2,
+      "type": "DomainDigestRevisionMergeTarget"
+    },
+    "digestId": {
+      "number": 3,
+      "type": "string"
+    },
+    "revision": {
+      "number": 4,
+      "type": "int64"
+    },
+    "body": {
+      "number": 5,
+      "type": "string"
+    },
+    "messageIds": {
+      "number": 6,
+      "type": "DomainDigestRevisionMessageIds"
+    },
+    "createdAt": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainDigestRevisionMergeTarget": {
+    "prId": {
+      "number": 1,
+      "type": "string"
+    },
+    "actionId": {
+      "number": 2,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 3,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 4,
+      "type": "int64"
+    },
+    "head": {
+      "number": 5,
+      "type": "string"
+    },
+    "context": {
+      "number": 6,
+      "type": "string"
+    },
+    "policy": {
+      "number": 7,
+      "type": "string"
+    },
+    "method": {
+      "number": 8,
+      "type": "DomainDigestRevisionMergeTargetMethod"
+    }
+  },
+  "DomainDigestRevisionMergeTargetMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainDigestInspectionDigestTransportKind": {
+    "codex_queue": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainDigestInspectionDigestTransport": {
+    "kind": {
+      "number": 1,
+      "type": "DomainDigestInspectionDigestTransportKind"
+    },
+    "socket": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainDigestInspectionDigest": {
+    "transport": {
+      "number": 1,
+      "type": "DomainDigestInspectionDigestTransport"
+    },
+    "cleanupPending": {
+      "number": 2,
+      "type": "bool"
+    },
+    "id": {
+      "number": 3,
+      "type": "string"
+    },
+    "agentId": {
+      "number": 4,
+      "type": "string"
+    },
+    "state": {
+      "number": 5,
+      "type": "DomainDigestInspectionDigestState"
+    },
+    "revision": {
+      "number": 6,
+      "type": "int64"
+    },
+    "createdAt": {
+      "number": 7,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 8,
+      "type": "int64"
+    },
+    "nextCheckAt": {
+      "number": 9,
+      "type": "int64"
+    },
+    "queueId": {
+      "number": 10,
+      "type": "string"
+    },
+    "error": {
+      "number": 11,
+      "type": "string"
+    }
+  },
+  "DomainDigestInspectionDigestState": {
+    "ready": {
+      "number": 1,
+      "type": "enum"
+    },
+    "queued": {
+      "number": 2,
+      "type": "enum"
+    },
+    "withdrawing": {
+      "number": 3,
+      "type": "enum"
+    },
+    "enqueueing": {
+      "number": 4,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 5,
+      "type": "enum"
+    },
+    "received": {
+      "number": 6,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 7,
+      "type": "enum"
+    },
+    "unavailable": {
+      "number": 8,
+      "type": "enum"
+    }
+  },
+  "DomainDigestInspection": {
+    "digest": {
+      "number": 1,
+      "type": "DomainDigestInspectionDigest"
+    },
+    "revision": {
+      "number": 2,
+      "type": "DomainDigestInspectionRevision"
+    },
+    "revisions": {
+      "number": 3,
+      "type": "DomainDigestInspectionRevisions"
+    },
+    "receipts": {
+      "number": 4,
+      "type": "DomainDigestInspectionReceipts"
+    },
+    "events": {
+      "number": 5,
+      "type": "DomainDigestInspectionEvents"
+    }
+  },
+  "DomainDigestInspectionRevision": {
+    "dispatchId": {
+      "number": 1,
+      "type": "string"
+    },
+    "mergeTarget": {
+      "number": 2,
+      "type": "DomainDigestInspectionRevisionMergeTarget"
+    },
+    "digestId": {
+      "number": 3,
+      "type": "string"
+    },
+    "revision": {
+      "number": 4,
+      "type": "int64"
+    },
+    "body": {
+      "number": 5,
+      "type": "string"
+    },
+    "messageIds": {
+      "number": 6,
+      "type": "DomainDigestInspectionRevisionMessageIds"
+    },
+    "createdAt": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainDigestInspectionRevisionMergeTarget": {
+    "prId": {
+      "number": 1,
+      "type": "string"
+    },
+    "actionId": {
+      "number": 2,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 3,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 4,
+      "type": "int64"
+    },
+    "head": {
+      "number": 5,
+      "type": "string"
+    },
+    "context": {
+      "number": 6,
+      "type": "string"
+    },
+    "policy": {
+      "number": 7,
+      "type": "string"
+    },
+    "method": {
+      "number": 8,
+      "type": "DomainDigestInspectionRevisionMergeTargetMethod"
+    }
+  },
+  "DomainDigestInspectionRevisionMergeTargetMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainDigestInspectionReceiptsItem": {
+    "agentId": {
+      "number": 1,
+      "type": "string"
+    },
+    "revision": {
+      "number": 2,
+      "type": "int64"
+    },
+    "at": {
+      "number": 3,
+      "type": "int64"
+    }
+  },
+  "DomainDigestInspectionEventsItem": {
+    "sequence": {
+      "number": 1,
+      "type": "int64"
+    },
+    "digestId": {
+      "number": 2,
+      "type": "string"
+    },
+    "agentId": {
+      "number": 3,
+      "type": "string"
+    },
+    "at": {
+      "number": 4,
+      "type": "int64"
+    },
+    "kind": {
+      "number": 5,
+      "type": "string"
+    },
+    "detail": {
+      "number": 6,
+      "type": "DomainDigestInspectionEventsItemDetail"
+    }
+  },
+  "DomainDigestInspectionEventsItemDetail": {
+    "reason": {
+      "number": 1,
+      "type": "string"
+    },
+    "queueId": {
+      "number": 2,
+      "type": "string"
+    },
+    "clientId": {
+      "number": 3,
+      "type": "string"
+    },
+    "dispatchId": {
+      "number": 4,
+      "type": "string"
+    },
+    "operation": {
+      "number": 5,
+      "type": "string"
+    },
+    "socket": {
+      "number": 6,
+      "type": "string"
+    },
+    "error": {
+      "number": 7,
+      "type": "string"
+    },
+    "state": {
+      "number": 8,
+      "type": "string"
+    },
+    "revision": {
+      "number": 9,
+      "type": "int64"
+    },
+    "receivedRevision": {
+      "number": 10,
+      "type": "int64"
+    },
+    "currentRevision": {
+      "number": 11,
+      "type": "int64"
+    },
+    "messages": {
+      "number": 12,
+      "type": "DomainDigestInspectionEventsItemDetailMessages"
+    },
+    "deleted": {
+      "number": 13,
+      "type": "bool"
+    },
+    "historyComplete": {
+      "number": 14,
+      "type": "bool"
+    },
+    "oldRevision": {
+      "number": 15,
+      "type": "int64"
+    },
+    "nextRevision": {
+      "number": 16,
+      "type": "int64"
+    },
+    "omittedFields": {
+      "number": 17,
+      "type": "DomainDigestInspectionEventsItemDetailOmittedFields"
+    }
+  },
+  "DomainDigestReceipt": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "revision": {
+      "number": 2,
+      "type": "int64"
+    },
+    "currentRevision": {
+      "number": 3,
+      "type": "int64"
+    },
+    "agentId": {
+      "number": 4,
+      "type": "string"
+    },
+    "receivedAtMs": {
+      "number": 5,
+      "type": "int64"
+    }
+  },
+  "DomainMergeReceiptResult": {
+    "receipt": {
+      "number": 1,
+      "type": "string"
+    },
+    "state": {
+      "number": 2,
+      "type": "DomainMergeReceiptResultState"
+    },
+    "pr": {
+      "number": 3,
+      "type": "string"
+    },
+    "reason": {
+      "number": 4,
+      "type": "string"
+    },
+    "entry": {
+      "number": 5,
+      "type": "string"
+    },
+    "chain": {
+      "number": 6,
+      "type": "string"
+    },
+    "detail": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainMergeReceiptResultState": {
+    "queued": {
+      "number": 1,
+      "type": "enum"
+    },
+    "waiting": {
+      "number": 2,
+      "type": "enum"
+    },
+    "preparing": {
+      "number": 3,
+      "type": "enum"
+    },
+    "waiting_owner": {
+      "number": 4,
+      "type": "enum"
+    },
+    "waiting_checks": {
+      "number": 5,
+      "type": "enum"
+    },
+    "ready": {
+      "number": 6,
+      "type": "enum"
+    },
+    "merging": {
+      "number": 7,
+      "type": "enum"
+    },
+    "merged": {
+      "number": 8,
+      "type": "enum"
+    },
+    "blocked": {
+      "number": 9,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 10,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 11,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewChainsItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "requestId": {
+      "number": 2,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 3,
+      "type": "string"
+    },
+    "state": {
+      "number": 4,
+      "type": "DomainMergeOverviewChainsItemState"
+    },
+    "inputDigest": {
+      "number": 5,
+      "type": "string"
+    },
+    "createdAt": {
+      "number": 6,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainMergeOverviewChainsItemState": {
+    "active": {
+      "number": 1,
+      "type": "enum"
+    },
+    "paused": {
+      "number": 2,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 3,
+      "type": "enum"
+    },
+    "completed": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverview": {
+    "chains": {
+      "number": 1,
+      "type": "DomainMergeOverviewChains"
+    },
+    "entries": {
+      "number": 2,
+      "type": "DomainMergeOverviewEntries"
+    },
+    "operations": {
+      "number": 3,
+      "type": "DomainMergeOverviewOperations"
+    },
+    "dependencies": {
+      "number": 4,
+      "type": "DomainMergeOverviewDependencies"
+    }
+  },
+  "DomainMergeOverviewEntriesItem": {
+    "receiptId": {
+      "number": 1,
+      "type": "string"
+    },
+    "receiptContext": {
+      "number": 2,
+      "type": "string"
+    },
+    "autoMerge": {
+      "number": 3,
+      "type": "bool"
+    },
+    "id": {
+      "number": 4,
+      "type": "string"
+    },
+    "chainId": {
+      "number": 5,
+      "type": "string"
+    },
+    "prId": {
+      "number": 6,
+      "type": "string"
+    },
+    "method": {
+      "number": 7,
+      "type": "DomainMergeOverviewEntriesItemMethod"
+    },
+    "checks": {
+      "number": 8,
+      "type": "DomainMergeOverviewEntriesItemChecks"
+    },
+    "noCi": {
+      "number": 9,
+      "type": "bool"
+    },
+    "state": {
+      "number": 10,
+      "type": "DomainMergeOverviewEntriesItemState"
+    },
+    "detail": {
+      "number": 11,
+      "type": "string"
+    },
+    "version": {
+      "number": 12,
+      "type": "int64"
+    },
+    "nextAt": {
+      "number": 13,
+      "type": "int64"
+    },
+    "ready": {
+      "number": 14,
+      "type": "DomainMergeOverviewEntriesItemReady"
+    },
+    "preparationHold": {
+      "number": 15,
+      "type": "bool"
+    },
+    "preparedKey": {
+      "number": 16,
+      "type": "string"
+    },
+    "preparedHead": {
+      "number": 17,
+      "type": "string"
+    },
+    "mergeCommit": {
+      "number": 18,
+      "type": "string"
+    }
+  },
+  "DomainMergeOverviewEntriesItemMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewEntriesItemState": {
+    "waiting": {
+      "number": 1,
+      "type": "enum"
+    },
+    "preparing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "waiting_owner": {
+      "number": 3,
+      "type": "enum"
+    },
+    "waiting_checks": {
+      "number": 4,
+      "type": "enum"
+    },
+    "ready": {
+      "number": 5,
+      "type": "enum"
+    },
+    "merging": {
+      "number": 6,
+      "type": "enum"
+    },
+    "merged": {
+      "number": 7,
+      "type": "enum"
+    },
+    "blocked": {
+      "number": 8,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 9,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 10,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewEntriesItemReady": {
+    "epoch": {
+      "number": 1,
+      "type": "int64"
+    },
+    "head": {
+      "number": 2,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 3,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 4,
+      "type": "string"
+    },
+    "feedback": {
+      "number": 5,
+      "type": "string"
+    },
+    "graph": {
+      "number": 6,
+      "type": "string"
+    },
+    "at": {
+      "number": 7,
+      "type": "int64"
+    }
+  },
+  "DomainMergeOverviewOperationsItem": {
+    "requestId": {
+      "number": 1,
+      "type": "string"
+    },
+    "nextCheckAt": {
+      "number": 2,
+      "type": "int64"
+    },
+    "epoch": {
+      "number": 3,
+      "type": "int64"
+    },
+    "id": {
+      "number": 4,
+      "type": "string"
+    },
+    "entryId": {
+      "number": 5,
+      "type": "string"
+    },
+    "prId": {
+      "number": 6,
+      "type": "string"
+    },
+    "kind": {
+      "number": 7,
+      "type": "DomainMergeOverviewOperationsItemKind"
+    },
+    "state": {
+      "number": 8,
+      "type": "DomainMergeOverviewOperationsItemState"
+    },
+    "phase": {
+      "number": 9,
+      "type": "DomainMergeOverviewOperationsItemPhase"
+    },
+    "head": {
+      "number": 10,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 11,
+      "type": "string"
+    },
+    "baseSha": {
+      "number": 12,
+      "type": "string"
+    },
+    "graph": {
+      "number": 13,
+      "type": "string"
+    },
+    "ownerId": {
+      "number": 14,
+      "type": "string"
+    },
+    "createdAt": {
+      "number": 15,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 16,
+      "type": "int64"
+    },
+    "detail": {
+      "number": 17,
+      "type": "string"
+    },
+    "resultHead": {
+      "number": 18,
+      "type": "string"
+    },
+    "mergeCommit": {
+      "number": 19,
+      "type": "string"
+    },
+    "preparation": {
+      "number": 20,
+      "type": "DomainMergeOverviewOperationsItemPreparation"
+    },
+    "prerequisiteCommit": {
+      "number": 21,
+      "type": "string"
+    },
+    "preparationKey": {
+      "number": 22,
+      "type": "string"
+    },
+    "workspace": {
+      "number": 23,
+      "type": "string"
+    }
+  },
+  "DomainMergeOverviewOperationsItemKind": {
+    "prepare": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewOperationsItemState": {
+    "planned": {
+      "number": 1,
+      "type": "enum"
+    },
+    "running": {
+      "number": 2,
+      "type": "enum"
+    },
+    "succeeded": {
+      "number": 3,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 4,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 5,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewOperationsItemPhase": {
+    "local": {
+      "number": 1,
+      "type": "enum"
+    },
+    "pushing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "merging": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewOperationsItemPreparationKind": {
+    "rebase": {
+      "number": 1,
+      "type": "enum"
+    },
+    "toml_revision": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewOperationsItemPreparation": {
+    "kind": {
+      "number": 1,
+      "type": "DomainMergeOverviewOperationsItemPreparationKind"
+    },
+    "repository": {
+      "number": 2,
+      "type": "string"
+    },
+    "checks": {
+      "number": 3,
+      "type": "DomainMergeOverviewOperationsItemPreparationChecks"
+    },
+    "timeoutMs": {
+      "number": 4,
+      "type": "int64"
+    },
+    "path": {
+      "number": 5,
+      "type": "string"
+    },
+    "key": {
+      "number": 6,
+      "type": "DomainMergeOverviewOperationsItemPreparationKey"
+    },
+    "expectedValue": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainMergeOverviewDependenciesItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "dependentId": {
+      "number": 2,
+      "type": "string"
+    },
+    "prerequisiteId": {
+      "number": 3,
+      "type": "string"
+    },
+    "confirmedBy": {
+      "number": 4,
+      "type": "string"
+    },
+    "active": {
+      "number": 5,
+      "type": "bool"
+    },
+    "removedBy": {
+      "number": 6,
+      "type": "string"
+    },
+    "removedAt": {
+      "number": 7,
+      "type": "int64"
+    },
+    "reason": {
+      "number": 8,
+      "type": "string"
+    },
+    "referenceId": {
+      "number": 9,
+      "type": "string"
+    },
+    "preparation": {
+      "number": 10,
+      "type": "DomainMergeOverviewDependenciesItemPreparation"
+    }
+  },
+  "DomainMergeOverviewDependenciesItemPreparationKind": {
+    "rebase": {
+      "number": 1,
+      "type": "enum"
+    },
+    "toml_revision": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewDependenciesItemPreparation": {
+    "kind": {
+      "number": 1,
+      "type": "DomainMergeOverviewDependenciesItemPreparationKind"
+    },
+    "repository": {
+      "number": 2,
+      "type": "string"
+    },
+    "checks": {
+      "number": 3,
+      "type": "DomainMergeOverviewDependenciesItemPreparationChecks"
+    },
+    "timeoutMs": {
+      "number": 4,
+      "type": "int64"
+    },
+    "path": {
+      "number": 5,
+      "type": "string"
+    },
+    "key": {
+      "number": 6,
+      "type": "DomainMergeOverviewDependenciesItemPreparationKey"
+    },
+    "expectedValue": {
+      "number": 7,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmission": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "request": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionRequest"
+    },
+    "state": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionState"
+    },
+    "detail": {
+      "number": 4,
+      "type": "string"
+    },
+    "createdAt": {
+      "number": 5,
+      "type": "int64"
+    },
+    "updatedAt": {
+      "number": 6,
+      "type": "int64"
+    },
+    "snapshot": {
+      "number": 7,
+      "type": "DomainArchivedSubmissionSnapshot"
+    },
+    "policyVersion": {
+      "number": 8,
+      "type": "int64"
+    },
+    "policyDigest": {
+      "number": 9,
+      "type": "string"
+    },
+    "stages": {
+      "number": 10,
+      "type": "DomainArchivedSubmissionStages"
+    },
+    "brief": {
+      "number": 11,
+      "type": "DomainArchivedSubmissionBrief"
+    },
+    "prUrl": {
+      "number": 12,
+      "type": "string"
+    },
+    "prId": {
+      "number": 13,
+      "type": "string"
+    },
+    "workerPids": {
+      "number": 14,
+      "type": "DomainArchivedSubmissionWorkerPids"
+    },
+    "notificationRevision": {
+      "number": 15,
+      "type": "int64"
+    }
+  },
+  "DomainArchivedSubmissionRequestMode": {
+    "publish": {
+      "number": 1,
+      "type": "enum"
+    },
+    "policy": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionRequest": {
+    "mode": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionRequestMode"
+    },
+    "requestId": {
+      "number": 2,
+      "type": "string"
+    },
+    "repository": {
+      "number": 3,
+      "type": "string"
+    },
+    "headRef": {
+      "number": 4,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 5,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 6,
+      "type": "string"
+    },
+    "purpose": {
+      "number": 7,
+      "type": "string"
+    },
+    "validation": {
+      "number": 8,
+      "type": "DomainArchivedSubmissionRequestValidation"
+    },
+    "draft": {
+      "number": 9,
+      "type": "bool"
+    },
+    "owner": {
+      "number": 10,
+      "type": "DomainArchivedSubmissionRequestOwner"
+    }
+  },
+  "DomainArchivedSubmissionRequestValidationItem": {
+    "command": {
+      "number": 1,
+      "type": "string"
+    },
+    "result": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionRequestValidationItemResult"
+    },
+    "note": {
+      "number": 3,
+      "type": "string"
+    },
+    "evidenceUrl": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionRequestValidationItemResult": {
+    "passed": {
+      "number": 1,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 2,
+      "type": "enum"
+    },
+    "not_run": {
+      "number": 3,
+      "type": "enum"
+    },
+    "unknown": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionRequestOwnerHarness": {
+    "codex": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionRequestOwner": {
+    "harness": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionRequestOwnerHarness"
+    },
+    "endpoint": {
+      "number": 2,
+      "type": "string"
+    },
+    "sessionId": {
+      "number": 3,
+      "type": "string"
+    },
+    "label": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionState": {
+    "queued": {
+      "number": 1,
+      "type": "enum"
+    },
+    "analyzing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "writing": {
+      "number": 3,
+      "type": "enum"
+    },
+    "publishing": {
+      "number": 4,
+      "type": "enum"
+    },
+    "enrolling": {
+      "number": 5,
+      "type": "enum"
+    },
+    "succeeded": {
+      "number": 6,
+      "type": "enum"
+    },
+    "needs_input": {
+      "number": 7,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 8,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 9,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 10,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionSnapshot": {
+    "repository": {
+      "number": 1,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 2,
+      "type": "string"
+    },
+    "baseSha": {
+      "number": 3,
+      "type": "string"
+    },
+    "private": {
+      "number": 4,
+      "type": "bool"
+    },
+    "files": {
+      "number": 5,
+      "type": "DomainArchivedSubmissionSnapshotFiles"
+    },
+    "diff": {
+      "number": 6,
+      "type": "string"
+    },
+    "sources": {
+      "number": 7,
+      "type": "DomainArchivedSubmissionSnapshotSources"
+    },
+    "sourceDigest": {
+      "number": 8,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionSnapshotSourcesItem": {
+    "path": {
+      "number": 1,
+      "type": "string"
+    },
+    "sha": {
+      "number": 2,
+      "type": "string"
+    },
+    "text": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemRole": {
+    "policy": {
+      "number": 1,
+      "type": "enum"
+    },
+    "change": {
+      "number": 2,
+      "type": "enum"
+    },
+    "writer": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItem": {
+    "role": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemRole"
+    },
+    "model": {
+      "number": 2,
+      "type": "string"
+    },
+    "promptDigest": {
+      "number": 3,
+      "type": "string"
+    },
+    "raw": {
+      "number": 4,
+      "type": "string"
+    },
+    "result": {
+      "number": 5,
+      "type": "DomainArchivedSubmissionStagesItemResult"
+    },
+    "at": {
+      "number": 6,
+      "type": "int64"
+    },
+    "invalidResult": {
+      "number": 7,
+      "type": "bool"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResult": {
+    "fields:blockers,requirements,template": {
+      "number": 1,
+      "type": "variant"
+    },
+    "fields:blockers,claims,limitations,outcome,rationale,tier": {
+      "number": 2,
+      "type": "variant"
+    },
+    "fields:blockers,body,requirementChecks,title": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "strength": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength"
+    },
+    "category": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory"
+    },
+    "description": {
+      "number": 4,
+      "type": "string"
+    },
+    "sourcePath": {
+      "number": 5,
+      "type": "string"
+    },
+    "sourceSha": {
+      "number": 6,
+      "type": "string"
+    },
+    "line": {
+      "number": 7,
+      "type": "int64"
+    },
+    "quote": {
+      "number": 8,
+      "type": "string"
+    },
+    "condition": {
+      "number": 9,
+      "type": "string"
+    },
+    "scope": {
+      "number": 10,
+      "type": "string"
+    },
+    "check": {
+      "number": 11,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength": {
+    "required": {
+      "number": 1,
+      "type": "enum"
+    },
+    "recommended": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory": {
+    "title": {
+      "number": 1,
+      "type": "enum"
+    },
+    "content": {
+      "number": 2,
+      "type": "enum"
+    },
+    "evidence": {
+      "number": 3,
+      "type": "enum"
+    },
+    "format": {
+      "number": 4,
+      "type": "enum"
+    },
+    "workflow": {
+      "number": 5,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck": {
+    "kind:body_contains": {
+      "number": 1,
+      "type": "variant"
+    },
+    "kind:title_prefix": {
+      "number": 2,
+      "type": "variant"
+    },
+    "kind:title_max_length": {
+      "number": 3,
+      "type": "variant"
+    },
+    "kind:evidence_required": {
+      "number": 4,
+      "type": "variant"
+    },
+    "kind:semantic": {
+      "number": 5,
+      "type": "variant"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind": {
+    "body_contains": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1": {
+    "kind": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind"
+    },
+    "value": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind": {
+    "title_prefix": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2": {
+    "kind": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind"
+    },
+    "prefixes": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind": {
+    "title_max_length": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3": {
+    "kind": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind"
+    },
+    "maximum": {
+      "number": 2,
+      "type": "int64"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind": {
+    "evidence_required": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4": {
+    "kind": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind": {
+    "semantic": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5": {
+    "kind": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant1": {
+    "requirements": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1Requirements"
+    },
+    "template": {
+      "number": 2,
+      "type": "string"
+    },
+    "blockers": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant1Blockers"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant2Tier": {
+    "routine": {
+      "number": 1,
+      "type": "enum"
+    },
+    "standard": {
+      "number": 2,
+      "type": "enum"
+    },
+    "complex": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant2": {
+    "tier": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2Tier"
+    },
+    "rationale": {
+      "number": 2,
+      "type": "string"
+    },
+    "outcome": {
+      "number": 3,
+      "type": "string"
+    },
+    "claims": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2Claims"
+    },
+    "limitations": {
+      "number": 5,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2Limitations"
+    },
+    "blockers": {
+      "number": 6,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2Blockers"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem": {
+    "statement": {
+      "number": 1,
+      "type": "string"
+    },
+    "falsification": {
+      "number": 2,
+      "type": "string"
+    },
+    "evidenceRefs": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs"
+    },
+    "basis": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis": {
+    "reported": {
+      "number": 1,
+      "type": "enum"
+    },
+    "observed": {
+      "number": 2,
+      "type": "enum"
+    },
+    "unverified": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant3": {
+    "title": {
+      "number": 1,
+      "type": "string"
+    },
+    "body": {
+      "number": 2,
+      "type": "string"
+    },
+    "requirementChecks": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks"
+    },
+    "blockers": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant3Blockers"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem": {
+    "ruleId": {
+      "number": 1,
+      "type": "string"
+    },
+    "status": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus"
+    },
+    "rationale": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus": {
+    "satisfied": {
+      "number": 1,
+      "type": "enum"
+    },
+    "unmet": {
+      "number": 2,
+      "type": "enum"
+    },
+    "unknown": {
+      "number": 3,
+      "type": "enum"
+    },
+    "not_applicable": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBrief": {
+    "schemaVersion": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionBriefSchemaVersion"
+    },
+    "request": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionBriefRequest"
+    },
+    "baseSha": {
+      "number": 3,
+      "type": "string"
+    },
+    "policyVersion": {
+      "number": 4,
+      "type": "int64"
+    },
+    "change": {
+      "number": 5,
+      "type": "DomainArchivedSubmissionBriefChange"
+    },
+    "draft": {
+      "number": 6,
+      "type": "DomainArchivedSubmissionBriefDraft"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequestMode": {
+    "publish": {
+      "number": 1,
+      "type": "enum"
+    },
+    "policy": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequest": {
+    "mode": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionBriefRequestMode"
+    },
+    "requestId": {
+      "number": 2,
+      "type": "string"
+    },
+    "repository": {
+      "number": 3,
+      "type": "string"
+    },
+    "headRef": {
+      "number": 4,
+      "type": "string"
+    },
+    "headSha": {
+      "number": 5,
+      "type": "string"
+    },
+    "baseRef": {
+      "number": 6,
+      "type": "string"
+    },
+    "purpose": {
+      "number": 7,
+      "type": "string"
+    },
+    "validation": {
+      "number": 8,
+      "type": "DomainArchivedSubmissionBriefRequestValidation"
+    },
+    "draft": {
+      "number": 9,
+      "type": "bool"
+    },
+    "owner": {
+      "number": 10,
+      "type": "DomainArchivedSubmissionBriefRequestOwner"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequestValidationItem": {
+    "command": {
+      "number": 1,
+      "type": "string"
+    },
+    "result": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionBriefRequestValidationItemResult"
+    },
+    "note": {
+      "number": 3,
+      "type": "string"
+    },
+    "evidenceUrl": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequestValidationItemResult": {
+    "passed": {
+      "number": 1,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 2,
+      "type": "enum"
+    },
+    "not_run": {
+      "number": 3,
+      "type": "enum"
+    },
+    "unknown": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequestOwnerHarness": {
+    "codex": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBriefRequestOwner": {
+    "harness": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionBriefRequestOwnerHarness"
+    },
+    "endpoint": {
+      "number": 2,
+      "type": "string"
+    },
+    "sessionId": {
+      "number": 3,
+      "type": "string"
+    },
+    "label": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionBriefChangeTier": {
+    "routine": {
+      "number": 1,
+      "type": "enum"
+    },
+    "standard": {
+      "number": 2,
+      "type": "enum"
+    },
+    "complex": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBriefChange": {
+    "tier": {
+      "number": 1,
+      "type": "DomainArchivedSubmissionBriefChangeTier"
+    },
+    "rationale": {
+      "number": 2,
+      "type": "string"
+    },
+    "outcome": {
+      "number": 3,
+      "type": "string"
+    },
+    "claims": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionBriefChangeClaims"
+    },
+    "limitations": {
+      "number": 5,
+      "type": "DomainArchivedSubmissionBriefChangeLimitations"
+    },
+    "blockers": {
+      "number": 6,
+      "type": "DomainArchivedSubmissionBriefChangeBlockers"
+    }
+  },
+  "DomainArchivedSubmissionBriefChangeClaimsItem": {
+    "statement": {
+      "number": 1,
+      "type": "string"
+    },
+    "falsification": {
+      "number": 2,
+      "type": "string"
+    },
+    "evidenceRefs": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs"
+    },
+    "basis": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionBriefChangeClaimsItemBasis"
+    }
+  },
+  "DomainArchivedSubmissionBriefChangeClaimsItemBasis": {
+    "reported": {
+      "number": 1,
+      "type": "enum"
+    },
+    "observed": {
+      "number": 2,
+      "type": "enum"
+    },
+    "unverified": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionBriefDraft": {
+    "title": {
+      "number": 1,
+      "type": "string"
+    },
+    "body": {
+      "number": 2,
+      "type": "string"
+    },
+    "requirementChecks": {
+      "number": 3,
+      "type": "DomainArchivedSubmissionBriefDraftRequirementChecks"
+    },
+    "blockers": {
+      "number": 4,
+      "type": "DomainArchivedSubmissionBriefDraftBlockers"
+    }
+  },
+  "DomainArchivedSubmissionBriefDraftRequirementChecksItem": {
+    "ruleId": {
+      "number": 1,
+      "type": "string"
+    },
+    "status": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus"
+    },
+    "rationale": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus": {
+    "satisfied": {
+      "number": 1,
+      "type": "enum"
+    },
+    "unmet": {
+      "number": 2,
+      "type": "enum"
+    },
+    "unknown": {
+      "number": 3,
+      "type": "enum"
+    },
+    "not_applicable": {
+      "number": 4,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyComplexityProfilesRoutine": {
+    "minWords": {
+      "number": 1,
+      "type": "int64"
+    },
+    "maxWords": {
+      "number": 2,
+      "type": "int64"
+    },
+    "guidance": {
+      "number": 3,
+      "type": "string"
+    },
+    "advisory": {
+      "number": 4,
+      "type": "DomainRepositoryPolicyComplexityProfilesRoutineAdvisory"
+    }
+  },
+  "DomainRepositoryPolicyComplexityProfiles": {
+    "routine": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyComplexityProfilesRoutine"
+    },
+    "standard": {
+      "number": 2,
+      "type": "DomainRepositoryPolicyComplexityProfilesStandard"
+    },
+    "complex": {
+      "number": 3,
+      "type": "DomainRepositoryPolicyComplexityProfilesComplex"
+    }
+  },
+  "DomainRepositoryPolicyComplexityProfilesStandard": {
+    "minWords": {
+      "number": 1,
+      "type": "int64"
+    },
+    "maxWords": {
+      "number": 2,
+      "type": "int64"
+    },
+    "guidance": {
+      "number": 3,
+      "type": "string"
+    },
+    "advisory": {
+      "number": 4,
+      "type": "DomainRepositoryPolicyComplexityProfilesStandardAdvisory"
+    }
+  },
+  "DomainRepositoryPolicyComplexityProfilesComplex": {
+    "minWords": {
+      "number": 1,
+      "type": "int64"
+    },
+    "maxWords": {
+      "number": 2,
+      "type": "int64"
+    },
+    "guidance": {
+      "number": 3,
+      "type": "string"
+    },
+    "advisory": {
+      "number": 4,
+      "type": "DomainRepositoryPolicyComplexityProfilesComplexAdvisory"
+    }
+  },
+  "DomainRepositoryPolicy": {
+    "complexityProfiles": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyComplexityProfiles"
+    },
+    "schemaVersion": {
+      "number": 2,
+      "type": "DomainRepositoryPolicySchemaVersion"
+    },
+    "repository": {
+      "number": 3,
+      "type": "string"
+    },
+    "version": {
+      "number": 4,
+      "type": "int64"
+    },
+    "sourceDigest": {
+      "number": 5,
+      "type": "string"
+    },
+    "analystVersion": {
+      "number": 6,
+      "type": "DomainRepositoryPolicyAnalystVersion"
+    },
+    "stockVersion": {
+      "number": 7,
+      "type": "DomainRepositoryPolicyStockVersion"
+    },
+    "createdAtMs": {
+      "number": 8,
+      "type": "int64"
+    },
+    "citationCorrections": {
+      "number": 9,
+      "type": "DomainRepositoryPolicyCitationCorrections"
+    },
+    "sources": {
+      "number": 10,
+      "type": "DomainRepositoryPolicySources"
+    },
+    "analysis": {
+      "number": 11,
+      "type": "DomainRepositoryPolicyAnalysis"
+    }
+  },
+  "DomainRepositoryPolicyAnalystVersion": {
+    "literal:1": {
+      "number": 1,
+      "type": "variant"
+    },
+    "literal:2": {
+      "number": 2,
+      "type": "variant"
+    },
+    "literal:3": {
+      "number": 3,
+      "type": "variant"
+    }
+  },
+  "DomainRepositoryPolicyCitationCorrectionsItem": {
+    "ruleId": {
+      "number": 1,
+      "type": "string"
+    },
+    "reportedLine": {
+      "number": 2,
+      "type": "int64"
+    },
+    "verifiedLine": {
+      "number": 3,
+      "type": "int64"
+    }
+  },
+  "DomainRepositoryPolicySourcesItem": {
+    "path": {
+      "number": 1,
+      "type": "string"
+    },
+    "sha": {
+      "number": 2,
+      "type": "string"
+    },
+    "text": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItem": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "strength": {
+      "number": 2,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemStrength"
+    },
+    "category": {
+      "number": 3,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCategory"
+    },
+    "description": {
+      "number": 4,
+      "type": "string"
+    },
+    "sourcePath": {
+      "number": 5,
+      "type": "string"
+    },
+    "sourceSha": {
+      "number": 6,
+      "type": "string"
+    },
+    "line": {
+      "number": 7,
+      "type": "int64"
+    },
+    "quote": {
+      "number": 8,
+      "type": "string"
+    },
+    "condition": {
+      "number": 9,
+      "type": "string"
+    },
+    "scope": {
+      "number": 10,
+      "type": "string"
+    },
+    "check": {
+      "number": 11,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheck"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemStrength": {
+    "required": {
+      "number": 1,
+      "type": "enum"
+    },
+    "recommended": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCategory": {
+    "title": {
+      "number": 1,
+      "type": "enum"
+    },
+    "content": {
+      "number": 2,
+      "type": "enum"
+    },
+    "evidence": {
+      "number": 3,
+      "type": "enum"
+    },
+    "format": {
+      "number": 4,
+      "type": "enum"
+    },
+    "workflow": {
+      "number": 5,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheck": {
+    "kind:body_contains": {
+      "number": 1,
+      "type": "variant"
+    },
+    "kind:title_prefix": {
+      "number": 2,
+      "type": "variant"
+    },
+    "kind:title_max_length": {
+      "number": 3,
+      "type": "variant"
+    },
+    "kind:evidence_required": {
+      "number": 4,
+      "type": "variant"
+    },
+    "kind:semantic": {
+      "number": 5,
+      "type": "variant"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind": {
+    "body_contains": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1": {
+    "kind": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind"
+    },
+    "value": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind": {
+    "title_prefix": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2": {
+    "kind": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind"
+    },
+    "prefixes": {
+      "number": 2,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind": {
+    "title_max_length": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3": {
+    "kind": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind"
+    },
+    "maximum": {
+      "number": 2,
+      "type": "int64"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind": {
+    "evidence_required": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4": {
+    "kind": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind": {
+    "semantic": {
+      "number": 1,
+      "type": "enum"
+    }
+  },
+  "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5": {
+    "kind": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind"
+    }
+  },
+  "DomainRepositoryPolicyAnalysis": {
+    "requirements": {
+      "number": 1,
+      "type": "DomainRepositoryPolicyAnalysisRequirements"
+    },
+    "template": {
+      "number": 2,
+      "type": "string"
+    },
+    "blockers": {
+      "number": 3,
+      "type": "DomainRepositoryPolicyAnalysisBlockers"
+    }
+  },
+  "SetAutoMergeRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    },
+    "enabled": {
+      "number": 2,
+      "type": "bool"
+    },
+    "actorId": {
+      "number": 3,
+      "type": "string"
+    },
+    "requestId": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "QueueMergeChainRequestInput": {
+    "requestId": {
+      "number": 1,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 2,
+      "type": "string"
+    },
+    "entries": {
+      "number": 3,
+      "type": "QueueMergeChainRequestInputEntries"
+    }
+  },
+  "QueueMergeChainRequestInputEntriesItem": {
+    "prUrl": {
+      "number": 1,
+      "type": "string"
+    },
+    "method": {
+      "number": 2,
+      "type": "QueueMergeChainRequestInputEntriesItemMethod"
+    },
+    "checks": {
+      "number": 3,
+      "type": "QueueMergeChainRequestInputEntriesItemChecks"
+    },
+    "noCi": {
+      "number": 4,
+      "type": "bool"
+    }
+  },
+  "QueueMergeChainRequestInputEntriesItemMethod": {
+    "squash": {
+      "number": 1,
+      "type": "enum"
+    },
+    "merge": {
+      "number": 2,
+      "type": "enum"
+    },
+    "rebase": {
+      "number": 3,
+      "type": "enum"
+    }
+  },
+  "QueueMergeChainRequest": {
+    "input": {
+      "number": 1,
+      "type": "QueueMergeChainRequestInput"
+    }
+  },
+  "InspectMergeChainsRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "ListPRReferencesRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "ListPRDependenciesRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "ConfirmPRDependencyRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    },
+    "prerequisite": {
+      "number": 2,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 3,
+      "type": "string"
+    },
+    "reason": {
+      "number": 4,
+      "type": "string"
+    },
+    "referenceId": {
+      "number": 5,
+      "type": "string"
+    },
+    "profile": {
+      "number": 6,
+      "type": "string"
+    }
+  },
+  "RemovePRDependencyRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 2,
+      "type": "string"
+    }
+  },
+  "DecidePRReferenceRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 2,
+      "type": "string"
+    },
+    "decision": {
+      "number": 3,
+      "type": "DecidePRReferenceRequestDecision"
+    }
+  },
+  "DecidePRReferenceRequestDecision": {
+    "related": {
+      "number": 1,
+      "type": "enum"
+    },
+    "dismissed": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "SetMergePolicyRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 2,
+      "type": "string"
+    },
+    "checks": {
+      "number": 3,
+      "type": "SetMergePolicyRequestChecks"
+    },
+    "noCi": {
+      "number": 4,
+      "type": "bool"
+    }
+  },
+  "SetMergeReadyRequest": {
+    "pr": {
+      "number": 1,
+      "type": "string"
+    },
+    "head": {
+      "number": 2,
+      "type": "string"
+    },
+    "actorId": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "PauseMergeChainRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "ResumeMergeChainRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "CancelMergeChainRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "ReconcileMergeOperationRequest": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    }
+  },
+  "DomainReconciliationResult": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "state": {
+      "number": 2,
+      "type": "DomainReconciliationResultState"
+    },
+    "detail": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainReconciliationResultState": {
+    "planned": {
+      "number": 1,
+      "type": "enum"
+    },
+    "running": {
+      "number": 2,
+      "type": "enum"
+    },
+    "succeeded": {
+      "number": 3,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 4,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 5,
+      "type": "enum"
+    }
+  },
+  "DomainArchivedSubmissionSummary": {
+    "id": {
+      "number": 1,
+      "type": "string"
+    },
+    "state": {
+      "number": 2,
+      "type": "DomainArchivedSubmissionSummaryState"
+    },
+    "detail": {
+      "number": 3,
+      "type": "string"
+    },
+    "url": {
+      "number": 4,
+      "type": "string"
+    }
+  },
+  "DomainArchivedSubmissionSummaryState": {
+    "queued": {
+      "number": 1,
+      "type": "enum"
+    },
+    "analyzing": {
+      "number": 2,
+      "type": "enum"
+    },
+    "writing": {
+      "number": 3,
+      "type": "enum"
+    },
+    "publishing": {
+      "number": 4,
+      "type": "enum"
+    },
+    "enrolling": {
+      "number": 5,
+      "type": "enum"
+    },
+    "succeeded": {
+      "number": 6,
+      "type": "enum"
+    },
+    "needs_input": {
+      "number": 7,
+      "type": "enum"
+    },
+    "failed": {
+      "number": 8,
+      "type": "enum"
+    },
+    "uncertain": {
+      "number": 9,
+      "type": "enum"
+    },
+    "cancelled": {
+      "number": 10,
+      "type": "enum"
+    }
+  }
+}

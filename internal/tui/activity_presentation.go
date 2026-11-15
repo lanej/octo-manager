@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 type activityPresentation struct{ title, detail, prURL string }

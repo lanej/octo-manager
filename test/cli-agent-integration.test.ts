@@ -85,21 +85,24 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     expect(value.data.pr.url).toBe("https://github.com/o/r/pull/1");
     const client = schedulerClient(directory);
     await client.refreshTrackedPullRequest({ id: value.data.pr.id });
-    const compact = await run(["pr", value.data.pr.id], true);
+    const compact = await run(["pr", "show", value.data.pr.id], true);
     expect(compact.code).toBe(0);
-    expect(compact.output).not.toContain("checksJson");
+    expect(compact.output).not.toContain("checks");
     expect(compact.output).toContain('"detailsOmitted":true');
     coordinator.githubScheduler.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    const full = await run(["pr", value.data.pr.id, "--full"], true);
+    const full = await run(["pr", "show", value.data.pr.id, "--full"], true);
     expect(full.code).toBe(0);
-    expect(full.output).toContain("checksJson");
+    expect(full.output).toContain("checks");
     expect(full.output).not.toContain('"ok":true');
-    const explicit = await run(["pr", value.data.pr.id, "--json"], false);
+    const explicit = await run(
+      ["pr", "show", value.data.pr.id, "--json"],
+      false,
+    );
     expect(explicit.code).toBe(0);
-    expect(explicit.output).toContain("checksJson");
+    expect(explicit.output).toContain("checks");
     expect(explicit.output.trim().split("\n")).toHaveLength(1);
-    const human = await run(["pr", value.data.pr.id], false);
+    const human = await run(["pr", "show", value.data.pr.id], false);
     expect(human.code).toBe(0);
     expect(human.output.trim().split("\n").length).toBeGreaterThan(1);
     expect(human.output).not.toContain('"ok"');
@@ -119,17 +122,17 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     expect(rejected.error).toContain('"ok":false');
     expect(Buffer.byteLength(rejected.error)).toBeLessThan(500);
     expect((await client.listTrackedPullRequests({})).prs).toHaveLength(1);
-    const failed = await run(["pr", "missing", "--json"], false);
+    const failed = await run(["pr", "show", "missing", "--json"], false);
     expect(failed.code).toBe(1);
     expect(failed.output).toBe("");
     expect(failed.error).toContain('"ok":false');
     offline = true;
-    const stale = await run(["refresh", value.data.pr.id], true);
+    const stale = await run(["pr", "refresh", value.data.pr.id], true);
     expect(stale.code).toBe(0);
     expect(stale.output).toContain("refresh");
     coordinator.githubScheduler.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    const errored = await run(["pr", value.data.pr.id], true);
+    const errored = await run(["pr", "show", value.data.pr.id], true);
     expect(errored.output).toContain("GitHub temporarily unavailable");
     expect(errored.output).toContain("refreshErrorAtMs");
     expect(errored.output).toContain('"observedAtMs":1000');
@@ -144,7 +147,7 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
         "fixture_event",
         `Event ${String(index)} ` + "details ".repeat(100),
       );
-    const events = await run(["events", job.id, "--after", "0"], true);
+    const events = await run(["job", "events", job.id, "--after", "0"], true);
     expect(events.code).toBe(0);
     expect(events.output.trim().split("\n")).toHaveLength(1);
     expect(Buffer.byteLength(events.output)).toBeLessThanOrEqual(3001);
@@ -181,11 +184,10 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     );
     const template = await run(
       [
-        "repo-policy",
-        "template",
-        "--repo",
+        "history",
+        "policy",
         "o/r",
-        "--version",
+        "--policy-version",
         "1",
         "--tier",
         "routine",
@@ -201,7 +203,7 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     );
     const hint: unknown = JSON.parse(template.output);
     if (!Check(Hint, hint)) throw new Error("Missing policy recovery");
-    expect(hint.next).toContain("'--version' '1'");
+    expect(hint.next).toContain("'--policy-version' '1'");
     expect(hint.next).toContain("'--tier' 'routine'");
     const bin = join(directory, "bin");
     await mkdir(bin);
@@ -229,7 +231,7 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     expect(recovered).toContain("Advisory");
     expect(recovered).not.toContain("LATEST POLICY");
     const huge = await run(
-      ["repo-policy", "template", "--repo", "o/r", "--version", "2"],
+      ["history", "policy", "o/r", "--policy-version", "2"],
       true,
     );
     expect(huge.code).toBe(0);

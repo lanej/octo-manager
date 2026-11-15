@@ -9,7 +9,7 @@ import (
 	"github.com/lanej/charmed/navigation"
 	"github.com/lanej/charmed/text"
 	charmedui "github.com/lanej/charmed/tui"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 type dashboardTab struct {

@@ -295,6 +295,7 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       [
         process.execPath,
         "src/cli.ts",
+        "agent",
         "inbox",
         "--agent-id",
         pr.ownerAgentId,

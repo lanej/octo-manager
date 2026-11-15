@@ -3,12 +3,12 @@ import {
   ConflictDecision,
   type ListConflictCasesRequest,
   type GetConflictCaseRequest,
-} from "../gen/octomanager/v1/repairs_pb.js";
+} from "../gen/octomanager/v2/repairs_pb.js";
 import { Code, ConnectError } from "@connectrpc/connect";
 import {
   RepairState as WireState,
   type RequestRebaseRequest,
-} from "../gen/octomanager/v1/repairs_pb.js";
+} from "../gen/octomanager/v2/repairs_pb.js";
 import { RepairState, type RepairAttempt } from "./types.js";
 import type { RepairService } from "./service.js";
 const states: Record<RepairState, WireState> = {

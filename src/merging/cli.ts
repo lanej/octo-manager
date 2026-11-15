@@ -1,3 +1,4 @@
+import { mergeRequest } from "../api/merge-client.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -26,6 +27,19 @@ export async function mergingCLI(
     return value;
   };
   switch (command) {
+    case "merge-policy":
+      input = {
+        op: "policy",
+        pr: id ?? "",
+        actorId,
+        checks: (values.checks ?? "")
+          .split(",")
+          .filter((value) => value !== ""),
+        noCi: values.ci === false,
+      };
+      if (input.noCi && input.checks.length > 0)
+        throw new Error("Choose expected checks or --no-ci");
+      break;
     case "auto-merge":
       if ((values.on === true) === (values.off === true))
         throw new Error("Choose --on or --off");
@@ -46,6 +60,18 @@ export async function mergingCLI(
       break;
     case "queue-chain":
       input = { op: "queue", input: checked(QueueInputSchema, intent()) };
+      break;
+    case "dependency-confirm":
+      input = {
+        op: "confirm",
+        pr: values.pr ?? "",
+        prerequisite: values.prerequisite ?? "",
+        actorId,
+        reason: values.reason ?? "",
+      };
+      break;
+    case "reference-dismiss":
+      input = { op: "decide", id: id ?? "", actorId, decision: "dismissed" };
       break;
     case "merge-command":
       input = checked(CommandSchema, intent());
@@ -77,10 +103,7 @@ export async function mergingCLI(
       process.env["OCTO_MANAGER_STATE"] ??
       join(homedir(), ".local/state/octo-manager"),
   );
-  const result = await schedulerClient(directory).mergeCommand({
-    inputJson: JSON.stringify(input),
-  });
-  const value: unknown = JSON.parse(result.resultJson);
+  const value = await mergeRequest(schedulerClient(directory), input);
   printResult(parsed, value);
   return true;
 }

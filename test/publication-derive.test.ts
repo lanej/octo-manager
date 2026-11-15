@@ -170,18 +170,12 @@ test("default service retires queued legacy analysis and rejects new model reque
   }
 });
 
-test("legacy submission RPC returns clear migration feedback instead of an internal tracking error", async () => {
+test("v2 removes legacy execution RPCs while preserving saved history", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-legacy-rpc-"));
   const coordinator = new Coordinator(directory);
   try {
     await coordinator.start();
-    let message = "";
-    try {
-      await schedulerClient(directory).submitPullRequest({ inputJson: "{}" });
-    } catch (error) {
-      message = error instanceof Error ? error.message : "";
-    }
-    expect(message).toContain("Legacy drafting retired");
+    expect("submitPullRequest" in schedulerClient(directory)).toBe(false);
     expect(coordinator.store.submissions.list()).toHaveLength(0);
   } finally {
     await coordinator.close();

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -9,7 +8,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func TestDisplayTimeDefaultsAndDST(t *testing.T) {
@@ -81,7 +80,7 @@ func TestAllDashboardTimesUseTheDisplayZone(t *testing.T) {
 	address := m.currentSubject().url
 	m.reviews[address] = &v1.PullRequestDetails{ObservedAtMs: instant, Messages: []*v1.ReviewMessage{{AtMs: instant}}}
 
-	views := []string{m.trackingContent(), m.activityTime(instant), m.repairContent("pr"), m.reviewsMarkdown(), m.stateView(100), strings.Join(m.workerLines(), "\n"), m.deliveryDetails("{\"NextAttemptAt\":" + fmt.Sprint(instant) + "}")}
+	views := []string{m.trackingContent(), m.activityTime(instant), m.repairContent("pr"), m.reviewsMarkdown(), m.stateView(100), strings.Join(m.workerLines(), "\n"), m.deliveryDetails(&v1.DomainDeliveryProgress{Variant: &v1.DomainDeliveryProgress_Variant_1{Variant_1: &v1.DomainDeliveryProgressVariant1{NextAttemptAt: new(instant)}}})}
 	for _, view := range views {
 		if !strings.Contains(ansi.Strip(view), "17:30") || !strings.Contains(ansi.Strip(view), "PST -0800") {
 			t.Errorf("view did not use display zone: %s", ansi.Strip(view))

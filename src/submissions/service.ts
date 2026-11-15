@@ -110,6 +110,33 @@ export class SubmissionService {
     }, 1000);
     this.tick();
   }
+  reconcileLegacy(now: number): void {
+    if (
+      this.options.allowLegacyExecution === true ||
+      this.stopped ||
+      this.active !== undefined
+    )
+      return;
+    const value = this.store
+      .list()
+      .find(
+        (item) =>
+          item.brief !== undefined &&
+          [State.Uncertain, State.Publishing, State.Enrolling].includes(
+            item.state,
+          ) &&
+          this.store.reconciliation(item.id).nextAt <= now,
+      );
+    if (value === undefined) return;
+    const previous = this.store.reconciliation(value.id),
+      delays = [60000, 300000, 900000];
+    this.store.deferReconciliation(
+      value.id,
+      previous.attempts + 1,
+      now + (delays[previous.attempts] ?? 3600000),
+    );
+    this.retry(value.id);
+  }
   submit(raw: unknown): Submission {
     if (this.options.allowLegacyExecution !== true)
       throw new Error(
@@ -147,7 +174,11 @@ export class SubmissionService {
       const active = { id, abort, work: Promise.resolve() };
       this.active = active;
       active.work = this.github
-        .find(value.request, `<!-- octo-submission:${id} -->`, abort.signal)
+        .find(
+          value.request,
+          `<!-- octo-submission:${id} -->`,
+          AbortSignal.any([abort.signal, AbortSignal.timeout(15000)]),
+        )
         .then((published) => {
           if (published === undefined)
             this.store.save({

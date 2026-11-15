@@ -1,0 +1,10 @@
+syntax = "proto3";
+package octomanager.v2;
+import "octomanager/v2/domain.proto";
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
+message GetSubmissionRequest { string id = 1; }
+message GetSubmissionResponse { DomainArchivedSubmission submission = 1; }
+message ListSubmissionsRequest { uint64 before_row_id = 1; uint32 limit = 2; }
+message ListSubmissionsResponse { repeated DomainArchivedSubmissionSummary submissions = 1; uint64 next_before_row_id = 2; }
+message GetRepositoryPolicyRequest { string repository = 1; optional uint32 version = 2; string tier = 3; }
+message GetRepositoryPolicyResponse { DomainRepositoryPolicy policy = 1; string template = 2; }

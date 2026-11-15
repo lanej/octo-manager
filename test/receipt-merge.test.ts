@@ -1,3 +1,8 @@
+import { unwire } from "../src/api/codec.js";
+import {
+  DomainMergeReceiptResultSchema,
+  DomainMergeReceiptResultState,
+} from "../src/gen/octomanager/v2/domain_pb.js";
 import { linkPRReferences } from "../src/notifications/links.js";
 import { DeliveryState } from "../src/tracking/types.js";
 import assert from "node:assert/strict";
@@ -166,10 +171,16 @@ async function fixture(initialReview: string | null = null) {
       uncertain = true;
     },
     async merge() {
-      return schedulerClient(directory).mergeAgentMessage({
+      const response = await schedulerClient(directory).mergeAgentMessage({
         receiptId: id,
         agentTarget: owner,
       });
+      assert(response.result !== undefined);
+      return {
+        resultText: JSON.stringify(
+          unwire(DomainMergeReceiptResultSchema, response.result),
+        ),
+      };
     },
     observe() {
       coordinator.store.tracking.observe(pr.id, current.observation, config);
@@ -220,11 +231,12 @@ test("Ready offers one merge command; hook receipt alone cannot merge; explicit 
       ],
       { stdout: "pipe", stderr: "pipe" },
     );
-    const [inspection, inspectionCode] = await Promise.all([
+    const [inspection, inspectionCode, inspectionError] = await Promise.all([
       new Response(inspect.stdout).text(),
       inspect.exited,
+      new Response(inspect.stderr).text(),
     ]);
-    expect(inspectionCode).toBe(0);
+    expect(inspectionCode, inspectionError).toBe(0);
     const inspected: unknown = JSON.parse(inspection);
     expect(inspected).toMatchObject({
       merge: { pr: url, head, method: "squash" },
@@ -263,7 +275,7 @@ test("Ready offers one merge command; hook receipt alone cannot merge; explicit 
     await f.reopen();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain('"merged"');
+    expect((await f.merge()).resultText).toContain('"merged"');
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
   } finally {
@@ -292,7 +304,7 @@ test("another recipient cannot use the merge receipt and stale head requests ack
       observation: { ...f.current.observation, headSha: "d".repeat(40) },
     };
     f.observe();
-    expect((await f.merge()).resultJson).toContain('"blocked"');
+    expect((await f.merge()).resultText).toContain('"blocked"');
     expect(
       f.coordinator.store.digests.receipts(f.notice.digestId),
     ).toHaveLength(1);
@@ -329,7 +341,7 @@ test("unknown merge outcomes are not replayed by repeated receipt commands", asy
     await f.merge();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain('"uncertain"');
+    expect((await f.merge()).resultText).toContain('"uncertain"');
     f.advance();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -384,7 +396,7 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
       requestId: "off",
     });
     await f.coordinator.merging.tick();
-    expect((await f.merge()).resultJson).toContain("changed since this notice");
+    expect((await f.merge()).resultText).toContain("changed since this notice");
     const unread = f.coordinator.store.tracking.inbox.list(
       f.pr.ownerAgentId,
       0,
@@ -410,8 +422,8 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
           receiptId: token,
           agentTarget: owner,
         })
-      ).resultJson,
-    ).toContain("queued");
+      ).result?.state,
+    ).toBe(DomainMergeReceiptResultState.QUEUED);
     expect(f.coordinator.store.merging.entries()[0]?.autoMerge).toBe(false);
     f.coordinator.merging.command({
       op: "auto_merge",
@@ -481,7 +493,7 @@ test("approval after check receipt produces one fresh linked Ready notice and ol
       receiptId: token,
       agentTarget: owner,
     });
-    expect((await f.merge()).resultJson).toContain("no merge target");
+    expect((await f.merge()).resultText).toContain("no merge target");
     expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBe(
       ready.dispatchId,
     );
@@ -520,10 +532,10 @@ test("a new ordinary owner assessment retires obsolete receipt authority without
       head: newer,
     });
     expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBeUndefined();
-    expect((await f.merge()).resultJson).toContain("superseded");
+    expect((await f.merge()).resultText).toContain("superseded");
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
-    expect((await f.merge()).resultJson).toContain("superseded");
+    expect((await f.merge()).resultText).toContain("superseded");
     expect(f.coordinator.store.merging.operations()[0]?.head).toBe(newer);
   } finally {
     await f.close();
@@ -900,7 +912,7 @@ test("read failures and recovery do not repeat a receipted Ready decision, inclu
       expect(f.reads).toBe(reads);
       if (cycle === 0) {
         await f.reopen();
-        expect((await f.merge()).resultJson).toContain('"blocked"');
+        expect((await f.merge()).resultText).toContain('"blocked"');
         expect(f.coordinator.store.merging.entries()).toHaveLength(0);
       }
       expect(
