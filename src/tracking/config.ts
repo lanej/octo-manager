@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
+import { workerModel as parseWorkerModel } from "../worker-model.js";
 export interface CodexEndpoint {
   socket?: string;
   delivery?: "turn" | "queue";
@@ -42,6 +43,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
   };
 }
 export interface TrackingConfig {
+  workerModel?: string;
   polling?: PollPolicy & Partial<SchedulerPolicy>;
   merging?: Record<string, PreparationProfile>;
   submissionModels?: Partial<Record<"policy" | "change" | "writer", string>>;
@@ -112,6 +114,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
           "endpoints",
           "repairs",
           "submissionModels",
+          "workerModel",
           "merging",
           "polling",
         ].includes(k),
@@ -119,6 +122,13 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   )
     throw new Error("Invalid tracking configuration");
   const result = structuredClone(defaults);
+  if (raw["workerModel"] !== undefined) {
+    const model = raw["workerModel"];
+    if (typeof model !== "string" || model.length > 200)
+      throw new Error("Invalid worker model");
+    parseWorkerModel(model);
+    result.workerModel = model;
+  }
   if (raw["polling"] !== undefined) {
     const value = raw["polling"];
     if (

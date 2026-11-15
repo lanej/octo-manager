@@ -11,7 +11,7 @@ import {
   unlink,
 } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { devNull, tmpdir } from "node:os";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -120,6 +120,7 @@ async function fixture(conflicting = false) {
       await w.git(["config", "user.name", "Repair Test"]);
       await w.git(["config", "user.email", "repair@localhost"]);
       await w.git(["config", "commit.gpgsign", "false"]);
+      await w.git(["config", "core.attributesFile", devNull]);
     };
     return w;
   };
