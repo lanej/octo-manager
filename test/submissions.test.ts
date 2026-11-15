@@ -178,6 +178,7 @@ async function harness(run: RunStage, github = new GitHub()) {
       { read: () => Promise.reject(new Error("Offline test")) },
     );
   let service = new SubmissionService(store.submissions, tracking, {
+    allowLegacyExecution: true,
     github,
     run,
     instructions: (role) => Promise.resolve(`Bounded ${role}`),
@@ -206,6 +207,7 @@ async function harness(run: RunStage, github = new GitHub()) {
         { read: () => Promise.reject(new Error("Offline test")) },
       );
       service = new SubmissionService(store.submissions, tracking, {
+        allowLegacyExecution: true,
         github,
         run,
         instructions: (role) => Promise.resolve(`Bounded ${role}`),

@@ -288,6 +288,8 @@ func (x *GetSubmissionRequest) GetId() string {
 
 type ListSubmissionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         uint32                 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	BeforeRowId   uint64                 `protobuf:"varint,2,opt,name=before_row_id,json=beforeRowId,proto3" json:"before_row_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -322,9 +324,24 @@ func (*ListSubmissionsRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v1_submissions_proto_rawDescGZIP(), []int{6}
 }
 
+func (x *ListSubmissionsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListSubmissionsRequest) GetBeforeRowId() uint64 {
+	if x != nil {
+		return x.BeforeRowId
+	}
+	return 0
+}
+
 type ListSubmissionsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	SubmissionsJson []string               `protobuf:"bytes,1,rep,name=submissions_json,json=submissionsJson,proto3" json:"submissions_json,omitempty"`
+	NextBeforeRowId uint64                 `protobuf:"varint,2,opt,name=next_before_row_id,json=nextBeforeRowId,proto3" json:"next_before_row_id,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -364,6 +381,13 @@ func (x *ListSubmissionsResponse) GetSubmissionsJson() []string {
 		return x.SubmissionsJson
 	}
 	return nil
+}
+
+func (x *ListSubmissionsResponse) GetNextBeforeRowId() uint64 {
+	if x != nil {
+		return x.NextBeforeRowId
+	}
+	return 0
 }
 
 type RetrySubmissionRequest struct {
@@ -583,10 +607,13 @@ const file_octomanager_v1_submissions_proto_rawDesc = "" +
 	"\x18CancelSubmissionResponse\x12'\n" +
 	"\x0fsubmission_json\x18\x01 \x01(\tR\x0esubmissionJson\"&\n" +
 	"\x14GetSubmissionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x18\n" +
-	"\x16ListSubmissionsRequest\"D\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"R\n" +
+	"\x16ListSubmissionsRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\rR\x05limit\x12\"\n" +
+	"\rbefore_row_id\x18\x02 \x01(\x04R\vbeforeRowId\"q\n" +
 	"\x17ListSubmissionsResponse\x12)\n" +
-	"\x10submissions_json\x18\x01 \x03(\tR\x0fsubmissionsJson\"(\n" +
+	"\x10submissions_json\x18\x01 \x03(\tR\x0fsubmissionsJson\x12+\n" +
+	"\x12next_before_row_id\x18\x02 \x01(\x04R\x0fnextBeforeRowId\"(\n" +
 	"\x16RetrySubmissionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\")\n" +
 	"\x17CancelSubmissionRequest\x12\x0e\n" +

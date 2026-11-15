@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/submissions.proto.
  */
 export const file_octomanager_v1_submissions: GenFile = /*@__PURE__*/
-  fileDesc("CiBvY3RvbWFuYWdlci92MS9zdWJtaXNzaW9ucy5wcm90bxIOb2N0b21hbmFnZXIudjEiLgoYU3VibWl0UHVsbFJlcXVlc3RSZXF1ZXN0EhIKCmlucHV0X2pzb24YASABKAkiNAoZU3VibWl0UHVsbFJlcXVlc3RSZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMAoVR2V0U3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIyChdSZXRyeVN1Ym1pc3Npb25SZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMwoYQ2FuY2VsU3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIiChRHZXRTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIYChZMaXN0U3VibWlzc2lvbnNSZXF1ZXN0IjMKF0xpc3RTdWJtaXNzaW9uc1Jlc3BvbnNlEhgKEHN1Ym1pc3Npb25zX2pzb24YASADKAkiJAoWUmV0cnlTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIlChdDYW5jZWxTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJgChpHZXRSZXBvc2l0b3J5UG9saWN5UmVxdWVzdBISCgpyZXBvc2l0b3J5GAEgASgJEhQKB3ZlcnNpb24YAiABKA1IAIgBARIMCgR0aWVyGAMgASgJQgoKCF92ZXJzaW9uIkQKG0dldFJlcG9zaXRvcnlQb2xpY3lSZXNwb25zZRITCgtwb2xpY3lfanNvbhgBIAEoCRIQCgh0ZW1wbGF0ZRgCIAEoCUJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
+  fileDesc("CiBvY3RvbWFuYWdlci92MS9zdWJtaXNzaW9ucy5wcm90bxIOb2N0b21hbmFnZXIudjEiLgoYU3VibWl0UHVsbFJlcXVlc3RSZXF1ZXN0EhIKCmlucHV0X2pzb24YASABKAkiNAoZU3VibWl0UHVsbFJlcXVlc3RSZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMAoVR2V0U3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIyChdSZXRyeVN1Ym1pc3Npb25SZXNwb25zZRIXCg9zdWJtaXNzaW9uX2pzb24YASABKAkiMwoYQ2FuY2VsU3VibWlzc2lvblJlc3BvbnNlEhcKD3N1Ym1pc3Npb25fanNvbhgBIAEoCSIiChRHZXRTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSI+ChZMaXN0U3VibWlzc2lvbnNSZXF1ZXN0Eg0KBWxpbWl0GAEgASgNEhUKDWJlZm9yZV9yb3dfaWQYAiABKAQiTwoXTGlzdFN1Ym1pc3Npb25zUmVzcG9uc2USGAoQc3VibWlzc2lvbnNfanNvbhgBIAMoCRIaChJuZXh0X2JlZm9yZV9yb3dfaWQYAiABKAQiJAoWUmV0cnlTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIlChdDYW5jZWxTdWJtaXNzaW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJgChpHZXRSZXBvc2l0b3J5UG9saWN5UmVxdWVzdBISCgpyZXBvc2l0b3J5GAEgASgJEhQKB3ZlcnNpb24YAiABKA1IAIgBARIMCgR0aWVyGAMgASgJQgoKCF92ZXJzaW9uIkQKG0dldFJlcG9zaXRvcnlQb2xpY3lSZXNwb25zZRITCgtwb2xpY3lfanNvbhgBIAEoCRIQCgh0ZW1wbGF0ZRgCIAEoCUJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
 
 /**
  * Structured JSON is validated with the exported versioned JSON Schemas.
@@ -120,6 +120,15 @@ export const GetSubmissionRequestSchema: GenMessage<GetSubmissionRequest> = /*@_
  * @generated from message octomanager.v1.ListSubmissionsRequest
  */
 export type ListSubmissionsRequest = Message<"octomanager.v1.ListSubmissionsRequest"> & {
+  /**
+   * @generated from field: uint32 limit = 1;
+   */
+  limit: number;
+
+  /**
+   * @generated from field: uint64 before_row_id = 2;
+   */
+  beforeRowId: bigint;
 };
 
 /**
@@ -137,6 +146,11 @@ export type ListSubmissionsResponse = Message<"octomanager.v1.ListSubmissionsRes
    * @generated from field: repeated string submissions_json = 1;
    */
   submissionsJson: string[];
+
+  /**
+   * @generated from field: uint64 next_before_row_id = 2;
+   */
+  nextBeforeRowId: bigint;
 };
 
 /**
