@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -11,8 +12,17 @@ import (
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
+	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
 )
+
+type usageChart struct {
+	plot        chart.TimeSeries
+	first, last time.Time
+	peak        float64
+	palette     theme.Theme
+	valid       bool
+}
 
 func (m *Model) globalPanel() bool {
 	return m.panel == activityPanel || m.panel == githubPanel
@@ -96,21 +106,21 @@ func (m *Model) forecastView(label string, forecast *v1.GitHubQuotaForecast) str
 	return m.field("Forecast", status) + "\n" + m.muted(fmt.Sprintf("Recent pace: %.0f %s/hour over %.1f min · estimate, not a guarantee", forecast.GetUnitsPerHour(), units, float64(forecast.GetWindowMs())/60000))
 }
 
-func requestSeries(minutes []*v1.GitHubReadMinute) ([]chart.TimeSeriesData, float64) {
+func requestSeries(hours []*v1.GitHubReadHour) ([]chart.TimeSeriesData, float64) {
 	series := []chart.TimeSeriesData{
-		{ID: "rest", Label: "REST attempts", Unit: "/min"},
-		{ID: "graphql", Label: "GraphQL attempts", Unit: "/min"},
-		{ID: "cache", Label: "Cache reuses", Unit: "/min"},
+		{ID: "rest", Label: "REST attempts", Unit: "/hour"},
+		{ID: "graphql", Label: "GraphQL attempts", Unit: "/hour"},
+		{ID: "cache", Label: "Cache reuses", Unit: "/hour"},
 	}
 	peak := 1.0
 
-	for _, minute := range minutes {
-		counts := [3]uint64{minute.GetRest(), minute.GetGraphql(), minute.GetCacheReuses()}
+	for _, hour := range hours {
+		counts := [3]uint64{hour.GetRest(), hour.GetGraphql(), hour.GetCacheReuses()}
 		for i, count := range counts {
 			value := float64(count)
 			peak = math.Max(peak, value)
 			series[i].Points = append(series[i].Points, timeserieslinechart.TimePoint{
-				Time: time.UnixMilli(minute.GetStartedAtMs()), Value: value,
+				Time: time.UnixMilli(hour.GetStartedAtMs()), Value: value,
 			})
 		}
 	}
@@ -132,24 +142,37 @@ func (m *Model) githubContent(width int) string {
 		dashboardSection{id: "graphql-budget", title: "GRAPHQL QUOTA", content: func(w int) string {
 			return m.budgetView("GraphQL", usage.GetGraphql(), usage.GetGraphqlRetryAtMs(), usage.GetSampledAtMs(), w)
 		}})
-	lines := []string{scheduler, m.muted("Shared authentication budget · includes other tools · GraphQL uses points"), budgets, "", text.Badge("Octo API traffic", m.theme), m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses", usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())), m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)), m.muted("Rolling hour · per-minute counts · current minute is partial · resets on restart")}
+	lines := []string{scheduler, m.muted("Shared authentication budget · includes other tools · GraphQL uses points"), budgets, "", text.Badge("Octo API traffic", m.theme), m.field("Since coordinator started", fmt.Sprintf("%d attempts · %d cache reuses · %d rate-limit responses", usage.GetRequests(), usage.GetCacheReuses(), usage.GetRateLimits())), m.field("Started", m.timestamp(usage.GetStartedAtMs(), fullTimestamp)), m.muted(fmt.Sprintf("Last %d hourly buckets · current hour is partial · counts since coordinator start", m.githubHours))}
 
-	minutes := usage.GetMinutes()
-	if len(minutes) == 0 {
-		return strings.Join(append(lines, m.muted("Traffic history not observed yet.")), "\n")
+	hours := usage.GetHours()
+
+	hours = hours[max(0, len(hours)-m.githubHours):]
+	if len(hours) == 0 {
+		return strings.Join(append(lines, m.muted("Hourly traffic history not observed yet.")), "\n")
 	}
 
-	series, peak := requestSeries(minutes)
-	first := time.UnixMilli(minutes[0].GetStartedAtMs())
-	last := time.UnixMilli(minutes[len(minutes)-1].GetStartedAtMs()).Add(time.Minute)
-	plot := chart.NewTimeSeries(series, layout.Size{Width: max(1, width), Height: 9}, m.theme,
-		timeserieslinechart.WithYRange(0, peak),
-		timeserieslinechart.WithTimeRange(first, last),
-		timeserieslinechart.WithXLabelFormatter(func(_ int, value float64) string {
-			return time.Unix(int64(math.Round(value)), 0).In(m.location).Format("15:04")
-		}),
-	)
-	lines = append(lines, plot.View(), chart.SeriesLegend(series, max(1, width), m.theme),
+	series, peak := requestSeries(hours)
+	first := time.UnixMilli(hours[0].GetStartedAtMs())
+	last := time.UnixMilli(hours[len(hours)-1].GetStartedAtMs()).Add(time.Hour)
+	size := layout.Size{Width: max(1, width), Height: 9}
+
+	cached := &m.usageChart
+	if !cached.valid || cached.first != first || cached.last != last || cached.peak != peak || !reflect.DeepEqual(cached.palette, m.theme) {
+		cached.plot = chart.NewTimeSeries(series, size, m.theme,
+			timeserieslinechart.WithYRange(0, peak),
+			timeserieslinechart.WithTimeRange(first, last),
+			timeserieslinechart.WithXLabelFormatter(func(_ int, value float64) string {
+				return time.Unix(int64(math.Round(value)), 0).In(m.location).Format("01-02 15:04")
+			}),
+		)
+		cached.first, cached.last, cached.peak, cached.palette, cached.valid = first, last, peak, m.theme, true
+	} else {
+		cached.plot.ApplyData(series)
+		cached.plot.Resize(size)
+	}
+
+	lines = append(lines, cached.plot.View(), chart.SeriesLegend(series, max(1, width), m.theme),
+		m.hourlyTotals(hours, usage),
 		m.muted("Chart times: "+m.zoneLabel()+" · HTTP attempts include transport failures; Git transport is excluded."),
 		m.field("Metrics sampled", m.timestamp(usage.GetSampledAtMs(), fullTimestamp)))
 
@@ -183,4 +206,37 @@ func (m *Model) schedulerContent() string {
 	}
 
 	return strings.Join(lines, "\n") + "\n"
+}
+
+const (
+	DefaultGitHubHours = 24
+	MaxGitHubHours     = 168
+)
+
+func (m *Model) SetGitHubHours(hours int) error {
+	if hours < 1 || hours > MaxGitHubHours {
+		return fmt.Errorf("GitHub history hours must be between 1 and %d", MaxGitHubHours)
+	}
+
+	m.githubHours = hours
+	m.resizeContent()
+
+	return nil
+}
+
+func (m *Model) hourlyTotals(hours []*v1.GitHubReadHour, usage *v1.GitHubReadUsage) string {
+	lines := []string{text.Badge("Hourly totals", m.theme), m.muted("Newest first · partial hours are not extrapolated · resets on coordinator restart")}
+
+	for i := len(hours) - 1; i >= 0; i-- {
+		hour := hours[i]
+
+		state := "complete"
+		if hour.GetStartedAtMs() < usage.GetStartedAtMs() || hour.GetStartedAtMs()+int64(time.Hour/time.Millisecond) > usage.GetSampledAtMs() {
+			state = "partial"
+		}
+
+		lines = append(lines, fmt.Sprintf("%s · REST %d · GraphQL %d · cache %d · %s", m.timestamp(hour.GetStartedAtMs(), "01-02 15:04 -0700"), hour.GetRest(), hour.GetGraphql(), hour.GetCacheReuses(), state))
+	}
+
+	return strings.Join(lines, "\n")
 }

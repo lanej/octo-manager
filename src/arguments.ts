@@ -34,6 +34,7 @@ export function parseCommand(
       state: { type: "string" },
       theme: { type: "string" },
       timezone: { type: "string" },
+      "github-hours": { type: "string" },
       model: { type: "string" },
       profile: { type: "string" },
       url: { type: "string" },

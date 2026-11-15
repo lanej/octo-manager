@@ -472,8 +472,10 @@ type ListActivityRequest struct {
 	// An exclusive upper bound selects a recent page in descending sequence order.
 	// Omit for forward replay; zero selects the latest page. Do not combine with after_sequence.
 	BeforeSequence *uint64 `protobuf:"varint,2,opt,name=before_sequence,json=beforeSequence,proto3,oneof" json:"before_sequence,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Recent-page size, 1–200; zero keeps the default of 200. Forward replay remains fixed-size.
+	Limit         uint32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListActivityRequest) Reset() {
@@ -520,6 +522,13 @@ func (x *ListActivityRequest) GetBeforeSequence() uint64 {
 	return 0
 }
 
+func (x *ListActivityRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
 var File_octomanager_v1_activity_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_activity_proto_rawDesc = "" +
@@ -557,10 +566,11 @@ const file_octomanager_v1_activity_proto_rawDesc = "" +
 	"\x15RecordActivityRequest\x125\n" +
 	"\x06report\x18\x01 \x01(\v2\x1d.octomanager.v1.ActivityInputR\x06report\"T\n" +
 	"\x16RecordActivityResponse\x12:\n" +
-	"\bactivity\x18\x01 \x01(\v2\x1e.octomanager.v1.ActivityReportR\bactivity\"~\n" +
+	"\bactivity\x18\x01 \x01(\v2\x1e.octomanager.v1.ActivityReportR\bactivity\"\x94\x01\n" +
 	"\x13ListActivityRequest\x12%\n" +
 	"\x0eafter_sequence\x18\x01 \x01(\x04R\rafterSequence\x12,\n" +
-	"\x0fbefore_sequence\x18\x02 \x01(\x04H\x00R\x0ebeforeSequence\x88\x01\x01B\x12\n" +
+	"\x0fbefore_sequence\x18\x02 \x01(\x04H\x00R\x0ebeforeSequence\x88\x01\x01\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\rR\x05limitB\x12\n" +
 	"\x10_before_sequence*\xcb\x01\n" +
 	"\fActivityName\x12\x1d\n" +
 	"\x19ACTIVITY_NAME_UNSPECIFIED\x10\x00\x12\x1a\n" +

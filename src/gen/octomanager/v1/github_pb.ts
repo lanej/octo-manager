@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v1/github.proto.
  */
 export const file_octomanager_v1_github: GenFile = /*@__PURE__*/
-  fileDesc("ChtvY3RvbWFuYWdlci92MS9naXRodWIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxIpgBChBHaXRIdWJSYXRlQnVkZ2V0Eg0KBWxpbWl0GAEgASgNEhEKCXJlbWFpbmluZxgCIAEoDRITCgtyZXNldF9hdF9tcxgDIAEoAxIWCg5vYnNlcnZlZF9hdF9tcxgEIAEoAxI1Cghmb3JlY2FzdBgFIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YlF1b3RhRm9yZWNhc3QiXgoQR2l0SHViUmVhZE1pbnV0ZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEgwKBHJlc3QYAiABKAQSDwoHZ3JhcGhxbBgDIAEoBBIUCgxjYWNoZV9yZXVzZXMYBCABKAQiyQIKD0dpdEh1YlJlYWRVc2FnZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEhUKDXNhbXBsZWRfYXRfbXMYAiABKAMSEAoIcmVxdWVzdHMYAyABKAQSFAoMY2FjaGVfcmV1c2VzGAQgASgEEhMKC3JhdGVfbGltaXRzGAUgASgEEjEKB21pbnV0ZXMYBiADKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSZWFkTWludXRlEi4KBHJlc3QYByABKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSYXRlQnVkZ2V0EjEKB2dyYXBocWwYCCABKAsyIC5vY3RvbWFuYWdlci52MS5HaXRIdWJSYXRlQnVkZ2V0EhgKEHJlc3RfcmV0cnlfYXRfbXMYCSABKAMSGwoTZ3JhcGhxbF9yZXRyeV9hdF9tcxgKIAEoAyKtAgoTR2l0SHViUXVvdGFGb3JlY2FzdBIyCgVzdGF0ZRgBIAEoDjIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YkZvcmVjYXN0U3RhdGUSDgoGcmVhc29uGAIgASgJEhEKCXdpbmRvd19tcxgDIAEoAxIVCg1zYW1wbGVkX2F0X21zGAQgASgDEhsKDnVuaXRzX3Blcl9ob3VyGAUgASgBSACIAQESKQoccHJvamVjdGVkX3JlbWFpbmluZ19hdF9yZXNldBgGIAEoAUgBiAEBEhoKDWV4aGF1c3RfYXRfbXMYByABKANIAogBAUIRCg9fdW5pdHNfcGVyX2hvdXJCHwodX3Byb2plY3RlZF9yZW1haW5pbmdfYXRfcmVzZXRCEAoOX2V4aGF1c3RfYXRfbXMimwEKDVJlZnJlc2hTdGF0dXMSKwoFc3RhdGUYASABKA4yHC5vY3RvbWFuYWdlci52MS5SZWZyZXNoU3RhdGUSEQoJZHVlX2F0X21zGAIgASgDEh8KEmxhc3RfYXR0ZW1wdF9hdF9tcxgDIAEoA0gAiAEBEhIKCmxhc3RfZXJyb3IYBCABKAlCFQoTX2xhc3RfYXR0ZW1wdF9hdF9tcyrQAQoTR2l0SHViRm9yZWNhc3RTdGF0ZRImCiJHSVRfSFVCX0ZPUkVDQVNUX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9VTktOT1dOEAESIwofR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9PTl9UUkFDSxACEiIKHkdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfQVRfUklTSxADEiQKIEdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfRVhIQVVTVEVEEAQqfgoMUmVmcmVzaFN0YXRlEh0KGVJFRlJFU0hfU1RBVEVfVU5TUEVDSUZJRUQQABIYChRSRUZSRVNIX1NUQVRFX1FVRVVFRBABEhkKFVJFRlJFU0hfU1RBVEVfUlVOTklORxACEhoKFlJFRlJFU0hfU1RBVEVfREVGRVJSRUQQA0JAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
+  fileDesc("ChtvY3RvbWFuYWdlci92MS9naXRodWIucHJvdG8SDm9jdG9tYW5hZ2VyLnYxIpgBChBHaXRIdWJSYXRlQnVkZ2V0Eg0KBWxpbWl0GAEgASgNEhEKCXJlbWFpbmluZxgCIAEoDRITCgtyZXNldF9hdF9tcxgDIAEoAxIWCg5vYnNlcnZlZF9hdF9tcxgEIAEoAxI1Cghmb3JlY2FzdBgFIAEoCzIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YlF1b3RhRm9yZWNhc3QiXgoQR2l0SHViUmVhZE1pbnV0ZRIVCg1zdGFydGVkX2F0X21zGAEgASgDEgwKBHJlc3QYAiABKAQSDwoHZ3JhcGhxbBgDIAEoBBIUCgxjYWNoZV9yZXVzZXMYBCABKAQiXAoOR2l0SHViUmVhZEhvdXISFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIMCgRyZXN0GAIgASgEEg8KB2dyYXBocWwYAyABKAQSFAoMY2FjaGVfcmV1c2VzGAQgASgEIvgCCg9HaXRIdWJSZWFkVXNhZ2USFQoNc3RhcnRlZF9hdF9tcxgBIAEoAxIVCg1zYW1wbGVkX2F0X21zGAIgASgDEhAKCHJlcXVlc3RzGAMgASgEEhQKDGNhY2hlX3JldXNlcxgEIAEoBBITCgtyYXRlX2xpbWl0cxgFIAEoBBIxCgdtaW51dGVzGAYgAygLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmVhZE1pbnV0ZRIuCgRyZXN0GAcgASgLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmF0ZUJ1ZGdldBIxCgdncmFwaHFsGAggASgLMiAub2N0b21hbmFnZXIudjEuR2l0SHViUmF0ZUJ1ZGdldBIYChByZXN0X3JldHJ5X2F0X21zGAkgASgDEhsKE2dyYXBocWxfcmV0cnlfYXRfbXMYCiABKAMSLQoFaG91cnMYCyADKAsyHi5vY3RvbWFuYWdlci52MS5HaXRIdWJSZWFkSG91ciKtAgoTR2l0SHViUXVvdGFGb3JlY2FzdBIyCgVzdGF0ZRgBIAEoDjIjLm9jdG9tYW5hZ2VyLnYxLkdpdEh1YkZvcmVjYXN0U3RhdGUSDgoGcmVhc29uGAIgASgJEhEKCXdpbmRvd19tcxgDIAEoAxIVCg1zYW1wbGVkX2F0X21zGAQgASgDEhsKDnVuaXRzX3Blcl9ob3VyGAUgASgBSACIAQESKQoccHJvamVjdGVkX3JlbWFpbmluZ19hdF9yZXNldBgGIAEoAUgBiAEBEhoKDWV4aGF1c3RfYXRfbXMYByABKANIAogBAUIRCg9fdW5pdHNfcGVyX2hvdXJCHwodX3Byb2plY3RlZF9yZW1haW5pbmdfYXRfcmVzZXRCEAoOX2V4aGF1c3RfYXRfbXMimwEKDVJlZnJlc2hTdGF0dXMSKwoFc3RhdGUYASABKA4yHC5vY3RvbWFuYWdlci52MS5SZWZyZXNoU3RhdGUSEQoJZHVlX2F0X21zGAIgASgDEh8KEmxhc3RfYXR0ZW1wdF9hdF9tcxgDIAEoA0gAiAEBEhIKCmxhc3RfZXJyb3IYBCABKAlCFQoTX2xhc3RfYXR0ZW1wdF9hdF9tcyrQAQoTR2l0SHViRm9yZWNhc3RTdGF0ZRImCiJHSVRfSFVCX0ZPUkVDQVNUX1NUQVRFX1VOU1BFQ0lGSUVEEAASIgoeR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9VTktOT1dOEAESIwofR0lUX0hVQl9GT1JFQ0FTVF9TVEFURV9PTl9UUkFDSxACEiIKHkdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfQVRfUklTSxADEiQKIEdJVF9IVUJfRk9SRUNBU1RfU1RBVEVfRVhIQVVTVEVEEAQqfgoMUmVmcmVzaFN0YXRlEh0KGVJFRlJFU0hfU1RBVEVfVU5TUEVDSUZJRUQQABIYChRSRUZSRVNIX1NUQVRFX1FVRVVFRBABEhkKFVJFRlJFU0hfU1RBVEVfUlVOTklORxACEhoKFlJFRlJFU0hfU1RBVEVfREVGRVJSRUQQA0JAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjE7b2N0b21hbmFnZXJ2MWIGcHJvdG8z");
 
 /**
  * @generated from message octomanager.v1.GitHubRateBudget
@@ -82,6 +82,40 @@ export const GitHubReadMinuteSchema: GenMessage<GitHubReadMinute> = /*@__PURE__*
   messageDesc(file_octomanager_v1_github, 1);
 
 /**
+ * Counts in a fixed UTC hour. Startup and the current hour can be partial.
+ *
+ * @generated from message octomanager.v1.GitHubReadHour
+ */
+export type GitHubReadHour = Message<"octomanager.v1.GitHubReadHour"> & {
+  /**
+   * @generated from field: int64 started_at_ms = 1;
+   */
+  startedAtMs: bigint;
+
+  /**
+   * @generated from field: uint64 rest = 2;
+   */
+  rest: bigint;
+
+  /**
+   * @generated from field: uint64 graphql = 3;
+   */
+  graphql: bigint;
+
+  /**
+   * @generated from field: uint64 cache_reuses = 4;
+   */
+  cacheReuses: bigint;
+};
+
+/**
+ * Describes the message octomanager.v1.GitHubReadHour.
+ * Use `create(GitHubReadHourSchema)` to create a new message.
+ */
+export const GitHubReadHourSchema: GenMessage<GitHubReadHour> = /*@__PURE__*/
+  messageDesc(file_octomanager_v1_github, 2);
+
+/**
  * @generated from message octomanager.v1.GitHubReadUsage
  */
 export type GitHubReadUsage = Message<"octomanager.v1.GitHubReadUsage"> & {
@@ -134,6 +168,13 @@ export type GitHubReadUsage = Message<"octomanager.v1.GitHubReadUsage"> & {
    * @generated from field: int64 graphql_retry_at_ms = 10;
    */
   graphqlRetryAtMs: bigint;
+
+  /**
+   * At most 168 hourly buckets, retained independently of minute samples and quota resets.
+   *
+   * @generated from field: repeated octomanager.v1.GitHubReadHour hours = 11;
+   */
+  hours: GitHubReadHour[];
 };
 
 /**
@@ -141,7 +182,7 @@ export type GitHubReadUsage = Message<"octomanager.v1.GitHubReadUsage"> & {
  * Use `create(GitHubReadUsageSchema)` to create a new message.
  */
 export const GitHubReadUsageSchema: GenMessage<GitHubReadUsage> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_github, 2);
+  messageDesc(file_octomanager_v1_github, 3);
 
 /**
  * @generated from message octomanager.v1.GitHubQuotaForecast
@@ -188,7 +229,7 @@ export type GitHubQuotaForecast = Message<"octomanager.v1.GitHubQuotaForecast"> 
  * Use `create(GitHubQuotaForecastSchema)` to create a new message.
  */
 export const GitHubQuotaForecastSchema: GenMessage<GitHubQuotaForecast> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_github, 3);
+  messageDesc(file_octomanager_v1_github, 4);
 
 /**
  * @generated from message octomanager.v1.RefreshStatus
@@ -220,7 +261,7 @@ export type RefreshStatus = Message<"octomanager.v1.RefreshStatus"> & {
  * Use `create(RefreshStatusSchema)` to create a new message.
  */
 export const RefreshStatusSchema: GenMessage<RefreshStatus> = /*@__PURE__*/
-  messageDesc(file_octomanager_v1_github, 4);
+  messageDesc(file_octomanager_v1_github, 5);
 
 /**
  * @generated from enum octomanager.v1.GitHubForecastState

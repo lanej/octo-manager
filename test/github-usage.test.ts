@@ -138,3 +138,63 @@ test("a failed transport is an attempt and cannot manufacture a quota observatio
   assert.equal(reader.usage().rest, undefined);
   assert.equal(reader.usage().cacheReuses, 0);
 });
+
+test("hourly traffic survives hour and day rollover independently of minute and quota windows", () => {
+  const hour = 3600000;
+  let at = Date.UTC(2026, 10, 14, 23, 59, 59);
+  const usage = new GitHubUsage(() => at);
+  usage.attempt("core");
+  usage.reused();
+  at = Date.UTC(2026, 10, 15, 0, 0);
+  usage.attempt("graphql");
+  usage.observe(
+    "core",
+    new Map([
+      ["x-ratelimit-limit", "5000"],
+      ["x-ratelimit-remaining", "5000"],
+      ["x-ratelimit-reset", String((at + hour) / 1000)],
+    ]),
+  );
+  const value = usage.snapshot({ core: 0, graphql: 0 });
+  assert.deepEqual(value.hours, [
+    {
+      startedAtMs: Date.UTC(2026, 10, 14, 23),
+      rest: 1,
+      graphql: 0,
+      cacheReuses: 1,
+    },
+    { startedAtMs: at, rest: 0, graphql: 1, cacheReuses: 0 },
+  ]);
+  const first = value.hours[0];
+  assert(first !== undefined);
+  first.rest = 900;
+  assert.equal(usage.snapshot({ core: 0, graphql: 0 }).hours[0]?.rest, 1);
+  const wire = wireGitHubUsage(usage.snapshot({ core: 0, graphql: 0 }));
+  const wireFirst = wire.hours[0];
+  assert(wireFirst !== undefined);
+  assert.equal(wireFirst.rest, 1n);
+  assert.equal(wireFirst.startedAtMs, BigInt(Date.UTC(2026, 10, 14, 23)));
+  at += 2 * hour;
+  const idle = usage.snapshot({ core: 0, graphql: 0 });
+  assert.equal(idle.hours.length, 4);
+  assert.equal(idle.hours[0]?.rest, 1);
+  assert.equal(idle.hours[2]?.rest, 0);
+  assert.equal(idle.hours[3]?.graphql, 0);
+  assert.equal(
+    idle.minutes.reduce((sum, bucket) => sum + bucket.rest + bucket.graphql, 0),
+    0,
+  );
+  at += 200 * hour;
+  const bounded = usage.snapshot({ core: 0, graphql: 0 });
+  assert.equal(bounded.hours.length, 168);
+  assert.equal(bounded.hours[0]?.startedAtMs, at - 167 * hour);
+  assert.equal(
+    bounded.hours.reduce(
+      (sum, bucket) => sum + bucket.rest + bucket.graphql,
+      0,
+    ),
+    0,
+  );
+  assert.equal(bounded.requests, 2);
+  assert.equal(bounded.cacheReuses, 1);
+});
