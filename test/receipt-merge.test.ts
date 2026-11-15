@@ -1003,3 +1003,146 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
     await f.close();
   }
 });
+
+test("caller instructions survive restart and accompany only its PR updates and confirmed merge", async () => {
+  const f = await fixture();
+  const instructions =
+    "Fix review findings; after merge pull latest and reinstall.";
+  try {
+    const observer = f.coordinator.tracking.registerAgent({
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    f.coordinator.tracking.subscribe(f.pr.id, {
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        resolve("src/cli.ts"),
+        "pr",
+        "auto-merge",
+        url,
+        "--on",
+        "--agent-id",
+        f.pr.ownerAgentId,
+        "--instructions",
+        instructions,
+        "--state",
+        f.directory,
+        "--json",
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const [code, output, error] = await Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    expect(code, error + output).toBe(0);
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
+    ).toBe(instructions);
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, observer.id),
+    ).toBeUndefined();
+    const frozen = f.coordinator.store.digests.version(
+      f.notice.digestId,
+      f.notice.revision,
+    ).body;
+    expect(frozen).not.toContain(instructions);
+    await f.reopen();
+    expect(
+      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
+    ).toBe(instructions);
+    await f.coordinator.merging.tick();
+    const pending = f.coordinator.store.tracking.inbox.list(
+      f.pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    const body = renderDigest(
+      pending,
+      f.directory,
+      "12345678",
+      f.coordinator.merging.receipts.presentation,
+    ).body;
+    expect(body.split(instructions)).toHaveLength(2);
+    f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head);
+    await f.coordinator.merging.tick();
+    expect(f.writes).toBe(1);
+    await f.coordinator.digests.flush();
+    const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    assert(digest !== undefined);
+    const delivered = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    ).body;
+    expect(delivered).toContain("GitHub confirmed merge");
+    expect(delivered).toContain(`Instructions: ${instructions}`);
+  } finally {
+    await f.close();
+  }
+});
+
+test("instruction updates and clearing do not change readiness, and invalid or non-owner configuration fails", async () => {
+  const f = await fixture();
+  try {
+    const store = f.coordinator.store.merging;
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "instructions",
+      "Review and repair actionable feedback.",
+    );
+    store.ready(url, f.pr.ownerAgentId, head);
+    const before = store.entry(url).ready;
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "replace",
+      "After merge update the local install.",
+    );
+    expect(store.entry(url).ready).toEqual(before);
+    const observer = f.coordinator.tracking.registerAgent({
+      ...owner,
+      sessionId: "instruction-observer",
+    });
+    expect(() =>
+      store.autoMerge(url, observer.id, true, "unauthorized", "Do work"),
+    ).toThrow();
+    expect(() =>
+      store.autoMerge(
+        url,
+        f.pr.ownerAgentId,
+        true,
+        "oversize",
+        "x".repeat(1001),
+      ),
+    ).toThrow();
+    store.autoMerge(url, f.pr.ownerAgentId, true, "clear", "");
+    expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
+    expect(store.entry(url).ready).toEqual(before);
+    store.autoMerge(
+      url,
+      f.pr.ownerAgentId,
+      true,
+      "restore",
+      "After merge reinstall.",
+    );
+    const assigned = f.coordinator.store.tracking.assign(f.pr.id, {
+      ...owner,
+      sessionId: "new-owner",
+    });
+    expect(
+      store.agentInstructions(f.pr.id, assigned.ownerAgentId),
+    ).toBeUndefined();
+    expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});

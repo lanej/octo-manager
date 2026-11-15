@@ -819,6 +819,10 @@
     "mergeCommit": {
       "number": 18,
       "type": "string"
+    },
+    "agentInstructions": {
+      "number": 19,
+      "type": "DomainMergeEntryAgentInstructions"
     }
   },
   "DomainMergeEntryMethod": {
@@ -2071,6 +2075,10 @@
     "mergeCommit": {
       "number": 18,
       "type": "string"
+    },
+    "agentInstructions": {
+      "number": 19,
+      "type": "DomainMergeOverviewEntriesItemAgentInstructions"
     }
   },
   "DomainMergeOverviewEntriesItemMethod": {
@@ -3669,6 +3677,10 @@
     "requestId": {
       "number": 4,
       "type": "string"
+    },
+    "instructions": {
+      "number": 5,
+      "type": "string"
     }
   },
   "QueueMergeChainRequestInput": {
@@ -3951,6 +3963,34 @@
     "cancelled": {
       "number": 10,
       "type": "enum"
+    }
+  },
+  "DomainMergeEntryAgentInstructions": {
+    "agentId": {
+      "number": 1,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 2,
+      "type": "int64"
+    },
+    "text": {
+      "number": 3,
+      "type": "string"
+    }
+  },
+  "DomainMergeOverviewEntriesItemAgentInstructions": {
+    "agentId": {
+      "number": 1,
+      "type": "string"
+    },
+    "epoch": {
+      "number": 2,
+      "type": "int64"
+    },
+    "text": {
+      "number": 3,
+      "type": "string"
     }
   }
 }

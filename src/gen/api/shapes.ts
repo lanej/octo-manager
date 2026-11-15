@@ -1081,6 +1081,26 @@ export const shapes: Record<string, Shape> = {
       }
     ]
   },
+  "DomainMergeEntryAgentInstructions": {
+    "kind": "object",
+    "fields": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "epoch",
+        "type": "int64",
+        "required": true
+      },
+      {
+        "key": "text",
+        "type": "string",
+        "required": true
+      }
+    ]
+  },
   "DomainMergeEntryMethod": {
     "kind": "enum",
     "values": [
@@ -1199,6 +1219,11 @@ export const shapes: Record<string, Shape> = {
         "key": "autoMerge",
         "type": "bool",
         "required": true
+      },
+      {
+        "key": "agentInstructions",
+        "type": "DomainMergeEntryAgentInstructions",
+        "required": false
       },
       {
         "key": "id",
@@ -2724,6 +2749,26 @@ export const shapes: Record<string, Shape> = {
     "kind": "list",
     "element": "DomainMergeOverviewChainsItem"
   },
+  "DomainMergeOverviewEntriesItemAgentInstructions": {
+    "kind": "object",
+    "fields": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true
+      },
+      {
+        "key": "epoch",
+        "type": "int64",
+        "required": true
+      },
+      {
+        "key": "text",
+        "type": "string",
+        "required": true
+      }
+    ]
+  },
   "DomainMergeOverviewEntriesItemMethod": {
     "kind": "enum",
     "values": [
@@ -2842,6 +2887,11 @@ export const shapes: Record<string, Shape> = {
         "key": "autoMerge",
         "type": "bool",
         "required": true
+      },
+      {
+        "key": "agentInstructions",
+        "type": "DomainMergeOverviewEntriesItemAgentInstructions",
+        "required": false
       },
       {
         "key": "id",
@@ -5257,6 +5307,11 @@ export const shapes: Record<string, Shape> = {
   "SetAutoMergeRequest": {
     "kind": "object",
     "fields": [
+      {
+        "key": "instructions",
+        "type": "string",
+        "required": false
+      },
       {
         "key": "pr",
         "type": "string",

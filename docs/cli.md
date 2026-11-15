@@ -23,7 +23,7 @@ Use `--state DIRECTORY` for another coordinator and `--cwd DIRECTORY` for caller
 octo-manager pr track --url https://github.com/owner/repo/pull/42 --thread-id SESSION
 octo-manager pr list
 octo-manager pr show PR_ID --full
-octo-manager pr auto-merge PR_ID --on --agent-id AGENT_ID
+octo-manager pr auto-merge PR_ID --on --agent-id AGENT_ID --instructions 'After merge, pull latest and reinstall.'
 octo-manager pr policy PR_ID --checks 'Linux checks,macOS checks' --agent-id AGENT_ID
 octo-manager activity list
 octo-manager history policy owner/repo --policy-version 2 --tier routine

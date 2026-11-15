@@ -45,6 +45,9 @@ export async function mergingCLI(
         throw new Error("Choose --on or --off");
       input = {
         op: "auto_merge",
+        ...(values.instructions === undefined
+          ? {}
+          : { instructions: values.instructions }),
         pr: id ?? "",
         enabled: values.on === true,
         actorId,

@@ -6636,6 +6636,66 @@ func (x *DomainMergeChain) GetUpdatedAt() int64 {
 	return 0
 }
 
+type DomainMergeEntryAgentInstructions struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
+	Epoch         *int64                 `protobuf:"varint,2,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
+	Text          *string                `protobuf:"bytes,3,opt,name=text,proto3,oneof" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DomainMergeEntryAgentInstructions) Reset() {
+	*x = DomainMergeEntryAgentInstructions{}
+	mi := &file_octomanager_v2_domain_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainMergeEntryAgentInstructions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainMergeEntryAgentInstructions) ProtoMessage() {}
+
+func (x *DomainMergeEntryAgentInstructions) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_domain_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainMergeEntryAgentInstructions.ProtoReflect.Descriptor instead.
+func (*DomainMergeEntryAgentInstructions) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *DomainMergeEntryAgentInstructions) GetAgentId() string {
+	if x != nil && x.AgentId != nil {
+		return *x.AgentId
+	}
+	return ""
+}
+
+func (x *DomainMergeEntryAgentInstructions) GetEpoch() int64 {
+	if x != nil && x.Epoch != nil {
+		return *x.Epoch
+	}
+	return 0
+}
+
+func (x *DomainMergeEntryAgentInstructions) GetText() string {
+	if x != nil && x.Text != nil {
+		return *x.Text
+	}
+	return ""
+}
+
 type DomainMergeEntryChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -6645,7 +6705,7 @@ type DomainMergeEntryChecks struct {
 
 func (x *DomainMergeEntryChecks) Reset() {
 	*x = DomainMergeEntryChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[35]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6657,7 +6717,7 @@ func (x *DomainMergeEntryChecks) String() string {
 func (*DomainMergeEntryChecks) ProtoMessage() {}
 
 func (x *DomainMergeEntryChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[35]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6670,7 +6730,7 @@ func (x *DomainMergeEntryChecks) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeEntryChecks.ProtoReflect.Descriptor instead.
 func (*DomainMergeEntryChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{35}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *DomainMergeEntryChecks) GetItems() []string {
@@ -6695,7 +6755,7 @@ type DomainMergeEntryReady struct {
 
 func (x *DomainMergeEntryReady) Reset() {
 	*x = DomainMergeEntryReady{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[36]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6707,7 +6767,7 @@ func (x *DomainMergeEntryReady) String() string {
 func (*DomainMergeEntryReady) ProtoMessage() {}
 
 func (x *DomainMergeEntryReady) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[36]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6720,7 +6780,7 @@ func (x *DomainMergeEntryReady) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeEntryReady.ProtoReflect.Descriptor instead.
 func (*DomainMergeEntryReady) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{36}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *DomainMergeEntryReady) GetEpoch() int64 {
@@ -6773,32 +6833,33 @@ func (x *DomainMergeEntryReady) GetAt() int64 {
 }
 
 type DomainMergeEntry struct {
-	state           protoimpl.MessageState  `protogen:"open.v1"`
-	ReceiptId       *string                 `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
-	ReceiptContext  *string                 `protobuf:"bytes,2,opt,name=receipt_context,json=receiptContext,proto3,oneof" json:"receipt_context,omitempty"`
-	AutoMerge       *bool                   `protobuf:"varint,3,opt,name=auto_merge,json=autoMerge,proto3,oneof" json:"auto_merge,omitempty"`
-	Id              *string                 `protobuf:"bytes,4,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	ChainId         *string                 `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3,oneof" json:"chain_id,omitempty"`
-	PrId            *string                 `protobuf:"bytes,6,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
-	Method          *DomainMergeEntryMethod `protobuf:"varint,7,opt,name=method,proto3,enum=octomanager.v2.DomainMergeEntryMethod,oneof" json:"method,omitempty"`
-	Checks          *DomainMergeEntryChecks `protobuf:"bytes,8,opt,name=checks,proto3" json:"checks,omitempty"`
-	NoCi            *bool                   `protobuf:"varint,9,opt,name=no_ci,json=noCi,proto3,oneof" json:"no_ci,omitempty"`
-	State           *DomainMergeEntryState  `protobuf:"varint,10,opt,name=state,proto3,enum=octomanager.v2.DomainMergeEntryState,oneof" json:"state,omitempty"`
-	Detail          *string                 `protobuf:"bytes,11,opt,name=detail,proto3,oneof" json:"detail,omitempty"`
-	Version         *int64                  `protobuf:"varint,12,opt,name=version,proto3,oneof" json:"version,omitempty"`
-	NextAt          *int64                  `protobuf:"varint,13,opt,name=next_at,json=nextAt,proto3,oneof" json:"next_at,omitempty"`
-	Ready           *DomainMergeEntryReady  `protobuf:"bytes,14,opt,name=ready,proto3" json:"ready,omitempty"`
-	PreparationHold *bool                   `protobuf:"varint,15,opt,name=preparation_hold,json=preparationHold,proto3,oneof" json:"preparation_hold,omitempty"`
-	PreparedKey     *string                 `protobuf:"bytes,16,opt,name=prepared_key,json=preparedKey,proto3,oneof" json:"prepared_key,omitempty"`
-	PreparedHead    *string                 `protobuf:"bytes,17,opt,name=prepared_head,json=preparedHead,proto3,oneof" json:"prepared_head,omitempty"`
-	MergeCommit     *string                 `protobuf:"bytes,18,opt,name=merge_commit,json=mergeCommit,proto3,oneof" json:"merge_commit,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState             `protogen:"open.v1"`
+	ReceiptId         *string                            `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
+	ReceiptContext    *string                            `protobuf:"bytes,2,opt,name=receipt_context,json=receiptContext,proto3,oneof" json:"receipt_context,omitempty"`
+	AutoMerge         *bool                              `protobuf:"varint,3,opt,name=auto_merge,json=autoMerge,proto3,oneof" json:"auto_merge,omitempty"`
+	AgentInstructions *DomainMergeEntryAgentInstructions `protobuf:"bytes,19,opt,name=agent_instructions,json=agentInstructions,proto3" json:"agent_instructions,omitempty"`
+	Id                *string                            `protobuf:"bytes,4,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	ChainId           *string                            `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3,oneof" json:"chain_id,omitempty"`
+	PrId              *string                            `protobuf:"bytes,6,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
+	Method            *DomainMergeEntryMethod            `protobuf:"varint,7,opt,name=method,proto3,enum=octomanager.v2.DomainMergeEntryMethod,oneof" json:"method,omitempty"`
+	Checks            *DomainMergeEntryChecks            `protobuf:"bytes,8,opt,name=checks,proto3" json:"checks,omitempty"`
+	NoCi              *bool                              `protobuf:"varint,9,opt,name=no_ci,json=noCi,proto3,oneof" json:"no_ci,omitempty"`
+	State             *DomainMergeEntryState             `protobuf:"varint,10,opt,name=state,proto3,enum=octomanager.v2.DomainMergeEntryState,oneof" json:"state,omitempty"`
+	Detail            *string                            `protobuf:"bytes,11,opt,name=detail,proto3,oneof" json:"detail,omitempty"`
+	Version           *int64                             `protobuf:"varint,12,opt,name=version,proto3,oneof" json:"version,omitempty"`
+	NextAt            *int64                             `protobuf:"varint,13,opt,name=next_at,json=nextAt,proto3,oneof" json:"next_at,omitempty"`
+	Ready             *DomainMergeEntryReady             `protobuf:"bytes,14,opt,name=ready,proto3" json:"ready,omitempty"`
+	PreparationHold   *bool                              `protobuf:"varint,15,opt,name=preparation_hold,json=preparationHold,proto3,oneof" json:"preparation_hold,omitempty"`
+	PreparedKey       *string                            `protobuf:"bytes,16,opt,name=prepared_key,json=preparedKey,proto3,oneof" json:"prepared_key,omitempty"`
+	PreparedHead      *string                            `protobuf:"bytes,17,opt,name=prepared_head,json=preparedHead,proto3,oneof" json:"prepared_head,omitempty"`
+	MergeCommit       *string                            `protobuf:"bytes,18,opt,name=merge_commit,json=mergeCommit,proto3,oneof" json:"merge_commit,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *DomainMergeEntry) Reset() {
 	*x = DomainMergeEntry{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[37]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6810,7 +6871,7 @@ func (x *DomainMergeEntry) String() string {
 func (*DomainMergeEntry) ProtoMessage() {}
 
 func (x *DomainMergeEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[37]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6823,7 +6884,7 @@ func (x *DomainMergeEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeEntry.ProtoReflect.Descriptor instead.
 func (*DomainMergeEntry) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{37}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *DomainMergeEntry) GetReceiptId() string {
@@ -6845,6 +6906,13 @@ func (x *DomainMergeEntry) GetAutoMerge() bool {
 		return *x.AutoMerge
 	}
 	return false
+}
+
+func (x *DomainMergeEntry) GetAgentInstructions() *DomainMergeEntryAgentInstructions {
+	if x != nil {
+		return x.AgentInstructions
+	}
+	return nil
 }
 
 func (x *DomainMergeEntry) GetId() string {
@@ -6961,7 +7029,7 @@ type DomainMergeOperationPreparationChecksItem struct {
 
 func (x *DomainMergeOperationPreparationChecksItem) Reset() {
 	*x = DomainMergeOperationPreparationChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[38]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6973,7 +7041,7 @@ func (x *DomainMergeOperationPreparationChecksItem) String() string {
 func (*DomainMergeOperationPreparationChecksItem) ProtoMessage() {}
 
 func (x *DomainMergeOperationPreparationChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[38]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6986,7 +7054,7 @@ func (x *DomainMergeOperationPreparationChecksItem) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainMergeOperationPreparationChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOperationPreparationChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{38}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *DomainMergeOperationPreparationChecksItem) GetItems() []string {
@@ -7005,7 +7073,7 @@ type DomainMergeOperationPreparationChecks struct {
 
 func (x *DomainMergeOperationPreparationChecks) Reset() {
 	*x = DomainMergeOperationPreparationChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[39]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7017,7 +7085,7 @@ func (x *DomainMergeOperationPreparationChecks) String() string {
 func (*DomainMergeOperationPreparationChecks) ProtoMessage() {}
 
 func (x *DomainMergeOperationPreparationChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[39]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7030,7 +7098,7 @@ func (x *DomainMergeOperationPreparationChecks) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use DomainMergeOperationPreparationChecks.ProtoReflect.Descriptor instead.
 func (*DomainMergeOperationPreparationChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{39}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *DomainMergeOperationPreparationChecks) GetItems() []*DomainMergeOperationPreparationChecksItem {
@@ -7049,7 +7117,7 @@ type DomainMergeOperationPreparationKey struct {
 
 func (x *DomainMergeOperationPreparationKey) Reset() {
 	*x = DomainMergeOperationPreparationKey{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[40]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7061,7 +7129,7 @@ func (x *DomainMergeOperationPreparationKey) String() string {
 func (*DomainMergeOperationPreparationKey) ProtoMessage() {}
 
 func (x *DomainMergeOperationPreparationKey) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[40]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7074,7 +7142,7 @@ func (x *DomainMergeOperationPreparationKey) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainMergeOperationPreparationKey.ProtoReflect.Descriptor instead.
 func (*DomainMergeOperationPreparationKey) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{40}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *DomainMergeOperationPreparationKey) GetItems() []string {
@@ -7099,7 +7167,7 @@ type DomainMergeOperationPreparation struct {
 
 func (x *DomainMergeOperationPreparation) Reset() {
 	*x = DomainMergeOperationPreparation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[41]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7111,7 +7179,7 @@ func (x *DomainMergeOperationPreparation) String() string {
 func (*DomainMergeOperationPreparation) ProtoMessage() {}
 
 func (x *DomainMergeOperationPreparation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[41]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7124,7 +7192,7 @@ func (x *DomainMergeOperationPreparation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOperationPreparation.ProtoReflect.Descriptor instead.
 func (*DomainMergeOperationPreparation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{41}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *DomainMergeOperationPreparation) GetKind() DomainMergeOperationPreparationKind {
@@ -7207,7 +7275,7 @@ type DomainMergeOperation struct {
 
 func (x *DomainMergeOperation) Reset() {
 	*x = DomainMergeOperation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[42]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7219,7 +7287,7 @@ func (x *DomainMergeOperation) String() string {
 func (*DomainMergeOperation) ProtoMessage() {}
 
 func (x *DomainMergeOperation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[42]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7232,7 +7300,7 @@ func (x *DomainMergeOperation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOperation.ProtoReflect.Descriptor instead.
 func (*DomainMergeOperation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{42}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *DomainMergeOperation) GetRequestId() string {
@@ -7405,7 +7473,7 @@ type DomainDependencyPreparationChecksItem struct {
 
 func (x *DomainDependencyPreparationChecksItem) Reset() {
 	*x = DomainDependencyPreparationChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[43]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7417,7 +7485,7 @@ func (x *DomainDependencyPreparationChecksItem) String() string {
 func (*DomainDependencyPreparationChecksItem) ProtoMessage() {}
 
 func (x *DomainDependencyPreparationChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[43]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7430,7 +7498,7 @@ func (x *DomainDependencyPreparationChecksItem) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use DomainDependencyPreparationChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainDependencyPreparationChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{43}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *DomainDependencyPreparationChecksItem) GetItems() []string {
@@ -7449,7 +7517,7 @@ type DomainDependencyPreparationChecks struct {
 
 func (x *DomainDependencyPreparationChecks) Reset() {
 	*x = DomainDependencyPreparationChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[44]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7461,7 +7529,7 @@ func (x *DomainDependencyPreparationChecks) String() string {
 func (*DomainDependencyPreparationChecks) ProtoMessage() {}
 
 func (x *DomainDependencyPreparationChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[44]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7474,7 +7542,7 @@ func (x *DomainDependencyPreparationChecks) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use DomainDependencyPreparationChecks.ProtoReflect.Descriptor instead.
 func (*DomainDependencyPreparationChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{44}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *DomainDependencyPreparationChecks) GetItems() []*DomainDependencyPreparationChecksItem {
@@ -7493,7 +7561,7 @@ type DomainDependencyPreparationKey struct {
 
 func (x *DomainDependencyPreparationKey) Reset() {
 	*x = DomainDependencyPreparationKey{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[45]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7505,7 +7573,7 @@ func (x *DomainDependencyPreparationKey) String() string {
 func (*DomainDependencyPreparationKey) ProtoMessage() {}
 
 func (x *DomainDependencyPreparationKey) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[45]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7518,7 +7586,7 @@ func (x *DomainDependencyPreparationKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDependencyPreparationKey.ProtoReflect.Descriptor instead.
 func (*DomainDependencyPreparationKey) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{45}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *DomainDependencyPreparationKey) GetItems() []string {
@@ -7543,7 +7611,7 @@ type DomainDependencyPreparation struct {
 
 func (x *DomainDependencyPreparation) Reset() {
 	*x = DomainDependencyPreparation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[46]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7555,7 +7623,7 @@ func (x *DomainDependencyPreparation) String() string {
 func (*DomainDependencyPreparation) ProtoMessage() {}
 
 func (x *DomainDependencyPreparation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[46]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7568,7 +7636,7 @@ func (x *DomainDependencyPreparation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDependencyPreparation.ProtoReflect.Descriptor instead.
 func (*DomainDependencyPreparation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{46}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *DomainDependencyPreparation) GetKind() DomainDependencyPreparationKind {
@@ -7638,7 +7706,7 @@ type DomainDependency struct {
 
 func (x *DomainDependency) Reset() {
 	*x = DomainDependency{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[47]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7650,7 +7718,7 @@ func (x *DomainDependency) String() string {
 func (*DomainDependency) ProtoMessage() {}
 
 func (x *DomainDependency) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[47]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7663,7 +7731,7 @@ func (x *DomainDependency) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDependency.ProtoReflect.Descriptor instead.
 func (*DomainDependency) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{47}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *DomainDependency) GetId() string {
@@ -7757,7 +7825,7 @@ type DomainPRReference struct {
 
 func (x *DomainPRReference) Reset() {
 	*x = DomainPRReference{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[48]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7769,7 +7837,7 @@ func (x *DomainPRReference) String() string {
 func (*DomainPRReference) ProtoMessage() {}
 
 func (x *DomainPRReference) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[48]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7782,7 +7850,7 @@ func (x *DomainPRReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainPRReference.ProtoReflect.Descriptor instead.
 func (*DomainPRReference) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{48}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *DomainPRReference) GetId() string {
@@ -7885,7 +7953,7 @@ type DomainQueueInputEntriesItemChecks struct {
 
 func (x *DomainQueueInputEntriesItemChecks) Reset() {
 	*x = DomainQueueInputEntriesItemChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[49]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7897,7 +7965,7 @@ func (x *DomainQueueInputEntriesItemChecks) String() string {
 func (*DomainQueueInputEntriesItemChecks) ProtoMessage() {}
 
 func (x *DomainQueueInputEntriesItemChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[49]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7910,7 +7978,7 @@ func (x *DomainQueueInputEntriesItemChecks) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use DomainQueueInputEntriesItemChecks.ProtoReflect.Descriptor instead.
 func (*DomainQueueInputEntriesItemChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{49}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *DomainQueueInputEntriesItemChecks) GetItems() []string {
@@ -7932,7 +8000,7 @@ type DomainQueueInputEntriesItem struct {
 
 func (x *DomainQueueInputEntriesItem) Reset() {
 	*x = DomainQueueInputEntriesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[50]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7944,7 +8012,7 @@ func (x *DomainQueueInputEntriesItem) String() string {
 func (*DomainQueueInputEntriesItem) ProtoMessage() {}
 
 func (x *DomainQueueInputEntriesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[50]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7957,7 +8025,7 @@ func (x *DomainQueueInputEntriesItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainQueueInputEntriesItem.ProtoReflect.Descriptor instead.
 func (*DomainQueueInputEntriesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{50}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *DomainQueueInputEntriesItem) GetPrUrl() string {
@@ -7997,7 +8065,7 @@ type DomainQueueInputEntries struct {
 
 func (x *DomainQueueInputEntries) Reset() {
 	*x = DomainQueueInputEntries{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[51]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8009,7 +8077,7 @@ func (x *DomainQueueInputEntries) String() string {
 func (*DomainQueueInputEntries) ProtoMessage() {}
 
 func (x *DomainQueueInputEntries) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[51]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8022,7 +8090,7 @@ func (x *DomainQueueInputEntries) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainQueueInputEntries.ProtoReflect.Descriptor instead.
 func (*DomainQueueInputEntries) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{51}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *DomainQueueInputEntries) GetItems() []*DomainQueueInputEntriesItem {
@@ -8043,7 +8111,7 @@ type DomainQueueInput struct {
 
 func (x *DomainQueueInput) Reset() {
 	*x = DomainQueueInput{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[52]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8055,7 +8123,7 @@ func (x *DomainQueueInput) String() string {
 func (*DomainQueueInput) ProtoMessage() {}
 
 func (x *DomainQueueInput) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[52]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8068,7 +8136,7 @@ func (x *DomainQueueInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainQueueInput.ProtoReflect.Descriptor instead.
 func (*DomainQueueInput) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{52}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *DomainQueueInput) GetRequestId() string {
@@ -8108,7 +8176,7 @@ type DomainReceiptTarget struct {
 
 func (x *DomainReceiptTarget) Reset() {
 	*x = DomainReceiptTarget{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[53]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8120,7 +8188,7 @@ func (x *DomainReceiptTarget) String() string {
 func (*DomainReceiptTarget) ProtoMessage() {}
 
 func (x *DomainReceiptTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[53]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8133,7 +8201,7 @@ func (x *DomainReceiptTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainReceiptTarget.ProtoReflect.Descriptor instead.
 func (*DomainReceiptTarget) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{53}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *DomainReceiptTarget) GetPrId() string {
@@ -8202,7 +8270,7 @@ type DomainAgentDigestTransport struct {
 
 func (x *DomainAgentDigestTransport) Reset() {
 	*x = DomainAgentDigestTransport{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[54]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8214,7 +8282,7 @@ func (x *DomainAgentDigestTransport) String() string {
 func (*DomainAgentDigestTransport) ProtoMessage() {}
 
 func (x *DomainAgentDigestTransport) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[54]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8227,7 +8295,7 @@ func (x *DomainAgentDigestTransport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainAgentDigestTransport.ProtoReflect.Descriptor instead.
 func (*DomainAgentDigestTransport) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{54}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *DomainAgentDigestTransport) GetKind() DomainAgentDigestTransportKind {
@@ -8263,7 +8331,7 @@ type DomainAgentDigest struct {
 
 func (x *DomainAgentDigest) Reset() {
 	*x = DomainAgentDigest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[55]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8275,7 +8343,7 @@ func (x *DomainAgentDigest) String() string {
 func (*DomainAgentDigest) ProtoMessage() {}
 
 func (x *DomainAgentDigest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[55]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8288,7 +8356,7 @@ func (x *DomainAgentDigest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainAgentDigest.ProtoReflect.Descriptor instead.
 func (*DomainAgentDigest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{55}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *DomainAgentDigest) GetTransport() *DomainAgentDigestTransport {
@@ -8384,7 +8452,7 @@ type DomainDigestRevisionMergeTarget struct {
 
 func (x *DomainDigestRevisionMergeTarget) Reset() {
 	*x = DomainDigestRevisionMergeTarget{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[56]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8396,7 +8464,7 @@ func (x *DomainDigestRevisionMergeTarget) String() string {
 func (*DomainDigestRevisionMergeTarget) ProtoMessage() {}
 
 func (x *DomainDigestRevisionMergeTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[56]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8409,7 +8477,7 @@ func (x *DomainDigestRevisionMergeTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestRevisionMergeTarget.ProtoReflect.Descriptor instead.
 func (*DomainDigestRevisionMergeTarget) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{56}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *DomainDigestRevisionMergeTarget) GetPrId() string {
@@ -8477,7 +8545,7 @@ type DomainDigestRevisionMessageIds struct {
 
 func (x *DomainDigestRevisionMessageIds) Reset() {
 	*x = DomainDigestRevisionMessageIds{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[57]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8489,7 +8557,7 @@ func (x *DomainDigestRevisionMessageIds) String() string {
 func (*DomainDigestRevisionMessageIds) ProtoMessage() {}
 
 func (x *DomainDigestRevisionMessageIds) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[57]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8502,7 +8570,7 @@ func (x *DomainDigestRevisionMessageIds) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestRevisionMessageIds.ProtoReflect.Descriptor instead.
 func (*DomainDigestRevisionMessageIds) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{57}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *DomainDigestRevisionMessageIds) GetItems() []string {
@@ -8527,7 +8595,7 @@ type DomainDigestRevision struct {
 
 func (x *DomainDigestRevision) Reset() {
 	*x = DomainDigestRevision{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[58]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8539,7 +8607,7 @@ func (x *DomainDigestRevision) String() string {
 func (*DomainDigestRevision) ProtoMessage() {}
 
 func (x *DomainDigestRevision) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[58]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8552,7 +8620,7 @@ func (x *DomainDigestRevision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestRevision.ProtoReflect.Descriptor instead.
 func (*DomainDigestRevision) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{58}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *DomainDigestRevision) GetDispatchId() string {
@@ -8614,7 +8682,7 @@ type DomainDigestInspectionDigestTransport struct {
 
 func (x *DomainDigestInspectionDigestTransport) Reset() {
 	*x = DomainDigestInspectionDigestTransport{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[59]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8626,7 +8694,7 @@ func (x *DomainDigestInspectionDigestTransport) String() string {
 func (*DomainDigestInspectionDigestTransport) ProtoMessage() {}
 
 func (x *DomainDigestInspectionDigestTransport) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[59]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8639,7 +8707,7 @@ func (x *DomainDigestInspectionDigestTransport) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use DomainDigestInspectionDigestTransport.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionDigestTransport) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{59}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *DomainDigestInspectionDigestTransport) GetKind() DomainDigestInspectionDigestTransportKind {
@@ -8675,7 +8743,7 @@ type DomainDigestInspectionDigest struct {
 
 func (x *DomainDigestInspectionDigest) Reset() {
 	*x = DomainDigestInspectionDigest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[60]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8687,7 +8755,7 @@ func (x *DomainDigestInspectionDigest) String() string {
 func (*DomainDigestInspectionDigest) ProtoMessage() {}
 
 func (x *DomainDigestInspectionDigest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[60]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8700,7 +8768,7 @@ func (x *DomainDigestInspectionDigest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionDigest.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionDigest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{60}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *DomainDigestInspectionDigest) GetTransport() *DomainDigestInspectionDigestTransport {
@@ -8796,7 +8864,7 @@ type DomainDigestInspectionRevisionMergeTarget struct {
 
 func (x *DomainDigestInspectionRevisionMergeTarget) Reset() {
 	*x = DomainDigestInspectionRevisionMergeTarget{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[61]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8808,7 +8876,7 @@ func (x *DomainDigestInspectionRevisionMergeTarget) String() string {
 func (*DomainDigestInspectionRevisionMergeTarget) ProtoMessage() {}
 
 func (x *DomainDigestInspectionRevisionMergeTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[61]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8821,7 +8889,7 @@ func (x *DomainDigestInspectionRevisionMergeTarget) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainDigestInspectionRevisionMergeTarget.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionRevisionMergeTarget) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{61}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *DomainDigestInspectionRevisionMergeTarget) GetPrId() string {
@@ -8889,7 +8957,7 @@ type DomainDigestInspectionRevisionMessageIds struct {
 
 func (x *DomainDigestInspectionRevisionMessageIds) Reset() {
 	*x = DomainDigestInspectionRevisionMessageIds{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[62]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8901,7 +8969,7 @@ func (x *DomainDigestInspectionRevisionMessageIds) String() string {
 func (*DomainDigestInspectionRevisionMessageIds) ProtoMessage() {}
 
 func (x *DomainDigestInspectionRevisionMessageIds) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[62]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8914,7 +8982,7 @@ func (x *DomainDigestInspectionRevisionMessageIds) ProtoReflect() protoreflect.M
 
 // Deprecated: Use DomainDigestInspectionRevisionMessageIds.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionRevisionMessageIds) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{62}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *DomainDigestInspectionRevisionMessageIds) GetItems() []string {
@@ -8939,7 +9007,7 @@ type DomainDigestInspectionRevision struct {
 
 func (x *DomainDigestInspectionRevision) Reset() {
 	*x = DomainDigestInspectionRevision{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[63]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8951,7 +9019,7 @@ func (x *DomainDigestInspectionRevision) String() string {
 func (*DomainDigestInspectionRevision) ProtoMessage() {}
 
 func (x *DomainDigestInspectionRevision) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[63]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8964,7 +9032,7 @@ func (x *DomainDigestInspectionRevision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionRevision.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionRevision) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{63}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *DomainDigestInspectionRevision) GetDispatchId() string {
@@ -9025,7 +9093,7 @@ type DomainDigestInspectionRevisions struct {
 
 func (x *DomainDigestInspectionRevisions) Reset() {
 	*x = DomainDigestInspectionRevisions{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[64]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9037,7 +9105,7 @@ func (x *DomainDigestInspectionRevisions) String() string {
 func (*DomainDigestInspectionRevisions) ProtoMessage() {}
 
 func (x *DomainDigestInspectionRevisions) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[64]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9050,7 +9118,7 @@ func (x *DomainDigestInspectionRevisions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionRevisions.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionRevisions) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{64}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *DomainDigestInspectionRevisions) GetItems() []int64 {
@@ -9071,7 +9139,7 @@ type DomainDigestInspectionReceiptsItem struct {
 
 func (x *DomainDigestInspectionReceiptsItem) Reset() {
 	*x = DomainDigestInspectionReceiptsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[65]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9083,7 +9151,7 @@ func (x *DomainDigestInspectionReceiptsItem) String() string {
 func (*DomainDigestInspectionReceiptsItem) ProtoMessage() {}
 
 func (x *DomainDigestInspectionReceiptsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[65]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9096,7 +9164,7 @@ func (x *DomainDigestInspectionReceiptsItem) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainDigestInspectionReceiptsItem.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionReceiptsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{65}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *DomainDigestInspectionReceiptsItem) GetAgentId() string {
@@ -9129,7 +9197,7 @@ type DomainDigestInspectionReceipts struct {
 
 func (x *DomainDigestInspectionReceipts) Reset() {
 	*x = DomainDigestInspectionReceipts{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[66]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9141,7 +9209,7 @@ func (x *DomainDigestInspectionReceipts) String() string {
 func (*DomainDigestInspectionReceipts) ProtoMessage() {}
 
 func (x *DomainDigestInspectionReceipts) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[66]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9154,7 +9222,7 @@ func (x *DomainDigestInspectionReceipts) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionReceipts.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionReceipts) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{66}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *DomainDigestInspectionReceipts) GetItems() []*DomainDigestInspectionReceiptsItem {
@@ -9173,7 +9241,7 @@ type DomainDigestInspectionEventsItemDetailMessages struct {
 
 func (x *DomainDigestInspectionEventsItemDetailMessages) Reset() {
 	*x = DomainDigestInspectionEventsItemDetailMessages{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[67]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9185,7 +9253,7 @@ func (x *DomainDigestInspectionEventsItemDetailMessages) String() string {
 func (*DomainDigestInspectionEventsItemDetailMessages) ProtoMessage() {}
 
 func (x *DomainDigestInspectionEventsItemDetailMessages) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[67]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9198,7 +9266,7 @@ func (x *DomainDigestInspectionEventsItemDetailMessages) ProtoReflect() protoref
 
 // Deprecated: Use DomainDigestInspectionEventsItemDetailMessages.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionEventsItemDetailMessages) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{67}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *DomainDigestInspectionEventsItemDetailMessages) GetItems() []string {
@@ -9217,7 +9285,7 @@ type DomainDigestInspectionEventsItemDetailOmittedFields struct {
 
 func (x *DomainDigestInspectionEventsItemDetailOmittedFields) Reset() {
 	*x = DomainDigestInspectionEventsItemDetailOmittedFields{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[68]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9229,7 +9297,7 @@ func (x *DomainDigestInspectionEventsItemDetailOmittedFields) String() string {
 func (*DomainDigestInspectionEventsItemDetailOmittedFields) ProtoMessage() {}
 
 func (x *DomainDigestInspectionEventsItemDetailOmittedFields) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[68]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9242,7 +9310,7 @@ func (x *DomainDigestInspectionEventsItemDetailOmittedFields) ProtoReflect() pro
 
 // Deprecated: Use DomainDigestInspectionEventsItemDetailOmittedFields.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionEventsItemDetailOmittedFields) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{68}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *DomainDigestInspectionEventsItemDetailOmittedFields) GetItems() []string {
@@ -9277,7 +9345,7 @@ type DomainDigestInspectionEventsItemDetail struct {
 
 func (x *DomainDigestInspectionEventsItemDetail) Reset() {
 	*x = DomainDigestInspectionEventsItemDetail{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[69]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9289,7 +9357,7 @@ func (x *DomainDigestInspectionEventsItemDetail) String() string {
 func (*DomainDigestInspectionEventsItemDetail) ProtoMessage() {}
 
 func (x *DomainDigestInspectionEventsItemDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[69]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9302,7 +9370,7 @@ func (x *DomainDigestInspectionEventsItemDetail) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use DomainDigestInspectionEventsItemDetail.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionEventsItemDetail) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{69}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *DomainDigestInspectionEventsItemDetail) GetReason() string {
@@ -9438,7 +9506,7 @@ type DomainDigestInspectionEventsItem struct {
 
 func (x *DomainDigestInspectionEventsItem) Reset() {
 	*x = DomainDigestInspectionEventsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[70]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9450,7 +9518,7 @@ func (x *DomainDigestInspectionEventsItem) String() string {
 func (*DomainDigestInspectionEventsItem) ProtoMessage() {}
 
 func (x *DomainDigestInspectionEventsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[70]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9463,7 +9531,7 @@ func (x *DomainDigestInspectionEventsItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionEventsItem.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionEventsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{70}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *DomainDigestInspectionEventsItem) GetSequence() int64 {
@@ -9517,7 +9585,7 @@ type DomainDigestInspectionEvents struct {
 
 func (x *DomainDigestInspectionEvents) Reset() {
 	*x = DomainDigestInspectionEvents{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[71]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9529,7 +9597,7 @@ func (x *DomainDigestInspectionEvents) String() string {
 func (*DomainDigestInspectionEvents) ProtoMessage() {}
 
 func (x *DomainDigestInspectionEvents) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[71]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9542,7 +9610,7 @@ func (x *DomainDigestInspectionEvents) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspectionEvents.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspectionEvents) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{71}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *DomainDigestInspectionEvents) GetItems() []*DomainDigestInspectionEventsItem {
@@ -9565,7 +9633,7 @@ type DomainDigestInspection struct {
 
 func (x *DomainDigestInspection) Reset() {
 	*x = DomainDigestInspection{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[72]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9577,7 +9645,7 @@ func (x *DomainDigestInspection) String() string {
 func (*DomainDigestInspection) ProtoMessage() {}
 
 func (x *DomainDigestInspection) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[72]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9590,7 +9658,7 @@ func (x *DomainDigestInspection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestInspection.ProtoReflect.Descriptor instead.
 func (*DomainDigestInspection) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{72}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *DomainDigestInspection) GetDigest() *DomainDigestInspectionDigest {
@@ -9641,7 +9709,7 @@ type DomainDigestReceipt struct {
 
 func (x *DomainDigestReceipt) Reset() {
 	*x = DomainDigestReceipt{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[73]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9653,7 +9721,7 @@ func (x *DomainDigestReceipt) String() string {
 func (*DomainDigestReceipt) ProtoMessage() {}
 
 func (x *DomainDigestReceipt) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[73]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9666,7 +9734,7 @@ func (x *DomainDigestReceipt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainDigestReceipt.ProtoReflect.Descriptor instead.
 func (*DomainDigestReceipt) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{73}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *DomainDigestReceipt) GetId() string {
@@ -9719,7 +9787,7 @@ type DomainMergeReceiptResult struct {
 
 func (x *DomainMergeReceiptResult) Reset() {
 	*x = DomainMergeReceiptResult{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[74]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9731,7 +9799,7 @@ func (x *DomainMergeReceiptResult) String() string {
 func (*DomainMergeReceiptResult) ProtoMessage() {}
 
 func (x *DomainMergeReceiptResult) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[74]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9744,7 +9812,7 @@ func (x *DomainMergeReceiptResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeReceiptResult.ProtoReflect.Descriptor instead.
 func (*DomainMergeReceiptResult) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{74}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *DomainMergeReceiptResult) GetReceipt() string {
@@ -9811,7 +9879,7 @@ type DomainMergeOverviewChainsItem struct {
 
 func (x *DomainMergeOverviewChainsItem) Reset() {
 	*x = DomainMergeOverviewChainsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[75]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9823,7 +9891,7 @@ func (x *DomainMergeOverviewChainsItem) String() string {
 func (*DomainMergeOverviewChainsItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewChainsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[75]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9836,7 +9904,7 @@ func (x *DomainMergeOverviewChainsItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewChainsItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewChainsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{75}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *DomainMergeOverviewChainsItem) GetId() string {
@@ -9897,7 +9965,7 @@ type DomainMergeOverviewChains struct {
 
 func (x *DomainMergeOverviewChains) Reset() {
 	*x = DomainMergeOverviewChains{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[76]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9909,7 +9977,7 @@ func (x *DomainMergeOverviewChains) String() string {
 func (*DomainMergeOverviewChains) ProtoMessage() {}
 
 func (x *DomainMergeOverviewChains) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[76]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9922,7 +9990,7 @@ func (x *DomainMergeOverviewChains) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewChains.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewChains) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{76}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *DomainMergeOverviewChains) GetItems() []*DomainMergeOverviewChainsItem {
@@ -9930,6 +9998,66 @@ func (x *DomainMergeOverviewChains) GetItems() []*DomainMergeOverviewChainsItem 
 		return x.Items
 	}
 	return nil
+}
+
+type DomainMergeOverviewEntriesItemAgentInstructions struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
+	Epoch         *int64                 `protobuf:"varint,2,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
+	Text          *string                `protobuf:"bytes,3,opt,name=text,proto3,oneof" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) Reset() {
+	*x = DomainMergeOverviewEntriesItemAgentInstructions{}
+	mi := &file_octomanager_v2_domain_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainMergeOverviewEntriesItemAgentInstructions) ProtoMessage() {}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_domain_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainMergeOverviewEntriesItemAgentInstructions.ProtoReflect.Descriptor instead.
+func (*DomainMergeOverviewEntriesItemAgentInstructions) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) GetAgentId() string {
+	if x != nil && x.AgentId != nil {
+		return *x.AgentId
+	}
+	return ""
+}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) GetEpoch() int64 {
+	if x != nil && x.Epoch != nil {
+		return *x.Epoch
+	}
+	return 0
+}
+
+func (x *DomainMergeOverviewEntriesItemAgentInstructions) GetText() string {
+	if x != nil && x.Text != nil {
+		return *x.Text
+	}
+	return ""
 }
 
 type DomainMergeOverviewEntriesItemChecks struct {
@@ -9941,7 +10069,7 @@ type DomainMergeOverviewEntriesItemChecks struct {
 
 func (x *DomainMergeOverviewEntriesItemChecks) Reset() {
 	*x = DomainMergeOverviewEntriesItemChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[77]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9953,7 +10081,7 @@ func (x *DomainMergeOverviewEntriesItemChecks) String() string {
 func (*DomainMergeOverviewEntriesItemChecks) ProtoMessage() {}
 
 func (x *DomainMergeOverviewEntriesItemChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[77]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9966,7 +10094,7 @@ func (x *DomainMergeOverviewEntriesItemChecks) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use DomainMergeOverviewEntriesItemChecks.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewEntriesItemChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{77}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *DomainMergeOverviewEntriesItemChecks) GetItems() []string {
@@ -9991,7 +10119,7 @@ type DomainMergeOverviewEntriesItemReady struct {
 
 func (x *DomainMergeOverviewEntriesItemReady) Reset() {
 	*x = DomainMergeOverviewEntriesItemReady{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[78]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10003,7 +10131,7 @@ func (x *DomainMergeOverviewEntriesItemReady) String() string {
 func (*DomainMergeOverviewEntriesItemReady) ProtoMessage() {}
 
 func (x *DomainMergeOverviewEntriesItemReady) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[78]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10016,7 +10144,7 @@ func (x *DomainMergeOverviewEntriesItemReady) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use DomainMergeOverviewEntriesItemReady.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewEntriesItemReady) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{78}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *DomainMergeOverviewEntriesItemReady) GetEpoch() int64 {
@@ -10069,32 +10197,33 @@ func (x *DomainMergeOverviewEntriesItemReady) GetAt() int64 {
 }
 
 type DomainMergeOverviewEntriesItem struct {
-	state           protoimpl.MessageState                `protogen:"open.v1"`
-	ReceiptId       *string                               `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
-	ReceiptContext  *string                               `protobuf:"bytes,2,opt,name=receipt_context,json=receiptContext,proto3,oneof" json:"receipt_context,omitempty"`
-	AutoMerge       *bool                                 `protobuf:"varint,3,opt,name=auto_merge,json=autoMerge,proto3,oneof" json:"auto_merge,omitempty"`
-	Id              *string                               `protobuf:"bytes,4,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	ChainId         *string                               `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3,oneof" json:"chain_id,omitempty"`
-	PrId            *string                               `protobuf:"bytes,6,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
-	Method          *DomainMergeOverviewEntriesItemMethod `protobuf:"varint,7,opt,name=method,proto3,enum=octomanager.v2.DomainMergeOverviewEntriesItemMethod,oneof" json:"method,omitempty"`
-	Checks          *DomainMergeOverviewEntriesItemChecks `protobuf:"bytes,8,opt,name=checks,proto3" json:"checks,omitempty"`
-	NoCi            *bool                                 `protobuf:"varint,9,opt,name=no_ci,json=noCi,proto3,oneof" json:"no_ci,omitempty"`
-	State           *DomainMergeOverviewEntriesItemState  `protobuf:"varint,10,opt,name=state,proto3,enum=octomanager.v2.DomainMergeOverviewEntriesItemState,oneof" json:"state,omitempty"`
-	Detail          *string                               `protobuf:"bytes,11,opt,name=detail,proto3,oneof" json:"detail,omitempty"`
-	Version         *int64                                `protobuf:"varint,12,opt,name=version,proto3,oneof" json:"version,omitempty"`
-	NextAt          *int64                                `protobuf:"varint,13,opt,name=next_at,json=nextAt,proto3,oneof" json:"next_at,omitempty"`
-	Ready           *DomainMergeOverviewEntriesItemReady  `protobuf:"bytes,14,opt,name=ready,proto3" json:"ready,omitempty"`
-	PreparationHold *bool                                 `protobuf:"varint,15,opt,name=preparation_hold,json=preparationHold,proto3,oneof" json:"preparation_hold,omitempty"`
-	PreparedKey     *string                               `protobuf:"bytes,16,opt,name=prepared_key,json=preparedKey,proto3,oneof" json:"prepared_key,omitempty"`
-	PreparedHead    *string                               `protobuf:"bytes,17,opt,name=prepared_head,json=preparedHead,proto3,oneof" json:"prepared_head,omitempty"`
-	MergeCommit     *string                               `protobuf:"bytes,18,opt,name=merge_commit,json=mergeCommit,proto3,oneof" json:"merge_commit,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState                           `protogen:"open.v1"`
+	ReceiptId         *string                                          `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
+	ReceiptContext    *string                                          `protobuf:"bytes,2,opt,name=receipt_context,json=receiptContext,proto3,oneof" json:"receipt_context,omitempty"`
+	AutoMerge         *bool                                            `protobuf:"varint,3,opt,name=auto_merge,json=autoMerge,proto3,oneof" json:"auto_merge,omitempty"`
+	AgentInstructions *DomainMergeOverviewEntriesItemAgentInstructions `protobuf:"bytes,19,opt,name=agent_instructions,json=agentInstructions,proto3" json:"agent_instructions,omitempty"`
+	Id                *string                                          `protobuf:"bytes,4,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	ChainId           *string                                          `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3,oneof" json:"chain_id,omitempty"`
+	PrId              *string                                          `protobuf:"bytes,6,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
+	Method            *DomainMergeOverviewEntriesItemMethod            `protobuf:"varint,7,opt,name=method,proto3,enum=octomanager.v2.DomainMergeOverviewEntriesItemMethod,oneof" json:"method,omitempty"`
+	Checks            *DomainMergeOverviewEntriesItemChecks            `protobuf:"bytes,8,opt,name=checks,proto3" json:"checks,omitempty"`
+	NoCi              *bool                                            `protobuf:"varint,9,opt,name=no_ci,json=noCi,proto3,oneof" json:"no_ci,omitempty"`
+	State             *DomainMergeOverviewEntriesItemState             `protobuf:"varint,10,opt,name=state,proto3,enum=octomanager.v2.DomainMergeOverviewEntriesItemState,oneof" json:"state,omitempty"`
+	Detail            *string                                          `protobuf:"bytes,11,opt,name=detail,proto3,oneof" json:"detail,omitempty"`
+	Version           *int64                                           `protobuf:"varint,12,opt,name=version,proto3,oneof" json:"version,omitempty"`
+	NextAt            *int64                                           `protobuf:"varint,13,opt,name=next_at,json=nextAt,proto3,oneof" json:"next_at,omitempty"`
+	Ready             *DomainMergeOverviewEntriesItemReady             `protobuf:"bytes,14,opt,name=ready,proto3" json:"ready,omitempty"`
+	PreparationHold   *bool                                            `protobuf:"varint,15,opt,name=preparation_hold,json=preparationHold,proto3,oneof" json:"preparation_hold,omitempty"`
+	PreparedKey       *string                                          `protobuf:"bytes,16,opt,name=prepared_key,json=preparedKey,proto3,oneof" json:"prepared_key,omitempty"`
+	PreparedHead      *string                                          `protobuf:"bytes,17,opt,name=prepared_head,json=preparedHead,proto3,oneof" json:"prepared_head,omitempty"`
+	MergeCommit       *string                                          `protobuf:"bytes,18,opt,name=merge_commit,json=mergeCommit,proto3,oneof" json:"merge_commit,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *DomainMergeOverviewEntriesItem) Reset() {
 	*x = DomainMergeOverviewEntriesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[79]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10106,7 +10235,7 @@ func (x *DomainMergeOverviewEntriesItem) String() string {
 func (*DomainMergeOverviewEntriesItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewEntriesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[79]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10119,7 +10248,7 @@ func (x *DomainMergeOverviewEntriesItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewEntriesItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewEntriesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{79}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *DomainMergeOverviewEntriesItem) GetReceiptId() string {
@@ -10141,6 +10270,13 @@ func (x *DomainMergeOverviewEntriesItem) GetAutoMerge() bool {
 		return *x.AutoMerge
 	}
 	return false
+}
+
+func (x *DomainMergeOverviewEntriesItem) GetAgentInstructions() *DomainMergeOverviewEntriesItemAgentInstructions {
+	if x != nil {
+		return x.AgentInstructions
+	}
+	return nil
 }
 
 func (x *DomainMergeOverviewEntriesItem) GetId() string {
@@ -10257,7 +10393,7 @@ type DomainMergeOverviewEntries struct {
 
 func (x *DomainMergeOverviewEntries) Reset() {
 	*x = DomainMergeOverviewEntries{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[80]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10269,7 +10405,7 @@ func (x *DomainMergeOverviewEntries) String() string {
 func (*DomainMergeOverviewEntries) ProtoMessage() {}
 
 func (x *DomainMergeOverviewEntries) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[80]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10282,7 +10418,7 @@ func (x *DomainMergeOverviewEntries) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewEntries.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewEntries) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{80}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *DomainMergeOverviewEntries) GetItems() []*DomainMergeOverviewEntriesItem {
@@ -10301,7 +10437,7 @@ type DomainMergeOverviewOperationsItemPreparationChecksItem struct {
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) Reset() {
 	*x = DomainMergeOverviewOperationsItemPreparationChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[81]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10313,7 +10449,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) String() string
 func (*DomainMergeOverviewOperationsItemPreparationChecksItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[81]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10326,7 +10462,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) ProtoReflect() 
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPreparationChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperationsItemPreparationChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{81}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) GetItems() []string {
@@ -10345,7 +10481,7 @@ type DomainMergeOverviewOperationsItemPreparationChecks struct {
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecks) Reset() {
 	*x = DomainMergeOverviewOperationsItemPreparationChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[82]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10357,7 +10493,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecks) String() string {
 func (*DomainMergeOverviewOperationsItemPreparationChecks) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[82]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10370,7 +10506,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecks) ProtoReflect() prot
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPreparationChecks.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperationsItemPreparationChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{82}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *DomainMergeOverviewOperationsItemPreparationChecks) GetItems() []*DomainMergeOverviewOperationsItemPreparationChecksItem {
@@ -10389,7 +10525,7 @@ type DomainMergeOverviewOperationsItemPreparationKey struct {
 
 func (x *DomainMergeOverviewOperationsItemPreparationKey) Reset() {
 	*x = DomainMergeOverviewOperationsItemPreparationKey{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[83]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10401,7 +10537,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationKey) String() string {
 func (*DomainMergeOverviewOperationsItemPreparationKey) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperationsItemPreparationKey) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[83]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10414,7 +10550,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationKey) ProtoReflect() protore
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPreparationKey.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperationsItemPreparationKey) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{83}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *DomainMergeOverviewOperationsItemPreparationKey) GetItems() []string {
@@ -10439,7 +10575,7 @@ type DomainMergeOverviewOperationsItemPreparation struct {
 
 func (x *DomainMergeOverviewOperationsItemPreparation) Reset() {
 	*x = DomainMergeOverviewOperationsItemPreparation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[84]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10451,7 +10587,7 @@ func (x *DomainMergeOverviewOperationsItemPreparation) String() string {
 func (*DomainMergeOverviewOperationsItemPreparation) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperationsItemPreparation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[84]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10464,7 +10600,7 @@ func (x *DomainMergeOverviewOperationsItemPreparation) ProtoReflect() protorefle
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPreparation.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperationsItemPreparation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{84}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *DomainMergeOverviewOperationsItemPreparation) GetKind() DomainMergeOverviewOperationsItemPreparationKind {
@@ -10547,7 +10683,7 @@ type DomainMergeOverviewOperationsItem struct {
 
 func (x *DomainMergeOverviewOperationsItem) Reset() {
 	*x = DomainMergeOverviewOperationsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[85]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10559,7 +10695,7 @@ func (x *DomainMergeOverviewOperationsItem) String() string {
 func (*DomainMergeOverviewOperationsItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperationsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[85]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10572,7 +10708,7 @@ func (x *DomainMergeOverviewOperationsItem) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use DomainMergeOverviewOperationsItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperationsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{85}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *DomainMergeOverviewOperationsItem) GetRequestId() string {
@@ -10745,7 +10881,7 @@ type DomainMergeOverviewOperations struct {
 
 func (x *DomainMergeOverviewOperations) Reset() {
 	*x = DomainMergeOverviewOperations{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[86]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10757,7 +10893,7 @@ func (x *DomainMergeOverviewOperations) String() string {
 func (*DomainMergeOverviewOperations) ProtoMessage() {}
 
 func (x *DomainMergeOverviewOperations) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[86]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10770,7 +10906,7 @@ func (x *DomainMergeOverviewOperations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewOperations.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewOperations) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{86}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *DomainMergeOverviewOperations) GetItems() []*DomainMergeOverviewOperationsItem {
@@ -10789,7 +10925,7 @@ type DomainMergeOverviewDependenciesItemPreparationChecksItem struct {
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) Reset() {
 	*x = DomainMergeOverviewDependenciesItemPreparationChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[87]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10801,7 +10937,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) String() stri
 func (*DomainMergeOverviewDependenciesItemPreparationChecksItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[87]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10814,7 +10950,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) ProtoReflect(
 
 // Deprecated: Use DomainMergeOverviewDependenciesItemPreparationChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependenciesItemPreparationChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{87}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) GetItems() []string {
@@ -10833,7 +10969,7 @@ type DomainMergeOverviewDependenciesItemPreparationChecks struct {
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecks) Reset() {
 	*x = DomainMergeOverviewDependenciesItemPreparationChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[88]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10845,7 +10981,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecks) String() string {
 func (*DomainMergeOverviewDependenciesItemPreparationChecks) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[88]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10858,7 +10994,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecks) ProtoReflect() pr
 
 // Deprecated: Use DomainMergeOverviewDependenciesItemPreparationChecks.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependenciesItemPreparationChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{88}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *DomainMergeOverviewDependenciesItemPreparationChecks) GetItems() []*DomainMergeOverviewDependenciesItemPreparationChecksItem {
@@ -10877,7 +11013,7 @@ type DomainMergeOverviewDependenciesItemPreparationKey struct {
 
 func (x *DomainMergeOverviewDependenciesItemPreparationKey) Reset() {
 	*x = DomainMergeOverviewDependenciesItemPreparationKey{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[89]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10889,7 +11025,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationKey) String() string {
 func (*DomainMergeOverviewDependenciesItemPreparationKey) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependenciesItemPreparationKey) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[89]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10902,7 +11038,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationKey) ProtoReflect() proto
 
 // Deprecated: Use DomainMergeOverviewDependenciesItemPreparationKey.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependenciesItemPreparationKey) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{89}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *DomainMergeOverviewDependenciesItemPreparationKey) GetItems() []string {
@@ -10927,7 +11063,7 @@ type DomainMergeOverviewDependenciesItemPreparation struct {
 
 func (x *DomainMergeOverviewDependenciesItemPreparation) Reset() {
 	*x = DomainMergeOverviewDependenciesItemPreparation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[90]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10939,7 +11075,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparation) String() string {
 func (*DomainMergeOverviewDependenciesItemPreparation) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependenciesItemPreparation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[90]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10952,7 +11088,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparation) ProtoReflect() protoref
 
 // Deprecated: Use DomainMergeOverviewDependenciesItemPreparation.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependenciesItemPreparation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{90}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *DomainMergeOverviewDependenciesItemPreparation) GetKind() DomainMergeOverviewDependenciesItemPreparationKind {
@@ -11022,7 +11158,7 @@ type DomainMergeOverviewDependenciesItem struct {
 
 func (x *DomainMergeOverviewDependenciesItem) Reset() {
 	*x = DomainMergeOverviewDependenciesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[91]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11034,7 +11170,7 @@ func (x *DomainMergeOverviewDependenciesItem) String() string {
 func (*DomainMergeOverviewDependenciesItem) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependenciesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[91]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11047,7 +11183,7 @@ func (x *DomainMergeOverviewDependenciesItem) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use DomainMergeOverviewDependenciesItem.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependenciesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{91}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *DomainMergeOverviewDependenciesItem) GetId() string {
@@ -11129,7 +11265,7 @@ type DomainMergeOverviewDependencies struct {
 
 func (x *DomainMergeOverviewDependencies) Reset() {
 	*x = DomainMergeOverviewDependencies{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[92]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11141,7 +11277,7 @@ func (x *DomainMergeOverviewDependencies) String() string {
 func (*DomainMergeOverviewDependencies) ProtoMessage() {}
 
 func (x *DomainMergeOverviewDependencies) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[92]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11154,7 +11290,7 @@ func (x *DomainMergeOverviewDependencies) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverviewDependencies.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewDependencies) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{92}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *DomainMergeOverviewDependencies) GetItems() []*DomainMergeOverviewDependenciesItem {
@@ -11176,7 +11312,7 @@ type DomainMergeOverview struct {
 
 func (x *DomainMergeOverview) Reset() {
 	*x = DomainMergeOverview{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[93]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11188,7 +11324,7 @@ func (x *DomainMergeOverview) String() string {
 func (*DomainMergeOverview) ProtoMessage() {}
 
 func (x *DomainMergeOverview) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[93]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11201,7 +11337,7 @@ func (x *DomainMergeOverview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainMergeOverview.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverview) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{93}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *DomainMergeOverview) GetChains() *DomainMergeOverviewChains {
@@ -11243,7 +11379,7 @@ type DomainReconciliationResult struct {
 
 func (x *DomainReconciliationResult) Reset() {
 	*x = DomainReconciliationResult{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[94]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11255,7 +11391,7 @@ func (x *DomainReconciliationResult) String() string {
 func (*DomainReconciliationResult) ProtoMessage() {}
 
 func (x *DomainReconciliationResult) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[94]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11268,7 +11404,7 @@ func (x *DomainReconciliationResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainReconciliationResult.ProtoReflect.Descriptor instead.
 func (*DomainReconciliationResult) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{94}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *DomainReconciliationResult) GetId() string {
@@ -11304,7 +11440,7 @@ type DomainArchivedSubmissionSummary struct {
 
 func (x *DomainArchivedSubmissionSummary) Reset() {
 	*x = DomainArchivedSubmissionSummary{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[95]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11316,7 +11452,7 @@ func (x *DomainArchivedSubmissionSummary) String() string {
 func (*DomainArchivedSubmissionSummary) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[95]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11329,7 +11465,7 @@ func (x *DomainArchivedSubmissionSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmissionSummary.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionSummary) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{95}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *DomainArchivedSubmissionSummary) GetId() string {
@@ -11372,7 +11508,7 @@ type DomainArchivedSubmissionRequestValidationItem struct {
 
 func (x *DomainArchivedSubmissionRequestValidationItem) Reset() {
 	*x = DomainArchivedSubmissionRequestValidationItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[96]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11384,7 +11520,7 @@ func (x *DomainArchivedSubmissionRequestValidationItem) String() string {
 func (*DomainArchivedSubmissionRequestValidationItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionRequestValidationItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[96]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11397,7 +11533,7 @@ func (x *DomainArchivedSubmissionRequestValidationItem) ProtoReflect() protorefl
 
 // Deprecated: Use DomainArchivedSubmissionRequestValidationItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionRequestValidationItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{96}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *DomainArchivedSubmissionRequestValidationItem) GetCommand() string {
@@ -11437,7 +11573,7 @@ type DomainArchivedSubmissionRequestValidation struct {
 
 func (x *DomainArchivedSubmissionRequestValidation) Reset() {
 	*x = DomainArchivedSubmissionRequestValidation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[97]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11449,7 +11585,7 @@ func (x *DomainArchivedSubmissionRequestValidation) String() string {
 func (*DomainArchivedSubmissionRequestValidation) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionRequestValidation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[97]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11462,7 +11598,7 @@ func (x *DomainArchivedSubmissionRequestValidation) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainArchivedSubmissionRequestValidation.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionRequestValidation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{97}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *DomainArchivedSubmissionRequestValidation) GetItems() []*DomainArchivedSubmissionRequestValidationItem {
@@ -11484,7 +11620,7 @@ type DomainArchivedSubmissionRequestOwner struct {
 
 func (x *DomainArchivedSubmissionRequestOwner) Reset() {
 	*x = DomainArchivedSubmissionRequestOwner{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[98]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11496,7 +11632,7 @@ func (x *DomainArchivedSubmissionRequestOwner) String() string {
 func (*DomainArchivedSubmissionRequestOwner) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionRequestOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[98]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11509,7 +11645,7 @@ func (x *DomainArchivedSubmissionRequestOwner) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use DomainArchivedSubmissionRequestOwner.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionRequestOwner) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{98}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *DomainArchivedSubmissionRequestOwner) GetHarness() DomainArchivedSubmissionRequestOwnerHarness {
@@ -11558,7 +11694,7 @@ type DomainArchivedSubmissionRequest struct {
 
 func (x *DomainArchivedSubmissionRequest) Reset() {
 	*x = DomainArchivedSubmissionRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[99]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11570,7 +11706,7 @@ func (x *DomainArchivedSubmissionRequest) String() string {
 func (*DomainArchivedSubmissionRequest) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[99]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11583,7 +11719,7 @@ func (x *DomainArchivedSubmissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmissionRequest.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{99}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *DomainArchivedSubmissionRequest) GetMode() DomainArchivedSubmissionRequestMode {
@@ -11665,7 +11801,7 @@ type DomainArchivedSubmissionSnapshotFiles struct {
 
 func (x *DomainArchivedSubmissionSnapshotFiles) Reset() {
 	*x = DomainArchivedSubmissionSnapshotFiles{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[100]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11677,7 +11813,7 @@ func (x *DomainArchivedSubmissionSnapshotFiles) String() string {
 func (*DomainArchivedSubmissionSnapshotFiles) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionSnapshotFiles) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[100]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11690,7 +11826,7 @@ func (x *DomainArchivedSubmissionSnapshotFiles) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use DomainArchivedSubmissionSnapshotFiles.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionSnapshotFiles) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{100}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *DomainArchivedSubmissionSnapshotFiles) GetItems() []string {
@@ -11711,7 +11847,7 @@ type DomainArchivedSubmissionSnapshotSourcesItem struct {
 
 func (x *DomainArchivedSubmissionSnapshotSourcesItem) Reset() {
 	*x = DomainArchivedSubmissionSnapshotSourcesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[101]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11723,7 +11859,7 @@ func (x *DomainArchivedSubmissionSnapshotSourcesItem) String() string {
 func (*DomainArchivedSubmissionSnapshotSourcesItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionSnapshotSourcesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[101]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11736,7 +11872,7 @@ func (x *DomainArchivedSubmissionSnapshotSourcesItem) ProtoReflect() protoreflec
 
 // Deprecated: Use DomainArchivedSubmissionSnapshotSourcesItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionSnapshotSourcesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{101}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *DomainArchivedSubmissionSnapshotSourcesItem) GetPath() string {
@@ -11769,7 +11905,7 @@ type DomainArchivedSubmissionSnapshotSources struct {
 
 func (x *DomainArchivedSubmissionSnapshotSources) Reset() {
 	*x = DomainArchivedSubmissionSnapshotSources{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[102]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11781,7 +11917,7 @@ func (x *DomainArchivedSubmissionSnapshotSources) String() string {
 func (*DomainArchivedSubmissionSnapshotSources) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionSnapshotSources) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[102]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11794,7 +11930,7 @@ func (x *DomainArchivedSubmissionSnapshotSources) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use DomainArchivedSubmissionSnapshotSources.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionSnapshotSources) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{102}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *DomainArchivedSubmissionSnapshotSources) GetItems() []*DomainArchivedSubmissionSnapshotSourcesItem {
@@ -11820,7 +11956,7 @@ type DomainArchivedSubmissionSnapshot struct {
 
 func (x *DomainArchivedSubmissionSnapshot) Reset() {
 	*x = DomainArchivedSubmissionSnapshot{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[103]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11832,7 +11968,7 @@ func (x *DomainArchivedSubmissionSnapshot) String() string {
 func (*DomainArchivedSubmissionSnapshot) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[103]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11845,7 +11981,7 @@ func (x *DomainArchivedSubmissionSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmissionSnapshot.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionSnapshot) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{103}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *DomainArchivedSubmissionSnapshot) GetRepository() string {
@@ -11914,7 +12050,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[104]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11927,7 +12063,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[104]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11940,7 +12076,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{104}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1) GetKind() DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind {
@@ -11966,7 +12102,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[105]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11979,7 +12115,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[105]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11992,7 +12128,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{105}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes) GetItems() []string {
@@ -12012,7 +12148,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[106]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12025,7 +12161,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[106]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12038,7 +12174,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{106}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2) GetKind() DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind {
@@ -12065,7 +12201,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[107]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12078,7 +12214,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[107]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12091,7 +12227,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{107}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3) GetKind() DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind {
@@ -12117,7 +12253,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[108]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12130,7 +12266,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[108]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12143,7 +12279,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{108}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4) GetKind() DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind {
@@ -12162,7 +12298,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVarian
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[109]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12175,7 +12311,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVari
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[109]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12188,7 +12324,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{109}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5) GetKind() DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind {
@@ -12214,7 +12350,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck struc
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[110]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12226,7 +12362,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) 
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[110]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12239,7 +12375,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) 
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{110}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck) GetVariant() isDomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant {
@@ -12352,7 +12488,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[111]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12364,7 +12500,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) Strin
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[111]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12377,7 +12513,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) Proto
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{111}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) GetId() string {
@@ -12466,7 +12602,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1Requirements struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1Requirements{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[112]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12478,7 +12614,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) String() 
 func (*DomainArchivedSubmissionStagesItemResultVariant1Requirements) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[112]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12491,7 +12627,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) ProtoRefl
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1Requirements.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1Requirements) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{112}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) GetItems() []*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem {
@@ -12510,7 +12646,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1Blockers struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1Blockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[113]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12522,7 +12658,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) String() stri
 func (*DomainArchivedSubmissionStagesItemResultVariant1Blockers) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[113]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12535,7 +12671,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) ProtoReflect(
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1Blockers.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1Blockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{113}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) GetItems() []string {
@@ -12556,7 +12692,7 @@ type DomainArchivedSubmissionStagesItemResultVariant1 struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant1{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[114]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12568,7 +12704,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1) String() string {
 func (*DomainArchivedSubmissionStagesItemResultVariant1) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[114]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12581,7 +12717,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1) ProtoReflect() protor
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant1) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{114}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant1) GetRequirements() *DomainArchivedSubmissionStagesItemResultVariant1Requirements {
@@ -12614,7 +12750,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs stru
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[115]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12626,7 +12762,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)
 func (*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[115]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12639,7 +12775,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{115}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs) GetItems() []string {
@@ -12661,7 +12797,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[116]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12673,7 +12809,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) String() st
 func (*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[116]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12686,7 +12822,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) ProtoReflec
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{116}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) GetStatement() string {
@@ -12726,7 +12862,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2Claims struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2Claims{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[117]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12738,7 +12874,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) String() string
 func (*DomainArchivedSubmissionStagesItemResultVariant2Claims) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[117]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12751,7 +12887,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) ProtoReflect() 
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2Claims.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2Claims) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{117}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) GetItems() []*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem {
@@ -12770,7 +12906,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2Limitations struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2Limitations{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[118]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12782,7 +12918,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) String() s
 func (*DomainArchivedSubmissionStagesItemResultVariant2Limitations) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[118]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12795,7 +12931,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) ProtoRefle
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2Limitations.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2Limitations) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{118}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) GetItems() []string {
@@ -12814,7 +12950,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2Blockers struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2Blockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[119]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12826,7 +12962,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) String() stri
 func (*DomainArchivedSubmissionStagesItemResultVariant2Blockers) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[119]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12839,7 +12975,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) ProtoReflect(
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2Blockers.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2Blockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{119}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) GetItems() []string {
@@ -12863,7 +12999,7 @@ type DomainArchivedSubmissionStagesItemResultVariant2 struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant2{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[120]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12875,7 +13011,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2) String() string {
 func (*DomainArchivedSubmissionStagesItemResultVariant2) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[120]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12888,7 +13024,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2) ProtoReflect() protor
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant2) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{120}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant2) GetTier() DomainArchivedSubmissionStagesItemResultVariant2Tier {
@@ -12944,7 +13080,7 @@ type DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem struc
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[121]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12956,7 +13092,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) 
 func (*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[121]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12969,7 +13105,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) 
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{121}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) GetRuleId() string {
@@ -13002,7 +13138,7 @@ type DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[122]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13014,7 +13150,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) Stri
 func (*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[122]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13027,7 +13163,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) Prot
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{122}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) GetItems() []*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem {
@@ -13046,7 +13182,7 @@ type DomainArchivedSubmissionStagesItemResultVariant3Blockers struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant3Blockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[123]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13058,7 +13194,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) String() stri
 func (*DomainArchivedSubmissionStagesItemResultVariant3Blockers) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[123]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13071,7 +13207,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) ProtoReflect(
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant3Blockers.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant3Blockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{123}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) GetItems() []string {
@@ -13093,7 +13229,7 @@ type DomainArchivedSubmissionStagesItemResultVariant3 struct {
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResultVariant3{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[124]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13105,7 +13241,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3) String() string {
 func (*DomainArchivedSubmissionStagesItemResultVariant3) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[124]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13118,7 +13254,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3) ProtoReflect() protor
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant3.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResultVariant3) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{124}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResultVariant3) GetTitle() string {
@@ -13163,7 +13299,7 @@ type DomainArchivedSubmissionStagesItemResult struct {
 
 func (x *DomainArchivedSubmissionStagesItemResult) Reset() {
 	*x = DomainArchivedSubmissionStagesItemResult{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[125]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13175,7 +13311,7 @@ func (x *DomainArchivedSubmissionStagesItemResult) String() string {
 func (*DomainArchivedSubmissionStagesItemResult) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItemResult) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[125]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13188,7 +13324,7 @@ func (x *DomainArchivedSubmissionStagesItemResult) ProtoReflect() protoreflect.M
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResult.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItemResult) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{125}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *DomainArchivedSubmissionStagesItemResult) GetVariant() isDomainArchivedSubmissionStagesItemResult_Variant {
@@ -13265,7 +13401,7 @@ type DomainArchivedSubmissionStagesItem struct {
 
 func (x *DomainArchivedSubmissionStagesItem) Reset() {
 	*x = DomainArchivedSubmissionStagesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[126]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13277,7 +13413,7 @@ func (x *DomainArchivedSubmissionStagesItem) String() string {
 func (*DomainArchivedSubmissionStagesItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStagesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[126]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13290,7 +13426,7 @@ func (x *DomainArchivedSubmissionStagesItem) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainArchivedSubmissionStagesItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStagesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{126}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *DomainArchivedSubmissionStagesItem) GetRole() DomainArchivedSubmissionStagesItemRole {
@@ -13351,7 +13487,7 @@ type DomainArchivedSubmissionStages struct {
 
 func (x *DomainArchivedSubmissionStages) Reset() {
 	*x = DomainArchivedSubmissionStages{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[127]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13363,7 +13499,7 @@ func (x *DomainArchivedSubmissionStages) String() string {
 func (*DomainArchivedSubmissionStages) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionStages) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[127]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13376,7 +13512,7 @@ func (x *DomainArchivedSubmissionStages) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmissionStages.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionStages) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{127}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *DomainArchivedSubmissionStages) GetItems() []*DomainArchivedSubmissionStagesItem {
@@ -13395,7 +13531,7 @@ type DomainArchivedSubmissionBriefSchemaVersion struct {
 
 func (x *DomainArchivedSubmissionBriefSchemaVersion) Reset() {
 	*x = DomainArchivedSubmissionBriefSchemaVersion{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[128]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13407,7 +13543,7 @@ func (x *DomainArchivedSubmissionBriefSchemaVersion) String() string {
 func (*DomainArchivedSubmissionBriefSchemaVersion) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefSchemaVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[128]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13420,7 +13556,7 @@ func (x *DomainArchivedSubmissionBriefSchemaVersion) ProtoReflect() protoreflect
 
 // Deprecated: Use DomainArchivedSubmissionBriefSchemaVersion.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefSchemaVersion) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{128}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *DomainArchivedSubmissionBriefSchemaVersion) GetLiteral() int64 {
@@ -13442,7 +13578,7 @@ type DomainArchivedSubmissionBriefRequestValidationItem struct {
 
 func (x *DomainArchivedSubmissionBriefRequestValidationItem) Reset() {
 	*x = DomainArchivedSubmissionBriefRequestValidationItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[129]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13454,7 +13590,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidationItem) String() string {
 func (*DomainArchivedSubmissionBriefRequestValidationItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefRequestValidationItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[129]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13467,7 +13603,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidationItem) ProtoReflect() prot
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestValidationItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefRequestValidationItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{129}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *DomainArchivedSubmissionBriefRequestValidationItem) GetCommand() string {
@@ -13507,7 +13643,7 @@ type DomainArchivedSubmissionBriefRequestValidation struct {
 
 func (x *DomainArchivedSubmissionBriefRequestValidation) Reset() {
 	*x = DomainArchivedSubmissionBriefRequestValidation{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[130]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13519,7 +13655,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidation) String() string {
 func (*DomainArchivedSubmissionBriefRequestValidation) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefRequestValidation) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[130]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13532,7 +13668,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidation) ProtoReflect() protoref
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestValidation.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefRequestValidation) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{130}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *DomainArchivedSubmissionBriefRequestValidation) GetItems() []*DomainArchivedSubmissionBriefRequestValidationItem {
@@ -13554,7 +13690,7 @@ type DomainArchivedSubmissionBriefRequestOwner struct {
 
 func (x *DomainArchivedSubmissionBriefRequestOwner) Reset() {
 	*x = DomainArchivedSubmissionBriefRequestOwner{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[131]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13566,7 +13702,7 @@ func (x *DomainArchivedSubmissionBriefRequestOwner) String() string {
 func (*DomainArchivedSubmissionBriefRequestOwner) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefRequestOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[131]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13579,7 +13715,7 @@ func (x *DomainArchivedSubmissionBriefRequestOwner) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestOwner.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefRequestOwner) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{131}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *DomainArchivedSubmissionBriefRequestOwner) GetHarness() DomainArchivedSubmissionBriefRequestOwnerHarness {
@@ -13628,7 +13764,7 @@ type DomainArchivedSubmissionBriefRequest struct {
 
 func (x *DomainArchivedSubmissionBriefRequest) Reset() {
 	*x = DomainArchivedSubmissionBriefRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[132]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13640,7 +13776,7 @@ func (x *DomainArchivedSubmissionBriefRequest) String() string {
 func (*DomainArchivedSubmissionBriefRequest) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[132]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13653,7 +13789,7 @@ func (x *DomainArchivedSubmissionBriefRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequest.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{132}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *DomainArchivedSubmissionBriefRequest) GetMode() DomainArchivedSubmissionBriefRequestMode {
@@ -13735,7 +13871,7 @@ type DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs struct {
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) Reset() {
 	*x = DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[133]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13747,7 +13883,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) String() str
 func (*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[133]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13760,7 +13896,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) ProtoReflect
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{133}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) GetItems() []string {
@@ -13782,7 +13918,7 @@ type DomainArchivedSubmissionBriefChangeClaimsItem struct {
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItem) Reset() {
 	*x = DomainArchivedSubmissionBriefChangeClaimsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[134]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[136]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13794,7 +13930,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItem) String() string {
 func (*DomainArchivedSubmissionBriefChangeClaimsItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[134]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[136]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13807,7 +13943,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItem) ProtoReflect() protorefl
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeClaimsItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChangeClaimsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{134}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *DomainArchivedSubmissionBriefChangeClaimsItem) GetStatement() string {
@@ -13847,7 +13983,7 @@ type DomainArchivedSubmissionBriefChangeClaims struct {
 
 func (x *DomainArchivedSubmissionBriefChangeClaims) Reset() {
 	*x = DomainArchivedSubmissionBriefChangeClaims{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[135]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[137]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13859,7 +13995,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaims) String() string {
 func (*DomainArchivedSubmissionBriefChangeClaims) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChangeClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[135]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[137]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13872,7 +14008,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaims) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeClaims.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChangeClaims) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{135}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *DomainArchivedSubmissionBriefChangeClaims) GetItems() []*DomainArchivedSubmissionBriefChangeClaimsItem {
@@ -13891,7 +14027,7 @@ type DomainArchivedSubmissionBriefChangeLimitations struct {
 
 func (x *DomainArchivedSubmissionBriefChangeLimitations) Reset() {
 	*x = DomainArchivedSubmissionBriefChangeLimitations{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[136]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[138]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13903,7 +14039,7 @@ func (x *DomainArchivedSubmissionBriefChangeLimitations) String() string {
 func (*DomainArchivedSubmissionBriefChangeLimitations) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChangeLimitations) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[136]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[138]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13916,7 +14052,7 @@ func (x *DomainArchivedSubmissionBriefChangeLimitations) ProtoReflect() protoref
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeLimitations.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChangeLimitations) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{136}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{138}
 }
 
 func (x *DomainArchivedSubmissionBriefChangeLimitations) GetItems() []string {
@@ -13935,7 +14071,7 @@ type DomainArchivedSubmissionBriefChangeBlockers struct {
 
 func (x *DomainArchivedSubmissionBriefChangeBlockers) Reset() {
 	*x = DomainArchivedSubmissionBriefChangeBlockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[137]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[139]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13947,7 +14083,7 @@ func (x *DomainArchivedSubmissionBriefChangeBlockers) String() string {
 func (*DomainArchivedSubmissionBriefChangeBlockers) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChangeBlockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[137]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[139]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13960,7 +14096,7 @@ func (x *DomainArchivedSubmissionBriefChangeBlockers) ProtoReflect() protoreflec
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeBlockers.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChangeBlockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{137}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{139}
 }
 
 func (x *DomainArchivedSubmissionBriefChangeBlockers) GetItems() []string {
@@ -13984,7 +14120,7 @@ type DomainArchivedSubmissionBriefChange struct {
 
 func (x *DomainArchivedSubmissionBriefChange) Reset() {
 	*x = DomainArchivedSubmissionBriefChange{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[138]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[140]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13996,7 +14132,7 @@ func (x *DomainArchivedSubmissionBriefChange) String() string {
 func (*DomainArchivedSubmissionBriefChange) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefChange) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[138]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[140]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14009,7 +14145,7 @@ func (x *DomainArchivedSubmissionBriefChange) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use DomainArchivedSubmissionBriefChange.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefChange) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{138}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *DomainArchivedSubmissionBriefChange) GetTier() DomainArchivedSubmissionBriefChangeTier {
@@ -14065,7 +14201,7 @@ type DomainArchivedSubmissionBriefDraftRequirementChecksItem struct {
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) Reset() {
 	*x = DomainArchivedSubmissionBriefDraftRequirementChecksItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[139]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[141]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14077,7 +14213,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) String() strin
 func (*DomainArchivedSubmissionBriefDraftRequirementChecksItem) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[139]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[141]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14090,7 +14226,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) ProtoReflect()
 
 // Deprecated: Use DomainArchivedSubmissionBriefDraftRequirementChecksItem.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefDraftRequirementChecksItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{139}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) GetRuleId() string {
@@ -14123,7 +14259,7 @@ type DomainArchivedSubmissionBriefDraftRequirementChecks struct {
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) Reset() {
 	*x = DomainArchivedSubmissionBriefDraftRequirementChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[140]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[142]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14135,7 +14271,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) String() string {
 func (*DomainArchivedSubmissionBriefDraftRequirementChecks) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[140]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[142]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14148,7 +14284,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) ProtoReflect() pro
 
 // Deprecated: Use DomainArchivedSubmissionBriefDraftRequirementChecks.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefDraftRequirementChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{140}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{142}
 }
 
 func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) GetItems() []*DomainArchivedSubmissionBriefDraftRequirementChecksItem {
@@ -14167,7 +14303,7 @@ type DomainArchivedSubmissionBriefDraftBlockers struct {
 
 func (x *DomainArchivedSubmissionBriefDraftBlockers) Reset() {
 	*x = DomainArchivedSubmissionBriefDraftBlockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[141]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[143]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14179,7 +14315,7 @@ func (x *DomainArchivedSubmissionBriefDraftBlockers) String() string {
 func (*DomainArchivedSubmissionBriefDraftBlockers) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefDraftBlockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[141]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[143]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14192,7 +14328,7 @@ func (x *DomainArchivedSubmissionBriefDraftBlockers) ProtoReflect() protoreflect
 
 // Deprecated: Use DomainArchivedSubmissionBriefDraftBlockers.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefDraftBlockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{141}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *DomainArchivedSubmissionBriefDraftBlockers) GetItems() []string {
@@ -14214,7 +14350,7 @@ type DomainArchivedSubmissionBriefDraft struct {
 
 func (x *DomainArchivedSubmissionBriefDraft) Reset() {
 	*x = DomainArchivedSubmissionBriefDraft{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[142]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[144]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14226,7 +14362,7 @@ func (x *DomainArchivedSubmissionBriefDraft) String() string {
 func (*DomainArchivedSubmissionBriefDraft) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBriefDraft) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[142]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[144]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14239,7 +14375,7 @@ func (x *DomainArchivedSubmissionBriefDraft) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainArchivedSubmissionBriefDraft.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBriefDraft) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{142}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{144}
 }
 
 func (x *DomainArchivedSubmissionBriefDraft) GetTitle() string {
@@ -14284,7 +14420,7 @@ type DomainArchivedSubmissionBrief struct {
 
 func (x *DomainArchivedSubmissionBrief) Reset() {
 	*x = DomainArchivedSubmissionBrief{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[143]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[145]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14296,7 +14432,7 @@ func (x *DomainArchivedSubmissionBrief) String() string {
 func (*DomainArchivedSubmissionBrief) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionBrief) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[143]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[145]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14309,7 +14445,7 @@ func (x *DomainArchivedSubmissionBrief) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmissionBrief.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionBrief) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{143}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{145}
 }
 
 func (x *DomainArchivedSubmissionBrief) GetSchemaVersion() *DomainArchivedSubmissionBriefSchemaVersion {
@@ -14363,7 +14499,7 @@ type DomainArchivedSubmissionWorkerPids struct {
 
 func (x *DomainArchivedSubmissionWorkerPids) Reset() {
 	*x = DomainArchivedSubmissionWorkerPids{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[144]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[146]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14375,7 +14511,7 @@ func (x *DomainArchivedSubmissionWorkerPids) String() string {
 func (*DomainArchivedSubmissionWorkerPids) ProtoMessage() {}
 
 func (x *DomainArchivedSubmissionWorkerPids) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[144]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[146]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14388,7 +14524,7 @@ func (x *DomainArchivedSubmissionWorkerPids) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainArchivedSubmissionWorkerPids.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmissionWorkerPids) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{144}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{146}
 }
 
 func (x *DomainArchivedSubmissionWorkerPids) GetItems() []int64 {
@@ -14421,7 +14557,7 @@ type DomainArchivedSubmission struct {
 
 func (x *DomainArchivedSubmission) Reset() {
 	*x = DomainArchivedSubmission{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[145]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[147]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14433,7 +14569,7 @@ func (x *DomainArchivedSubmission) String() string {
 func (*DomainArchivedSubmission) ProtoMessage() {}
 
 func (x *DomainArchivedSubmission) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[145]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[147]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14446,7 +14582,7 @@ func (x *DomainArchivedSubmission) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainArchivedSubmission.ProtoReflect.Descriptor instead.
 func (*DomainArchivedSubmission) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{145}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{147}
 }
 
 func (x *DomainArchivedSubmission) GetId() string {
@@ -14563,7 +14699,7 @@ type DomainRepositoryPolicyComplexityProfilesRoutineAdvisory struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesRoutineAdvisory{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[146]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[148]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14575,7 +14711,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) String() strin
 func (*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[146]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[148]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14588,7 +14724,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) ProtoReflect()
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesRoutineAdvisory.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{146}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{148}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) GetLiteral() bool {
@@ -14610,7 +14746,7 @@ type DomainRepositoryPolicyComplexityProfilesRoutine struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutine) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesRoutine{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[147]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[149]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14622,7 +14758,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutine) String() string {
 func (*DomainRepositoryPolicyComplexityProfilesRoutine) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutine) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[147]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[149]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14635,7 +14771,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutine) ProtoReflect() protore
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesRoutine.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesRoutine) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{147}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{149}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesRoutine) GetMinWords() int64 {
@@ -14675,7 +14811,7 @@ type DomainRepositoryPolicyComplexityProfilesStandardAdvisory struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesStandardAdvisory{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[148]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[150]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14687,7 +14823,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) String() stri
 func (*DomainRepositoryPolicyComplexityProfilesStandardAdvisory) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[148]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[150]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14700,7 +14836,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) ProtoReflect(
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesStandardAdvisory.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesStandardAdvisory) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{148}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{150}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) GetLiteral() bool {
@@ -14722,7 +14858,7 @@ type DomainRepositoryPolicyComplexityProfilesStandard struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandard) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesStandard{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[149]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[151]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14734,7 +14870,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandard) String() string {
 func (*DomainRepositoryPolicyComplexityProfilesStandard) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandard) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[149]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[151]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14747,7 +14883,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandard) ProtoReflect() protor
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesStandard.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesStandard) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{149}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{151}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesStandard) GetMinWords() int64 {
@@ -14787,7 +14923,7 @@ type DomainRepositoryPolicyComplexityProfilesComplexAdvisory struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesComplexAdvisory{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[150]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[152]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14799,7 +14935,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) String() strin
 func (*DomainRepositoryPolicyComplexityProfilesComplexAdvisory) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[150]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[152]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14812,7 +14948,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) ProtoReflect()
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesComplexAdvisory.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesComplexAdvisory) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{150}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{152}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) GetLiteral() bool {
@@ -14834,7 +14970,7 @@ type DomainRepositoryPolicyComplexityProfilesComplex struct {
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplex) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfilesComplex{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[151]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[153]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14846,7 +14982,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplex) String() string {
 func (*DomainRepositoryPolicyComplexityProfilesComplex) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplex) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[151]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[153]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14859,7 +14995,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplex) ProtoReflect() protore
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfilesComplex.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfilesComplex) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{151}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{153}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfilesComplex) GetMinWords() int64 {
@@ -14901,7 +15037,7 @@ type DomainRepositoryPolicyComplexityProfiles struct {
 
 func (x *DomainRepositoryPolicyComplexityProfiles) Reset() {
 	*x = DomainRepositoryPolicyComplexityProfiles{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[152]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[154]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14913,7 +15049,7 @@ func (x *DomainRepositoryPolicyComplexityProfiles) String() string {
 func (*DomainRepositoryPolicyComplexityProfiles) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyComplexityProfiles) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[152]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[154]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14926,7 +15062,7 @@ func (x *DomainRepositoryPolicyComplexityProfiles) ProtoReflect() protoreflect.M
 
 // Deprecated: Use DomainRepositoryPolicyComplexityProfiles.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyComplexityProfiles) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{152}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{154}
 }
 
 func (x *DomainRepositoryPolicyComplexityProfiles) GetRoutine() *DomainRepositoryPolicyComplexityProfilesRoutine {
@@ -14959,7 +15095,7 @@ type DomainRepositoryPolicySchemaVersion struct {
 
 func (x *DomainRepositoryPolicySchemaVersion) Reset() {
 	*x = DomainRepositoryPolicySchemaVersion{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[153]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[155]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14971,7 +15107,7 @@ func (x *DomainRepositoryPolicySchemaVersion) String() string {
 func (*DomainRepositoryPolicySchemaVersion) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicySchemaVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[153]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[155]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14984,7 +15120,7 @@ func (x *DomainRepositoryPolicySchemaVersion) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use DomainRepositoryPolicySchemaVersion.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicySchemaVersion) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{153}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{155}
 }
 
 func (x *DomainRepositoryPolicySchemaVersion) GetLiteral() int64 {
@@ -15003,7 +15139,7 @@ type DomainRepositoryPolicyAnalystVersionVariant1 struct {
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant1) Reset() {
 	*x = DomainRepositoryPolicyAnalystVersionVariant1{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[154]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[156]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15015,7 +15151,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant1) String() string {
 func (*DomainRepositoryPolicyAnalystVersionVariant1) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant1) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[154]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[156]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15028,7 +15164,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant1) ProtoReflect() protorefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalystVersionVariant1.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalystVersionVariant1) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{154}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{156}
 }
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant1) GetLiteral() int64 {
@@ -15047,7 +15183,7 @@ type DomainRepositoryPolicyAnalystVersionVariant2 struct {
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant2) Reset() {
 	*x = DomainRepositoryPolicyAnalystVersionVariant2{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[155]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[157]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15059,7 +15195,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant2) String() string {
 func (*DomainRepositoryPolicyAnalystVersionVariant2) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant2) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[155]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[157]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15072,7 +15208,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant2) ProtoReflect() protorefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalystVersionVariant2.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalystVersionVariant2) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{155}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{157}
 }
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant2) GetLiteral() int64 {
@@ -15091,7 +15227,7 @@ type DomainRepositoryPolicyAnalystVersionVariant3 struct {
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant3) Reset() {
 	*x = DomainRepositoryPolicyAnalystVersionVariant3{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[156]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[158]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15103,7 +15239,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant3) String() string {
 func (*DomainRepositoryPolicyAnalystVersionVariant3) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant3) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[156]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[158]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15116,7 +15252,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant3) ProtoReflect() protorefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalystVersionVariant3.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalystVersionVariant3) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{156}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{158}
 }
 
 func (x *DomainRepositoryPolicyAnalystVersionVariant3) GetLiteral() int64 {
@@ -15140,7 +15276,7 @@ type DomainRepositoryPolicyAnalystVersion struct {
 
 func (x *DomainRepositoryPolicyAnalystVersion) Reset() {
 	*x = DomainRepositoryPolicyAnalystVersion{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[157]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[159]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15152,7 +15288,7 @@ func (x *DomainRepositoryPolicyAnalystVersion) String() string {
 func (*DomainRepositoryPolicyAnalystVersion) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalystVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[157]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[159]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15165,7 +15301,7 @@ func (x *DomainRepositoryPolicyAnalystVersion) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use DomainRepositoryPolicyAnalystVersion.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalystVersion) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{157}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{159}
 }
 
 func (x *DomainRepositoryPolicyAnalystVersion) GetVariant() isDomainRepositoryPolicyAnalystVersion_Variant {
@@ -15236,7 +15372,7 @@ type DomainRepositoryPolicyStockVersion struct {
 
 func (x *DomainRepositoryPolicyStockVersion) Reset() {
 	*x = DomainRepositoryPolicyStockVersion{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[158]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[160]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15248,7 +15384,7 @@ func (x *DomainRepositoryPolicyStockVersion) String() string {
 func (*DomainRepositoryPolicyStockVersion) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyStockVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[158]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[160]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15261,7 +15397,7 @@ func (x *DomainRepositoryPolicyStockVersion) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use DomainRepositoryPolicyStockVersion.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyStockVersion) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{158}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{160}
 }
 
 func (x *DomainRepositoryPolicyStockVersion) GetLiteral() int64 {
@@ -15282,7 +15418,7 @@ type DomainRepositoryPolicyCitationCorrectionsItem struct {
 
 func (x *DomainRepositoryPolicyCitationCorrectionsItem) Reset() {
 	*x = DomainRepositoryPolicyCitationCorrectionsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[159]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[161]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15294,7 +15430,7 @@ func (x *DomainRepositoryPolicyCitationCorrectionsItem) String() string {
 func (*DomainRepositoryPolicyCitationCorrectionsItem) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyCitationCorrectionsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[159]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[161]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15307,7 +15443,7 @@ func (x *DomainRepositoryPolicyCitationCorrectionsItem) ProtoReflect() protorefl
 
 // Deprecated: Use DomainRepositoryPolicyCitationCorrectionsItem.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyCitationCorrectionsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{159}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{161}
 }
 
 func (x *DomainRepositoryPolicyCitationCorrectionsItem) GetRuleId() string {
@@ -15340,7 +15476,7 @@ type DomainRepositoryPolicyCitationCorrections struct {
 
 func (x *DomainRepositoryPolicyCitationCorrections) Reset() {
 	*x = DomainRepositoryPolicyCitationCorrections{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[160]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[162]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15352,7 +15488,7 @@ func (x *DomainRepositoryPolicyCitationCorrections) String() string {
 func (*DomainRepositoryPolicyCitationCorrections) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyCitationCorrections) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[160]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[162]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15365,7 +15501,7 @@ func (x *DomainRepositoryPolicyCitationCorrections) ProtoReflect() protoreflect.
 
 // Deprecated: Use DomainRepositoryPolicyCitationCorrections.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyCitationCorrections) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{160}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{162}
 }
 
 func (x *DomainRepositoryPolicyCitationCorrections) GetItems() []*DomainRepositoryPolicyCitationCorrectionsItem {
@@ -15386,7 +15522,7 @@ type DomainRepositoryPolicySourcesItem struct {
 
 func (x *DomainRepositoryPolicySourcesItem) Reset() {
 	*x = DomainRepositoryPolicySourcesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[161]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[163]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15398,7 +15534,7 @@ func (x *DomainRepositoryPolicySourcesItem) String() string {
 func (*DomainRepositoryPolicySourcesItem) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicySourcesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[161]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[163]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15411,7 +15547,7 @@ func (x *DomainRepositoryPolicySourcesItem) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use DomainRepositoryPolicySourcesItem.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicySourcesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{161}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{163}
 }
 
 func (x *DomainRepositoryPolicySourcesItem) GetPath() string {
@@ -15444,7 +15580,7 @@ type DomainRepositoryPolicySources struct {
 
 func (x *DomainRepositoryPolicySources) Reset() {
 	*x = DomainRepositoryPolicySources{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[162]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[164]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15456,7 +15592,7 @@ func (x *DomainRepositoryPolicySources) String() string {
 func (*DomainRepositoryPolicySources) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicySources) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[162]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[164]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15469,7 +15605,7 @@ func (x *DomainRepositoryPolicySources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainRepositoryPolicySources.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicySources) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{162}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{164}
 }
 
 func (x *DomainRepositoryPolicySources) GetItems() []*DomainRepositoryPolicySourcesItem {
@@ -15489,7 +15625,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1 struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[163]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[165]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15501,7 +15637,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) String() s
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[163]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[165]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15514,7 +15650,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) ProtoRefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{163}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{165}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) GetKind() DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind {
@@ -15540,7 +15676,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes struct 
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[164]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[166]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15552,7 +15688,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) St
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[164]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[166]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15565,7 +15701,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) Pr
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{164}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{166}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) GetItems() []string {
@@ -15585,7 +15721,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2 struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[165]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[167]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15597,7 +15733,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) String() s
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[165]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[167]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15610,7 +15746,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) ProtoRefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{165}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{167}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) GetKind() DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind {
@@ -15637,7 +15773,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3 struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[166]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[168]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15649,7 +15785,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) String() s
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[166]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[168]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15662,7 +15798,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) ProtoRefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{166}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{168}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) GetKind() DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind {
@@ -15688,7 +15824,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4 struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[167]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[169]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15700,7 +15836,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) String() s
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[167]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[169]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15713,7 +15849,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) ProtoRefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{167}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{169}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) GetKind() DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind {
@@ -15732,7 +15868,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5 struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[168]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[170]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15744,7 +15880,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) String() s
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[168]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[170]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15757,7 +15893,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) ProtoRefle
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{168}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{170}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) GetKind() DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind {
@@ -15783,7 +15919,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItemCheck struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheck) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItemCheck{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[169]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[171]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15795,7 +15931,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheck) String() string {
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheck) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[169]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[171]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15808,7 +15944,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheck) ProtoReflect() pro
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheck.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheck) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{169}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{171}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheck) GetVariant() isDomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant {
@@ -15921,7 +16057,7 @@ type DomainRepositoryPolicyAnalysisRequirementsItem struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItem) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirementsItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[170]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[172]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15933,7 +16069,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItem) String() string {
 func (*DomainRepositoryPolicyAnalysisRequirementsItem) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[170]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[172]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15946,7 +16082,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItem) ProtoReflect() protoref
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItem.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirementsItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{170}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{172}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirementsItem) GetId() string {
@@ -16035,7 +16171,7 @@ type DomainRepositoryPolicyAnalysisRequirements struct {
 
 func (x *DomainRepositoryPolicyAnalysisRequirements) Reset() {
 	*x = DomainRepositoryPolicyAnalysisRequirements{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[171]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[173]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16047,7 +16183,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirements) String() string {
 func (*DomainRepositoryPolicyAnalysisRequirements) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisRequirements) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[171]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[173]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16060,7 +16196,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirements) ProtoReflect() protoreflect
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirements.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisRequirements) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{171}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{173}
 }
 
 func (x *DomainRepositoryPolicyAnalysisRequirements) GetItems() []*DomainRepositoryPolicyAnalysisRequirementsItem {
@@ -16079,7 +16215,7 @@ type DomainRepositoryPolicyAnalysisBlockers struct {
 
 func (x *DomainRepositoryPolicyAnalysisBlockers) Reset() {
 	*x = DomainRepositoryPolicyAnalysisBlockers{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[172]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[174]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16091,7 +16227,7 @@ func (x *DomainRepositoryPolicyAnalysisBlockers) String() string {
 func (*DomainRepositoryPolicyAnalysisBlockers) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysisBlockers) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[172]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[174]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16104,7 +16240,7 @@ func (x *DomainRepositoryPolicyAnalysisBlockers) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisBlockers.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysisBlockers) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{172}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{174}
 }
 
 func (x *DomainRepositoryPolicyAnalysisBlockers) GetItems() []string {
@@ -16125,7 +16261,7 @@ type DomainRepositoryPolicyAnalysis struct {
 
 func (x *DomainRepositoryPolicyAnalysis) Reset() {
 	*x = DomainRepositoryPolicyAnalysis{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[173]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[175]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16137,7 +16273,7 @@ func (x *DomainRepositoryPolicyAnalysis) String() string {
 func (*DomainRepositoryPolicyAnalysis) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicyAnalysis) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[173]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[175]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16150,7 +16286,7 @@ func (x *DomainRepositoryPolicyAnalysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainRepositoryPolicyAnalysis.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicyAnalysis) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{173}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{175}
 }
 
 func (x *DomainRepositoryPolicyAnalysis) GetRequirements() *DomainRepositoryPolicyAnalysisRequirements {
@@ -16193,7 +16329,7 @@ type DomainRepositoryPolicy struct {
 
 func (x *DomainRepositoryPolicy) Reset() {
 	*x = DomainRepositoryPolicy{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[174]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[176]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16205,7 +16341,7 @@ func (x *DomainRepositoryPolicy) String() string {
 func (*DomainRepositoryPolicy) ProtoMessage() {}
 
 func (x *DomainRepositoryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[174]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[176]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16218,7 +16354,7 @@ func (x *DomainRepositoryPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainRepositoryPolicy.ProtoReflect.Descriptor instead.
 func (*DomainRepositoryPolicy) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{174}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{176}
 }
 
 func (x *DomainRepositoryPolicy) GetComplexityProfiles() *DomainRepositoryPolicyComplexityProfiles {
@@ -16300,6 +16436,7 @@ func (x *DomainRepositoryPolicy) GetAnalysis() *DomainRepositoryPolicyAnalysis {
 
 type SetAutoMergeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Instructions  *string                `protobuf:"bytes,5,opt,name=instructions,proto3,oneof" json:"instructions,omitempty"`
 	Pr            *string                `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
 	Enabled       *bool                  `protobuf:"varint,2,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	ActorId       *string                `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3,oneof" json:"actor_id,omitempty"`
@@ -16310,7 +16447,7 @@ type SetAutoMergeRequest struct {
 
 func (x *SetAutoMergeRequest) Reset() {
 	*x = SetAutoMergeRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[175]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[177]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16322,7 +16459,7 @@ func (x *SetAutoMergeRequest) String() string {
 func (*SetAutoMergeRequest) ProtoMessage() {}
 
 func (x *SetAutoMergeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[175]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[177]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16335,7 +16472,14 @@ func (x *SetAutoMergeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetAutoMergeRequest.ProtoReflect.Descriptor instead.
 func (*SetAutoMergeRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{175}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{177}
+}
+
+func (x *SetAutoMergeRequest) GetInstructions() string {
+	if x != nil && x.Instructions != nil {
+		return *x.Instructions
+	}
+	return ""
 }
 
 func (x *SetAutoMergeRequest) GetPr() string {
@@ -16375,7 +16519,7 @@ type QueueMergeChainRequestInputEntriesItemChecks struct {
 
 func (x *QueueMergeChainRequestInputEntriesItemChecks) Reset() {
 	*x = QueueMergeChainRequestInputEntriesItemChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[176]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[178]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16387,7 +16531,7 @@ func (x *QueueMergeChainRequestInputEntriesItemChecks) String() string {
 func (*QueueMergeChainRequestInputEntriesItemChecks) ProtoMessage() {}
 
 func (x *QueueMergeChainRequestInputEntriesItemChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[176]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[178]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16400,7 +16544,7 @@ func (x *QueueMergeChainRequestInputEntriesItemChecks) ProtoReflect() protorefle
 
 // Deprecated: Use QueueMergeChainRequestInputEntriesItemChecks.ProtoReflect.Descriptor instead.
 func (*QueueMergeChainRequestInputEntriesItemChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{176}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{178}
 }
 
 func (x *QueueMergeChainRequestInputEntriesItemChecks) GetItems() []string {
@@ -16422,7 +16566,7 @@ type QueueMergeChainRequestInputEntriesItem struct {
 
 func (x *QueueMergeChainRequestInputEntriesItem) Reset() {
 	*x = QueueMergeChainRequestInputEntriesItem{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[177]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[179]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16434,7 +16578,7 @@ func (x *QueueMergeChainRequestInputEntriesItem) String() string {
 func (*QueueMergeChainRequestInputEntriesItem) ProtoMessage() {}
 
 func (x *QueueMergeChainRequestInputEntriesItem) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[177]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[179]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16447,7 +16591,7 @@ func (x *QueueMergeChainRequestInputEntriesItem) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use QueueMergeChainRequestInputEntriesItem.ProtoReflect.Descriptor instead.
 func (*QueueMergeChainRequestInputEntriesItem) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{177}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{179}
 }
 
 func (x *QueueMergeChainRequestInputEntriesItem) GetPrUrl() string {
@@ -16487,7 +16631,7 @@ type QueueMergeChainRequestInputEntries struct {
 
 func (x *QueueMergeChainRequestInputEntries) Reset() {
 	*x = QueueMergeChainRequestInputEntries{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[178]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[180]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16499,7 +16643,7 @@ func (x *QueueMergeChainRequestInputEntries) String() string {
 func (*QueueMergeChainRequestInputEntries) ProtoMessage() {}
 
 func (x *QueueMergeChainRequestInputEntries) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[178]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[180]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16512,7 +16656,7 @@ func (x *QueueMergeChainRequestInputEntries) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use QueueMergeChainRequestInputEntries.ProtoReflect.Descriptor instead.
 func (*QueueMergeChainRequestInputEntries) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{178}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{180}
 }
 
 func (x *QueueMergeChainRequestInputEntries) GetItems() []*QueueMergeChainRequestInputEntriesItem {
@@ -16533,7 +16677,7 @@ type QueueMergeChainRequestInput struct {
 
 func (x *QueueMergeChainRequestInput) Reset() {
 	*x = QueueMergeChainRequestInput{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[179]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[181]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16545,7 +16689,7 @@ func (x *QueueMergeChainRequestInput) String() string {
 func (*QueueMergeChainRequestInput) ProtoMessage() {}
 
 func (x *QueueMergeChainRequestInput) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[179]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[181]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16558,7 +16702,7 @@ func (x *QueueMergeChainRequestInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueueMergeChainRequestInput.ProtoReflect.Descriptor instead.
 func (*QueueMergeChainRequestInput) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{179}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{181}
 }
 
 func (x *QueueMergeChainRequestInput) GetRequestId() string {
@@ -16591,7 +16735,7 @@ type QueueMergeChainRequest struct {
 
 func (x *QueueMergeChainRequest) Reset() {
 	*x = QueueMergeChainRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[180]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[182]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16603,7 +16747,7 @@ func (x *QueueMergeChainRequest) String() string {
 func (*QueueMergeChainRequest) ProtoMessage() {}
 
 func (x *QueueMergeChainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[180]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[182]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16616,7 +16760,7 @@ func (x *QueueMergeChainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueueMergeChainRequest.ProtoReflect.Descriptor instead.
 func (*QueueMergeChainRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{180}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{182}
 }
 
 func (x *QueueMergeChainRequest) GetInput() *QueueMergeChainRequestInput {
@@ -16635,7 +16779,7 @@ type InspectMergeChainsRequest struct {
 
 func (x *InspectMergeChainsRequest) Reset() {
 	*x = InspectMergeChainsRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[181]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[183]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16647,7 +16791,7 @@ func (x *InspectMergeChainsRequest) String() string {
 func (*InspectMergeChainsRequest) ProtoMessage() {}
 
 func (x *InspectMergeChainsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[181]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[183]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16660,7 +16804,7 @@ func (x *InspectMergeChainsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InspectMergeChainsRequest.ProtoReflect.Descriptor instead.
 func (*InspectMergeChainsRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{181}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{183}
 }
 
 func (x *InspectMergeChainsRequest) GetId() string {
@@ -16679,7 +16823,7 @@ type ListPRReferencesRequest struct {
 
 func (x *ListPRReferencesRequest) Reset() {
 	*x = ListPRReferencesRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[182]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[184]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16691,7 +16835,7 @@ func (x *ListPRReferencesRequest) String() string {
 func (*ListPRReferencesRequest) ProtoMessage() {}
 
 func (x *ListPRReferencesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[182]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[184]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16704,7 +16848,7 @@ func (x *ListPRReferencesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPRReferencesRequest.ProtoReflect.Descriptor instead.
 func (*ListPRReferencesRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{182}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{184}
 }
 
 func (x *ListPRReferencesRequest) GetPr() string {
@@ -16723,7 +16867,7 @@ type ListPRDependenciesRequest struct {
 
 func (x *ListPRDependenciesRequest) Reset() {
 	*x = ListPRDependenciesRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[183]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[185]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16735,7 +16879,7 @@ func (x *ListPRDependenciesRequest) String() string {
 func (*ListPRDependenciesRequest) ProtoMessage() {}
 
 func (x *ListPRDependenciesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[183]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[185]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16748,7 +16892,7 @@ func (x *ListPRDependenciesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPRDependenciesRequest.ProtoReflect.Descriptor instead.
 func (*ListPRDependenciesRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{183}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{185}
 }
 
 func (x *ListPRDependenciesRequest) GetPr() string {
@@ -16772,7 +16916,7 @@ type ConfirmPRDependencyRequest struct {
 
 func (x *ConfirmPRDependencyRequest) Reset() {
 	*x = ConfirmPRDependencyRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[184]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[186]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16784,7 +16928,7 @@ func (x *ConfirmPRDependencyRequest) String() string {
 func (*ConfirmPRDependencyRequest) ProtoMessage() {}
 
 func (x *ConfirmPRDependencyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[184]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[186]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16797,7 +16941,7 @@ func (x *ConfirmPRDependencyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmPRDependencyRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmPRDependencyRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{184}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{186}
 }
 
 func (x *ConfirmPRDependencyRequest) GetPr() string {
@@ -16852,7 +16996,7 @@ type RemovePRDependencyRequest struct {
 
 func (x *RemovePRDependencyRequest) Reset() {
 	*x = RemovePRDependencyRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[185]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[187]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16864,7 +17008,7 @@ func (x *RemovePRDependencyRequest) String() string {
 func (*RemovePRDependencyRequest) ProtoMessage() {}
 
 func (x *RemovePRDependencyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[185]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[187]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16877,7 +17021,7 @@ func (x *RemovePRDependencyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemovePRDependencyRequest.ProtoReflect.Descriptor instead.
 func (*RemovePRDependencyRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{185}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{187}
 }
 
 func (x *RemovePRDependencyRequest) GetId() string {
@@ -16905,7 +17049,7 @@ type DecidePRReferenceRequest struct {
 
 func (x *DecidePRReferenceRequest) Reset() {
 	*x = DecidePRReferenceRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[186]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[188]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16917,7 +17061,7 @@ func (x *DecidePRReferenceRequest) String() string {
 func (*DecidePRReferenceRequest) ProtoMessage() {}
 
 func (x *DecidePRReferenceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[186]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[188]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16930,7 +17074,7 @@ func (x *DecidePRReferenceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecidePRReferenceRequest.ProtoReflect.Descriptor instead.
 func (*DecidePRReferenceRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{186}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{188}
 }
 
 func (x *DecidePRReferenceRequest) GetId() string {
@@ -16963,7 +17107,7 @@ type SetMergePolicyRequestChecks struct {
 
 func (x *SetMergePolicyRequestChecks) Reset() {
 	*x = SetMergePolicyRequestChecks{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[187]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[189]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16975,7 +17119,7 @@ func (x *SetMergePolicyRequestChecks) String() string {
 func (*SetMergePolicyRequestChecks) ProtoMessage() {}
 
 func (x *SetMergePolicyRequestChecks) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[187]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[189]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16988,7 +17132,7 @@ func (x *SetMergePolicyRequestChecks) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMergePolicyRequestChecks.ProtoReflect.Descriptor instead.
 func (*SetMergePolicyRequestChecks) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{187}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{189}
 }
 
 func (x *SetMergePolicyRequestChecks) GetItems() []string {
@@ -17010,7 +17154,7 @@ type SetMergePolicyRequest struct {
 
 func (x *SetMergePolicyRequest) Reset() {
 	*x = SetMergePolicyRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[188]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[190]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17022,7 +17166,7 @@ func (x *SetMergePolicyRequest) String() string {
 func (*SetMergePolicyRequest) ProtoMessage() {}
 
 func (x *SetMergePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[188]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[190]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17035,7 +17179,7 @@ func (x *SetMergePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMergePolicyRequest.ProtoReflect.Descriptor instead.
 func (*SetMergePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{188}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{190}
 }
 
 func (x *SetMergePolicyRequest) GetPr() string {
@@ -17077,7 +17221,7 @@ type SetMergeReadyRequest struct {
 
 func (x *SetMergeReadyRequest) Reset() {
 	*x = SetMergeReadyRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[189]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[191]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17089,7 +17233,7 @@ func (x *SetMergeReadyRequest) String() string {
 func (*SetMergeReadyRequest) ProtoMessage() {}
 
 func (x *SetMergeReadyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[189]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[191]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17102,7 +17246,7 @@ func (x *SetMergeReadyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMergeReadyRequest.ProtoReflect.Descriptor instead.
 func (*SetMergeReadyRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{189}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{191}
 }
 
 func (x *SetMergeReadyRequest) GetPr() string {
@@ -17135,7 +17279,7 @@ type PauseMergeChainRequest struct {
 
 func (x *PauseMergeChainRequest) Reset() {
 	*x = PauseMergeChainRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[190]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[192]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17147,7 +17291,7 @@ func (x *PauseMergeChainRequest) String() string {
 func (*PauseMergeChainRequest) ProtoMessage() {}
 
 func (x *PauseMergeChainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[190]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[192]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17160,7 +17304,7 @@ func (x *PauseMergeChainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PauseMergeChainRequest.ProtoReflect.Descriptor instead.
 func (*PauseMergeChainRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{190}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{192}
 }
 
 func (x *PauseMergeChainRequest) GetId() string {
@@ -17179,7 +17323,7 @@ type ResumeMergeChainRequest struct {
 
 func (x *ResumeMergeChainRequest) Reset() {
 	*x = ResumeMergeChainRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[191]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[193]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17191,7 +17335,7 @@ func (x *ResumeMergeChainRequest) String() string {
 func (*ResumeMergeChainRequest) ProtoMessage() {}
 
 func (x *ResumeMergeChainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[191]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[193]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17204,7 +17348,7 @@ func (x *ResumeMergeChainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeMergeChainRequest.ProtoReflect.Descriptor instead.
 func (*ResumeMergeChainRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{191}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{193}
 }
 
 func (x *ResumeMergeChainRequest) GetId() string {
@@ -17223,7 +17367,7 @@ type CancelMergeChainRequest struct {
 
 func (x *CancelMergeChainRequest) Reset() {
 	*x = CancelMergeChainRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[192]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[194]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17235,7 +17379,7 @@ func (x *CancelMergeChainRequest) String() string {
 func (*CancelMergeChainRequest) ProtoMessage() {}
 
 func (x *CancelMergeChainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[192]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[194]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17248,7 +17392,7 @@ func (x *CancelMergeChainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelMergeChainRequest.ProtoReflect.Descriptor instead.
 func (*CancelMergeChainRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{192}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{194}
 }
 
 func (x *CancelMergeChainRequest) GetId() string {
@@ -17267,7 +17411,7 @@ type ReconcileMergeOperationRequest struct {
 
 func (x *ReconcileMergeOperationRequest) Reset() {
 	*x = ReconcileMergeOperationRequest{}
-	mi := &file_octomanager_v2_domain_proto_msgTypes[193]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[195]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17279,7 +17423,7 @@ func (x *ReconcileMergeOperationRequest) String() string {
 func (*ReconcileMergeOperationRequest) ProtoMessage() {}
 
 func (x *ReconcileMergeOperationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_octomanager_v2_domain_proto_msgTypes[193]
+	mi := &file_octomanager_v2_domain_proto_msgTypes[195]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17292,7 +17436,7 @@ func (x *ReconcileMergeOperationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReconcileMergeOperationRequest.ProtoReflect.Descriptor instead.
 func (*ReconcileMergeOperationRequest) Descriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{193}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{195}
 }
 
 func (x *ReconcileMergeOperationRequest) GetId() string {
@@ -17626,7 +17770,14 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\x06_stateB\x0f\n" +
 	"\r_input_digestB\r\n" +
 	"\v_created_atB\r\n" +
-	"\v_updated_at\".\n" +
+	"\v_updated_at\"\x97\x01\n" +
+	"!DomainMergeEntryAgentInstructions\x12\x1e\n" +
+	"\bagent_id\x18\x01 \x01(\tH\x00R\aagentId\x88\x01\x01\x12\x19\n" +
+	"\x05epoch\x18\x02 \x01(\x03H\x01R\x05epoch\x88\x01\x01\x12\x17\n" +
+	"\x04text\x18\x03 \x01(\tH\x02R\x04text\x88\x01\x01B\v\n" +
+	"\t_agent_idB\b\n" +
+	"\x06_epochB\a\n" +
+	"\x05_text\".\n" +
 	"\x16DomainMergeEntryChecks\x12\x14\n" +
 	"\x05items\x18\x01 \x03(\tR\x05items\"\xa7\x02\n" +
 	"\x15DomainMergeEntryReady\x12\x19\n" +
@@ -17643,13 +17794,14 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\t_owner_idB\v\n" +
 	"\t_feedbackB\b\n" +
 	"\x06_graphB\x05\n" +
-	"\x03_at\"\xd4\a\n" +
+	"\x03_at\"\xb6\b\n" +
 	"\x10DomainMergeEntry\x12\"\n" +
 	"\n" +
 	"receipt_id\x18\x01 \x01(\tH\x00R\treceiptId\x88\x01\x01\x12,\n" +
 	"\x0freceipt_context\x18\x02 \x01(\tH\x01R\x0ereceiptContext\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"auto_merge\x18\x03 \x01(\bH\x02R\tautoMerge\x88\x01\x01\x12\x13\n" +
+	"auto_merge\x18\x03 \x01(\bH\x02R\tautoMerge\x88\x01\x01\x12`\n" +
+	"\x12agent_instructions\x18\x13 \x01(\v21.octomanager.v2.DomainMergeEntryAgentInstructionsR\x11agentInstructions\x12\x13\n" +
 	"\x02id\x18\x04 \x01(\tH\x03R\x02id\x88\x01\x01\x12\x1e\n" +
 	"\bchain_id\x18\x05 \x01(\tH\x04R\achainId\x88\x01\x01\x12\x18\n" +
 	"\x05pr_id\x18\x06 \x01(\tH\x05R\x04prId\x88\x01\x01\x12C\n" +
@@ -18135,7 +18287,14 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\v_created_atB\r\n" +
 	"\v_updated_at\"`\n" +
 	"\x19DomainMergeOverviewChains\x12C\n" +
-	"\x05items\x18\x01 \x03(\v2-.octomanager.v2.DomainMergeOverviewChainsItemR\x05items\"<\n" +
+	"\x05items\x18\x01 \x03(\v2-.octomanager.v2.DomainMergeOverviewChainsItemR\x05items\"\xa5\x01\n" +
+	"/DomainMergeOverviewEntriesItemAgentInstructions\x12\x1e\n" +
+	"\bagent_id\x18\x01 \x01(\tH\x00R\aagentId\x88\x01\x01\x12\x19\n" +
+	"\x05epoch\x18\x02 \x01(\x03H\x01R\x05epoch\x88\x01\x01\x12\x17\n" +
+	"\x04text\x18\x03 \x01(\tH\x02R\x04text\x88\x01\x01B\v\n" +
+	"\t_agent_idB\b\n" +
+	"\x06_epochB\a\n" +
+	"\x05_text\"<\n" +
 	"$DomainMergeOverviewEntriesItemChecks\x12\x14\n" +
 	"\x05items\x18\x01 \x03(\tR\x05items\"\xb5\x02\n" +
 	"#DomainMergeOverviewEntriesItemReady\x12\x19\n" +
@@ -18152,13 +18311,14 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\t_owner_idB\v\n" +
 	"\t_feedbackB\b\n" +
 	"\x06_graphB\x05\n" +
-	"\x03_at\"\x9a\b\n" +
+	"\x03_at\"\x8a\t\n" +
 	"\x1eDomainMergeOverviewEntriesItem\x12\"\n" +
 	"\n" +
 	"receipt_id\x18\x01 \x01(\tH\x00R\treceiptId\x88\x01\x01\x12,\n" +
 	"\x0freceipt_context\x18\x02 \x01(\tH\x01R\x0ereceiptContext\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"auto_merge\x18\x03 \x01(\bH\x02R\tautoMerge\x88\x01\x01\x12\x13\n" +
+	"auto_merge\x18\x03 \x01(\bH\x02R\tautoMerge\x88\x01\x01\x12n\n" +
+	"\x12agent_instructions\x18\x13 \x01(\v2?.octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructionsR\x11agentInstructions\x12\x13\n" +
 	"\x02id\x18\x04 \x01(\tH\x03R\x02id\x88\x01\x01\x12\x1e\n" +
 	"\bchain_id\x18\x05 \x01(\tH\x04R\achainId\x88\x01\x01\x12\x18\n" +
 	"\x05pr_id\x18\x06 \x01(\tH\x05R\x04prId\x88\x01\x01\x12Q\n" +
@@ -18874,13 +19034,15 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\n" +
 	"\b_versionB\x10\n" +
 	"\x0e_source_digestB\x10\n" +
-	"\x0e_created_at_ms\"\xbc\x01\n" +
-	"\x13SetAutoMergeRequest\x12\x13\n" +
-	"\x02pr\x18\x01 \x01(\tH\x00R\x02pr\x88\x01\x01\x12\x1d\n" +
-	"\aenabled\x18\x02 \x01(\bH\x01R\aenabled\x88\x01\x01\x12\x1e\n" +
-	"\bactor_id\x18\x03 \x01(\tH\x02R\aactorId\x88\x01\x01\x12\"\n" +
+	"\x0e_created_at_ms\"\xf6\x01\n" +
+	"\x13SetAutoMergeRequest\x12'\n" +
+	"\finstructions\x18\x05 \x01(\tH\x00R\finstructions\x88\x01\x01\x12\x13\n" +
+	"\x02pr\x18\x01 \x01(\tH\x01R\x02pr\x88\x01\x01\x12\x1d\n" +
+	"\aenabled\x18\x02 \x01(\bH\x02R\aenabled\x88\x01\x01\x12\x1e\n" +
+	"\bactor_id\x18\x03 \x01(\tH\x03R\aactorId\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"request_id\x18\x04 \x01(\tH\x03R\trequestId\x88\x01\x01B\x05\n" +
+	"request_id\x18\x04 \x01(\tH\x04R\trequestId\x88\x01\x01B\x0f\n" +
+	"\r_instructionsB\x05\n" +
 	"\x03_prB\n" +
 	"\n" +
 	"\b_enabledB\v\n" +
@@ -19373,7 +19535,7 @@ func file_octomanager_v2_domain_proto_rawDescGZIP() []byte {
 }
 
 var file_octomanager_v2_domain_proto_enumTypes = make([]protoimpl.EnumInfo, 78)
-var file_octomanager_v2_domain_proto_msgTypes = make([]protoimpl.MessageInfo, 194)
+var file_octomanager_v2_domain_proto_msgTypes = make([]protoimpl.MessageInfo, 196)
 var file_octomanager_v2_domain_proto_goTypes = []any{
 	(DomainCheckEvidenceVariant1State)(0),                                                         // 0: octomanager.v2.DomainCheckEvidenceVariant1State
 	(DomainCheckEvidenceVariant2State)(0),                                                         // 1: octomanager.v2.DomainCheckEvidenceVariant2State
@@ -19488,165 +19650,167 @@ var file_octomanager_v2_domain_proto_goTypes = []any{
 	(*DomainDeliveryOutcomeVariant3)(nil),                                                         // 110: octomanager.v2.DomainDeliveryOutcomeVariant3
 	(*DomainDeliveryOutcome)(nil),                                                                 // 111: octomanager.v2.DomainDeliveryOutcome
 	(*DomainMergeChain)(nil),                                                                      // 112: octomanager.v2.DomainMergeChain
-	(*DomainMergeEntryChecks)(nil),                                                                // 113: octomanager.v2.DomainMergeEntryChecks
-	(*DomainMergeEntryReady)(nil),                                                                 // 114: octomanager.v2.DomainMergeEntryReady
-	(*DomainMergeEntry)(nil),                                                                      // 115: octomanager.v2.DomainMergeEntry
-	(*DomainMergeOperationPreparationChecksItem)(nil),                                             // 116: octomanager.v2.DomainMergeOperationPreparationChecksItem
-	(*DomainMergeOperationPreparationChecks)(nil),                                                 // 117: octomanager.v2.DomainMergeOperationPreparationChecks
-	(*DomainMergeOperationPreparationKey)(nil),                                                    // 118: octomanager.v2.DomainMergeOperationPreparationKey
-	(*DomainMergeOperationPreparation)(nil),                                                       // 119: octomanager.v2.DomainMergeOperationPreparation
-	(*DomainMergeOperation)(nil),                                                                  // 120: octomanager.v2.DomainMergeOperation
-	(*DomainDependencyPreparationChecksItem)(nil),                                                 // 121: octomanager.v2.DomainDependencyPreparationChecksItem
-	(*DomainDependencyPreparationChecks)(nil),                                                     // 122: octomanager.v2.DomainDependencyPreparationChecks
-	(*DomainDependencyPreparationKey)(nil),                                                        // 123: octomanager.v2.DomainDependencyPreparationKey
-	(*DomainDependencyPreparation)(nil),                                                           // 124: octomanager.v2.DomainDependencyPreparation
-	(*DomainDependency)(nil),                                                                      // 125: octomanager.v2.DomainDependency
-	(*DomainPRReference)(nil),                                                                     // 126: octomanager.v2.DomainPRReference
-	(*DomainQueueInputEntriesItemChecks)(nil),                                                     // 127: octomanager.v2.DomainQueueInputEntriesItemChecks
-	(*DomainQueueInputEntriesItem)(nil),                                                           // 128: octomanager.v2.DomainQueueInputEntriesItem
-	(*DomainQueueInputEntries)(nil),                                                               // 129: octomanager.v2.DomainQueueInputEntries
-	(*DomainQueueInput)(nil),                                                                      // 130: octomanager.v2.DomainQueueInput
-	(*DomainReceiptTarget)(nil),                                                                   // 131: octomanager.v2.DomainReceiptTarget
-	(*DomainAgentDigestTransport)(nil),                                                            // 132: octomanager.v2.DomainAgentDigestTransport
-	(*DomainAgentDigest)(nil),                                                                     // 133: octomanager.v2.DomainAgentDigest
-	(*DomainDigestRevisionMergeTarget)(nil),                                                       // 134: octomanager.v2.DomainDigestRevisionMergeTarget
-	(*DomainDigestRevisionMessageIds)(nil),                                                        // 135: octomanager.v2.DomainDigestRevisionMessageIds
-	(*DomainDigestRevision)(nil),                                                                  // 136: octomanager.v2.DomainDigestRevision
-	(*DomainDigestInspectionDigestTransport)(nil),                                                 // 137: octomanager.v2.DomainDigestInspectionDigestTransport
-	(*DomainDigestInspectionDigest)(nil),                                                          // 138: octomanager.v2.DomainDigestInspectionDigest
-	(*DomainDigestInspectionRevisionMergeTarget)(nil),                                             // 139: octomanager.v2.DomainDigestInspectionRevisionMergeTarget
-	(*DomainDigestInspectionRevisionMessageIds)(nil),                                              // 140: octomanager.v2.DomainDigestInspectionRevisionMessageIds
-	(*DomainDigestInspectionRevision)(nil),                                                        // 141: octomanager.v2.DomainDigestInspectionRevision
-	(*DomainDigestInspectionRevisions)(nil),                                                       // 142: octomanager.v2.DomainDigestInspectionRevisions
-	(*DomainDigestInspectionReceiptsItem)(nil),                                                    // 143: octomanager.v2.DomainDigestInspectionReceiptsItem
-	(*DomainDigestInspectionReceipts)(nil),                                                        // 144: octomanager.v2.DomainDigestInspectionReceipts
-	(*DomainDigestInspectionEventsItemDetailMessages)(nil),                                        // 145: octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
-	(*DomainDigestInspectionEventsItemDetailOmittedFields)(nil),                                   // 146: octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
-	(*DomainDigestInspectionEventsItemDetail)(nil),                                                // 147: octomanager.v2.DomainDigestInspectionEventsItemDetail
-	(*DomainDigestInspectionEventsItem)(nil),                                                      // 148: octomanager.v2.DomainDigestInspectionEventsItem
-	(*DomainDigestInspectionEvents)(nil),                                                          // 149: octomanager.v2.DomainDigestInspectionEvents
-	(*DomainDigestInspection)(nil),                                                                // 150: octomanager.v2.DomainDigestInspection
-	(*DomainDigestReceipt)(nil),                                                                   // 151: octomanager.v2.DomainDigestReceipt
-	(*DomainMergeReceiptResult)(nil),                                                              // 152: octomanager.v2.DomainMergeReceiptResult
-	(*DomainMergeOverviewChainsItem)(nil),                                                         // 153: octomanager.v2.DomainMergeOverviewChainsItem
-	(*DomainMergeOverviewChains)(nil),                                                             // 154: octomanager.v2.DomainMergeOverviewChains
-	(*DomainMergeOverviewEntriesItemChecks)(nil),                                                  // 155: octomanager.v2.DomainMergeOverviewEntriesItemChecks
-	(*DomainMergeOverviewEntriesItemReady)(nil),                                                   // 156: octomanager.v2.DomainMergeOverviewEntriesItemReady
-	(*DomainMergeOverviewEntriesItem)(nil),                                                        // 157: octomanager.v2.DomainMergeOverviewEntriesItem
-	(*DomainMergeOverviewEntries)(nil),                                                            // 158: octomanager.v2.DomainMergeOverviewEntries
-	(*DomainMergeOverviewOperationsItemPreparationChecksItem)(nil),                                // 159: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
-	(*DomainMergeOverviewOperationsItemPreparationChecks)(nil),                                    // 160: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
-	(*DomainMergeOverviewOperationsItemPreparationKey)(nil),                                       // 161: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
-	(*DomainMergeOverviewOperationsItemPreparation)(nil),                                          // 162: octomanager.v2.DomainMergeOverviewOperationsItemPreparation
-	(*DomainMergeOverviewOperationsItem)(nil),                                                     // 163: octomanager.v2.DomainMergeOverviewOperationsItem
-	(*DomainMergeOverviewOperations)(nil),                                                         // 164: octomanager.v2.DomainMergeOverviewOperations
-	(*DomainMergeOverviewDependenciesItemPreparationChecksItem)(nil),                              // 165: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
-	(*DomainMergeOverviewDependenciesItemPreparationChecks)(nil),                                  // 166: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
-	(*DomainMergeOverviewDependenciesItemPreparationKey)(nil),                                     // 167: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
-	(*DomainMergeOverviewDependenciesItemPreparation)(nil),                                        // 168: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
-	(*DomainMergeOverviewDependenciesItem)(nil),                                                   // 169: octomanager.v2.DomainMergeOverviewDependenciesItem
-	(*DomainMergeOverviewDependencies)(nil),                                                       // 170: octomanager.v2.DomainMergeOverviewDependencies
-	(*DomainMergeOverview)(nil),                                                                   // 171: octomanager.v2.DomainMergeOverview
-	(*DomainReconciliationResult)(nil),                                                            // 172: octomanager.v2.DomainReconciliationResult
-	(*DomainArchivedSubmissionSummary)(nil),                                                       // 173: octomanager.v2.DomainArchivedSubmissionSummary
-	(*DomainArchivedSubmissionRequestValidationItem)(nil),                                         // 174: octomanager.v2.DomainArchivedSubmissionRequestValidationItem
-	(*DomainArchivedSubmissionRequestValidation)(nil),                                             // 175: octomanager.v2.DomainArchivedSubmissionRequestValidation
-	(*DomainArchivedSubmissionRequestOwner)(nil),                                                  // 176: octomanager.v2.DomainArchivedSubmissionRequestOwner
-	(*DomainArchivedSubmissionRequest)(nil),                                                       // 177: octomanager.v2.DomainArchivedSubmissionRequest
-	(*DomainArchivedSubmissionSnapshotFiles)(nil),                                                 // 178: octomanager.v2.DomainArchivedSubmissionSnapshotFiles
-	(*DomainArchivedSubmissionSnapshotSourcesItem)(nil),                                           // 179: octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
-	(*DomainArchivedSubmissionSnapshotSources)(nil),                                               // 180: octomanager.v2.DomainArchivedSubmissionSnapshotSources
-	(*DomainArchivedSubmissionSnapshot)(nil),                                                      // 181: octomanager.v2.DomainArchivedSubmissionSnapshot
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1)(nil),         // 182: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes)(nil), // 183: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2)(nil),         // 184: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3)(nil),         // 185: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4)(nil),         // 186: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5)(nil),         // 187: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck)(nil),                 // 188: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem)(nil),                      // 189: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
-	(*DomainArchivedSubmissionStagesItemResultVariant1Requirements)(nil),                          // 190: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
-	(*DomainArchivedSubmissionStagesItemResultVariant1Blockers)(nil),                              // 191: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant1)(nil),                                      // 192: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
-	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)(nil),                // 193: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
-	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem)(nil),                            // 194: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
-	(*DomainArchivedSubmissionStagesItemResultVariant2Claims)(nil),                                // 195: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
-	(*DomainArchivedSubmissionStagesItemResultVariant2Limitations)(nil),                           // 196: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
-	(*DomainArchivedSubmissionStagesItemResultVariant2Blockers)(nil),                              // 197: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant2)(nil),                                      // 198: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
-	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem)(nil),                 // 199: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
-	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks)(nil),                     // 200: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
-	(*DomainArchivedSubmissionStagesItemResultVariant3Blockers)(nil),                              // 201: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant3)(nil),                                      // 202: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
-	(*DomainArchivedSubmissionStagesItemResult)(nil),                                              // 203: octomanager.v2.DomainArchivedSubmissionStagesItemResult
-	(*DomainArchivedSubmissionStagesItem)(nil),                                                    // 204: octomanager.v2.DomainArchivedSubmissionStagesItem
-	(*DomainArchivedSubmissionStages)(nil),                                                        // 205: octomanager.v2.DomainArchivedSubmissionStages
-	(*DomainArchivedSubmissionBriefSchemaVersion)(nil),                                            // 206: octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
-	(*DomainArchivedSubmissionBriefRequestValidationItem)(nil),                                    // 207: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
-	(*DomainArchivedSubmissionBriefRequestValidation)(nil),                                        // 208: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
-	(*DomainArchivedSubmissionBriefRequestOwner)(nil),                                             // 209: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
-	(*DomainArchivedSubmissionBriefRequest)(nil),                                                  // 210: octomanager.v2.DomainArchivedSubmissionBriefRequest
-	(*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs)(nil),                             // 211: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
-	(*DomainArchivedSubmissionBriefChangeClaimsItem)(nil),                                         // 212: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
-	(*DomainArchivedSubmissionBriefChangeClaims)(nil),                                             // 213: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
-	(*DomainArchivedSubmissionBriefChangeLimitations)(nil),                                        // 214: octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
-	(*DomainArchivedSubmissionBriefChangeBlockers)(nil),                                           // 215: octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
-	(*DomainArchivedSubmissionBriefChange)(nil),                                                   // 216: octomanager.v2.DomainArchivedSubmissionBriefChange
-	(*DomainArchivedSubmissionBriefDraftRequirementChecksItem)(nil),                               // 217: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
-	(*DomainArchivedSubmissionBriefDraftRequirementChecks)(nil),                                   // 218: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
-	(*DomainArchivedSubmissionBriefDraftBlockers)(nil),                                            // 219: octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
-	(*DomainArchivedSubmissionBriefDraft)(nil),                                                    // 220: octomanager.v2.DomainArchivedSubmissionBriefDraft
-	(*DomainArchivedSubmissionBrief)(nil),                                                         // 221: octomanager.v2.DomainArchivedSubmissionBrief
-	(*DomainArchivedSubmissionWorkerPids)(nil),                                                    // 222: octomanager.v2.DomainArchivedSubmissionWorkerPids
-	(*DomainArchivedSubmission)(nil),                                                              // 223: octomanager.v2.DomainArchivedSubmission
-	(*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory)(nil),                               // 224: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesRoutine)(nil),                                       // 225: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
-	(*DomainRepositoryPolicyComplexityProfilesStandardAdvisory)(nil),                              // 226: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesStandard)(nil),                                      // 227: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
-	(*DomainRepositoryPolicyComplexityProfilesComplexAdvisory)(nil),                               // 228: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesComplex)(nil),                                       // 229: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
-	(*DomainRepositoryPolicyComplexityProfiles)(nil),                                              // 230: octomanager.v2.DomainRepositoryPolicyComplexityProfiles
-	(*DomainRepositoryPolicySchemaVersion)(nil),                                                   // 231: octomanager.v2.DomainRepositoryPolicySchemaVersion
-	(*DomainRepositoryPolicyAnalystVersionVariant1)(nil),                                          // 232: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
-	(*DomainRepositoryPolicyAnalystVersionVariant2)(nil),                                          // 233: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
-	(*DomainRepositoryPolicyAnalystVersionVariant3)(nil),                                          // 234: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
-	(*DomainRepositoryPolicyAnalystVersion)(nil),                                                  // 235: octomanager.v2.DomainRepositoryPolicyAnalystVersion
-	(*DomainRepositoryPolicyStockVersion)(nil),                                                    // 236: octomanager.v2.DomainRepositoryPolicyStockVersion
-	(*DomainRepositoryPolicyCitationCorrectionsItem)(nil),                                         // 237: octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
-	(*DomainRepositoryPolicyCitationCorrections)(nil),                                             // 238: octomanager.v2.DomainRepositoryPolicyCitationCorrections
-	(*DomainRepositoryPolicySourcesItem)(nil),                                                     // 239: octomanager.v2.DomainRepositoryPolicySourcesItem
-	(*DomainRepositoryPolicySources)(nil),                                                         // 240: octomanager.v2.DomainRepositoryPolicySources
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1)(nil),                           // 241: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes)(nil),                   // 242: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2)(nil),                           // 243: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3)(nil),                           // 244: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4)(nil),                           // 245: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5)(nil),                           // 246: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheck)(nil),                                   // 247: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
-	(*DomainRepositoryPolicyAnalysisRequirementsItem)(nil),                                        // 248: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
-	(*DomainRepositoryPolicyAnalysisRequirements)(nil),                                            // 249: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
-	(*DomainRepositoryPolicyAnalysisBlockers)(nil),                                                // 250: octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
-	(*DomainRepositoryPolicyAnalysis)(nil),                                                        // 251: octomanager.v2.DomainRepositoryPolicyAnalysis
-	(*DomainRepositoryPolicy)(nil),                                                                // 252: octomanager.v2.DomainRepositoryPolicy
-	(*SetAutoMergeRequest)(nil),                                                                   // 253: octomanager.v2.SetAutoMergeRequest
-	(*QueueMergeChainRequestInputEntriesItemChecks)(nil),                                          // 254: octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
-	(*QueueMergeChainRequestInputEntriesItem)(nil),                                                // 255: octomanager.v2.QueueMergeChainRequestInputEntriesItem
-	(*QueueMergeChainRequestInputEntries)(nil),                                                    // 256: octomanager.v2.QueueMergeChainRequestInputEntries
-	(*QueueMergeChainRequestInput)(nil),                                                           // 257: octomanager.v2.QueueMergeChainRequestInput
-	(*QueueMergeChainRequest)(nil),                                                                // 258: octomanager.v2.QueueMergeChainRequest
-	(*InspectMergeChainsRequest)(nil),                                                             // 259: octomanager.v2.InspectMergeChainsRequest
-	(*ListPRReferencesRequest)(nil),                                                               // 260: octomanager.v2.ListPRReferencesRequest
-	(*ListPRDependenciesRequest)(nil),                                                             // 261: octomanager.v2.ListPRDependenciesRequest
-	(*ConfirmPRDependencyRequest)(nil),                                                            // 262: octomanager.v2.ConfirmPRDependencyRequest
-	(*RemovePRDependencyRequest)(nil),                                                             // 263: octomanager.v2.RemovePRDependencyRequest
-	(*DecidePRReferenceRequest)(nil),                                                              // 264: octomanager.v2.DecidePRReferenceRequest
-	(*SetMergePolicyRequestChecks)(nil),                                                           // 265: octomanager.v2.SetMergePolicyRequestChecks
-	(*SetMergePolicyRequest)(nil),                                                                 // 266: octomanager.v2.SetMergePolicyRequest
-	(*SetMergeReadyRequest)(nil),                                                                  // 267: octomanager.v2.SetMergeReadyRequest
-	(*PauseMergeChainRequest)(nil),                                                                // 268: octomanager.v2.PauseMergeChainRequest
-	(*ResumeMergeChainRequest)(nil),                                                               // 269: octomanager.v2.ResumeMergeChainRequest
-	(*CancelMergeChainRequest)(nil),                                                               // 270: octomanager.v2.CancelMergeChainRequest
-	(*ReconcileMergeOperationRequest)(nil),                                                        // 271: octomanager.v2.ReconcileMergeOperationRequest
+	(*DomainMergeEntryAgentInstructions)(nil),                                                     // 113: octomanager.v2.DomainMergeEntryAgentInstructions
+	(*DomainMergeEntryChecks)(nil),                                                                // 114: octomanager.v2.DomainMergeEntryChecks
+	(*DomainMergeEntryReady)(nil),                                                                 // 115: octomanager.v2.DomainMergeEntryReady
+	(*DomainMergeEntry)(nil),                                                                      // 116: octomanager.v2.DomainMergeEntry
+	(*DomainMergeOperationPreparationChecksItem)(nil),                                             // 117: octomanager.v2.DomainMergeOperationPreparationChecksItem
+	(*DomainMergeOperationPreparationChecks)(nil),                                                 // 118: octomanager.v2.DomainMergeOperationPreparationChecks
+	(*DomainMergeOperationPreparationKey)(nil),                                                    // 119: octomanager.v2.DomainMergeOperationPreparationKey
+	(*DomainMergeOperationPreparation)(nil),                                                       // 120: octomanager.v2.DomainMergeOperationPreparation
+	(*DomainMergeOperation)(nil),                                                                  // 121: octomanager.v2.DomainMergeOperation
+	(*DomainDependencyPreparationChecksItem)(nil),                                                 // 122: octomanager.v2.DomainDependencyPreparationChecksItem
+	(*DomainDependencyPreparationChecks)(nil),                                                     // 123: octomanager.v2.DomainDependencyPreparationChecks
+	(*DomainDependencyPreparationKey)(nil),                                                        // 124: octomanager.v2.DomainDependencyPreparationKey
+	(*DomainDependencyPreparation)(nil),                                                           // 125: octomanager.v2.DomainDependencyPreparation
+	(*DomainDependency)(nil),                                                                      // 126: octomanager.v2.DomainDependency
+	(*DomainPRReference)(nil),                                                                     // 127: octomanager.v2.DomainPRReference
+	(*DomainQueueInputEntriesItemChecks)(nil),                                                     // 128: octomanager.v2.DomainQueueInputEntriesItemChecks
+	(*DomainQueueInputEntriesItem)(nil),                                                           // 129: octomanager.v2.DomainQueueInputEntriesItem
+	(*DomainQueueInputEntries)(nil),                                                               // 130: octomanager.v2.DomainQueueInputEntries
+	(*DomainQueueInput)(nil),                                                                      // 131: octomanager.v2.DomainQueueInput
+	(*DomainReceiptTarget)(nil),                                                                   // 132: octomanager.v2.DomainReceiptTarget
+	(*DomainAgentDigestTransport)(nil),                                                            // 133: octomanager.v2.DomainAgentDigestTransport
+	(*DomainAgentDigest)(nil),                                                                     // 134: octomanager.v2.DomainAgentDigest
+	(*DomainDigestRevisionMergeTarget)(nil),                                                       // 135: octomanager.v2.DomainDigestRevisionMergeTarget
+	(*DomainDigestRevisionMessageIds)(nil),                                                        // 136: octomanager.v2.DomainDigestRevisionMessageIds
+	(*DomainDigestRevision)(nil),                                                                  // 137: octomanager.v2.DomainDigestRevision
+	(*DomainDigestInspectionDigestTransport)(nil),                                                 // 138: octomanager.v2.DomainDigestInspectionDigestTransport
+	(*DomainDigestInspectionDigest)(nil),                                                          // 139: octomanager.v2.DomainDigestInspectionDigest
+	(*DomainDigestInspectionRevisionMergeTarget)(nil),                                             // 140: octomanager.v2.DomainDigestInspectionRevisionMergeTarget
+	(*DomainDigestInspectionRevisionMessageIds)(nil),                                              // 141: octomanager.v2.DomainDigestInspectionRevisionMessageIds
+	(*DomainDigestInspectionRevision)(nil),                                                        // 142: octomanager.v2.DomainDigestInspectionRevision
+	(*DomainDigestInspectionRevisions)(nil),                                                       // 143: octomanager.v2.DomainDigestInspectionRevisions
+	(*DomainDigestInspectionReceiptsItem)(nil),                                                    // 144: octomanager.v2.DomainDigestInspectionReceiptsItem
+	(*DomainDigestInspectionReceipts)(nil),                                                        // 145: octomanager.v2.DomainDigestInspectionReceipts
+	(*DomainDigestInspectionEventsItemDetailMessages)(nil),                                        // 146: octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
+	(*DomainDigestInspectionEventsItemDetailOmittedFields)(nil),                                   // 147: octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
+	(*DomainDigestInspectionEventsItemDetail)(nil),                                                // 148: octomanager.v2.DomainDigestInspectionEventsItemDetail
+	(*DomainDigestInspectionEventsItem)(nil),                                                      // 149: octomanager.v2.DomainDigestInspectionEventsItem
+	(*DomainDigestInspectionEvents)(nil),                                                          // 150: octomanager.v2.DomainDigestInspectionEvents
+	(*DomainDigestInspection)(nil),                                                                // 151: octomanager.v2.DomainDigestInspection
+	(*DomainDigestReceipt)(nil),                                                                   // 152: octomanager.v2.DomainDigestReceipt
+	(*DomainMergeReceiptResult)(nil),                                                              // 153: octomanager.v2.DomainMergeReceiptResult
+	(*DomainMergeOverviewChainsItem)(nil),                                                         // 154: octomanager.v2.DomainMergeOverviewChainsItem
+	(*DomainMergeOverviewChains)(nil),                                                             // 155: octomanager.v2.DomainMergeOverviewChains
+	(*DomainMergeOverviewEntriesItemAgentInstructions)(nil),                                       // 156: octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
+	(*DomainMergeOverviewEntriesItemChecks)(nil),                                                  // 157: octomanager.v2.DomainMergeOverviewEntriesItemChecks
+	(*DomainMergeOverviewEntriesItemReady)(nil),                                                   // 158: octomanager.v2.DomainMergeOverviewEntriesItemReady
+	(*DomainMergeOverviewEntriesItem)(nil),                                                        // 159: octomanager.v2.DomainMergeOverviewEntriesItem
+	(*DomainMergeOverviewEntries)(nil),                                                            // 160: octomanager.v2.DomainMergeOverviewEntries
+	(*DomainMergeOverviewOperationsItemPreparationChecksItem)(nil),                                // 161: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
+	(*DomainMergeOverviewOperationsItemPreparationChecks)(nil),                                    // 162: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
+	(*DomainMergeOverviewOperationsItemPreparationKey)(nil),                                       // 163: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
+	(*DomainMergeOverviewOperationsItemPreparation)(nil),                                          // 164: octomanager.v2.DomainMergeOverviewOperationsItemPreparation
+	(*DomainMergeOverviewOperationsItem)(nil),                                                     // 165: octomanager.v2.DomainMergeOverviewOperationsItem
+	(*DomainMergeOverviewOperations)(nil),                                                         // 166: octomanager.v2.DomainMergeOverviewOperations
+	(*DomainMergeOverviewDependenciesItemPreparationChecksItem)(nil),                              // 167: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
+	(*DomainMergeOverviewDependenciesItemPreparationChecks)(nil),                                  // 168: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
+	(*DomainMergeOverviewDependenciesItemPreparationKey)(nil),                                     // 169: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
+	(*DomainMergeOverviewDependenciesItemPreparation)(nil),                                        // 170: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
+	(*DomainMergeOverviewDependenciesItem)(nil),                                                   // 171: octomanager.v2.DomainMergeOverviewDependenciesItem
+	(*DomainMergeOverviewDependencies)(nil),                                                       // 172: octomanager.v2.DomainMergeOverviewDependencies
+	(*DomainMergeOverview)(nil),                                                                   // 173: octomanager.v2.DomainMergeOverview
+	(*DomainReconciliationResult)(nil),                                                            // 174: octomanager.v2.DomainReconciliationResult
+	(*DomainArchivedSubmissionSummary)(nil),                                                       // 175: octomanager.v2.DomainArchivedSubmissionSummary
+	(*DomainArchivedSubmissionRequestValidationItem)(nil),                                         // 176: octomanager.v2.DomainArchivedSubmissionRequestValidationItem
+	(*DomainArchivedSubmissionRequestValidation)(nil),                                             // 177: octomanager.v2.DomainArchivedSubmissionRequestValidation
+	(*DomainArchivedSubmissionRequestOwner)(nil),                                                  // 178: octomanager.v2.DomainArchivedSubmissionRequestOwner
+	(*DomainArchivedSubmissionRequest)(nil),                                                       // 179: octomanager.v2.DomainArchivedSubmissionRequest
+	(*DomainArchivedSubmissionSnapshotFiles)(nil),                                                 // 180: octomanager.v2.DomainArchivedSubmissionSnapshotFiles
+	(*DomainArchivedSubmissionSnapshotSourcesItem)(nil),                                           // 181: octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
+	(*DomainArchivedSubmissionSnapshotSources)(nil),                                               // 182: octomanager.v2.DomainArchivedSubmissionSnapshotSources
+	(*DomainArchivedSubmissionSnapshot)(nil),                                                      // 183: octomanager.v2.DomainArchivedSubmissionSnapshot
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1)(nil),         // 184: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes)(nil), // 185: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2)(nil),         // 186: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3)(nil),         // 187: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4)(nil),         // 188: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5)(nil),         // 189: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck)(nil),                 // 190: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem)(nil),                      // 191: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
+	(*DomainArchivedSubmissionStagesItemResultVariant1Requirements)(nil),                          // 192: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
+	(*DomainArchivedSubmissionStagesItemResultVariant1Blockers)(nil),                              // 193: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant1)(nil),                                      // 194: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
+	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)(nil),                // 195: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
+	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem)(nil),                            // 196: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
+	(*DomainArchivedSubmissionStagesItemResultVariant2Claims)(nil),                                // 197: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
+	(*DomainArchivedSubmissionStagesItemResultVariant2Limitations)(nil),                           // 198: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
+	(*DomainArchivedSubmissionStagesItemResultVariant2Blockers)(nil),                              // 199: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant2)(nil),                                      // 200: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
+	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem)(nil),                 // 201: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
+	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks)(nil),                     // 202: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
+	(*DomainArchivedSubmissionStagesItemResultVariant3Blockers)(nil),                              // 203: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant3)(nil),                                      // 204: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
+	(*DomainArchivedSubmissionStagesItemResult)(nil),                                              // 205: octomanager.v2.DomainArchivedSubmissionStagesItemResult
+	(*DomainArchivedSubmissionStagesItem)(nil),                                                    // 206: octomanager.v2.DomainArchivedSubmissionStagesItem
+	(*DomainArchivedSubmissionStages)(nil),                                                        // 207: octomanager.v2.DomainArchivedSubmissionStages
+	(*DomainArchivedSubmissionBriefSchemaVersion)(nil),                                            // 208: octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
+	(*DomainArchivedSubmissionBriefRequestValidationItem)(nil),                                    // 209: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
+	(*DomainArchivedSubmissionBriefRequestValidation)(nil),                                        // 210: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
+	(*DomainArchivedSubmissionBriefRequestOwner)(nil),                                             // 211: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
+	(*DomainArchivedSubmissionBriefRequest)(nil),                                                  // 212: octomanager.v2.DomainArchivedSubmissionBriefRequest
+	(*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs)(nil),                             // 213: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
+	(*DomainArchivedSubmissionBriefChangeClaimsItem)(nil),                                         // 214: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
+	(*DomainArchivedSubmissionBriefChangeClaims)(nil),                                             // 215: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
+	(*DomainArchivedSubmissionBriefChangeLimitations)(nil),                                        // 216: octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
+	(*DomainArchivedSubmissionBriefChangeBlockers)(nil),                                           // 217: octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
+	(*DomainArchivedSubmissionBriefChange)(nil),                                                   // 218: octomanager.v2.DomainArchivedSubmissionBriefChange
+	(*DomainArchivedSubmissionBriefDraftRequirementChecksItem)(nil),                               // 219: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
+	(*DomainArchivedSubmissionBriefDraftRequirementChecks)(nil),                                   // 220: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
+	(*DomainArchivedSubmissionBriefDraftBlockers)(nil),                                            // 221: octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
+	(*DomainArchivedSubmissionBriefDraft)(nil),                                                    // 222: octomanager.v2.DomainArchivedSubmissionBriefDraft
+	(*DomainArchivedSubmissionBrief)(nil),                                                         // 223: octomanager.v2.DomainArchivedSubmissionBrief
+	(*DomainArchivedSubmissionWorkerPids)(nil),                                                    // 224: octomanager.v2.DomainArchivedSubmissionWorkerPids
+	(*DomainArchivedSubmission)(nil),                                                              // 225: octomanager.v2.DomainArchivedSubmission
+	(*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory)(nil),                               // 226: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesRoutine)(nil),                                       // 227: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
+	(*DomainRepositoryPolicyComplexityProfilesStandardAdvisory)(nil),                              // 228: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesStandard)(nil),                                      // 229: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
+	(*DomainRepositoryPolicyComplexityProfilesComplexAdvisory)(nil),                               // 230: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesComplex)(nil),                                       // 231: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
+	(*DomainRepositoryPolicyComplexityProfiles)(nil),                                              // 232: octomanager.v2.DomainRepositoryPolicyComplexityProfiles
+	(*DomainRepositoryPolicySchemaVersion)(nil),                                                   // 233: octomanager.v2.DomainRepositoryPolicySchemaVersion
+	(*DomainRepositoryPolicyAnalystVersionVariant1)(nil),                                          // 234: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
+	(*DomainRepositoryPolicyAnalystVersionVariant2)(nil),                                          // 235: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
+	(*DomainRepositoryPolicyAnalystVersionVariant3)(nil),                                          // 236: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
+	(*DomainRepositoryPolicyAnalystVersion)(nil),                                                  // 237: octomanager.v2.DomainRepositoryPolicyAnalystVersion
+	(*DomainRepositoryPolicyStockVersion)(nil),                                                    // 238: octomanager.v2.DomainRepositoryPolicyStockVersion
+	(*DomainRepositoryPolicyCitationCorrectionsItem)(nil),                                         // 239: octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
+	(*DomainRepositoryPolicyCitationCorrections)(nil),                                             // 240: octomanager.v2.DomainRepositoryPolicyCitationCorrections
+	(*DomainRepositoryPolicySourcesItem)(nil),                                                     // 241: octomanager.v2.DomainRepositoryPolicySourcesItem
+	(*DomainRepositoryPolicySources)(nil),                                                         // 242: octomanager.v2.DomainRepositoryPolicySources
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1)(nil),                           // 243: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes)(nil),                   // 244: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2)(nil),                           // 245: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3)(nil),                           // 246: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4)(nil),                           // 247: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5)(nil),                           // 248: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheck)(nil),                                   // 249: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
+	(*DomainRepositoryPolicyAnalysisRequirementsItem)(nil),                                        // 250: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
+	(*DomainRepositoryPolicyAnalysisRequirements)(nil),                                            // 251: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
+	(*DomainRepositoryPolicyAnalysisBlockers)(nil),                                                // 252: octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
+	(*DomainRepositoryPolicyAnalysis)(nil),                                                        // 253: octomanager.v2.DomainRepositoryPolicyAnalysis
+	(*DomainRepositoryPolicy)(nil),                                                                // 254: octomanager.v2.DomainRepositoryPolicy
+	(*SetAutoMergeRequest)(nil),                                                                   // 255: octomanager.v2.SetAutoMergeRequest
+	(*QueueMergeChainRequestInputEntriesItemChecks)(nil),                                          // 256: octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
+	(*QueueMergeChainRequestInputEntriesItem)(nil),                                                // 257: octomanager.v2.QueueMergeChainRequestInputEntriesItem
+	(*QueueMergeChainRequestInputEntries)(nil),                                                    // 258: octomanager.v2.QueueMergeChainRequestInputEntries
+	(*QueueMergeChainRequestInput)(nil),                                                           // 259: octomanager.v2.QueueMergeChainRequestInput
+	(*QueueMergeChainRequest)(nil),                                                                // 260: octomanager.v2.QueueMergeChainRequest
+	(*InspectMergeChainsRequest)(nil),                                                             // 261: octomanager.v2.InspectMergeChainsRequest
+	(*ListPRReferencesRequest)(nil),                                                               // 262: octomanager.v2.ListPRReferencesRequest
+	(*ListPRDependenciesRequest)(nil),                                                             // 263: octomanager.v2.ListPRDependenciesRequest
+	(*ConfirmPRDependencyRequest)(nil),                                                            // 264: octomanager.v2.ConfirmPRDependencyRequest
+	(*RemovePRDependencyRequest)(nil),                                                             // 265: octomanager.v2.RemovePRDependencyRequest
+	(*DecidePRReferenceRequest)(nil),                                                              // 266: octomanager.v2.DecidePRReferenceRequest
+	(*SetMergePolicyRequestChecks)(nil),                                                           // 267: octomanager.v2.SetMergePolicyRequestChecks
+	(*SetMergePolicyRequest)(nil),                                                                 // 268: octomanager.v2.SetMergePolicyRequest
+	(*SetMergeReadyRequest)(nil),                                                                  // 269: octomanager.v2.SetMergeReadyRequest
+	(*PauseMergeChainRequest)(nil),                                                                // 270: octomanager.v2.PauseMergeChainRequest
+	(*ResumeMergeChainRequest)(nil),                                                               // 271: octomanager.v2.ResumeMergeChainRequest
+	(*CancelMergeChainRequest)(nil),                                                               // 272: octomanager.v2.CancelMergeChainRequest
+	(*ReconcileMergeOperationRequest)(nil),                                                        // 273: octomanager.v2.ReconcileMergeOperationRequest
 }
 var file_octomanager_v2_domain_proto_depIdxs = []int32{
 	79,  // 0: octomanager.v2.DomainCheckEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainCheckEvidenceVariant1ValueItem
@@ -19696,199 +19860,201 @@ var file_octomanager_v2_domain_proto_depIdxs = []int32{
 	109, // 44: octomanager.v2.DomainDeliveryOutcome.variant_2:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant2
 	110, // 45: octomanager.v2.DomainDeliveryOutcome.variant_3:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant3
 	18,  // 46: octomanager.v2.DomainMergeChain.state:type_name -> octomanager.v2.DomainMergeChainState
-	19,  // 47: octomanager.v2.DomainMergeEntry.method:type_name -> octomanager.v2.DomainMergeEntryMethod
-	113, // 48: octomanager.v2.DomainMergeEntry.checks:type_name -> octomanager.v2.DomainMergeEntryChecks
-	20,  // 49: octomanager.v2.DomainMergeEntry.state:type_name -> octomanager.v2.DomainMergeEntryState
-	114, // 50: octomanager.v2.DomainMergeEntry.ready:type_name -> octomanager.v2.DomainMergeEntryReady
-	116, // 51: octomanager.v2.DomainMergeOperationPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOperationPreparationChecksItem
-	24,  // 52: octomanager.v2.DomainMergeOperationPreparation.kind:type_name -> octomanager.v2.DomainMergeOperationPreparationKind
-	117, // 53: octomanager.v2.DomainMergeOperationPreparation.checks:type_name -> octomanager.v2.DomainMergeOperationPreparationChecks
-	118, // 54: octomanager.v2.DomainMergeOperationPreparation.key:type_name -> octomanager.v2.DomainMergeOperationPreparationKey
-	21,  // 55: octomanager.v2.DomainMergeOperation.kind:type_name -> octomanager.v2.DomainMergeOperationKind
-	22,  // 56: octomanager.v2.DomainMergeOperation.state:type_name -> octomanager.v2.DomainMergeOperationState
-	23,  // 57: octomanager.v2.DomainMergeOperation.phase:type_name -> octomanager.v2.DomainMergeOperationPhase
-	119, // 58: octomanager.v2.DomainMergeOperation.preparation:type_name -> octomanager.v2.DomainMergeOperationPreparation
-	121, // 59: octomanager.v2.DomainDependencyPreparationChecks.items:type_name -> octomanager.v2.DomainDependencyPreparationChecksItem
-	25,  // 60: octomanager.v2.DomainDependencyPreparation.kind:type_name -> octomanager.v2.DomainDependencyPreparationKind
-	122, // 61: octomanager.v2.DomainDependencyPreparation.checks:type_name -> octomanager.v2.DomainDependencyPreparationChecks
-	123, // 62: octomanager.v2.DomainDependencyPreparation.key:type_name -> octomanager.v2.DomainDependencyPreparationKey
-	124, // 63: octomanager.v2.DomainDependency.preparation:type_name -> octomanager.v2.DomainDependencyPreparation
-	26,  // 64: octomanager.v2.DomainPRReference.target_kind:type_name -> octomanager.v2.DomainPRReferenceTargetKind
-	27,  // 65: octomanager.v2.DomainPRReference.hint:type_name -> octomanager.v2.DomainPRReferenceHint
-	28,  // 66: octomanager.v2.DomainPRReference.decision:type_name -> octomanager.v2.DomainPRReferenceDecision
-	29,  // 67: octomanager.v2.DomainQueueInputEntriesItem.method:type_name -> octomanager.v2.DomainQueueInputEntriesItemMethod
-	127, // 68: octomanager.v2.DomainQueueInputEntriesItem.checks:type_name -> octomanager.v2.DomainQueueInputEntriesItemChecks
-	128, // 69: octomanager.v2.DomainQueueInputEntries.items:type_name -> octomanager.v2.DomainQueueInputEntriesItem
-	129, // 70: octomanager.v2.DomainQueueInput.entries:type_name -> octomanager.v2.DomainQueueInputEntries
-	30,  // 71: octomanager.v2.DomainReceiptTarget.method:type_name -> octomanager.v2.DomainReceiptTargetMethod
-	31,  // 72: octomanager.v2.DomainAgentDigestTransport.kind:type_name -> octomanager.v2.DomainAgentDigestTransportKind
-	132, // 73: octomanager.v2.DomainAgentDigest.transport:type_name -> octomanager.v2.DomainAgentDigestTransport
-	32,  // 74: octomanager.v2.DomainAgentDigest.state:type_name -> octomanager.v2.DomainAgentDigestState
-	33,  // 75: octomanager.v2.DomainDigestRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestRevisionMergeTargetMethod
-	134, // 76: octomanager.v2.DomainDigestRevision.merge_target:type_name -> octomanager.v2.DomainDigestRevisionMergeTarget
-	135, // 77: octomanager.v2.DomainDigestRevision.message_ids:type_name -> octomanager.v2.DomainDigestRevisionMessageIds
-	34,  // 78: octomanager.v2.DomainDigestInspectionDigestTransport.kind:type_name -> octomanager.v2.DomainDigestInspectionDigestTransportKind
-	137, // 79: octomanager.v2.DomainDigestInspectionDigest.transport:type_name -> octomanager.v2.DomainDigestInspectionDigestTransport
-	35,  // 80: octomanager.v2.DomainDigestInspectionDigest.state:type_name -> octomanager.v2.DomainDigestInspectionDigestState
-	36,  // 81: octomanager.v2.DomainDigestInspectionRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
-	139, // 82: octomanager.v2.DomainDigestInspectionRevision.merge_target:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTarget
-	140, // 83: octomanager.v2.DomainDigestInspectionRevision.message_ids:type_name -> octomanager.v2.DomainDigestInspectionRevisionMessageIds
-	143, // 84: octomanager.v2.DomainDigestInspectionReceipts.items:type_name -> octomanager.v2.DomainDigestInspectionReceiptsItem
-	145, // 85: octomanager.v2.DomainDigestInspectionEventsItemDetail.messages:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
-	146, // 86: octomanager.v2.DomainDigestInspectionEventsItemDetail.omitted_fields:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
-	147, // 87: octomanager.v2.DomainDigestInspectionEventsItem.detail:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetail
-	148, // 88: octomanager.v2.DomainDigestInspectionEvents.items:type_name -> octomanager.v2.DomainDigestInspectionEventsItem
-	138, // 89: octomanager.v2.DomainDigestInspection.digest:type_name -> octomanager.v2.DomainDigestInspectionDigest
-	141, // 90: octomanager.v2.DomainDigestInspection.revision:type_name -> octomanager.v2.DomainDigestInspectionRevision
-	142, // 91: octomanager.v2.DomainDigestInspection.revisions:type_name -> octomanager.v2.DomainDigestInspectionRevisions
-	144, // 92: octomanager.v2.DomainDigestInspection.receipts:type_name -> octomanager.v2.DomainDigestInspectionReceipts
-	149, // 93: octomanager.v2.DomainDigestInspection.events:type_name -> octomanager.v2.DomainDigestInspectionEvents
-	37,  // 94: octomanager.v2.DomainMergeReceiptResult.state:type_name -> octomanager.v2.DomainMergeReceiptResultState
-	38,  // 95: octomanager.v2.DomainMergeOverviewChainsItem.state:type_name -> octomanager.v2.DomainMergeOverviewChainsItemState
-	153, // 96: octomanager.v2.DomainMergeOverviewChains.items:type_name -> octomanager.v2.DomainMergeOverviewChainsItem
-	39,  // 97: octomanager.v2.DomainMergeOverviewEntriesItem.method:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemMethod
-	155, // 98: octomanager.v2.DomainMergeOverviewEntriesItem.checks:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemChecks
-	40,  // 99: octomanager.v2.DomainMergeOverviewEntriesItem.state:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemState
-	156, // 100: octomanager.v2.DomainMergeOverviewEntriesItem.ready:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemReady
-	157, // 101: octomanager.v2.DomainMergeOverviewEntries.items:type_name -> octomanager.v2.DomainMergeOverviewEntriesItem
-	159, // 102: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
-	44,  // 103: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
-	160, // 104: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
-	161, // 105: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
-	41,  // 106: octomanager.v2.DomainMergeOverviewOperationsItem.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemKind
-	42,  // 107: octomanager.v2.DomainMergeOverviewOperationsItem.state:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemState
-	43,  // 108: octomanager.v2.DomainMergeOverviewOperationsItem.phase:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPhase
-	162, // 109: octomanager.v2.DomainMergeOverviewOperationsItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparation
-	163, // 110: octomanager.v2.DomainMergeOverviewOperations.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItem
-	165, // 111: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
-	45,  // 112: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
-	166, // 113: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
-	167, // 114: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
-	168, // 115: octomanager.v2.DomainMergeOverviewDependenciesItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
-	169, // 116: octomanager.v2.DomainMergeOverviewDependencies.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItem
-	154, // 117: octomanager.v2.DomainMergeOverview.chains:type_name -> octomanager.v2.DomainMergeOverviewChains
-	158, // 118: octomanager.v2.DomainMergeOverview.entries:type_name -> octomanager.v2.DomainMergeOverviewEntries
-	164, // 119: octomanager.v2.DomainMergeOverview.operations:type_name -> octomanager.v2.DomainMergeOverviewOperations
-	170, // 120: octomanager.v2.DomainMergeOverview.dependencies:type_name -> octomanager.v2.DomainMergeOverviewDependencies
-	46,  // 121: octomanager.v2.DomainReconciliationResult.state:type_name -> octomanager.v2.DomainReconciliationResultState
-	47,  // 122: octomanager.v2.DomainArchivedSubmissionSummary.state:type_name -> octomanager.v2.DomainArchivedSubmissionSummaryState
-	49,  // 123: octomanager.v2.DomainArchivedSubmissionRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
-	174, // 124: octomanager.v2.DomainArchivedSubmissionRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItem
-	50,  // 125: octomanager.v2.DomainArchivedSubmissionRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
-	48,  // 126: octomanager.v2.DomainArchivedSubmissionRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionRequestMode
-	175, // 127: octomanager.v2.DomainArchivedSubmissionRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidation
-	176, // 128: octomanager.v2.DomainArchivedSubmissionRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwner
-	179, // 129: octomanager.v2.DomainArchivedSubmissionSnapshotSources.items:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
-	178, // 130: octomanager.v2.DomainArchivedSubmissionSnapshot.files:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotFiles
-	180, // 131: octomanager.v2.DomainArchivedSubmissionSnapshot.sources:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSources
-	55,  // 132: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
-	56,  // 133: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
-	183, // 134: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
-	57,  // 135: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
-	58,  // 136: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
-	59,  // 137: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
-	182, // 138: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
-	184, // 139: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
-	185, // 140: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
-	186, // 141: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
-	187, // 142: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
-	53,  // 143: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.strength:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
-	54,  // 144: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.category:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
-	188, // 145: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.check:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
-	189, // 146: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
-	190, // 147: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.requirements:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
-	191, // 148: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
-	193, // 149: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
-	61,  // 150: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
-	194, // 151: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
-	60,  // 152: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.tier:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
-	195, // 153: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.claims:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
-	196, // 154: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
-	197, // 155: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
-	62,  // 156: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
-	199, // 157: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
-	200, // 158: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
-	201, // 159: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
-	192, // 160: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
-	198, // 161: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
-	202, // 162: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
-	52,  // 163: octomanager.v2.DomainArchivedSubmissionStagesItem.role:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemRole
-	203, // 164: octomanager.v2.DomainArchivedSubmissionStagesItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResult
-	204, // 165: octomanager.v2.DomainArchivedSubmissionStages.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItem
-	64,  // 166: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
-	207, // 167: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
-	65,  // 168: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
-	63,  // 169: octomanager.v2.DomainArchivedSubmissionBriefRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestMode
-	208, // 170: octomanager.v2.DomainArchivedSubmissionBriefRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
-	209, // 171: octomanager.v2.DomainArchivedSubmissionBriefRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
-	211, // 172: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
-	67,  // 173: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
-	212, // 174: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
-	66,  // 175: octomanager.v2.DomainArchivedSubmissionBriefChange.tier:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeTier
-	213, // 176: octomanager.v2.DomainArchivedSubmissionBriefChange.claims:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
-	214, // 177: octomanager.v2.DomainArchivedSubmissionBriefChange.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
-	215, // 178: octomanager.v2.DomainArchivedSubmissionBriefChange.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
-	68,  // 179: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
-	217, // 180: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
-	218, // 181: octomanager.v2.DomainArchivedSubmissionBriefDraft.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
-	219, // 182: octomanager.v2.DomainArchivedSubmissionBriefDraft.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
-	206, // 183: octomanager.v2.DomainArchivedSubmissionBrief.schema_version:type_name -> octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
-	210, // 184: octomanager.v2.DomainArchivedSubmissionBrief.request:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequest
-	216, // 185: octomanager.v2.DomainArchivedSubmissionBrief.change:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChange
-	220, // 186: octomanager.v2.DomainArchivedSubmissionBrief.draft:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraft
-	177, // 187: octomanager.v2.DomainArchivedSubmission.request:type_name -> octomanager.v2.DomainArchivedSubmissionRequest
-	51,  // 188: octomanager.v2.DomainArchivedSubmission.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
-	181, // 189: octomanager.v2.DomainArchivedSubmission.snapshot:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshot
-	205, // 190: octomanager.v2.DomainArchivedSubmission.stages:type_name -> octomanager.v2.DomainArchivedSubmissionStages
-	221, // 191: octomanager.v2.DomainArchivedSubmission.brief:type_name -> octomanager.v2.DomainArchivedSubmissionBrief
-	222, // 192: octomanager.v2.DomainArchivedSubmission.worker_pids:type_name -> octomanager.v2.DomainArchivedSubmissionWorkerPids
-	224, // 193: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
-	226, // 194: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
-	228, // 195: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
-	225, // 196: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.routine:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
-	227, // 197: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.standard:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
-	229, // 198: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.complex:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
-	232, // 199: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
-	233, // 200: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
-	234, // 201: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
-	237, // 202: octomanager.v2.DomainRepositoryPolicyCitationCorrections.items:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
-	239, // 203: octomanager.v2.DomainRepositoryPolicySources.items:type_name -> octomanager.v2.DomainRepositoryPolicySourcesItem
-	71,  // 204: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
-	72,  // 205: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
-	242, // 206: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
-	73,  // 207: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
-	74,  // 208: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
-	75,  // 209: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
-	241, // 210: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
-	243, // 211: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
-	244, // 212: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
-	245, // 213: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
-	246, // 214: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
-	69,  // 215: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.strength:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
-	70,  // 216: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.category:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
-	247, // 217: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.check:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
-	248, // 218: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements.items:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
-	249, // 219: octomanager.v2.DomainRepositoryPolicyAnalysis.requirements:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
-	250, // 220: octomanager.v2.DomainRepositoryPolicyAnalysis.blockers:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
-	230, // 221: octomanager.v2.DomainRepositoryPolicy.complexity_profiles:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfiles
-	231, // 222: octomanager.v2.DomainRepositoryPolicy.schema_version:type_name -> octomanager.v2.DomainRepositoryPolicySchemaVersion
-	235, // 223: octomanager.v2.DomainRepositoryPolicy.analyst_version:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersion
-	236, // 224: octomanager.v2.DomainRepositoryPolicy.stock_version:type_name -> octomanager.v2.DomainRepositoryPolicyStockVersion
-	238, // 225: octomanager.v2.DomainRepositoryPolicy.citation_corrections:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrections
-	240, // 226: octomanager.v2.DomainRepositoryPolicy.sources:type_name -> octomanager.v2.DomainRepositoryPolicySources
-	251, // 227: octomanager.v2.DomainRepositoryPolicy.analysis:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysis
-	76,  // 228: octomanager.v2.QueueMergeChainRequestInputEntriesItem.method:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
-	254, // 229: octomanager.v2.QueueMergeChainRequestInputEntriesItem.checks:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
-	255, // 230: octomanager.v2.QueueMergeChainRequestInputEntries.items:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItem
-	256, // 231: octomanager.v2.QueueMergeChainRequestInput.entries:type_name -> octomanager.v2.QueueMergeChainRequestInputEntries
-	257, // 232: octomanager.v2.QueueMergeChainRequest.input:type_name -> octomanager.v2.QueueMergeChainRequestInput
-	77,  // 233: octomanager.v2.DecidePRReferenceRequest.decision:type_name -> octomanager.v2.DecidePRReferenceRequestDecision
-	265, // 234: octomanager.v2.SetMergePolicyRequest.checks:type_name -> octomanager.v2.SetMergePolicyRequestChecks
-	235, // [235:235] is the sub-list for method output_type
-	235, // [235:235] is the sub-list for method input_type
-	235, // [235:235] is the sub-list for extension type_name
-	235, // [235:235] is the sub-list for extension extendee
-	0,   // [0:235] is the sub-list for field type_name
+	113, // 47: octomanager.v2.DomainMergeEntry.agent_instructions:type_name -> octomanager.v2.DomainMergeEntryAgentInstructions
+	19,  // 48: octomanager.v2.DomainMergeEntry.method:type_name -> octomanager.v2.DomainMergeEntryMethod
+	114, // 49: octomanager.v2.DomainMergeEntry.checks:type_name -> octomanager.v2.DomainMergeEntryChecks
+	20,  // 50: octomanager.v2.DomainMergeEntry.state:type_name -> octomanager.v2.DomainMergeEntryState
+	115, // 51: octomanager.v2.DomainMergeEntry.ready:type_name -> octomanager.v2.DomainMergeEntryReady
+	117, // 52: octomanager.v2.DomainMergeOperationPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOperationPreparationChecksItem
+	24,  // 53: octomanager.v2.DomainMergeOperationPreparation.kind:type_name -> octomanager.v2.DomainMergeOperationPreparationKind
+	118, // 54: octomanager.v2.DomainMergeOperationPreparation.checks:type_name -> octomanager.v2.DomainMergeOperationPreparationChecks
+	119, // 55: octomanager.v2.DomainMergeOperationPreparation.key:type_name -> octomanager.v2.DomainMergeOperationPreparationKey
+	21,  // 56: octomanager.v2.DomainMergeOperation.kind:type_name -> octomanager.v2.DomainMergeOperationKind
+	22,  // 57: octomanager.v2.DomainMergeOperation.state:type_name -> octomanager.v2.DomainMergeOperationState
+	23,  // 58: octomanager.v2.DomainMergeOperation.phase:type_name -> octomanager.v2.DomainMergeOperationPhase
+	120, // 59: octomanager.v2.DomainMergeOperation.preparation:type_name -> octomanager.v2.DomainMergeOperationPreparation
+	122, // 60: octomanager.v2.DomainDependencyPreparationChecks.items:type_name -> octomanager.v2.DomainDependencyPreparationChecksItem
+	25,  // 61: octomanager.v2.DomainDependencyPreparation.kind:type_name -> octomanager.v2.DomainDependencyPreparationKind
+	123, // 62: octomanager.v2.DomainDependencyPreparation.checks:type_name -> octomanager.v2.DomainDependencyPreparationChecks
+	124, // 63: octomanager.v2.DomainDependencyPreparation.key:type_name -> octomanager.v2.DomainDependencyPreparationKey
+	125, // 64: octomanager.v2.DomainDependency.preparation:type_name -> octomanager.v2.DomainDependencyPreparation
+	26,  // 65: octomanager.v2.DomainPRReference.target_kind:type_name -> octomanager.v2.DomainPRReferenceTargetKind
+	27,  // 66: octomanager.v2.DomainPRReference.hint:type_name -> octomanager.v2.DomainPRReferenceHint
+	28,  // 67: octomanager.v2.DomainPRReference.decision:type_name -> octomanager.v2.DomainPRReferenceDecision
+	29,  // 68: octomanager.v2.DomainQueueInputEntriesItem.method:type_name -> octomanager.v2.DomainQueueInputEntriesItemMethod
+	128, // 69: octomanager.v2.DomainQueueInputEntriesItem.checks:type_name -> octomanager.v2.DomainQueueInputEntriesItemChecks
+	129, // 70: octomanager.v2.DomainQueueInputEntries.items:type_name -> octomanager.v2.DomainQueueInputEntriesItem
+	130, // 71: octomanager.v2.DomainQueueInput.entries:type_name -> octomanager.v2.DomainQueueInputEntries
+	30,  // 72: octomanager.v2.DomainReceiptTarget.method:type_name -> octomanager.v2.DomainReceiptTargetMethod
+	31,  // 73: octomanager.v2.DomainAgentDigestTransport.kind:type_name -> octomanager.v2.DomainAgentDigestTransportKind
+	133, // 74: octomanager.v2.DomainAgentDigest.transport:type_name -> octomanager.v2.DomainAgentDigestTransport
+	32,  // 75: octomanager.v2.DomainAgentDigest.state:type_name -> octomanager.v2.DomainAgentDigestState
+	33,  // 76: octomanager.v2.DomainDigestRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestRevisionMergeTargetMethod
+	135, // 77: octomanager.v2.DomainDigestRevision.merge_target:type_name -> octomanager.v2.DomainDigestRevisionMergeTarget
+	136, // 78: octomanager.v2.DomainDigestRevision.message_ids:type_name -> octomanager.v2.DomainDigestRevisionMessageIds
+	34,  // 79: octomanager.v2.DomainDigestInspectionDigestTransport.kind:type_name -> octomanager.v2.DomainDigestInspectionDigestTransportKind
+	138, // 80: octomanager.v2.DomainDigestInspectionDigest.transport:type_name -> octomanager.v2.DomainDigestInspectionDigestTransport
+	35,  // 81: octomanager.v2.DomainDigestInspectionDigest.state:type_name -> octomanager.v2.DomainDigestInspectionDigestState
+	36,  // 82: octomanager.v2.DomainDigestInspectionRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
+	140, // 83: octomanager.v2.DomainDigestInspectionRevision.merge_target:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTarget
+	141, // 84: octomanager.v2.DomainDigestInspectionRevision.message_ids:type_name -> octomanager.v2.DomainDigestInspectionRevisionMessageIds
+	144, // 85: octomanager.v2.DomainDigestInspectionReceipts.items:type_name -> octomanager.v2.DomainDigestInspectionReceiptsItem
+	146, // 86: octomanager.v2.DomainDigestInspectionEventsItemDetail.messages:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
+	147, // 87: octomanager.v2.DomainDigestInspectionEventsItemDetail.omitted_fields:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
+	148, // 88: octomanager.v2.DomainDigestInspectionEventsItem.detail:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetail
+	149, // 89: octomanager.v2.DomainDigestInspectionEvents.items:type_name -> octomanager.v2.DomainDigestInspectionEventsItem
+	139, // 90: octomanager.v2.DomainDigestInspection.digest:type_name -> octomanager.v2.DomainDigestInspectionDigest
+	142, // 91: octomanager.v2.DomainDigestInspection.revision:type_name -> octomanager.v2.DomainDigestInspectionRevision
+	143, // 92: octomanager.v2.DomainDigestInspection.revisions:type_name -> octomanager.v2.DomainDigestInspectionRevisions
+	145, // 93: octomanager.v2.DomainDigestInspection.receipts:type_name -> octomanager.v2.DomainDigestInspectionReceipts
+	150, // 94: octomanager.v2.DomainDigestInspection.events:type_name -> octomanager.v2.DomainDigestInspectionEvents
+	37,  // 95: octomanager.v2.DomainMergeReceiptResult.state:type_name -> octomanager.v2.DomainMergeReceiptResultState
+	38,  // 96: octomanager.v2.DomainMergeOverviewChainsItem.state:type_name -> octomanager.v2.DomainMergeOverviewChainsItemState
+	154, // 97: octomanager.v2.DomainMergeOverviewChains.items:type_name -> octomanager.v2.DomainMergeOverviewChainsItem
+	156, // 98: octomanager.v2.DomainMergeOverviewEntriesItem.agent_instructions:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
+	39,  // 99: octomanager.v2.DomainMergeOverviewEntriesItem.method:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemMethod
+	157, // 100: octomanager.v2.DomainMergeOverviewEntriesItem.checks:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemChecks
+	40,  // 101: octomanager.v2.DomainMergeOverviewEntriesItem.state:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemState
+	158, // 102: octomanager.v2.DomainMergeOverviewEntriesItem.ready:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemReady
+	159, // 103: octomanager.v2.DomainMergeOverviewEntries.items:type_name -> octomanager.v2.DomainMergeOverviewEntriesItem
+	161, // 104: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
+	44,  // 105: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
+	162, // 106: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
+	163, // 107: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
+	41,  // 108: octomanager.v2.DomainMergeOverviewOperationsItem.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemKind
+	42,  // 109: octomanager.v2.DomainMergeOverviewOperationsItem.state:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemState
+	43,  // 110: octomanager.v2.DomainMergeOverviewOperationsItem.phase:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPhase
+	164, // 111: octomanager.v2.DomainMergeOverviewOperationsItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparation
+	165, // 112: octomanager.v2.DomainMergeOverviewOperations.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItem
+	167, // 113: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
+	45,  // 114: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
+	168, // 115: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
+	169, // 116: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
+	170, // 117: octomanager.v2.DomainMergeOverviewDependenciesItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
+	171, // 118: octomanager.v2.DomainMergeOverviewDependencies.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItem
+	155, // 119: octomanager.v2.DomainMergeOverview.chains:type_name -> octomanager.v2.DomainMergeOverviewChains
+	160, // 120: octomanager.v2.DomainMergeOverview.entries:type_name -> octomanager.v2.DomainMergeOverviewEntries
+	166, // 121: octomanager.v2.DomainMergeOverview.operations:type_name -> octomanager.v2.DomainMergeOverviewOperations
+	172, // 122: octomanager.v2.DomainMergeOverview.dependencies:type_name -> octomanager.v2.DomainMergeOverviewDependencies
+	46,  // 123: octomanager.v2.DomainReconciliationResult.state:type_name -> octomanager.v2.DomainReconciliationResultState
+	47,  // 124: octomanager.v2.DomainArchivedSubmissionSummary.state:type_name -> octomanager.v2.DomainArchivedSubmissionSummaryState
+	49,  // 125: octomanager.v2.DomainArchivedSubmissionRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
+	176, // 126: octomanager.v2.DomainArchivedSubmissionRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItem
+	50,  // 127: octomanager.v2.DomainArchivedSubmissionRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
+	48,  // 128: octomanager.v2.DomainArchivedSubmissionRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionRequestMode
+	177, // 129: octomanager.v2.DomainArchivedSubmissionRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidation
+	178, // 130: octomanager.v2.DomainArchivedSubmissionRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwner
+	181, // 131: octomanager.v2.DomainArchivedSubmissionSnapshotSources.items:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
+	180, // 132: octomanager.v2.DomainArchivedSubmissionSnapshot.files:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotFiles
+	182, // 133: octomanager.v2.DomainArchivedSubmissionSnapshot.sources:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSources
+	55,  // 134: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
+	56,  // 135: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
+	185, // 136: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
+	57,  // 137: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
+	58,  // 138: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
+	59,  // 139: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
+	184, // 140: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
+	186, // 141: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
+	187, // 142: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
+	188, // 143: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
+	189, // 144: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
+	53,  // 145: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.strength:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
+	54,  // 146: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.category:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
+	190, // 147: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.check:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
+	191, // 148: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
+	192, // 149: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.requirements:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
+	193, // 150: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
+	195, // 151: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
+	61,  // 152: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
+	196, // 153: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
+	60,  // 154: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.tier:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
+	197, // 155: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.claims:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
+	198, // 156: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
+	199, // 157: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
+	62,  // 158: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
+	201, // 159: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
+	202, // 160: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
+	203, // 161: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
+	194, // 162: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
+	200, // 163: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
+	204, // 164: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
+	52,  // 165: octomanager.v2.DomainArchivedSubmissionStagesItem.role:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemRole
+	205, // 166: octomanager.v2.DomainArchivedSubmissionStagesItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResult
+	206, // 167: octomanager.v2.DomainArchivedSubmissionStages.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItem
+	64,  // 168: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
+	209, // 169: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
+	65,  // 170: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
+	63,  // 171: octomanager.v2.DomainArchivedSubmissionBriefRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestMode
+	210, // 172: octomanager.v2.DomainArchivedSubmissionBriefRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
+	211, // 173: octomanager.v2.DomainArchivedSubmissionBriefRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
+	213, // 174: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
+	67,  // 175: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
+	214, // 176: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
+	66,  // 177: octomanager.v2.DomainArchivedSubmissionBriefChange.tier:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeTier
+	215, // 178: octomanager.v2.DomainArchivedSubmissionBriefChange.claims:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
+	216, // 179: octomanager.v2.DomainArchivedSubmissionBriefChange.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
+	217, // 180: octomanager.v2.DomainArchivedSubmissionBriefChange.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
+	68,  // 181: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
+	219, // 182: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
+	220, // 183: octomanager.v2.DomainArchivedSubmissionBriefDraft.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
+	221, // 184: octomanager.v2.DomainArchivedSubmissionBriefDraft.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
+	208, // 185: octomanager.v2.DomainArchivedSubmissionBrief.schema_version:type_name -> octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
+	212, // 186: octomanager.v2.DomainArchivedSubmissionBrief.request:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequest
+	218, // 187: octomanager.v2.DomainArchivedSubmissionBrief.change:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChange
+	222, // 188: octomanager.v2.DomainArchivedSubmissionBrief.draft:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraft
+	179, // 189: octomanager.v2.DomainArchivedSubmission.request:type_name -> octomanager.v2.DomainArchivedSubmissionRequest
+	51,  // 190: octomanager.v2.DomainArchivedSubmission.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
+	183, // 191: octomanager.v2.DomainArchivedSubmission.snapshot:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshot
+	207, // 192: octomanager.v2.DomainArchivedSubmission.stages:type_name -> octomanager.v2.DomainArchivedSubmissionStages
+	223, // 193: octomanager.v2.DomainArchivedSubmission.brief:type_name -> octomanager.v2.DomainArchivedSubmissionBrief
+	224, // 194: octomanager.v2.DomainArchivedSubmission.worker_pids:type_name -> octomanager.v2.DomainArchivedSubmissionWorkerPids
+	226, // 195: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
+	228, // 196: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
+	230, // 197: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
+	227, // 198: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.routine:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
+	229, // 199: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.standard:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
+	231, // 200: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.complex:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
+	234, // 201: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
+	235, // 202: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
+	236, // 203: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
+	239, // 204: octomanager.v2.DomainRepositoryPolicyCitationCorrections.items:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
+	241, // 205: octomanager.v2.DomainRepositoryPolicySources.items:type_name -> octomanager.v2.DomainRepositoryPolicySourcesItem
+	71,  // 206: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
+	72,  // 207: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
+	244, // 208: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
+	73,  // 209: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
+	74,  // 210: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
+	75,  // 211: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
+	243, // 212: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
+	245, // 213: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
+	246, // 214: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
+	247, // 215: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
+	248, // 216: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
+	69,  // 217: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.strength:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
+	70,  // 218: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.category:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
+	249, // 219: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.check:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
+	250, // 220: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements.items:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
+	251, // 221: octomanager.v2.DomainRepositoryPolicyAnalysis.requirements:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
+	252, // 222: octomanager.v2.DomainRepositoryPolicyAnalysis.blockers:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
+	232, // 223: octomanager.v2.DomainRepositoryPolicy.complexity_profiles:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfiles
+	233, // 224: octomanager.v2.DomainRepositoryPolicy.schema_version:type_name -> octomanager.v2.DomainRepositoryPolicySchemaVersion
+	237, // 225: octomanager.v2.DomainRepositoryPolicy.analyst_version:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersion
+	238, // 226: octomanager.v2.DomainRepositoryPolicy.stock_version:type_name -> octomanager.v2.DomainRepositoryPolicyStockVersion
+	240, // 227: octomanager.v2.DomainRepositoryPolicy.citation_corrections:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrections
+	242, // 228: octomanager.v2.DomainRepositoryPolicy.sources:type_name -> octomanager.v2.DomainRepositoryPolicySources
+	253, // 229: octomanager.v2.DomainRepositoryPolicy.analysis:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysis
+	76,  // 230: octomanager.v2.QueueMergeChainRequestInputEntriesItem.method:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
+	256, // 231: octomanager.v2.QueueMergeChainRequestInputEntriesItem.checks:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
+	257, // 232: octomanager.v2.QueueMergeChainRequestInputEntries.items:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItem
+	258, // 233: octomanager.v2.QueueMergeChainRequestInput.entries:type_name -> octomanager.v2.QueueMergeChainRequestInputEntries
+	259, // 234: octomanager.v2.QueueMergeChainRequest.input:type_name -> octomanager.v2.QueueMergeChainRequestInput
+	77,  // 235: octomanager.v2.DecidePRReferenceRequest.decision:type_name -> octomanager.v2.DecidePRReferenceRequestDecision
+	267, // 236: octomanager.v2.SetMergePolicyRequest.checks:type_name -> octomanager.v2.SetMergePolicyRequestChecks
+	237, // [237:237] is the sub-list for method output_type
+	237, // [237:237] is the sub-list for method input_type
+	237, // [237:237] is the sub-list for extension type_name
+	237, // [237:237] is the sub-list for extension extendee
+	0,   // [0:237] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_domain_proto_init() }
@@ -19946,132 +20112,134 @@ func file_octomanager_v2_domain_proto_init() {
 		(*DomainDeliveryOutcome_Variant_3)(nil),
 	}
 	file_octomanager_v2_domain_proto_msgTypes[34].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[36].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[35].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[37].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[41].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[38].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[42].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[46].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[43].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[47].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[48].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[50].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[52].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[49].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[51].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[53].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[54].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[55].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[56].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[58].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[57].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[59].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[60].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[61].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[63].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[65].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[69].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[62].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[64].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[66].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[70].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[73].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[71].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[74].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[75].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[76].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[78].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[79].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[84].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[85].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[90].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[91].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[94].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[95].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[80].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[81].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[86].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[87].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[92].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[93].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[96].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[97].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[98].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[99].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[100].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[101].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[103].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[104].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[105].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[106].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[107].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[108].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[109].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[110].OneofWrappers = []any{
+	file_octomanager_v2_domain_proto_msgTypes[110].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[111].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[112].OneofWrappers = []any{
 		(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_1)(nil),
 		(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_2)(nil),
 		(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_3)(nil),
 		(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_4)(nil),
 		(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_5)(nil),
 	}
-	file_octomanager_v2_domain_proto_msgTypes[111].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[114].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[113].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[116].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[120].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[121].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[124].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[125].OneofWrappers = []any{
+	file_octomanager_v2_domain_proto_msgTypes[118].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[122].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[123].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[126].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[127].OneofWrappers = []any{
 		(*DomainArchivedSubmissionStagesItemResult_Variant_1)(nil),
 		(*DomainArchivedSubmissionStagesItemResult_Variant_2)(nil),
 		(*DomainArchivedSubmissionStagesItemResult_Variant_3)(nil),
 	}
-	file_octomanager_v2_domain_proto_msgTypes[126].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[128].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[129].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[130].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[131].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[132].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[133].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[134].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[138].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[139].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[142].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[143].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[136].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[140].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[141].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[144].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[145].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[146].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[147].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[148].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[149].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[150].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[151].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[152].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[153].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[154].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[155].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[156].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[157].OneofWrappers = []any{
+	file_octomanager_v2_domain_proto_msgTypes[157].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[158].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[159].OneofWrappers = []any{
 		(*DomainRepositoryPolicyAnalystVersion_Variant_1)(nil),
 		(*DomainRepositoryPolicyAnalystVersion_Variant_2)(nil),
 		(*DomainRepositoryPolicyAnalystVersion_Variant_3)(nil),
 	}
-	file_octomanager_v2_domain_proto_msgTypes[158].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[159].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[160].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[161].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[163].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[165].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[166].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[167].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[168].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[169].OneofWrappers = []any{
+	file_octomanager_v2_domain_proto_msgTypes[169].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[170].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[171].OneofWrappers = []any{
 		(*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_1)(nil),
 		(*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_2)(nil),
 		(*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_3)(nil),
 		(*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_4)(nil),
 		(*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_5)(nil),
 	}
-	file_octomanager_v2_domain_proto_msgTypes[170].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[173].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[174].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[172].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[175].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[176].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[177].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[179].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[181].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[182].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[183].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[184].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[185].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[186].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[187].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[188].OneofWrappers = []any{}
-	file_octomanager_v2_domain_proto_msgTypes[189].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[190].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[191].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[192].OneofWrappers = []any{}
 	file_octomanager_v2_domain_proto_msgTypes[193].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[194].OneofWrappers = []any{}
+	file_octomanager_v2_domain_proto_msgTypes[195].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_domain_proto_rawDesc), len(file_octomanager_v2_domain_proto_rawDesc)),
 			NumEnums:      78,
-			NumMessages:   194,
+			NumMessages:   196,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

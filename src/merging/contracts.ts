@@ -127,6 +127,9 @@ export const EntrySchema = object({
   receiptId: Type.Optional(text()),
   receiptContext: Type.Optional(text()),
   autoMerge: Type.Boolean(),
+  agentInstructions: Type.Optional(
+    object({ agentId: text(), epoch: Type.Integer(), text: text(1000) }),
+  ),
   id: text(),
   chainId: text(),
   prId: text(),
@@ -178,6 +181,7 @@ const actor = { actorId: text() };
 export const CommandSchema = Type.Union([
   object({
     op: Type.Literal("auto_merge"),
+    instructions: Type.Optional(Type.String({ maxLength: 1000 })),
     pr: text(2000),
     enabled: Type.Boolean(),
     actorId: text(),

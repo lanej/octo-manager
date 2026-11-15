@@ -11,6 +11,7 @@ export type Capability =
 export interface Options extends Record<string, string | boolean | undefined> {
   "intent-file"?: string;
   purpose?: string;
+  instructions?: string;
   "sample-remote"?: string;
   "sample-count"?: string;
   template?: string;

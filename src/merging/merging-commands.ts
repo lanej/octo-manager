@@ -19,6 +19,7 @@ export const commands: CommandSpec[] = [
     capability: "merging",
     description: "Set automatic merging",
     options: [
+      "--instructions <text>",
       "--on",
       "--off",
       "--agent-id <id>",

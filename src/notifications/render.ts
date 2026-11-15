@@ -149,6 +149,15 @@ export function renderDigest(
   function body(rows: AgentMessage[]): string {
     const groups = new Map<string, string[]>();
     const counts = new Map<string, number>();
+    const instructions = new Map<string, Set<string>>();
+    for (const row of rows) {
+      const text = presentations.get(row.id)?.instructions;
+      if (text === undefined) continue;
+      const group = entry(row, presentations.get(row.id)).group;
+      const texts = instructions.get(group) ?? new Set<string>();
+      texts.add(text);
+      instructions.set(group, texts);
+    }
     for (const item of compactEntries(
       rows.map((row) => entry(row, presentations.get(row.id))),
     )) {
@@ -160,12 +169,15 @@ export function renderDigest(
     }
     return `${[...groups]
       .map(([heading, lines]) => {
+        const instruction = [...(instructions.get(heading) ?? [])]
+          .map((text) => `\nInstructions: ${cleanText(text, 1000)}`)
+          .join("");
         const single = counts.get(heading) === 1;
         if (single) {
           const first = (lines[0] ?? "- Update").replace(/^- /u, "");
-          return `${heading === "" ? "" : heading + " · "}${first}${lines.length > 1 ? "\n" + lines.slice(1).join("\n") : ""}`;
+          return `${heading === "" ? "" : heading + " · "}${first}${lines.length > 1 ? "\n" + lines.slice(1).join("\n") : ""}${instruction}`;
         }
-        return `${heading === "" ? "" : heading + "\n"}${lines.join("\n")}`;
+        return `${heading === "" ? "" : heading + "\n"}${lines.join("\n")}${instruction}`;
       })
       .join("\n\n")}\n\n${footer(rows)}`;
   }
