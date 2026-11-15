@@ -289,6 +289,7 @@ function inspectArgs(
     return ["action", lookup(action, "id") ?? positionals[1] ?? "", "--full"];
   if (command === "subscribe" || command === "unsubscribe")
     return ["participants", positionals[1] ?? values.url ?? "", "--full"];
+  if (command === "ack") return ["message", positionals[1] ?? "", "--full"];
   if (command === "acknowledge-digest") {
     const receipt = record(root["receipt"]) ? root["receipt"] : {};
     return [
@@ -394,7 +395,7 @@ export function printResult(
           result,
           cliJSON,
           parsed.values.json ||
-            ["acknowledge-digest", "acknowledge-message"].includes(
+            ["ack", "acknowledge-digest", "acknowledge-message"].includes(
               parsed.positionals[0] ?? "",
             )
             ? undefined

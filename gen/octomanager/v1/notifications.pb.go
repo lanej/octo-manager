@@ -26,6 +26,7 @@ type GetAgentDigestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Revision      *uint32                `protobuf:"varint,2,opt,name=revision,proto3,oneof" json:"revision,omitempty"`
+	ReceiptId     string                 `protobuf:"bytes,3,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -72,6 +73,13 @@ func (x *GetAgentDigestRequest) GetRevision() uint32 {
 		return *x.Revision
 	}
 	return 0
+}
+
+func (x *GetAgentDigestRequest) GetReceiptId() string {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return ""
 }
 
 type GetAgentDigestResponse struct {
@@ -212,6 +220,8 @@ type AcknowledgeAgentDigestRequest struct {
 	Revision      uint32                 `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	AgentId       string                 `protobuf:"bytes,3,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	ExpectedBody  *string                `protobuf:"bytes,4,opt,name=expected_body,json=expectedBody,proto3,oneof" json:"expected_body,omitempty"`
+	ReceiptId     string                 `protobuf:"bytes,5,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	AgentTarget   *AgentTarget           `protobuf:"bytes,6,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -272,6 +282,20 @@ func (x *AcknowledgeAgentDigestRequest) GetExpectedBody() string {
 		return *x.ExpectedBody
 	}
 	return ""
+}
+
+func (x *AcknowledgeAgentDigestRequest) GetReceiptId() string {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return ""
+}
+
+func (x *AcknowledgeAgentDigestRequest) GetAgentTarget() *AgentTarget {
+	if x != nil {
+		return x.AgentTarget
+	}
+	return nil
 }
 
 type AgentDigestMember struct {
@@ -438,10 +462,12 @@ var File_octomanager_v1_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v1_notifications_proto_rawDesc = "" +
 	"\n" +
-	"\"octomanager/v1/notifications.proto\x12\x0eoctomanager.v1\"U\n" +
+	"\"octomanager/v1/notifications.proto\x12\x0eoctomanager.v1\x1a\x1doctomanager/v1/tracking.proto\"t\n" +
 	"\x15GetAgentDigestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\brevision\x18\x02 \x01(\rH\x00R\brevision\x88\x01\x01B\v\n" +
+	"\brevision\x18\x02 \x01(\rH\x00R\brevision\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x03 \x01(\tR\treceiptIdB\v\n" +
 	"\t_revision\"9\n" +
 	"\x16GetAgentDigestResponse\x12\x1f\n" +
 	"\vrecord_json\x18\x01 \x01(\tR\n" +
@@ -450,12 +476,15 @@ const file_octomanager_v1_notifications_proto_rawDesc = "" +
 	"\bagent_id\x18\x01 \x01(\tH\x00R\aagentId\x88\x01\x01B\v\n" +
 	"\t_agent_id\"=\n" +
 	"\x18ListAgentDigestsResponse\x12!\n" +
-	"\fdigests_json\x18\x01 \x03(\tR\vdigestsJson\"\xa2\x01\n" +
+	"\fdigests_json\x18\x01 \x03(\tR\vdigestsJson\"\x81\x02\n" +
 	"\x1dAcknowledgeAgentDigestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\rR\brevision\x12\x19\n" +
 	"\bagent_id\x18\x03 \x01(\tR\aagentId\x12(\n" +
-	"\rexpected_body\x18\x04 \x01(\tH\x00R\fexpectedBody\x88\x01\x01B\x10\n" +
+	"\rexpected_body\x18\x04 \x01(\tH\x00R\fexpectedBody\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x05 \x01(\tR\treceiptId\x12>\n" +
+	"\fagent_target\x18\x06 \x01(\v2\x1b.octomanager.v1.AgentTargetR\vagentTargetB\x10\n" +
 	"\x0e_expected_body\"\xf3\x02\n" +
 	"\x11AgentDigestMember\x12\x1d\n" +
 	"\n" +
@@ -498,14 +527,16 @@ var file_octomanager_v1_notifications_proto_goTypes = []any{
 	(*AcknowledgeAgentDigestRequest)(nil),  // 4: octomanager.v1.AcknowledgeAgentDigestRequest
 	(*AgentDigestMember)(nil),              // 5: octomanager.v1.AgentDigestMember
 	(*AcknowledgeAgentDigestResponse)(nil), // 6: octomanager.v1.AcknowledgeAgentDigestResponse
+	(*AgentTarget)(nil),                    // 7: octomanager.v1.AgentTarget
 }
 var file_octomanager_v1_notifications_proto_depIdxs = []int32{
-	5, // 0: octomanager.v1.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v1.AgentDigestMember
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	7, // 0: octomanager.v1.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v1.AgentTarget
+	5, // 1: octomanager.v1.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v1.AgentDigestMember
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v1_notifications_proto_init() }
@@ -513,6 +544,7 @@ func file_octomanager_v1_notifications_proto_init() {
 	if File_octomanager_v1_notifications_proto != nil {
 		return
 	}
+	file_octomanager_v1_tracking_proto_init()
 	file_octomanager_v1_notifications_proto_msgTypes[0].OneofWrappers = []any{}
 	file_octomanager_v1_notifications_proto_msgTypes[2].OneofWrappers = []any{}
 	file_octomanager_v1_notifications_proto_msgTypes[4].OneofWrappers = []any{}

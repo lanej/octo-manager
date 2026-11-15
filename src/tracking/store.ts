@@ -135,6 +135,22 @@ export class TrackingStore {
     if (!a) throw new Error("Agent not found");
     return a;
   }
+  sessionAgent(harness: string, sessionId: string, endpoint?: string): string {
+    if (harness === "" || sessionId === "")
+      throw new Error("Invalid agent session context");
+    const rows = this.db
+      .prepare(
+        "SELECT id FROM agent_refs WHERE harness=? AND session_id=? AND (? IS NULL OR endpoint=?) LIMIT 2",
+      )
+      .all(harness, sessionId, endpoint ?? null, endpoint ?? null);
+    if (rows.length !== 1)
+      throw new Error(
+        rows.length === 0
+          ? "Invalid agent session: not registered"
+          : "Invalid agent session: ambiguous; specify --endpoint or --agent-id",
+      );
+    return String(rows[0]?.["id"]);
+  }
   registerAgent(t: AgentTarget): AgentRef {
     return this.transaction(() => this.register(t));
   }
