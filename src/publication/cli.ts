@@ -202,6 +202,15 @@ async function input(
   root: string,
   value: Draft,
 ): Promise<PublicationInput> {
+  if (
+    parsed.values.track === true &&
+    parsed.values.harness !== undefined &&
+    parsed.values.harness !== "codex"
+  )
+    throw new PublicationError(
+      "tracking_harness",
+      "--track supports only --harness codex; omit --track for publication from other harnesses.",
+    );
   const headRef =
     parsed.values.head ?? (await git(root, "branch", "--show-current"));
   if (headRef === "")
