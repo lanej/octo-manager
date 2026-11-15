@@ -67,7 +67,8 @@ async function fixture(initialReview: string | null = null) {
     current = snapshot(),
     reads = 0,
     writes = 0,
-    uncertain = false;
+    uncertain = false,
+    readError: string | undefined;
   current.review = initialReview;
   let slots: QueuedMessage[] = [];
   const queue: QueueConnection = {
@@ -88,6 +89,7 @@ async function fixture(initialReview: string | null = null) {
   const provider: MergeProvider = {
     inspect: () => {
       reads++;
+      if (readError !== undefined) return Promise.reject(new Error(readError));
       return Promise.resolve(structuredClone(current));
     },
     merge: (_url, pinned, _method, _signal, beforeSend) => {
@@ -156,6 +158,9 @@ async function fixture(initialReview: string | null = null) {
     },
     set current(value: MergeSnapshot) {
       current = value;
+    },
+    failReads(value?: string) {
+      readError = value;
     },
     uncertain() {
       uncertain = true;
@@ -860,6 +865,128 @@ test("rendered excerpts preserve complete existing links beyond the old plain-te
     const plain = linkPRReferences(`See ${target}`, url);
     expect(plain).toContain(`](${target})`);
     expect(plain).not.toContain(")?diff=");
+  } finally {
+    await f.close();
+  }
+});
+
+test("read failures and recovery do not repeat a receipted Ready decision, including across restart", async () => {
+  const f = await fixture();
+  try {
+    await schedulerClient(f.directory).acknowledgeAgentDigest({
+      receiptId: f.id,
+      agentTarget: owner,
+    });
+    const generation = f.coordinator.store.merging.noticeReadiness(
+      f.pr.id,
+    )?.generation;
+    for (let cycle = 0; cycle < 3; cycle++) {
+      f.failReads("Synthetic GitHub timeout");
+      f.advance();
+      await f.coordinator.merging.tick();
+      await f.coordinator.digests.flush();
+      expect(
+        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError,
+      ).toBe("Synthetic GitHub timeout");
+      const source = f.coordinator.store.tracking.inbox.get(
+        f.notice.messageIds[0] ?? "",
+      );
+      assert(source !== undefined);
+      expect(f.coordinator.merging.receipts.presentation(source).defer).toBe(
+        true,
+      );
+      const reads = f.reads;
+      await f.coordinator.merging.tick();
+      expect(f.reads).toBe(reads);
+      if (cycle === 0) {
+        await f.reopen();
+        expect((await f.merge()).resultJson).toContain('"blocked"');
+        expect(f.coordinator.store.merging.entries()).toHaveLength(0);
+      }
+      expect(
+        f.coordinator.store.digests.active(f.pr.ownerAgentId),
+      ).toBeUndefined();
+      f.failReads();
+      f.advance();
+      await f.coordinator.merging.tick();
+      await f.coordinator.digests.flush();
+      expect(
+        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError,
+      ).toBeUndefined();
+      expect(
+        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation,
+      ).toBe(generation);
+      expect(
+        f.coordinator.store.digests.active(f.pr.ownerAgentId),
+      ).toBeUndefined();
+    }
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+test("known dependency blockers avoid eligibility reads and repeat notices", async () => {
+  const f = await fixture();
+  try {
+    const parent = f.coordinator.store.tracking.track(
+      "https://github.com/owner/repo/pull/37",
+      owner,
+    );
+    f.coordinator.store.tracking.observe(
+      parent.id,
+      f.current.observation,
+      defaultTrackingConfig(),
+    );
+    f.coordinator.store.merging.confirm(
+      f.pr.id,
+      parent.id,
+      f.pr.ownerAgentId,
+      "Parent must merge first",
+    );
+    const reads = f.reads;
+    f.failReads("GitHub unavailable");
+    await f.coordinator.merging.tick();
+    await f.coordinator.digests.flush();
+    expect(f.reads).toBe(reads);
+    const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    assert(digest !== undefined);
+    const version = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    );
+    expect(version.body).toContain("dependency requirements remain");
+    const id = messageReceiptId(version.body);
+    assert(id !== undefined);
+    await schedulerClient(f.directory).acknowledgeAgentDigest({
+      receiptId: id,
+      agentTarget: owner,
+    });
+    for (let cycle = 0; cycle < 3; cycle++) {
+      f.advance();
+      await f.coordinator.merging.tick();
+      await f.coordinator.digests.flush();
+      expect(f.reads).toBe(reads);
+      expect(
+        f.coordinator.store.digests.active(f.pr.ownerAgentId),
+      ).toBeUndefined();
+    }
+    f.failReads();
+    f.current.observation.lifecycle = "merged";
+    f.coordinator.store.tracking.observe(
+      parent.id,
+      f.current.observation,
+      defaultTrackingConfig(),
+    );
+    f.current.observation.lifecycle = "open";
+    f.advance();
+    await f.coordinator.merging.tick();
+    await f.coordinator.digests.flush();
+    const ready = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    assert(ready !== undefined);
+    expect(
+      f.coordinator.store.digests.version(ready.id, ready.revision).body,
+    ).toContain(" · Ready");
+    expect(f.writes).toBe(0);
   } finally {
     await f.close();
   }

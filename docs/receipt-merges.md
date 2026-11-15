@@ -18,6 +18,8 @@ Ready requires complete check, workflow and review coverage, passing expected an
 
 The cache is invalidated by changed head, target, ownership, tracking epoch, checks, review evidence, dependency graph, merge policy or queue recipients. Each semantic readiness decision has a distinct immutable message and generation. It replaces queue-covered completion deliveries without recording a receipt; direct-turn recipients retain their normal check delivery. The latest same-head completion generation supersedes older queue copies. A completed check notice can report the remaining blocker. If approval arrives after that notice was acknowledged, a fresh Ready workflow notice provides its own immutable receipt ID. Duplicate unchanged observations do not repeat it. Superseded readiness notices are withdrawn through the normal queue reconciler.
 
+Known unmerged dependencies are evaluated from cached state before optional eligibility reads. Inspection failures retain a diagnostic and retry deadline separately from the last confirmed eligibility decision. Failed reads suppress Ready offers and reject new receipt merge requests until a successful inspection; failure and recovery alone do not create new notification generations. Real eligibility changes still produce fresh notices.
+
 ## Execution and recovery
 
 The command returns queued status promptly. The existing merge scheduler reads fresh evidence before execution, checks the pinned owner/context again at dispatch and supplies the exact head to GitHub without bypassing protection rules. GitHub’s accepted asynchronous operation is polled by its saved request ID; only a confirmed result is reported as merged.
