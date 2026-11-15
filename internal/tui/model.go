@@ -74,6 +74,7 @@ type Model struct {
 	retained             map[string]*renderMemo
 	resultContent        string
 	usageChart           usageChart
+	githubHours          int
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {
@@ -83,7 +84,7 @@ func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.
 
 	session, cancel := context.WithCancel(ctx)
 
-	return &Model{panel: trackingPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviewStatuses: map[string]*v1.RefreshStatus{}, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+	return &Model{githubHours: DefaultGitHubHours, panel: trackingPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviewStatuses: map[string]*v1.RefreshStatus{}, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd {

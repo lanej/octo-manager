@@ -133,7 +133,7 @@ func (m *Model) contentInput(width int) renderInput {
 	case trackingPanel:
 		return m.input(fmt.Sprintf("%s/%d", key, width), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh)
 	case githubPanel:
-		return m.input(fmt.Sprintf("%s/%d", key, width), m.snapshot.GetGithubUsage(), m.schedulerViewStatus())
+		return m.input(fmt.Sprintf("%s/%d/%d", key, width, m.githubHours), m.snapshot.GetGithubUsage(), m.schedulerViewStatus())
 	case activityPanel:
 		// Activity owns its bounded-page cache; do not clone its loaded history here.
 		return m.input(key)
