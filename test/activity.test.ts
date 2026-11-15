@@ -233,6 +233,27 @@ test("recent activity pages bound a large history and retain forward replay and 
     });
     assert.equal(older.events[0]?.detail, "failure 11800");
     assert.equal(older.events.at(-1)?.detail, "failure 11601");
+    const small = await client.listActivity({
+      beforeSequence: 12001n,
+      limit: 50,
+    });
+    assert.equal(small.events.length, 50);
+    assert.equal(small.nextSequence, 11951n);
+    assert.equal(small.hasMore, true);
+    const smallOlder = await client.listActivity({
+      beforeSequence: small.nextSequence,
+      limit: 50,
+    });
+    assert.equal(smallOlder.events[0]?.detail, "failure 11950");
+    assert.equal(smallOlder.events.at(-1)?.detail, "failure 11901");
+    await assert.rejects(
+      client.listActivity({ beforeSequence: 0n, limit: 201 }),
+      hasCode(Code.InvalidArgument),
+    );
+    await assert.rejects(
+      client.listActivity({ afterSequence: 0n, limit: 50 }),
+      hasCode(Code.InvalidArgument),
+    );
     const replay = await client.listActivity({ afterSequence: 0n });
     assert.equal(replay.events[0]?.detail, "failure 1");
     assert.equal(replay.nextSequence, 200n);

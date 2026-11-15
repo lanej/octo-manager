@@ -274,9 +274,7 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		}
 
 		if m.panel == activityPanel {
-			m.agentActivity.seenThrough = 0
-
-			return m.loadActivity()
+			return m.refreshActivity()
 		}
 
 		if m.panel == trackingPanel {

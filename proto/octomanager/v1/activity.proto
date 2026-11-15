@@ -47,4 +47,6 @@ message ListActivityRequest {
   // An exclusive upper bound selects a recent page in descending sequence order.
   // Omit for forward replay; zero selects the latest page. Do not combine with after_sequence.
   optional uint64 before_sequence = 2;
+  // Recent-page size, 1–200; zero keeps the default of 200. Forward replay remains fixed-size.
+  uint32 limit = 3;
 }

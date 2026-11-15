@@ -80,6 +80,14 @@ export function activityRoutes(
       }
     },
     listActivity(request: ListActivityRequest) {
+      if (
+        request.limit > 200 ||
+        (request.limit !== 0 && request.beforeSequence === undefined)
+      )
+        throw new ConnectError(
+          "Activity limit requires a recent cursor and must be at most 200",
+          Code.InvalidArgument,
+        );
       if (request.beforeSequence !== undefined) {
         if (request.afterSequence !== 0n)
           throw new ConnectError(
@@ -96,7 +104,7 @@ export function activityRoutes(
             Code.OutOfRange,
           );
         const rows = recent(Number(before)),
-          page = rows.slice(0, 200),
+          page = rows.slice(0, request.limit === 0 ? 200 : request.limit),
           next = page.at(-1)?.sequence ?? 0n;
         return {
           activities: store
@@ -105,7 +113,7 @@ export function activityRoutes(
             .map(wireReport),
           events: page.filter((entry) => entry.kind !== "agent_activity"),
           nextSequence: next,
-          hasMore: rows.length > 200,
+          hasMore: rows.length > page.length,
         };
       }
       if (
