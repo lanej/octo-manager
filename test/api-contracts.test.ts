@@ -1,3 +1,6 @@
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { test, expect } from "bun:test";
 import { wire, unwire } from "../src/api/codec.js";
 import {
@@ -69,11 +72,6 @@ test("v2 contract has no serialized-document or dynamic payload escape hatches",
 });
 
 test("regeneration retains committed wire IDs when domain property order changes", async () => {
-  const { mkdtemp, mkdir, writeFile, readFile, rm } = await import(
-    "node:fs/promises"
-  );
-  const { join, resolve } = await import("node:path");
-  const { tmpdir } = await import("node:os");
   const directory = await mkdtemp(join(tmpdir(), "octo-wire-tags-"));
   const manifest = readFileSync("proto/api-wire-tags.json", "utf8");
   try {

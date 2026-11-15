@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -26,12 +27,17 @@ test("TypeScript client rejects a mismatched API before attempting a mutation", 
       server.once("error", reject);
       server.listen(join(directory, "run.sock"), resolve);
     });
-    await expect(
-      schedulerClient(directory).setPaused({ paused: true }),
-    ).rejects.toThrow("update the server, CLI, and dashboard together");
+    await assert.rejects(
+      () => schedulerClient(directory).setPaused({ paused: true }),
+      /update the server, CLI, and dashboard together/u,
+    );
     expect(mutations).toBe(0);
   } finally {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        resolve();
+      });
+    });
     await rm(directory, { recursive: true, force: true });
   }
 });

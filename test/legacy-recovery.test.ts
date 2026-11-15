@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -151,7 +152,8 @@ test("legacy publication lookup rejects duplicate markers instead of selecting t
       })),
     ),
   );
-  await expect(
-    provider.find(request, marker, new AbortController().signal),
-  ).rejects.toThrow("ambiguous");
+  await assert.rejects(
+    () => provider.find(request, marker, new AbortController().signal),
+    /ambiguous/u,
+  );
 });

@@ -318,14 +318,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "if (!command || values.help) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
       "source": "if (!values.watch) break;",
       "count": 1
     },
@@ -351,14 +343,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
       "source": "else if (command === \"events\" && id) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "source": "if (!command || values.help) {",
       "count": 1
     },
     {
@@ -501,22 +485,6 @@
       "file": "src/client.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type 'number' is more narrow than the original type.",
-      "source": "if(v.$typeName===\"octomanager.v1.ActionDelivery\")return {...v,$typeName:undefined,state:TrackingDeliveryState[v.state as number]?.toLowerCase()??\"unknown\"};",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
-      "message": "Unsafe type assertion: type 'number' is more narrow than the original type.",
-      "source": "if(v.$typeName===\"octomanager.v1.PendingAction\")return {...v,$typeName:undefined,state:TrackingActionState[v.state as number]?.toLowerCase()??\"unknown\"};",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'Status' is more narrow than the original type.",
       "source": "const status = JobStatus[value.status]?.toLowerCase() as Status;",
       "count": 1
@@ -527,14 +495,6 @@
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'Status' is more narrow than the original type.",
       "source": "if (!status || status === (\"unspecified\" as Status)) throw new Error(\"Unsupported job status\");",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "if(value && typeof value===\"object\" && \"$typeName\" in value){",
       "count": 1
     },
     {
@@ -567,22 +527,6 @@
       "rule": "prettier",
       "message": "Formatting differs",
       "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property '$typeName' comes from an index signature, so it must be accessed with ['$typeName'].",
-      "source": "if(v.$typeName===\"octomanager.v1.ActionDelivery\")return {...v,$typeName:undefined,state:TrackingDeliveryState[v.state as number]?.toLowerCase()??\"unknown\"};",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property '$typeName' comes from an index signature, so it must be accessed with ['$typeName'].",
-      "source": "if(v.$typeName===\"octomanager.v1.PendingAction\")return {...v,$typeName:undefined,state:TrackingActionState[v.state as number]?.toLowerCase()??\"unknown\"};",
       "count": 1
     },
     {
@@ -687,22 +631,6 @@
       "rule": "TS4111",
       "message": "Property 'requestId' comes from an index signature, so it must be accessed with ['requestId'].",
       "source": "return job((await client.submitJob({ requestId: c.requestId, task: { kind: task.kind === \"resolve_conflict\" ? { case: \"resolveConflict\", value: {} } : { case: \"summarizePullRequest\", value: { url: task.url } } } })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'state' comes from an index signature, so it must be accessed with ['state'].",
-      "source": "if(v.$typeName===\"octomanager.v1.ActionDelivery\")return {...v,$typeName:undefined,state:TrackingDeliveryState[v.state as number]?.toLowerCase()??\"unknown\"};",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'state' comes from an index signature, so it must be accessed with ['state'].",
-      "source": "if(v.$typeName===\"octomanager.v1.PendingAction\")return {...v,$typeName:undefined,state:TrackingActionState[v.state as number]?.toLowerCase()??\"unknown\"};",
       "count": 1
     },
     {
