@@ -1,6 +1,5 @@
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { marked } from "marked";
-import mermaid from "mermaid";
 import { Type, type Static, type TSchema } from "typebox";
 import { Check } from "typebox/value";
 const text = () => Type.String({ minLength: 1, maxLength: 8000 });
@@ -345,14 +344,4 @@ export function inspectMarkdown(body: string) {
     codeReferences,
   };
 }
-export async function validateDiagrams(diagrams: string[]): Promise<string[]> {
-  const blockers: string[] = [];
-  for (const [index, diagram] of diagrams.entries()) {
-    try {
-      await mermaid.parse(diagram);
-    } catch {
-      blockers.push(`Invalid Mermaid diagram ${String(index + 1)}`);
-    }
-  }
-  return blockers;
-}
+export { validateDiagrams } from "./mermaid.js";

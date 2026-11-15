@@ -520,7 +520,7 @@ export class SubmissionService {
           snapshot,
           contract,
           evaluated,
-          await validateDiagrams(inspectMarkdown(draft.body).diagrams),
+          await validateDiagrams(inspectMarkdown(draft.body).diagrams, signal),
           flow,
         );
         const preparedDigest = hash({

@@ -56,10 +56,19 @@ test("Markdown accounting excludes fenced code, includes table prose, and locate
   ).toEqual(["#123"]);
 });
 test("Mermaid uses its real syntax parser", async () => {
-  expect(await validateDiagrams(["flowchart LR\n A-->B"])).toEqual([]);
-  expect(await validateDiagrams(["flowchart LR\n A --> ["])).toEqual([
-    "Invalid Mermaid diagram 1",
-  ]);
+  const priorWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  expect(
+    await validateDiagrams([
+      "flowchart LR\n A[Exact base and head SHAs] --> B[Fetch selected repositories]",
+    ]),
+  ).toEqual([]);
+  const invalid = await validateDiagrams(["flowchart LR\n A --> ["]);
+  expect(invalid).toHaveLength(1);
+  expect(invalid[0]).toContain("Invalid Mermaid diagram 1");
+  expect(invalid[0]).toContain("Parse error");
+  expect(Object.getOwnPropertyDescriptor(globalThis, "window")).toEqual(
+    priorWindow,
+  );
 });
 
 test("HTML screenshots and links participate in artifact and reference validation", () => {
