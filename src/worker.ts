@@ -1,3 +1,4 @@
+import { sendWorkerResult } from "./worker-delivery.js";
 import { workerResultText } from "./worker-result.js";
 import type { StageTask } from "./submissions/contracts.js";
 import { repairWorkerTask, record, single, type RepairWorkerTask } from "./repairs/types.js";
@@ -5,6 +6,7 @@ import { createAgentSession, DefaultResourceLoader, getAgentDir, SessionManager,
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
 import { createWorkerRuntime } from "./auth.js";
+import { workerModel, type WorkerProvider } from "./worker-model.js";
 import { conflictBrief } from "./fixture.js";
 import { cleanText, parseTask, type Task } from "./domain.js";
 
@@ -16,6 +18,7 @@ const pending = new Map<string, { resolve: (value: unknown) => void; reject: (er
 function send(value: object): Promise<void> {
   return new Promise(resolve => { if (process.connected) process.send?.({ ...value, attempt }, undefined, undefined, () => resolve()); else resolve(); });
 }
+function workerAborted(): boolean { return aborted; }
 function stop(): void {
   aborted = true;
   for (const request of pending.values()) request.reject(new Error("Worker aborted"));
@@ -52,13 +55,14 @@ function callTool(name: string, args: unknown): Promise<unknown> {
 function tool(name: string, description: string, parameters = Type.Object({}, { additionalProperties: false })): ToolDefinition {
   return { name, label: name, description, parameters, execute: async (_id, args) => ({ content: [{ type: "text", text: JSON.stringify(await callTool(name, args)) }], details: {} }) };
 }
-function diagnosis(error: unknown): string {
+function diagnosis(error: unknown, provider?: WorkerProvider): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/needs refreshing/i.test(message)) return "Existing Codex authentication needs refreshing through Codex";
-  if (/auth|credential|api.key|401|403|login/i.test(message)) return "Authentication required: use a signed-in Codex session or run octo-manager login";
+  if (/auth|credential|api.key|401|403|login/i.test(message)) return provider === "amazon-bedrock" ? "Authentication required: configure existing AWS credentials or a Bedrock bearer token" : "Authentication required: use a signed-in Codex session or run octo-manager login";
   if (/429|rate.limit/i.test(message)) return "Provider rate limit (429)";
   if (/500|502|503|504|ECONNRESET|ETIMEDOUT|EAI_AGAIN/i.test(message)) return "Provider temporarily unavailable (503)";
-  if (/model.*not|unknown.*model/i.test(message)) return "Configured OpenAI Codex model is unavailable; select a supported model with --model";
+  if (/model.*not|unknown.*model/i.test(message)) return "Configured worker model is unavailable; select a supported provider-qualified model with --model";
+  if (/Invalid worker model|Unsupported worker provider/u.test(message)) return message;
   if (/budget/i.test(message)) return "Attempt exceeded the model turn or tool budget";
   return "Pi worker failed; check provider access and model configuration";
 }
@@ -79,11 +83,19 @@ function prStage(raw: Record<string, unknown>): StageTask {
 async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): Promise<void> {
   let flushTimer: NodeJS.Timeout | undefined;
   let budgetExceeded = false;
+  let provider: WorkerProvider | undefined;
+  const delivery = { terminalSent: false };
+  const finish = async (value: object) => {
+    delivery.terminalSent = true;
+    await sendWorkerResult(value, attempt);
+  };
   try {
-    const { runtime, source } = await createWorkerRuntime();
+    const selected = workerModel(modelId);
+    provider = selected.provider;
+    const { runtime, source } = await createWorkerRuntime({ provider: selected.provider });
     if (aborted) return;
-    await send({ type: "progress", text: `Using existing ${source === "codex" ? "Codex" : "Pi"} ChatGPT authentication` });
-    const model = runtime.getModel("openai-codex", modelId);
+    await send({ type: "progress", text: source === "aws" ? "Using existing AWS Bedrock authentication" : `Using existing ${source === "codex" ? "Codex" : "Pi"} ChatGPT authentication` });
+    const model = runtime.getModel(selected.provider, selected.id);
     if (!model) throw new Error("Unknown model");
     const tools: ToolDefinition[] = task.kind === "pr_stage" ? [] : task.kind === "repair_conflicts" ? [
       tool("read_file", "Read a tracked text file in the isolated repair checkout.", Type.Object({ path: Type.String() }, { additionalProperties: false })),
@@ -111,12 +123,17 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
     if (aborted) return;
     const last = [...session.messages].reverse().find(message => message.role === "assistant");
     if (last?.role === "assistant" && (last.stopReason === "error" || last.stopReason === "aborted" || last.stopReason === "length")) throw new Error(last.errorMessage ?? `Provider response ${last.stopReason}`);
-    await send({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
-  } catch (error) { if (!aborted) await send({ type: "failure", error: diagnosis(error) }); }
+    await finish({ type: "done", text: workerResultText(task.kind === "pr_stage" ? "structured" : "prose", session.getLastAssistantText() ?? "") });
+  } catch (error) {
+    if (!workerAborted() && !delivery.terminalSent) {
+      try { await finish({ type: "failure", error: diagnosis(error, provider) }); }
+      catch { process.exitCode = 1; }
+    } else if (!workerAborted()) process.exitCode = 1;
+  }
   finally {
     if (flushTimer) clearInterval(flushTimer);
     session?.dispose();
     // WHY: Provider keep-alive sockets must not keep a completed worker occupying the scheduler slot.
-    process.exit(0);
+    process.exit(process.exitCode ?? 0);
   }
 }

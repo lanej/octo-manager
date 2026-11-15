@@ -52,7 +52,9 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     return;
   }
   if (command === "serve") {
-    const coordinator = new Coordinator(directory, { model: values.model, trackingConfig: loadTrackingConfig(values.config) });
+    const trackingConfig = loadTrackingConfig(values.config);
+    const model = values.model ?? trackingConfig.workerModel;
+    const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
     console.log(JSON.stringify({ ready: true, state: directory }));
     await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
