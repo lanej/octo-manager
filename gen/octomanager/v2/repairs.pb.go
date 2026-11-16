@@ -140,6 +140,7 @@ func (ConflictDecision) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_repairs_proto_rawDescGZIP(), []int{1}
 }
 
+// RepairUpdate records one step or outcome transition in a repair attempt.
 type RepairUpdate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	State         RepairState            `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.RepairState" json:"state,omitempty"`
@@ -208,6 +209,7 @@ func (x *RepairUpdate) GetAtMs() int64 {
 	return 0
 }
 
+// RepairAttempt journals a bounded PR repair, its pinned revisions, and verification history.
 type RepairAttempt struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -396,6 +398,7 @@ func (x *RepairAttempt) GetMechanicalRepairs() uint32 {
 	return 0
 }
 
+// RequestRebaseRequest supplies arguments for the following operation: Queues an explicitly requested, bounded PR rebase repair.
 type RequestRebaseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -456,6 +459,7 @@ func (x *RequestRebaseRequest) GetProfile() string {
 	return ""
 }
 
+// RequestRebaseResponse returns the result for the following operation: Queues an explicitly requested, bounded PR rebase repair.
 type RequestRebaseResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repair        *RepairAttempt         `protobuf:"bytes,1,opt,name=repair,proto3" json:"repair,omitempty"`
@@ -500,6 +504,7 @@ func (x *RequestRebaseResponse) GetRepair() *RepairAttempt {
 	return nil
 }
 
+// ListRepairsRequest supplies arguments for the following operation: Lists durable repair attempts and their current outcomes.
 type ListRepairsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -536,6 +541,7 @@ func (*ListRepairsRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_repairs_proto_rawDescGZIP(), []int{4}
 }
 
+// ListRepairsResponse returns the result for the following operation: Lists durable repair attempts and their current outcomes.
 type ListRepairsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repairs       []*RepairAttempt       `protobuf:"bytes,1,rep,name=repairs,proto3" json:"repairs,omitempty"`
@@ -580,6 +586,7 @@ func (x *ListRepairsResponse) GetRepairs() []*RepairAttempt {
 	return nil
 }
 
+// ConflictCase retains a mechanical conflict decision and the source/candidate evidence behind it.
 type ConflictCase struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -760,6 +767,7 @@ func (x *ConflictCase) GetToolVersion() string {
 	return ""
 }
 
+// ListConflictCasesRequest supplies arguments for the following operation: Lists retained mechanical conflict decisions for repair inspection.
 type ListConflictCasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AfterId       uint64                 `protobuf:"varint,1,opt,name=after_id,json=afterId,proto3" json:"after_id,omitempty"`
@@ -804,6 +812,7 @@ func (x *ListConflictCasesRequest) GetAfterId() uint64 {
 	return 0
 }
 
+// ListConflictCasesResponse returns the result for the following operation: Lists retained mechanical conflict decisions for repair inspection.
 type ListConflictCasesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cases         []*ConflictCase        `protobuf:"bytes,1,rep,name=cases,proto3" json:"cases,omitempty"`
@@ -856,6 +865,7 @@ func (x *ListConflictCasesResponse) GetNextId() uint64 {
 	return 0
 }
 
+// GetConflictCaseRequest supplies arguments for the following operation: Reads one conflict case and its recorded source and candidate evidence.
 type GetConflictCaseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -900,6 +910,7 @@ func (x *GetConflictCaseRequest) GetId() uint64 {
 	return 0
 }
 
+// GetConflictCaseResponse returns the result for the following operation: Reads one conflict case and its recorded source and candidate evidence.
 type GetConflictCaseResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ConflictCase  *ConflictCase          `protobuf:"bytes,1,opt,name=conflict_case,json=conflictCase,proto3" json:"conflict_case,omitempty"`

@@ -1,75 +1,139 @@
 syntax = "proto3";
 package octomanager.v2;
-import "octomanager/v2/tracking.proto";
-import "octomanager/v2/domain.proto";
+
 import "octomanager/v2/activity.proto";
+import "octomanager/v2/domain.proto";
+import "octomanager/v2/github.proto";
+import "octomanager/v2/notifications.proto";
 import "octomanager/v2/repairs.proto";
 import "octomanager/v2/submissions.proto";
-import "octomanager/v2/notifications.proto";
-import "octomanager/v2/github.proto";
+import "octomanager/v2/tracking.proto";
+
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
 
+// SchedulerService exposes the versioned coordinator API over local Connect RPC.
 service SchedulerService {
+  // Reports the wire API version before clients perform coordinator operations.
   rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
+  // Sets an owner-authorized per-PR automatic merge override.
   rpc SetAutoMerge(SetAutoMergeRequest) returns (SetAutoMergeResponse);
+  // Records ordered merge intents; acceptance does not confirm a GitHub merge.
   rpc QueueMergeChain(QueueMergeChainRequest) returns (QueueMergeChainResponse);
+  // Inspects retained merge chains, entries, and in-flight operations.
   rpc InspectMergeChains(InspectMergeChainsRequest) returns (InspectMergeChainsResponse);
+  // Lists discovered references without treating them as confirmed dependencies.
   rpc ListPRReferences(ListPRReferencesRequest) returns (ListPRReferencesResponse);
+  // Lists explicitly confirmed prerequisites for tracked PRs.
   rpc ListPRDependencies(ListPRDependenciesRequest) returns (ListPRDependenciesResponse);
+  // Confirms an owner-authorized prerequisite and rejects dependency cycles.
   rpc ConfirmPRDependency(ConfirmPRDependencyRequest) returns (ConfirmPRDependencyResponse);
+  // Removes a confirmed prerequisite under the dependent PR owner’s authority.
   rpc RemovePRDependency(RemovePRDependencyRequest) returns (RemovePRDependencyResponse);
+  // Records whether a discovered reference is related or dismissed.
   rpc DecidePRReference(DecidePRReferenceRequest) returns (DecidePRReferenceResponse);
+  // Sets the expected checks or explicit no-CI policy for a tracked PR.
   rpc SetMergePolicy(SetMergePolicyRequest) returns (SetMergePolicyResponse);
+  // Records the owner’s assessment for an exact PR head and current evidence.
   rpc SetMergeReady(SetMergeReadyRequest) returns (SetMergeReadyResponse);
+  // Pauses future merge dispatch for a chain without undoing prior effects.
   rpc PauseMergeChain(PauseMergeChainRequest) returns (PauseMergeChainResponse);
+  // Resumes eligibility evaluation for a paused merge chain.
   rpc ResumeMergeChain(ResumeMergeChainRequest) returns (ResumeMergeChainResponse);
+  // Cancels unfinished chain entries while preserving operation history.
   rpc CancelMergeChain(CancelMergeChainRequest) returns (CancelMergeChainResponse);
+  // Rechecks an uncertain GitHub operation without blindly repeating its mutation.
   rpc ReconcileMergeOperation(ReconcileMergeOperationRequest) returns (ReconcileMergeOperationResponse);
 
+  // Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
   rpc MergeAgentMessage(MergeAgentMessageRequest) returns (MergeAgentMessageResponse);
+  // Inspects a digest or frozen receipt without acknowledging its messages.
   rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
+  // Lists retained notification digests for a recipient.
   rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);
+  // Receipts an exact digest revision without accepting the underlying actions.
   rpc AcknowledgeAgentDigest(AcknowledgeAgentDigestRequest) returns (AcknowledgeAgentDigestResponse);
+  // Reads archived submission evidence; it does not resume legacy drafting.
   rpc GetSubmission(GetSubmissionRequest) returns (GetSubmissionResponse);
+  // Pages archived submission summaries without loading full worker evidence.
   rpc ListSubmissions(ListSubmissionsRequest) returns (ListSubmissionsResponse);
+  // Reads a retained repository publication policy and its rendered template.
   rpc GetRepositoryPolicy(GetRepositoryPolicyRequest) returns (GetRepositoryPolicyResponse);
+  // Lists retained mechanical conflict decisions for repair inspection.
   rpc ListConflictCases(ListConflictCasesRequest) returns (ListConflictCasesResponse);
+  // Reads one conflict case and its recorded source and candidate evidence.
   rpc GetConflictCase(GetConflictCaseRequest) returns (GetConflictCaseResponse);
+  // Queues an explicitly requested, bounded PR rebase repair.
   rpc RequestRebase(RequestRebaseRequest) returns (RequestRebaseResponse);
+  // Lists durable repair attempts and their current outcomes.
   rpc ListRepairs(ListRepairsRequest) returns (ListRepairsResponse);
+  // Records a caller-reported operation outcome without independently verifying it.
   rpc RecordActivity(RecordActivityRequest) returns (RecordActivityResponse);
+  // Pages recorded agent activity and coordinator events.
   rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
+  // Registers a session target without granting PR ownership or repair authority.
   rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+  // Adds an observer to an already enrolled PR without transferring ownership.
   rpc SubscribePullRequest(SubscribePullRequestRequest) returns (SubscribePullRequestResponse);
+  // Removes one observer’s subscription and cancels only its applicable deliveries.
   rpc UnsubscribePullRequest(UnsubscribePullRequestRequest) returns (UnsubscribePullRequestResponse);
+  // Pages the owner and observers without claiming that their sessions are online.
   rpc ListPRParticipants(ListPRParticipantsRequest) returns (ListPRParticipantsResponse);
+  // Enrolls a PR for observation with an explicit responsible owner.
   rpc TrackPullRequest(TrackPullRequestRequest) returns (TrackPullRequestResponse);
+  // Lists retained PR enrollments and their cached observations.
   rpc ListTrackedPullRequests(ListTrackedPullRequestsRequest) returns (ListTrackedPullRequestsResponse);
+  // Reads one tracked PR and its current cached evidence.
   rpc GetTrackedPullRequest(GetTrackedPullRequestRequest) returns (GetTrackedPullRequestResponse);
+  // Requests a scheduled refresh rather than bypassing GitHub rate coordination.
   rpc RefreshTrackedPullRequest(RefreshTrackedPullRequestRequest) returns (RefreshTrackedPullRequestResponse);
+  // Transfers responsibility while preserving explicit observer subscriptions.
   rpc AssignPullRequest(AssignPullRequestRequest) returns (AssignPullRequestResponse);
+  // Disables observation and delivery without deleting retained evidence.
   rpc UntrackPullRequest(UntrackPullRequestRequest) returns (UntrackPullRequestResponse);
+  // Lists PR actions whose ownership is separate from notification receipt.
   rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
+  // Reads a durable action, its progress, and related delivery evidence.
   rpc GetAction(GetActionRequest) returns (GetActionResponse);
+  // Records the current owner’s acceptance of an applicable action.
   rpc AcknowledgeAction(AcknowledgeActionRequest) returns (AcknowledgeActionResponse);
+  // Records that the current owner has started work on an applicable action.
   rpc StartAction(StartActionRequest) returns (StartActionResponse);
+  // Explicitly retries notification delivery while retaining previous attempts.
   rpc RetryDelivery(RetryDeliveryRequest) returns (RetryDeliveryResponse);
+  // Pages recipient-specific messages and independent receipt state.
   rpc ListAgentMessages(ListAgentMessagesRequest) returns (ListAgentMessagesResponse);
+  // Receipts one recipient’s message without clearing another recipient’s copy.
   rpc AcknowledgeMessage(AcknowledgeMessageRequest) returns (AcknowledgeMessageResponse);
+  // Changes the selected execution profile for an owner-authorized action.
   rpc ReprofileAction(ReprofileActionRequest) returns (ReprofileActionResponse);
+  // Accepts an idempotent, scoped worker task into the scheduler queue.
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
+  // Reads a job and its attempts without changing execution state.
   rpc GetJob(GetJobRequest) returns (GetJobResponse);
+  // Reads PR details through the coordinated GitHub request boundary.
   rpc GetPullRequest(GetPullRequestRequest) returns (GetPullRequestResponse);
+  // Reads a combined scheduler and PR view for dashboard refresh.
   rpc WatchDashboard(WatchDashboardRequest) returns (stream WatchDashboardResponse);
+  // Reads current scheduler, worker, job, and event state.
   rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
+  // Reads sequenced scheduler events after the caller’s cursor.
   rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
+  // Streams job updates; disconnecting the client does not cancel the job.
   rpc Watch(WatchRequest) returns (stream WatchResponse);
+  // Requests cancellation and retains the asynchronous worker-exit transition.
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  // Explicitly requeues a failed or interrupted job while preserving its attempts.
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
+  // Controls future worker dispatch without cancelling an already running job.
   rpc SetPaused(SetPausedRequest) returns (SetPausedResponse);
 }
-message SummarizePullRequestTask { string url = 1; }
+// SummarizePullRequestTask selects the public PR to read through bounded summary tools.
+message SummarizePullRequestTask {
+  string url = 1;
+}
+// ResolveConflictTask selects the generated disposable conflict fixture used by the demonstration.
 message ResolveConflictTask {}
+// Task selects exactly one supported worker capability.
 message Task {
   oneof kind {
     SummarizePullRequestTask summarize_pull_request = 1;
@@ -102,6 +166,7 @@ enum WorkerState {
   WORKER_STATE_BUSY = 2;
   WORKER_STATE_RECOVERING = 3;
 }
+// Attempt retains a worker execution’s timing, process identity, and failure evidence.
 message Attempt {
   uint32 number = 1;
   int64 started_at_ms = 2;
@@ -110,6 +175,7 @@ message Attempt {
   optional int64 exit_observed_at_ms = 5;
   optional string error = 6;
 }
+// Job records durable scheduling state, attempts, and any resulting output.
 message Job {
   string id = 1;
   string request_id = 2;
@@ -123,6 +189,7 @@ message Job {
   optional string result_markdown = 10;
   optional string error = 11;
 }
+// ActionEventContext attaches action ownership and blocker context to a scheduler event.
 message ActionEventContext {
   ActionState state = 1;
   string pr_url = 2;
@@ -131,6 +198,7 @@ message ActionEventContext {
   optional string actor_session_id = 5;
   optional string actor_label = 6;
 }
+// JobEvent records a sequenced scheduler transition with optional PR/action context.
 message JobEvent {
   uint64 sequence = 1;
   string job_id = 2;
@@ -141,6 +209,7 @@ message JobEvent {
   optional string action_id = 7;
   ActionEventContext action_context = 8;
 }
+// Snapshot captures scheduler and worker state with retained jobs and recent events.
 message Snapshot {
   string instance_id = 1;
   uint64 sequence = 2;
@@ -156,30 +225,82 @@ message Snapshot {
   repeated MergeStatus merge_statuses = 12;
   GitHubSchedulerStatus github_scheduler = 13;
 }
-message SubmitJobRequest { string request_id = 1; Task task = 2; }
-message SubmitJobResponse { Job job = 1; }
-message GetJobRequest { string id = 1; }
-message GetJobResponse { Job job = 1; }
+// SubmitJobRequest supplies arguments for the following operation: Accepts an idempotent, scoped worker task into the scheduler queue.
+message SubmitJobRequest {
+  string request_id = 1;
+  Task task = 2;
+}
+// SubmitJobResponse returns the result for the following operation: Accepts an idempotent, scoped worker task into the scheduler queue.
+message SubmitJobResponse {
+  Job job = 1;
+}
+// GetJobRequest supplies arguments for the following operation: Reads a job and its attempts without changing execution state.
+message GetJobRequest {
+  string id = 1;
+}
+// GetJobResponse returns the result for the following operation: Reads a job and its attempts without changing execution state.
+message GetJobResponse {
+  Job job = 1;
+}
+// GetSnapshotRequest supplies arguments for the following operation: Reads current scheduler, worker, job, and event state.
 message GetSnapshotRequest {}
-message GetSnapshotResponse { Snapshot snapshot = 1; }
+// GetSnapshotResponse returns the result for the following operation: Reads current scheduler, worker, job, and event state.
+message GetSnapshotResponse {
+  Snapshot snapshot = 1;
+}
+// WatchRequest supplies arguments for the following operation: Streams job updates; disconnecting the client does not cancel the job.
 message WatchRequest {
   string instance_id = 1;
   uint64 after_sequence = 2;
   optional string job_id = 3;
   optional string pr_id = 4;
 }
-message WatchResponse { JobEvent event = 1; }
-message CancelJobRequest { string id = 1; }
-message CancelJobResponse { Job job = 1; }
-message RetryJobRequest { string id = 1; }
-message RetryJobResponse { Job job = 1; }
-message SetPausedRequest { bool paused = 1; }
-message SetPausedResponse { Snapshot snapshot = 1; }
+// WatchResponse returns the result for the following operation: Streams job updates; disconnecting the client does not cancel the job.
+message WatchResponse {
+  JobEvent event = 1;
+}
+// CancelJobRequest supplies arguments for the following operation: Requests cancellation and retains the asynchronous worker-exit transition.
+message CancelJobRequest {
+  string id = 1;
+}
+// CancelJobResponse returns the result for the following operation: Requests cancellation and retains the asynchronous worker-exit transition.
+message CancelJobResponse {
+  Job job = 1;
+}
+// RetryJobRequest supplies arguments for the following operation: Explicitly requeues a failed or interrupted job while preserving its attempts.
+message RetryJobRequest {
+  string id = 1;
+}
+// RetryJobResponse returns the result for the following operation: Explicitly requeues a failed or interrupted job while preserving its attempts.
+message RetryJobResponse {
+  Job job = 1;
+}
+// SetPausedRequest supplies arguments for the following operation: Controls future worker dispatch without cancelling an already running job.
+message SetPausedRequest {
+  bool paused = 1;
+}
+// SetPausedResponse returns the result for the following operation: Controls future worker dispatch without cancelling an already running job.
+message SetPausedResponse {
+  Snapshot snapshot = 1;
+}
 
-message ListEventsRequest { uint64 after_sequence = 1; optional string job_id = 2; optional string pr_id = 3; }
-message ListEventsResponse { repeated JobEvent events = 1; }
+// ListEventsRequest supplies arguments for the following operation: Reads sequenced scheduler events after the caller’s cursor.
+message ListEventsRequest {
+  uint64 after_sequence = 1;
+  optional string job_id = 2;
+  optional string pr_id = 3;
+}
+// ListEventsResponse returns the result for the following operation: Reads sequenced scheduler events after the caller’s cursor.
+message ListEventsResponse {
+  repeated JobEvent events = 1;
+}
 
-message StateTransition { JobStatus from = 1; JobStatus to = 2; }
+// StateTransition describes a legal scheduler state transition and its trigger.
+message StateTransition {
+  JobStatus from = 1;
+  JobStatus to = 2;
+}
+// ReviewMessage retains PR review text, source location, and truncation evidence.
 message ReviewMessage {
   string id = 1;
   string url = 2;
@@ -193,6 +314,7 @@ message ReviewMessage {
   string commit_sha = 10;
   bool body_truncated = 11;
 }
+// PullRequestDetails contains a cached PR read and the scope of its retained review messages.
 message PullRequestDetails {
   string url = 1;
   string title = 2;
@@ -202,16 +324,41 @@ message PullRequestDetails {
   repeated ReviewMessage messages = 6;
   bool may_have_more_messages = 7;
 }
-message GetPullRequestRequest { string url = 1; bool refresh = 2; }
-message GetPullRequestResponse { PullRequestDetails pull_request = 1; RefreshStatus refresh = 2; }
-message GitHubSchedulerStatus {
- int64 tick_ms = 1; int64 request_spacing_ms = 2; uint64 tick_sequence = 3;
- int64 next_tick_at_ms = 4; int64 next_dispatch_at_ms = 5; uint32 queued_requests = 6;
- bool in_flight = 7; int64 core_retry_at_ms = 8; int64 graphql_retry_at_ms = 9;
+// GetPullRequestRequest supplies arguments for the following operation: Reads PR details through the coordinated GitHub request boundary.
+message GetPullRequestRequest {
+  string url = 1;
+  bool refresh = 2;
 }
-message WatchDashboardRequest { string url = 1; bool reviews = 2; }
-message WatchDashboardResponse { Snapshot snapshot = 1; PullRequestDetails pull_request = 2; RefreshStatus refresh = 3; }
+// GetPullRequestResponse returns the result for the following operation: Reads PR details through the coordinated GitHub request boundary.
+message GetPullRequestResponse {
+  PullRequestDetails pull_request = 1;
+  RefreshStatus refresh = 2;
+}
+// GitHubSchedulerStatus reports coordinated request timing, queue depth, and rate backoff.
+message GitHubSchedulerStatus {
+  int64 tick_ms = 1;
+  int64 request_spacing_ms = 2;
+  uint64 tick_sequence = 3;
+  int64 next_tick_at_ms = 4;
+  int64 next_dispatch_at_ms = 5;
+  uint32 queued_requests = 6;
+  bool in_flight = 7;
+  int64 core_retry_at_ms = 8;
+  int64 graphql_retry_at_ms = 9;
+}
+// WatchDashboardRequest supplies arguments for the following operation: Reads a combined scheduler and PR view for dashboard refresh.
+message WatchDashboardRequest {
+  string url = 1;
+  bool reviews = 2;
+}
+// WatchDashboardResponse returns the result for the following operation: Reads a combined scheduler and PR view for dashboard refresh.
+message WatchDashboardResponse {
+  Snapshot snapshot = 1;
+  PullRequestDetails pull_request = 2;
+  RefreshStatus refresh = 3;
+}
 
+// ListActivityResponse returns the result for the following operation: Pages recorded agent activity and coordinator events.
 message ListActivityResponse {
   repeated ActivityReport activities = 1;
   repeated JobEvent events = 2;
@@ -219,21 +366,80 @@ message ListActivityResponse {
   bool has_more = 4;
 }
 
-message MergeStatus { string pr_id = 1; string chain_id = 2; string state = 3; string detail = 4; repeated string prerequisite_urls = 5; bool auto_merge = 6; string chain_state = 7; string auto_merge_source = 8; string auto_merge_stage = 9; }
+// MergeStatus summarizes a PR’s merge-chain state and prerequisite URLs.
+message MergeStatus {
+  string pr_id = 1;
+  string chain_id = 2;
+  string state = 3;
+  string detail = 4;
+  repeated string prerequisite_urls = 5;
+  bool auto_merge = 6;
+  string chain_state = 7;
+  string auto_merge_source = 8;
+  string auto_merge_stage = 9;
+}
 
+// GetServerInfoRequest supplies arguments for the following operation: Reports the wire API version before clients perform coordinator operations.
 message GetServerInfoRequest {}
-message GetServerInfoResponse { uint32 api_version = 1; }
-message SetAutoMergeResponse { DomainMergeEntry entry = 1; string pr_id = 2; bool enabled = 3; }
-message QueueMergeChainResponse { DomainMergeChain chain = 1; }
-message InspectMergeChainsResponse { DomainMergeOverview overview = 1; }
-message ListPRReferencesResponse { repeated DomainPRReference references = 1; }
-message ListPRDependenciesResponse { repeated DomainDependency dependencies = 1; }
-message ConfirmPRDependencyResponse { DomainDependency dependency = 1; }
-message RemovePRDependencyResponse { DomainDependency dependency = 1; }
-message DecidePRReferenceResponse { DomainPRReference reference = 1; }
-message SetMergePolicyResponse { DomainMergeEntry entry = 1; }
-message SetMergeReadyResponse { DomainMergeEntry entry = 1; }
-message PauseMergeChainResponse { DomainMergeChain chain = 1; }
-message ResumeMergeChainResponse { DomainMergeChain chain = 1; }
-message CancelMergeChainResponse { DomainMergeChain chain = 1; }
-message ReconcileMergeOperationResponse { DomainReconciliationResult operation = 1; }
+// GetServerInfoResponse returns the result for the following operation: Reports the wire API version before clients perform coordinator operations.
+message GetServerInfoResponse {
+  uint32 api_version = 1;
+}
+// SetAutoMergeResponse returns the result for the following operation: Sets an owner-authorized per-PR automatic merge override.
+message SetAutoMergeResponse {
+  DomainMergeEntry entry = 1;
+  string pr_id = 2;
+  bool enabled = 3;
+}
+// QueueMergeChainResponse returns the result for the following operation: Records ordered merge intents; acceptance does not confirm a GitHub merge.
+message QueueMergeChainResponse {
+  DomainMergeChain chain = 1;
+}
+// InspectMergeChainsResponse returns the result for the following operation: Inspects retained merge chains, entries, and in-flight operations.
+message InspectMergeChainsResponse {
+  DomainMergeOverview overview = 1;
+}
+// ListPRReferencesResponse returns the result for the following operation: Lists discovered references without treating them as confirmed dependencies.
+message ListPRReferencesResponse {
+  repeated DomainPRReference references = 1;
+}
+// ListPRDependenciesResponse returns the result for the following operation: Lists explicitly confirmed prerequisites for tracked PRs.
+message ListPRDependenciesResponse {
+  repeated DomainDependency dependencies = 1;
+}
+// ConfirmPRDependencyResponse returns the result for the following operation: Confirms an owner-authorized prerequisite and rejects dependency cycles.
+message ConfirmPRDependencyResponse {
+  DomainDependency dependency = 1;
+}
+// RemovePRDependencyResponse returns the result for the following operation: Removes a confirmed prerequisite under the dependent PR owner’s authority.
+message RemovePRDependencyResponse {
+  DomainDependency dependency = 1;
+}
+// DecidePRReferenceResponse returns the result for the following operation: Records whether a discovered reference is related or dismissed.
+message DecidePRReferenceResponse {
+  DomainPRReference reference = 1;
+}
+// SetMergePolicyResponse returns the result for the following operation: Sets the expected checks or explicit no-CI policy for a tracked PR.
+message SetMergePolicyResponse {
+  DomainMergeEntry entry = 1;
+}
+// SetMergeReadyResponse returns the result for the following operation: Records the owner’s assessment for an exact PR head and current evidence.
+message SetMergeReadyResponse {
+  DomainMergeEntry entry = 1;
+}
+// PauseMergeChainResponse returns the result for the following operation: Pauses future merge dispatch for a chain without undoing prior effects.
+message PauseMergeChainResponse {
+  DomainMergeChain chain = 1;
+}
+// ResumeMergeChainResponse returns the result for the following operation: Resumes eligibility evaluation for a paused merge chain.
+message ResumeMergeChainResponse {
+  DomainMergeChain chain = 1;
+}
+// CancelMergeChainResponse returns the result for the following operation: Cancels unfinished chain entries while preserving operation history.
+message CancelMergeChainResponse {
+  DomainMergeChain chain = 1;
+}
+// ReconcileMergeOperationResponse returns the result for the following operation: Rechecks an uncertain GitHub operation without blindly repeating its mutation.
+message ReconcileMergeOperationResponse {
+  DomainReconciliationResult operation = 1;
+}

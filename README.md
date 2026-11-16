@@ -154,3 +154,9 @@ Octo accepts caller-written PR titles and descriptions, validates local format r
 `bun run check` gives the typed TypeScript analyzer an explicit 4 GiB Node heap budget on both local machines and CI; Octokit declarations exceed the default roughly 2 GiB heap on hosted macOS. Individual lint runs use `node --max-old-space-size=4096 scripts/check-typescript.mjs lint`. This changes analysis memory limits, without disabling rules or growing the retrofit baseline.
 
 The [CLI guide](docs/cli.md) describes capability groups and agent shortcuts. The [local API](docs/api.md) uses typed v2 contracts shared by the coordinator and dashboard.
+
+## Protobuf quality
+
+The managed source-code profile selects beta-stage Protobuf checks with owned authority and adoption hold. Existing Go/TypeScript checks and the application stack remain in place. Run `python3 scripts/check-protobuf.py tools` once to provision pinned Buf and build its native JSON-string rule, then `bun run generate` to regenerate formatted schemas and Go/TypeScript bindings. Domain-message documentation comes from the canonical contracts and exporter; edit those inputs rather than generated files.
+
+Run `PROTOBUF_AGAINST='.git#ref=origin/main' bun run check` for full verification against the integration branch. The standalone gate is `python3 scripts/check-protobuf.py all --against '.git#ref=origin/main'`. Use the actual PR base or released revision when checking a change; there is no ratchet or ignored-field exception. CI uses the PR base SHA or the previous push SHA, and manual runs require a baseline revision. These checks preserve the v2 contract and do not require restarting the daemon or migrating stored state.

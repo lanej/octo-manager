@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
-import { roots, CommandSchema } from "../src/api/contracts.js";
+import {
+  roots,
+  rootDescriptions,
+  CommandSchema,
+} from "../src/api/contracts.js";
 interface SchemaNode {
   type?: string;
+  description?: string;
   const?: string | number | boolean;
   enum?: string[];
   anyOf?: SchemaNode[];
@@ -28,6 +33,8 @@ function node(value: unknown): SchemaNode {
   const raw = object(value),
     result: SchemaNode = {};
   if (typeof raw["type"] === "string") result.type = raw["type"];
+  if (typeof raw["description"] === "string")
+    result.description = raw["description"];
   const constant = raw["const"];
   if (
     typeof constant === "string" ||
@@ -129,9 +136,14 @@ function variantKey(schema: SchemaNode): string {
       .join(",")
   );
 }
-function type(name: string, s: SchemaNode): string {
+function type(name: string, s: SchemaNode, purpose: string): string {
+  const documentation = `// ${name} ${s.description ?? purpose}\n`;
   if (s.enum !== undefined)
-    return type(name, { anyOf: s.enum.map((value) => ({ const: value })) });
+    return type(
+      name,
+      { anyOf: s.enum.map((value) => ({ const: value })) },
+      purpose,
+    );
   if (s.anyOf !== undefined) {
     const branches = s.anyOf;
     if (branches.every((b) => typeof b.const === "string")) {
@@ -150,13 +162,17 @@ function type(name: string, s: SchemaNode): string {
     const variants = branches.map((branch) => {
       const number = tag(name, variantKey(branch), "variant");
       return {
-        type: type(name + "Variant" + String(number), branch),
+        type: type(
+          name + "Variant" + String(number),
+          branch,
+          `represents ${variantKey(branch)} for ${name}.`,
+        ),
         field: `variant${String(number)}`,
         number,
       };
     });
     definitions.push(
-      `message ${name} { ${reserved(
+      `${documentation}message ${name} { ${reserved(
         name,
         variants.map((v) => v.number),
       )} oneof variant { ${variants.map((v) => `${v.type} variant_${String(v.number)} = ${String(v.number)};`).join(" ")} } }`,
@@ -169,21 +185,33 @@ function type(name: string, s: SchemaNode): string {
   }
   if (s.const !== undefined) {
     if (typeof s.const === "string")
-      return type(name, { anyOf: [{ const: s.const }] });
+      return type(name, { anyOf: [{ const: s.const }] }, purpose);
     const scalar = typeof s.const === "boolean" ? "bool" : "int64";
-    definitions.push(`message ${name} { optional ${scalar} literal = 1; }`);
+    definitions.push(
+      `${documentation}message ${name} { optional ${scalar} literal = 1; }`,
+    );
     shapes[name] = { kind: "literal", scalar, value: s.const };
     return name;
   }
   if (s.type === "array") {
-    const element = type(name + "Item", s.items ?? {});
-    definitions.push(`message ${name} { repeated ${element} items = 1; }`);
+    const element = type(
+      name + "Item",
+      s.items ?? {},
+      `represents one item in ${name}.`,
+    );
+    definitions.push(
+      `${documentation}message ${name} { repeated ${element} items = 1; }`,
+    );
     shapes[name] = { kind: "list", element };
     return name;
   }
   if (s.type === "object") {
     const fields = Object.entries(s.properties ?? {}).map(([key, value]) => {
-      const fieldType = type(name + pascal(key), value),
+      const fieldType = type(
+          name + pascal(key),
+          value,
+          `contains the ${key} value of ${name}.`,
+        ),
         number = tag(name, key, fieldType);
       return {
         key,
@@ -194,7 +222,7 @@ function type(name: string, s: SchemaNode): string {
       };
     });
     definitions.push(
-      `message ${name} { ${reserved(
+      `${documentation}message ${name} { ${reserved(
         name,
         fields.map((field) => field.number),
       )} ${fields.map((field) => field.declaration).join(" ")} }`,
@@ -215,8 +243,13 @@ function type(name: string, s: SchemaNode): string {
   if (s.type === "boolean") return "bool";
   throw new Error(`Untyped API field: ${name}`);
 }
-for (const [name, schema] of Object.entries(roots))
-  type("Domain" + name, node(schema));
+const descriptions: Readonly<Record<string, string>> = rootDescriptions;
+for (const [name, schema] of Object.entries(roots)) {
+  const purpose = descriptions[name];
+  if (purpose === undefined)
+    throw new Error(`Missing API documentation: ${name}`);
+  type("Domain" + name, node(schema), purpose);
+}
 const operations: Record<string, string> = {
   auto_merge: "SetAutoMerge",
   queue: "QueueMergeChain",
@@ -240,11 +273,15 @@ for (const schema of node(CommandSchema).anyOf ?? []) {
     throw new Error("Missing operation discriminator");
   const operation = operations[op.const];
   if (operation === undefined) throw new Error("Unmapped operation");
-  type(operation + "Request", {
-    type: "object",
-    properties: fields,
-    required: (schema.required ?? []).filter((key) => key !== "op"),
-  });
+  type(
+    operation + "Request",
+    {
+      type: "object",
+      properties: fields,
+      required: (schema.required ?? []).filter((key) => key !== "op"),
+    },
+    `supplies the validated ${op.const} command arguments.`,
+  );
   requests[op.const] = operation;
 }
 writeFileSync(

@@ -1,0 +1,73 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      against:
+        description: Git revision containing the compatibility baseline
+        required: true
+        default: origin/main
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PROTOBUF_AGAINST: '.git#ref=${{ inputs.against || github.event.pull_request.base.sha || github.event.before }}'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2
+        with:
+          tool: shellcheck@0.11.0
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-quality
+          key: go-quality-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check-go.sh', 'go.mod') }}
+      - uses: bufbuild/buf-action@v1
+        with:
+          version: '1.75.0'
+          setup_only: true
+      - run: python3 scripts/check-protobuf.py tools
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: npm ci --prefix .typescript-quality --ignore-scripts
+      - run: bun run generate
+      - run: git diff --exit-code -- gen src/gen schemas proto
+      - run: bun run check
+      - name: Exercise native installation and manual startup
+        run: bun scripts/test-install-acceptance.ts
+      - name: Start an isolated Linux user service
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export XDG_RUNTIME_DIR
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user show-environment >/dev/null
+          bun scripts/test-install-acceptance.ts --start

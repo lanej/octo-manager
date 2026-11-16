@@ -4263,6 +4263,7 @@ func (DecidePRReferenceRequestDecision) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{81}
 }
 
+// DomainCheckRecord records one check execution at an observed PR revision.
 type DomainCheckRecord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -4395,6 +4396,7 @@ func (x *DomainCheckRecord) GetEvent() string {
 	return ""
 }
 
+// DomainCheckEvidenceVariant1ValueItem represents one item in DomainCheckEvidenceVariant1Value.
 type DomainCheckEvidenceVariant1ValueItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -4527,6 +4529,7 @@ func (x *DomainCheckEvidenceVariant1ValueItem) GetEvent() string {
 	return ""
 }
 
+// DomainCheckEvidenceVariant1Value contains the value value of DomainCheckEvidenceVariant1.
 type DomainCheckEvidenceVariant1Value struct {
 	state         protoimpl.MessageState                  `protogen:"open.v1"`
 	Items         []*DomainCheckEvidenceVariant1ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -4571,6 +4574,7 @@ func (x *DomainCheckEvidenceVariant1Value) GetItems() []*DomainCheckEvidenceVari
 	return nil
 }
 
+// DomainCheckEvidenceVariant1 represents state:complete for DomainCheckEvidence.
 type DomainCheckEvidenceVariant1 struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	State         *DomainCheckEvidenceVariant1State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainCheckEvidenceVariant1State,oneof" json:"state,omitempty"`
@@ -4623,6 +4627,7 @@ func (x *DomainCheckEvidenceVariant1) GetValue() *DomainCheckEvidenceVariant1Val
 	return nil
 }
 
+// DomainCheckEvidenceVariant2ValueItem represents one item in DomainCheckEvidenceVariant2Value.
 type DomainCheckEvidenceVariant2ValueItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -4755,6 +4760,7 @@ func (x *DomainCheckEvidenceVariant2ValueItem) GetEvent() string {
 	return ""
 }
 
+// DomainCheckEvidenceVariant2Value contains the value value of DomainCheckEvidenceVariant2.
 type DomainCheckEvidenceVariant2Value struct {
 	state         protoimpl.MessageState                  `protogen:"open.v1"`
 	Items         []*DomainCheckEvidenceVariant2ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -4799,6 +4805,7 @@ func (x *DomainCheckEvidenceVariant2Value) GetItems() []*DomainCheckEvidenceVari
 	return nil
 }
 
+// DomainCheckEvidenceVariant2 represents state:partial for DomainCheckEvidence.
 type DomainCheckEvidenceVariant2 struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	State         *DomainCheckEvidenceVariant2State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainCheckEvidenceVariant2State,oneof" json:"state,omitempty"`
@@ -4859,6 +4866,7 @@ func (x *DomainCheckEvidenceVariant2) GetReason() string {
 	return ""
 }
 
+// DomainCheckEvidenceVariant3 represents state:unavailable for DomainCheckEvidence.
 type DomainCheckEvidenceVariant3 struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	State         *DomainCheckEvidenceVariant3State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainCheckEvidenceVariant3State,oneof" json:"state,omitempty"`
@@ -4911,6 +4919,7 @@ func (x *DomainCheckEvidenceVariant3) GetReason() string {
 	return ""
 }
 
+// DomainCheckEvidence distinguishes complete, partial, and unavailable check observations.
 type DomainCheckEvidence struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -5009,6 +5018,7 @@ func (*DomainCheckEvidence_Variant_2) isDomainCheckEvidence_Variant() {}
 
 func (*DomainCheckEvidence_Variant_3) isDomainCheckEvidence_Variant() {}
 
+// DomainReviewEvidenceVariant1ValueItem represents one item in DomainReviewEvidenceVariant1Value.
 type DomainReviewEvidenceVariant1ValueItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -5101,6 +5111,7 @@ func (x *DomainReviewEvidenceVariant1ValueItem) GetBody() string {
 	return ""
 }
 
+// DomainReviewEvidenceVariant1Value contains the value value of DomainReviewEvidenceVariant1.
 type DomainReviewEvidenceVariant1Value struct {
 	state         protoimpl.MessageState                   `protogen:"open.v1"`
 	Items         []*DomainReviewEvidenceVariant1ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -5145,6 +5156,7 @@ func (x *DomainReviewEvidenceVariant1Value) GetItems() []*DomainReviewEvidenceVa
 	return nil
 }
 
+// DomainReviewEvidenceVariant1 represents state:complete for DomainReviewEvidence.
 type DomainReviewEvidenceVariant1 struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
 	State         *DomainReviewEvidenceVariant1State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainReviewEvidenceVariant1State,oneof" json:"state,omitempty"`
@@ -5197,6 +5209,7 @@ func (x *DomainReviewEvidenceVariant1) GetValue() *DomainReviewEvidenceVariant1V
 	return nil
 }
 
+// DomainReviewEvidenceVariant2ValueItem represents one item in DomainReviewEvidenceVariant2Value.
 type DomainReviewEvidenceVariant2ValueItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -5289,6 +5302,7 @@ func (x *DomainReviewEvidenceVariant2ValueItem) GetBody() string {
 	return ""
 }
 
+// DomainReviewEvidenceVariant2Value contains the value value of DomainReviewEvidenceVariant2.
 type DomainReviewEvidenceVariant2Value struct {
 	state         protoimpl.MessageState                   `protogen:"open.v1"`
 	Items         []*DomainReviewEvidenceVariant2ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -5333,6 +5347,7 @@ func (x *DomainReviewEvidenceVariant2Value) GetItems() []*DomainReviewEvidenceVa
 	return nil
 }
 
+// DomainReviewEvidenceVariant2 represents state:partial for DomainReviewEvidence.
 type DomainReviewEvidenceVariant2 struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
 	State         *DomainReviewEvidenceVariant2State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainReviewEvidenceVariant2State,oneof" json:"state,omitempty"`
@@ -5393,6 +5408,7 @@ func (x *DomainReviewEvidenceVariant2) GetReason() string {
 	return ""
 }
 
+// DomainReviewEvidenceVariant3 represents state:unavailable for DomainReviewEvidence.
 type DomainReviewEvidenceVariant3 struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
 	State         *DomainReviewEvidenceVariant3State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainReviewEvidenceVariant3State,oneof" json:"state,omitempty"`
@@ -5445,6 +5461,7 @@ func (x *DomainReviewEvidenceVariant3) GetReason() string {
 	return ""
 }
 
+// DomainReviewEvidence distinguishes complete, partial, and unavailable review observations.
 type DomainReviewEvidence struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -5543,6 +5560,7 @@ func (*DomainReviewEvidence_Variant_2) isDomainReviewEvidence_Variant() {}
 
 func (*DomainReviewEvidence_Variant_3) isDomainReviewEvidence_Variant() {}
 
+// DomainFeedbackEvidenceVariant1ValueItem represents one item in DomainFeedbackEvidenceVariant1Value.
 type DomainFeedbackEvidenceVariant1ValueItem struct {
 	state         protoimpl.MessageState                         `protogen:"open.v1"`
 	Source        *DomainFeedbackEvidenceVariant1ValueItemSource `protobuf:"varint,1,opt,name=source,proto3,enum=octomanager.v2.DomainFeedbackEvidenceVariant1ValueItemSource,oneof" json:"source,omitempty"`
@@ -5659,6 +5677,7 @@ func (x *DomainFeedbackEvidenceVariant1ValueItem) GetReviewId() string {
 	return ""
 }
 
+// DomainFeedbackEvidenceVariant1Value contains the value value of DomainFeedbackEvidenceVariant1.
 type DomainFeedbackEvidenceVariant1Value struct {
 	state         protoimpl.MessageState                     `protogen:"open.v1"`
 	Items         []*DomainFeedbackEvidenceVariant1ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -5703,6 +5722,7 @@ func (x *DomainFeedbackEvidenceVariant1Value) GetItems() []*DomainFeedbackEviden
 	return nil
 }
 
+// DomainFeedbackEvidenceVariant1 represents state:complete for DomainFeedbackEvidence.
 type DomainFeedbackEvidenceVariant1 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainFeedbackEvidenceVariant1State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainFeedbackEvidenceVariant1State,oneof" json:"state,omitempty"`
@@ -5755,6 +5775,7 @@ func (x *DomainFeedbackEvidenceVariant1) GetValue() *DomainFeedbackEvidenceVaria
 	return nil
 }
 
+// DomainFeedbackEvidenceVariant2ValueItem represents one item in DomainFeedbackEvidenceVariant2Value.
 type DomainFeedbackEvidenceVariant2ValueItem struct {
 	state         protoimpl.MessageState                         `protogen:"open.v1"`
 	Source        *DomainFeedbackEvidenceVariant2ValueItemSource `protobuf:"varint,1,opt,name=source,proto3,enum=octomanager.v2.DomainFeedbackEvidenceVariant2ValueItemSource,oneof" json:"source,omitempty"`
@@ -5871,6 +5892,7 @@ func (x *DomainFeedbackEvidenceVariant2ValueItem) GetReviewId() string {
 	return ""
 }
 
+// DomainFeedbackEvidenceVariant2Value contains the value value of DomainFeedbackEvidenceVariant2.
 type DomainFeedbackEvidenceVariant2Value struct {
 	state         protoimpl.MessageState                     `protogen:"open.v1"`
 	Items         []*DomainFeedbackEvidenceVariant2ValueItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -5915,6 +5937,7 @@ func (x *DomainFeedbackEvidenceVariant2Value) GetItems() []*DomainFeedbackEviden
 	return nil
 }
 
+// DomainFeedbackEvidenceVariant2 represents state:partial for DomainFeedbackEvidence.
 type DomainFeedbackEvidenceVariant2 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainFeedbackEvidenceVariant2State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainFeedbackEvidenceVariant2State,oneof" json:"state,omitempty"`
@@ -5975,6 +5998,7 @@ func (x *DomainFeedbackEvidenceVariant2) GetReason() string {
 	return ""
 }
 
+// DomainFeedbackEvidenceVariant3 represents state:unavailable for DomainFeedbackEvidence.
 type DomainFeedbackEvidenceVariant3 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainFeedbackEvidenceVariant3State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainFeedbackEvidenceVariant3State,oneof" json:"state,omitempty"`
@@ -6027,6 +6051,7 @@ func (x *DomainFeedbackEvidenceVariant3) GetReason() string {
 	return ""
 }
 
+// DomainFeedbackEvidence retains review feedback together with the completeness of its observation.
 type DomainFeedbackEvidence struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -6125,6 +6150,7 @@ func (*DomainFeedbackEvidence_Variant_2) isDomainFeedbackEvidence_Variant() {}
 
 func (*DomainFeedbackEvidence_Variant_3) isDomainFeedbackEvidence_Variant() {}
 
+// DomainDeliveryProgressVariant1 represents state:pending for DomainDeliveryProgress.
 type DomainDeliveryProgressVariant1 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainDeliveryProgressVariant1State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryProgressVariant1State,oneof" json:"state,omitempty"`
@@ -6177,6 +6203,7 @@ func (x *DomainDeliveryProgressVariant1) GetNextAttemptAt() int64 {
 	return 0
 }
 
+// DomainDeliveryProgressVariant2 represents state:sending for DomainDeliveryProgress.
 type DomainDeliveryProgressVariant2 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainDeliveryProgressVariant2State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryProgressVariant2State,oneof" json:"state,omitempty"`
@@ -6229,6 +6256,7 @@ func (x *DomainDeliveryProgressVariant2) GetStartedAt() int64 {
 	return 0
 }
 
+// DomainDeliveryProgressVariant3 represents state:delivered for DomainDeliveryProgress.
 type DomainDeliveryProgressVariant3 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainDeliveryProgressVariant3State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryProgressVariant3State,oneof" json:"state,omitempty"`
@@ -6305,6 +6333,7 @@ func (x *DomainDeliveryProgressVariant3) GetNote() string {
 	return ""
 }
 
+// DomainDeliveryProgressVariant4 represents fields:at,reason,state for DomainDeliveryProgress.
 type DomainDeliveryProgressVariant4 struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	State         *DomainDeliveryProgressVariant4State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryProgressVariant4State,oneof" json:"state,omitempty"`
@@ -6365,6 +6394,7 @@ func (x *DomainDeliveryProgressVariant4) GetReason() string {
 	return ""
 }
 
+// DomainDeliveryProgress records the delivery transport step without claiming that the agent received it.
 type DomainDeliveryProgress struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -6479,6 +6509,7 @@ func (*DomainDeliveryProgress_Variant_3) isDomainDeliveryProgress_Variant() {}
 
 func (*DomainDeliveryProgress_Variant_4) isDomainDeliveryProgress_Variant() {}
 
+// DomainDeliveryOutcomeVariant1 represents state:sending for DomainDeliveryOutcome.
 type DomainDeliveryOutcomeVariant1 struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	State         *DomainDeliveryOutcomeVariant1State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryOutcomeVariant1State,oneof" json:"state,omitempty"`
@@ -6523,6 +6554,7 @@ func (x *DomainDeliveryOutcomeVariant1) GetState() DomainDeliveryOutcomeVariant1
 	return DomainDeliveryOutcomeVariant1State_DOMAIN_DELIVERY_OUTCOME_VARIANT1_STATE_UNSPECIFIED
 }
 
+// DomainDeliveryOutcomeVariant2 represents state:accepted for DomainDeliveryOutcome.
 type DomainDeliveryOutcomeVariant2 struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	State         *DomainDeliveryOutcomeVariant2State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryOutcomeVariant2State,oneof" json:"state,omitempty"`
@@ -6591,6 +6623,7 @@ func (x *DomainDeliveryOutcomeVariant2) GetQueueId() string {
 	return ""
 }
 
+// DomainDeliveryOutcomeVariant3 represents fields:at,reason,state for DomainDeliveryOutcome.
 type DomainDeliveryOutcomeVariant3 struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	State         *DomainDeliveryOutcomeVariant3State `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.DomainDeliveryOutcomeVariant3State,oneof" json:"state,omitempty"`
@@ -6651,6 +6684,7 @@ func (x *DomainDeliveryOutcomeVariant3) GetReason() string {
 	return ""
 }
 
+// DomainDeliveryOutcome records confirmed, failed, or uncertain delivery evidence.
 type DomainDeliveryOutcome struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -6749,6 +6783,7 @@ func (*DomainDeliveryOutcome_Variant_2) isDomainDeliveryOutcome_Variant() {}
 
 func (*DomainDeliveryOutcome_Variant_3) isDomainDeliveryOutcome_Variant() {}
 
+// DomainMergeChain groups ordered PR merge intents under one actor and lifecycle.
 type DomainMergeChain struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -6841,6 +6876,7 @@ func (x *DomainMergeChain) GetUpdatedAt() int64 {
 	return 0
 }
 
+// DomainMergeEntryAgentInstructions contains the agentInstructions value of DomainMergeEntry.
 type DomainMergeEntryAgentInstructions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
@@ -6901,6 +6937,7 @@ func (x *DomainMergeEntryAgentInstructions) GetText() string {
 	return ""
 }
 
+// DomainMergeEntryChecks contains the checks value of DomainMergeEntry.
 type DomainMergeEntryChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -6945,6 +6982,7 @@ func (x *DomainMergeEntryChecks) GetItems() []string {
 	return nil
 }
 
+// DomainMergeEntryReady contains the ready value of DomainMergeEntry.
 type DomainMergeEntryReady struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Epoch         *int64                 `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
@@ -7037,6 +7075,7 @@ func (x *DomainMergeEntryReady) GetAt() int64 {
 	return 0
 }
 
+// DomainMergeEntry records the gates and exact-head readiness for one PR in a merge chain.
 type DomainMergeEntry struct {
 	state             protoimpl.MessageState             `protogen:"open.v1"`
 	ReceiptId         *string                            `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
@@ -7249,6 +7288,7 @@ func (x *DomainMergeEntry) GetMergeCommit() string {
 	return ""
 }
 
+// DomainRepositoryAutomationPolicyInstructions contains the instructions value of DomainRepositoryAutomationPolicy.
 type DomainRepositoryAutomationPolicyInstructions struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	ReviewFeedback      *string                `protobuf:"bytes,1,opt,name=review_feedback,proto3,oneof" json:"review_feedback,omitempty"`
@@ -7357,6 +7397,7 @@ func (x *DomainRepositoryAutomationPolicyInstructions) GetMergeBlocked() string 
 	return ""
 }
 
+// DomainRepositoryAutomationPolicy records effective repository automation defaults and their provenance.
 type DomainRepositoryAutomationPolicy struct {
 	state         protoimpl.MessageState                        `protogen:"open.v1"`
 	PrId          *string                                       `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
@@ -7473,6 +7514,7 @@ func (x *DomainRepositoryAutomationPolicy) GetError() string {
 	return ""
 }
 
+// DomainMergeOperationPreparationChecksItem represents one item in DomainMergeOperationPreparationChecks.
 type DomainMergeOperationPreparationChecksItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -7517,6 +7559,7 @@ func (x *DomainMergeOperationPreparationChecksItem) GetItems() []string {
 	return nil
 }
 
+// DomainMergeOperationPreparationChecks contains the checks value of DomainMergeOperationPreparation.
 type DomainMergeOperationPreparationChecks struct {
 	state         protoimpl.MessageState                       `protogen:"open.v1"`
 	Items         []*DomainMergeOperationPreparationChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -7561,6 +7604,7 @@ func (x *DomainMergeOperationPreparationChecks) GetItems() []*DomainMergeOperati
 	return nil
 }
 
+// DomainMergeOperationPreparationKey contains the key value of DomainMergeOperationPreparation.
 type DomainMergeOperationPreparationKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -7605,6 +7649,7 @@ func (x *DomainMergeOperationPreparationKey) GetItems() []string {
 	return nil
 }
 
+// DomainMergeOperationPreparation contains the preparation value of DomainMergeOperation.
 type DomainMergeOperationPreparation struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
 	Kind          *DomainMergeOperationPreparationKind   `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainMergeOperationPreparationKind,oneof" json:"kind,omitempty"`
@@ -7697,6 +7742,7 @@ func (x *DomainMergeOperationPreparation) GetExpectedValue() string {
 	return ""
 }
 
+// DomainMergeOperation journals a GitHub mutation and its reconciliation evidence.
 type DomainMergeOperation struct {
 	state              protoimpl.MessageState           `protogen:"open.v1"`
 	RequestId          *string                          `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
@@ -7917,6 +7963,7 @@ func (x *DomainMergeOperation) GetWorkspace() string {
 	return ""
 }
 
+// DomainDependencyPreparationChecksItem represents one item in DomainDependencyPreparationChecks.
 type DomainDependencyPreparationChecksItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -7961,6 +8008,7 @@ func (x *DomainDependencyPreparationChecksItem) GetItems() []string {
 	return nil
 }
 
+// DomainDependencyPreparationChecks contains the checks value of DomainDependencyPreparation.
 type DomainDependencyPreparationChecks struct {
 	state         protoimpl.MessageState                   `protogen:"open.v1"`
 	Items         []*DomainDependencyPreparationChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -8005,6 +8053,7 @@ func (x *DomainDependencyPreparationChecks) GetItems() []*DomainDependencyPrepar
 	return nil
 }
 
+// DomainDependencyPreparationKey contains the key value of DomainDependencyPreparation.
 type DomainDependencyPreparationKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -8049,6 +8098,7 @@ func (x *DomainDependencyPreparationKey) GetItems() []string {
 	return nil
 }
 
+// DomainDependencyPreparation contains the preparation value of DomainDependency.
 type DomainDependencyPreparation struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
 	Kind          *DomainDependencyPreparationKind   `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainDependencyPreparationKind,oneof" json:"kind,omitempty"`
@@ -8141,6 +8191,7 @@ func (x *DomainDependencyPreparation) GetExpectedValue() string {
 	return ""
 }
 
+// DomainDependency records an explicitly confirmed prerequisite between tracked PRs.
 type DomainDependency struct {
 	state          protoimpl.MessageState       `protogen:"open.v1"`
 	Id             *string                      `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -8257,6 +8308,7 @@ func (x *DomainDependency) GetPreparation() *DomainDependencyPreparation {
 	return nil
 }
 
+// DomainPRReference retains a discovered PR reference separately from a confirmed dependency.
 type DomainPRReference struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Id            *string                      `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -8397,6 +8449,7 @@ func (x *DomainPRReference) GetDecidedBy() string {
 	return ""
 }
 
+// DomainQueueInputEntriesItemChecks contains the checks value of DomainQueueInputEntriesItem.
 type DomainQueueInputEntriesItemChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -8441,6 +8494,7 @@ func (x *DomainQueueInputEntriesItemChecks) GetItems() []string {
 	return nil
 }
 
+// DomainQueueInputEntriesItem represents one item in DomainQueueInputEntries.
 type DomainQueueInputEntriesItem struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
 	PrUrl         *string                            `protobuf:"bytes,1,opt,name=pr_url,json=prUrl,proto3,oneof" json:"pr_url,omitempty"`
@@ -8509,6 +8563,7 @@ func (x *DomainQueueInputEntriesItem) GetNoCi() bool {
 	return false
 }
 
+// DomainQueueInputEntries contains the entries value of DomainQueueInput.
 type DomainQueueInputEntries struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	Items         []*DomainQueueInputEntriesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -8553,6 +8608,7 @@ func (x *DomainQueueInputEntries) GetItems() []*DomainQueueInputEntriesItem {
 	return nil
 }
 
+// DomainQueueInput describes the ordered merge intents and request identity supplied by a caller.
 type DomainQueueInput struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	RequestId     *string                  `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
@@ -8613,6 +8669,7 @@ func (x *DomainQueueInput) GetEntries() *DomainQueueInputEntries {
 	return nil
 }
 
+// DomainReceiptTarget freezes the PR, owner, and revision context associated with a notification.
 type DomainReceiptTarget struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	PrId          *string                    `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
@@ -8713,6 +8770,7 @@ func (x *DomainReceiptTarget) GetMethod() DomainReceiptTargetMethod {
 	return DomainReceiptTargetMethod_DOMAIN_RECEIPT_TARGET_METHOD_UNSPECIFIED
 }
 
+// DomainAgentDigestTransport contains the transport value of DomainAgentDigest.
 type DomainAgentDigestTransport struct {
 	state         protoimpl.MessageState          `protogen:"open.v1"`
 	Kind          *DomainAgentDigestTransportKind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainAgentDigestTransportKind,oneof" json:"kind,omitempty"`
@@ -8765,6 +8823,7 @@ func (x *DomainAgentDigestTransport) GetSocket() string {
 	return ""
 }
 
+// DomainAgentDigest identifies a recipient's evolving notification digest.
 type DomainAgentDigest struct {
 	state          protoimpl.MessageState      `protogen:"open.v1"`
 	Transport      *DomainAgentDigestTransport `protobuf:"bytes,1,opt,name=transport,proto3" json:"transport,omitempty"`
@@ -8889,6 +8948,7 @@ func (x *DomainAgentDigest) GetError() string {
 	return ""
 }
 
+// DomainDigestRevisionMergeTarget contains the mergeTarget value of DomainDigestRevision.
 type DomainDigestRevisionMergeTarget struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
 	PrId          *string                                `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
@@ -8989,6 +9049,7 @@ func (x *DomainDigestRevisionMergeTarget) GetMethod() DomainDigestRevisionMergeT
 	return DomainDigestRevisionMergeTargetMethod_DOMAIN_DIGEST_REVISION_MERGE_TARGET_METHOD_UNSPECIFIED
 }
 
+// DomainDigestRevisionMessageIds contains the messageIds value of DomainDigestRevision.
 type DomainDigestRevisionMessageIds struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -9033,6 +9094,7 @@ func (x *DomainDigestRevisionMessageIds) GetItems() []string {
 	return nil
 }
 
+// DomainDigestRevision freezes one rendered notification revision and its exact members.
 type DomainDigestRevision struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	DispatchId    *string                          `protobuf:"bytes,1,opt,name=dispatch_id,json=dispatchId,proto3,oneof" json:"dispatch_id,omitempty"`
@@ -9125,6 +9187,7 @@ func (x *DomainDigestRevision) GetCreatedAt() int64 {
 	return 0
 }
 
+// DomainDigestInspectionDigestTransport contains the transport value of DomainDigestInspectionDigest.
 type DomainDigestInspectionDigestTransport struct {
 	state         protoimpl.MessageState                     `protogen:"open.v1"`
 	Kind          *DomainDigestInspectionDigestTransportKind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainDigestInspectionDigestTransportKind,oneof" json:"kind,omitempty"`
@@ -9177,6 +9240,7 @@ func (x *DomainDigestInspectionDigestTransport) GetSocket() string {
 	return ""
 }
 
+// DomainDigestInspectionDigest contains the digest value of DomainDigestInspection.
 type DomainDigestInspectionDigest struct {
 	state          protoimpl.MessageState                 `protogen:"open.v1"`
 	Transport      *DomainDigestInspectionDigestTransport `protobuf:"bytes,1,opt,name=transport,proto3" json:"transport,omitempty"`
@@ -9301,6 +9365,7 @@ func (x *DomainDigestInspectionDigest) GetError() string {
 	return ""
 }
 
+// DomainDigestInspectionRevisionMergeTarget contains the mergeTarget value of DomainDigestInspectionRevision.
 type DomainDigestInspectionRevisionMergeTarget struct {
 	state         protoimpl.MessageState                           `protogen:"open.v1"`
 	PrId          *string                                          `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
@@ -9401,6 +9466,7 @@ func (x *DomainDigestInspectionRevisionMergeTarget) GetMethod() DomainDigestInsp
 	return DomainDigestInspectionRevisionMergeTargetMethod_DOMAIN_DIGEST_INSPECTION_REVISION_MERGE_TARGET_METHOD_UNSPECIFIED
 }
 
+// DomainDigestInspectionRevisionMessageIds contains the messageIds value of DomainDigestInspectionRevision.
 type DomainDigestInspectionRevisionMessageIds struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -9445,6 +9511,7 @@ func (x *DomainDigestInspectionRevisionMessageIds) GetItems() []string {
 	return nil
 }
 
+// DomainDigestInspectionRevision contains the revision value of DomainDigestInspection.
 type DomainDigestInspectionRevision struct {
 	state         protoimpl.MessageState                     `protogen:"open.v1"`
 	DispatchId    *string                                    `protobuf:"bytes,1,opt,name=dispatch_id,json=dispatchId,proto3,oneof" json:"dispatch_id,omitempty"`
@@ -9537,6 +9604,7 @@ func (x *DomainDigestInspectionRevision) GetCreatedAt() int64 {
 	return 0
 }
 
+// DomainDigestInspectionRevisions contains the revisions value of DomainDigestInspection.
 type DomainDigestInspectionRevisions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []int64                `protobuf:"varint,1,rep,packed,name=items,proto3" json:"items,omitempty"`
@@ -9581,6 +9649,7 @@ func (x *DomainDigestInspectionRevisions) GetItems() []int64 {
 	return nil
 }
 
+// DomainDigestInspectionReceiptsItem represents one item in DomainDigestInspectionReceipts.
 type DomainDigestInspectionReceiptsItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
@@ -9641,6 +9710,7 @@ func (x *DomainDigestInspectionReceiptsItem) GetAt() int64 {
 	return 0
 }
 
+// DomainDigestInspectionReceipts contains the receipts value of DomainDigestInspection.
 type DomainDigestInspectionReceipts struct {
 	state         protoimpl.MessageState                `protogen:"open.v1"`
 	Items         []*DomainDigestInspectionReceiptsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -9685,6 +9755,7 @@ func (x *DomainDigestInspectionReceipts) GetItems() []*DomainDigestInspectionRec
 	return nil
 }
 
+// DomainDigestInspectionEventsItemDetailMessages contains the messages value of DomainDigestInspectionEventsItemDetail.
 type DomainDigestInspectionEventsItemDetailMessages struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -9729,6 +9800,7 @@ func (x *DomainDigestInspectionEventsItemDetailMessages) GetItems() []string {
 	return nil
 }
 
+// DomainDigestInspectionEventsItemDetailOmittedFields contains the omittedFields value of DomainDigestInspectionEventsItemDetail.
 type DomainDigestInspectionEventsItemDetailOmittedFields struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -9773,6 +9845,7 @@ func (x *DomainDigestInspectionEventsItemDetailOmittedFields) GetItems() []strin
 	return nil
 }
 
+// DomainDigestInspectionEventsItemDetail contains the detail value of DomainDigestInspectionEventsItem.
 type DomainDigestInspectionEventsItemDetail struct {
 	state            protoimpl.MessageState                               `protogen:"open.v1"`
 	Reason           *string                                              `protobuf:"bytes,1,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
@@ -9945,6 +10018,7 @@ func (x *DomainDigestInspectionEventsItemDetail) GetOmittedFields() *DomainDiges
 	return nil
 }
 
+// DomainDigestInspectionEventsItem represents one item in DomainDigestInspectionEvents.
 type DomainDigestInspectionEventsItem struct {
 	state         protoimpl.MessageState                  `protogen:"open.v1"`
 	Sequence      *int64                                  `protobuf:"varint,1,opt,name=sequence,proto3,oneof" json:"sequence,omitempty"`
@@ -10029,6 +10103,7 @@ func (x *DomainDigestInspectionEventsItem) GetDetail() *DomainDigestInspectionEv
 	return nil
 }
 
+// DomainDigestInspectionEvents contains the events value of DomainDigestInspection.
 type DomainDigestInspectionEvents struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	Items         []*DomainDigestInspectionEventsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10073,6 +10148,7 @@ func (x *DomainDigestInspectionEvents) GetItems() []*DomainDigestInspectionEvent
 	return nil
 }
 
+// DomainDigestInspection combines a digest revision with its receipts and retained delivery history.
 type DomainDigestInspection struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Digest        *DomainDigestInspectionDigest    `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
@@ -10149,6 +10225,7 @@ func (x *DomainDigestInspection) GetEvents() *DomainDigestInspectionEvents {
 	return nil
 }
 
+// DomainDigestReceipt records receipt of a particular digest revision without accepting its actions.
 type DomainDigestReceipt struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -10225,6 +10302,7 @@ func (x *DomainDigestReceipt) GetReceivedAtMs() int64 {
 	return 0
 }
 
+// DomainMergeReceiptResult reports whether a receipt-bound merge was queued or blocked.
 type DomainMergeReceiptResult struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	Receipt       *string                        `protobuf:"bytes,1,opt,name=receipt,proto3,oneof" json:"receipt,omitempty"`
@@ -10317,6 +10395,7 @@ func (x *DomainMergeReceiptResult) GetDetail() string {
 	return ""
 }
 
+// DomainMergeOverviewChainsItem represents one item in DomainMergeOverviewChains.
 type DomainMergeOverviewChainsItem struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	Id            *string                             `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -10409,6 +10488,7 @@ func (x *DomainMergeOverviewChainsItem) GetUpdatedAt() int64 {
 	return 0
 }
 
+// DomainMergeOverviewChains contains the chains value of DomainMergeOverview.
 type DomainMergeOverviewChains struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewChainsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10453,6 +10533,7 @@ func (x *DomainMergeOverviewChains) GetItems() []*DomainMergeOverviewChainsItem 
 	return nil
 }
 
+// DomainMergeOverviewEntriesItemAgentInstructions contains the agentInstructions value of DomainMergeOverviewEntriesItem.
 type DomainMergeOverviewEntriesItemAgentInstructions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
@@ -10513,6 +10594,7 @@ func (x *DomainMergeOverviewEntriesItemAgentInstructions) GetText() string {
 	return ""
 }
 
+// DomainMergeOverviewEntriesItemChecks contains the checks value of DomainMergeOverviewEntriesItem.
 type DomainMergeOverviewEntriesItemChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10557,6 +10639,7 @@ func (x *DomainMergeOverviewEntriesItemChecks) GetItems() []string {
 	return nil
 }
 
+// DomainMergeOverviewEntriesItemReady contains the ready value of DomainMergeOverviewEntriesItem.
 type DomainMergeOverviewEntriesItemReady struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Epoch         *int64                 `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
@@ -10649,6 +10732,7 @@ func (x *DomainMergeOverviewEntriesItemReady) GetAt() int64 {
 	return 0
 }
 
+// DomainMergeOverviewEntriesItem represents one item in DomainMergeOverviewEntries.
 type DomainMergeOverviewEntriesItem struct {
 	state             protoimpl.MessageState                           `protogen:"open.v1"`
 	ReceiptId         *string                                          `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3,oneof" json:"receipt_id,omitempty"`
@@ -10861,6 +10945,7 @@ func (x *DomainMergeOverviewEntriesItem) GetMergeCommit() string {
 	return ""
 }
 
+// DomainMergeOverviewEntries contains the entries value of DomainMergeOverview.
 type DomainMergeOverviewEntries struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewEntriesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10905,6 +10990,7 @@ func (x *DomainMergeOverviewEntries) GetItems() []*DomainMergeOverviewEntriesIte
 	return nil
 }
 
+// DomainMergeOverviewOperationsItemPreparationChecksItem represents one item in DomainMergeOverviewOperationsItemPreparationChecks.
 type DomainMergeOverviewOperationsItemPreparationChecksItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10949,6 +11035,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecksItem) GetItems() []st
 	return nil
 }
 
+// DomainMergeOverviewOperationsItemPreparationChecks contains the checks value of DomainMergeOverviewOperationsItemPreparation.
 type DomainMergeOverviewOperationsItemPreparationChecks struct {
 	state         protoimpl.MessageState                                    `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewOperationsItemPreparationChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -10993,6 +11080,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationChecks) GetItems() []*Domai
 	return nil
 }
 
+// DomainMergeOverviewOperationsItemPreparationKey contains the key value of DomainMergeOverviewOperationsItemPreparation.
 type DomainMergeOverviewOperationsItemPreparationKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11037,6 +11125,7 @@ func (x *DomainMergeOverviewOperationsItemPreparationKey) GetItems() []string {
 	return nil
 }
 
+// DomainMergeOverviewOperationsItemPreparation contains the preparation value of DomainMergeOverviewOperationsItem.
 type DomainMergeOverviewOperationsItemPreparation struct {
 	state         protoimpl.MessageState                              `protogen:"open.v1"`
 	Kind          *DomainMergeOverviewOperationsItemPreparationKind   `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind,oneof" json:"kind,omitempty"`
@@ -11129,6 +11218,7 @@ func (x *DomainMergeOverviewOperationsItemPreparation) GetExpectedValue() string
 	return ""
 }
 
+// DomainMergeOverviewOperationsItem represents one item in DomainMergeOverviewOperations.
 type DomainMergeOverviewOperationsItem struct {
 	state              protoimpl.MessageState                        `protogen:"open.v1"`
 	RequestId          *string                                       `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
@@ -11349,6 +11439,7 @@ func (x *DomainMergeOverviewOperationsItem) GetWorkspace() string {
 	return ""
 }
 
+// DomainMergeOverviewOperations contains the operations value of DomainMergeOverview.
 type DomainMergeOverviewOperations struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewOperationsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11393,6 +11484,7 @@ func (x *DomainMergeOverviewOperations) GetItems() []*DomainMergeOverviewOperati
 	return nil
 }
 
+// DomainMergeOverviewDependenciesItemPreparationChecksItem represents one item in DomainMergeOverviewDependenciesItemPreparationChecks.
 type DomainMergeOverviewDependenciesItemPreparationChecksItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11437,6 +11529,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecksItem) GetItems() []
 	return nil
 }
 
+// DomainMergeOverviewDependenciesItemPreparationChecks contains the checks value of DomainMergeOverviewDependenciesItemPreparation.
 type DomainMergeOverviewDependenciesItemPreparationChecks struct {
 	state         protoimpl.MessageState                                      `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewDependenciesItemPreparationChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11481,6 +11574,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationChecks) GetItems() []*Dom
 	return nil
 }
 
+// DomainMergeOverviewDependenciesItemPreparationKey contains the key value of DomainMergeOverviewDependenciesItemPreparation.
 type DomainMergeOverviewDependenciesItemPreparationKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11525,6 +11619,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparationKey) GetItems() []string 
 	return nil
 }
 
+// DomainMergeOverviewDependenciesItemPreparation contains the preparation value of DomainMergeOverviewDependenciesItem.
 type DomainMergeOverviewDependenciesItemPreparation struct {
 	state         protoimpl.MessageState                                `protogen:"open.v1"`
 	Kind          *DomainMergeOverviewDependenciesItemPreparationKind   `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind,oneof" json:"kind,omitempty"`
@@ -11617,6 +11712,7 @@ func (x *DomainMergeOverviewDependenciesItemPreparation) GetExpectedValue() stri
 	return ""
 }
 
+// DomainMergeOverviewDependenciesItem represents one item in DomainMergeOverviewDependencies.
 type DomainMergeOverviewDependenciesItem struct {
 	state          protoimpl.MessageState                          `protogen:"open.v1"`
 	Id             *string                                         `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -11733,6 +11829,7 @@ func (x *DomainMergeOverviewDependenciesItem) GetPreparation() *DomainMergeOverv
 	return nil
 }
 
+// DomainMergeOverviewDependencies contains the dependencies value of DomainMergeOverview.
 type DomainMergeOverviewDependencies struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
 	Items         []*DomainMergeOverviewDependenciesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -11777,6 +11874,7 @@ func (x *DomainMergeOverviewDependencies) GetItems() []*DomainMergeOverviewDepen
 	return nil
 }
 
+// DomainMergeOverview combines merge chains, entries, operations, and confirmed dependencies.
 type DomainMergeOverview struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Chains        *DomainMergeOverviewChains       `protobuf:"bytes,1,opt,name=chains,proto3" json:"chains,omitempty"`
@@ -11845,6 +11943,7 @@ func (x *DomainMergeOverview) GetDependencies() *DomainMergeOverviewDependencies
 	return nil
 }
 
+// DomainReconciliationResult reports the observed outcome of reconciling an uncertain merge operation.
 type DomainReconciliationResult struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Id            *string                          `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -11905,6 +12004,7 @@ func (x *DomainReconciliationResult) GetDetail() string {
 	return ""
 }
 
+// DomainArchivedSubmissionSummary summarizes a historical submission without loading its worker evidence.
 type DomainArchivedSubmissionSummary struct {
 	state         protoimpl.MessageState                `protogen:"open.v1"`
 	Id            *string                               `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -11973,6 +12073,7 @@ func (x *DomainArchivedSubmissionSummary) GetUrl() string {
 	return ""
 }
 
+// DomainArchivedSubmissionRequestValidationItem represents one item in DomainArchivedSubmissionRequestValidation.
 type DomainArchivedSubmissionRequestValidationItem struct {
 	state         protoimpl.MessageState                               `protogen:"open.v1"`
 	Command       *string                                              `protobuf:"bytes,1,opt,name=command,proto3,oneof" json:"command,omitempty"`
@@ -12041,6 +12142,7 @@ func (x *DomainArchivedSubmissionRequestValidationItem) GetEvidenceUrl() string 
 	return ""
 }
 
+// DomainArchivedSubmissionRequestValidation contains the validation value of DomainArchivedSubmissionRequest.
 type DomainArchivedSubmissionRequestValidation struct {
 	state         protoimpl.MessageState                           `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionRequestValidationItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -12085,6 +12187,7 @@ func (x *DomainArchivedSubmissionRequestValidation) GetItems() []*DomainArchived
 	return nil
 }
 
+// DomainArchivedSubmissionRequestOwner contains the owner value of DomainArchivedSubmissionRequest.
 type DomainArchivedSubmissionRequestOwner struct {
 	state         protoimpl.MessageState                       `protogen:"open.v1"`
 	Harness       *DomainArchivedSubmissionRequestOwnerHarness `protobuf:"varint,1,opt,name=harness,proto3,enum=octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness,oneof" json:"harness,omitempty"`
@@ -12153,6 +12256,7 @@ func (x *DomainArchivedSubmissionRequestOwner) GetLabel() string {
 	return ""
 }
 
+// DomainArchivedSubmissionRequest contains the request value of DomainArchivedSubmission.
 type DomainArchivedSubmissionRequest struct {
 	state         protoimpl.MessageState                     `protogen:"open.v1"`
 	Mode          *DomainArchivedSubmissionRequestMode       `protobuf:"varint,1,opt,name=mode,proto3,enum=octomanager.v2.DomainArchivedSubmissionRequestMode,oneof" json:"mode,omitempty"`
@@ -12269,6 +12373,7 @@ func (x *DomainArchivedSubmissionRequest) GetOwner() *DomainArchivedSubmissionRe
 	return nil
 }
 
+// DomainArchivedSubmissionSnapshotFiles contains the files value of DomainArchivedSubmissionSnapshot.
 type DomainArchivedSubmissionSnapshotFiles struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -12313,6 +12418,7 @@ func (x *DomainArchivedSubmissionSnapshotFiles) GetItems() []string {
 	return nil
 }
 
+// DomainArchivedSubmissionSnapshotSourcesItem represents one item in DomainArchivedSubmissionSnapshotSources.
 type DomainArchivedSubmissionSnapshotSourcesItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          *string                `protobuf:"bytes,1,opt,name=path,proto3,oneof" json:"path,omitempty"`
@@ -12373,6 +12479,7 @@ func (x *DomainArchivedSubmissionSnapshotSourcesItem) GetText() string {
 	return ""
 }
 
+// DomainArchivedSubmissionSnapshotSources contains the sources value of DomainArchivedSubmissionSnapshot.
 type DomainArchivedSubmissionSnapshotSources struct {
 	state         protoimpl.MessageState                         `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionSnapshotSourcesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -12417,6 +12524,7 @@ func (x *DomainArchivedSubmissionSnapshotSources) GetItems() []*DomainArchivedSu
 	return nil
 }
 
+// DomainArchivedSubmissionSnapshot contains the snapshot value of DomainArchivedSubmission.
 type DomainArchivedSubmissionSnapshot struct {
 	state         protoimpl.MessageState                   `protogen:"open.v1"`
 	Repository    *string                                  `protobuf:"bytes,1,opt,name=repository,proto3,oneof" json:"repository,omitempty"`
@@ -12517,6 +12625,7 @@ func (x *DomainArchivedSubmissionSnapshot) GetSourceDigest() string {
 	return ""
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1 represents kind:body_contains for DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1 struct {
 	state         protoimpl.MessageState                                                             `protogen:"open.v1"`
 	Kind          *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind,oneof" json:"kind,omitempty"`
@@ -12570,6 +12679,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return ""
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes contains the prefixes value of DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -12615,6 +12725,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2 represents kind:title_prefix for DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2 struct {
 	state         protoimpl.MessageState                                                                 `protogen:"open.v1"`
 	Kind          *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind     `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind,oneof" json:"kind,omitempty"`
@@ -12668,6 +12779,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3 represents kind:title_max_length for DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3 struct {
 	state         protoimpl.MessageState                                                             `protogen:"open.v1"`
 	Kind          *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind,oneof" json:"kind,omitempty"`
@@ -12721,6 +12833,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return 0
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4 represents kind:evidence_required for DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4 struct {
 	state         protoimpl.MessageState                                                             `protogen:"open.v1"`
 	Kind          *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind,oneof" json:"kind,omitempty"`
@@ -12766,6 +12879,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind_DOMAIN_ARCHIVED_SUBMISSION_STAGES_ITEM_RESULT_VARIANT1_REQUIREMENTS_ITEM_CHECK_VARIANT4_KIND_UNSPECIFIED
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5 represents kind:semantic for DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5 struct {
 	state         protoimpl.MessageState                                                             `protogen:"open.v1"`
 	Kind          *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind,oneof" json:"kind,omitempty"`
@@ -12811,6 +12925,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVa
 	return DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind_DOMAIN_ARCHIVED_SUBMISSION_STAGES_ITEM_RESULT_VARIANT1_REQUIREMENTS_ITEM_CHECK_VARIANT5_KIND_UNSPECIFIED
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck contains the check value of DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -12946,6 +13061,7 @@ func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Var
 func (*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant_5) isDomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck_Variant() {
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem represents one item in DomainArchivedSubmissionStagesItemResultVariant1Requirements.
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem struct {
 	state         protoimpl.MessageState                                                    `protogen:"open.v1"`
 	Id            *string                                                                   `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -13070,6 +13186,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem) GetCh
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1Requirements contains the requirements value of DomainArchivedSubmissionStagesItemResultVariant1.
 type DomainArchivedSubmissionStagesItemResultVariant1Requirements struct {
 	state         protoimpl.MessageState                                              `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13114,6 +13231,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Requirements) GetItems(
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1Blockers contains the blockers value of DomainArchivedSubmissionStagesItemResultVariant1.
 type DomainArchivedSubmissionStagesItemResultVariant1Blockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13158,6 +13276,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1Blockers) GetItems() []
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant1 represents fields:blockers,requirements,template for DomainArchivedSubmissionStagesItemResult.
 type DomainArchivedSubmissionStagesItemResultVariant1 struct {
 	state         protoimpl.MessageState                                        `protogen:"open.v1"`
 	Requirements  *DomainArchivedSubmissionStagesItemResultVariant1Requirements `protobuf:"bytes,1,opt,name=requirements,proto3" json:"requirements,omitempty"`
@@ -13218,6 +13337,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant1) GetBlockers() *Domain
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs contains the evidenceRefs value of DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.
 type DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13262,6 +13382,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem represents one item in DomainArchivedSubmissionStagesItemResultVariant2Claims.
 type DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem struct {
 	state         protoimpl.MessageState                                                  `protogen:"open.v1"`
 	Statement     *string                                                                 `protobuf:"bytes,1,opt,name=statement,proto3,oneof" json:"statement,omitempty"`
@@ -13330,6 +13451,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem) GetBasis() 
 	return DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis_DOMAIN_ARCHIVED_SUBMISSION_STAGES_ITEM_RESULT_VARIANT2_CLAIMS_ITEM_BASIS_UNSPECIFIED
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2Claims contains the claims value of DomainArchivedSubmissionStagesItemResultVariant2.
 type DomainArchivedSubmissionStagesItemResultVariant2Claims struct {
 	state         protoimpl.MessageState                                        `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13374,6 +13496,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Claims) GetItems() []*D
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2Limitations contains the limitations value of DomainArchivedSubmissionStagesItemResultVariant2.
 type DomainArchivedSubmissionStagesItemResultVariant2Limitations struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13418,6 +13541,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Limitations) GetItems()
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2Blockers contains the blockers value of DomainArchivedSubmissionStagesItemResultVariant2.
 type DomainArchivedSubmissionStagesItemResultVariant2Blockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13462,6 +13586,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2Blockers) GetItems() []
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant2 represents fields:blockers,claims,limitations,outcome,rationale,tier for DomainArchivedSubmissionStagesItemResult.
 type DomainArchivedSubmissionStagesItemResultVariant2 struct {
 	state         protoimpl.MessageState                                       `protogen:"open.v1"`
 	Tier          *DomainArchivedSubmissionStagesItemResultVariant2Tier        `protobuf:"varint,1,opt,name=tier,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier,oneof" json:"tier,omitempty"`
@@ -13546,6 +13671,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant2) GetBlockers() *Domain
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem represents one item in DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.
 type DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem struct {
 	state         protoimpl.MessageState                                                       `protogen:"open.v1"`
 	RuleId        *string                                                                      `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
@@ -13606,6 +13732,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem) 
 	return ""
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks contains the requirementChecks value of DomainArchivedSubmissionStagesItemResultVariant3.
 type DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks struct {
 	state         protoimpl.MessageState                                                   `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13650,6 +13777,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks) GetI
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant3Blockers contains the blockers value of DomainArchivedSubmissionStagesItemResultVariant3.
 type DomainArchivedSubmissionStagesItemResultVariant3Blockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13694,6 +13822,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3Blockers) GetItems() []
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResultVariant3 represents fields:blockers,body,requirementChecks,title for DomainArchivedSubmissionStagesItemResult.
 type DomainArchivedSubmissionStagesItemResultVariant3 struct {
 	state             protoimpl.MessageState                                             `protogen:"open.v1"`
 	Title             *string                                                            `protobuf:"bytes,1,opt,name=title,proto3,oneof" json:"title,omitempty"`
@@ -13762,6 +13891,7 @@ func (x *DomainArchivedSubmissionStagesItemResultVariant3) GetBlockers() *Domain
 	return nil
 }
 
+// DomainArchivedSubmissionStagesItemResult contains the result value of DomainArchivedSubmissionStagesItem.
 type DomainArchivedSubmissionStagesItemResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -13863,6 +13993,7 @@ func (*DomainArchivedSubmissionStagesItemResult_Variant_2) isDomainArchivedSubmi
 func (*DomainArchivedSubmissionStagesItemResult_Variant_3) isDomainArchivedSubmissionStagesItemResult_Variant() {
 }
 
+// DomainArchivedSubmissionStagesItem represents one item in DomainArchivedSubmissionStages.
 type DomainArchivedSubmissionStagesItem struct {
 	state         protoimpl.MessageState                    `protogen:"open.v1"`
 	Role          *DomainArchivedSubmissionStagesItemRole   `protobuf:"varint,1,opt,name=role,proto3,enum=octomanager.v2.DomainArchivedSubmissionStagesItemRole,oneof" json:"role,omitempty"`
@@ -13955,6 +14086,7 @@ func (x *DomainArchivedSubmissionStagesItem) GetInvalidResult() bool {
 	return false
 }
 
+// DomainArchivedSubmissionStages contains the stages value of DomainArchivedSubmission.
 type DomainArchivedSubmissionStages struct {
 	state         protoimpl.MessageState                `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionStagesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -13999,6 +14131,7 @@ func (x *DomainArchivedSubmissionStages) GetItems() []*DomainArchivedSubmissionS
 	return nil
 }
 
+// DomainArchivedSubmissionBriefSchemaVersion contains the schemaVersion value of DomainArchivedSubmissionBrief.
 type DomainArchivedSubmissionBriefSchemaVersion struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -14043,6 +14176,7 @@ func (x *DomainArchivedSubmissionBriefSchemaVersion) GetLiteral() int64 {
 	return 0
 }
 
+// DomainArchivedSubmissionBriefRequestValidationItem represents one item in DomainArchivedSubmissionBriefRequestValidation.
 type DomainArchivedSubmissionBriefRequestValidationItem struct {
 	state         protoimpl.MessageState                                    `protogen:"open.v1"`
 	Command       *string                                                   `protobuf:"bytes,1,opt,name=command,proto3,oneof" json:"command,omitempty"`
@@ -14111,6 +14245,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidationItem) GetEvidenceUrl() st
 	return ""
 }
 
+// DomainArchivedSubmissionBriefRequestValidation contains the validation value of DomainArchivedSubmissionBriefRequest.
 type DomainArchivedSubmissionBriefRequestValidation struct {
 	state         protoimpl.MessageState                                `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionBriefRequestValidationItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14155,6 +14290,7 @@ func (x *DomainArchivedSubmissionBriefRequestValidation) GetItems() []*DomainArc
 	return nil
 }
 
+// DomainArchivedSubmissionBriefRequestOwner contains the owner value of DomainArchivedSubmissionBriefRequest.
 type DomainArchivedSubmissionBriefRequestOwner struct {
 	state         protoimpl.MessageState                            `protogen:"open.v1"`
 	Harness       *DomainArchivedSubmissionBriefRequestOwnerHarness `protobuf:"varint,1,opt,name=harness,proto3,enum=octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness,oneof" json:"harness,omitempty"`
@@ -14223,6 +14359,7 @@ func (x *DomainArchivedSubmissionBriefRequestOwner) GetLabel() string {
 	return ""
 }
 
+// DomainArchivedSubmissionBriefRequest contains the request value of DomainArchivedSubmissionBrief.
 type DomainArchivedSubmissionBriefRequest struct {
 	state         protoimpl.MessageState                          `protogen:"open.v1"`
 	Mode          *DomainArchivedSubmissionBriefRequestMode       `protobuf:"varint,1,opt,name=mode,proto3,enum=octomanager.v2.DomainArchivedSubmissionBriefRequestMode,oneof" json:"mode,omitempty"`
@@ -14339,6 +14476,7 @@ func (x *DomainArchivedSubmissionBriefRequest) GetOwner() *DomainArchivedSubmiss
 	return nil
 }
 
+// DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs contains the evidenceRefs value of DomainArchivedSubmissionBriefChangeClaimsItem.
 type DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14383,6 +14521,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs) GetItems() [
 	return nil
 }
 
+// DomainArchivedSubmissionBriefChangeClaimsItem represents one item in DomainArchivedSubmissionBriefChangeClaims.
 type DomainArchivedSubmissionBriefChangeClaimsItem struct {
 	state         protoimpl.MessageState                                     `protogen:"open.v1"`
 	Statement     *string                                                    `protobuf:"bytes,1,opt,name=statement,proto3,oneof" json:"statement,omitempty"`
@@ -14451,6 +14590,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaimsItem) GetBasis() DomainArchive
 	return DomainArchivedSubmissionBriefChangeClaimsItemBasis_DOMAIN_ARCHIVED_SUBMISSION_BRIEF_CHANGE_CLAIMS_ITEM_BASIS_UNSPECIFIED
 }
 
+// DomainArchivedSubmissionBriefChangeClaims contains the claims value of DomainArchivedSubmissionBriefChange.
 type DomainArchivedSubmissionBriefChangeClaims struct {
 	state         protoimpl.MessageState                           `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionBriefChangeClaimsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14495,6 +14635,7 @@ func (x *DomainArchivedSubmissionBriefChangeClaims) GetItems() []*DomainArchived
 	return nil
 }
 
+// DomainArchivedSubmissionBriefChangeLimitations contains the limitations value of DomainArchivedSubmissionBriefChange.
 type DomainArchivedSubmissionBriefChangeLimitations struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14539,6 +14680,7 @@ func (x *DomainArchivedSubmissionBriefChangeLimitations) GetItems() []string {
 	return nil
 }
 
+// DomainArchivedSubmissionBriefChangeBlockers contains the blockers value of DomainArchivedSubmissionBriefChange.
 type DomainArchivedSubmissionBriefChangeBlockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14583,6 +14725,7 @@ func (x *DomainArchivedSubmissionBriefChangeBlockers) GetItems() []string {
 	return nil
 }
 
+// DomainArchivedSubmissionBriefChange contains the change value of DomainArchivedSubmissionBrief.
 type DomainArchivedSubmissionBriefChange struct {
 	state         protoimpl.MessageState                          `protogen:"open.v1"`
 	Tier          *DomainArchivedSubmissionBriefChangeTier        `protobuf:"varint,1,opt,name=tier,proto3,enum=octomanager.v2.DomainArchivedSubmissionBriefChangeTier,oneof" json:"tier,omitempty"`
@@ -14667,6 +14810,7 @@ func (x *DomainArchivedSubmissionBriefChange) GetBlockers() *DomainArchivedSubmi
 	return nil
 }
 
+// DomainArchivedSubmissionBriefDraftRequirementChecksItem represents one item in DomainArchivedSubmissionBriefDraftRequirementChecks.
 type DomainArchivedSubmissionBriefDraftRequirementChecksItem struct {
 	state         protoimpl.MessageState                                         `protogen:"open.v1"`
 	RuleId        *string                                                        `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
@@ -14727,6 +14871,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecksItem) GetRationale()
 	return ""
 }
 
+// DomainArchivedSubmissionBriefDraftRequirementChecks contains the requirementChecks value of DomainArchivedSubmissionBriefDraft.
 type DomainArchivedSubmissionBriefDraftRequirementChecks struct {
 	state         protoimpl.MessageState                                     `protogen:"open.v1"`
 	Items         []*DomainArchivedSubmissionBriefDraftRequirementChecksItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14771,6 +14916,7 @@ func (x *DomainArchivedSubmissionBriefDraftRequirementChecks) GetItems() []*Doma
 	return nil
 }
 
+// DomainArchivedSubmissionBriefDraftBlockers contains the blockers value of DomainArchivedSubmissionBriefDraft.
 type DomainArchivedSubmissionBriefDraftBlockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -14815,6 +14961,7 @@ func (x *DomainArchivedSubmissionBriefDraftBlockers) GetItems() []string {
 	return nil
 }
 
+// DomainArchivedSubmissionBriefDraft contains the draft value of DomainArchivedSubmissionBrief.
 type DomainArchivedSubmissionBriefDraft struct {
 	state             protoimpl.MessageState                               `protogen:"open.v1"`
 	Title             *string                                              `protobuf:"bytes,1,opt,name=title,proto3,oneof" json:"title,omitempty"`
@@ -14883,6 +15030,7 @@ func (x *DomainArchivedSubmissionBriefDraft) GetBlockers() *DomainArchivedSubmis
 	return nil
 }
 
+// DomainArchivedSubmissionBrief contains the brief value of DomainArchivedSubmission.
 type DomainArchivedSubmissionBrief struct {
 	state         protoimpl.MessageState                      `protogen:"open.v1"`
 	SchemaVersion *DomainArchivedSubmissionBriefSchemaVersion `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
@@ -14967,6 +15115,7 @@ func (x *DomainArchivedSubmissionBrief) GetDraft() *DomainArchivedSubmissionBrie
 	return nil
 }
 
+// DomainArchivedSubmissionWorkerPids contains the workerPids value of DomainArchivedSubmission.
 type DomainArchivedSubmissionWorkerPids struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []int64                `protobuf:"varint,1,rep,packed,name=items,proto3" json:"items,omitempty"`
@@ -15011,6 +15160,7 @@ func (x *DomainArchivedSubmissionWorkerPids) GetItems() []int64 {
 	return nil
 }
 
+// DomainArchivedSubmission retains historical submission stages, including invalid worker output as evidence.
 type DomainArchivedSubmission struct {
 	state                protoimpl.MessageState              `protogen:"open.v1"`
 	Id                   *string                             `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -15167,6 +15317,7 @@ func (x *DomainArchivedSubmission) GetNotificationRevision() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyComplexityProfilesRoutineAdvisory contains the advisory value of DomainRepositoryPolicyComplexityProfilesRoutine.
 type DomainRepositoryPolicyComplexityProfilesRoutineAdvisory struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *bool                  `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15211,6 +15362,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutineAdvisory) GetLiteral() b
 	return false
 }
 
+// DomainRepositoryPolicyComplexityProfilesRoutine Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative.
 type DomainRepositoryPolicyComplexityProfilesRoutine struct {
 	state         protoimpl.MessageState                                   `protogen:"open.v1"`
 	MinWords      *int64                                                   `protobuf:"varint,1,opt,name=min_words,json=minWords,proto3,oneof" json:"min_words,omitempty"`
@@ -15279,6 +15431,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesRoutine) GetAdvisory() *DomainR
 	return nil
 }
 
+// DomainRepositoryPolicyComplexityProfilesStandardAdvisory contains the advisory value of DomainRepositoryPolicyComplexityProfilesStandard.
 type DomainRepositoryPolicyComplexityProfilesStandardAdvisory struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *bool                  `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15323,6 +15476,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandardAdvisory) GetLiteral() 
 	return false
 }
 
+// DomainRepositoryPolicyComplexityProfilesStandard Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative.
 type DomainRepositoryPolicyComplexityProfilesStandard struct {
 	state         protoimpl.MessageState                                    `protogen:"open.v1"`
 	MinWords      *int64                                                    `protobuf:"varint,1,opt,name=min_words,json=minWords,proto3,oneof" json:"min_words,omitempty"`
@@ -15391,6 +15545,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesStandard) GetAdvisory() *Domain
 	return nil
 }
 
+// DomainRepositoryPolicyComplexityProfilesComplexAdvisory contains the advisory value of DomainRepositoryPolicyComplexityProfilesComplex.
 type DomainRepositoryPolicyComplexityProfilesComplexAdvisory struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *bool                  `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15435,6 +15590,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplexAdvisory) GetLiteral() b
 	return false
 }
 
+// DomainRepositoryPolicyComplexityProfilesComplex Description size guidance selected by risk and semantic scope alongside change size. Repository requirements remain authoritative.
 type DomainRepositoryPolicyComplexityProfilesComplex struct {
 	state         protoimpl.MessageState                                   `protogen:"open.v1"`
 	MinWords      *int64                                                   `protobuf:"varint,1,opt,name=min_words,json=minWords,proto3,oneof" json:"min_words,omitempty"`
@@ -15503,6 +15659,7 @@ func (x *DomainRepositoryPolicyComplexityProfilesComplex) GetAdvisory() *DomainR
 	return nil
 }
 
+// DomainRepositoryPolicyComplexityProfiles contains the complexityProfiles value of DomainRepositoryPolicy.
 type DomainRepositoryPolicyComplexityProfiles struct {
 	state         protoimpl.MessageState                            `protogen:"open.v1"`
 	Routine       *DomainRepositoryPolicyComplexityProfilesRoutine  `protobuf:"bytes,1,opt,name=routine,proto3" json:"routine,omitempty"`
@@ -15563,6 +15720,7 @@ func (x *DomainRepositoryPolicyComplexityProfiles) GetComplex() *DomainRepositor
 	return nil
 }
 
+// DomainRepositoryPolicySchemaVersion contains the schemaVersion value of DomainRepositoryPolicy.
 type DomainRepositoryPolicySchemaVersion struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15607,6 +15765,7 @@ func (x *DomainRepositoryPolicySchemaVersion) GetLiteral() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyAnalystVersionVariant1 represents literal:1 for DomainRepositoryPolicyAnalystVersion.
 type DomainRepositoryPolicyAnalystVersionVariant1 struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15651,6 +15810,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant1) GetLiteral() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyAnalystVersionVariant2 represents literal:2 for DomainRepositoryPolicyAnalystVersion.
 type DomainRepositoryPolicyAnalystVersionVariant2 struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15695,6 +15855,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant2) GetLiteral() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyAnalystVersionVariant3 represents literal:3 for DomainRepositoryPolicyAnalystVersion.
 type DomainRepositoryPolicyAnalystVersionVariant3 struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15739,6 +15900,7 @@ func (x *DomainRepositoryPolicyAnalystVersionVariant3) GetLiteral() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyAnalystVersion contains the analystVersion value of DomainRepositoryPolicy.
 type DomainRepositoryPolicyAnalystVersion struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -15840,6 +16002,7 @@ func (*DomainRepositoryPolicyAnalystVersion_Variant_2) isDomainRepositoryPolicyA
 func (*DomainRepositoryPolicyAnalystVersion_Variant_3) isDomainRepositoryPolicyAnalystVersion_Variant() {
 }
 
+// DomainRepositoryPolicyStockVersion contains the stockVersion value of DomainRepositoryPolicy.
 type DomainRepositoryPolicyStockVersion struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Literal       *int64                 `protobuf:"varint,1,opt,name=literal,proto3,oneof" json:"literal,omitempty"`
@@ -15884,6 +16047,7 @@ func (x *DomainRepositoryPolicyStockVersion) GetLiteral() int64 {
 	return 0
 }
 
+// DomainRepositoryPolicyCitationCorrectionsItem represents one item in DomainRepositoryPolicyCitationCorrections.
 type DomainRepositoryPolicyCitationCorrectionsItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RuleId        *string                `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3,oneof" json:"rule_id,omitempty"`
@@ -15944,6 +16108,7 @@ func (x *DomainRepositoryPolicyCitationCorrectionsItem) GetVerifiedLine() int64 
 	return 0
 }
 
+// DomainRepositoryPolicyCitationCorrections contains the citationCorrections value of DomainRepositoryPolicy.
 type DomainRepositoryPolicyCitationCorrections struct {
 	state         protoimpl.MessageState                           `protogen:"open.v1"`
 	Items         []*DomainRepositoryPolicyCitationCorrectionsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -15988,6 +16153,7 @@ func (x *DomainRepositoryPolicyCitationCorrections) GetItems() []*DomainReposito
 	return nil
 }
 
+// DomainRepositoryPolicySourcesItem represents one item in DomainRepositoryPolicySources.
 type DomainRepositoryPolicySourcesItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          *string                `protobuf:"bytes,1,opt,name=path,proto3,oneof" json:"path,omitempty"`
@@ -16048,6 +16214,7 @@ func (x *DomainRepositoryPolicySourcesItem) GetText() string {
 	return ""
 }
 
+// DomainRepositoryPolicySources contains the sources value of DomainRepositoryPolicy.
 type DomainRepositoryPolicySources struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	Items         []*DomainRepositoryPolicySourcesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -16092,6 +16259,7 @@ func (x *DomainRepositoryPolicySources) GetItems() []*DomainRepositoryPolicySour
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1 represents kind:body_contains for DomainRepositoryPolicyAnalysisRequirementsItemCheck.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1 struct {
 	state         protoimpl.MessageState                                           `protogen:"open.v1"`
 	Kind          *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind,oneof" json:"kind,omitempty"`
@@ -16144,6 +16312,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1) GetValue()
 	return ""
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes contains the prefixes value of DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -16188,6 +16357,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes) Ge
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2 represents kind:title_prefix for DomainRepositoryPolicyAnalysisRequirementsItemCheck.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2 struct {
 	state         protoimpl.MessageState                                               `protogen:"open.v1"`
 	Kind          *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind     `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind,oneof" json:"kind,omitempty"`
@@ -16240,6 +16410,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2) GetPrefixe
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3 represents kind:title_max_length for DomainRepositoryPolicyAnalysisRequirementsItemCheck.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3 struct {
 	state         protoimpl.MessageState                                           `protogen:"open.v1"`
 	Kind          *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind,oneof" json:"kind,omitempty"`
@@ -16292,6 +16463,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3) GetMaximum
 	return 0
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4 represents kind:evidence_required for DomainRepositoryPolicyAnalysisRequirementsItemCheck.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4 struct {
 	state         protoimpl.MessageState                                           `protogen:"open.v1"`
 	Kind          *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind,oneof" json:"kind,omitempty"`
@@ -16336,6 +16508,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4) GetKind() 
 	return DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind_DOMAIN_REPOSITORY_POLICY_ANALYSIS_REQUIREMENTS_ITEM_CHECK_VARIANT4_KIND_UNSPECIFIED
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5 represents kind:semantic for DomainRepositoryPolicyAnalysisRequirementsItemCheck.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5 struct {
 	state         protoimpl.MessageState                                           `protogen:"open.v1"`
 	Kind          *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind,oneof" json:"kind,omitempty"`
@@ -16380,6 +16553,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5) GetKind() 
 	return DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind_DOMAIN_REPOSITORY_POLICY_ANALYSIS_REQUIREMENTS_ITEM_CHECK_VARIANT5_KIND_UNSPECIFIED
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItemCheck contains the check value of DomainRepositoryPolicyAnalysisRequirementsItem.
 type DomainRepositoryPolicyAnalysisRequirementsItemCheck struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Variant:
@@ -16515,6 +16689,7 @@ func (*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_4) isDomainRe
 func (*DomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant_5) isDomainRepositoryPolicyAnalysisRequirementsItemCheck_Variant() {
 }
 
+// DomainRepositoryPolicyAnalysisRequirementsItem represents one item in DomainRepositoryPolicyAnalysisRequirements.
 type DomainRepositoryPolicyAnalysisRequirementsItem struct {
 	state         protoimpl.MessageState                                  `protogen:"open.v1"`
 	Id            *string                                                 `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -16639,6 +16814,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirementsItem) GetCheck() *DomainRepos
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysisRequirements contains the requirements value of DomainRepositoryPolicyAnalysis.
 type DomainRepositoryPolicyAnalysisRequirements struct {
 	state         protoimpl.MessageState                            `protogen:"open.v1"`
 	Items         []*DomainRepositoryPolicyAnalysisRequirementsItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -16683,6 +16859,7 @@ func (x *DomainRepositoryPolicyAnalysisRequirements) GetItems() []*DomainReposit
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysisBlockers contains the blockers value of DomainRepositoryPolicyAnalysis.
 type DomainRepositoryPolicyAnalysisBlockers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -16727,6 +16904,7 @@ func (x *DomainRepositoryPolicyAnalysisBlockers) GetItems() []string {
 	return nil
 }
 
+// DomainRepositoryPolicyAnalysis contains the analysis value of DomainRepositoryPolicy.
 type DomainRepositoryPolicyAnalysis struct {
 	state         protoimpl.MessageState                      `protogen:"open.v1"`
 	Requirements  *DomainRepositoryPolicyAnalysisRequirements `protobuf:"bytes,1,opt,name=requirements,proto3" json:"requirements,omitempty"`
@@ -16787,6 +16965,7 @@ func (x *DomainRepositoryPolicyAnalysis) GetBlockers() *DomainRepositoryPolicyAn
 	return nil
 }
 
+// DomainRepositoryPolicy records a versioned repository publication policy and its source evidence.
 type DomainRepositoryPolicy struct {
 	state               protoimpl.MessageState                     `protogen:"open.v1"`
 	ComplexityProfiles  *DomainRepositoryPolicyComplexityProfiles  `protobuf:"bytes,1,opt,name=complexity_profiles,json=complexityProfiles,proto3" json:"complexity_profiles,omitempty"`
@@ -16911,6 +17090,7 @@ func (x *DomainRepositoryPolicy) GetAnalysis() *DomainRepositoryPolicyAnalysis {
 	return nil
 }
 
+// SetAutoMergeRequest supplies the validated auto_merge command arguments.
 type SetAutoMergeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Instructions  *string                `protobuf:"bytes,5,opt,name=instructions,proto3,oneof" json:"instructions,omitempty"`
@@ -16995,6 +17175,7 @@ func (x *SetAutoMergeRequest) GetRequestId() string {
 	return ""
 }
 
+// QueueMergeChainRequestInputEntriesItemChecks contains the checks value of QueueMergeChainRequestInputEntriesItem.
 type QueueMergeChainRequestInputEntriesItemChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -17039,6 +17220,7 @@ func (x *QueueMergeChainRequestInputEntriesItemChecks) GetItems() []string {
 	return nil
 }
 
+// QueueMergeChainRequestInputEntriesItem represents one item in QueueMergeChainRequestInputEntries.
 type QueueMergeChainRequestInputEntriesItem struct {
 	state         protoimpl.MessageState                        `protogen:"open.v1"`
 	PrUrl         *string                                       `protobuf:"bytes,1,opt,name=pr_url,json=prUrl,proto3,oneof" json:"pr_url,omitempty"`
@@ -17107,6 +17289,7 @@ func (x *QueueMergeChainRequestInputEntriesItem) GetNoCi() bool {
 	return false
 }
 
+// QueueMergeChainRequestInputEntries contains the entries value of QueueMergeChainRequestInput.
 type QueueMergeChainRequestInputEntries struct {
 	state         protoimpl.MessageState                    `protogen:"open.v1"`
 	Items         []*QueueMergeChainRequestInputEntriesItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -17151,6 +17334,7 @@ func (x *QueueMergeChainRequestInputEntries) GetItems() []*QueueMergeChainReques
 	return nil
 }
 
+// QueueMergeChainRequestInput contains the input value of QueueMergeChainRequest.
 type QueueMergeChainRequestInput struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	RequestId     *string                             `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
@@ -17211,6 +17395,7 @@ func (x *QueueMergeChainRequestInput) GetEntries() *QueueMergeChainRequestInputE
 	return nil
 }
 
+// QueueMergeChainRequest supplies the validated queue command arguments.
 type QueueMergeChainRequest struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Input         *QueueMergeChainRequestInput `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
@@ -17255,6 +17440,7 @@ func (x *QueueMergeChainRequest) GetInput() *QueueMergeChainRequestInput {
 	return nil
 }
 
+// InspectMergeChainsRequest supplies the validated inspect command arguments.
 type InspectMergeChainsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17299,6 +17485,7 @@ func (x *InspectMergeChainsRequest) GetId() string {
 	return ""
 }
 
+// ListPRReferencesRequest supplies the validated references command arguments.
 type ListPRReferencesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *string                `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
@@ -17343,6 +17530,7 @@ func (x *ListPRReferencesRequest) GetPr() string {
 	return ""
 }
 
+// ListPRDependenciesRequest supplies the validated dependencies command arguments.
 type ListPRDependenciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *string                `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
@@ -17387,6 +17575,7 @@ func (x *ListPRDependenciesRequest) GetPr() string {
 	return ""
 }
 
+// ConfirmPRDependencyRequest supplies the validated confirm command arguments.
 type ConfirmPRDependencyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *string                `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
@@ -17471,6 +17660,7 @@ func (x *ConfirmPRDependencyRequest) GetProfile() string {
 	return ""
 }
 
+// RemovePRDependencyRequest supplies the validated remove command arguments.
 type RemovePRDependencyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17523,6 +17713,7 @@ func (x *RemovePRDependencyRequest) GetActorId() string {
 	return ""
 }
 
+// DecidePRReferenceRequest supplies the validated decide command arguments.
 type DecidePRReferenceRequest struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	Id            *string                           `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17583,6 +17774,7 @@ func (x *DecidePRReferenceRequest) GetDecision() DecidePRReferenceRequestDecisio
 	return DecidePRReferenceRequestDecision_DECIDE_PR_REFERENCE_REQUEST_DECISION_UNSPECIFIED
 }
 
+// SetMergePolicyRequestChecks contains the checks value of SetMergePolicyRequest.
 type SetMergePolicyRequestChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []string               `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -17627,6 +17819,7 @@ func (x *SetMergePolicyRequestChecks) GetItems() []string {
 	return nil
 }
 
+// SetMergePolicyRequest supplies the validated policy command arguments.
 type SetMergePolicyRequest struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Pr            *string                      `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
@@ -17695,6 +17888,7 @@ func (x *SetMergePolicyRequest) GetNoCi() bool {
 	return false
 }
 
+// SetMergeReadyRequest supplies the validated ready command arguments.
 type SetMergeReadyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *string                `protobuf:"bytes,1,opt,name=pr,proto3,oneof" json:"pr,omitempty"`
@@ -17755,6 +17949,7 @@ func (x *SetMergeReadyRequest) GetActorId() string {
 	return ""
 }
 
+// PauseMergeChainRequest supplies the validated pause command arguments.
 type PauseMergeChainRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17799,6 +17994,7 @@ func (x *PauseMergeChainRequest) GetId() string {
 	return ""
 }
 
+// ResumeMergeChainRequest supplies the validated resume command arguments.
 type ResumeMergeChainRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17843,6 +18039,7 @@ func (x *ResumeMergeChainRequest) GetId() string {
 	return ""
 }
 
+// CancelMergeChainRequest supplies the validated cancel command arguments.
 type CancelMergeChainRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -17887,6 +18084,7 @@ func (x *CancelMergeChainRequest) GetId() string {
 	return ""
 }
 
+// ReconcileMergeOperationRequest supplies the validated reconcile command arguments.
 type ReconcileMergeOperationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`

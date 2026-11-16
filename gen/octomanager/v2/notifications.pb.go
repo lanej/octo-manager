@@ -82,6 +82,7 @@ func (x *GetAgentDigestRequest) GetReceiptId() string {
 	return ""
 }
 
+// GetAgentDigestResponse returns the result for the following operation: Inspects a digest or frozen receipt without acknowledging its messages.
 type GetAgentDigestResponse struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Inspection    *DomainDigestInspection `protobuf:"bytes,1,opt,name=inspection,proto3" json:"inspection,omitempty"`
@@ -126,6 +127,7 @@ func (x *GetAgentDigestResponse) GetInspection() *DomainDigestInspection {
 	return nil
 }
 
+// ListAgentDigestsRequest supplies arguments for the following operation: Lists retained notification digests for a recipient.
 type ListAgentDigestsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
@@ -170,6 +172,7 @@ func (x *ListAgentDigestsRequest) GetAgentId() string {
 	return ""
 }
 
+// ListAgentDigestsResponse returns the result for the following operation: Lists retained notification digests for a recipient.
 type ListAgentDigestsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Digests       []*DomainAgentDigest   `protobuf:"bytes,1,rep,name=digests,proto3" json:"digests,omitempty"`
@@ -214,6 +217,7 @@ func (x *ListAgentDigestsResponse) GetDigests() []*DomainAgentDigest {
 	return nil
 }
 
+// AcknowledgeAgentDigestRequest supplies arguments for the following operation: Receipts an exact digest revision without accepting the underlying actions.
 type AcknowledgeAgentDigestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -298,6 +302,7 @@ func (x *AcknowledgeAgentDigestRequest) GetAgentTarget() *AgentTarget {
 	return nil
 }
 
+// AgentDigestMember identifies a frozen notification member and its recipient-specific applicability.
 type AgentDigestMember struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	MessageId        string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
@@ -406,6 +411,7 @@ func (x *AgentDigestMember) GetAcknowledgedAtMs() int64 {
 	return 0
 }
 
+// AcknowledgeAgentDigestResponse returns the result for the following operation: Receipts an exact digest revision without accepting the underlying actions.
 type AcknowledgeAgentDigestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Receipt       *DomainDigestReceipt   `protobuf:"bytes,1,opt,name=receipt,proto3" json:"receipt,omitempty"`
@@ -458,6 +464,7 @@ func (x *AcknowledgeAgentDigestResponse) GetMessages() []*AgentDigestMember {
 	return nil
 }
 
+// MergeAgentMessageRequest supplies arguments for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 type MergeAgentMessageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ReceiptId     string                 `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
@@ -518,6 +525,7 @@ func (x *MergeAgentMessageRequest) GetAgentTarget() *AgentTarget {
 	return nil
 }
 
+// MergeAgentMessageResponse returns the result for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 type MergeAgentMessageResponse struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Result        *DomainMergeReceiptResult `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
@@ -566,7 +574,7 @@ var File_octomanager_v2_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\n" +
-	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1doctomanager/v2/tracking.proto\x1a\x1boctomanager/v2/domain.proto\"t\n" +
+	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1boctomanager/v2/domain.proto\x1a\x1doctomanager/v2/tracking.proto\"t\n" +
 	"\x15GetAgentDigestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\brevision\x18\x02 \x01(\rH\x00R\brevision\x88\x01\x01\x12\x1d\n" +
@@ -666,8 +674,8 @@ func file_octomanager_v2_notifications_proto_init() {
 	if File_octomanager_v2_notifications_proto != nil {
 		return
 	}
-	file_octomanager_v2_tracking_proto_init()
 	file_octomanager_v2_domain_proto_init()
+	file_octomanager_v2_tracking_proto_init()
 	file_octomanager_v2_notifications_proto_msgTypes[0].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[2].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[4].OneofWrappers = []any{}

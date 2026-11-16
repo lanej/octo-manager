@@ -13,6 +13,8 @@ export const file_octomanager_v2_repairs: GenFile = /*@__PURE__*/
   fileDesc("ChxvY3RvbWFuYWdlci92Mi9yZXBhaXJzLnByb3RvEg5vY3RvbWFuYWdlci52MiJnCgxSZXBhaXJVcGRhdGUSKgoFc3RhdGUYASABKA4yGy5vY3RvbWFuYWdlci52Mi5SZXBhaXJTdGF0ZRIMCgRzdGVwGAIgASgJEg4KBmRldGFpbBgDIAEoCRINCgVhdF9tcxgEIAEoAyKEBAoNUmVwYWlyQXR0ZW1wdBIKCgJpZBgBIAEoCRINCgVwcl9pZBgCIAEoCRIOCgZwcl91cmwYAyABKAkSKgoFc3RhdGUYBCABKA4yGy5vY3RvbWFuYWdlci52Mi5SZXBhaXJTdGF0ZRIMCgRzdGVwGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1jcmVhdGVkX2F0X21zGAcgASgDEhUKDXVwZGF0ZWRfYXRfbXMYCCABKAMSDwoHcHJvZmlsZRgJIAEoCRIPCgdoYXJuZXNzGAogASgJEg0KBW1vZGVsGAsgASgJEhoKDW9yaWdpbmFsX2hlYWQYDCABKAlIAIgBARIXCgp0YXJnZXRfc2hhGA0gASgJSAGIAQESFwoKdGFyZ2V0X3JlZhgOIAEoCUgCiAEBEhgKC3Jlc3VsdF9oZWFkGA8gASgJSAOIAQESGAoQY29uZmxpY3RlZF9wYXRocxgQIAMoCRISCgp1c2VkX2FnZW50GBEgASgIEi0KB2hpc3RvcnkYEiADKAsyHC5vY3RvbWFuYWdlci52Mi5SZXBhaXJVcGRhdGUSGgoSbWVjaGFuaWNhbF9yZXBhaXJzGBMgASgNQhAKDl9vcmlnaW5hbF9oZWFkQg0KC190YXJnZXRfc2hhQg0KC190YXJnZXRfcmVmQg4KDF9yZXN1bHRfaGVhZCJIChRSZXF1ZXN0UmViYXNlUmVxdWVzdBISCgpyZXF1ZXN0X2lkGAEgASgJEgsKA3VybBgCIAEoCRIPCgdwcm9maWxlGAMgASgJIkYKFVJlcXVlc3RSZWJhc2VSZXNwb25zZRItCgZyZXBhaXIYASABKAsyHS5vY3RvbWFuYWdlci52Mi5SZXBhaXJBdHRlbXB0IhQKEkxpc3RSZXBhaXJzUmVxdWVzdCJFChNMaXN0UmVwYWlyc1Jlc3BvbnNlEi4KB3JlcGFpcnMYASADKAsyHS5vY3RvbWFuYWdlci52Mi5SZXBhaXJBdHRlbXB0IqEECgxDb25mbGljdENhc2USCgoCaWQYASABKAQSEQoJcmVwYWlyX2lkGAIgASgJEg4KBnByX3VybBgDIAEoCRINCgVyb3VuZBgEIAEoDRIMCgRwYXRoGAUgASgJEg4KBnJlY2lwZRgGIAEoCRIyCghkZWNpc2lvbhgHIAEoDjIgLm9jdG9tYW5hZ2VyLnYyLkNvbmZsaWN0RGVjaXNpb24SDgoGcmVhc29uGAggASgJEg0KBWF0X21zGAkgASgDEhYKCWJhc2VfYmxvYhgKIAEoCUgAiAEBEhgKC3RhcmdldF9ibG9iGAsgASgJSAGIAQESGgoNcmVwbGF5ZWRfYmxvYhgMIAEoCUgCiAEBEhYKCWJhc2VfdGV4dBgNIAEoCUgDiAEBEhgKC3RhcmdldF90ZXh0GA4gASgJSASIAQESGgoNcmVwbGF5ZWRfdGV4dBgPIAEoCUgFiAEBEhYKCWNhbmRpZGF0ZRgQIAEoCUgGiAEBEhkKDGFnZW50X3Jlc3VsdBgRIAEoCUgHiAEBEhQKDHRvb2xfdmVyc2lvbhgSIAEoCUIMCgpfYmFzZV9ibG9iQg4KDF90YXJnZXRfYmxvYkIQCg5fcmVwbGF5ZWRfYmxvYkIMCgpfYmFzZV90ZXh0Qg4KDF90YXJnZXRfdGV4dEIQCg5fcmVwbGF5ZWRfdGV4dEIMCgpfY2FuZGlkYXRlQg8KDV9hZ2VudF9yZXN1bHQiLAoYTGlzdENvbmZsaWN0Q2FzZXNSZXF1ZXN0EhAKCGFmdGVyX2lkGAEgASgEIlkKGUxpc3RDb25mbGljdENhc2VzUmVzcG9uc2USKwoFY2FzZXMYASADKAsyHC5vY3RvbWFuYWdlci52Mi5Db25mbGljdENhc2USDwoHbmV4dF9pZBgCIAEoBCIkChZHZXRDb25mbGljdENhc2VSZXF1ZXN0EgoKAmlkGAEgASgEIk4KF0dldENvbmZsaWN0Q2FzZVJlc3BvbnNlEjMKDWNvbmZsaWN0X2Nhc2UYASABKAsyHC5vY3RvbWFuYWdlci52Mi5Db25mbGljdENhc2Uq6wEKC1JlcGFpclN0YXRlEhwKGFJFUEFJUl9TVEFURV9VTlNQRUNJRklFRBAAEhcKE1JFUEFJUl9TVEFURV9RVUVVRUQQARIYChRSRVBBSVJfU1RBVEVfUlVOTklORxACEiAKHFJFUEFJUl9TVEFURV9BV0FJVElOR19DSEVDS1MQAxIaChZSRVBBSVJfU1RBVEVfU1VDQ0VFREVEEAQSGAoUUkVQQUlSX1NUQVRFX0JMT0NLRUQQBRIXChNSRVBBSVJfU1RBVEVfRkFJTEVEEAYSGgoWUkVQQUlSX1NUQVRFX1VOQ0VSVEFJThAHKrABChBDb25mbGljdERlY2lzaW9uEiEKHUNPTkZMSUNUX0RFQ0lTSU9OX1VOU1BFQ0lGSUVEEAASHQoZQ09ORkxJQ1RfREVDSVNJT05fUEVORElORxABEh0KGUNPTkZMSUNUX0RFQ0lTSU9OX0FQUExJRUQQAhIeChpDT05GTElDVF9ERUNJU0lPTl9ERUNMSU5FRBADEhsKF0NPTkZMSUNUX0RFQ0lTSU9OX0VSUk9SEARCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YyO29jdG9tYW5hZ2VydjJiBnByb3RvMw");
 
 /**
+ * RepairUpdate records one step or outcome transition in a repair attempt.
+ *
  * @generated from message octomanager.v2.RepairUpdate
  */
 export type RepairUpdate = Message<"octomanager.v2.RepairUpdate"> & {
@@ -45,6 +47,8 @@ export const RepairUpdateSchema: GenMessage<RepairUpdate> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_repairs, 0);
 
 /**
+ * RepairAttempt journals a bounded PR repair, its pinned revisions, and verification history.
+ *
  * @generated from message octomanager.v2.RepairAttempt
  */
 export type RepairAttempt = Message<"octomanager.v2.RepairAttempt"> & {
@@ -152,6 +156,8 @@ export const RepairAttemptSchema: GenMessage<RepairAttempt> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_repairs, 1);
 
 /**
+ * RequestRebaseRequest supplies arguments for the following operation: Queues an explicitly requested, bounded PR rebase repair.
+ *
  * @generated from message octomanager.v2.RequestRebaseRequest
  */
 export type RequestRebaseRequest = Message<"octomanager.v2.RequestRebaseRequest"> & {
@@ -179,6 +185,8 @@ export const RequestRebaseRequestSchema: GenMessage<RequestRebaseRequest> = /*@_
   messageDesc(file_octomanager_v2_repairs, 2);
 
 /**
+ * RequestRebaseResponse returns the result for the following operation: Queues an explicitly requested, bounded PR rebase repair.
+ *
  * @generated from message octomanager.v2.RequestRebaseResponse
  */
 export type RequestRebaseResponse = Message<"octomanager.v2.RequestRebaseResponse"> & {
@@ -196,6 +204,8 @@ export const RequestRebaseResponseSchema: GenMessage<RequestRebaseResponse> = /*
   messageDesc(file_octomanager_v2_repairs, 3);
 
 /**
+ * ListRepairsRequest supplies arguments for the following operation: Lists durable repair attempts and their current outcomes.
+ *
  * @generated from message octomanager.v2.ListRepairsRequest
  */
 export type ListRepairsRequest = Message<"octomanager.v2.ListRepairsRequest"> & {
@@ -209,6 +219,8 @@ export const ListRepairsRequestSchema: GenMessage<ListRepairsRequest> = /*@__PUR
   messageDesc(file_octomanager_v2_repairs, 4);
 
 /**
+ * ListRepairsResponse returns the result for the following operation: Lists durable repair attempts and their current outcomes.
+ *
  * @generated from message octomanager.v2.ListRepairsResponse
  */
 export type ListRepairsResponse = Message<"octomanager.v2.ListRepairsResponse"> & {
@@ -226,6 +238,8 @@ export const ListRepairsResponseSchema: GenMessage<ListRepairsResponse> = /*@__P
   messageDesc(file_octomanager_v2_repairs, 5);
 
 /**
+ * ConflictCase retains a mechanical conflict decision and the source/candidate evidence behind it.
+ *
  * @generated from message octomanager.v2.ConflictCase
  */
 export type ConflictCase = Message<"octomanager.v2.ConflictCase"> & {
@@ -328,6 +342,8 @@ export const ConflictCaseSchema: GenMessage<ConflictCase> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_repairs, 6);
 
 /**
+ * ListConflictCasesRequest supplies arguments for the following operation: Lists retained mechanical conflict decisions for repair inspection.
+ *
  * @generated from message octomanager.v2.ListConflictCasesRequest
  */
 export type ListConflictCasesRequest = Message<"octomanager.v2.ListConflictCasesRequest"> & {
@@ -345,6 +361,8 @@ export const ListConflictCasesRequestSchema: GenMessage<ListConflictCasesRequest
   messageDesc(file_octomanager_v2_repairs, 7);
 
 /**
+ * ListConflictCasesResponse returns the result for the following operation: Lists retained mechanical conflict decisions for repair inspection.
+ *
  * @generated from message octomanager.v2.ListConflictCasesResponse
  */
 export type ListConflictCasesResponse = Message<"octomanager.v2.ListConflictCasesResponse"> & {
@@ -367,6 +385,8 @@ export const ListConflictCasesResponseSchema: GenMessage<ListConflictCasesRespon
   messageDesc(file_octomanager_v2_repairs, 8);
 
 /**
+ * GetConflictCaseRequest supplies arguments for the following operation: Reads one conflict case and its recorded source and candidate evidence.
+ *
  * @generated from message octomanager.v2.GetConflictCaseRequest
  */
 export type GetConflictCaseRequest = Message<"octomanager.v2.GetConflictCaseRequest"> & {
@@ -384,6 +404,8 @@ export const GetConflictCaseRequestSchema: GenMessage<GetConflictCaseRequest> = 
   messageDesc(file_octomanager_v2_repairs, 9);
 
 /**
+ * GetConflictCaseResponse returns the result for the following operation: Reads one conflict case and its recorded source and candidate evidence.
+ *
  * @generated from message octomanager.v2.GetConflictCaseResponse
  */
 export type GetConflictCaseResponse = Message<"octomanager.v2.GetConflictCaseResponse"> & {

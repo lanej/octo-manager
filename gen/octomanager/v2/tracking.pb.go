@@ -253,6 +253,7 @@ func (CheckWatchState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{3}
 }
 
+// AgentTarget identifies a harness session and delivery endpoint; it does not grant authority.
 type AgentTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Harness       string                 `protobuf:"bytes,1,opt,name=harness,proto3" json:"harness,omitempty"`
@@ -321,6 +322,7 @@ func (x *AgentTarget) GetLabel() string {
 	return ""
 }
 
+// AgentReference records a registered target and any separately observed harness version.
 type AgentReference struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -389,6 +391,7 @@ func (x *AgentReference) GetVersionObservedAtMs() int64 {
 	return 0
 }
 
+// TargetBase identifies the target branch and the observed commit at that branch.
 type TargetBase struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ref           string                 `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
@@ -441,6 +444,7 @@ func (x *TargetBase) GetSha() string {
 	return ""
 }
 
+// TrackingObservation freezes PR identity, lifecycle, and evidence with their completeness states.
 type TrackingObservation struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Id            uint64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -565,6 +569,7 @@ func (x *TrackingObservation) GetWorkflows() *DomainCheckEvidence {
 	return nil
 }
 
+// TrackedPullRequest retains enrollment, ownership, cached observations, and retirement state.
 type TrackedPullRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -713,6 +718,7 @@ func (x *TrackedPullRequest) GetArchiveReason() string {
 	return ""
 }
 
+// ExecutionProfile selects bounded instructions and optional worker harness/model settings.
 type ExecutionProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -781,6 +787,7 @@ func (x *ExecutionProfile) GetModel() string {
 	return ""
 }
 
+// ConflictBlocker pins the head and target-base revisions that could not merge cleanly.
 type ConflictBlocker struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HeadSha       string                 `protobuf:"bytes,1,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
@@ -841,6 +848,7 @@ func (x *ConflictBlocker) GetBaseRef() string {
 	return ""
 }
 
+// CheckBlocker identifies a failing check execution at an exact PR head.
 type CheckBlocker struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SourceId      string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
@@ -909,6 +917,7 @@ func (x *CheckBlocker) GetCheckKey() string {
 	return ""
 }
 
+// ReviewBlocker identifies a change-requesting review and its reviewed revision.
 type ReviewBlocker struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ReviewId        string                 `protobuf:"bytes,1,opt,name=review_id,json=reviewId,proto3" json:"review_id,omitempty"`
@@ -969,6 +978,7 @@ func (x *ReviewBlocker) GetReviewedHeadSha() string {
 	return ""
 }
 
+// ReviewFeedback retains the source identity, location, revision, and text of review feedback.
 type ReviewFeedback struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
@@ -1085,6 +1095,7 @@ func (x *ReviewFeedback) GetReviewId() string {
 	return ""
 }
 
+// CheckWatch tracks one generation of check observation for a fixed PR head.
 type CheckWatch struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1193,6 +1204,7 @@ func (x *CheckWatch) GetReplacementHeadSha() string {
 	return ""
 }
 
+// CheckResults reports settled check executions or the head that superseded them.
 type CheckResults struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	WatchId            string                 `protobuf:"bytes,1,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
@@ -1269,6 +1281,7 @@ func (x *CheckResults) GetReplacementHeadSha() string {
 	return ""
 }
 
+// PendingAction records an owner’s actionable blocker separately from message delivery.
 type PendingAction struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1519,6 +1532,7 @@ func (*PendingAction_ReviewFeedback) isPendingAction_Blocker() {}
 
 func (*PendingAction_CheckResults) isPendingAction_Blocker() {}
 
+// ActionDelivery tracks one recipient’s delivery lifecycle and retained transport progress.
 type ActionDelivery struct {
 	state            protoimpl.MessageState  `protogen:"open.v1"`
 	Id               string                  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1627,6 +1641,7 @@ func (x *ActionDelivery) GetAcknowledgedAtMs() int64 {
 	return 0
 }
 
+// DeliveryAttempt records a single transport attempt and its observed outcome.
 type DeliveryAttempt struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DeliveryId     string                 `protobuf:"bytes,1,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty"`
@@ -1703,6 +1718,7 @@ func (x *DeliveryAttempt) GetOutcome() *DomainDeliveryOutcome {
 	return nil
 }
 
+// TrackingSnapshot combines registered agents, tracked PRs, actions, and deliveries.
 type TrackingSnapshot struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Prs           []*TrackedPullRequest  `protobuf:"bytes,1,rep,name=prs,proto3" json:"prs,omitempty"`
@@ -1787,6 +1803,7 @@ func (x *TrackingSnapshot) GetCheckWatches() []*CheckWatch {
 	return nil
 }
 
+// TrackPullRequestRequest supplies arguments for the following operation: Enrolls a PR for observation with an explicit responsible owner.
 type TrackPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -1847,6 +1864,7 @@ func (x *TrackPullRequestRequest) GetCwd() string {
 	return ""
 }
 
+// ListTrackedPullRequestsRequest supplies arguments for the following operation: Lists retained PR enrollments and their cached observations.
 type ListTrackedPullRequestsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1883,6 +1901,7 @@ func (*ListTrackedPullRequestsRequest) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{17}
 }
 
+// ListTrackedPullRequestsResponse returns the result for the following operation: Lists retained PR enrollments and their cached observations.
 type ListTrackedPullRequestsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Prs           []*TrackedPullRequest  `protobuf:"bytes,1,rep,name=prs,proto3" json:"prs,omitempty"`
@@ -1927,6 +1946,7 @@ func (x *ListTrackedPullRequestsResponse) GetPrs() []*TrackedPullRequest {
 	return nil
 }
 
+// AssignPullRequestRequest supplies arguments for the following operation: Transfers responsibility while preserving explicit observer subscriptions.
 type AssignPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1979,6 +1999,7 @@ func (x *AssignPullRequestRequest) GetOwner() *AgentTarget {
 	return nil
 }
 
+// ListActionsRequest supplies arguments for the following operation: Lists PR actions whose ownership is separate from notification receipt.
 type ListActionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PrId          *string                `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
@@ -2023,6 +2044,7 @@ func (x *ListActionsRequest) GetPrId() string {
 	return ""
 }
 
+// ListActionsResponse returns the result for the following operation: Lists PR actions whose ownership is separate from notification receipt.
 type ListActionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Actions       []*PendingAction       `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
@@ -2067,6 +2089,7 @@ func (x *ListActionsResponse) GetActions() []*PendingAction {
 	return nil
 }
 
+// RetryDeliveryRequest supplies arguments for the following operation: Explicitly retries notification delivery while retaining previous attempts.
 type RetryDeliveryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2111,6 +2134,7 @@ func (x *RetryDeliveryRequest) GetId() string {
 	return ""
 }
 
+// RetryDeliveryResponse returns the result for the following operation: Explicitly retries notification delivery while retaining previous attempts.
 type RetryDeliveryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Delivery      *ActionDelivery        `protobuf:"bytes,1,opt,name=delivery,proto3" json:"delivery,omitempty"`
@@ -2155,6 +2179,7 @@ func (x *RetryDeliveryResponse) GetDelivery() *ActionDelivery {
 	return nil
 }
 
+// TrackPullRequestResponse returns the result for the following operation: Enrolls a PR for observation with an explicit responsible owner.
 type TrackPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
@@ -2199,6 +2224,7 @@ func (x *TrackPullRequestResponse) GetPr() *TrackedPullRequest {
 	return nil
 }
 
+// GetTrackedPullRequestRequest supplies arguments for the following operation: Reads one tracked PR and its current cached evidence.
 type GetTrackedPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2243,6 +2269,7 @@ func (x *GetTrackedPullRequestRequest) GetId() string {
 	return ""
 }
 
+// GetTrackedPullRequestResponse returns the result for the following operation: Reads one tracked PR and its current cached evidence.
 type GetTrackedPullRequestResponse struct {
 	state            protoimpl.MessageState            `protogen:"open.v1"`
 	Pr               *TrackedPullRequest               `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
@@ -2295,6 +2322,7 @@ func (x *GetTrackedPullRequestResponse) GetRepositoryPolicy() *DomainRepositoryA
 	return nil
 }
 
+// RefreshTrackedPullRequestRequest supplies arguments for the following operation: Requests a scheduled refresh rather than bypassing GitHub rate coordination.
 type RefreshTrackedPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2339,6 +2367,7 @@ func (x *RefreshTrackedPullRequestRequest) GetId() string {
 	return ""
 }
 
+// RefreshTrackedPullRequestResponse returns the result for the following operation: Requests a scheduled refresh rather than bypassing GitHub rate coordination.
 type RefreshTrackedPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
@@ -2391,6 +2420,7 @@ func (x *RefreshTrackedPullRequestResponse) GetRefresh() *RefreshStatus {
 	return nil
 }
 
+// AssignPullRequestResponse returns the result for the following operation: Transfers responsibility while preserving explicit observer subscriptions.
 type AssignPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
@@ -2435,6 +2465,7 @@ func (x *AssignPullRequestResponse) GetPr() *TrackedPullRequest {
 	return nil
 }
 
+// UntrackPullRequestRequest supplies arguments for the following operation: Disables observation and delivery without deleting retained evidence.
 type UntrackPullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2479,6 +2510,7 @@ func (x *UntrackPullRequestRequest) GetId() string {
 	return ""
 }
 
+// UntrackPullRequestResponse returns the result for the following operation: Disables observation and delivery without deleting retained evidence.
 type UntrackPullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pr            *TrackedPullRequest    `protobuf:"bytes,1,opt,name=pr,proto3" json:"pr,omitempty"`
@@ -2523,6 +2555,7 @@ func (x *UntrackPullRequestResponse) GetPr() *TrackedPullRequest {
 	return nil
 }
 
+// GetActionRequest supplies arguments for the following operation: Reads a durable action, its progress, and related delivery evidence.
 type GetActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2567,6 +2600,7 @@ func (x *GetActionRequest) GetId() string {
 	return ""
 }
 
+// GetActionResponse returns the result for the following operation: Reads a durable action, its progress, and related delivery evidence.
 type GetActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *PendingAction         `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
@@ -2611,6 +2645,7 @@ func (x *GetActionResponse) GetAction() *PendingAction {
 	return nil
 }
 
+// AcknowledgeActionRequest supplies arguments for the following operation: Records the current owner’s acceptance of an applicable action.
 type AcknowledgeActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2663,6 +2698,7 @@ func (x *AcknowledgeActionRequest) GetAgentId() string {
 	return ""
 }
 
+// AcknowledgeActionResponse returns the result for the following operation: Records the current owner’s acceptance of an applicable action.
 type AcknowledgeActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *PendingAction         `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
@@ -2707,6 +2743,7 @@ func (x *AcknowledgeActionResponse) GetAction() *PendingAction {
 	return nil
 }
 
+// StartActionRequest supplies arguments for the following operation: Records that the current owner has started work on an applicable action.
 type StartActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2759,6 +2796,7 @@ func (x *StartActionRequest) GetAgentId() string {
 	return ""
 }
 
+// StartActionResponse returns the result for the following operation: Records that the current owner has started work on an applicable action.
 type StartActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *PendingAction         `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
@@ -2803,6 +2841,7 @@ func (x *StartActionResponse) GetAction() *PendingAction {
 	return nil
 }
 
+// ReprofileActionRequest supplies arguments for the following operation: Changes the selected execution profile for an owner-authorized action.
 type ReprofileActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2847,6 +2886,7 @@ func (x *ReprofileActionRequest) GetId() string {
 	return ""
 }
 
+// ReprofileActionResponse returns the result for the following operation: Changes the selected execution profile for an owner-authorized action.
 type ReprofileActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *PendingAction         `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
@@ -2891,6 +2931,7 @@ func (x *ReprofileActionResponse) GetAction() *PendingAction {
 	return nil
 }
 
+// AgentMessage retains one recipient’s immutable action notification and receipt state.
 type AgentMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Sequence         uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
@@ -2999,6 +3040,7 @@ func (x *AgentMessage) GetSubmissionId() string {
 	return ""
 }
 
+// ListAgentMessagesRequest supplies arguments for the following operation: Pages recipient-specific messages and independent receipt state.
 type ListAgentMessagesRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	AgentId             string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
@@ -3067,6 +3109,7 @@ func (x *ListAgentMessagesRequest) GetApplicableOnly() bool {
 	return false
 }
 
+// ListAgentMessagesResponse returns the result for the following operation: Pages recipient-specific messages and independent receipt state.
 type ListAgentMessagesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Messages      []*AgentMessage        `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
@@ -3127,6 +3170,7 @@ func (x *ListAgentMessagesResponse) GetHasMore() bool {
 	return false
 }
 
+// AcknowledgeMessageRequest supplies arguments for the following operation: Receipts one recipient’s message without clearing another recipient’s copy.
 type AcknowledgeMessageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -3187,6 +3231,7 @@ func (x *AcknowledgeMessageRequest) GetExpectedBody() string {
 	return ""
 }
 
+// AcknowledgeMessageResponse returns the result for the following operation: Receipts one recipient’s message without clearing another recipient’s copy.
 type AcknowledgeMessageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       *AgentMessage          `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -3231,6 +3276,7 @@ func (x *AcknowledgeMessageResponse) GetMessage() *AgentMessage {
 	return nil
 }
 
+// RegisterAgentRequest supplies arguments for the following operation: Registers a session target without granting PR ownership or repair authority.
 type RegisterAgentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Target        *AgentTarget           `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
@@ -3275,6 +3321,7 @@ func (x *RegisterAgentRequest) GetTarget() *AgentTarget {
 	return nil
 }
 
+// RegisterAgentResponse returns the result for the following operation: Registers a session target without granting PR ownership or repair authority.
 type RegisterAgentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Agent         *AgentReference        `protobuf:"bytes,1,opt,name=agent,proto3" json:"agent,omitempty"`
@@ -3319,6 +3366,7 @@ func (x *RegisterAgentResponse) GetAgent() *AgentReference {
 	return nil
 }
 
+// PRParticipant identifies an owner or observer without implying session availability.
 type PRParticipant struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
@@ -3387,6 +3435,7 @@ func (x *PRParticipant) GetHarness() string {
 	return ""
 }
 
+// SubscribePullRequestRequest supplies arguments for the following operation: Adds an observer to an already enrolled PR without transferring ownership.
 type SubscribePullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -3439,6 +3488,7 @@ func (x *SubscribePullRequestRequest) GetAgent() *AgentTarget {
 	return nil
 }
 
+// UnsubscribePullRequestRequest supplies arguments for the following operation: Removes one observer’s subscription and cancels only its applicable deliveries.
 type UnsubscribePullRequestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -3491,6 +3541,7 @@ func (x *UnsubscribePullRequestRequest) GetAgentId() string {
 	return ""
 }
 
+// ListPRParticipantsRequest supplies arguments for the following operation: Pages the owner and observers without claiming that their sessions are online.
 type ListPRParticipantsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -3543,6 +3594,7 @@ func (x *ListPRParticipantsRequest) GetOffset() uint32 {
 	return 0
 }
 
+// ListPRParticipantsResponse returns the result for the following operation: Pages the owner and observers without claiming that their sessions are online.
 type ListPRParticipantsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
@@ -3603,6 +3655,7 @@ func (x *ListPRParticipantsResponse) GetHasMore() bool {
 	return false
 }
 
+// SubscribePullRequestResponse returns the result for the following operation: Adds an observer to an already enrolled PR without transferring ownership.
 type SubscribePullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
@@ -3663,6 +3716,7 @@ func (x *SubscribePullRequestResponse) GetHasMore() bool {
 	return false
 }
 
+// UnsubscribePullRequestResponse returns the result for the following operation: Removes one observer’s subscription and cancels only its applicable deliveries.
 type UnsubscribePullRequestResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Participants  []*PRParticipant       `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`

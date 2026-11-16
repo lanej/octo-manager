@@ -134,6 +134,7 @@ func (ActivityOutcome) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_activity_proto_rawDescGZIP(), []int{1}
 }
 
+// ActivityActor contains caller-supplied agent metadata rather than an authenticated identity claim.
 type ActivityActor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Harness       string                 `protobuf:"bytes,1,opt,name=harness,proto3" json:"harness,omitempty"`
@@ -218,6 +219,7 @@ func (x *ActivityActor) GetCwd() string {
 	return ""
 }
 
+// ActivityInput reports one named operation outcome with an idempotent request identity.
 type ActivityInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -318,6 +320,7 @@ func (x *ActivityInput) GetEvidenceUrl() string {
 	return ""
 }
 
+// ActivityReport adds coordinator sequence and ingestion time to a caller’s operation report.
 type ActivityReport struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
@@ -378,6 +381,7 @@ func (x *ActivityReport) GetReport() *ActivityInput {
 	return nil
 }
 
+// RecordActivityRequest supplies arguments for the following operation: Records a caller-reported operation outcome without independently verifying it.
 type RecordActivityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Report        *ActivityInput         `protobuf:"bytes,1,opt,name=report,proto3" json:"report,omitempty"`
@@ -422,6 +426,7 @@ func (x *RecordActivityRequest) GetReport() *ActivityInput {
 	return nil
 }
 
+// RecordActivityResponse returns the result for the following operation: Records a caller-reported operation outcome without independently verifying it.
 type RecordActivityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Activity      *ActivityReport        `protobuf:"bytes,1,opt,name=activity,proto3" json:"activity,omitempty"`
@@ -466,6 +471,7 @@ func (x *RecordActivityResponse) GetActivity() *ActivityReport {
 	return nil
 }
 
+// ListActivityRequest supplies arguments for the following operation: Pages recorded agent activity and coordinator events.
 type ListActivityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AfterSequence uint64                 `protobuf:"varint,1,opt,name=after_sequence,json=afterSequence,proto3" json:"after_sequence,omitempty"`

@@ -203,3 +203,50 @@ export const roots = {
   RepositoryPolicy: PolicySchema,
 };
 export { CommandSchema };
+
+// Wire documentation lives beside the domain roots so generation cannot silently omit a capability.
+export const rootDescriptions = {
+  CheckRecord: "records one check execution at an observed PR revision.",
+  CheckEvidence:
+    "distinguishes complete, partial, and unavailable check observations.",
+  ReviewEvidence:
+    "distinguishes complete, partial, and unavailable review observations.",
+  FeedbackEvidence:
+    "retains review feedback together with the completeness of its observation.",
+  DeliveryProgress:
+    "records the delivery transport step without claiming that the agent received it.",
+  DeliveryOutcome: "records confirmed, failed, or uncertain delivery evidence.",
+  MergeChain: "groups ordered PR merge intents under one actor and lifecycle.",
+  MergeEntry:
+    "records the gates and exact-head readiness for one PR in a merge chain.",
+  RepositoryAutomationPolicy:
+    "records effective repository automation defaults and their provenance.",
+  MergeOperation: "journals a GitHub mutation and its reconciliation evidence.",
+  Dependency:
+    "records an explicitly confirmed prerequisite between tracked PRs.",
+  PRReference:
+    "retains a discovered PR reference separately from a confirmed dependency.",
+  QueueInput:
+    "describes the ordered merge intents and request identity supplied by a caller.",
+  ReceiptTarget:
+    "freezes the PR, owner, and revision context associated with a notification.",
+  AgentDigest: "identifies a recipient's evolving notification digest.",
+  DigestRevision:
+    "freezes one rendered notification revision and its exact members.",
+  DigestInspection:
+    "combines a digest revision with its receipts and retained delivery history.",
+  DigestReceipt:
+    "records receipt of a particular digest revision without accepting its actions.",
+  MergeReceiptResult:
+    "reports whether a receipt-bound merge was queued or blocked.",
+  MergeOverview:
+    "combines merge chains, entries, operations, and confirmed dependencies.",
+  ReconciliationResult:
+    "reports the observed outcome of reconciling an uncertain merge operation.",
+  ArchivedSubmissionSummary:
+    "summarizes a historical submission without loading its worker evidence.",
+  ArchivedSubmission:
+    "retains historical submission stages, including invalid worker output as evidence.",
+  RepositoryPolicy:
+    "records a versioned repository publication policy and its source evidence.",
+} satisfies Record<keyof typeof roots, string>;

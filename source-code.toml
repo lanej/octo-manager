@@ -1,0 +1,22 @@
+schema_version = 1
+stage = "beta"
+kind = "tool"
+authority = "owned"
+adoption = "hold"
+mode = "tracked"
+skills = ["builder", "architecture", "pr-writer", "go", "typescript"]
+agents = "codex"
+pr_template = "none"
+detect_languages = true
+
+[checks.go]
+enabled = true
+rollout = "strict"
+
+[checks.typescript]
+enabled = true
+rollout = "ratchet"
+projects = ["tsconfig.quality.json"]
+
+[checks.protobuf]
+enabled = true

@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GetSubmissionRequest supplies arguments for the following operation: Reads archived submission evidence; it does not resume legacy drafting.
 type GetSubmissionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -65,6 +66,7 @@ func (x *GetSubmissionRequest) GetId() string {
 	return ""
 }
 
+// GetSubmissionResponse returns the result for the following operation: Reads archived submission evidence; it does not resume legacy drafting.
 type GetSubmissionResponse struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Submission    *DomainArchivedSubmission `protobuf:"bytes,1,opt,name=submission,proto3" json:"submission,omitempty"`
@@ -109,6 +111,7 @@ func (x *GetSubmissionResponse) GetSubmission() *DomainArchivedSubmission {
 	return nil
 }
 
+// ListSubmissionsRequest supplies arguments for the following operation: Pages archived submission summaries without loading full worker evidence.
 type ListSubmissionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BeforeRowId   uint64                 `protobuf:"varint,1,opt,name=before_row_id,json=beforeRowId,proto3" json:"before_row_id,omitempty"`
@@ -161,6 +164,7 @@ func (x *ListSubmissionsRequest) GetLimit() uint32 {
 	return 0
 }
 
+// ListSubmissionsResponse returns the result for the following operation: Pages archived submission summaries without loading full worker evidence.
 type ListSubmissionsResponse struct {
 	state           protoimpl.MessageState             `protogen:"open.v1"`
 	Submissions     []*DomainArchivedSubmissionSummary `protobuf:"bytes,1,rep,name=submissions,proto3" json:"submissions,omitempty"`
@@ -213,6 +217,7 @@ func (x *ListSubmissionsResponse) GetNextBeforeRowId() uint64 {
 	return 0
 }
 
+// GetRepositoryPolicyRequest supplies arguments for the following operation: Reads a retained repository publication policy and its rendered template.
 type GetRepositoryPolicyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repository    string                 `protobuf:"bytes,1,opt,name=repository,proto3" json:"repository,omitempty"`
@@ -273,6 +278,7 @@ func (x *GetRepositoryPolicyRequest) GetTier() string {
 	return ""
 }
 
+// GetRepositoryPolicyResponse returns the result for the following operation: Reads a retained repository publication policy and its rendered template.
 type GetRepositoryPolicyResponse struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Policy        *DomainRepositoryPolicy `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`

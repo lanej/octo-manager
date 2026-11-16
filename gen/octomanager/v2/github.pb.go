@@ -128,6 +128,7 @@ func (RefreshState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_github_proto_rawDescGZIP(), []int{1}
 }
 
+// GitHubRateBudget records the last observed quota window and its usage forecast.
 type GitHubRateBudget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         uint32                 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -204,6 +205,7 @@ func (x *GitHubRateBudget) GetForecast() *GitHubQuotaForecast {
 	return nil
 }
 
+// GitHubReadMinute counts coordinated request and cache activity in one minute bucket.
 type GitHubReadMinute struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StartedAtMs   int64                  `protobuf:"varint,1,opt,name=started_at_ms,json=startedAtMs,proto3" json:"started_at_ms,omitempty"`
@@ -341,6 +343,7 @@ func (x *GitHubReadHour) GetCacheReuses() uint64 {
 	return 0
 }
 
+// GitHubReadUsage combines bounded request history, quota observations, and current backoff.
 type GitHubReadUsage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	StartedAtMs      int64                  `protobuf:"varint,1,opt,name=started_at_ms,json=startedAtMs,proto3" json:"started_at_ms,omitempty"`
@@ -466,6 +469,7 @@ func (x *GitHubReadUsage) GetHours() []*GitHubReadHour {
 	return nil
 }
 
+// GitHubQuotaForecast projects quota exhaustion with an explicit reason and observation window.
 type GitHubQuotaForecast struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	State                     GitHubForecastState    `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.GitHubForecastState" json:"state,omitempty"`
@@ -558,6 +562,7 @@ func (x *GitHubQuotaForecast) GetExhaustAtMs() int64 {
 	return 0
 }
 
+// RefreshStatus distinguishes a requested refresh from a completed observation.
 type RefreshStatus struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	State           RefreshState           `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.RefreshState" json:"state,omitempty"`
