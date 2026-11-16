@@ -1,3 +1,4 @@
+import { setImmediate } from "node:timers/promises";
 import type { MessagePresentation } from "../merging/receipt-types.js";
 import { resolveId } from "../tracking/identifiers.js";
 import {
@@ -113,6 +114,7 @@ export class DigestService {
   }
   private async run(): Promise<void> {
     for (const agent of this.tracking.store.agents()) {
+      await setImmediate();
       if (this.stopped) break;
       if (!this.managed(agent.id)) continue;
       const pending = this.pending(agent.id),

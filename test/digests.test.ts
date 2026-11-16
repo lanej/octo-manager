@@ -781,3 +781,44 @@ test("legacy withdrawal stays uncertain without positive receipt and recovers fr
     await f.close();
   }
 });
+test("digest recovery selects event kinds without losing chronology or full history", async () => {
+  const f = await fixture();
+  try {
+    f.notice("Retained finding");
+    await f.flush();
+    const value = f.store.digests.active(f.actor.id);
+    if (value === undefined) throw new Error("No digest");
+    f.store.digests.event(f.actor.id, value.id, "queue_cancel_started", {
+      queueId: "old",
+    });
+    f.store.digests.event(
+      f.actor.id,
+      value.id,
+      "queue_inspection_unavailable",
+      { reason: "offline" },
+    );
+    f.store.digests.event(f.actor.id, value.id, "queue_cancel_confirmed", {
+      queueId: "old",
+    });
+    const kinds = ["queue_cancel_started", "queue_cancel_confirmed"];
+    const all = f.store.digests.events(value.id);
+    expect(f.store.digests.events(value.id, kinds)).toEqual(
+      all.filter((event) => kinds.includes(event.kind)),
+    );
+    expect(
+      f.store.digests.events(value.id, kinds).map((event) => event.kind),
+    ).toEqual(kinds);
+    expect(f.store.digests.events(value.id, [])).toEqual([]);
+    expect(f.store.digests.events(value.id, ["absent"])).toEqual([]);
+    expect(f.store.digests.hasEvent(value.id, "queue_enqueue_started")).toBe(
+      true,
+    );
+    expect(f.store.digests.hasEvent(value.id, "absent")).toBe(false);
+    expect(
+      f.store.digests.hasEvent("other-digest", "queue_enqueue_started"),
+    ).toBe(false);
+    expect(f.store.digests.events(value.id)).toEqual(all);
+  } finally {
+    await f.close();
+  }
+});
