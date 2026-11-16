@@ -1,16 +1,18 @@
 import { issueGit } from "./git-effects.js";
 import { GitHubPublisher } from "../publication/publisher.js";
-import { sdkTransport } from "../github-sdk.js";
+import { sdkTransport, type GitHubTransport } from "../github-sdk.js";
 import { PublicationStore } from "../publication/store.js";
 import { publishRequest } from "../publication/publisher.js";
 import { readContract, githubRepository } from "../publication/contract.js";
 import { ActionState } from "../tracking/types.js";
 import type { TrackingService } from "../tracking/service.js";
 import type { IssueCodeHost } from "./ports.js";
+import { updateIssuePR } from "./publication.js";
 import { currentMergeChecks } from "../merging/checks.js";
 export function trackedCodeHost(
   tracking: TrackingService,
   stateDirectory: string,
+  transport: GitHubTransport = sdkTransport(),
 ): IssueCodeHost {
   return {
     async commit(issue, signal, authorize) {
@@ -66,6 +68,26 @@ export function trackedCodeHost(
         throw new Error(
           "Issue PR descriptions must not close issues before verification",
         );
+      const push = async (headRef: string) => {
+        await git(
+          "-c",
+          "credential.helper=",
+          "-c",
+          "credential.helper=!gh auth git-credential",
+          "push",
+          `https://github.com/${repository}.git`,
+          `HEAD:refs/heads/${headRef}`,
+        );
+      };
+      if (issue.prUrl !== "")
+        return updateIssuePR(
+          issue,
+          { repository, branch, base, head },
+          transport,
+          push,
+          signal,
+          authorize,
+        );
       const configured = readContract(issue.workspace);
       const journal = new PublicationStore(stateDirectory);
       try {
@@ -84,19 +106,10 @@ export function trackedCodeHost(
           },
           key,
         );
-        await git(
-          "-c",
-          "credential.helper=",
-          "-c",
-          "credential.helper=!gh auth git-credential",
-          "push",
-          `https://github.com/${repository}.git`,
-          `HEAD:refs/heads/${branch}`,
-        );
-        const transport = sdkTransport();
+        await push(branch);
         const publisher = new GitHubPublisher(
           (request, requestSignal, beforeSend) =>
-            transport(request, requestSignal, () => {
+            transport(request, requestSignal ?? signal, () => {
               authorize();
               beforeSend?.();
             }),

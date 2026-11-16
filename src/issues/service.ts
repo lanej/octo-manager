@@ -591,7 +591,8 @@ export class IssueService {
       (comment) =>
         !issue.reviewedComments.includes(`${comment.id}:${comment.revision}`),
     );
-    const bodyChanged = issue.body !== "" && issue.body !== observed.body;
+    // The empty title identifies enrollment before its first observation; an empty body is valid observed input.
+    const bodyChanged = issue.title !== "" && issue.body !== observed.body;
     const pending = [...issue.pendingComments];
     for (const item of changed)
       if (
@@ -1110,7 +1111,10 @@ export class IssueService {
           ...issue.pendingComments.map((item) => `${item.id}:${item.revision}`),
         ],
       };
-    if (next.waiting === Waiting.Clarification) {
+    if (
+      next.waiting === Waiting.Clarification &&
+      next.clarificationRound !== issue.clarificationRound
+    ) {
       next.clarificationDueAt =
         policy.timeoutMs === undefined
           ? undefined

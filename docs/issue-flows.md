@@ -62,7 +62,7 @@ flowchart TD
 
 The clarification deadline is persisted per round. Research and alpha default to immediate planning, beta to one hour, production to four hours; unknown maturity disables the timer. Immediate timing posts the questions and plan together. A timeout produces one plan per round, with unanswered questions and assumptions retained. It does not itself authorize implementation, publication, or merging. Blocking questions continue to stop implementation; unanswered nonblocking questions require `proceed_under_assumptions` and a timeout/immediate plan before implementation is eligible.
 
-Answers from `issue answer` are recorded locally and queued for posting to the issue. GitHub replies enter through the next complete tracker observation. Classification and the plan are agent assessments. A revised brief clears both approvals; `no_change` preserves them. Follow-up creation needs repository authority or explicit approval of the current proposal assignment. This choice keeps added scope outside the current fix without silently discarding the comment.
+Answers from `issue answer` are recorded locally and queued for posting to the issue. GitHub replies enter through the next complete tracker observation. Classification and the plan are agent assessments. A revised brief clears both approvals; `no_change` preserves them, including clarification waiting and the existing round deadline. Follow-up creation needs repository authority or explicit approval of the current proposal assignment. This choice keeps added scope outside the current fix without silently discarding the comment.
 
 ## Deadlines, timeouts, and retries
 
@@ -76,7 +76,7 @@ The clocks below have different consequences. A clarification deadline asks an a
 | Pending effect check | At least one minute between checks in this process | Recheck the existing intention, rather than creating a new intention | No overall abandonment deadline; pending/uncertain effects can remain unresolved. Restart resets this in-memory delay. |
 | Issue observation | Adaptive one-to-fifteen-minute polling; In review and Verification retain one minute | Read current tracker evidence | Failed reads retain lifecycle evidence and block progression; the error path schedules another read without implicitly retrying an agent. |
 
-The supplied operation signal is advisory: Codex RPC dispatch does not receive it directly, and code-host publication does not forward the effect signal to every SDK request. Those waits can outlast thirty seconds and delay the scheduler pass; a timer alone does not guarantee interruption or prompt uncertainty recording. Local Git commands have their own bounds.
+The supplied operation signal is advisory: Codex RPC dispatch does not receive it directly and instead uses a ten-second timer per call. Code-host publication forwards the effect signal to its SDK requests. Those waits can outlast thirty seconds and delay the scheduler pass; a timer alone does not guarantee interruption or prompt uncertainty recording. Local Git commands have their own bounds.
 
 Clarification accepts zero through seven days, or can be disabled. Assignment profiles accept one second through one day; testing uses the implementation profile and each dispatched assignment has its own clock. Changing policy does not rewrite the timeout already pinned to an assignment. There is no total issue-duration deadline, automatic approval expiry, or deadline that forces a dependency/check wait to merge. PR checks and dependencies use the existing PR workflow.
 
@@ -170,7 +170,7 @@ Completed agent output is validated independently of transport success. A parsed
 
 ## Commit, publication, verification, and closure
 
-Implementation agents write source in an isolated checkout. The coordinator commits locally because linked-worktree metadata lies outside the agent's writable root. Testing runs the project checks and returns evidence; authorized publication can use a caller-written draft and tested commit, or link a reported existing PR under the same publication gate. Coordinator-created PRs require a clean checkout with the exact tested commit and a confirmed publisher receipt. An existing `prUrl` enrolls tracking; it is not evidence that Octo created that PR.
+Implementation agents write source in an isolated checkout. The coordinator commits locally because linked-worktree metadata lies outside the agent's writable root. Testing runs the project checks and returns evidence; authorized publication can use a caller-written draft and tested commit, or link a reported existing PR under the same publication gate. Coordinator-created PRs require a clean checkout with the exact tested commit and a confirmed publisher receipt. An existing `prUrl` enrolls tracking; it is not evidence that Octo created that PR. Remediation updates the linked open PR on the same verified repository, base and head branch, using a non-force push of the tested head. It preserves the PR description and reconciles the remote head before advancing, rather than opening another publication. A changed remote head requires observation and retesting.
 
 ```mermaid
 sequenceDiagram

@@ -120,7 +120,14 @@ export function applyResult(
     case "no_change":
       if (assignment.purpose !== "comments")
         throw new Error("No-change result requires comment assessment");
-      return next;
+      return {
+        ...next,
+        waiting:
+          issue.stage === IssueStage.Investigation &&
+          (issue.brief?.questions.length ?? 0) > 0
+            ? Waiting.Clarification
+            : Waiting.None,
+      };
     case "follow_up":
       if (
         assignment.role !== Role.Investigation ||

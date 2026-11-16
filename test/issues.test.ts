@@ -743,3 +743,84 @@ test("a late publication confirmation cannot revive a cancelled issue", async ()
     f.close();
   }
 });
+
+test("unrelated comments preserve clarification waiting and its original deadline", async () => {
+  const f = fixture({ timeoutMs: 180000 });
+  try {
+    await f.service.tick();
+    const waiting = await f.complete({
+      disposition: "clarification",
+      summary: "Need rounding policy",
+      evidence: [],
+      brief: {
+        ...brief,
+        questions: ["Which rounding?"],
+        blockingQuestions: true,
+      },
+    });
+    f.observe({
+      comments: [
+        {
+          id: "unrelated",
+          revision: "1",
+          author: "reader",
+          body: "Thanks!",
+          url: "https://test/comment",
+        },
+      ],
+    });
+    f.advance(120001);
+    await f.service.tick();
+    expect(f.assignments.at(-1)?.purpose).toBe("comments");
+    const assessed = await f.complete({
+      disposition: "no_change",
+      summary: "Acknowledgment only",
+      evidence: [],
+    });
+    expect(assessed.waiting).toBe(Waiting.Clarification);
+    expect(assessed.brief).toEqual(waiting.brief);
+    expect(assessed.clarificationDueAt).toBe(waiting.clarificationDueAt);
+    f.advance(60000);
+    await f.service.tick();
+    expect(f.assignments.at(-1)?.purpose).toBe("timeout");
+  } finally {
+    f.close();
+  }
+});
+
+test("adding an initially empty issue description supersedes active implementation", async () => {
+  const f = fixture({ implement: true });
+  try {
+    f.observe({ body: "" });
+    await f.service.tick();
+    expect(f.assignments.at(-1)?.purpose).not.toBe("comments");
+    await f.complete({
+      disposition: "brief",
+      summary: "Title-only investigation",
+      evidence: [],
+      brief,
+    });
+    await f.service.tick();
+    const active = f.assignments.at(-1);
+    expect(active?.role).toBe(Role.Implementation);
+    const epoch = f.store.get(f.enrolled.id).epoch;
+    f.observe({ body: "Also preserve compatibility", revision: "2" });
+    f.advance(120001);
+    await f.service.tick();
+    const observed = f.store.get(f.enrolled.id);
+    expect(observed.epoch).toBe(epoch + 1);
+    expect(
+      observed.pendingComments.find((item) => item.id === "issue-body")?.body,
+    ).toBe("Also preserve compatibility");
+    expect(
+      f.store.assignments().find((item) => item.id === active?.id)?.state,
+    ).toBe(AttemptState.Superseded);
+    await f.service.tick();
+    expect(f.assignments.at(-1)?.purpose).toBe("comments");
+    expect(f.assignments.at(-1)?.prompt).toContain(
+      "Also preserve compatibility",
+    );
+  } finally {
+    f.close();
+  }
+});
