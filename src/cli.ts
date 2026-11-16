@@ -15,7 +15,6 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { Coordinator } from "./coordinator.js";
 import { loadTrackingConfig } from "./tracking/config.js";
 import { request, trackingRequest } from "./client.js";
 import { existsSync } from "node:fs";
@@ -52,6 +51,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     return;
   }
   if (command === "serve") {
+    const { Coordinator } = await import("./coordinator.js");
     const trackingConfig = loadTrackingConfig(values.config);
     const model = values.model ?? trackingConfig.workerModel;
     const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
