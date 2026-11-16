@@ -4,6 +4,17 @@ import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
+  "version",
+  "scope",
+  "blockingQuestions",
+  "waiting",
+  "briefVersion",
+  "approvedVersion",
+  "externalId",
+  "provider",
+  "project",
+  "clarificationDueAtMs",
+  "externallyClosed",
   "autoMerge",
   "autoMergeSource",
   "autoMergeStage",
@@ -91,6 +102,18 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "issue",
+  "issues",
+  "reference",
+  "brief",
+  "briefs",
+  "assignments",
+  "assignment",
+  "effects",
+  "criteria",
+  "questions",
+  "assumptions",
+  "evidence",
   "repositoryPolicy",
   "refresh",
   "chains",
@@ -246,6 +269,15 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (command.startsWith("issue-") && !readOnlyCommand(positionals)) {
+    const root = record(raw) ? raw : {};
+    const issue = record(root["issue"]) ? root["issue"] : {};
+    return [
+      "issue-show",
+      lookup(issue, "id") ?? positionals[1] ?? "",
+      "--full",
+    ];
+  }
   if (command === "dependency-confirm")
     return ["dependencies", values.pr ?? ""];
   if (command === "dependency-remove") return ["dependencies"];

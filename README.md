@@ -160,3 +160,7 @@ The [CLI guide](docs/cli.md) describes capability groups and agent shortcuts. Th
 The managed source-code profile selects beta-stage Protobuf checks with owned authority and adoption hold. Existing Go/TypeScript checks and the application stack remain in place. Run `python3 scripts/check-protobuf.py tools` once to provision pinned Buf and build its native JSON-string rule, then `bun run generate` to regenerate formatted schemas and Go/TypeScript bindings. Domain-message documentation comes from the canonical contracts and exporter; edit those inputs rather than generated files.
 
 Run `PROTOBUF_AGAINST='.git#ref=origin/main' bun run check` for full verification against the integration branch. The standalone gate is `python3 scripts/check-protobuf.py all --against '.git#ref=origin/main'`. Use the actual PR base or released revision when checking a change; there is no ratchet or ignored-field exception. CI uses the PR base SHA or the previous push SHA, and manual runs require a baseline revision. These checks preserve the v2 contract and do not require restarting the daemon or migrating stored state.
+
+## Issue lifecycle
+
+Explicitly enroll issues for investigation, versioned briefs, clarification, implementation, testing, review, and post-merge acceptance verification. Repository policy controls each authority gate; tracker and dispatcher ports keep GitHub and Codex replaceable. See the [issue lifecycle guide](docs/issues.md) for configuration, commands, evidence, and recovery. The **7 Issues** dashboard tab shows current issue work.

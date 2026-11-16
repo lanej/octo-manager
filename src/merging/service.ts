@@ -29,6 +29,7 @@ import {
 } from "./contracts.js";
 import { checkGate, fingerprint, graphKey, readyFor } from "./policy.js";
 export interface MergeOptions {
+  issueGate?: (url: string) => boolean;
   repositoryInstructions?: (
     message: import("../tracking/inbox.js").AgentMessage,
   ) => string | undefined;
@@ -57,6 +58,7 @@ export class MergeService {
     mkdirSync(root, { recursive: true, mode: 0o700 });
     this.prepare = options.prepare ?? preparer(root, cases);
     this.interval = options.intervalMs ?? 1000;
+    this.issueGate = options.issueGate ?? (() => true);
     store.recover();
     this.receipts = new ReceiptMerges(
       store,
@@ -74,6 +76,7 @@ export class MergeService {
   readonly receipts: ReceiptMerges;
   private profiles: Record<string, PreparationProfile>;
   private interval: number;
+  private issueGate: (url: string) => boolean;
   start(): void {
     this.timer = setInterval(() => {
       this.tick().catch((error: unknown) => {
@@ -218,6 +221,7 @@ export class MergeService {
       return false;
     const pr = this.store.tracking.pr(entry.prId);
     return (
+      this.issueGate(pr.url) &&
       !this.abort.signal.aborted &&
       pr.enabled &&
       (entry.autoMerge || entry.receiptId !== undefined) &&

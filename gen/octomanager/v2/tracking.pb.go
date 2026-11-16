@@ -2943,8 +2943,10 @@ type AgentMessage struct {
 	AcknowledgedAtMs *int64                 `protobuf:"varint,7,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
 	Applicable       bool                   `protobuf:"varint,8,opt,name=applicable,proto3" json:"applicable,omitempty"`
 	SubmissionId     *string                `protobuf:"bytes,9,opt,name=submission_id,json=submissionId,proto3,oneof" json:"submission_id,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Provider-neutral issue whose lifecycle prompted this notice.
+	IssueId       *string `protobuf:"bytes,10,opt,name=issue_id,json=issueId,proto3,oneof" json:"issue_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentMessage) Reset() {
@@ -3036,6 +3038,13 @@ func (x *AgentMessage) GetApplicable() bool {
 func (x *AgentMessage) GetSubmissionId() string {
 	if x != nil && x.SubmissionId != nil {
 		return *x.SubmissionId
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetIssueId() string {
+	if x != nil && x.IssueId != nil {
+		return *x.IssueId
 	}
 	return ""
 }
@@ -4008,7 +4017,7 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x16ReprofileActionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"P\n" +
 	"\x17ReprofileActionResponse\x125\n" +
-	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v2.PendingActionR\x06action\"\xe3\x02\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v2.PendingActionR\x06action\"\x90\x03\n" +
 	"\fAgentMessage\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x1b\n" +
@@ -4020,9 +4029,12 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\n" +
 	"applicable\x18\b \x01(\bR\n" +
 	"applicable\x12(\n" +
-	"\rsubmission_id\x18\t \x01(\tH\x01R\fsubmissionId\x88\x01\x01B\x15\n" +
+	"\rsubmission_id\x18\t \x01(\tH\x01R\fsubmissionId\x88\x01\x01\x12\x1e\n" +
+	"\bissue_id\x18\n" +
+	" \x01(\tH\x02R\aissueId\x88\x01\x01B\x15\n" +
 	"\x13_acknowledged_at_msB\x10\n" +
-	"\x0e_submission_id\"\xb8\x01\n" +
+	"\x0e_submission_idB\v\n" +
+	"\t_issue_id\"\xb8\x01\n" +
 	"\x18ListAgentMessagesRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12%\n" +
 	"\x0eafter_sequence\x18\x02 \x01(\x04R\rafterSequence\x121\n" +

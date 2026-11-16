@@ -315,6 +315,8 @@ message AgentMessage {
   optional int64 acknowledged_at_ms = 7;
   bool applicable = 8;
   optional string submission_id = 9;
+  // Provider-neutral issue whose lifecycle prompted this notice.
+  optional string issue_id = 10;
 }
 // ListAgentMessagesRequest supplies arguments for the following operation: Pages recipient-specific messages and independent receipt state.
 message ListAgentMessagesRequest {

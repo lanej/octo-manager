@@ -25,7 +25,7 @@ type usageChart struct {
 }
 
 func (m *Model) globalPanel() bool {
-	return m.panel == activityPanel || m.panel == githubPanel
+	return m.panel == activityPanel || m.panel == githubPanel || m.panel == issuesPanel
 }
 
 func (m *Model) githubSummary() string {

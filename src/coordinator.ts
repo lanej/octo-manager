@@ -1,3 +1,10 @@
+import type { IssueOptions } from "./issues/service.js";
+import { IssueService } from "./issues/service.js";
+import { GitHubIssueTracker } from "./issue-trackers/github.js";
+import { CodexDispatcher } from "./dispatch/codex.js";
+import { ManagedIssueWorkspace } from "./dispatch/workspace.js";
+import { loadIssuePolicy } from "./issues/config.js";
+import { trackedCodeHost } from "./issues/composition.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
 import {githubReads} from "./github-api.js";
@@ -25,7 +32,8 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions {
+  issueOptions?: IssueOptions; mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -52,6 +60,7 @@ export class Coordinator extends EventEmitter {
   readonly socketPath: string;
   private server?: Server;
   private sockets = new Set<Socket>();
+  readonly issues: IssueService;
   private timer?: NodeJS.Timeout;
   private active?: Active;
   private stopping = false;
@@ -67,12 +76,14 @@ export class Coordinator extends EventEmitter {
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
       this.store.repositories.tick();
       this.tracking.tick();
+      this.issues.tick().catch((error: unknown) => { this.store.event("", "issue_scheduler_error", error instanceof Error ? error.message : "Issue tick failed"); });
       this.submissions.reconcileLegacy(this.now());
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
-    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
+    this.issues=new IssueService(this.store.issues,options.issueOptions ?? {trackers:[new GitHubIssueTracker()],dispatchers:[new CodexDispatcher()],workspace:new ManagedIssueWorkspace(),codeHost:trackedCodeHost(this.tracking,directory),policy:loadIssuePolicy},this.now);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,...options.digestOptions});
@@ -278,6 +289,7 @@ export class Coordinator extends EventEmitter {
       this.notifications.stop();
       await this.githubScheduler.close();
 
+    await this.issues.close();
     await this.merging.close();
     await this.digests.close();
       await this.submissions.close();

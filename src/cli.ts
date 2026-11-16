@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { issuesCLI } from "./issues/cli.js";
 import { commandTree, CommanderError } from "./command-tree.js";
 import { publicationCLI } from "./publication/cli.js";
 import {mergingCLI} from "./merging/cli.js";
@@ -24,6 +25,7 @@ import { terminalStates, type JobEvent } from "./domain.js";
 process.umask(0o077);
 async function execute(parsed: ParsedCommand): Promise<void> {
   switch(parsed.capability){
+    case "issues": await issuesCLI(parsed); return;
     case "publication": await publicationCLI(parsed); return;
     case "merging": await mergingCLI(parsed); return;
     case "notifications": await notificationsCLI(parsed); return;

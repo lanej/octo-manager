@@ -99,7 +99,7 @@ func (m *Model) regionInput(id string) renderInput {
 			return m.input(key, &v1.Snapshot{Scheduler: m.snapshot.GetScheduler(), Worker: m.snapshot.GetWorker()})
 		case githubPanel:
 			return m.input(key, m.snapshot.GetGithubUsage())
-		case activityPanel:
+		case activityPanel, issuesPanel:
 			return m.input(key)
 		default:
 			return m.input(key)
@@ -134,6 +134,8 @@ func (m *Model) contentInput(width int) renderInput {
 		return m.input(fmt.Sprintf("%s/%d", key, width), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh)
 	case githubPanel:
 		return m.input(fmt.Sprintf("%s/%d/%d", key, width, m.githubHours), m.snapshot.GetGithubUsage(), m.schedulerViewStatus())
+	case issuesPanel:
+		return m.input(fmt.Sprintf("%s/%d", key, m.issueIndex), &v1.Snapshot{Issues: m.snapshot.GetIssues()})
 	case activityPanel:
 		// Activity owns its bounded-page cache; do not clone its loaded history here.
 		return m.input(key)

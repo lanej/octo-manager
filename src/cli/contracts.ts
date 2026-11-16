@@ -7,7 +7,8 @@ export type Capability =
   | "merging"
   | "repairs"
   | "activity"
-  | "history";
+  | "history"
+  | "issues";
 export interface Options extends Record<string, string | boolean | undefined> {
   "intent-file"?: string;
   purpose?: string;

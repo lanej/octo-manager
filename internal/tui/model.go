@@ -60,6 +60,7 @@ type Model struct {
 	connectionError      string
 	commandError         string
 	commandPending       bool
+	issueIndex           int
 	panel                panelView
 	reviews              map[string]*v1.PullRequestDetails
 	reviewErrors         map[string]string
@@ -218,12 +219,26 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.move(-1)
 		}
 	case "h", "left":
+		if m.panel == issuesPanel {
+			m.issueIndex = max(0, m.issueIndex-1)
+			m.resizeContent()
+
+			return nil
+		}
+
 		if m.panel == activityPanel {
 			return m.moveActivityPage(1)
 		} else if m.tab().worker {
 			m.moveRun(-1)
 		}
 	case "l", "right":
+		if m.panel == issuesPanel {
+			m.issueIndex = min(max(0, len(m.snapshot.GetIssues())-1), m.issueIndex+1)
+			m.resizeContent()
+
+			return nil
+		}
+
 		if m.panel == activityPanel {
 			return m.moveActivityPage(-1)
 		} else if m.tab().worker {
@@ -253,6 +268,12 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 		m.resizeContent()
 
 		return m.loadActivity()
+	case "7":
+		m.panel = issuesPanel
+		m.result.GotoTop()
+		m.resizeContent()
+
+		return nil
 	case "6":
 		m.panel = githubPanel
 		m.result.GotoTop()

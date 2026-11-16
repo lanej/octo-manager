@@ -1,3 +1,4 @@
+import { issueRoutes, wireIssue } from "./issues/rpc.js";
 import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
 import {mergeRoutes} from "./api/merge-routes.js";
 import {wire} from "./api/codec.js";
@@ -41,6 +42,7 @@ export function wireSnapshot(coordinator: Coordinator) {
     instanceId: coordinator.store.instanceId(), sequence: BigInt(coordinator.store.sequence()),
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
+    issues: coordinator.store.issues.list().slice(0,50).map(issue=>wireIssue(issue,coordinator.store.issues.assignments(issue.id).at(-1))),
     tracking: wireTracking(coordinator.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
     githubScheduler:wireScheduler(coordinator.githubScheduler),
@@ -75,6 +77,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    ...issueRoutes(coordinator.issues),
     ...dashboardRoutes(coordinator),
     getServerInfo(){return {apiVersion:2};},
     ...mergeRoutes(coordinator),
