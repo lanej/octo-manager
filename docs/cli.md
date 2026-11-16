@@ -5,6 +5,7 @@
 | Group | Purpose |
 | --- | --- |
 | `pr` | Initialize and inspect publication guidance, validate and publish caller-written drafts, track PRs, manage subscriptions, and configure merge policy |
+| `issue` | Enroll issues, inspect lifecycle evidence, approve brief/publication/follow-up work, answer clarification, and pause/resume/cancel |
 | `agent` | Register sessions, inspect registered agents, and read inbox or tracking state |
 | `messages` | Inspect frozen messages and revisions, acknowledge receipt, or request their pinned merge |
 | `action` | Inspect blockers, accept work, change profiles, and retry delivery |
@@ -30,3 +31,5 @@ octo-manager history policy owner/repo --policy-version 2 --tier routine
 ```
 
 `pr publish --title TITLE --body-file FILE` uses the caller-written description and local publication contract. It remains a standalone publisher with a separate receipt journal; it does not acquire the daemon lock. The daemon automatically reconciles uncertain legacy publications through scheduled GitHub reads without drafting or creating PRs.
+
+Issue commands and maturity-dependent configuration are in [issue setup](issues.md); [issue flows](issue-flows.md) distinguish approval, dispatch acceptance, verification, and closure.

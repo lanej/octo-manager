@@ -1,10 +1,10 @@
 # Octo Manager
 
-A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The working path covers public PR reviews and discussion, worker summaries, and an actual disposable merge conflict.
+Octo Manager coordinates issue remediation and GitHub PR delivery through a local CLI and Charmed dashboard. Versioned issue briefs guide investigation, implementation and testing, followed by separate acceptance verification. The coordinator owns durable decisions and authorized tracker/Git/GitHub effects; scoped agents perform the work. Existing PR tracking, review delivery, repairs, dependencies and guarded auto-merge remain independently usable.
 
 ![Tracking dashboard with explicit auto-merge status and grouped ownership and actions](docs/images/dashboard-tracking.png)
 
-See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
+Start with [issue setup](docs/issues.md) and the [state-machine and flow guide](docs/issue-flows.md). The [live acceptance record](docs/live-acceptance.md) distinguishes provider trials from controlled tests and representative renderings.
 
 ## Run
 
@@ -39,9 +39,9 @@ Dashboard timestamps use local time, honoring `TZ` when set and otherwise the OS
 
 ## Existing authentication
 
-The worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
+The Pi worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
 
-If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub reads use the existing `gh` login. Private or indeterminate repository visibility is rejected before content reaches the model. Public PR content goes to the selected model provider. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
+If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub adapters use the existing `gh` login for accessible public and private repositories. The Pi summary demo separately rejects private or indeterminate repository visibility before content reaches its model. Public demo PR content goes to the selected model provider. Issue dispatch uses the configured Codex app-server and stage profiles. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
 
 ### Amazon Bedrock
 
@@ -86,14 +86,15 @@ The dashboard opens on Tracking and gives each tab a dedicated workspace:
 | **4 Tracking** | Ownership, automation, blockers and delivery | PR navigation; nested automation/ownership and actions/delivery sections |
 | **5 Activity** | Reported agent operations across sessions | Global timeline without PR or worker panes |
 | **6 GitHub** | API budgets, forecasts and traffic | Global view; nested REST and GraphQL quota sections |
+| **7 Issues** | Issue stages, agent assignments and briefs | Global view; selected issue criteria and clarification |
 
 Auto-merge status stays visible in the PR list and Tracking/Reviews context, including paused chains and cancelled chains with in-flight operations. Tracking retains the opt-in `a` switch and shows the next merge step; an enabled switch does not imply checks or owner assessment have passed. Confirmed merged/closed PRs show their outcome. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
 
-Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
+Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Review observations retain explicit partial-history and truncated-body markers; accessible public and private PRs are supported. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
 Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
 
-The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`6` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
+The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`7` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
 
 ```text
 octo-manager job submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
@@ -109,15 +110,15 @@ CLI responses are JSON; `--json` selects compact output. Event pages contain at 
 
 ## API and architecture
 
-The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and Codex integration. The [Protobuf contract](proto/octomanager/v1/scheduler.proto) generates Go and TypeScript bindings. ConnectRPC runs over HTTP/1.1 on an owner-only Unix socket. The [API guide](docs/api.md) defines cursor/replay semantics, idempotency, errors, deadlines, and disconnect behavior. The [architecture guide](docs/architecture.md) includes ownership and state diagrams.
+The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and Codex integration. The [Protobuf contract](proto/octomanager/v2/scheduler.proto) generates Go and TypeScript bindings. ConnectRPC runs over HTTP/1.1 on an owner-only Unix socket. The [API guide](docs/api.md) defines cursor/replay semantics, idempotency, errors, deadlines, and disconnect behavior. The [architecture guide](docs/architecture.md) includes ownership and state diagrams.
 
 `demo` first creates a real merge conflict in `retry-policy.json`, then queues a summary of public Pi PR 11546. The required merge keeps `maxAttempts=3` from the target and `timeoutSeconds=60` from the source, with `retryDelaySeconds=1`. The coordinator rejects either unchanged side, extra keys/paths, invalid values, and conflict markers, then commits and checks a clean two-parent merge. Only generated repositories are changed, and user hooks/signing are disabled for these fixtures.
 
-Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
+Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. These limits apply to Pi jobs. Issue assignment concurrency, timeouts and remote effects follow the separate [issue lifecycle](docs/issue-flows.md).
 
 ## Polling and auto-merge
 
-[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
+[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `pr auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
 
 ## Dependency-aware merge chains
 

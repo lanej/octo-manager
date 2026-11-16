@@ -195,22 +195,22 @@ func (m *Model) dashboardView() string {
 			case "footer":
 				return (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
 			case "notice":
-				notice := "j/k PRs · u refresh · 1–6 tabs · q quit"
+				notice := "j/k PRs · u refresh · 1–7 tabs · q quit"
 				if m.panel == trackingPanel {
-					notice = "j/k PRs · a auto-merge · 1–6 tabs · q quit"
+					notice = "j/k PRs · a auto-merge · 1–7 tabs · q quit"
 				} else if tab.global {
-					notice = "j/k scroll · u refresh · 1–6 tabs · q quit"
+					notice = "j/k scroll · u refresh · 1–7 tabs · q quit"
 				}
 
 				if size.Width < 80 {
-					notice = "1–6 tabs · q quit · j/k PRs"
+					notice = "1–7 tabs · q quit · j/k PRs"
 					if m.panel == trackingPanel {
-						notice = "a auto-merge · 1–6 tabs · q quit"
+						notice = "a auto-merge · 1–7 tabs · q quit"
 					} else if tab.global {
-						notice = "j/k scroll · 1–6 tabs · q quit"
+						notice = "j/k scroll · 1–7 tabs · q quit"
 					}
 				} else if tab.worker {
-					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–6 tabs · q quit"
+					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–7 tabs · q quit"
 				}
 
 				if m.connectionError != "" {
