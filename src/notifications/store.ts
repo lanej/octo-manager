@@ -26,6 +26,9 @@ export class DigestStore {
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)",
     );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)",
+    );
   }
   private dispatchId(): string {
     for (let attempt = 0; attempt < 32; attempt++) {
@@ -100,23 +103,28 @@ export class DigestStore {
         .get(id, kind) !== undefined
     );
   }
-  events(id: string, kinds?: readonly string[]): DigestEvent[] {
-    if (kinds?.length === 0) return [];
+  events(id: string, kinds?: readonly string[], limit?: number): DigestEvent[] {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0))
+      throw new Error("Invalid digest event limit");
+    if (kinds?.length === 0 || limit === 0) return [];
     const filter =
       kinds === undefined
         ? ""
         : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
-    return this.db
+    const index =
+      kinds === undefined ? "digest_events_by_digest" : "digest_events_by_kind";
+    const rows = this.db
       .prepare(
-        `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY digest_events_by_kind WHERE digest_id=?${filter} ORDER BY sequence`,
+        `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY ${index} WHERE digest_id=?${filter} ORDER BY sequence${limit === undefined ? "" : " DESC LIMIT ?"}`,
       )
-      .all(id, ...(kinds ?? []))
-      .map((row) =>
-        digestEvent({
-          ...row,
-          detail: JSON.parse(String(row["detail"])) as unknown,
-        }),
-      );
+      .all(id, ...(kinds ?? []), ...(limit === undefined ? [] : [limit]));
+    if (limit !== undefined) rows.reverse();
+    return rows.map((row) =>
+      digestEvent({
+        ...row,
+        detail: JSON.parse(String(row["detail"])) as unknown,
+      }),
+    );
   }
   create(
     agentId: string,

@@ -817,6 +817,13 @@ test("digest recovery selects event kinds without losing chronology or full hist
     expect(
       f.store.digests.hasEvent("other-digest", "queue_enqueue_started"),
     ).toBe(false);
+    expect(f.store.digests.events(value.id, undefined, 2)).toEqual(
+      all.slice(-2),
+    );
+    expect(f.store.digests.events(value.id, kinds, 1)).toEqual(
+      all.filter((event) => kinds.includes(event.kind)).slice(-1),
+    );
+    expect(f.store.digests.events(value.id, undefined, 0)).toEqual([]);
     expect(f.store.digests.events(value.id)).toEqual(all);
   } finally {
     await f.close();

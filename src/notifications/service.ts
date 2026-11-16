@@ -786,7 +786,7 @@ export class DigestService {
         .revisions(value.id)
         .map((version) => version.revision),
       receipts: this.store.receipts(value.id),
-      events: this.store.events(value.id).slice(-100),
+      events: this.store.events(value.id, undefined, 100),
     };
   }
   async close(): Promise<void> {
