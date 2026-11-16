@@ -1,5 +1,4 @@
 import { parse, SubmissionSchema } from "../submissions/contracts.js";
-import { deriveGuidance } from "./derive.js";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync, existsSync } from "node:fs";
@@ -322,6 +321,7 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
               "sample_count",
               "Use --sample-count between 1 and 20.",
             );
+          const { deriveGuidance } = await import("./derive.js");
           const derived = await deriveGuidance(root, {
             remote: parsed.values["sample-remote"] ?? "origin",
             count,

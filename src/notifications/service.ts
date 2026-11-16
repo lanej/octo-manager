@@ -1,3 +1,4 @@
+import { setImmediate } from "node:timers/promises";
 import type { MessagePresentation } from "../merging/receipt-types.js";
 import { resolveId } from "../tracking/identifiers.js";
 import {
@@ -113,6 +114,7 @@ export class DigestService {
   }
   private async run(): Promise<void> {
     for (const agent of this.tracking.store.agents()) {
+      await setImmediate();
       if (this.stopped) break;
       if (!this.managed(agent.id)) continue;
       const pending = this.pending(agent.id),
@@ -400,9 +402,10 @@ export class DigestService {
       if (terminal(active)) return;
       const versions = this.store.revisions(active.id);
       if (keep === undefined) {
-        const attempted = this.store
-          .events(active.id)
-          .some((event) => event.kind === "queue_enqueue_started");
+        const attempted = this.store.hasEvent(
+          active.id,
+          "queue_enqueue_started",
+        );
         if (attempted) {
           const history = await connection.received(
             agent,
@@ -639,7 +642,11 @@ export class DigestService {
   }
   private withdrawals(id: string): { queueId: string; clientId: string }[] {
     const pending = new Map<string, { queueId: string; clientId: string }>();
-    for (const event of this.store.events(id)) {
+    for (const event of this.store.events(id, [
+      "queue_cancel_started",
+      "queue_cancel_confirmed",
+      "queue_cancel_reconciled",
+    ])) {
       if (
         event.kind !== "queue_cancel_started" &&
         event.kind !== "queue_cancel_confirmed" &&
@@ -779,7 +786,7 @@ export class DigestService {
         .revisions(value.id)
         .map((version) => version.revision),
       receipts: this.store.receipts(value.id),
-      events: this.store.events(value.id).slice(-100),
+      events: this.store.events(value.id, undefined, 100),
     };
   }
   async close(): Promise<void> {

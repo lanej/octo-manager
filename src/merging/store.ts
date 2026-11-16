@@ -904,7 +904,7 @@ export class MergeStore {
       return next;
     });
   }
-  scan(pr: TrackedPR): void {
+  scan(pr: TrackedPR, tracked = this.tracking.prs()): void {
     const observation = pr.observation;
     if (observation === undefined) return;
     const sources: ReferenceSource[] = [];
@@ -921,7 +921,7 @@ export class MergeStore {
           text: item.body,
           url: item.url,
         });
-    const found = references(pr, sources, this.tracking.prs()),
+    const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
       for (const prior of this.refs().filter(

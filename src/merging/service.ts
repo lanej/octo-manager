@@ -1,3 +1,4 @@
+import { setImmediate } from "node:timers/promises";
 import { ReceiptMerges, receiptContext } from "./receipts.js";
 import { MergeDeclined } from "./async-merge.js";
 import { randomUUID } from "node:crypto";
@@ -234,8 +235,12 @@ export class MergeService {
     );
   }
   private async run(): Promise<void> {
-    for (const pr of this.store.tracking.prs().filter((pr) => pr.enabled))
-      this.store.scan(pr);
+    const prs = this.store.tracking.prs();
+    for (const pr of prs.filter((pr) => pr.enabled)) {
+      await setImmediate();
+      if (this.abort.signal.aborted) return;
+      this.store.scan(pr, prs);
+    }
     for (const operation of this.store
       .operations()
       .filter(

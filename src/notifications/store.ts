@@ -23,6 +23,12 @@ export class DigestStore {
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
     );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)",
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)",
+    );
   }
   private dispatchId(): string {
     for (let attempt = 0; attempt < 32; attempt++) {
@@ -88,18 +94,37 @@ export class DigestStore {
     if (value === undefined) throw new Error("Digest revision not found");
     return value;
   }
-  events(id: string): DigestEvent[] {
-    return this.db
+  hasEvent(id: string, kind: string): boolean {
+    return (
+      this.db
+        .prepare(
+          "SELECT 1 FROM agent_digest_events WHERE digest_id=? AND kind=? LIMIT 1",
+        )
+        .get(id, kind) !== undefined
+    );
+  }
+  events(id: string, kinds?: readonly string[], limit?: number): DigestEvent[] {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0))
+      throw new Error("Invalid digest event limit");
+    if (kinds?.length === 0 || limit === 0) return [];
+    const filter =
+      kinds === undefined
+        ? ""
+        : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
+    const index =
+      kinds === undefined ? "digest_events_by_digest" : "digest_events_by_kind";
+    const rows = this.db
       .prepare(
-        "SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events WHERE digest_id=? ORDER BY sequence",
+        `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY ${index} WHERE digest_id=?${filter} ORDER BY sequence${limit === undefined ? "" : " DESC LIMIT ?"}`,
       )
-      .all(id)
-      .map((row) =>
-        digestEvent({
-          ...row,
-          detail: JSON.parse(String(row["detail"])) as unknown,
-        }),
-      );
+      .all(id, ...(kinds ?? []), ...(limit === undefined ? [] : [limit]));
+    if (limit !== undefined) rows.reverse();
+    return rows.map((row) =>
+      digestEvent({
+        ...row,
+        detail: JSON.parse(String(row["detail"])) as unknown,
+      }),
+    );
   }
   create(
     agentId: string,
