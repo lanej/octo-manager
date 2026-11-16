@@ -4,6 +4,7 @@ package octomanager.v2;
 import "octomanager/v2/activity.proto";
 import "octomanager/v2/domain.proto";
 import "octomanager/v2/github.proto";
+import "octomanager/v2/issues.proto";
 import "octomanager/v2/notifications.proto";
 import "octomanager/v2/repairs.proto";
 import "octomanager/v2/submissions.proto";
@@ -13,6 +14,14 @@ option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanage
 
 // SchedulerService exposes the versioned coordinator API over local Connect RPC.
 service SchedulerService {
+  // Enrolls an issue for investigation through its configured tracker.
+  rpc EnrollIssue(EnrollIssueRequest) returns (EnrollIssueResponse);
+  // Lists a bounded page of managed issues.
+  rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse);
+  // Inspects one issue and bounded lifecycle evidence.
+  rpc GetIssue(GetIssueRequest) returns (GetIssueResponse);
+  // Records approvals, answers, and lifecycle controls.
+  rpc UpdateIssue(UpdateIssueRequest) returns (UpdateIssueResponse);
   // Reports the wire API version before clients perform coordinator operations.
   rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
   // Sets an owner-authorized per-PR automatic merge override.
@@ -224,6 +233,8 @@ message Snapshot {
   GitHubReadUsage github_usage = 11;
   repeated MergeStatus merge_statuses = 12;
   GitHubSchedulerStatus github_scheduler = 13;
+  // Current bounded issue summaries for the Issues dashboard.
+  repeated ManagedIssue issues = 14;
 }
 // SubmitJobRequest supplies arguments for the following operation: Accepts an idempotent, scoped worker task into the scheduler queue.
 message SubmitJobRequest {

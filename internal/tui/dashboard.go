@@ -29,6 +29,8 @@ func tabDefinition(panel panelView) dashboardTab {
 		return dashboardTab{id: "tracking", label: "4 Tracking", title: "PR TRACKING", purpose: "See ownership, blockers and the next merge step", region: "pr-tracking"}
 	case activityPanel:
 		return dashboardTab{id: "agent-activity", label: "5 Activity", title: "AGENT ACTIVITY", purpose: "Follow reported agent operations across sessions", region: "agent-activity", global: true}
+	case issuesPanel:
+		return dashboardTab{id: "issues", label: "7 Issues", title: "ISSUE LIFECYCLE", purpose: "Coordinate investigation, implementation and acceptance", region: "issue-lifecycle", global: true}
 	case githubPanel:
 		return dashboardTab{id: "github", label: "6 GitHub", title: "GITHUB BUDGET", purpose: "Check API consumption, cooldowns and quota forecasts", region: "github-budget", global: true}
 	default:
@@ -135,10 +137,12 @@ func (m *Model) dashboardContext(width int) string {
 		detail = "Dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_") + " · worker " + stateName(m.snapshot.GetWorker().String(), "WORKER_STATE_")
 	case activityPanel:
 		detail = "All sessions · named operations, outcomes and related PRs"
+	case issuesPanel:
+		detail = "h/l select issue · j/k scroll · CLI records approvals and answers"
 	case githubPanel:
 		detail = m.githubSummary()
 	default:
-		detail = "Choose a tab using 1–6"
+		detail = "Choose a tab using 1–7"
 	}
 
 	return layout.Fit(ansi.Truncate(m.theme.Subtle().Render(tab.purpose), width, "…")+"\n"+ansi.Truncate(text.Label(detail, m.theme), width, "…"), layout.Size{Width: width, Height: 2})
@@ -164,7 +168,7 @@ func (m *Model) dashboardView() string {
 			case "navigation":
 				items := []navigation.Tab{}
 
-				for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel} {
+				for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
 					definition := tabDefinition(panel)
 					items = append(items, navigation.Tab{ID: definition.id, Label: definition.label})
 				}
@@ -191,22 +195,22 @@ func (m *Model) dashboardView() string {
 			case "footer":
 				return (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
 			case "notice":
-				notice := "j/k PRs · u refresh · 1–6 tabs · q quit"
+				notice := "j/k PRs · u refresh · 1–7 tabs · q quit"
 				if m.panel == trackingPanel {
-					notice = "j/k PRs · a auto-merge · 1–6 tabs · q quit"
+					notice = "j/k PRs · a auto-merge · 1–7 tabs · q quit"
 				} else if tab.global {
-					notice = "j/k scroll · u refresh · 1–6 tabs · q quit"
+					notice = "j/k scroll · u refresh · 1–7 tabs · q quit"
 				}
 
 				if size.Width < 80 {
-					notice = "1–6 tabs · q quit · j/k PRs"
+					notice = "1–7 tabs · q quit · j/k PRs"
 					if m.panel == trackingPanel {
-						notice = "a auto-merge · 1–6 tabs · q quit"
+						notice = "a auto-merge · 1–7 tabs · q quit"
 					} else if tab.global {
-						notice = "j/k scroll · 1–6 tabs · q quit"
+						notice = "j/k scroll · 1–7 tabs · q quit"
 					}
 				} else if tab.worker {
-					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–6 tabs · q quit"
+					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–7 tabs · q quit"
 				}
 
 				if m.connectionError != "" {

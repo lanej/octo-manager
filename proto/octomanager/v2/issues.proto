@@ -1,0 +1,148 @@
+syntax = "proto3";
+package octomanager.v2;
+
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
+
+// IssueStage describes work progress independently of tracker status.
+enum IssueStage {
+  ISSUE_STAGE_UNSPECIFIED = 0;
+  ISSUE_STAGE_INVESTIGATION = 1;
+  ISSUE_STAGE_READY = 2;
+  ISSUE_STAGE_IN_PROGRESS = 3;
+  ISSUE_STAGE_TESTING = 4;
+  ISSUE_STAGE_IN_REVIEW = 5;
+  ISSUE_STAGE_VERIFICATION = 6;
+  ISSUE_STAGE_DONE = 7;
+  ISSUE_STAGE_CANCELLED = 8;
+}
+// IssueWaiting explains why a stage cannot advance.
+enum IssueWaiting {
+  ISSUE_WAITING_UNSPECIFIED = 0;
+  ISSUE_WAITING_NONE = 1;
+  ISSUE_WAITING_NEEDS_CLARIFICATION = 2;
+  ISSUE_WAITING_BLOCKED = 3;
+  ISSUE_WAITING_AWAITING_APPROVAL = 4;
+  ISSUE_WAITING_PAUSED = 5;
+}
+// IssueReference retains provider-qualified identity.
+message IssueReference {
+  string provider = 1;
+  string project = 2;
+  string external_id = 3;
+  string url = 4;
+}
+// IssueBrief is a versioned implementation and acceptance contract.
+message IssueBrief {
+  uint32 version = 1;
+  string outcome = 2;
+  string scope = 3;
+  repeated string criteria = 4;
+  repeated string assumptions = 5;
+  repeated string questions = 6;
+  bool blocking_questions = 7;
+}
+// ManagedIssue is a bounded current-state view.
+message ManagedIssue {
+  string id = 1;
+  IssueReference reference = 2;
+  string title = 3;
+  IssueStage stage = 4;
+  IssueWaiting waiting = 5;
+  string detail = 6;
+  IssueBrief brief = 7;
+  string assignment_id = 8;
+  string pr_url = 9;
+  uint64 updated_at_ms = 10;
+  optional uint64 clarification_due_at_ms = 11;
+  bool externally_closed = 12;
+  uint32 approved_version = 13;
+  string workspace = 14;
+  IssueAssignment assignment = 15;
+}
+// IssueAssignment exposes dispatch identity without dumping agent history.
+message IssueAssignment {
+  string id = 1;
+  string role = 2;
+  string state = 3;
+  string session_id = 4;
+  string turn_id = 5;
+  uint32 brief_version = 6;
+  string detail = 7;
+  string harness = 8;
+  string model = 9;
+  repeated string evidence = 10;
+}
+// IssueEvent is one retained lifecycle observation or decision.
+message IssueEvent {
+  uint64 sequence = 1;
+  uint64 at_ms = 2;
+  string kind = 3;
+  string detail = 4;
+}
+// EnrollIssueRequest explicitly authorizes investigation in a local repository.
+message EnrollIssueRequest {
+  string provider = 1;
+  string url = 2;
+  string root = 3;
+  string owner_agent_id = 4;
+  string request_id = 5;
+}
+// EnrollIssueResponse returns the durable issue identity.
+message EnrollIssueResponse {
+  ManagedIssue issue = 1;
+}
+// ListIssuesRequest requests one bounded page.
+message ListIssuesRequest {
+  uint32 offset = 1;
+}
+// ListIssuesResponse returns at most twenty summaries.
+message ListIssuesResponse {
+  repeated ManagedIssue issues = 1;
+  bool has_more = 2;
+}
+// GetIssueRequest requests current state and bounded evidence.
+message GetIssueRequest {
+  string id = 1;
+  uint64 before_sequence = 2;
+}
+// GetIssueResponse retains independently paged lifecycle evidence.
+message GetIssueResponse {
+  ManagedIssue issue = 1;
+  repeated IssueAssignment assignments = 2;
+  repeated IssueEvent events = 3;
+  bool has_more_events = 4;
+  repeated IssueBrief briefs = 5;
+  repeated IssueEffect effects = 6;
+}
+// IssueOperation identifies an explicit operator decision.
+enum IssueOperation {
+  ISSUE_OPERATION_UNSPECIFIED = 0;
+  ISSUE_OPERATION_APPROVE = 1;
+  ISSUE_OPERATION_APPROVE_PUBLICATION = 2;
+  ISSUE_OPERATION_ANSWER = 3;
+  ISSUE_OPERATION_PAUSE = 4;
+  ISSUE_OPERATION_RESUME = 5;
+  ISSUE_OPERATION_CANCEL = 6;
+  ISSUE_OPERATION_REFRESH = 7;
+  ISSUE_OPERATION_APPROVE_FOLLOW_UP = 8;
+}
+// UpdateIssueRequest pins approval to the brief version that was inspected.
+message UpdateIssueRequest {
+  string id = 1;
+  IssueOperation operation = 2;
+  string text = 3;
+  uint32 brief_version = 4;
+  string request_id = 5;
+}
+// UpdateIssueResponse confirms the recorded decision, not agent execution.
+message UpdateIssueResponse {
+  ManagedIssue issue = 1;
+}
+
+// IssueEffect exposes a bounded pending coordinator effect for reconciliation.
+message IssueEffect {
+  string id = 1;
+  string kind = 2;
+  string state = 3;
+  string url = 4;
+}

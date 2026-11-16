@@ -1,3 +1,4 @@
+import { commands as issueCommands } from "./issues/issue-commands.js";
 import { commands as applicationCommands } from "./cli/application-commands.js";
 import { commands as publicationCommands } from "./publication/publication-commands.js";
 import { commands as trackingCommands } from "./tracking/tracking-commands.js";
@@ -39,6 +40,7 @@ const publication = [
   ...request,
 ];
 export const commandSpecs: CommandSpec[] = [
+  ...issueCommands,
   ...applicationCommands,
   ...publicationCommands,
   ...trackingCommands,

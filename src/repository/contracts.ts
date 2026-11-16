@@ -1,3 +1,4 @@
+import { IssueConfigSchema } from "../issues/config.js";
 import { Type, type Static } from "typebox";
 export enum NotificationState {
   ReviewFeedback = "review_feedback",
@@ -35,6 +36,7 @@ export const InstructionsSchema = Type.Object(
 export const ConfigSchema = Type.Object(
   {
     schema_version: Type.Literal(1),
+    issues: Type.Optional(IssueConfigSchema),
     merging: Type.Optional(
       Type.Object(
         {

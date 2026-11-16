@@ -30,6 +30,10 @@ func webLink(value string) (text.Link, error) {
 			label = parts[0] + "/" + parts[1] + "@" + parts[3][:8]
 		}
 
+		if len(parts) == 4 && parts[2] == "issues" {
+			label = parts[0] + "/" + parts[1] + "#" + parts[3]
+		}
+
 		if len(parts) >= 5 && parts[2] == "actions" && parts[3] == "runs" {
 			label = parts[0] + "/" + parts[1] + " · check run " + parts[4]
 		}

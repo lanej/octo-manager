@@ -14,7 +14,7 @@ import (
 func TestEachTabDeclaresItsWholeResponsiveScreen(t *testing.T) {
 	t.Parallel()
 
-	for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel} {
+	for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
 		m := model(t, theme.Dark)
 		address := "https://github.com/owner/repo/pull/31"
 		m.snapshot.Jobs = []*v1.Job{prJob("run", address)}
@@ -84,7 +84,7 @@ func TestReadOnlyTabsCannotIssueWorkerControls(t *testing.T) {
 	t.Parallel()
 
 	m := model(t, theme.Dark)
-	for _, panel := range []panelView{reviewsPanel, trackingPanel, activityPanel, githubPanel} {
+	for _, panel := range []panelView{reviewsPanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
 		m.panel = panel
 		for _, key := range []string{"p", "c", "r"} {
 			if m.key(tea.KeyPressMsg{Code: rune(key[0]), Text: key}) != nil || m.commandPending {

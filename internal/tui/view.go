@@ -186,6 +186,8 @@ func (m *Model) resizeContent() {
 			return m.trackingContent()
 		case activityPanel:
 			return ""
+		case issuesPanel:
+			return m.issuesContent()
 		case githubPanel:
 			return m.githubContent(inner.Width)
 		default:
@@ -196,7 +198,7 @@ func (m *Model) resizeContent() {
 	rendered := content
 	if m.panel == activityPanel {
 		rendered = m.renderedActivity(max(1, inner.Width))
-	} else if m.panel == trackingPanel || m.panel == githubPanel {
+	} else if m.panel == trackingPanel || m.panel == githubPanel || m.panel == issuesPanel {
 		rendered = m.renderedContent(content, inner.Width, false)
 	} else if m.panel != statePanel {
 		rendered = m.renderedContent(content, inner.Width, true)
@@ -336,6 +338,8 @@ func (m *Model) header() []string {
 	switch m.panel {
 	case activityPanel:
 		identity = "All agent sessions"
+	case issuesPanel:
+		identity = "Issue investigation and remediation"
 	case githubPanel:
 		identity = "GitHub traffic and rate limits"
 	case reviewsPanel, outputPanel, statePanel, trackingPanel:

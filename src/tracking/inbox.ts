@@ -7,6 +7,7 @@ export interface AgentMessage {
   id: string;
   actionId: string;
   submissionId?: string;
+  issueId?: string;
   participantPRId?: string;
   workflowPRId?: string;
   recipientAgentId: string;
@@ -32,7 +33,8 @@ const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
   NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id, ${applicable} AS applicable
   FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
   JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
-const messagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (substr(m.subject_id,1,6)!='ready:' OR EXISTS(SELECT 1 FROM actions a WHERE a.id=substr(m.subject_id,7) AND a.state IN ('open','acknowledged','working'))) AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
+const workflowMessagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (substr(m.subject_id,1,6)!='ready:' OR EXISTS(SELECT 1 FROM actions a WHERE a.id=substr(m.subject_id,7) AND a.state IN ('open','acknowledged','working'))) AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
+const messagesQuery = `SELECT * FROM (SELECT *,NULL AS issue_id FROM (${workflowMessagesQuery}) UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable,issue_id FROM issue_notices)`;
 function decode(row: Record<string, unknown>): AgentMessage {
   return {
     sequence: integer(row["sequence"]),
@@ -46,6 +48,9 @@ function decode(row: Record<string, unknown>): AgentMessage {
       : {}),
     ...(typeof row["workflow_pr_id"] === "string"
       ? { workflowPRId: row["workflow_pr_id"] }
+      : {}),
+    ...(typeof row["issue_id"] === "string"
+      ? { issueId: row["issue_id"] }
       : {}),
     recipientAgentId: text(row["recipient_agent_id"]),
     body: text(row["body"]),
@@ -117,13 +122,15 @@ export class AgentInbox {
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        message.workflowPRId !== undefined
-          ? "UPDATE merge_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
-          : message.participantPRId !== undefined
-            ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
-            : message.submissionId === undefined
-              ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
-              : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
+        message.issueId !== undefined
+          ? "UPDATE issue_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+          : message.workflowPRId !== undefined
+            ? "UPDATE merge_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+            : message.participantPRId !== undefined
+              ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+              : message.submissionId === undefined
+                ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
+                : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);
@@ -140,6 +147,9 @@ export class AgentInbox {
   }
 }
 export function migrateInbox(db: DatabaseSync): void {
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS issue_notices(sequence INTEGER PRIMARY KEY,id TEXT UNIQUE NOT NULL,issue_id TEXT NOT NULL,recipient_agent_id TEXT NOT NULL,body TEXT NOT NULL,created_at_ms INTEGER NOT NULL,acknowledged_at_ms INTEGER,next_check_at_ms INTEGER NOT NULL,applicable INTEGER NOT NULL)",
+  );
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (
     version === 7 ||

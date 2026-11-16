@@ -20,6 +20,7 @@ const (
 	trackingPanel
 	activityPanel
 	githubPanel
+	issuesPanel
 )
 
 type (
