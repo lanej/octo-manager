@@ -23,6 +23,9 @@ export class DigestStore {
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
     );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)",
+    );
   }
   private dispatchId(): string {
     for (let attempt = 0; attempt < 32; attempt++) {
@@ -88,12 +91,26 @@ export class DigestStore {
     if (value === undefined) throw new Error("Digest revision not found");
     return value;
   }
-  events(id: string): DigestEvent[] {
+  hasEvent(id: string, kind: string): boolean {
+    return (
+      this.db
+        .prepare(
+          "SELECT 1 FROM agent_digest_events WHERE digest_id=? AND kind=? LIMIT 1",
+        )
+        .get(id, kind) !== undefined
+    );
+  }
+  events(id: string, kinds?: readonly string[]): DigestEvent[] {
+    if (kinds?.length === 0) return [];
+    const filter =
+      kinds === undefined
+        ? ""
+        : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
     return this.db
       .prepare(
-        "SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events WHERE digest_id=? ORDER BY sequence",
+        `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY digest_events_by_kind WHERE digest_id=?${filter} ORDER BY sequence`,
       )
-      .all(id)
+      .all(id, ...(kinds ?? []))
       .map((row) =>
         digestEvent({
           ...row,

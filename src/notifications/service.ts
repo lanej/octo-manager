@@ -400,9 +400,10 @@ export class DigestService {
       if (terminal(active)) return;
       const versions = this.store.revisions(active.id);
       if (keep === undefined) {
-        const attempted = this.store
-          .events(active.id)
-          .some((event) => event.kind === "queue_enqueue_started");
+        const attempted = this.store.hasEvent(
+          active.id,
+          "queue_enqueue_started",
+        );
         if (attempted) {
           const history = await connection.received(
             agent,
@@ -639,7 +640,11 @@ export class DigestService {
   }
   private withdrawals(id: string): { queueId: string; clientId: string }[] {
     const pending = new Map<string, { queueId: string; clientId: string }>();
-    for (const event of this.store.events(id)) {
+    for (const event of this.store.events(id, [
+      "queue_cancel_started",
+      "queue_cancel_confirmed",
+      "queue_cancel_reconciled",
+    ])) {
       if (
         event.kind !== "queue_cancel_started" &&
         event.kind !== "queue_cancel_confirmed" &&
