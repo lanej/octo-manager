@@ -1,5 +1,6 @@
 import {
   IssueStage,
+  Role,
   type IssueRecord,
   type IssuePolicy,
   type Assignment,
@@ -42,4 +43,27 @@ export function assignmentPrompt(
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+export function assignmentLabel(
+  issue: IssueRecord,
+  role: Role,
+  purpose: Assignment["purpose"],
+): string {
+  const actions: Record<Role, string> = {
+    investigation: "Investigate",
+    implementation: "Implement",
+    verification: "Verify",
+  };
+  const action =
+    purpose === "comments"
+      ? "Assess comments"
+      : purpose === "timeout"
+        ? "Plan"
+        : role === Role.Implementation && issue.stage === IssueStage.Testing
+          ? "Test"
+          : role === Role.Implementation && issue.prUrl !== ""
+            ? "Remediate"
+            : actions[role];
+  return `${action} ${issue.ref.project}#${issue.ref.externalId}: ${issue.title}`;
 }

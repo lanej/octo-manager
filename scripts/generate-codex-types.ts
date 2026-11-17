@@ -41,6 +41,7 @@ try {
     "InitializeResponse.ts",
     "v2/ThreadReadParams.ts",
     "v2/ThreadStartParams.ts",
+    "v2/ThreadSetNameParams.ts",
     "v2/TurnInterruptParams.ts",
     "v2/ThreadResumeParams.ts",
     "v2/TurnStartParams.ts",

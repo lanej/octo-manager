@@ -138,6 +138,7 @@ export interface IssueRecord {
   pollIntervalMs: number;
 }
 export interface Assignment {
+  sessionLabel?: string;
   id: string;
   issueId: string;
   role: Role;

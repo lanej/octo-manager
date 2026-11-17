@@ -22,7 +22,7 @@ import type {
 } from "./ports.js";
 import { IssueStore } from "./store.js";
 import { applyResult, canImplement } from "./decisions.js";
-import { assignmentPrompt } from "./prompts.js";
+import { assignmentPrompt, assignmentLabel } from "./prompts.js";
 export interface IssueOptions {
   trackers: IssueTracker[];
   dispatchers: AgentDispatcher[];
@@ -869,6 +869,7 @@ export class IssueService {
             .at(-1)
         : undefined;
     const assignment: Assignment = {
+      sessionLabel: assignmentLabel(issue, role, purpose),
       id: randomUUID(),
       issueId: issue.id,
       role,

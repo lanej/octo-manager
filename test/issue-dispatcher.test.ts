@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -17,6 +18,10 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
   const http = createServer();
   const sockets = new WebSocketServer({ server: http });
   const methods: string[] = [];
+  const names: string[] = [];
+  let rejectNaming = false;
+  let revokeDuringNaming = false;
+  let authorized = true;
   let turnStatus = "completed";
   sockets.on("connection", (socket) => {
     socket.on("message", (data) => {
@@ -44,7 +49,25 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
           platformOs: "test",
         };
       if (request.method === "thread/start")
-        response = { thread: { id: "stage-session" } };
+        response = { thread: { id: "01234567-89ab-cdef-0123-456789abcdef" } };
+      if (request.method === "thread/name/set") {
+        const params = checked(
+          Type.Object({ threadId: Type.String(), name: Type.String() }),
+          request.params,
+        );
+        expect(params.threadId).toBe("01234567-89ab-cdef-0123-456789abcdef");
+        names.push(params.name);
+        if (revokeDuringNaming) authorized = false;
+        if (rejectNaming) {
+          socket.send(
+            JSON.stringify({
+              id: request.id,
+              error: { code: -32601, message: "Naming unsupported" },
+            }),
+          );
+          return;
+        }
+      }
       if (request.method === "turn/start") {
         expect(
           checked(Type.Object({ cwd: Type.String() }), request.params).cwd,
@@ -82,6 +105,7 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
   try {
     const assignment: Assignment = {
       id: "assignment",
+      sessionLabel: "Investigate owner/repo#42: Fix retries",
       issueId: "issue",
       role: Role.Investigation,
       purpose: "stage",
@@ -115,6 +139,15 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
     );
     assignment.turnId = status.turnId;
     expect(status.state).toBe("running");
+    expect(names).toEqual([
+      "Investigate owner/repo#42: Fix retries · 01234567",
+    ]);
+    expect(methods.indexOf("thread/name/set")).toBeGreaterThan(
+      methods.indexOf("thread/start"),
+    );
+    expect(methods.indexOf("thread/name/set")).toBeLessThan(
+      methods.indexOf("turn/start"),
+    );
     const completed = await dispatcher.inspect(assignment, signal);
     expect(completed.state).toBe("completed");
     expect(completed.result?.disposition).toBe("blocked");
@@ -126,6 +159,39 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
     expect(methods).toContain("turn/interrupt");
     turnStatus = "interrupted";
     expect(await dispatcher.cancel(assignment, signal)).toBe(true);
+    methods.length = 0;
+    assignment.sessionLabel = "Test owner/repo#42: Fix retries";
+    const resumed = await dispatcher.submit(assignment, () => {}, signal);
+    expect(resumed.sessionId).toBe(status.sessionId);
+    expect(methods).toContain("thread/resume");
+    expect(methods).not.toContain("thread/start");
+    expect(names.at(-1)).toBe("Test owner/repo#42: Fix retries · 01234567");
+    rejectNaming = true;
+    methods.length = 0;
+    assignment.sessionLabel = `Verify owner/repo#42: \n\u001b${"🙂".repeat(120)}`;
+    const unnamed = await dispatcher.submit(assignment, () => {}, signal);
+    expect(unnamed.state).toBe("running");
+    expect(unnamed.detail).toContain("Naming unsupported");
+    expect(methods).toContain("turn/start");
+    const boundedName = names.at(-1) ?? "";
+    expect(Array.from(boundedName).length).toBeLessThan(100);
+    expect(boundedName).not.toMatch(/[\p{Cc}\p{Cf}]/u);
+    expect(boundedName.endsWith(" · 01234567")).toBe(true);
+    rejectNaming = false;
+    revokeDuringNaming = true;
+    methods.length = 0;
+    await assert.rejects(
+      dispatcher.submit(
+        assignment,
+        () => {
+          if (!authorized) throw new Error("Authority revoked during rename");
+        },
+        signal,
+      ),
+      /Authority revoked/u,
+    );
+    expect(methods).toContain("thread/name/set");
+    expect(methods).not.toContain("turn/start");
   } finally {
     for (const socket of sockets.clients) socket.terminate();
     await new Promise<void>((resolve) => {

@@ -1,3 +1,4 @@
+import type { ThreadSetNameParams } from "../agents/protocol/v2/ThreadSetNameParams.js";
 import type { ThreadTurnsListParams } from "../agents/protocol/v2/ThreadTurnsListParams.js";
 import type { JsonValue } from "../agents/protocol/serde_json/JsonValue.js";
 import { Type } from "typebox";
@@ -118,6 +119,21 @@ export class CodexDispatcher implements AgentDispatcher {
         const params: ThreadResumeParams = { threadId: sessionId };
         await connection.dispatch("thread/resume", params);
       }
+      let namingDetail = "";
+      const label = assignment.sessionLabel ?? `Issue ${assignment.role}`;
+      const clean = label
+        .replace(/[\p{Cc}\p{Cf}]+/gu, " ")
+        .replace(/\s+/gu, " ")
+        .trim();
+      const characters = Array.from(clean);
+      const name = `${characters.slice(0, 80).join("")}${characters.length > 80 ? "…" : ""} · ${sessionId.slice(0, 8)}`;
+      const naming: ThreadSetNameParams = { threadId: sessionId, name };
+      try {
+        await connection.dispatch("thread/name/set", naming);
+      } catch (error) {
+        // Naming is presentation; a rejected rename must not strand a checkpointed session before dispatch.
+        namingDetail = `; session title unavailable: ${error instanceof Error ? error.message.slice(0, 300) : "rename failed"}`;
+      }
       checkpoint(sessionId);
       signal.throwIfAborted();
       const params: TurnStartParams = {
@@ -154,7 +170,7 @@ export class CodexDispatcher implements AgentDispatcher {
         state: "running",
         sessionId,
         turnId: started.turn.id,
-        detail: "Codex accepted assignment",
+        detail: `Codex accepted assignment${namingDetail}`,
       };
     } finally {
       connection.close();
