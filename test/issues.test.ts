@@ -206,6 +206,12 @@ test("issue steel thread requires brief approval, tests, merge and separate veri
   try {
     await f.service.tick();
     expect(f.assignments[0]?.role).toBe(Role.Investigation);
+    expect(f.assignments[0]?.sessionLabel).toBe(
+      "Investigate project#1: Wrong result",
+    );
+    expect(f.store.assignments(f.enrolled.id)[0]?.sessionLabel).toBe(
+      "Investigate project#1: Wrong result",
+    );
     let issue = await f.complete({
       disposition: "brief",
       summary: "Investigated",
@@ -249,6 +255,9 @@ test("issue steel thread requires brief approval, tests, merge and separate veri
     f.merge();
     await f.service.tick();
     expect(f.assignments.at(-1)?.role).toBe(Role.Verification);
+    expect(f.assignments.at(-1)?.sessionLabel).toBe(
+      "Verify project#1: Wrong result",
+    );
     issue = await f.complete({
       disposition: "verified",
       summary: "Acceptance confirmed",

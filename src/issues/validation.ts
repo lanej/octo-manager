@@ -54,6 +54,7 @@ const issue = Type.Object({
   pollIntervalMs: number,
 });
 const assignment = Type.Object({
+  sessionLabel: Type.Optional(text),
   id: text,
   issueId: text,
   role: Type.Enum(Role),

@@ -225,6 +225,7 @@ export class CodexConnection implements AgentConnection {
   async dispatch(
     method:
       | "thread/start"
+      | "thread/name/set"
       | "thread/read"
       | "thread/turns/list"
       | "thread/resume"

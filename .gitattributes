@@ -1,0 +1,5 @@
+# Collapse generated bindings in GitHub reviews while keeping their diffs available on demand.
+gen/** linguist-generated=true
+src/gen/** linguist-generated=true
+src/agents/protocol/** linguist-generated=true
+proto/octomanager/v2/domain.proto linguist-generated=true

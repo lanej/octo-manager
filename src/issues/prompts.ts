@@ -1,5 +1,6 @@
 import {
   IssueStage,
+  Role,
   type IssueRecord,
   type IssuePolicy,
   type Assignment,
@@ -42,4 +43,38 @@ export function assignmentPrompt(
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+function assignmentAction(
+  issue: IssueRecord,
+  role: Role,
+  purpose: Assignment["purpose"],
+): string {
+  switch (purpose) {
+    case "comments":
+      return "Assess comments";
+    case "timeout":
+      return "Plan";
+    case "stage":
+      break;
+  }
+  switch (role) {
+    case Role.Investigation:
+      return "Investigate";
+    case Role.Implementation:
+      if (issue.stage === IssueStage.Testing) return "Test";
+      if (issue.prUrl !== "") return "Remediate";
+      return "Implement";
+    case Role.Verification:
+      return "Verify";
+  }
+}
+
+export function assignmentLabel(
+  issue: IssueRecord,
+  role: Role,
+  purpose: Assignment["purpose"],
+): string {
+  const action = assignmentAction(issue, role, purpose);
+  return `${action} ${issue.ref.project}#${issue.ref.externalId}: ${issue.title}`;
 }
