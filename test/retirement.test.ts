@@ -15,6 +15,8 @@ import {
   type NotificationPage,
   type NotificationReader,
 } from "../src/tracking/notification-reader.js";
+import { feedbackRevision } from "../src/tracking/feedback.js";
+import { ActionState } from "../src/tracking/types.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 const owner = { harness: "codex", endpoint: "local", sessionId: "owner" };
 const url = "https://github.com/owner/repo/pull/1";
@@ -527,6 +529,162 @@ test("queued manual refresh can revisit archived enrollment without restarting a
     }).toThrow();
   } finally {
     await service.close();
+    await f.close();
+  }
+});
+
+for (const terminal of ["closed", "merged"] as const)
+  test(`${terminal} pending review drains through restart; submitted feedback survives archive without replaying pre-closure actions`, async () => {
+    const f = await fixture();
+    try {
+      const pr = f.store.tracking.track(url, owner);
+      const feedback = (id: string) =>
+        feedbackRevision({
+          source: "inline",
+          id,
+          author: "owner",
+          body: "Extract the install finder into a variable",
+          url: `${url}#discussion_r${id}`,
+          headSha: "a".repeat(40),
+          reviewId: "review",
+        });
+      const before = feedback("1"),
+        after = feedback("2");
+      f.store.tracking.observe(
+        pr.id,
+        {
+          ...observation(f.now),
+          feedback: { state: "complete", value: [before] },
+        },
+        f.config,
+      );
+      const prior = f.store.tracking
+        .actions()
+        .find((action) => action.blocker.kind === "review_feedback");
+      if (prior === undefined)
+        throw new Error("Missing original review action");
+      const pending: ObservationInput = {
+        ...observation(f.now),
+        lifecycle: terminal,
+        reviews: {
+          state: "complete",
+          value: [
+            {
+              id: "review",
+              author: "owner",
+              headSha: "a".repeat(40),
+              state: "PENDING",
+              at: 0,
+              url,
+            },
+          ],
+        },
+        feedback: { state: "complete", value: [before] },
+      };
+      f.store.tracking.observe(pr.id, pending, f.config);
+      const deadline = f.store.tracking.pr(pr.id).drainDeadlineAt;
+      f.store.tracking.observe(pr.id, pending, f.config);
+      expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
+      expect(f.store.tracking.action(prior.id).progress.state).toBe(
+        ActionState.Superseded,
+      );
+      f.reopen();
+      expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
+      expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(deadline);
+      f.advance(1000);
+      const submitted: ObservationInput = {
+        ...pending,
+        observedAt: f.now,
+        reviews: {
+          state: "complete",
+          value: [
+            {
+              id: "review",
+              author: "owner",
+              headSha: "a".repeat(40),
+              state: "COMMENTED",
+              at: f.now,
+              url,
+            },
+          ],
+        },
+        feedback: { state: "complete", value: [before, after] },
+      };
+      f.store.tracking.observe(pr.id, submitted, f.config);
+      expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
+      const late = f.store.tracking
+        .actions()
+        .find(
+          (action) =>
+            action.blocker.kind === "review_feedback" &&
+            action.blocker.feedback.id === "2",
+        );
+      if (late === undefined) throw new Error("Missing late review action");
+      const delivery = f.store.tracking
+        .deliveries()
+        .find((item) => item.actionId === late.id);
+      if (delivery === undefined)
+        throw new Error("Missing late review delivery");
+      f.store.tracking.inbox.record(delivery.id, "Late submitted review");
+      f.store.tracking.observe(pr.id, submitted, f.config);
+      f.reopen();
+      expect(f.store.tracking.action(late.id).progress.state).toBe(
+        ActionState.Open,
+      );
+      expect(f.store.tracking.inbox.get(delivery.id)?.applicable).toBe(true);
+      expect(
+        f.store.tracking
+          .actions()
+          .filter((action) => action.blocker.kind === "review_feedback"),
+      ).toHaveLength(2);
+      expect(
+        f.store.tracking
+          .deliveries()
+          .filter((item) => item.actionId === late.id),
+      ).toHaveLength(1);
+    } finally {
+      await f.close();
+    }
+  });
+
+test("a pending review cannot extend the original drain deadline", async () => {
+  const f = await fixture();
+  try {
+    const pr = f.store.tracking.track(url, owner);
+    const pending: ObservationInput = {
+      ...observation(f.now),
+      lifecycle: "merged",
+      reviews: {
+        state: "complete",
+        value: [
+          {
+            id: "draft",
+            author: "owner",
+            headSha: "a".repeat(40),
+            state: "PENDING",
+            at: 0,
+            url,
+          },
+        ],
+      },
+    };
+    f.store.tracking.observe(pr.id, pending, f.config);
+    const deadline = f.store.tracking.pr(pr.id).drainDeadlineAt;
+    f.advance(86399999);
+    f.store.tracking.observe(
+      pr.id,
+      { ...pending, observedAt: f.now },
+      f.config,
+    );
+    f.reopen();
+    expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
+    expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(deadline);
+    f.advance(1);
+    f.store.tracking.retirement.expire();
+    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(
+      ArchiveReason.Deadline,
+    );
+  } finally {
     await f.close();
   }
 });

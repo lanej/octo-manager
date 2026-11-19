@@ -71,7 +71,7 @@ Acknowledgment output is deliberately smaller than inspection: `record_json` con
 
 PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.
 
-Merged PRs supersede outstanding actions and withdraw their queued notifications; immutable check snapshots, messages and receipts remain available as history. Startup reconciles existing actions against cached merged observations without a GitHub request. Closed, unmerged PRs still deliver final check failures while draining.
+Merged PRs supersede actions opened before merge and withdraw their queued notifications; actionable review feedback first observed after closure creates a separate delivery that remains applicable after archival. Immutable check snapshots, messages and receipts remain available as history. Startup reconciles existing actions against cached merged observations without a GitHub request. Closed, unmerged PRs still deliver final check failures while draining.
 
 
 A frozen revision can contain a validated merge target: PR, owner, tracking epoch, exact head, merge method, action, evidence-context and policy fingerprints. It is included only when the selected members contain one unambiguous owner Ready target. Changing that target creates another immutable dispatch even if the visible summary stays the same. [Receipt merges](receipt-merges.md) preserve separate receipt and merge outcomes; the public ID remains sufficient for either command.

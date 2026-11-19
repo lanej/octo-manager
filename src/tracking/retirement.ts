@@ -1,3 +1,9 @@
+import {
+  PRLifecycle,
+  pendingReview,
+  terminalPR,
+  prLifecycle,
+} from "./states.js";
 import type { DatabaseSync } from "node:sqlite";
 import {
   CheckWatchState,
@@ -140,7 +146,7 @@ export class RetirementStore {
     if (row === undefined) throw new Error("Tracked PR not found");
     const current = lifecycle(row);
     if (current.state === TrackingState.Disabled) return;
-    if (observation.lifecycle === "open") {
+    if (!terminalPR(observation.lifecycle)) {
       if (current.state !== TrackingState.Watching) {
         this.resumeInside(id);
         this.event(
@@ -156,7 +162,7 @@ export class RetirementStore {
       this.set(id, TrackingState.Draining, this.now() + 86400000, null);
       this.event(
         "pr_draining",
-        "PR closed; finishing existing check watches for at most 24 hours",
+        "PR closed; finishing checks and pending reviews for at most 24 hours",
         id,
       );
       return;
@@ -164,6 +170,9 @@ export class RetirementStore {
     if (
       checkEvidence(observation).state === "complete" &&
       observation.reviews.state === "complete" &&
+      !observation.reviews.value.some((review) =>
+        pendingReview(review.state),
+      ) &&
       (observation.feedback === undefined ||
         observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
@@ -187,10 +196,13 @@ export class RetirementStore {
       return;
     const evidence = checkEvidence(observation);
     if (
-      observation.lifecycle === "merged" &&
+      prLifecycle(observation.lifecycle) === PRLifecycle.Merged &&
       evidence.state === "complete" &&
       (evidence.value.length === 0 || checksFinished(evidence)) &&
       observation.reviews.state === "complete" &&
+      !observation.reviews.value.some((review) =>
+        pendingReview(review.state),
+      ) &&
       (observation.feedback === undefined ||
         observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)

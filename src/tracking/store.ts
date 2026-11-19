@@ -1,17 +1,16 @@
+import {
+  SQLiteObservationRepository,
+  type ObservationRepository,
+} from "./observations.js";
+import { PRLifecycle, terminalPR, prLifecycle } from "./states.js";
 import { compact } from "./messages.js";
 import { Subscriptions } from "./subscriptions.js";
 import { RetirementStore, lifecycle, TrackingState } from "./retirement.js";
 import { actionableFeedback } from "./review-signals.js";
 import { resolveId } from "./identifiers.js";
-import {
-  CheckWatches,
-  CheckWatchState,
-  storedCheckEvidence,
-  successfulCheck,
-} from "./checks.js";
+import { CheckWatches, CheckWatchState, successfulCheck } from "./checks.js";
 import { AgentInbox } from "./inbox.js";
-import { storedFeedback } from "./feedback.js";
-import { actionContext, targetBase } from "./evidence.js";
+import { actionContext } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -37,6 +36,7 @@ import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
+  private readonly observations: ObservationRepository;
   readonly subscriptions: Subscriptions;
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
@@ -53,6 +53,7 @@ export class TrackingStore {
     ) => void,
   ) {
     migrateTracking(db);
+    this.observations = new SQLiteObservationRepository(db);
     this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id));
     this.inbox = new AgentInbox(db, now);
     this.checks = new CheckWatches(db, now);
@@ -64,8 +65,11 @@ export class TrackingStore {
       for (const action of this.actions()) {
         if (!unfinished(action)) continue;
         const observation = observations.get(action.prId);
-        if (observation?.lifecycle === "merged") {
-          const progress = closeProgress(action, observation, this.now());
+        if (
+          observation !== undefined &&
+          prLifecycle(observation.lifecycle) === PRLifecycle.Merged
+        ) {
+          const progress = this.closeProgress(action, observation);
           if (progress !== undefined) {
             this.saveAction(
               { ...action, progress, updatedAt: this.now() },
@@ -183,32 +187,14 @@ export class TrackingStore {
       )
       .run(version, this.now(), id);
   }
-  private observation(r: Row): PRObservation {
-    const target = targetBase(r["target_base_json"]);
-    const feedback = storedFeedback(r["feedback_json"]);
-    const workflows = storedCheckEvidence(r["workflow_runs_json"]);
-    return {
-      id: r.id,
-      prId: r.pr_id,
-      observedAt: r.observed_at_ms,
-      headSha: r.head_sha,
-      baseSha: r.base_sha,
-      ...(target === undefined ? {} : { targetBase: target }),
-      ...(typeof r["description"] === "string"
-        ? { description: r["description"] }
-        : {}),
-      lifecycle: r.lifecycle,
-      mergeability: r.mergeability,
-      checks: parse(r.checks_json),
-      reviews: parse(r.reviews_json),
-      ...(feedback === undefined ? {} : { feedback }),
-      ...(workflows === undefined ? {} : { workflows }),
-    };
-  }
   reconcileCachedRetirement(): void {
     this.transaction(() => {
       for (const pr of this.prs())
-        if (pr.enabled && pr.observation?.lifecycle === "merged")
+        if (
+          pr.enabled &&
+          pr.observation !== undefined &&
+          prLifecycle(pr.observation.lifecycle) === PRLifecycle.Merged
+        )
           this.retirement.cachedMergedInside(pr.id, pr.observation);
     });
   }
@@ -217,11 +203,7 @@ export class TrackingStore {
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
       .all()
       .map((r: Row) => {
-        const o = this.db
-          .prepare(
-            "SELECT * FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
-          )
-          .get(r.id);
+        const observation = this.observations.latest(String(r["id"]));
         return {
           id: r.id,
           url: r.url,
@@ -239,7 +221,7 @@ export class TrackingStore {
                   message: r.last_refresh_error,
                 },
               }),
-          ...(o ? { observation: this.observation(o) } : {}),
+          ...(observation === undefined ? {} : { observation }),
         };
       });
   }
@@ -601,35 +583,7 @@ export class TrackingStore {
         (expectedEpoch !== undefined && p.trackingEpoch !== expectedEpoch)
       )
         return p;
-      const result = this.db
-        .prepare(
-          "INSERT INTO pr_observations(pr_id,observed_at_ms,head_sha,base_sha,lifecycle,mergeability,checks_state,checks_json,reviews_state,reviews_json,target_base_json,feedback_json,workflow_runs_json,description) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        )
-        .run(
-          p.id,
-          input.observedAt,
-          input.headSha,
-          input.baseSha,
-          input.lifecycle,
-          input.mergeability,
-          input.checks.state,
-          JSON.stringify(input.checks),
-          input.reviews.state,
-          JSON.stringify(input.reviews),
-          input.targetBase === undefined
-            ? null
-            : JSON.stringify(input.targetBase),
-          input.feedback === undefined ? null : JSON.stringify(input.feedback),
-          input.workflows === undefined
-            ? null
-            : JSON.stringify(input.workflows),
-          input.description ?? null,
-        );
-      const o: PRObservation = {
-        ...input,
-        id: Number(result.lastInsertRowid),
-        prId: p.id,
-      };
+      const o = this.observations.append(p.id, input);
       this.db
         .prepare(
           "UPDATE tracked_prs SET last_refresh_error=NULL,last_refresh_error_at_ms=NULL,updated_at_ms=? WHERE id=?",
@@ -639,7 +593,7 @@ export class TrackingStore {
       for (const a of this.actions().filter(
         (a) => a.prId === p.id && unfinished(a),
       )) {
-        const progress = closeProgress(a, o, this.now());
+        const progress = this.closeProgress(a, o);
         if (progress) {
           this.saveAction(
             { ...a, progress, updatedAt: this.now() },
@@ -653,7 +607,7 @@ export class TrackingStore {
         .observe(
           o,
           p.state === TrackingState.Archived ||
-            (p.state === TrackingState.Draining && o.lifecycle === "open"),
+            (p.state === TrackingState.Draining && !terminalPR(o.lifecycle)),
         )
         .flatMap((watch) => {
           const checks =
@@ -698,10 +652,10 @@ export class TrackingStore {
               }),
           );
           if (
-            o.lifecycle === "merged" ||
+            prLifecycle(o.lifecycle) === PRLifecycle.Merged ||
             watch.state !== CheckWatchState.Completed ||
             (unreported.length === 0 &&
-              (failures.length > 0 || o.lifecycle !== "open"))
+              (failures.length > 0 || terminalPR(o.lifecycle)))
           )
             return [];
           return [
@@ -759,6 +713,13 @@ export class TrackingStore {
       return this.pr(p.id);
     });
   }
+  private closeProgress(action: Action, observation: PRObservation) {
+    const openedOnTerminalPR =
+      action.blocker.kind === "review_feedback" &&
+      terminalPR(this.observations.lifecycle(action.openedObservationId));
+    return closeProgress(action, observation, this.now(), openedOnTerminalPR);
+  }
+
   refreshError(id: string, message: string): void {
     this.transaction(() => {
       const p = this.pr(id);

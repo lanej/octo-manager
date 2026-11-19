@@ -8,7 +8,13 @@ import {
   type PRObservation,
   type TrackedPR,
 } from "../tracking/types.js";
-import { checkGate, feedbackKey, fingerprint, graphKey } from "./policy.js";
+import {
+  checkGate,
+  feedbackKey,
+  fingerprint,
+  graphKey,
+  reviewGate,
+} from "./policy.js";
 import { currentMergeChecks } from "./checks.js";
 import {
   ChainState,
@@ -100,6 +106,9 @@ export class ReceiptMerges {
             entry.noCi,
             entry.autoMerge,
             entry.state,
+            entry.ready?.source,
+            entry.ready?.head,
+            entry.ready?.feedback,
             this.store.chain(entry.chainId).state,
             this.store.busy(pr.id),
           ],
@@ -116,14 +125,16 @@ export class ReceiptMerges {
       prId === undefined
         ? undefined
         : this.store.agentInstructions(prId, message.recipientAgentId);
+    const readiness = this.readinessPresentation(message);
     const instructions = [
+      readiness.instructions,
       this.repositoryInstructions?.(message),
       taskInstructions,
     ]
       .filter((value) => value !== undefined && value !== "")
       .join("\n");
     return {
-      ...this.readinessPresentation(message),
+      ...readiness,
       ...(instructions === "" ? {} : { instructions }),
     };
   };
@@ -155,6 +166,11 @@ export class ReceiptMerges {
         }
       : {
           summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${publicReason(cached.reason)}`,
+          ...(cached.reason === "Review feedback requires owner assessment"
+            ? {
+                instructions: `Review and address current feedback or record its accepted disposition, then attest with \`octo-manager pr ready ${pr.url} --head ${pr.observation.headSha}\`.`,
+              }
+            : {}),
         };
   }
   async refresh(): Promise<void> {
@@ -268,14 +284,18 @@ export class ReceiptMerges {
             .entries()
             .find((e) => e.prId === pr.id && !terminal(e.state));
           target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
-          const policy = existing ?? {
+          const assessment = this.store.ownerAssessment(fresh);
+          const policy = {
             method: target.method,
-            checks: [
+            checks: existing?.checks ?? [
               ...new Set(
-                currentMergeChecks(snapshot.observation).map((c) => c.name),
+                currentMergeChecks(snapshot.observation).map(
+                  (check) => check.name,
+                ),
               ),
             ],
-            noCi: false,
+            noCi: existing?.noCi ?? false,
+            ...(assessment === undefined ? {} : { ready: assessment }),
           };
           reason =
             receiptContext(this.store, fresh) !== context ||
@@ -411,6 +431,10 @@ export class ReceiptMerges {
         pr: pr.url,
         reason: "PR changed since this notice; inspect the current revision",
       };
+    const assessment = this.store.ownerAssessment(pr);
+    const review = reviewGate(pr.observation, assessment);
+    if (review !== undefined)
+      return { state: "blocked", pr: pr.url, reason: review };
     if (this.store.noticeReadiness(pr.id)?.inspectionError !== undefined)
       return {
         state: "blocked",

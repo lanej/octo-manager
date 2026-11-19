@@ -1,3 +1,5 @@
+import { feedbackRevision } from "../src/tracking/feedback.js";
+import { ReviewState } from "../src/tracking/states.js";
 import { unwire } from "../src/api/codec.js";
 import {
   DomainMergeReceiptResultSchema,
@@ -15,7 +17,10 @@ import { schedulerClient } from "../src/client.js";
 import { codexHook } from "../src/integrations/codex.js";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
 import type { MergeProvider, MergeSnapshot } from "../src/merging/github.js";
-import { EntryState } from "../src/merging/contracts.js";
+import {
+  EntryState,
+  ReviewAssessmentSource,
+} from "../src/merging/contracts.js";
 import { references } from "../src/merging/policy.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { agentMessage } from "../src/tracking/messages.js";
@@ -1161,5 +1166,222 @@ test("a squash receipt cannot authorize a replacement rebase chain for the same 
     expect(f.writes).toBe(0);
   } finally {
     await f.close();
+  }
+});
+
+function reviewFeedback(body = "Please introduce a persistence repository") {
+  return feedbackRevision({
+    source: "inline",
+    id: "review-comment",
+    author: "reviewer",
+    body,
+    url: `${url}#discussion_r123`,
+    headSha: head,
+    reviewId: "review",
+  });
+}
+async function ownerAssessment(f: Awaited<ReturnType<typeof fixture>>) {
+  const child = Bun.spawn(
+    [
+      process.execPath,
+      resolve("src/cli.ts"),
+      "pr",
+      "ready",
+      url,
+      "--head",
+      head,
+      "--agent-id",
+      f.pr.ownerAgentId,
+      "--state",
+      f.directory,
+      "--json",
+    ],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  const [code, output, error] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
+  expect(code, output + error).toBe(0);
+}
+async function refreshedReceipt(f: Awaited<ReturnType<typeof fixture>>) {
+  await f.coordinator.merging.receipts.refresh();
+  await f.coordinator.digests.flush();
+  const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+  if (digest === undefined) throw new Error("Missing current readiness digest");
+  const body = f.coordinator.store.digests.version(
+    digest.id,
+    digest.revision,
+  ).body;
+  const id = messageReceiptId(body);
+  if (id === undefined) throw new Error("Missing current readiness command");
+  return { id, body };
+}
+test("pending provider reviews withdraw Ready, reject old receipts and cannot be assessed", async () => {
+  const f = await fixture();
+  try {
+    f.current.observation.reviews = {
+      state: "complete",
+      value: [
+        {
+          id: "draft",
+          author: "reviewer",
+          state: ReviewState.Pending,
+          headSha: head,
+          at: 0,
+          url,
+        },
+      ],
+    };
+    f.observe();
+    expect((await f.merge()).resultText).toContain('"blocked"');
+    expect(() =>
+      f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head),
+    ).toThrow("pending review");
+    await f.coordinator.merging.receipts.refresh();
+    await f.coordinator.digests.flush();
+    expect(
+      f.coordinator.store.digests.active(f.pr.ownerAgentId),
+    ).toBeUndefined();
+    expect(f.coordinator.store.merging.entries()).toHaveLength(0);
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+test("delivery receipt and working state cannot authorize feedback; explicit CLI assessment works with auto-merge off", async () => {
+  const f = await fixture();
+  try {
+    f.current.observation.feedback = {
+      state: "complete",
+      value: [reviewFeedback()],
+    };
+    f.observe();
+    expect((await f.merge()).resultText).toContain('"blocked"');
+    const action = f.coordinator.store.tracking
+      .actions()
+      .find((item) => item.blocker.kind === "review_feedback");
+    if (action === undefined) throw new Error("Missing actionable review");
+    const delivery = f.coordinator.store.tracking
+      .deliveries()
+      .find((item) => item.actionId === action.id);
+    if (delivery === undefined) throw new Error("Missing review delivery");
+    f.coordinator.store.tracking.inbox.record(delivery.id, "Actionable review");
+    f.coordinator.store.tracking.acknowledgeMessage(
+      delivery.id,
+      f.pr.ownerAgentId,
+    );
+    f.coordinator.store.tracking.progress(action.id, f.pr.ownerAgentId, false);
+    f.coordinator.store.tracking.progress(action.id, f.pr.ownerAgentId, true);
+    const blocked = await refreshedReceipt(f);
+    expect(blocked.body).toContain("Review feedback requires owner assessment");
+    expect(blocked.body).not.toContain("octo-manager merge");
+    expect(blocked.body).toContain(
+      `octo-manager pr ready ${url} --head ${head}`,
+    );
+    expect(f.coordinator.store.merging.entries()).toHaveLength(0);
+    await ownerAssessment(f);
+    const assessed = f.coordinator.store.merging.entry(url);
+    expect(assessed.autoMerge).toBe(false);
+    expect(assessed.ready?.source).toBe(ReviewAssessmentSource.Owner);
+    await f.coordinator.merging.tick();
+    expect(f.writes).toBe(0);
+    await f.reopen();
+    const ready = await refreshedReceipt(f);
+    expect(ready.body).toContain("· Ready");
+    expect(ready.body).toContain("octo-manager merge");
+    const result = await schedulerClient(f.directory).mergeAgentMessage({
+      receiptId: ready.id,
+      agentTarget: owner,
+    });
+    expect(result.result).toBeDefined();
+    expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(
+      ReviewAssessmentSource.Owner,
+    );
+    expect(f.coordinator.store.merging.entry(url).autoMerge).toBe(false);
+    await f.coordinator.merging.tick();
+    expect(f.writes).toBe(1);
+  } finally {
+    await f.close();
+  }
+});
+test("edited feedback invalidates owner assessment and its previous Ready receipt", async () => {
+  const f = await fixture();
+  try {
+    f.current.observation.feedback = {
+      state: "complete",
+      value: [reviewFeedback()],
+    };
+    f.observe();
+    await ownerAssessment(f);
+    const ready = await refreshedReceipt(f);
+    expect(ready.body).toContain("octo-manager merge");
+    f.current.observation.feedback = {
+      state: "complete",
+      value: [reviewFeedback("Also validate the persisted review states")],
+    };
+    f.observe();
+    const response = await schedulerClient(f.directory).mergeAgentMessage({
+      receiptId: ready.id,
+      agentTarget: owner,
+    });
+    assert(response.result !== undefined);
+    expect(
+      JSON.stringify(unwire(DomainMergeReceiptResultSchema, response.result)),
+    ).toContain('"blocked"');
+    expect(
+      f.coordinator.store.merging.ownerAssessment(
+        f.coordinator.store.tracking.pr(f.pr.id),
+      ),
+    ).toBeUndefined();
+    expect((await refreshedReceipt(f)).body).toContain(
+      "Review feedback requires owner assessment",
+    );
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+test("fresh review evidence blocks a queued receipt before merge and cannot be auto-assessed", async () => {
+  for (const evidence of ["pending", "submitted"] as const) {
+    const f = await fixture();
+    try {
+      await f.merge();
+      expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(
+        ReviewAssessmentSource.Receipt,
+      );
+      if (evidence === "pending")
+        f.current.observation.reviews = {
+          state: "complete",
+          value: [
+            {
+              id: "draft",
+              author: "reviewer",
+              state: ReviewState.Pending,
+              headSha: head,
+              at: 0,
+              url,
+            },
+          ],
+        };
+      else
+        f.current.observation.feedback = {
+          state: "complete",
+          value: [reviewFeedback()],
+        };
+      await f.coordinator.merging.tick();
+      expect(f.writes).toBe(0);
+      expect(f.coordinator.store.merging.entry(url).state).not.toBe(
+        EntryState.Merged,
+      );
+      expect(
+        f.coordinator.store.merging.ownerAssessment(
+          f.coordinator.store.tracking.pr(f.pr.id),
+        ),
+      ).toBeUndefined();
+    } finally {
+      await f.close();
+    }
   }
 });

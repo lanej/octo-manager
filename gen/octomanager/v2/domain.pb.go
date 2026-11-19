@@ -1101,6 +1101,55 @@ func (DomainMergeEntryState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{21}
 }
 
+type DomainMergeEntryReadySource int32
+
+const (
+	DomainMergeEntryReadySource_DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED DomainMergeEntryReadySource = 0
+	DomainMergeEntryReadySource_DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER       DomainMergeEntryReadySource = 1
+	DomainMergeEntryReadySource_DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT     DomainMergeEntryReadySource = 2
+)
+
+// Enum value maps for DomainMergeEntryReadySource.
+var (
+	DomainMergeEntryReadySource_name = map[int32]string{
+		0: "DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED",
+		1: "DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER",
+		2: "DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT",
+	}
+	DomainMergeEntryReadySource_value = map[string]int32{
+		"DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED": 0,
+		"DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER":       1,
+		"DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT":     2,
+	}
+)
+
+func (x DomainMergeEntryReadySource) Enum() *DomainMergeEntryReadySource {
+	p := new(DomainMergeEntryReadySource)
+	*p = x
+	return p
+}
+
+func (x DomainMergeEntryReadySource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DomainMergeEntryReadySource) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_domain_proto_enumTypes[22].Descriptor()
+}
+
+func (DomainMergeEntryReadySource) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_domain_proto_enumTypes[22]
+}
+
+func (x DomainMergeEntryReadySource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DomainMergeEntryReadySource.Descriptor instead.
+func (DomainMergeEntryReadySource) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{22}
+}
+
 type DomainRepositoryAutomationPolicyStatus int32
 
 const (
@@ -1137,11 +1186,11 @@ func (x DomainRepositoryAutomationPolicyStatus) String() string {
 }
 
 func (DomainRepositoryAutomationPolicyStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[22].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[23].Descriptor()
 }
 
 func (DomainRepositoryAutomationPolicyStatus) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[22]
+	return &file_octomanager_v2_domain_proto_enumTypes[23]
 }
 
 func (x DomainRepositoryAutomationPolicyStatus) Number() protoreflect.EnumNumber {
@@ -1150,7 +1199,7 @@ func (x DomainRepositoryAutomationPolicyStatus) Number() protoreflect.EnumNumber
 
 // Deprecated: Use DomainRepositoryAutomationPolicyStatus.Descriptor instead.
 func (DomainRepositoryAutomationPolicyStatus) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{22}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{23}
 }
 
 type DomainRepositoryAutomationPolicyStage int32
@@ -1192,11 +1241,11 @@ func (x DomainRepositoryAutomationPolicyStage) String() string {
 }
 
 func (DomainRepositoryAutomationPolicyStage) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[23].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[24].Descriptor()
 }
 
 func (DomainRepositoryAutomationPolicyStage) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[23]
+	return &file_octomanager_v2_domain_proto_enumTypes[24]
 }
 
 func (x DomainRepositoryAutomationPolicyStage) Number() protoreflect.EnumNumber {
@@ -1205,7 +1254,7 @@ func (x DomainRepositoryAutomationPolicyStage) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use DomainRepositoryAutomationPolicyStage.Descriptor instead.
 func (DomainRepositoryAutomationPolicyStage) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{23}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{24}
 }
 
 type DomainMergeOperationKind int32
@@ -1241,11 +1290,11 @@ func (x DomainMergeOperationKind) String() string {
 }
 
 func (DomainMergeOperationKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[24].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[25].Descriptor()
 }
 
 func (DomainMergeOperationKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[24]
+	return &file_octomanager_v2_domain_proto_enumTypes[25]
 }
 
 func (x DomainMergeOperationKind) Number() protoreflect.EnumNumber {
@@ -1254,7 +1303,7 @@ func (x DomainMergeOperationKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOperationKind.Descriptor instead.
 func (DomainMergeOperationKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{24}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{25}
 }
 
 type DomainMergeOperationState int32
@@ -1299,11 +1348,11 @@ func (x DomainMergeOperationState) String() string {
 }
 
 func (DomainMergeOperationState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[25].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[26].Descriptor()
 }
 
 func (DomainMergeOperationState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[25]
+	return &file_octomanager_v2_domain_proto_enumTypes[26]
 }
 
 func (x DomainMergeOperationState) Number() protoreflect.EnumNumber {
@@ -1312,7 +1361,7 @@ func (x DomainMergeOperationState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOperationState.Descriptor instead.
 func (DomainMergeOperationState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{25}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{26}
 }
 
 type DomainMergeOperationPhase int32
@@ -1351,11 +1400,11 @@ func (x DomainMergeOperationPhase) String() string {
 }
 
 func (DomainMergeOperationPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[26].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[27].Descriptor()
 }
 
 func (DomainMergeOperationPhase) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[26]
+	return &file_octomanager_v2_domain_proto_enumTypes[27]
 }
 
 func (x DomainMergeOperationPhase) Number() protoreflect.EnumNumber {
@@ -1364,7 +1413,7 @@ func (x DomainMergeOperationPhase) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOperationPhase.Descriptor instead.
 func (DomainMergeOperationPhase) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{26}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{27}
 }
 
 type DomainMergeOperationPreparationKind int32
@@ -1400,11 +1449,11 @@ func (x DomainMergeOperationPreparationKind) String() string {
 }
 
 func (DomainMergeOperationPreparationKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[27].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[28].Descriptor()
 }
 
 func (DomainMergeOperationPreparationKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[27]
+	return &file_octomanager_v2_domain_proto_enumTypes[28]
 }
 
 func (x DomainMergeOperationPreparationKind) Number() protoreflect.EnumNumber {
@@ -1413,7 +1462,7 @@ func (x DomainMergeOperationPreparationKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOperationPreparationKind.Descriptor instead.
 func (DomainMergeOperationPreparationKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{27}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{28}
 }
 
 type DomainDependencyPreparationKind int32
@@ -1449,11 +1498,11 @@ func (x DomainDependencyPreparationKind) String() string {
 }
 
 func (DomainDependencyPreparationKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[28].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[29].Descriptor()
 }
 
 func (DomainDependencyPreparationKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[28]
+	return &file_octomanager_v2_domain_proto_enumTypes[29]
 }
 
 func (x DomainDependencyPreparationKind) Number() protoreflect.EnumNumber {
@@ -1462,7 +1511,7 @@ func (x DomainDependencyPreparationKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainDependencyPreparationKind.Descriptor instead.
 func (DomainDependencyPreparationKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{28}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{29}
 }
 
 type DomainPRReferenceTargetKind int32
@@ -1498,11 +1547,11 @@ func (x DomainPRReferenceTargetKind) String() string {
 }
 
 func (DomainPRReferenceTargetKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[29].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[30].Descriptor()
 }
 
 func (DomainPRReferenceTargetKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[29]
+	return &file_octomanager_v2_domain_proto_enumTypes[30]
 }
 
 func (x DomainPRReferenceTargetKind) Number() protoreflect.EnumNumber {
@@ -1511,7 +1560,7 @@ func (x DomainPRReferenceTargetKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainPRReferenceTargetKind.Descriptor instead.
 func (DomainPRReferenceTargetKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{29}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{30}
 }
 
 type DomainPRReferenceHint int32
@@ -1547,11 +1596,11 @@ func (x DomainPRReferenceHint) String() string {
 }
 
 func (DomainPRReferenceHint) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[30].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[31].Descriptor()
 }
 
 func (DomainPRReferenceHint) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[30]
+	return &file_octomanager_v2_domain_proto_enumTypes[31]
 }
 
 func (x DomainPRReferenceHint) Number() protoreflect.EnumNumber {
@@ -1560,7 +1609,7 @@ func (x DomainPRReferenceHint) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainPRReferenceHint.Descriptor instead.
 func (DomainPRReferenceHint) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{30}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{31}
 }
 
 type DomainPRReferenceDecision int32
@@ -1602,11 +1651,11 @@ func (x DomainPRReferenceDecision) String() string {
 }
 
 func (DomainPRReferenceDecision) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[31].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[32].Descriptor()
 }
 
 func (DomainPRReferenceDecision) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[31]
+	return &file_octomanager_v2_domain_proto_enumTypes[32]
 }
 
 func (x DomainPRReferenceDecision) Number() protoreflect.EnumNumber {
@@ -1615,7 +1664,7 @@ func (x DomainPRReferenceDecision) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainPRReferenceDecision.Descriptor instead.
 func (DomainPRReferenceDecision) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{31}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{32}
 }
 
 type DomainQueueInputEntriesItemMethod int32
@@ -1654,11 +1703,11 @@ func (x DomainQueueInputEntriesItemMethod) String() string {
 }
 
 func (DomainQueueInputEntriesItemMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[32].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[33].Descriptor()
 }
 
 func (DomainQueueInputEntriesItemMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[32]
+	return &file_octomanager_v2_domain_proto_enumTypes[33]
 }
 
 func (x DomainQueueInputEntriesItemMethod) Number() protoreflect.EnumNumber {
@@ -1667,7 +1716,7 @@ func (x DomainQueueInputEntriesItemMethod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainQueueInputEntriesItemMethod.Descriptor instead.
 func (DomainQueueInputEntriesItemMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{32}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{33}
 }
 
 type DomainReceiptTargetMethod int32
@@ -1706,11 +1755,11 @@ func (x DomainReceiptTargetMethod) String() string {
 }
 
 func (DomainReceiptTargetMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[33].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[34].Descriptor()
 }
 
 func (DomainReceiptTargetMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[33]
+	return &file_octomanager_v2_domain_proto_enumTypes[34]
 }
 
 func (x DomainReceiptTargetMethod) Number() protoreflect.EnumNumber {
@@ -1719,7 +1768,7 @@ func (x DomainReceiptTargetMethod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainReceiptTargetMethod.Descriptor instead.
 func (DomainReceiptTargetMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{33}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{34}
 }
 
 type DomainAgentDigestTransportKind int32
@@ -1752,11 +1801,11 @@ func (x DomainAgentDigestTransportKind) String() string {
 }
 
 func (DomainAgentDigestTransportKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[34].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[35].Descriptor()
 }
 
 func (DomainAgentDigestTransportKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[34]
+	return &file_octomanager_v2_domain_proto_enumTypes[35]
 }
 
 func (x DomainAgentDigestTransportKind) Number() protoreflect.EnumNumber {
@@ -1765,7 +1814,7 @@ func (x DomainAgentDigestTransportKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainAgentDigestTransportKind.Descriptor instead.
 func (DomainAgentDigestTransportKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{34}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{35}
 }
 
 type DomainAgentDigestState int32
@@ -1819,11 +1868,11 @@ func (x DomainAgentDigestState) String() string {
 }
 
 func (DomainAgentDigestState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[35].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[36].Descriptor()
 }
 
 func (DomainAgentDigestState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[35]
+	return &file_octomanager_v2_domain_proto_enumTypes[36]
 }
 
 func (x DomainAgentDigestState) Number() protoreflect.EnumNumber {
@@ -1832,7 +1881,7 @@ func (x DomainAgentDigestState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainAgentDigestState.Descriptor instead.
 func (DomainAgentDigestState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{35}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{36}
 }
 
 type DomainDigestRevisionMergeTargetMethod int32
@@ -1871,11 +1920,11 @@ func (x DomainDigestRevisionMergeTargetMethod) String() string {
 }
 
 func (DomainDigestRevisionMergeTargetMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[36].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[37].Descriptor()
 }
 
 func (DomainDigestRevisionMergeTargetMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[36]
+	return &file_octomanager_v2_domain_proto_enumTypes[37]
 }
 
 func (x DomainDigestRevisionMergeTargetMethod) Number() protoreflect.EnumNumber {
@@ -1884,7 +1933,7 @@ func (x DomainDigestRevisionMergeTargetMethod) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use DomainDigestRevisionMergeTargetMethod.Descriptor instead.
 func (DomainDigestRevisionMergeTargetMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{36}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{37}
 }
 
 type DomainDigestInspectionDigestTransportKind int32
@@ -1917,11 +1966,11 @@ func (x DomainDigestInspectionDigestTransportKind) String() string {
 }
 
 func (DomainDigestInspectionDigestTransportKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[37].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[38].Descriptor()
 }
 
 func (DomainDigestInspectionDigestTransportKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[37]
+	return &file_octomanager_v2_domain_proto_enumTypes[38]
 }
 
 func (x DomainDigestInspectionDigestTransportKind) Number() protoreflect.EnumNumber {
@@ -1930,7 +1979,7 @@ func (x DomainDigestInspectionDigestTransportKind) Number() protoreflect.EnumNum
 
 // Deprecated: Use DomainDigestInspectionDigestTransportKind.Descriptor instead.
 func (DomainDigestInspectionDigestTransportKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{37}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{38}
 }
 
 type DomainDigestInspectionDigestState int32
@@ -1984,11 +2033,11 @@ func (x DomainDigestInspectionDigestState) String() string {
 }
 
 func (DomainDigestInspectionDigestState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[38].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[39].Descriptor()
 }
 
 func (DomainDigestInspectionDigestState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[38]
+	return &file_octomanager_v2_domain_proto_enumTypes[39]
 }
 
 func (x DomainDigestInspectionDigestState) Number() protoreflect.EnumNumber {
@@ -1997,7 +2046,7 @@ func (x DomainDigestInspectionDigestState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainDigestInspectionDigestState.Descriptor instead.
 func (DomainDigestInspectionDigestState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{38}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{39}
 }
 
 type DomainDigestInspectionRevisionMergeTargetMethod int32
@@ -2036,11 +2085,11 @@ func (x DomainDigestInspectionRevisionMergeTargetMethod) String() string {
 }
 
 func (DomainDigestInspectionRevisionMergeTargetMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[39].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[40].Descriptor()
 }
 
 func (DomainDigestInspectionRevisionMergeTargetMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[39]
+	return &file_octomanager_v2_domain_proto_enumTypes[40]
 }
 
 func (x DomainDigestInspectionRevisionMergeTargetMethod) Number() protoreflect.EnumNumber {
@@ -2049,7 +2098,7 @@ func (x DomainDigestInspectionRevisionMergeTargetMethod) Number() protoreflect.E
 
 // Deprecated: Use DomainDigestInspectionRevisionMergeTargetMethod.Descriptor instead.
 func (DomainDigestInspectionRevisionMergeTargetMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{39}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{40}
 }
 
 type DomainMergeReceiptResultState int32
@@ -2112,11 +2161,11 @@ func (x DomainMergeReceiptResultState) String() string {
 }
 
 func (DomainMergeReceiptResultState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[40].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[41].Descriptor()
 }
 
 func (DomainMergeReceiptResultState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[40]
+	return &file_octomanager_v2_domain_proto_enumTypes[41]
 }
 
 func (x DomainMergeReceiptResultState) Number() protoreflect.EnumNumber {
@@ -2125,7 +2174,7 @@ func (x DomainMergeReceiptResultState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeReceiptResultState.Descriptor instead.
 func (DomainMergeReceiptResultState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{40}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{41}
 }
 
 type DomainMergeOverviewChainsItemState int32
@@ -2167,11 +2216,11 @@ func (x DomainMergeOverviewChainsItemState) String() string {
 }
 
 func (DomainMergeOverviewChainsItemState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[41].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[42].Descriptor()
 }
 
 func (DomainMergeOverviewChainsItemState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[41]
+	return &file_octomanager_v2_domain_proto_enumTypes[42]
 }
 
 func (x DomainMergeOverviewChainsItemState) Number() protoreflect.EnumNumber {
@@ -2180,7 +2229,7 @@ func (x DomainMergeOverviewChainsItemState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOverviewChainsItemState.Descriptor instead.
 func (DomainMergeOverviewChainsItemState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{41}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{42}
 }
 
 type DomainMergeOverviewEntriesItemAutoMergeSource int32
@@ -2216,11 +2265,11 @@ func (x DomainMergeOverviewEntriesItemAutoMergeSource) String() string {
 }
 
 func (DomainMergeOverviewEntriesItemAutoMergeSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[42].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[43].Descriptor()
 }
 
 func (DomainMergeOverviewEntriesItemAutoMergeSource) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[42]
+	return &file_octomanager_v2_domain_proto_enumTypes[43]
 }
 
 func (x DomainMergeOverviewEntriesItemAutoMergeSource) Number() protoreflect.EnumNumber {
@@ -2229,7 +2278,7 @@ func (x DomainMergeOverviewEntriesItemAutoMergeSource) Number() protoreflect.Enu
 
 // Deprecated: Use DomainMergeOverviewEntriesItemAutoMergeSource.Descriptor instead.
 func (DomainMergeOverviewEntriesItemAutoMergeSource) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{42}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{43}
 }
 
 type DomainMergeOverviewEntriesItemMethod int32
@@ -2268,11 +2317,11 @@ func (x DomainMergeOverviewEntriesItemMethod) String() string {
 }
 
 func (DomainMergeOverviewEntriesItemMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[43].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[44].Descriptor()
 }
 
 func (DomainMergeOverviewEntriesItemMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[43]
+	return &file_octomanager_v2_domain_proto_enumTypes[44]
 }
 
 func (x DomainMergeOverviewEntriesItemMethod) Number() protoreflect.EnumNumber {
@@ -2281,7 +2330,7 @@ func (x DomainMergeOverviewEntriesItemMethod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOverviewEntriesItemMethod.Descriptor instead.
 func (DomainMergeOverviewEntriesItemMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{43}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{44}
 }
 
 type DomainMergeOverviewEntriesItemState int32
@@ -2341,11 +2390,11 @@ func (x DomainMergeOverviewEntriesItemState) String() string {
 }
 
 func (DomainMergeOverviewEntriesItemState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[44].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[45].Descriptor()
 }
 
 func (DomainMergeOverviewEntriesItemState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[44]
+	return &file_octomanager_v2_domain_proto_enumTypes[45]
 }
 
 func (x DomainMergeOverviewEntriesItemState) Number() protoreflect.EnumNumber {
@@ -2354,7 +2403,56 @@ func (x DomainMergeOverviewEntriesItemState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainMergeOverviewEntriesItemState.Descriptor instead.
 func (DomainMergeOverviewEntriesItemState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{44}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{45}
+}
+
+type DomainMergeOverviewEntriesItemReadySource int32
+
+const (
+	DomainMergeOverviewEntriesItemReadySource_DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED DomainMergeOverviewEntriesItemReadySource = 0
+	DomainMergeOverviewEntriesItemReadySource_DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER       DomainMergeOverviewEntriesItemReadySource = 1
+	DomainMergeOverviewEntriesItemReadySource_DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT     DomainMergeOverviewEntriesItemReadySource = 2
+)
+
+// Enum value maps for DomainMergeOverviewEntriesItemReadySource.
+var (
+	DomainMergeOverviewEntriesItemReadySource_name = map[int32]string{
+		0: "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED",
+		1: "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER",
+		2: "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT",
+	}
+	DomainMergeOverviewEntriesItemReadySource_value = map[string]int32{
+		"DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED": 0,
+		"DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER":       1,
+		"DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT":     2,
+	}
+)
+
+func (x DomainMergeOverviewEntriesItemReadySource) Enum() *DomainMergeOverviewEntriesItemReadySource {
+	p := new(DomainMergeOverviewEntriesItemReadySource)
+	*p = x
+	return p
+}
+
+func (x DomainMergeOverviewEntriesItemReadySource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DomainMergeOverviewEntriesItemReadySource) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_domain_proto_enumTypes[46].Descriptor()
+}
+
+func (DomainMergeOverviewEntriesItemReadySource) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_domain_proto_enumTypes[46]
+}
+
+func (x DomainMergeOverviewEntriesItemReadySource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DomainMergeOverviewEntriesItemReadySource.Descriptor instead.
+func (DomainMergeOverviewEntriesItemReadySource) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{46}
 }
 
 type DomainMergeOverviewOperationsItemKind int32
@@ -2390,11 +2488,11 @@ func (x DomainMergeOverviewOperationsItemKind) String() string {
 }
 
 func (DomainMergeOverviewOperationsItemKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[45].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[47].Descriptor()
 }
 
 func (DomainMergeOverviewOperationsItemKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[45]
+	return &file_octomanager_v2_domain_proto_enumTypes[47]
 }
 
 func (x DomainMergeOverviewOperationsItemKind) Number() protoreflect.EnumNumber {
@@ -2403,7 +2501,7 @@ func (x DomainMergeOverviewOperationsItemKind) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use DomainMergeOverviewOperationsItemKind.Descriptor instead.
 func (DomainMergeOverviewOperationsItemKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{45}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{47}
 }
 
 type DomainMergeOverviewOperationsItemState int32
@@ -2448,11 +2546,11 @@ func (x DomainMergeOverviewOperationsItemState) String() string {
 }
 
 func (DomainMergeOverviewOperationsItemState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[46].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[48].Descriptor()
 }
 
 func (DomainMergeOverviewOperationsItemState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[46]
+	return &file_octomanager_v2_domain_proto_enumTypes[48]
 }
 
 func (x DomainMergeOverviewOperationsItemState) Number() protoreflect.EnumNumber {
@@ -2461,7 +2559,7 @@ func (x DomainMergeOverviewOperationsItemState) Number() protoreflect.EnumNumber
 
 // Deprecated: Use DomainMergeOverviewOperationsItemState.Descriptor instead.
 func (DomainMergeOverviewOperationsItemState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{46}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{48}
 }
 
 type DomainMergeOverviewOperationsItemPhase int32
@@ -2500,11 +2598,11 @@ func (x DomainMergeOverviewOperationsItemPhase) String() string {
 }
 
 func (DomainMergeOverviewOperationsItemPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[47].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[49].Descriptor()
 }
 
 func (DomainMergeOverviewOperationsItemPhase) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[47]
+	return &file_octomanager_v2_domain_proto_enumTypes[49]
 }
 
 func (x DomainMergeOverviewOperationsItemPhase) Number() protoreflect.EnumNumber {
@@ -2513,7 +2611,7 @@ func (x DomainMergeOverviewOperationsItemPhase) Number() protoreflect.EnumNumber
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPhase.Descriptor instead.
 func (DomainMergeOverviewOperationsItemPhase) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{47}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{49}
 }
 
 type DomainMergeOverviewOperationsItemPreparationKind int32
@@ -2549,11 +2647,11 @@ func (x DomainMergeOverviewOperationsItemPreparationKind) String() string {
 }
 
 func (DomainMergeOverviewOperationsItemPreparationKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[48].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[50].Descriptor()
 }
 
 func (DomainMergeOverviewOperationsItemPreparationKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[48]
+	return &file_octomanager_v2_domain_proto_enumTypes[50]
 }
 
 func (x DomainMergeOverviewOperationsItemPreparationKind) Number() protoreflect.EnumNumber {
@@ -2562,7 +2660,7 @@ func (x DomainMergeOverviewOperationsItemPreparationKind) Number() protoreflect.
 
 // Deprecated: Use DomainMergeOverviewOperationsItemPreparationKind.Descriptor instead.
 func (DomainMergeOverviewOperationsItemPreparationKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{48}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{50}
 }
 
 type DomainMergeOverviewDependenciesItemPreparationKind int32
@@ -2598,11 +2696,11 @@ func (x DomainMergeOverviewDependenciesItemPreparationKind) String() string {
 }
 
 func (DomainMergeOverviewDependenciesItemPreparationKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[49].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[51].Descriptor()
 }
 
 func (DomainMergeOverviewDependenciesItemPreparationKind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[49]
+	return &file_octomanager_v2_domain_proto_enumTypes[51]
 }
 
 func (x DomainMergeOverviewDependenciesItemPreparationKind) Number() protoreflect.EnumNumber {
@@ -2611,7 +2709,7 @@ func (x DomainMergeOverviewDependenciesItemPreparationKind) Number() protoreflec
 
 // Deprecated: Use DomainMergeOverviewDependenciesItemPreparationKind.Descriptor instead.
 func (DomainMergeOverviewDependenciesItemPreparationKind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{49}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{51}
 }
 
 type DomainReconciliationResultState int32
@@ -2656,11 +2754,11 @@ func (x DomainReconciliationResultState) String() string {
 }
 
 func (DomainReconciliationResultState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[50].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[52].Descriptor()
 }
 
 func (DomainReconciliationResultState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[50]
+	return &file_octomanager_v2_domain_proto_enumTypes[52]
 }
 
 func (x DomainReconciliationResultState) Number() protoreflect.EnumNumber {
@@ -2669,7 +2767,7 @@ func (x DomainReconciliationResultState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainReconciliationResultState.Descriptor instead.
 func (DomainReconciliationResultState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{50}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{52}
 }
 
 type DomainArchivedSubmissionSummaryState int32
@@ -2729,11 +2827,11 @@ func (x DomainArchivedSubmissionSummaryState) String() string {
 }
 
 func (DomainArchivedSubmissionSummaryState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[51].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[53].Descriptor()
 }
 
 func (DomainArchivedSubmissionSummaryState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[51]
+	return &file_octomanager_v2_domain_proto_enumTypes[53]
 }
 
 func (x DomainArchivedSubmissionSummaryState) Number() protoreflect.EnumNumber {
@@ -2742,7 +2840,7 @@ func (x DomainArchivedSubmissionSummaryState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainArchivedSubmissionSummaryState.Descriptor instead.
 func (DomainArchivedSubmissionSummaryState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{51}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{53}
 }
 
 type DomainArchivedSubmissionRequestMode int32
@@ -2778,11 +2876,11 @@ func (x DomainArchivedSubmissionRequestMode) String() string {
 }
 
 func (DomainArchivedSubmissionRequestMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[52].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[54].Descriptor()
 }
 
 func (DomainArchivedSubmissionRequestMode) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[52]
+	return &file_octomanager_v2_domain_proto_enumTypes[54]
 }
 
 func (x DomainArchivedSubmissionRequestMode) Number() protoreflect.EnumNumber {
@@ -2791,7 +2889,7 @@ func (x DomainArchivedSubmissionRequestMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainArchivedSubmissionRequestMode.Descriptor instead.
 func (DomainArchivedSubmissionRequestMode) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{52}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{54}
 }
 
 type DomainArchivedSubmissionRequestValidationItemResult int32
@@ -2833,11 +2931,11 @@ func (x DomainArchivedSubmissionRequestValidationItemResult) String() string {
 }
 
 func (DomainArchivedSubmissionRequestValidationItemResult) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[53].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[55].Descriptor()
 }
 
 func (DomainArchivedSubmissionRequestValidationItemResult) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[53]
+	return &file_octomanager_v2_domain_proto_enumTypes[55]
 }
 
 func (x DomainArchivedSubmissionRequestValidationItemResult) Number() protoreflect.EnumNumber {
@@ -2846,7 +2944,7 @@ func (x DomainArchivedSubmissionRequestValidationItemResult) Number() protorefle
 
 // Deprecated: Use DomainArchivedSubmissionRequestValidationItemResult.Descriptor instead.
 func (DomainArchivedSubmissionRequestValidationItemResult) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{53}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{55}
 }
 
 type DomainArchivedSubmissionRequestOwnerHarness int32
@@ -2879,11 +2977,11 @@ func (x DomainArchivedSubmissionRequestOwnerHarness) String() string {
 }
 
 func (DomainArchivedSubmissionRequestOwnerHarness) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[54].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[56].Descriptor()
 }
 
 func (DomainArchivedSubmissionRequestOwnerHarness) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[54]
+	return &file_octomanager_v2_domain_proto_enumTypes[56]
 }
 
 func (x DomainArchivedSubmissionRequestOwnerHarness) Number() protoreflect.EnumNumber {
@@ -2892,7 +2990,7 @@ func (x DomainArchivedSubmissionRequestOwnerHarness) Number() protoreflect.EnumN
 
 // Deprecated: Use DomainArchivedSubmissionRequestOwnerHarness.Descriptor instead.
 func (DomainArchivedSubmissionRequestOwnerHarness) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{54}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{56}
 }
 
 type DomainArchivedSubmissionState int32
@@ -2952,11 +3050,11 @@ func (x DomainArchivedSubmissionState) String() string {
 }
 
 func (DomainArchivedSubmissionState) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[55].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[57].Descriptor()
 }
 
 func (DomainArchivedSubmissionState) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[55]
+	return &file_octomanager_v2_domain_proto_enumTypes[57]
 }
 
 func (x DomainArchivedSubmissionState) Number() protoreflect.EnumNumber {
@@ -2965,7 +3063,7 @@ func (x DomainArchivedSubmissionState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainArchivedSubmissionState.Descriptor instead.
 func (DomainArchivedSubmissionState) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{55}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{57}
 }
 
 type DomainArchivedSubmissionStagesItemRole int32
@@ -3004,11 +3102,11 @@ func (x DomainArchivedSubmissionStagesItemRole) String() string {
 }
 
 func (DomainArchivedSubmissionStagesItemRole) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[56].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[58].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemRole) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[56]
+	return &file_octomanager_v2_domain_proto_enumTypes[58]
 }
 
 func (x DomainArchivedSubmissionStagesItemRole) Number() protoreflect.EnumNumber {
@@ -3017,7 +3115,7 @@ func (x DomainArchivedSubmissionStagesItemRole) Number() protoreflect.EnumNumber
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemRole.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemRole) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{56}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{58}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength int32
@@ -3053,11 +3151,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[57].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[59].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[57]
+	return &file_octomanager_v2_domain_proto_enumTypes[59]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength) Number() protoreflect.EnumNumber {
@@ -3066,7 +3164,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{57}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{59}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory int32
@@ -3111,11 +3209,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[58].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[60].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[58]
+	return &file_octomanager_v2_domain_proto_enumTypes[60]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory) Number() protoreflect.EnumNumber {
@@ -3124,7 +3222,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{58}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{60}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind int32
@@ -3157,11 +3255,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[59].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[61].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[59]
+	return &file_octomanager_v2_domain_proto_enumTypes[61]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind) Number() protoreflect.EnumNumber {
@@ -3170,7 +3268,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{59}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{61}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind int32
@@ -3203,11 +3301,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[60].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[62].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[60]
+	return &file_octomanager_v2_domain_proto_enumTypes[62]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind) Number() protoreflect.EnumNumber {
@@ -3216,7 +3314,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{60}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{62}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind int32
@@ -3249,11 +3347,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[61].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[63].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[61]
+	return &file_octomanager_v2_domain_proto_enumTypes[63]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind) Number() protoreflect.EnumNumber {
@@ -3262,7 +3360,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{61}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{63}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind int32
@@ -3295,11 +3393,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[62].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[64].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[62]
+	return &file_octomanager_v2_domain_proto_enumTypes[64]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind) Number() protoreflect.EnumNumber {
@@ -3308,7 +3406,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{62}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{64}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind int32
@@ -3341,11 +3439,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[63].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[65].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[63]
+	return &file_octomanager_v2_domain_proto_enumTypes[65]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind) Number() protoreflect.EnumNumber {
@@ -3354,7 +3452,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVar
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{63}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{65}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant2Tier int32
@@ -3393,11 +3491,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant2Tier) String() string {
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant2Tier) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[64].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[66].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant2Tier) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[64]
+	return &file_octomanager_v2_domain_proto_enumTypes[66]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant2Tier) Number() protoreflect.EnumNumber {
@@ -3406,7 +3504,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant2Tier) Number() protorefl
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2Tier.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant2Tier) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{64}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{66}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis int32
@@ -3445,11 +3543,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) String(
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[65].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[67].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[65]
+	return &file_octomanager_v2_domain_proto_enumTypes[67]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) Number() protoreflect.EnumNumber {
@@ -3458,7 +3556,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) Number(
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{65}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{67}
 }
 
 type DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus int32
@@ -3500,11 +3598,11 @@ func (x DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemSta
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[66].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[68].Descriptor()
 }
 
 func (DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[66]
+	return &file_octomanager_v2_domain_proto_enumTypes[68]
 }
 
 func (x DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus) Number() protoreflect.EnumNumber {
@@ -3513,7 +3611,7 @@ func (x DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemSta
 
 // Deprecated: Use DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus.Descriptor instead.
 func (DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{66}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{68}
 }
 
 type DomainArchivedSubmissionBriefRequestMode int32
@@ -3549,11 +3647,11 @@ func (x DomainArchivedSubmissionBriefRequestMode) String() string {
 }
 
 func (DomainArchivedSubmissionBriefRequestMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[67].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[69].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefRequestMode) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[67]
+	return &file_octomanager_v2_domain_proto_enumTypes[69]
 }
 
 func (x DomainArchivedSubmissionBriefRequestMode) Number() protoreflect.EnumNumber {
@@ -3562,7 +3660,7 @@ func (x DomainArchivedSubmissionBriefRequestMode) Number() protoreflect.EnumNumb
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestMode.Descriptor instead.
 func (DomainArchivedSubmissionBriefRequestMode) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{67}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{69}
 }
 
 type DomainArchivedSubmissionBriefRequestValidationItemResult int32
@@ -3604,11 +3702,11 @@ func (x DomainArchivedSubmissionBriefRequestValidationItemResult) String() strin
 }
 
 func (DomainArchivedSubmissionBriefRequestValidationItemResult) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[68].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[70].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefRequestValidationItemResult) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[68]
+	return &file_octomanager_v2_domain_proto_enumTypes[70]
 }
 
 func (x DomainArchivedSubmissionBriefRequestValidationItemResult) Number() protoreflect.EnumNumber {
@@ -3617,7 +3715,7 @@ func (x DomainArchivedSubmissionBriefRequestValidationItemResult) Number() proto
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestValidationItemResult.Descriptor instead.
 func (DomainArchivedSubmissionBriefRequestValidationItemResult) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{68}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{70}
 }
 
 type DomainArchivedSubmissionBriefRequestOwnerHarness int32
@@ -3650,11 +3748,11 @@ func (x DomainArchivedSubmissionBriefRequestOwnerHarness) String() string {
 }
 
 func (DomainArchivedSubmissionBriefRequestOwnerHarness) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[69].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[71].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefRequestOwnerHarness) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[69]
+	return &file_octomanager_v2_domain_proto_enumTypes[71]
 }
 
 func (x DomainArchivedSubmissionBriefRequestOwnerHarness) Number() protoreflect.EnumNumber {
@@ -3663,7 +3761,7 @@ func (x DomainArchivedSubmissionBriefRequestOwnerHarness) Number() protoreflect.
 
 // Deprecated: Use DomainArchivedSubmissionBriefRequestOwnerHarness.Descriptor instead.
 func (DomainArchivedSubmissionBriefRequestOwnerHarness) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{69}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{71}
 }
 
 type DomainArchivedSubmissionBriefChangeTier int32
@@ -3702,11 +3800,11 @@ func (x DomainArchivedSubmissionBriefChangeTier) String() string {
 }
 
 func (DomainArchivedSubmissionBriefChangeTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[70].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[72].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefChangeTier) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[70]
+	return &file_octomanager_v2_domain_proto_enumTypes[72]
 }
 
 func (x DomainArchivedSubmissionBriefChangeTier) Number() protoreflect.EnumNumber {
@@ -3715,7 +3813,7 @@ func (x DomainArchivedSubmissionBriefChangeTier) Number() protoreflect.EnumNumbe
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeTier.Descriptor instead.
 func (DomainArchivedSubmissionBriefChangeTier) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{70}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{72}
 }
 
 type DomainArchivedSubmissionBriefChangeClaimsItemBasis int32
@@ -3754,11 +3852,11 @@ func (x DomainArchivedSubmissionBriefChangeClaimsItemBasis) String() string {
 }
 
 func (DomainArchivedSubmissionBriefChangeClaimsItemBasis) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[71].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[73].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefChangeClaimsItemBasis) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[71]
+	return &file_octomanager_v2_domain_proto_enumTypes[73]
 }
 
 func (x DomainArchivedSubmissionBriefChangeClaimsItemBasis) Number() protoreflect.EnumNumber {
@@ -3767,7 +3865,7 @@ func (x DomainArchivedSubmissionBriefChangeClaimsItemBasis) Number() protoreflec
 
 // Deprecated: Use DomainArchivedSubmissionBriefChangeClaimsItemBasis.Descriptor instead.
 func (DomainArchivedSubmissionBriefChangeClaimsItemBasis) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{71}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{73}
 }
 
 type DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus int32
@@ -3809,11 +3907,11 @@ func (x DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) String() 
 }
 
 func (DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[72].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[74].Descriptor()
 }
 
 func (DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[72]
+	return &file_octomanager_v2_domain_proto_enumTypes[74]
 }
 
 func (x DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) Number() protoreflect.EnumNumber {
@@ -3822,7 +3920,7 @@ func (x DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) Number() 
 
 // Deprecated: Use DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus.Descriptor instead.
 func (DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{72}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{74}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemStrength int32
@@ -3858,11 +3956,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemStrength) String() string 
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemStrength) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[73].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[75].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemStrength) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[73]
+	return &file_octomanager_v2_domain_proto_enumTypes[75]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemStrength) Number() protoreflect.EnumNumber {
@@ -3871,7 +3969,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemStrength) Number() protore
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemStrength.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemStrength) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{73}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{75}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCategory int32
@@ -3916,11 +4014,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCategory) String() string 
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCategory) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[74].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[76].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCategory) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[74]
+	return &file_octomanager_v2_domain_proto_enumTypes[76]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCategory) Number() protoreflect.EnumNumber {
@@ -3929,7 +4027,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCategory) Number() protore
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCategory.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCategory) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{74}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{76}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind int32
@@ -3962,11 +4060,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) String(
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[75].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[77].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[75]
+	return &file_octomanager_v2_domain_proto_enumTypes[77]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) Number() protoreflect.EnumNumber {
@@ -3975,7 +4073,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) Number(
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{75}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{77}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind int32
@@ -4008,11 +4106,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) String(
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[76].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[78].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[76]
+	return &file_octomanager_v2_domain_proto_enumTypes[78]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) Number() protoreflect.EnumNumber {
@@ -4021,7 +4119,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) Number(
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{76}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{78}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind int32
@@ -4054,11 +4152,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) String(
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[77].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[79].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[77]
+	return &file_octomanager_v2_domain_proto_enumTypes[79]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) Number() protoreflect.EnumNumber {
@@ -4067,7 +4165,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) Number(
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{77}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{79}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind int32
@@ -4100,11 +4198,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) String(
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[78].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[80].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[78]
+	return &file_octomanager_v2_domain_proto_enumTypes[80]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) Number() protoreflect.EnumNumber {
@@ -4113,7 +4211,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) Number(
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{78}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{80}
 }
 
 type DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind int32
@@ -4146,11 +4244,11 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) String(
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[79].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[81].Descriptor()
 }
 
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[79]
+	return &file_octomanager_v2_domain_proto_enumTypes[81]
 }
 
 func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) Number() protoreflect.EnumNumber {
@@ -4159,7 +4257,7 @@ func (x DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) Number(
 
 // Deprecated: Use DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind.Descriptor instead.
 func (DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{79}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{81}
 }
 
 type QueueMergeChainRequestInputEntriesItemMethod int32
@@ -4198,11 +4296,11 @@ func (x QueueMergeChainRequestInputEntriesItemMethod) String() string {
 }
 
 func (QueueMergeChainRequestInputEntriesItemMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[80].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[82].Descriptor()
 }
 
 func (QueueMergeChainRequestInputEntriesItemMethod) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[80]
+	return &file_octomanager_v2_domain_proto_enumTypes[82]
 }
 
 func (x QueueMergeChainRequestInputEntriesItemMethod) Number() protoreflect.EnumNumber {
@@ -4211,7 +4309,7 @@ func (x QueueMergeChainRequestInputEntriesItemMethod) Number() protoreflect.Enum
 
 // Deprecated: Use QueueMergeChainRequestInputEntriesItemMethod.Descriptor instead.
 func (QueueMergeChainRequestInputEntriesItemMethod) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{80}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{82}
 }
 
 type DecidePRReferenceRequestDecision int32
@@ -4247,11 +4345,11 @@ func (x DecidePRReferenceRequestDecision) String() string {
 }
 
 func (DecidePRReferenceRequestDecision) Descriptor() protoreflect.EnumDescriptor {
-	return file_octomanager_v2_domain_proto_enumTypes[81].Descriptor()
+	return file_octomanager_v2_domain_proto_enumTypes[83].Descriptor()
 }
 
 func (DecidePRReferenceRequestDecision) Type() protoreflect.EnumType {
-	return &file_octomanager_v2_domain_proto_enumTypes[81]
+	return &file_octomanager_v2_domain_proto_enumTypes[83]
 }
 
 func (x DecidePRReferenceRequestDecision) Number() protoreflect.EnumNumber {
@@ -4260,7 +4358,7 @@ func (x DecidePRReferenceRequestDecision) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DecidePRReferenceRequestDecision.Descriptor instead.
 func (DecidePRReferenceRequestDecision) EnumDescriptor() ([]byte, []int) {
-	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{81}
+	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{83}
 }
 
 // DomainCheckRecord records one check execution at an observed PR revision.
@@ -6984,14 +7082,15 @@ func (x *DomainMergeEntryChecks) GetItems() []string {
 
 // DomainMergeEntryReady contains the ready value of DomainMergeEntry.
 type DomainMergeEntryReady struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Epoch         *int64                 `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
-	Head          *string                `protobuf:"bytes,2,opt,name=head,proto3,oneof" json:"head,omitempty"`
-	BaseRef       *string                `protobuf:"bytes,3,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
-	OwnerId       *string                `protobuf:"bytes,4,opt,name=owner_id,json=ownerId,proto3,oneof" json:"owner_id,omitempty"`
-	Feedback      *string                `protobuf:"bytes,5,opt,name=feedback,proto3,oneof" json:"feedback,omitempty"`
-	Graph         *string                `protobuf:"bytes,6,opt,name=graph,proto3,oneof" json:"graph,omitempty"`
-	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Source        *DomainMergeEntryReadySource `protobuf:"varint,8,opt,name=source,proto3,enum=octomanager.v2.DomainMergeEntryReadySource,oneof" json:"source,omitempty"`
+	Epoch         *int64                       `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
+	Head          *string                      `protobuf:"bytes,2,opt,name=head,proto3,oneof" json:"head,omitempty"`
+	BaseRef       *string                      `protobuf:"bytes,3,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
+	OwnerId       *string                      `protobuf:"bytes,4,opt,name=owner_id,json=ownerId,proto3,oneof" json:"owner_id,omitempty"`
+	Feedback      *string                      `protobuf:"bytes,5,opt,name=feedback,proto3,oneof" json:"feedback,omitempty"`
+	Graph         *string                      `protobuf:"bytes,6,opt,name=graph,proto3,oneof" json:"graph,omitempty"`
+	At            *int64                       `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7024,6 +7123,13 @@ func (x *DomainMergeEntryReady) ProtoReflect() protoreflect.Message {
 // Deprecated: Use DomainMergeEntryReady.ProtoReflect.Descriptor instead.
 func (*DomainMergeEntryReady) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *DomainMergeEntryReady) GetSource() DomainMergeEntryReadySource {
+	if x != nil && x.Source != nil {
+		return *x.Source
+	}
+	return DomainMergeEntryReadySource_DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED
 }
 
 func (x *DomainMergeEntryReady) GetEpoch() int64 {
@@ -10641,14 +10747,15 @@ func (x *DomainMergeOverviewEntriesItemChecks) GetItems() []string {
 
 // DomainMergeOverviewEntriesItemReady contains the ready value of DomainMergeOverviewEntriesItem.
 type DomainMergeOverviewEntriesItemReady struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Epoch         *int64                 `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
-	Head          *string                `protobuf:"bytes,2,opt,name=head,proto3,oneof" json:"head,omitempty"`
-	BaseRef       *string                `protobuf:"bytes,3,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
-	OwnerId       *string                `protobuf:"bytes,4,opt,name=owner_id,json=ownerId,proto3,oneof" json:"owner_id,omitempty"`
-	Feedback      *string                `protobuf:"bytes,5,opt,name=feedback,proto3,oneof" json:"feedback,omitempty"`
-	Graph         *string                `protobuf:"bytes,6,opt,name=graph,proto3,oneof" json:"graph,omitempty"`
-	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	state         protoimpl.MessageState                     `protogen:"open.v1"`
+	Source        *DomainMergeOverviewEntriesItemReadySource `protobuf:"varint,8,opt,name=source,proto3,enum=octomanager.v2.DomainMergeOverviewEntriesItemReadySource,oneof" json:"source,omitempty"`
+	Epoch         *int64                                     `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
+	Head          *string                                    `protobuf:"bytes,2,opt,name=head,proto3,oneof" json:"head,omitempty"`
+	BaseRef       *string                                    `protobuf:"bytes,3,opt,name=base_ref,json=baseRef,proto3,oneof" json:"base_ref,omitempty"`
+	OwnerId       *string                                    `protobuf:"bytes,4,opt,name=owner_id,json=ownerId,proto3,oneof" json:"owner_id,omitempty"`
+	Feedback      *string                                    `protobuf:"bytes,5,opt,name=feedback,proto3,oneof" json:"feedback,omitempty"`
+	Graph         *string                                    `protobuf:"bytes,6,opt,name=graph,proto3,oneof" json:"graph,omitempty"`
+	At            *int64                                     `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10681,6 +10788,13 @@ func (x *DomainMergeOverviewEntriesItemReady) ProtoReflect() protoreflect.Messag
 // Deprecated: Use DomainMergeOverviewEntriesItemReady.ProtoReflect.Descriptor instead.
 func (*DomainMergeOverviewEntriesItemReady) Descriptor() ([]byte, []int) {
 	return file_octomanager_v2_domain_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *DomainMergeOverviewEntriesItemReady) GetSource() DomainMergeOverviewEntriesItemReadySource {
+	if x != nil && x.Source != nil {
+		return *x.Source
+	}
+	return DomainMergeOverviewEntriesItemReadySource_DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED
 }
 
 func (x *DomainMergeOverviewEntriesItemReady) GetEpoch() int64 {
@@ -18462,15 +18576,17 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\x06_epochB\a\n" +
 	"\x05_text\".\n" +
 	"\x16DomainMergeEntryChecks\x12\x14\n" +
-	"\x05items\x18\x01 \x03(\tR\x05items\"\xa7\x02\n" +
-	"\x15DomainMergeEntryReady\x12\x19\n" +
-	"\x05epoch\x18\x01 \x01(\x03H\x00R\x05epoch\x88\x01\x01\x12\x17\n" +
-	"\x04head\x18\x02 \x01(\tH\x01R\x04head\x88\x01\x01\x12\x1e\n" +
-	"\bbase_ref\x18\x03 \x01(\tH\x02R\abaseRef\x88\x01\x01\x12\x1e\n" +
-	"\bowner_id\x18\x04 \x01(\tH\x03R\aownerId\x88\x01\x01\x12\x1f\n" +
-	"\bfeedback\x18\x05 \x01(\tH\x04R\bfeedback\x88\x01\x01\x12\x19\n" +
-	"\x05graph\x18\x06 \x01(\tH\x05R\x05graph\x88\x01\x01\x12\x13\n" +
-	"\x02at\x18\a \x01(\x03H\x06R\x02at\x88\x01\x01B\b\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\xfc\x02\n" +
+	"\x15DomainMergeEntryReady\x12H\n" +
+	"\x06source\x18\b \x01(\x0e2+.octomanager.v2.DomainMergeEntryReadySourceH\x00R\x06source\x88\x01\x01\x12\x19\n" +
+	"\x05epoch\x18\x01 \x01(\x03H\x01R\x05epoch\x88\x01\x01\x12\x17\n" +
+	"\x04head\x18\x02 \x01(\tH\x02R\x04head\x88\x01\x01\x12\x1e\n" +
+	"\bbase_ref\x18\x03 \x01(\tH\x03R\abaseRef\x88\x01\x01\x12\x1e\n" +
+	"\bowner_id\x18\x04 \x01(\tH\x04R\aownerId\x88\x01\x01\x12\x1f\n" +
+	"\bfeedback\x18\x05 \x01(\tH\x05R\bfeedback\x88\x01\x01\x12\x19\n" +
+	"\x05graph\x18\x06 \x01(\tH\x06R\x05graph\x88\x01\x01\x12\x13\n" +
+	"\x02at\x18\a \x01(\x03H\aR\x02at\x88\x01\x01B\t\n" +
+	"\a_sourceB\b\n" +
 	"\x06_epochB\a\n" +
 	"\x05_headB\v\n" +
 	"\t_base_refB\v\n" +
@@ -19027,15 +19143,17 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\x06_epochB\a\n" +
 	"\x05_text\"<\n" +
 	"$DomainMergeOverviewEntriesItemChecks\x12\x14\n" +
-	"\x05items\x18\x01 \x03(\tR\x05items\"\xb5\x02\n" +
-	"#DomainMergeOverviewEntriesItemReady\x12\x19\n" +
-	"\x05epoch\x18\x01 \x01(\x03H\x00R\x05epoch\x88\x01\x01\x12\x17\n" +
-	"\x04head\x18\x02 \x01(\tH\x01R\x04head\x88\x01\x01\x12\x1e\n" +
-	"\bbase_ref\x18\x03 \x01(\tH\x02R\abaseRef\x88\x01\x01\x12\x1e\n" +
-	"\bowner_id\x18\x04 \x01(\tH\x03R\aownerId\x88\x01\x01\x12\x1f\n" +
-	"\bfeedback\x18\x05 \x01(\tH\x04R\bfeedback\x88\x01\x01\x12\x19\n" +
-	"\x05graph\x18\x06 \x01(\tH\x05R\x05graph\x88\x01\x01\x12\x13\n" +
-	"\x02at\x18\a \x01(\x03H\x06R\x02at\x88\x01\x01B\b\n" +
+	"\x05items\x18\x01 \x03(\tR\x05items\"\x98\x03\n" +
+	"#DomainMergeOverviewEntriesItemReady\x12V\n" +
+	"\x06source\x18\b \x01(\x0e29.octomanager.v2.DomainMergeOverviewEntriesItemReadySourceH\x00R\x06source\x88\x01\x01\x12\x19\n" +
+	"\x05epoch\x18\x01 \x01(\x03H\x01R\x05epoch\x88\x01\x01\x12\x17\n" +
+	"\x04head\x18\x02 \x01(\tH\x02R\x04head\x88\x01\x01\x12\x1e\n" +
+	"\bbase_ref\x18\x03 \x01(\tH\x03R\abaseRef\x88\x01\x01\x12\x1e\n" +
+	"\bowner_id\x18\x04 \x01(\tH\x04R\aownerId\x88\x01\x01\x12\x1f\n" +
+	"\bfeedback\x18\x05 \x01(\tH\x05R\bfeedback\x88\x01\x01\x12\x19\n" +
+	"\x05graph\x18\x06 \x01(\tH\x06R\x05graph\x88\x01\x01\x12\x13\n" +
+	"\x02at\x18\a \x01(\x03H\aR\x02at\x88\x01\x01B\t\n" +
+	"\a_sourceB\b\n" +
 	"\x06_epochB\a\n" +
 	"\x05_headB\v\n" +
 	"\t_base_refB\v\n" +
@@ -19961,7 +20079,11 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	" DOMAIN_MERGE_ENTRY_STATE_BLOCKED\x10\b\x12&\n" +
 	"\"DOMAIN_MERGE_ENTRY_STATE_UNCERTAIN\x10\t\x12&\n" +
 	"\"DOMAIN_MERGE_ENTRY_STATE_CANCELLED\x10\n" +
-	"*\x8a\x02\n" +
+	"*\xa6\x01\n" +
+	"\x1bDomainMergeEntryReadySource\x12/\n" +
+	"+DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED\x10\x00\x12)\n" +
+	"%DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER\x10\x01\x12+\n" +
+	"'DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT\x10\x02*\x8a\x02\n" +
 	"&DomainRepositoryAutomationPolicyStatus\x12:\n" +
 	"6DOMAIN_REPOSITORY_AUTOMATION_POLICY_STATUS_UNSPECIFIED\x10\x00\x124\n" +
 	"0DOMAIN_REPOSITORY_AUTOMATION_POLICY_STATUS_VALID\x10\x01\x126\n" +
@@ -20098,7 +20220,11 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"0DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_BLOCKED\x10\b\x126\n" +
 	"2DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_UNCERTAIN\x10\t\x126\n" +
 	"2DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_CANCELLED\x10\n" +
-	"*\xd1\x01\n" +
+	"*\xe4\x01\n" +
+	")DomainMergeOverviewEntriesItemReadySource\x12?\n" +
+	";DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED\x10\x00\x129\n" +
+	"5DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER\x10\x01\x12;\n" +
+	"7DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT\x10\x02*\xd1\x01\n" +
 	"%DomainMergeOverviewOperationsItemKind\x12:\n" +
 	"6DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_KIND_UNSPECIFIED\x10\x00\x126\n" +
 	"2DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_KIND_PREPARE\x10\x01\x124\n" +
@@ -20293,7 +20419,7 @@ func file_octomanager_v2_domain_proto_rawDescGZIP() []byte {
 	return file_octomanager_v2_domain_proto_rawDescData
 }
 
-var file_octomanager_v2_domain_proto_enumTypes = make([]protoimpl.EnumInfo, 82)
+var file_octomanager_v2_domain_proto_enumTypes = make([]protoimpl.EnumInfo, 84)
 var file_octomanager_v2_domain_proto_msgTypes = make([]protoimpl.MessageInfo, 198)
 var file_octomanager_v2_domain_proto_goTypes = []any{
 	(DomainCheckEvidenceVariant1State)(0),                                                         // 0: octomanager.v2.DomainCheckEvidenceVariant1State
@@ -20318,513 +20444,517 @@ var file_octomanager_v2_domain_proto_goTypes = []any{
 	(DomainMergeEntryAutoMergeSource)(0),                                                          // 19: octomanager.v2.DomainMergeEntryAutoMergeSource
 	(DomainMergeEntryMethod)(0),                                                                   // 20: octomanager.v2.DomainMergeEntryMethod
 	(DomainMergeEntryState)(0),                                                                    // 21: octomanager.v2.DomainMergeEntryState
-	(DomainRepositoryAutomationPolicyStatus)(0),                                                   // 22: octomanager.v2.DomainRepositoryAutomationPolicyStatus
-	(DomainRepositoryAutomationPolicyStage)(0),                                                    // 23: octomanager.v2.DomainRepositoryAutomationPolicyStage
-	(DomainMergeOperationKind)(0),                                                                 // 24: octomanager.v2.DomainMergeOperationKind
-	(DomainMergeOperationState)(0),                                                                // 25: octomanager.v2.DomainMergeOperationState
-	(DomainMergeOperationPhase)(0),                                                                // 26: octomanager.v2.DomainMergeOperationPhase
-	(DomainMergeOperationPreparationKind)(0),                                                      // 27: octomanager.v2.DomainMergeOperationPreparationKind
-	(DomainDependencyPreparationKind)(0),                                                          // 28: octomanager.v2.DomainDependencyPreparationKind
-	(DomainPRReferenceTargetKind)(0),                                                              // 29: octomanager.v2.DomainPRReferenceTargetKind
-	(DomainPRReferenceHint)(0),                                                                    // 30: octomanager.v2.DomainPRReferenceHint
-	(DomainPRReferenceDecision)(0),                                                                // 31: octomanager.v2.DomainPRReferenceDecision
-	(DomainQueueInputEntriesItemMethod)(0),                                                        // 32: octomanager.v2.DomainQueueInputEntriesItemMethod
-	(DomainReceiptTargetMethod)(0),                                                                // 33: octomanager.v2.DomainReceiptTargetMethod
-	(DomainAgentDigestTransportKind)(0),                                                           // 34: octomanager.v2.DomainAgentDigestTransportKind
-	(DomainAgentDigestState)(0),                                                                   // 35: octomanager.v2.DomainAgentDigestState
-	(DomainDigestRevisionMergeTargetMethod)(0),                                                    // 36: octomanager.v2.DomainDigestRevisionMergeTargetMethod
-	(DomainDigestInspectionDigestTransportKind)(0),                                                // 37: octomanager.v2.DomainDigestInspectionDigestTransportKind
-	(DomainDigestInspectionDigestState)(0),                                                        // 38: octomanager.v2.DomainDigestInspectionDigestState
-	(DomainDigestInspectionRevisionMergeTargetMethod)(0),                                          // 39: octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
-	(DomainMergeReceiptResultState)(0),                                                            // 40: octomanager.v2.DomainMergeReceiptResultState
-	(DomainMergeOverviewChainsItemState)(0),                                                       // 41: octomanager.v2.DomainMergeOverviewChainsItemState
-	(DomainMergeOverviewEntriesItemAutoMergeSource)(0),                                            // 42: octomanager.v2.DomainMergeOverviewEntriesItemAutoMergeSource
-	(DomainMergeOverviewEntriesItemMethod)(0),                                                     // 43: octomanager.v2.DomainMergeOverviewEntriesItemMethod
-	(DomainMergeOverviewEntriesItemState)(0),                                                      // 44: octomanager.v2.DomainMergeOverviewEntriesItemState
-	(DomainMergeOverviewOperationsItemKind)(0),                                                    // 45: octomanager.v2.DomainMergeOverviewOperationsItemKind
-	(DomainMergeOverviewOperationsItemState)(0),                                                   // 46: octomanager.v2.DomainMergeOverviewOperationsItemState
-	(DomainMergeOverviewOperationsItemPhase)(0),                                                   // 47: octomanager.v2.DomainMergeOverviewOperationsItemPhase
-	(DomainMergeOverviewOperationsItemPreparationKind)(0),                                         // 48: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
-	(DomainMergeOverviewDependenciesItemPreparationKind)(0),                                       // 49: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
-	(DomainReconciliationResultState)(0),                                                          // 50: octomanager.v2.DomainReconciliationResultState
-	(DomainArchivedSubmissionSummaryState)(0),                                                     // 51: octomanager.v2.DomainArchivedSubmissionSummaryState
-	(DomainArchivedSubmissionRequestMode)(0),                                                      // 52: octomanager.v2.DomainArchivedSubmissionRequestMode
-	(DomainArchivedSubmissionRequestValidationItemResult)(0),                                      // 53: octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
-	(DomainArchivedSubmissionRequestOwnerHarness)(0),                                              // 54: octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
-	(DomainArchivedSubmissionState)(0),                                                            // 55: octomanager.v2.DomainArchivedSubmissionState
-	(DomainArchivedSubmissionStagesItemRole)(0),                                                   // 56: octomanager.v2.DomainArchivedSubmissionStagesItemRole
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength)(0),                 // 57: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory)(0),                 // 58: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind)(0),        // 59: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind)(0),        // 60: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind)(0),        // 61: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind)(0),        // 62: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
-	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind)(0),        // 63: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
-	(DomainArchivedSubmissionStagesItemResultVariant2Tier)(0),                                     // 64: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
-	(DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis)(0),                          // 65: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
-	(DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus)(0),              // 66: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
-	(DomainArchivedSubmissionBriefRequestMode)(0),                                                 // 67: octomanager.v2.DomainArchivedSubmissionBriefRequestMode
-	(DomainArchivedSubmissionBriefRequestValidationItemResult)(0),                                 // 68: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
-	(DomainArchivedSubmissionBriefRequestOwnerHarness)(0),                                         // 69: octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
-	(DomainArchivedSubmissionBriefChangeTier)(0),                                                  // 70: octomanager.v2.DomainArchivedSubmissionBriefChangeTier
-	(DomainArchivedSubmissionBriefChangeClaimsItemBasis)(0),                                       // 71: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
-	(DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus)(0),                            // 72: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
-	(DomainRepositoryPolicyAnalysisRequirementsItemStrength)(0),                                   // 73: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
-	(DomainRepositoryPolicyAnalysisRequirementsItemCategory)(0),                                   // 74: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
-	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind)(0),                          // 75: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
-	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind)(0),                          // 76: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
-	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind)(0),                          // 77: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
-	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind)(0),                          // 78: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
-	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind)(0),                          // 79: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
-	(QueueMergeChainRequestInputEntriesItemMethod)(0),                                             // 80: octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
-	(DecidePRReferenceRequestDecision)(0),                                                         // 81: octomanager.v2.DecidePRReferenceRequestDecision
-	(*DomainCheckRecord)(nil),                                                                     // 82: octomanager.v2.DomainCheckRecord
-	(*DomainCheckEvidenceVariant1ValueItem)(nil),                                                  // 83: octomanager.v2.DomainCheckEvidenceVariant1ValueItem
-	(*DomainCheckEvidenceVariant1Value)(nil),                                                      // 84: octomanager.v2.DomainCheckEvidenceVariant1Value
-	(*DomainCheckEvidenceVariant1)(nil),                                                           // 85: octomanager.v2.DomainCheckEvidenceVariant1
-	(*DomainCheckEvidenceVariant2ValueItem)(nil),                                                  // 86: octomanager.v2.DomainCheckEvidenceVariant2ValueItem
-	(*DomainCheckEvidenceVariant2Value)(nil),                                                      // 87: octomanager.v2.DomainCheckEvidenceVariant2Value
-	(*DomainCheckEvidenceVariant2)(nil),                                                           // 88: octomanager.v2.DomainCheckEvidenceVariant2
-	(*DomainCheckEvidenceVariant3)(nil),                                                           // 89: octomanager.v2.DomainCheckEvidenceVariant3
-	(*DomainCheckEvidence)(nil),                                                                   // 90: octomanager.v2.DomainCheckEvidence
-	(*DomainReviewEvidenceVariant1ValueItem)(nil),                                                 // 91: octomanager.v2.DomainReviewEvidenceVariant1ValueItem
-	(*DomainReviewEvidenceVariant1Value)(nil),                                                     // 92: octomanager.v2.DomainReviewEvidenceVariant1Value
-	(*DomainReviewEvidenceVariant1)(nil),                                                          // 93: octomanager.v2.DomainReviewEvidenceVariant1
-	(*DomainReviewEvidenceVariant2ValueItem)(nil),                                                 // 94: octomanager.v2.DomainReviewEvidenceVariant2ValueItem
-	(*DomainReviewEvidenceVariant2Value)(nil),                                                     // 95: octomanager.v2.DomainReviewEvidenceVariant2Value
-	(*DomainReviewEvidenceVariant2)(nil),                                                          // 96: octomanager.v2.DomainReviewEvidenceVariant2
-	(*DomainReviewEvidenceVariant3)(nil),                                                          // 97: octomanager.v2.DomainReviewEvidenceVariant3
-	(*DomainReviewEvidence)(nil),                                                                  // 98: octomanager.v2.DomainReviewEvidence
-	(*DomainFeedbackEvidenceVariant1ValueItem)(nil),                                               // 99: octomanager.v2.DomainFeedbackEvidenceVariant1ValueItem
-	(*DomainFeedbackEvidenceVariant1Value)(nil),                                                   // 100: octomanager.v2.DomainFeedbackEvidenceVariant1Value
-	(*DomainFeedbackEvidenceVariant1)(nil),                                                        // 101: octomanager.v2.DomainFeedbackEvidenceVariant1
-	(*DomainFeedbackEvidenceVariant2ValueItem)(nil),                                               // 102: octomanager.v2.DomainFeedbackEvidenceVariant2ValueItem
-	(*DomainFeedbackEvidenceVariant2Value)(nil),                                                   // 103: octomanager.v2.DomainFeedbackEvidenceVariant2Value
-	(*DomainFeedbackEvidenceVariant2)(nil),                                                        // 104: octomanager.v2.DomainFeedbackEvidenceVariant2
-	(*DomainFeedbackEvidenceVariant3)(nil),                                                        // 105: octomanager.v2.DomainFeedbackEvidenceVariant3
-	(*DomainFeedbackEvidence)(nil),                                                                // 106: octomanager.v2.DomainFeedbackEvidence
-	(*DomainDeliveryProgressVariant1)(nil),                                                        // 107: octomanager.v2.DomainDeliveryProgressVariant1
-	(*DomainDeliveryProgressVariant2)(nil),                                                        // 108: octomanager.v2.DomainDeliveryProgressVariant2
-	(*DomainDeliveryProgressVariant3)(nil),                                                        // 109: octomanager.v2.DomainDeliveryProgressVariant3
-	(*DomainDeliveryProgressVariant4)(nil),                                                        // 110: octomanager.v2.DomainDeliveryProgressVariant4
-	(*DomainDeliveryProgress)(nil),                                                                // 111: octomanager.v2.DomainDeliveryProgress
-	(*DomainDeliveryOutcomeVariant1)(nil),                                                         // 112: octomanager.v2.DomainDeliveryOutcomeVariant1
-	(*DomainDeliveryOutcomeVariant2)(nil),                                                         // 113: octomanager.v2.DomainDeliveryOutcomeVariant2
-	(*DomainDeliveryOutcomeVariant3)(nil),                                                         // 114: octomanager.v2.DomainDeliveryOutcomeVariant3
-	(*DomainDeliveryOutcome)(nil),                                                                 // 115: octomanager.v2.DomainDeliveryOutcome
-	(*DomainMergeChain)(nil),                                                                      // 116: octomanager.v2.DomainMergeChain
-	(*DomainMergeEntryAgentInstructions)(nil),                                                     // 117: octomanager.v2.DomainMergeEntryAgentInstructions
-	(*DomainMergeEntryChecks)(nil),                                                                // 118: octomanager.v2.DomainMergeEntryChecks
-	(*DomainMergeEntryReady)(nil),                                                                 // 119: octomanager.v2.DomainMergeEntryReady
-	(*DomainMergeEntry)(nil),                                                                      // 120: octomanager.v2.DomainMergeEntry
-	(*DomainRepositoryAutomationPolicyInstructions)(nil),                                          // 121: octomanager.v2.DomainRepositoryAutomationPolicyInstructions
-	(*DomainRepositoryAutomationPolicy)(nil),                                                      // 122: octomanager.v2.DomainRepositoryAutomationPolicy
-	(*DomainMergeOperationPreparationChecksItem)(nil),                                             // 123: octomanager.v2.DomainMergeOperationPreparationChecksItem
-	(*DomainMergeOperationPreparationChecks)(nil),                                                 // 124: octomanager.v2.DomainMergeOperationPreparationChecks
-	(*DomainMergeOperationPreparationKey)(nil),                                                    // 125: octomanager.v2.DomainMergeOperationPreparationKey
-	(*DomainMergeOperationPreparation)(nil),                                                       // 126: octomanager.v2.DomainMergeOperationPreparation
-	(*DomainMergeOperation)(nil),                                                                  // 127: octomanager.v2.DomainMergeOperation
-	(*DomainDependencyPreparationChecksItem)(nil),                                                 // 128: octomanager.v2.DomainDependencyPreparationChecksItem
-	(*DomainDependencyPreparationChecks)(nil),                                                     // 129: octomanager.v2.DomainDependencyPreparationChecks
-	(*DomainDependencyPreparationKey)(nil),                                                        // 130: octomanager.v2.DomainDependencyPreparationKey
-	(*DomainDependencyPreparation)(nil),                                                           // 131: octomanager.v2.DomainDependencyPreparation
-	(*DomainDependency)(nil),                                                                      // 132: octomanager.v2.DomainDependency
-	(*DomainPRReference)(nil),                                                                     // 133: octomanager.v2.DomainPRReference
-	(*DomainQueueInputEntriesItemChecks)(nil),                                                     // 134: octomanager.v2.DomainQueueInputEntriesItemChecks
-	(*DomainQueueInputEntriesItem)(nil),                                                           // 135: octomanager.v2.DomainQueueInputEntriesItem
-	(*DomainQueueInputEntries)(nil),                                                               // 136: octomanager.v2.DomainQueueInputEntries
-	(*DomainQueueInput)(nil),                                                                      // 137: octomanager.v2.DomainQueueInput
-	(*DomainReceiptTarget)(nil),                                                                   // 138: octomanager.v2.DomainReceiptTarget
-	(*DomainAgentDigestTransport)(nil),                                                            // 139: octomanager.v2.DomainAgentDigestTransport
-	(*DomainAgentDigest)(nil),                                                                     // 140: octomanager.v2.DomainAgentDigest
-	(*DomainDigestRevisionMergeTarget)(nil),                                                       // 141: octomanager.v2.DomainDigestRevisionMergeTarget
-	(*DomainDigestRevisionMessageIds)(nil),                                                        // 142: octomanager.v2.DomainDigestRevisionMessageIds
-	(*DomainDigestRevision)(nil),                                                                  // 143: octomanager.v2.DomainDigestRevision
-	(*DomainDigestInspectionDigestTransport)(nil),                                                 // 144: octomanager.v2.DomainDigestInspectionDigestTransport
-	(*DomainDigestInspectionDigest)(nil),                                                          // 145: octomanager.v2.DomainDigestInspectionDigest
-	(*DomainDigestInspectionRevisionMergeTarget)(nil),                                             // 146: octomanager.v2.DomainDigestInspectionRevisionMergeTarget
-	(*DomainDigestInspectionRevisionMessageIds)(nil),                                              // 147: octomanager.v2.DomainDigestInspectionRevisionMessageIds
-	(*DomainDigestInspectionRevision)(nil),                                                        // 148: octomanager.v2.DomainDigestInspectionRevision
-	(*DomainDigestInspectionRevisions)(nil),                                                       // 149: octomanager.v2.DomainDigestInspectionRevisions
-	(*DomainDigestInspectionReceiptsItem)(nil),                                                    // 150: octomanager.v2.DomainDigestInspectionReceiptsItem
-	(*DomainDigestInspectionReceipts)(nil),                                                        // 151: octomanager.v2.DomainDigestInspectionReceipts
-	(*DomainDigestInspectionEventsItemDetailMessages)(nil),                                        // 152: octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
-	(*DomainDigestInspectionEventsItemDetailOmittedFields)(nil),                                   // 153: octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
-	(*DomainDigestInspectionEventsItemDetail)(nil),                                                // 154: octomanager.v2.DomainDigestInspectionEventsItemDetail
-	(*DomainDigestInspectionEventsItem)(nil),                                                      // 155: octomanager.v2.DomainDigestInspectionEventsItem
-	(*DomainDigestInspectionEvents)(nil),                                                          // 156: octomanager.v2.DomainDigestInspectionEvents
-	(*DomainDigestInspection)(nil),                                                                // 157: octomanager.v2.DomainDigestInspection
-	(*DomainDigestReceipt)(nil),                                                                   // 158: octomanager.v2.DomainDigestReceipt
-	(*DomainMergeReceiptResult)(nil),                                                              // 159: octomanager.v2.DomainMergeReceiptResult
-	(*DomainMergeOverviewChainsItem)(nil),                                                         // 160: octomanager.v2.DomainMergeOverviewChainsItem
-	(*DomainMergeOverviewChains)(nil),                                                             // 161: octomanager.v2.DomainMergeOverviewChains
-	(*DomainMergeOverviewEntriesItemAgentInstructions)(nil),                                       // 162: octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
-	(*DomainMergeOverviewEntriesItemChecks)(nil),                                                  // 163: octomanager.v2.DomainMergeOverviewEntriesItemChecks
-	(*DomainMergeOverviewEntriesItemReady)(nil),                                                   // 164: octomanager.v2.DomainMergeOverviewEntriesItemReady
-	(*DomainMergeOverviewEntriesItem)(nil),                                                        // 165: octomanager.v2.DomainMergeOverviewEntriesItem
-	(*DomainMergeOverviewEntries)(nil),                                                            // 166: octomanager.v2.DomainMergeOverviewEntries
-	(*DomainMergeOverviewOperationsItemPreparationChecksItem)(nil),                                // 167: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
-	(*DomainMergeOverviewOperationsItemPreparationChecks)(nil),                                    // 168: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
-	(*DomainMergeOverviewOperationsItemPreparationKey)(nil),                                       // 169: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
-	(*DomainMergeOverviewOperationsItemPreparation)(nil),                                          // 170: octomanager.v2.DomainMergeOverviewOperationsItemPreparation
-	(*DomainMergeOverviewOperationsItem)(nil),                                                     // 171: octomanager.v2.DomainMergeOverviewOperationsItem
-	(*DomainMergeOverviewOperations)(nil),                                                         // 172: octomanager.v2.DomainMergeOverviewOperations
-	(*DomainMergeOverviewDependenciesItemPreparationChecksItem)(nil),                              // 173: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
-	(*DomainMergeOverviewDependenciesItemPreparationChecks)(nil),                                  // 174: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
-	(*DomainMergeOverviewDependenciesItemPreparationKey)(nil),                                     // 175: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
-	(*DomainMergeOverviewDependenciesItemPreparation)(nil),                                        // 176: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
-	(*DomainMergeOverviewDependenciesItem)(nil),                                                   // 177: octomanager.v2.DomainMergeOverviewDependenciesItem
-	(*DomainMergeOverviewDependencies)(nil),                                                       // 178: octomanager.v2.DomainMergeOverviewDependencies
-	(*DomainMergeOverview)(nil),                                                                   // 179: octomanager.v2.DomainMergeOverview
-	(*DomainReconciliationResult)(nil),                                                            // 180: octomanager.v2.DomainReconciliationResult
-	(*DomainArchivedSubmissionSummary)(nil),                                                       // 181: octomanager.v2.DomainArchivedSubmissionSummary
-	(*DomainArchivedSubmissionRequestValidationItem)(nil),                                         // 182: octomanager.v2.DomainArchivedSubmissionRequestValidationItem
-	(*DomainArchivedSubmissionRequestValidation)(nil),                                             // 183: octomanager.v2.DomainArchivedSubmissionRequestValidation
-	(*DomainArchivedSubmissionRequestOwner)(nil),                                                  // 184: octomanager.v2.DomainArchivedSubmissionRequestOwner
-	(*DomainArchivedSubmissionRequest)(nil),                                                       // 185: octomanager.v2.DomainArchivedSubmissionRequest
-	(*DomainArchivedSubmissionSnapshotFiles)(nil),                                                 // 186: octomanager.v2.DomainArchivedSubmissionSnapshotFiles
-	(*DomainArchivedSubmissionSnapshotSourcesItem)(nil),                                           // 187: octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
-	(*DomainArchivedSubmissionSnapshotSources)(nil),                                               // 188: octomanager.v2.DomainArchivedSubmissionSnapshotSources
-	(*DomainArchivedSubmissionSnapshot)(nil),                                                      // 189: octomanager.v2.DomainArchivedSubmissionSnapshot
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1)(nil),         // 190: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes)(nil), // 191: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2)(nil),         // 192: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3)(nil),         // 193: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4)(nil),         // 194: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5)(nil),         // 195: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck)(nil),                 // 196: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
-	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem)(nil),                      // 197: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
-	(*DomainArchivedSubmissionStagesItemResultVariant1Requirements)(nil),                          // 198: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
-	(*DomainArchivedSubmissionStagesItemResultVariant1Blockers)(nil),                              // 199: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant1)(nil),                                      // 200: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
-	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)(nil),                // 201: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
-	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem)(nil),                            // 202: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
-	(*DomainArchivedSubmissionStagesItemResultVariant2Claims)(nil),                                // 203: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
-	(*DomainArchivedSubmissionStagesItemResultVariant2Limitations)(nil),                           // 204: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
-	(*DomainArchivedSubmissionStagesItemResultVariant2Blockers)(nil),                              // 205: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant2)(nil),                                      // 206: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
-	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem)(nil),                 // 207: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
-	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks)(nil),                     // 208: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
-	(*DomainArchivedSubmissionStagesItemResultVariant3Blockers)(nil),                              // 209: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
-	(*DomainArchivedSubmissionStagesItemResultVariant3)(nil),                                      // 210: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
-	(*DomainArchivedSubmissionStagesItemResult)(nil),                                              // 211: octomanager.v2.DomainArchivedSubmissionStagesItemResult
-	(*DomainArchivedSubmissionStagesItem)(nil),                                                    // 212: octomanager.v2.DomainArchivedSubmissionStagesItem
-	(*DomainArchivedSubmissionStages)(nil),                                                        // 213: octomanager.v2.DomainArchivedSubmissionStages
-	(*DomainArchivedSubmissionBriefSchemaVersion)(nil),                                            // 214: octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
-	(*DomainArchivedSubmissionBriefRequestValidationItem)(nil),                                    // 215: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
-	(*DomainArchivedSubmissionBriefRequestValidation)(nil),                                        // 216: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
-	(*DomainArchivedSubmissionBriefRequestOwner)(nil),                                             // 217: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
-	(*DomainArchivedSubmissionBriefRequest)(nil),                                                  // 218: octomanager.v2.DomainArchivedSubmissionBriefRequest
-	(*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs)(nil),                             // 219: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
-	(*DomainArchivedSubmissionBriefChangeClaimsItem)(nil),                                         // 220: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
-	(*DomainArchivedSubmissionBriefChangeClaims)(nil),                                             // 221: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
-	(*DomainArchivedSubmissionBriefChangeLimitations)(nil),                                        // 222: octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
-	(*DomainArchivedSubmissionBriefChangeBlockers)(nil),                                           // 223: octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
-	(*DomainArchivedSubmissionBriefChange)(nil),                                                   // 224: octomanager.v2.DomainArchivedSubmissionBriefChange
-	(*DomainArchivedSubmissionBriefDraftRequirementChecksItem)(nil),                               // 225: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
-	(*DomainArchivedSubmissionBriefDraftRequirementChecks)(nil),                                   // 226: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
-	(*DomainArchivedSubmissionBriefDraftBlockers)(nil),                                            // 227: octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
-	(*DomainArchivedSubmissionBriefDraft)(nil),                                                    // 228: octomanager.v2.DomainArchivedSubmissionBriefDraft
-	(*DomainArchivedSubmissionBrief)(nil),                                                         // 229: octomanager.v2.DomainArchivedSubmissionBrief
-	(*DomainArchivedSubmissionWorkerPids)(nil),                                                    // 230: octomanager.v2.DomainArchivedSubmissionWorkerPids
-	(*DomainArchivedSubmission)(nil),                                                              // 231: octomanager.v2.DomainArchivedSubmission
-	(*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory)(nil),                               // 232: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesRoutine)(nil),                                       // 233: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
-	(*DomainRepositoryPolicyComplexityProfilesStandardAdvisory)(nil),                              // 234: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesStandard)(nil),                                      // 235: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
-	(*DomainRepositoryPolicyComplexityProfilesComplexAdvisory)(nil),                               // 236: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
-	(*DomainRepositoryPolicyComplexityProfilesComplex)(nil),                                       // 237: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
-	(*DomainRepositoryPolicyComplexityProfiles)(nil),                                              // 238: octomanager.v2.DomainRepositoryPolicyComplexityProfiles
-	(*DomainRepositoryPolicySchemaVersion)(nil),                                                   // 239: octomanager.v2.DomainRepositoryPolicySchemaVersion
-	(*DomainRepositoryPolicyAnalystVersionVariant1)(nil),                                          // 240: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
-	(*DomainRepositoryPolicyAnalystVersionVariant2)(nil),                                          // 241: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
-	(*DomainRepositoryPolicyAnalystVersionVariant3)(nil),                                          // 242: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
-	(*DomainRepositoryPolicyAnalystVersion)(nil),                                                  // 243: octomanager.v2.DomainRepositoryPolicyAnalystVersion
-	(*DomainRepositoryPolicyStockVersion)(nil),                                                    // 244: octomanager.v2.DomainRepositoryPolicyStockVersion
-	(*DomainRepositoryPolicyCitationCorrectionsItem)(nil),                                         // 245: octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
-	(*DomainRepositoryPolicyCitationCorrections)(nil),                                             // 246: octomanager.v2.DomainRepositoryPolicyCitationCorrections
-	(*DomainRepositoryPolicySourcesItem)(nil),                                                     // 247: octomanager.v2.DomainRepositoryPolicySourcesItem
-	(*DomainRepositoryPolicySources)(nil),                                                         // 248: octomanager.v2.DomainRepositoryPolicySources
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1)(nil),                           // 249: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes)(nil),                   // 250: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2)(nil),                           // 251: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3)(nil),                           // 252: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4)(nil),                           // 253: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5)(nil),                           // 254: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
-	(*DomainRepositoryPolicyAnalysisRequirementsItemCheck)(nil),                                   // 255: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
-	(*DomainRepositoryPolicyAnalysisRequirementsItem)(nil),                                        // 256: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
-	(*DomainRepositoryPolicyAnalysisRequirements)(nil),                                            // 257: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
-	(*DomainRepositoryPolicyAnalysisBlockers)(nil),                                                // 258: octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
-	(*DomainRepositoryPolicyAnalysis)(nil),                                                        // 259: octomanager.v2.DomainRepositoryPolicyAnalysis
-	(*DomainRepositoryPolicy)(nil),                                                                // 260: octomanager.v2.DomainRepositoryPolicy
-	(*SetAutoMergeRequest)(nil),                                                                   // 261: octomanager.v2.SetAutoMergeRequest
-	(*QueueMergeChainRequestInputEntriesItemChecks)(nil),                                          // 262: octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
-	(*QueueMergeChainRequestInputEntriesItem)(nil),                                                // 263: octomanager.v2.QueueMergeChainRequestInputEntriesItem
-	(*QueueMergeChainRequestInputEntries)(nil),                                                    // 264: octomanager.v2.QueueMergeChainRequestInputEntries
-	(*QueueMergeChainRequestInput)(nil),                                                           // 265: octomanager.v2.QueueMergeChainRequestInput
-	(*QueueMergeChainRequest)(nil),                                                                // 266: octomanager.v2.QueueMergeChainRequest
-	(*InspectMergeChainsRequest)(nil),                                                             // 267: octomanager.v2.InspectMergeChainsRequest
-	(*ListPRReferencesRequest)(nil),                                                               // 268: octomanager.v2.ListPRReferencesRequest
-	(*ListPRDependenciesRequest)(nil),                                                             // 269: octomanager.v2.ListPRDependenciesRequest
-	(*ConfirmPRDependencyRequest)(nil),                                                            // 270: octomanager.v2.ConfirmPRDependencyRequest
-	(*RemovePRDependencyRequest)(nil),                                                             // 271: octomanager.v2.RemovePRDependencyRequest
-	(*DecidePRReferenceRequest)(nil),                                                              // 272: octomanager.v2.DecidePRReferenceRequest
-	(*SetMergePolicyRequestChecks)(nil),                                                           // 273: octomanager.v2.SetMergePolicyRequestChecks
-	(*SetMergePolicyRequest)(nil),                                                                 // 274: octomanager.v2.SetMergePolicyRequest
-	(*SetMergeReadyRequest)(nil),                                                                  // 275: octomanager.v2.SetMergeReadyRequest
-	(*PauseMergeChainRequest)(nil),                                                                // 276: octomanager.v2.PauseMergeChainRequest
-	(*ResumeMergeChainRequest)(nil),                                                               // 277: octomanager.v2.ResumeMergeChainRequest
-	(*CancelMergeChainRequest)(nil),                                                               // 278: octomanager.v2.CancelMergeChainRequest
-	(*ReconcileMergeOperationRequest)(nil),                                                        // 279: octomanager.v2.ReconcileMergeOperationRequest
+	(DomainMergeEntryReadySource)(0),                                                              // 22: octomanager.v2.DomainMergeEntryReadySource
+	(DomainRepositoryAutomationPolicyStatus)(0),                                                   // 23: octomanager.v2.DomainRepositoryAutomationPolicyStatus
+	(DomainRepositoryAutomationPolicyStage)(0),                                                    // 24: octomanager.v2.DomainRepositoryAutomationPolicyStage
+	(DomainMergeOperationKind)(0),                                                                 // 25: octomanager.v2.DomainMergeOperationKind
+	(DomainMergeOperationState)(0),                                                                // 26: octomanager.v2.DomainMergeOperationState
+	(DomainMergeOperationPhase)(0),                                                                // 27: octomanager.v2.DomainMergeOperationPhase
+	(DomainMergeOperationPreparationKind)(0),                                                      // 28: octomanager.v2.DomainMergeOperationPreparationKind
+	(DomainDependencyPreparationKind)(0),                                                          // 29: octomanager.v2.DomainDependencyPreparationKind
+	(DomainPRReferenceTargetKind)(0),                                                              // 30: octomanager.v2.DomainPRReferenceTargetKind
+	(DomainPRReferenceHint)(0),                                                                    // 31: octomanager.v2.DomainPRReferenceHint
+	(DomainPRReferenceDecision)(0),                                                                // 32: octomanager.v2.DomainPRReferenceDecision
+	(DomainQueueInputEntriesItemMethod)(0),                                                        // 33: octomanager.v2.DomainQueueInputEntriesItemMethod
+	(DomainReceiptTargetMethod)(0),                                                                // 34: octomanager.v2.DomainReceiptTargetMethod
+	(DomainAgentDigestTransportKind)(0),                                                           // 35: octomanager.v2.DomainAgentDigestTransportKind
+	(DomainAgentDigestState)(0),                                                                   // 36: octomanager.v2.DomainAgentDigestState
+	(DomainDigestRevisionMergeTargetMethod)(0),                                                    // 37: octomanager.v2.DomainDigestRevisionMergeTargetMethod
+	(DomainDigestInspectionDigestTransportKind)(0),                                                // 38: octomanager.v2.DomainDigestInspectionDigestTransportKind
+	(DomainDigestInspectionDigestState)(0),                                                        // 39: octomanager.v2.DomainDigestInspectionDigestState
+	(DomainDigestInspectionRevisionMergeTargetMethod)(0),                                          // 40: octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
+	(DomainMergeReceiptResultState)(0),                                                            // 41: octomanager.v2.DomainMergeReceiptResultState
+	(DomainMergeOverviewChainsItemState)(0),                                                       // 42: octomanager.v2.DomainMergeOverviewChainsItemState
+	(DomainMergeOverviewEntriesItemAutoMergeSource)(0),                                            // 43: octomanager.v2.DomainMergeOverviewEntriesItemAutoMergeSource
+	(DomainMergeOverviewEntriesItemMethod)(0),                                                     // 44: octomanager.v2.DomainMergeOverviewEntriesItemMethod
+	(DomainMergeOverviewEntriesItemState)(0),                                                      // 45: octomanager.v2.DomainMergeOverviewEntriesItemState
+	(DomainMergeOverviewEntriesItemReadySource)(0),                                                // 46: octomanager.v2.DomainMergeOverviewEntriesItemReadySource
+	(DomainMergeOverviewOperationsItemKind)(0),                                                    // 47: octomanager.v2.DomainMergeOverviewOperationsItemKind
+	(DomainMergeOverviewOperationsItemState)(0),                                                   // 48: octomanager.v2.DomainMergeOverviewOperationsItemState
+	(DomainMergeOverviewOperationsItemPhase)(0),                                                   // 49: octomanager.v2.DomainMergeOverviewOperationsItemPhase
+	(DomainMergeOverviewOperationsItemPreparationKind)(0),                                         // 50: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
+	(DomainMergeOverviewDependenciesItemPreparationKind)(0),                                       // 51: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
+	(DomainReconciliationResultState)(0),                                                          // 52: octomanager.v2.DomainReconciliationResultState
+	(DomainArchivedSubmissionSummaryState)(0),                                                     // 53: octomanager.v2.DomainArchivedSubmissionSummaryState
+	(DomainArchivedSubmissionRequestMode)(0),                                                      // 54: octomanager.v2.DomainArchivedSubmissionRequestMode
+	(DomainArchivedSubmissionRequestValidationItemResult)(0),                                      // 55: octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
+	(DomainArchivedSubmissionRequestOwnerHarness)(0),                                              // 56: octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
+	(DomainArchivedSubmissionState)(0),                                                            // 57: octomanager.v2.DomainArchivedSubmissionState
+	(DomainArchivedSubmissionStagesItemRole)(0),                                                   // 58: octomanager.v2.DomainArchivedSubmissionStagesItemRole
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength)(0),                 // 59: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory)(0),                 // 60: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind)(0),        // 61: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind)(0),        // 62: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind)(0),        // 63: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind)(0),        // 64: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
+	(DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind)(0),        // 65: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
+	(DomainArchivedSubmissionStagesItemResultVariant2Tier)(0),                                     // 66: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
+	(DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis)(0),                          // 67: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
+	(DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus)(0),              // 68: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
+	(DomainArchivedSubmissionBriefRequestMode)(0),                                                 // 69: octomanager.v2.DomainArchivedSubmissionBriefRequestMode
+	(DomainArchivedSubmissionBriefRequestValidationItemResult)(0),                                 // 70: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
+	(DomainArchivedSubmissionBriefRequestOwnerHarness)(0),                                         // 71: octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
+	(DomainArchivedSubmissionBriefChangeTier)(0),                                                  // 72: octomanager.v2.DomainArchivedSubmissionBriefChangeTier
+	(DomainArchivedSubmissionBriefChangeClaimsItemBasis)(0),                                       // 73: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
+	(DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus)(0),                            // 74: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
+	(DomainRepositoryPolicyAnalysisRequirementsItemStrength)(0),                                   // 75: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
+	(DomainRepositoryPolicyAnalysisRequirementsItemCategory)(0),                                   // 76: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
+	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind)(0),                          // 77: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
+	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind)(0),                          // 78: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
+	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind)(0),                          // 79: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
+	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind)(0),                          // 80: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
+	(DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind)(0),                          // 81: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
+	(QueueMergeChainRequestInputEntriesItemMethod)(0),                                             // 82: octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
+	(DecidePRReferenceRequestDecision)(0),                                                         // 83: octomanager.v2.DecidePRReferenceRequestDecision
+	(*DomainCheckRecord)(nil),                                                                     // 84: octomanager.v2.DomainCheckRecord
+	(*DomainCheckEvidenceVariant1ValueItem)(nil),                                                  // 85: octomanager.v2.DomainCheckEvidenceVariant1ValueItem
+	(*DomainCheckEvidenceVariant1Value)(nil),                                                      // 86: octomanager.v2.DomainCheckEvidenceVariant1Value
+	(*DomainCheckEvidenceVariant1)(nil),                                                           // 87: octomanager.v2.DomainCheckEvidenceVariant1
+	(*DomainCheckEvidenceVariant2ValueItem)(nil),                                                  // 88: octomanager.v2.DomainCheckEvidenceVariant2ValueItem
+	(*DomainCheckEvidenceVariant2Value)(nil),                                                      // 89: octomanager.v2.DomainCheckEvidenceVariant2Value
+	(*DomainCheckEvidenceVariant2)(nil),                                                           // 90: octomanager.v2.DomainCheckEvidenceVariant2
+	(*DomainCheckEvidenceVariant3)(nil),                                                           // 91: octomanager.v2.DomainCheckEvidenceVariant3
+	(*DomainCheckEvidence)(nil),                                                                   // 92: octomanager.v2.DomainCheckEvidence
+	(*DomainReviewEvidenceVariant1ValueItem)(nil),                                                 // 93: octomanager.v2.DomainReviewEvidenceVariant1ValueItem
+	(*DomainReviewEvidenceVariant1Value)(nil),                                                     // 94: octomanager.v2.DomainReviewEvidenceVariant1Value
+	(*DomainReviewEvidenceVariant1)(nil),                                                          // 95: octomanager.v2.DomainReviewEvidenceVariant1
+	(*DomainReviewEvidenceVariant2ValueItem)(nil),                                                 // 96: octomanager.v2.DomainReviewEvidenceVariant2ValueItem
+	(*DomainReviewEvidenceVariant2Value)(nil),                                                     // 97: octomanager.v2.DomainReviewEvidenceVariant2Value
+	(*DomainReviewEvidenceVariant2)(nil),                                                          // 98: octomanager.v2.DomainReviewEvidenceVariant2
+	(*DomainReviewEvidenceVariant3)(nil),                                                          // 99: octomanager.v2.DomainReviewEvidenceVariant3
+	(*DomainReviewEvidence)(nil),                                                                  // 100: octomanager.v2.DomainReviewEvidence
+	(*DomainFeedbackEvidenceVariant1ValueItem)(nil),                                               // 101: octomanager.v2.DomainFeedbackEvidenceVariant1ValueItem
+	(*DomainFeedbackEvidenceVariant1Value)(nil),                                                   // 102: octomanager.v2.DomainFeedbackEvidenceVariant1Value
+	(*DomainFeedbackEvidenceVariant1)(nil),                                                        // 103: octomanager.v2.DomainFeedbackEvidenceVariant1
+	(*DomainFeedbackEvidenceVariant2ValueItem)(nil),                                               // 104: octomanager.v2.DomainFeedbackEvidenceVariant2ValueItem
+	(*DomainFeedbackEvidenceVariant2Value)(nil),                                                   // 105: octomanager.v2.DomainFeedbackEvidenceVariant2Value
+	(*DomainFeedbackEvidenceVariant2)(nil),                                                        // 106: octomanager.v2.DomainFeedbackEvidenceVariant2
+	(*DomainFeedbackEvidenceVariant3)(nil),                                                        // 107: octomanager.v2.DomainFeedbackEvidenceVariant3
+	(*DomainFeedbackEvidence)(nil),                                                                // 108: octomanager.v2.DomainFeedbackEvidence
+	(*DomainDeliveryProgressVariant1)(nil),                                                        // 109: octomanager.v2.DomainDeliveryProgressVariant1
+	(*DomainDeliveryProgressVariant2)(nil),                                                        // 110: octomanager.v2.DomainDeliveryProgressVariant2
+	(*DomainDeliveryProgressVariant3)(nil),                                                        // 111: octomanager.v2.DomainDeliveryProgressVariant3
+	(*DomainDeliveryProgressVariant4)(nil),                                                        // 112: octomanager.v2.DomainDeliveryProgressVariant4
+	(*DomainDeliveryProgress)(nil),                                                                // 113: octomanager.v2.DomainDeliveryProgress
+	(*DomainDeliveryOutcomeVariant1)(nil),                                                         // 114: octomanager.v2.DomainDeliveryOutcomeVariant1
+	(*DomainDeliveryOutcomeVariant2)(nil),                                                         // 115: octomanager.v2.DomainDeliveryOutcomeVariant2
+	(*DomainDeliveryOutcomeVariant3)(nil),                                                         // 116: octomanager.v2.DomainDeliveryOutcomeVariant3
+	(*DomainDeliveryOutcome)(nil),                                                                 // 117: octomanager.v2.DomainDeliveryOutcome
+	(*DomainMergeChain)(nil),                                                                      // 118: octomanager.v2.DomainMergeChain
+	(*DomainMergeEntryAgentInstructions)(nil),                                                     // 119: octomanager.v2.DomainMergeEntryAgentInstructions
+	(*DomainMergeEntryChecks)(nil),                                                                // 120: octomanager.v2.DomainMergeEntryChecks
+	(*DomainMergeEntryReady)(nil),                                                                 // 121: octomanager.v2.DomainMergeEntryReady
+	(*DomainMergeEntry)(nil),                                                                      // 122: octomanager.v2.DomainMergeEntry
+	(*DomainRepositoryAutomationPolicyInstructions)(nil),                                          // 123: octomanager.v2.DomainRepositoryAutomationPolicyInstructions
+	(*DomainRepositoryAutomationPolicy)(nil),                                                      // 124: octomanager.v2.DomainRepositoryAutomationPolicy
+	(*DomainMergeOperationPreparationChecksItem)(nil),                                             // 125: octomanager.v2.DomainMergeOperationPreparationChecksItem
+	(*DomainMergeOperationPreparationChecks)(nil),                                                 // 126: octomanager.v2.DomainMergeOperationPreparationChecks
+	(*DomainMergeOperationPreparationKey)(nil),                                                    // 127: octomanager.v2.DomainMergeOperationPreparationKey
+	(*DomainMergeOperationPreparation)(nil),                                                       // 128: octomanager.v2.DomainMergeOperationPreparation
+	(*DomainMergeOperation)(nil),                                                                  // 129: octomanager.v2.DomainMergeOperation
+	(*DomainDependencyPreparationChecksItem)(nil),                                                 // 130: octomanager.v2.DomainDependencyPreparationChecksItem
+	(*DomainDependencyPreparationChecks)(nil),                                                     // 131: octomanager.v2.DomainDependencyPreparationChecks
+	(*DomainDependencyPreparationKey)(nil),                                                        // 132: octomanager.v2.DomainDependencyPreparationKey
+	(*DomainDependencyPreparation)(nil),                                                           // 133: octomanager.v2.DomainDependencyPreparation
+	(*DomainDependency)(nil),                                                                      // 134: octomanager.v2.DomainDependency
+	(*DomainPRReference)(nil),                                                                     // 135: octomanager.v2.DomainPRReference
+	(*DomainQueueInputEntriesItemChecks)(nil),                                                     // 136: octomanager.v2.DomainQueueInputEntriesItemChecks
+	(*DomainQueueInputEntriesItem)(nil),                                                           // 137: octomanager.v2.DomainQueueInputEntriesItem
+	(*DomainQueueInputEntries)(nil),                                                               // 138: octomanager.v2.DomainQueueInputEntries
+	(*DomainQueueInput)(nil),                                                                      // 139: octomanager.v2.DomainQueueInput
+	(*DomainReceiptTarget)(nil),                                                                   // 140: octomanager.v2.DomainReceiptTarget
+	(*DomainAgentDigestTransport)(nil),                                                            // 141: octomanager.v2.DomainAgentDigestTransport
+	(*DomainAgentDigest)(nil),                                                                     // 142: octomanager.v2.DomainAgentDigest
+	(*DomainDigestRevisionMergeTarget)(nil),                                                       // 143: octomanager.v2.DomainDigestRevisionMergeTarget
+	(*DomainDigestRevisionMessageIds)(nil),                                                        // 144: octomanager.v2.DomainDigestRevisionMessageIds
+	(*DomainDigestRevision)(nil),                                                                  // 145: octomanager.v2.DomainDigestRevision
+	(*DomainDigestInspectionDigestTransport)(nil),                                                 // 146: octomanager.v2.DomainDigestInspectionDigestTransport
+	(*DomainDigestInspectionDigest)(nil),                                                          // 147: octomanager.v2.DomainDigestInspectionDigest
+	(*DomainDigestInspectionRevisionMergeTarget)(nil),                                             // 148: octomanager.v2.DomainDigestInspectionRevisionMergeTarget
+	(*DomainDigestInspectionRevisionMessageIds)(nil),                                              // 149: octomanager.v2.DomainDigestInspectionRevisionMessageIds
+	(*DomainDigestInspectionRevision)(nil),                                                        // 150: octomanager.v2.DomainDigestInspectionRevision
+	(*DomainDigestInspectionRevisions)(nil),                                                       // 151: octomanager.v2.DomainDigestInspectionRevisions
+	(*DomainDigestInspectionReceiptsItem)(nil),                                                    // 152: octomanager.v2.DomainDigestInspectionReceiptsItem
+	(*DomainDigestInspectionReceipts)(nil),                                                        // 153: octomanager.v2.DomainDigestInspectionReceipts
+	(*DomainDigestInspectionEventsItemDetailMessages)(nil),                                        // 154: octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
+	(*DomainDigestInspectionEventsItemDetailOmittedFields)(nil),                                   // 155: octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
+	(*DomainDigestInspectionEventsItemDetail)(nil),                                                // 156: octomanager.v2.DomainDigestInspectionEventsItemDetail
+	(*DomainDigestInspectionEventsItem)(nil),                                                      // 157: octomanager.v2.DomainDigestInspectionEventsItem
+	(*DomainDigestInspectionEvents)(nil),                                                          // 158: octomanager.v2.DomainDigestInspectionEvents
+	(*DomainDigestInspection)(nil),                                                                // 159: octomanager.v2.DomainDigestInspection
+	(*DomainDigestReceipt)(nil),                                                                   // 160: octomanager.v2.DomainDigestReceipt
+	(*DomainMergeReceiptResult)(nil),                                                              // 161: octomanager.v2.DomainMergeReceiptResult
+	(*DomainMergeOverviewChainsItem)(nil),                                                         // 162: octomanager.v2.DomainMergeOverviewChainsItem
+	(*DomainMergeOverviewChains)(nil),                                                             // 163: octomanager.v2.DomainMergeOverviewChains
+	(*DomainMergeOverviewEntriesItemAgentInstructions)(nil),                                       // 164: octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
+	(*DomainMergeOverviewEntriesItemChecks)(nil),                                                  // 165: octomanager.v2.DomainMergeOverviewEntriesItemChecks
+	(*DomainMergeOverviewEntriesItemReady)(nil),                                                   // 166: octomanager.v2.DomainMergeOverviewEntriesItemReady
+	(*DomainMergeOverviewEntriesItem)(nil),                                                        // 167: octomanager.v2.DomainMergeOverviewEntriesItem
+	(*DomainMergeOverviewEntries)(nil),                                                            // 168: octomanager.v2.DomainMergeOverviewEntries
+	(*DomainMergeOverviewOperationsItemPreparationChecksItem)(nil),                                // 169: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
+	(*DomainMergeOverviewOperationsItemPreparationChecks)(nil),                                    // 170: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
+	(*DomainMergeOverviewOperationsItemPreparationKey)(nil),                                       // 171: octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
+	(*DomainMergeOverviewOperationsItemPreparation)(nil),                                          // 172: octomanager.v2.DomainMergeOverviewOperationsItemPreparation
+	(*DomainMergeOverviewOperationsItem)(nil),                                                     // 173: octomanager.v2.DomainMergeOverviewOperationsItem
+	(*DomainMergeOverviewOperations)(nil),                                                         // 174: octomanager.v2.DomainMergeOverviewOperations
+	(*DomainMergeOverviewDependenciesItemPreparationChecksItem)(nil),                              // 175: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
+	(*DomainMergeOverviewDependenciesItemPreparationChecks)(nil),                                  // 176: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
+	(*DomainMergeOverviewDependenciesItemPreparationKey)(nil),                                     // 177: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
+	(*DomainMergeOverviewDependenciesItemPreparation)(nil),                                        // 178: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
+	(*DomainMergeOverviewDependenciesItem)(nil),                                                   // 179: octomanager.v2.DomainMergeOverviewDependenciesItem
+	(*DomainMergeOverviewDependencies)(nil),                                                       // 180: octomanager.v2.DomainMergeOverviewDependencies
+	(*DomainMergeOverview)(nil),                                                                   // 181: octomanager.v2.DomainMergeOverview
+	(*DomainReconciliationResult)(nil),                                                            // 182: octomanager.v2.DomainReconciliationResult
+	(*DomainArchivedSubmissionSummary)(nil),                                                       // 183: octomanager.v2.DomainArchivedSubmissionSummary
+	(*DomainArchivedSubmissionRequestValidationItem)(nil),                                         // 184: octomanager.v2.DomainArchivedSubmissionRequestValidationItem
+	(*DomainArchivedSubmissionRequestValidation)(nil),                                             // 185: octomanager.v2.DomainArchivedSubmissionRequestValidation
+	(*DomainArchivedSubmissionRequestOwner)(nil),                                                  // 186: octomanager.v2.DomainArchivedSubmissionRequestOwner
+	(*DomainArchivedSubmissionRequest)(nil),                                                       // 187: octomanager.v2.DomainArchivedSubmissionRequest
+	(*DomainArchivedSubmissionSnapshotFiles)(nil),                                                 // 188: octomanager.v2.DomainArchivedSubmissionSnapshotFiles
+	(*DomainArchivedSubmissionSnapshotSourcesItem)(nil),                                           // 189: octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
+	(*DomainArchivedSubmissionSnapshotSources)(nil),                                               // 190: octomanager.v2.DomainArchivedSubmissionSnapshotSources
+	(*DomainArchivedSubmissionSnapshot)(nil),                                                      // 191: octomanager.v2.DomainArchivedSubmissionSnapshot
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1)(nil),         // 192: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes)(nil), // 193: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2)(nil),         // 194: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3)(nil),         // 195: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4)(nil),         // 196: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5)(nil),         // 197: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck)(nil),                 // 198: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
+	(*DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem)(nil),                      // 199: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
+	(*DomainArchivedSubmissionStagesItemResultVariant1Requirements)(nil),                          // 200: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
+	(*DomainArchivedSubmissionStagesItemResultVariant1Blockers)(nil),                              // 201: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant1)(nil),                                      // 202: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
+	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs)(nil),                // 203: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
+	(*DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem)(nil),                            // 204: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
+	(*DomainArchivedSubmissionStagesItemResultVariant2Claims)(nil),                                // 205: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
+	(*DomainArchivedSubmissionStagesItemResultVariant2Limitations)(nil),                           // 206: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
+	(*DomainArchivedSubmissionStagesItemResultVariant2Blockers)(nil),                              // 207: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant2)(nil),                                      // 208: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
+	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem)(nil),                 // 209: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
+	(*DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks)(nil),                     // 210: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
+	(*DomainArchivedSubmissionStagesItemResultVariant3Blockers)(nil),                              // 211: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
+	(*DomainArchivedSubmissionStagesItemResultVariant3)(nil),                                      // 212: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
+	(*DomainArchivedSubmissionStagesItemResult)(nil),                                              // 213: octomanager.v2.DomainArchivedSubmissionStagesItemResult
+	(*DomainArchivedSubmissionStagesItem)(nil),                                                    // 214: octomanager.v2.DomainArchivedSubmissionStagesItem
+	(*DomainArchivedSubmissionStages)(nil),                                                        // 215: octomanager.v2.DomainArchivedSubmissionStages
+	(*DomainArchivedSubmissionBriefSchemaVersion)(nil),                                            // 216: octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
+	(*DomainArchivedSubmissionBriefRequestValidationItem)(nil),                                    // 217: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
+	(*DomainArchivedSubmissionBriefRequestValidation)(nil),                                        // 218: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
+	(*DomainArchivedSubmissionBriefRequestOwner)(nil),                                             // 219: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
+	(*DomainArchivedSubmissionBriefRequest)(nil),                                                  // 220: octomanager.v2.DomainArchivedSubmissionBriefRequest
+	(*DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs)(nil),                             // 221: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
+	(*DomainArchivedSubmissionBriefChangeClaimsItem)(nil),                                         // 222: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
+	(*DomainArchivedSubmissionBriefChangeClaims)(nil),                                             // 223: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
+	(*DomainArchivedSubmissionBriefChangeLimitations)(nil),                                        // 224: octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
+	(*DomainArchivedSubmissionBriefChangeBlockers)(nil),                                           // 225: octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
+	(*DomainArchivedSubmissionBriefChange)(nil),                                                   // 226: octomanager.v2.DomainArchivedSubmissionBriefChange
+	(*DomainArchivedSubmissionBriefDraftRequirementChecksItem)(nil),                               // 227: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
+	(*DomainArchivedSubmissionBriefDraftRequirementChecks)(nil),                                   // 228: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
+	(*DomainArchivedSubmissionBriefDraftBlockers)(nil),                                            // 229: octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
+	(*DomainArchivedSubmissionBriefDraft)(nil),                                                    // 230: octomanager.v2.DomainArchivedSubmissionBriefDraft
+	(*DomainArchivedSubmissionBrief)(nil),                                                         // 231: octomanager.v2.DomainArchivedSubmissionBrief
+	(*DomainArchivedSubmissionWorkerPids)(nil),                                                    // 232: octomanager.v2.DomainArchivedSubmissionWorkerPids
+	(*DomainArchivedSubmission)(nil),                                                              // 233: octomanager.v2.DomainArchivedSubmission
+	(*DomainRepositoryPolicyComplexityProfilesRoutineAdvisory)(nil),                               // 234: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesRoutine)(nil),                                       // 235: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
+	(*DomainRepositoryPolicyComplexityProfilesStandardAdvisory)(nil),                              // 236: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesStandard)(nil),                                      // 237: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
+	(*DomainRepositoryPolicyComplexityProfilesComplexAdvisory)(nil),                               // 238: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
+	(*DomainRepositoryPolicyComplexityProfilesComplex)(nil),                                       // 239: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
+	(*DomainRepositoryPolicyComplexityProfiles)(nil),                                              // 240: octomanager.v2.DomainRepositoryPolicyComplexityProfiles
+	(*DomainRepositoryPolicySchemaVersion)(nil),                                                   // 241: octomanager.v2.DomainRepositoryPolicySchemaVersion
+	(*DomainRepositoryPolicyAnalystVersionVariant1)(nil),                                          // 242: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
+	(*DomainRepositoryPolicyAnalystVersionVariant2)(nil),                                          // 243: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
+	(*DomainRepositoryPolicyAnalystVersionVariant3)(nil),                                          // 244: octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
+	(*DomainRepositoryPolicyAnalystVersion)(nil),                                                  // 245: octomanager.v2.DomainRepositoryPolicyAnalystVersion
+	(*DomainRepositoryPolicyStockVersion)(nil),                                                    // 246: octomanager.v2.DomainRepositoryPolicyStockVersion
+	(*DomainRepositoryPolicyCitationCorrectionsItem)(nil),                                         // 247: octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
+	(*DomainRepositoryPolicyCitationCorrections)(nil),                                             // 248: octomanager.v2.DomainRepositoryPolicyCitationCorrections
+	(*DomainRepositoryPolicySourcesItem)(nil),                                                     // 249: octomanager.v2.DomainRepositoryPolicySourcesItem
+	(*DomainRepositoryPolicySources)(nil),                                                         // 250: octomanager.v2.DomainRepositoryPolicySources
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1)(nil),                           // 251: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes)(nil),                   // 252: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2)(nil),                           // 253: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3)(nil),                           // 254: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4)(nil),                           // 255: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5)(nil),                           // 256: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
+	(*DomainRepositoryPolicyAnalysisRequirementsItemCheck)(nil),                                   // 257: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
+	(*DomainRepositoryPolicyAnalysisRequirementsItem)(nil),                                        // 258: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
+	(*DomainRepositoryPolicyAnalysisRequirements)(nil),                                            // 259: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
+	(*DomainRepositoryPolicyAnalysisBlockers)(nil),                                                // 260: octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
+	(*DomainRepositoryPolicyAnalysis)(nil),                                                        // 261: octomanager.v2.DomainRepositoryPolicyAnalysis
+	(*DomainRepositoryPolicy)(nil),                                                                // 262: octomanager.v2.DomainRepositoryPolicy
+	(*SetAutoMergeRequest)(nil),                                                                   // 263: octomanager.v2.SetAutoMergeRequest
+	(*QueueMergeChainRequestInputEntriesItemChecks)(nil),                                          // 264: octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
+	(*QueueMergeChainRequestInputEntriesItem)(nil),                                                // 265: octomanager.v2.QueueMergeChainRequestInputEntriesItem
+	(*QueueMergeChainRequestInputEntries)(nil),                                                    // 266: octomanager.v2.QueueMergeChainRequestInputEntries
+	(*QueueMergeChainRequestInput)(nil),                                                           // 267: octomanager.v2.QueueMergeChainRequestInput
+	(*QueueMergeChainRequest)(nil),                                                                // 268: octomanager.v2.QueueMergeChainRequest
+	(*InspectMergeChainsRequest)(nil),                                                             // 269: octomanager.v2.InspectMergeChainsRequest
+	(*ListPRReferencesRequest)(nil),                                                               // 270: octomanager.v2.ListPRReferencesRequest
+	(*ListPRDependenciesRequest)(nil),                                                             // 271: octomanager.v2.ListPRDependenciesRequest
+	(*ConfirmPRDependencyRequest)(nil),                                                            // 272: octomanager.v2.ConfirmPRDependencyRequest
+	(*RemovePRDependencyRequest)(nil),                                                             // 273: octomanager.v2.RemovePRDependencyRequest
+	(*DecidePRReferenceRequest)(nil),                                                              // 274: octomanager.v2.DecidePRReferenceRequest
+	(*SetMergePolicyRequestChecks)(nil),                                                           // 275: octomanager.v2.SetMergePolicyRequestChecks
+	(*SetMergePolicyRequest)(nil),                                                                 // 276: octomanager.v2.SetMergePolicyRequest
+	(*SetMergeReadyRequest)(nil),                                                                  // 277: octomanager.v2.SetMergeReadyRequest
+	(*PauseMergeChainRequest)(nil),                                                                // 278: octomanager.v2.PauseMergeChainRequest
+	(*ResumeMergeChainRequest)(nil),                                                               // 279: octomanager.v2.ResumeMergeChainRequest
+	(*CancelMergeChainRequest)(nil),                                                               // 280: octomanager.v2.CancelMergeChainRequest
+	(*ReconcileMergeOperationRequest)(nil),                                                        // 281: octomanager.v2.ReconcileMergeOperationRequest
 }
 var file_octomanager_v2_domain_proto_depIdxs = []int32{
-	83,  // 0: octomanager.v2.DomainCheckEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainCheckEvidenceVariant1ValueItem
+	85,  // 0: octomanager.v2.DomainCheckEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainCheckEvidenceVariant1ValueItem
 	0,   // 1: octomanager.v2.DomainCheckEvidenceVariant1.state:type_name -> octomanager.v2.DomainCheckEvidenceVariant1State
-	84,  // 2: octomanager.v2.DomainCheckEvidenceVariant1.value:type_name -> octomanager.v2.DomainCheckEvidenceVariant1Value
-	86,  // 3: octomanager.v2.DomainCheckEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainCheckEvidenceVariant2ValueItem
+	86,  // 2: octomanager.v2.DomainCheckEvidenceVariant1.value:type_name -> octomanager.v2.DomainCheckEvidenceVariant1Value
+	88,  // 3: octomanager.v2.DomainCheckEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainCheckEvidenceVariant2ValueItem
 	1,   // 4: octomanager.v2.DomainCheckEvidenceVariant2.state:type_name -> octomanager.v2.DomainCheckEvidenceVariant2State
-	87,  // 5: octomanager.v2.DomainCheckEvidenceVariant2.value:type_name -> octomanager.v2.DomainCheckEvidenceVariant2Value
+	89,  // 5: octomanager.v2.DomainCheckEvidenceVariant2.value:type_name -> octomanager.v2.DomainCheckEvidenceVariant2Value
 	2,   // 6: octomanager.v2.DomainCheckEvidenceVariant3.state:type_name -> octomanager.v2.DomainCheckEvidenceVariant3State
-	85,  // 7: octomanager.v2.DomainCheckEvidence.variant_1:type_name -> octomanager.v2.DomainCheckEvidenceVariant1
-	88,  // 8: octomanager.v2.DomainCheckEvidence.variant_2:type_name -> octomanager.v2.DomainCheckEvidenceVariant2
-	89,  // 9: octomanager.v2.DomainCheckEvidence.variant_3:type_name -> octomanager.v2.DomainCheckEvidenceVariant3
-	91,  // 10: octomanager.v2.DomainReviewEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainReviewEvidenceVariant1ValueItem
+	87,  // 7: octomanager.v2.DomainCheckEvidence.variant_1:type_name -> octomanager.v2.DomainCheckEvidenceVariant1
+	90,  // 8: octomanager.v2.DomainCheckEvidence.variant_2:type_name -> octomanager.v2.DomainCheckEvidenceVariant2
+	91,  // 9: octomanager.v2.DomainCheckEvidence.variant_3:type_name -> octomanager.v2.DomainCheckEvidenceVariant3
+	93,  // 10: octomanager.v2.DomainReviewEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainReviewEvidenceVariant1ValueItem
 	3,   // 11: octomanager.v2.DomainReviewEvidenceVariant1.state:type_name -> octomanager.v2.DomainReviewEvidenceVariant1State
-	92,  // 12: octomanager.v2.DomainReviewEvidenceVariant1.value:type_name -> octomanager.v2.DomainReviewEvidenceVariant1Value
-	94,  // 13: octomanager.v2.DomainReviewEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainReviewEvidenceVariant2ValueItem
+	94,  // 12: octomanager.v2.DomainReviewEvidenceVariant1.value:type_name -> octomanager.v2.DomainReviewEvidenceVariant1Value
+	96,  // 13: octomanager.v2.DomainReviewEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainReviewEvidenceVariant2ValueItem
 	4,   // 14: octomanager.v2.DomainReviewEvidenceVariant2.state:type_name -> octomanager.v2.DomainReviewEvidenceVariant2State
-	95,  // 15: octomanager.v2.DomainReviewEvidenceVariant2.value:type_name -> octomanager.v2.DomainReviewEvidenceVariant2Value
+	97,  // 15: octomanager.v2.DomainReviewEvidenceVariant2.value:type_name -> octomanager.v2.DomainReviewEvidenceVariant2Value
 	5,   // 16: octomanager.v2.DomainReviewEvidenceVariant3.state:type_name -> octomanager.v2.DomainReviewEvidenceVariant3State
-	93,  // 17: octomanager.v2.DomainReviewEvidence.variant_1:type_name -> octomanager.v2.DomainReviewEvidenceVariant1
-	96,  // 18: octomanager.v2.DomainReviewEvidence.variant_2:type_name -> octomanager.v2.DomainReviewEvidenceVariant2
-	97,  // 19: octomanager.v2.DomainReviewEvidence.variant_3:type_name -> octomanager.v2.DomainReviewEvidenceVariant3
+	95,  // 17: octomanager.v2.DomainReviewEvidence.variant_1:type_name -> octomanager.v2.DomainReviewEvidenceVariant1
+	98,  // 18: octomanager.v2.DomainReviewEvidence.variant_2:type_name -> octomanager.v2.DomainReviewEvidenceVariant2
+	99,  // 19: octomanager.v2.DomainReviewEvidence.variant_3:type_name -> octomanager.v2.DomainReviewEvidenceVariant3
 	7,   // 20: octomanager.v2.DomainFeedbackEvidenceVariant1ValueItem.source:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1ValueItemSource
-	99,  // 21: octomanager.v2.DomainFeedbackEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1ValueItem
+	101, // 21: octomanager.v2.DomainFeedbackEvidenceVariant1Value.items:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1ValueItem
 	6,   // 22: octomanager.v2.DomainFeedbackEvidenceVariant1.state:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1State
-	100, // 23: octomanager.v2.DomainFeedbackEvidenceVariant1.value:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1Value
+	102, // 23: octomanager.v2.DomainFeedbackEvidenceVariant1.value:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1Value
 	9,   // 24: octomanager.v2.DomainFeedbackEvidenceVariant2ValueItem.source:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2ValueItemSource
-	102, // 25: octomanager.v2.DomainFeedbackEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2ValueItem
+	104, // 25: octomanager.v2.DomainFeedbackEvidenceVariant2Value.items:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2ValueItem
 	8,   // 26: octomanager.v2.DomainFeedbackEvidenceVariant2.state:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2State
-	103, // 27: octomanager.v2.DomainFeedbackEvidenceVariant2.value:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2Value
+	105, // 27: octomanager.v2.DomainFeedbackEvidenceVariant2.value:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2Value
 	10,  // 28: octomanager.v2.DomainFeedbackEvidenceVariant3.state:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant3State
-	101, // 29: octomanager.v2.DomainFeedbackEvidence.variant_1:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1
-	104, // 30: octomanager.v2.DomainFeedbackEvidence.variant_2:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2
-	105, // 31: octomanager.v2.DomainFeedbackEvidence.variant_3:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant3
+	103, // 29: octomanager.v2.DomainFeedbackEvidence.variant_1:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant1
+	106, // 30: octomanager.v2.DomainFeedbackEvidence.variant_2:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant2
+	107, // 31: octomanager.v2.DomainFeedbackEvidence.variant_3:type_name -> octomanager.v2.DomainFeedbackEvidenceVariant3
 	11,  // 32: octomanager.v2.DomainDeliveryProgressVariant1.state:type_name -> octomanager.v2.DomainDeliveryProgressVariant1State
 	12,  // 33: octomanager.v2.DomainDeliveryProgressVariant2.state:type_name -> octomanager.v2.DomainDeliveryProgressVariant2State
 	13,  // 34: octomanager.v2.DomainDeliveryProgressVariant3.state:type_name -> octomanager.v2.DomainDeliveryProgressVariant3State
 	14,  // 35: octomanager.v2.DomainDeliveryProgressVariant4.state:type_name -> octomanager.v2.DomainDeliveryProgressVariant4State
-	107, // 36: octomanager.v2.DomainDeliveryProgress.variant_1:type_name -> octomanager.v2.DomainDeliveryProgressVariant1
-	108, // 37: octomanager.v2.DomainDeliveryProgress.variant_2:type_name -> octomanager.v2.DomainDeliveryProgressVariant2
-	109, // 38: octomanager.v2.DomainDeliveryProgress.variant_3:type_name -> octomanager.v2.DomainDeliveryProgressVariant3
-	110, // 39: octomanager.v2.DomainDeliveryProgress.variant_4:type_name -> octomanager.v2.DomainDeliveryProgressVariant4
+	109, // 36: octomanager.v2.DomainDeliveryProgress.variant_1:type_name -> octomanager.v2.DomainDeliveryProgressVariant1
+	110, // 37: octomanager.v2.DomainDeliveryProgress.variant_2:type_name -> octomanager.v2.DomainDeliveryProgressVariant2
+	111, // 38: octomanager.v2.DomainDeliveryProgress.variant_3:type_name -> octomanager.v2.DomainDeliveryProgressVariant3
+	112, // 39: octomanager.v2.DomainDeliveryProgress.variant_4:type_name -> octomanager.v2.DomainDeliveryProgressVariant4
 	15,  // 40: octomanager.v2.DomainDeliveryOutcomeVariant1.state:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant1State
 	16,  // 41: octomanager.v2.DomainDeliveryOutcomeVariant2.state:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant2State
 	17,  // 42: octomanager.v2.DomainDeliveryOutcomeVariant3.state:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant3State
-	112, // 43: octomanager.v2.DomainDeliveryOutcome.variant_1:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant1
-	113, // 44: octomanager.v2.DomainDeliveryOutcome.variant_2:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant2
-	114, // 45: octomanager.v2.DomainDeliveryOutcome.variant_3:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant3
+	114, // 43: octomanager.v2.DomainDeliveryOutcome.variant_1:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant1
+	115, // 44: octomanager.v2.DomainDeliveryOutcome.variant_2:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant2
+	116, // 45: octomanager.v2.DomainDeliveryOutcome.variant_3:type_name -> octomanager.v2.DomainDeliveryOutcomeVariant3
 	18,  // 46: octomanager.v2.DomainMergeChain.state:type_name -> octomanager.v2.DomainMergeChainState
-	19,  // 47: octomanager.v2.DomainMergeEntry.auto_merge_source:type_name -> octomanager.v2.DomainMergeEntryAutoMergeSource
-	117, // 48: octomanager.v2.DomainMergeEntry.agent_instructions:type_name -> octomanager.v2.DomainMergeEntryAgentInstructions
-	20,  // 49: octomanager.v2.DomainMergeEntry.method:type_name -> octomanager.v2.DomainMergeEntryMethod
-	118, // 50: octomanager.v2.DomainMergeEntry.checks:type_name -> octomanager.v2.DomainMergeEntryChecks
-	21,  // 51: octomanager.v2.DomainMergeEntry.state:type_name -> octomanager.v2.DomainMergeEntryState
-	119, // 52: octomanager.v2.DomainMergeEntry.ready:type_name -> octomanager.v2.DomainMergeEntryReady
-	22,  // 53: octomanager.v2.DomainRepositoryAutomationPolicy.status:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyStatus
-	23,  // 54: octomanager.v2.DomainRepositoryAutomationPolicy.stage:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyStage
-	121, // 55: octomanager.v2.DomainRepositoryAutomationPolicy.instructions:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyInstructions
-	123, // 56: octomanager.v2.DomainMergeOperationPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOperationPreparationChecksItem
-	27,  // 57: octomanager.v2.DomainMergeOperationPreparation.kind:type_name -> octomanager.v2.DomainMergeOperationPreparationKind
-	124, // 58: octomanager.v2.DomainMergeOperationPreparation.checks:type_name -> octomanager.v2.DomainMergeOperationPreparationChecks
-	125, // 59: octomanager.v2.DomainMergeOperationPreparation.key:type_name -> octomanager.v2.DomainMergeOperationPreparationKey
-	24,  // 60: octomanager.v2.DomainMergeOperation.kind:type_name -> octomanager.v2.DomainMergeOperationKind
-	25,  // 61: octomanager.v2.DomainMergeOperation.state:type_name -> octomanager.v2.DomainMergeOperationState
-	26,  // 62: octomanager.v2.DomainMergeOperation.phase:type_name -> octomanager.v2.DomainMergeOperationPhase
-	126, // 63: octomanager.v2.DomainMergeOperation.preparation:type_name -> octomanager.v2.DomainMergeOperationPreparation
-	128, // 64: octomanager.v2.DomainDependencyPreparationChecks.items:type_name -> octomanager.v2.DomainDependencyPreparationChecksItem
-	28,  // 65: octomanager.v2.DomainDependencyPreparation.kind:type_name -> octomanager.v2.DomainDependencyPreparationKind
-	129, // 66: octomanager.v2.DomainDependencyPreparation.checks:type_name -> octomanager.v2.DomainDependencyPreparationChecks
-	130, // 67: octomanager.v2.DomainDependencyPreparation.key:type_name -> octomanager.v2.DomainDependencyPreparationKey
-	131, // 68: octomanager.v2.DomainDependency.preparation:type_name -> octomanager.v2.DomainDependencyPreparation
-	29,  // 69: octomanager.v2.DomainPRReference.target_kind:type_name -> octomanager.v2.DomainPRReferenceTargetKind
-	30,  // 70: octomanager.v2.DomainPRReference.hint:type_name -> octomanager.v2.DomainPRReferenceHint
-	31,  // 71: octomanager.v2.DomainPRReference.decision:type_name -> octomanager.v2.DomainPRReferenceDecision
-	32,  // 72: octomanager.v2.DomainQueueInputEntriesItem.method:type_name -> octomanager.v2.DomainQueueInputEntriesItemMethod
-	134, // 73: octomanager.v2.DomainQueueInputEntriesItem.checks:type_name -> octomanager.v2.DomainQueueInputEntriesItemChecks
-	135, // 74: octomanager.v2.DomainQueueInputEntries.items:type_name -> octomanager.v2.DomainQueueInputEntriesItem
-	136, // 75: octomanager.v2.DomainQueueInput.entries:type_name -> octomanager.v2.DomainQueueInputEntries
-	33,  // 76: octomanager.v2.DomainReceiptTarget.method:type_name -> octomanager.v2.DomainReceiptTargetMethod
-	34,  // 77: octomanager.v2.DomainAgentDigestTransport.kind:type_name -> octomanager.v2.DomainAgentDigestTransportKind
-	139, // 78: octomanager.v2.DomainAgentDigest.transport:type_name -> octomanager.v2.DomainAgentDigestTransport
-	35,  // 79: octomanager.v2.DomainAgentDigest.state:type_name -> octomanager.v2.DomainAgentDigestState
-	36,  // 80: octomanager.v2.DomainDigestRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestRevisionMergeTargetMethod
-	141, // 81: octomanager.v2.DomainDigestRevision.merge_target:type_name -> octomanager.v2.DomainDigestRevisionMergeTarget
-	142, // 82: octomanager.v2.DomainDigestRevision.message_ids:type_name -> octomanager.v2.DomainDigestRevisionMessageIds
-	37,  // 83: octomanager.v2.DomainDigestInspectionDigestTransport.kind:type_name -> octomanager.v2.DomainDigestInspectionDigestTransportKind
-	144, // 84: octomanager.v2.DomainDigestInspectionDigest.transport:type_name -> octomanager.v2.DomainDigestInspectionDigestTransport
-	38,  // 85: octomanager.v2.DomainDigestInspectionDigest.state:type_name -> octomanager.v2.DomainDigestInspectionDigestState
-	39,  // 86: octomanager.v2.DomainDigestInspectionRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
-	146, // 87: octomanager.v2.DomainDigestInspectionRevision.merge_target:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTarget
-	147, // 88: octomanager.v2.DomainDigestInspectionRevision.message_ids:type_name -> octomanager.v2.DomainDigestInspectionRevisionMessageIds
-	150, // 89: octomanager.v2.DomainDigestInspectionReceipts.items:type_name -> octomanager.v2.DomainDigestInspectionReceiptsItem
-	152, // 90: octomanager.v2.DomainDigestInspectionEventsItemDetail.messages:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
-	153, // 91: octomanager.v2.DomainDigestInspectionEventsItemDetail.omitted_fields:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
-	154, // 92: octomanager.v2.DomainDigestInspectionEventsItem.detail:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetail
-	155, // 93: octomanager.v2.DomainDigestInspectionEvents.items:type_name -> octomanager.v2.DomainDigestInspectionEventsItem
-	145, // 94: octomanager.v2.DomainDigestInspection.digest:type_name -> octomanager.v2.DomainDigestInspectionDigest
-	148, // 95: octomanager.v2.DomainDigestInspection.revision:type_name -> octomanager.v2.DomainDigestInspectionRevision
-	149, // 96: octomanager.v2.DomainDigestInspection.revisions:type_name -> octomanager.v2.DomainDigestInspectionRevisions
-	151, // 97: octomanager.v2.DomainDigestInspection.receipts:type_name -> octomanager.v2.DomainDigestInspectionReceipts
-	156, // 98: octomanager.v2.DomainDigestInspection.events:type_name -> octomanager.v2.DomainDigestInspectionEvents
-	40,  // 99: octomanager.v2.DomainMergeReceiptResult.state:type_name -> octomanager.v2.DomainMergeReceiptResultState
-	41,  // 100: octomanager.v2.DomainMergeOverviewChainsItem.state:type_name -> octomanager.v2.DomainMergeOverviewChainsItemState
-	160, // 101: octomanager.v2.DomainMergeOverviewChains.items:type_name -> octomanager.v2.DomainMergeOverviewChainsItem
-	42,  // 102: octomanager.v2.DomainMergeOverviewEntriesItem.auto_merge_source:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemAutoMergeSource
-	162, // 103: octomanager.v2.DomainMergeOverviewEntriesItem.agent_instructions:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
-	43,  // 104: octomanager.v2.DomainMergeOverviewEntriesItem.method:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemMethod
-	163, // 105: octomanager.v2.DomainMergeOverviewEntriesItem.checks:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemChecks
-	44,  // 106: octomanager.v2.DomainMergeOverviewEntriesItem.state:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemState
-	164, // 107: octomanager.v2.DomainMergeOverviewEntriesItem.ready:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemReady
-	165, // 108: octomanager.v2.DomainMergeOverviewEntries.items:type_name -> octomanager.v2.DomainMergeOverviewEntriesItem
-	167, // 109: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
-	48,  // 110: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
-	168, // 111: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
-	169, // 112: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
-	45,  // 113: octomanager.v2.DomainMergeOverviewOperationsItem.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemKind
-	46,  // 114: octomanager.v2.DomainMergeOverviewOperationsItem.state:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemState
-	47,  // 115: octomanager.v2.DomainMergeOverviewOperationsItem.phase:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPhase
-	170, // 116: octomanager.v2.DomainMergeOverviewOperationsItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparation
-	171, // 117: octomanager.v2.DomainMergeOverviewOperations.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItem
-	173, // 118: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
-	49,  // 119: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
-	174, // 120: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
-	175, // 121: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
-	176, // 122: octomanager.v2.DomainMergeOverviewDependenciesItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
-	177, // 123: octomanager.v2.DomainMergeOverviewDependencies.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItem
-	161, // 124: octomanager.v2.DomainMergeOverview.chains:type_name -> octomanager.v2.DomainMergeOverviewChains
-	166, // 125: octomanager.v2.DomainMergeOverview.entries:type_name -> octomanager.v2.DomainMergeOverviewEntries
-	172, // 126: octomanager.v2.DomainMergeOverview.operations:type_name -> octomanager.v2.DomainMergeOverviewOperations
-	178, // 127: octomanager.v2.DomainMergeOverview.dependencies:type_name -> octomanager.v2.DomainMergeOverviewDependencies
-	50,  // 128: octomanager.v2.DomainReconciliationResult.state:type_name -> octomanager.v2.DomainReconciliationResultState
-	51,  // 129: octomanager.v2.DomainArchivedSubmissionSummary.state:type_name -> octomanager.v2.DomainArchivedSubmissionSummaryState
-	53,  // 130: octomanager.v2.DomainArchivedSubmissionRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
-	182, // 131: octomanager.v2.DomainArchivedSubmissionRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItem
-	54,  // 132: octomanager.v2.DomainArchivedSubmissionRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
-	52,  // 133: octomanager.v2.DomainArchivedSubmissionRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionRequestMode
-	183, // 134: octomanager.v2.DomainArchivedSubmissionRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidation
-	184, // 135: octomanager.v2.DomainArchivedSubmissionRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwner
-	187, // 136: octomanager.v2.DomainArchivedSubmissionSnapshotSources.items:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
-	186, // 137: octomanager.v2.DomainArchivedSubmissionSnapshot.files:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotFiles
-	188, // 138: octomanager.v2.DomainArchivedSubmissionSnapshot.sources:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSources
-	59,  // 139: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
-	60,  // 140: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
-	191, // 141: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
-	61,  // 142: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
-	62,  // 143: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
-	63,  // 144: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
-	190, // 145: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
-	192, // 146: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
-	193, // 147: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
-	194, // 148: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
-	195, // 149: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
-	57,  // 150: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.strength:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
-	58,  // 151: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.category:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
-	196, // 152: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.check:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
-	197, // 153: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
-	198, // 154: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.requirements:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
-	199, // 155: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
-	201, // 156: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
-	65,  // 157: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
-	202, // 158: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
-	64,  // 159: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.tier:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
-	203, // 160: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.claims:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
-	204, // 161: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
-	205, // 162: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
-	66,  // 163: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
-	207, // 164: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
-	208, // 165: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
-	209, // 166: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
-	200, // 167: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
-	206, // 168: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
-	210, // 169: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
-	56,  // 170: octomanager.v2.DomainArchivedSubmissionStagesItem.role:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemRole
-	211, // 171: octomanager.v2.DomainArchivedSubmissionStagesItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResult
-	212, // 172: octomanager.v2.DomainArchivedSubmissionStages.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItem
-	68,  // 173: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
-	215, // 174: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
-	69,  // 175: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
-	67,  // 176: octomanager.v2.DomainArchivedSubmissionBriefRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestMode
-	216, // 177: octomanager.v2.DomainArchivedSubmissionBriefRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
-	217, // 178: octomanager.v2.DomainArchivedSubmissionBriefRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
-	219, // 179: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
-	71,  // 180: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
-	220, // 181: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
-	70,  // 182: octomanager.v2.DomainArchivedSubmissionBriefChange.tier:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeTier
-	221, // 183: octomanager.v2.DomainArchivedSubmissionBriefChange.claims:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
-	222, // 184: octomanager.v2.DomainArchivedSubmissionBriefChange.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
-	223, // 185: octomanager.v2.DomainArchivedSubmissionBriefChange.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
-	72,  // 186: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
-	225, // 187: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
-	226, // 188: octomanager.v2.DomainArchivedSubmissionBriefDraft.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
-	227, // 189: octomanager.v2.DomainArchivedSubmissionBriefDraft.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
-	214, // 190: octomanager.v2.DomainArchivedSubmissionBrief.schema_version:type_name -> octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
-	218, // 191: octomanager.v2.DomainArchivedSubmissionBrief.request:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequest
-	224, // 192: octomanager.v2.DomainArchivedSubmissionBrief.change:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChange
-	228, // 193: octomanager.v2.DomainArchivedSubmissionBrief.draft:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraft
-	185, // 194: octomanager.v2.DomainArchivedSubmission.request:type_name -> octomanager.v2.DomainArchivedSubmissionRequest
-	55,  // 195: octomanager.v2.DomainArchivedSubmission.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
-	189, // 196: octomanager.v2.DomainArchivedSubmission.snapshot:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshot
-	213, // 197: octomanager.v2.DomainArchivedSubmission.stages:type_name -> octomanager.v2.DomainArchivedSubmissionStages
-	229, // 198: octomanager.v2.DomainArchivedSubmission.brief:type_name -> octomanager.v2.DomainArchivedSubmissionBrief
-	230, // 199: octomanager.v2.DomainArchivedSubmission.worker_pids:type_name -> octomanager.v2.DomainArchivedSubmissionWorkerPids
-	232, // 200: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
-	234, // 201: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
-	236, // 202: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
-	233, // 203: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.routine:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
-	235, // 204: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.standard:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
-	237, // 205: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.complex:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
-	240, // 206: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
-	241, // 207: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
-	242, // 208: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
-	245, // 209: octomanager.v2.DomainRepositoryPolicyCitationCorrections.items:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
-	247, // 210: octomanager.v2.DomainRepositoryPolicySources.items:type_name -> octomanager.v2.DomainRepositoryPolicySourcesItem
-	75,  // 211: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
-	76,  // 212: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
-	250, // 213: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
-	77,  // 214: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
-	78,  // 215: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
-	79,  // 216: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
-	249, // 217: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
-	251, // 218: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
-	252, // 219: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
-	253, // 220: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
-	254, // 221: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
-	73,  // 222: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.strength:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
-	74,  // 223: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.category:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
-	255, // 224: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.check:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
-	256, // 225: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements.items:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
-	257, // 226: octomanager.v2.DomainRepositoryPolicyAnalysis.requirements:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
-	258, // 227: octomanager.v2.DomainRepositoryPolicyAnalysis.blockers:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
-	238, // 228: octomanager.v2.DomainRepositoryPolicy.complexity_profiles:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfiles
-	239, // 229: octomanager.v2.DomainRepositoryPolicy.schema_version:type_name -> octomanager.v2.DomainRepositoryPolicySchemaVersion
-	243, // 230: octomanager.v2.DomainRepositoryPolicy.analyst_version:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersion
-	244, // 231: octomanager.v2.DomainRepositoryPolicy.stock_version:type_name -> octomanager.v2.DomainRepositoryPolicyStockVersion
-	246, // 232: octomanager.v2.DomainRepositoryPolicy.citation_corrections:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrections
-	248, // 233: octomanager.v2.DomainRepositoryPolicy.sources:type_name -> octomanager.v2.DomainRepositoryPolicySources
-	259, // 234: octomanager.v2.DomainRepositoryPolicy.analysis:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysis
-	80,  // 235: octomanager.v2.QueueMergeChainRequestInputEntriesItem.method:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
-	262, // 236: octomanager.v2.QueueMergeChainRequestInputEntriesItem.checks:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
-	263, // 237: octomanager.v2.QueueMergeChainRequestInputEntries.items:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItem
-	264, // 238: octomanager.v2.QueueMergeChainRequestInput.entries:type_name -> octomanager.v2.QueueMergeChainRequestInputEntries
-	265, // 239: octomanager.v2.QueueMergeChainRequest.input:type_name -> octomanager.v2.QueueMergeChainRequestInput
-	81,  // 240: octomanager.v2.DecidePRReferenceRequest.decision:type_name -> octomanager.v2.DecidePRReferenceRequestDecision
-	273, // 241: octomanager.v2.SetMergePolicyRequest.checks:type_name -> octomanager.v2.SetMergePolicyRequestChecks
-	242, // [242:242] is the sub-list for method output_type
-	242, // [242:242] is the sub-list for method input_type
-	242, // [242:242] is the sub-list for extension type_name
-	242, // [242:242] is the sub-list for extension extendee
-	0,   // [0:242] is the sub-list for field type_name
+	22,  // 47: octomanager.v2.DomainMergeEntryReady.source:type_name -> octomanager.v2.DomainMergeEntryReadySource
+	19,  // 48: octomanager.v2.DomainMergeEntry.auto_merge_source:type_name -> octomanager.v2.DomainMergeEntryAutoMergeSource
+	119, // 49: octomanager.v2.DomainMergeEntry.agent_instructions:type_name -> octomanager.v2.DomainMergeEntryAgentInstructions
+	20,  // 50: octomanager.v2.DomainMergeEntry.method:type_name -> octomanager.v2.DomainMergeEntryMethod
+	120, // 51: octomanager.v2.DomainMergeEntry.checks:type_name -> octomanager.v2.DomainMergeEntryChecks
+	21,  // 52: octomanager.v2.DomainMergeEntry.state:type_name -> octomanager.v2.DomainMergeEntryState
+	121, // 53: octomanager.v2.DomainMergeEntry.ready:type_name -> octomanager.v2.DomainMergeEntryReady
+	23,  // 54: octomanager.v2.DomainRepositoryAutomationPolicy.status:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyStatus
+	24,  // 55: octomanager.v2.DomainRepositoryAutomationPolicy.stage:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyStage
+	123, // 56: octomanager.v2.DomainRepositoryAutomationPolicy.instructions:type_name -> octomanager.v2.DomainRepositoryAutomationPolicyInstructions
+	125, // 57: octomanager.v2.DomainMergeOperationPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOperationPreparationChecksItem
+	28,  // 58: octomanager.v2.DomainMergeOperationPreparation.kind:type_name -> octomanager.v2.DomainMergeOperationPreparationKind
+	126, // 59: octomanager.v2.DomainMergeOperationPreparation.checks:type_name -> octomanager.v2.DomainMergeOperationPreparationChecks
+	127, // 60: octomanager.v2.DomainMergeOperationPreparation.key:type_name -> octomanager.v2.DomainMergeOperationPreparationKey
+	25,  // 61: octomanager.v2.DomainMergeOperation.kind:type_name -> octomanager.v2.DomainMergeOperationKind
+	26,  // 62: octomanager.v2.DomainMergeOperation.state:type_name -> octomanager.v2.DomainMergeOperationState
+	27,  // 63: octomanager.v2.DomainMergeOperation.phase:type_name -> octomanager.v2.DomainMergeOperationPhase
+	128, // 64: octomanager.v2.DomainMergeOperation.preparation:type_name -> octomanager.v2.DomainMergeOperationPreparation
+	130, // 65: octomanager.v2.DomainDependencyPreparationChecks.items:type_name -> octomanager.v2.DomainDependencyPreparationChecksItem
+	29,  // 66: octomanager.v2.DomainDependencyPreparation.kind:type_name -> octomanager.v2.DomainDependencyPreparationKind
+	131, // 67: octomanager.v2.DomainDependencyPreparation.checks:type_name -> octomanager.v2.DomainDependencyPreparationChecks
+	132, // 68: octomanager.v2.DomainDependencyPreparation.key:type_name -> octomanager.v2.DomainDependencyPreparationKey
+	133, // 69: octomanager.v2.DomainDependency.preparation:type_name -> octomanager.v2.DomainDependencyPreparation
+	30,  // 70: octomanager.v2.DomainPRReference.target_kind:type_name -> octomanager.v2.DomainPRReferenceTargetKind
+	31,  // 71: octomanager.v2.DomainPRReference.hint:type_name -> octomanager.v2.DomainPRReferenceHint
+	32,  // 72: octomanager.v2.DomainPRReference.decision:type_name -> octomanager.v2.DomainPRReferenceDecision
+	33,  // 73: octomanager.v2.DomainQueueInputEntriesItem.method:type_name -> octomanager.v2.DomainQueueInputEntriesItemMethod
+	136, // 74: octomanager.v2.DomainQueueInputEntriesItem.checks:type_name -> octomanager.v2.DomainQueueInputEntriesItemChecks
+	137, // 75: octomanager.v2.DomainQueueInputEntries.items:type_name -> octomanager.v2.DomainQueueInputEntriesItem
+	138, // 76: octomanager.v2.DomainQueueInput.entries:type_name -> octomanager.v2.DomainQueueInputEntries
+	34,  // 77: octomanager.v2.DomainReceiptTarget.method:type_name -> octomanager.v2.DomainReceiptTargetMethod
+	35,  // 78: octomanager.v2.DomainAgentDigestTransport.kind:type_name -> octomanager.v2.DomainAgentDigestTransportKind
+	141, // 79: octomanager.v2.DomainAgentDigest.transport:type_name -> octomanager.v2.DomainAgentDigestTransport
+	36,  // 80: octomanager.v2.DomainAgentDigest.state:type_name -> octomanager.v2.DomainAgentDigestState
+	37,  // 81: octomanager.v2.DomainDigestRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestRevisionMergeTargetMethod
+	143, // 82: octomanager.v2.DomainDigestRevision.merge_target:type_name -> octomanager.v2.DomainDigestRevisionMergeTarget
+	144, // 83: octomanager.v2.DomainDigestRevision.message_ids:type_name -> octomanager.v2.DomainDigestRevisionMessageIds
+	38,  // 84: octomanager.v2.DomainDigestInspectionDigestTransport.kind:type_name -> octomanager.v2.DomainDigestInspectionDigestTransportKind
+	146, // 85: octomanager.v2.DomainDigestInspectionDigest.transport:type_name -> octomanager.v2.DomainDigestInspectionDigestTransport
+	39,  // 86: octomanager.v2.DomainDigestInspectionDigest.state:type_name -> octomanager.v2.DomainDigestInspectionDigestState
+	40,  // 87: octomanager.v2.DomainDigestInspectionRevisionMergeTarget.method:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTargetMethod
+	148, // 88: octomanager.v2.DomainDigestInspectionRevision.merge_target:type_name -> octomanager.v2.DomainDigestInspectionRevisionMergeTarget
+	149, // 89: octomanager.v2.DomainDigestInspectionRevision.message_ids:type_name -> octomanager.v2.DomainDigestInspectionRevisionMessageIds
+	152, // 90: octomanager.v2.DomainDigestInspectionReceipts.items:type_name -> octomanager.v2.DomainDigestInspectionReceiptsItem
+	154, // 91: octomanager.v2.DomainDigestInspectionEventsItemDetail.messages:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailMessages
+	155, // 92: octomanager.v2.DomainDigestInspectionEventsItemDetail.omitted_fields:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetailOmittedFields
+	156, // 93: octomanager.v2.DomainDigestInspectionEventsItem.detail:type_name -> octomanager.v2.DomainDigestInspectionEventsItemDetail
+	157, // 94: octomanager.v2.DomainDigestInspectionEvents.items:type_name -> octomanager.v2.DomainDigestInspectionEventsItem
+	147, // 95: octomanager.v2.DomainDigestInspection.digest:type_name -> octomanager.v2.DomainDigestInspectionDigest
+	150, // 96: octomanager.v2.DomainDigestInspection.revision:type_name -> octomanager.v2.DomainDigestInspectionRevision
+	151, // 97: octomanager.v2.DomainDigestInspection.revisions:type_name -> octomanager.v2.DomainDigestInspectionRevisions
+	153, // 98: octomanager.v2.DomainDigestInspection.receipts:type_name -> octomanager.v2.DomainDigestInspectionReceipts
+	158, // 99: octomanager.v2.DomainDigestInspection.events:type_name -> octomanager.v2.DomainDigestInspectionEvents
+	41,  // 100: octomanager.v2.DomainMergeReceiptResult.state:type_name -> octomanager.v2.DomainMergeReceiptResultState
+	42,  // 101: octomanager.v2.DomainMergeOverviewChainsItem.state:type_name -> octomanager.v2.DomainMergeOverviewChainsItemState
+	162, // 102: octomanager.v2.DomainMergeOverviewChains.items:type_name -> octomanager.v2.DomainMergeOverviewChainsItem
+	46,  // 103: octomanager.v2.DomainMergeOverviewEntriesItemReady.source:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemReadySource
+	43,  // 104: octomanager.v2.DomainMergeOverviewEntriesItem.auto_merge_source:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemAutoMergeSource
+	164, // 105: octomanager.v2.DomainMergeOverviewEntriesItem.agent_instructions:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemAgentInstructions
+	44,  // 106: octomanager.v2.DomainMergeOverviewEntriesItem.method:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemMethod
+	165, // 107: octomanager.v2.DomainMergeOverviewEntriesItem.checks:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemChecks
+	45,  // 108: octomanager.v2.DomainMergeOverviewEntriesItem.state:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemState
+	166, // 109: octomanager.v2.DomainMergeOverviewEntriesItem.ready:type_name -> octomanager.v2.DomainMergeOverviewEntriesItemReady
+	167, // 110: octomanager.v2.DomainMergeOverviewEntries.items:type_name -> octomanager.v2.DomainMergeOverviewEntriesItem
+	169, // 111: octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecksItem
+	50,  // 112: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKind
+	170, // 113: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationChecks
+	171, // 114: octomanager.v2.DomainMergeOverviewOperationsItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparationKey
+	47,  // 115: octomanager.v2.DomainMergeOverviewOperationsItem.kind:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemKind
+	48,  // 116: octomanager.v2.DomainMergeOverviewOperationsItem.state:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemState
+	49,  // 117: octomanager.v2.DomainMergeOverviewOperationsItem.phase:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPhase
+	172, // 118: octomanager.v2.DomainMergeOverviewOperationsItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewOperationsItemPreparation
+	173, // 119: octomanager.v2.DomainMergeOverviewOperations.items:type_name -> octomanager.v2.DomainMergeOverviewOperationsItem
+	175, // 120: octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecksItem
+	51,  // 121: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.kind:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKind
+	176, // 122: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.checks:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationChecks
+	177, // 123: octomanager.v2.DomainMergeOverviewDependenciesItemPreparation.key:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparationKey
+	178, // 124: octomanager.v2.DomainMergeOverviewDependenciesItem.preparation:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItemPreparation
+	179, // 125: octomanager.v2.DomainMergeOverviewDependencies.items:type_name -> octomanager.v2.DomainMergeOverviewDependenciesItem
+	163, // 126: octomanager.v2.DomainMergeOverview.chains:type_name -> octomanager.v2.DomainMergeOverviewChains
+	168, // 127: octomanager.v2.DomainMergeOverview.entries:type_name -> octomanager.v2.DomainMergeOverviewEntries
+	174, // 128: octomanager.v2.DomainMergeOverview.operations:type_name -> octomanager.v2.DomainMergeOverviewOperations
+	180, // 129: octomanager.v2.DomainMergeOverview.dependencies:type_name -> octomanager.v2.DomainMergeOverviewDependencies
+	52,  // 130: octomanager.v2.DomainReconciliationResult.state:type_name -> octomanager.v2.DomainReconciliationResultState
+	53,  // 131: octomanager.v2.DomainArchivedSubmissionSummary.state:type_name -> octomanager.v2.DomainArchivedSubmissionSummaryState
+	55,  // 132: octomanager.v2.DomainArchivedSubmissionRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItemResult
+	184, // 133: octomanager.v2.DomainArchivedSubmissionRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidationItem
+	56,  // 134: octomanager.v2.DomainArchivedSubmissionRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwnerHarness
+	54,  // 135: octomanager.v2.DomainArchivedSubmissionRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionRequestMode
+	185, // 136: octomanager.v2.DomainArchivedSubmissionRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionRequestValidation
+	186, // 137: octomanager.v2.DomainArchivedSubmissionRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionRequestOwner
+	189, // 138: octomanager.v2.DomainArchivedSubmissionSnapshotSources.items:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSourcesItem
+	188, // 139: octomanager.v2.DomainArchivedSubmissionSnapshot.files:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotFiles
+	190, // 140: octomanager.v2.DomainArchivedSubmissionSnapshot.sources:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshotSources
+	61,  // 141: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1Kind
+	62,  // 142: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Kind
+	193, // 143: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2Prefixes
+	63,  // 144: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3Kind
+	64,  // 145: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4Kind
+	65,  // 146: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5Kind
+	192, // 147: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant1
+	194, // 148: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant2
+	195, // 149: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant3
+	196, // 150: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant4
+	197, // 151: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheckVariant5
+	59,  // 152: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.strength:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemStrength
+	60,  // 153: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.category:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCategory
+	198, // 154: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem.check:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItemCheck
+	199, // 155: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1RequirementsItem
+	200, // 156: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.requirements:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Requirements
+	201, // 157: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1Blockers
+	203, // 158: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemEvidenceRefs
+	67,  // 159: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItemBasis
+	204, // 160: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2ClaimsItem
+	66,  // 161: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.tier:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Tier
+	205, // 162: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.claims:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Claims
+	206, // 163: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Limitations
+	207, // 164: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2Blockers
+	68,  // 165: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItemStatus
+	209, // 166: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecksItem
+	210, // 167: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3RequirementChecks
+	211, // 168: octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3Blockers
+	202, // 169: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_1:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant1
+	208, // 170: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_2:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant2
+	212, // 171: octomanager.v2.DomainArchivedSubmissionStagesItemResult.variant_3:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResultVariant3
+	58,  // 172: octomanager.v2.DomainArchivedSubmissionStagesItem.role:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemRole
+	213, // 173: octomanager.v2.DomainArchivedSubmissionStagesItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItemResult
+	214, // 174: octomanager.v2.DomainArchivedSubmissionStages.items:type_name -> octomanager.v2.DomainArchivedSubmissionStagesItem
+	70,  // 175: octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem.result:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItemResult
+	217, // 176: octomanager.v2.DomainArchivedSubmissionBriefRequestValidation.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidationItem
+	71,  // 177: octomanager.v2.DomainArchivedSubmissionBriefRequestOwner.harness:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwnerHarness
+	69,  // 178: octomanager.v2.DomainArchivedSubmissionBriefRequest.mode:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestMode
+	218, // 179: octomanager.v2.DomainArchivedSubmissionBriefRequest.validation:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestValidation
+	219, // 180: octomanager.v2.DomainArchivedSubmissionBriefRequest.owner:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequestOwner
+	221, // 181: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.evidence_refs:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemEvidenceRefs
+	73,  // 182: octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem.basis:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItemBasis
+	222, // 183: octomanager.v2.DomainArchivedSubmissionBriefChangeClaims.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaimsItem
+	72,  // 184: octomanager.v2.DomainArchivedSubmissionBriefChange.tier:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeTier
+	223, // 185: octomanager.v2.DomainArchivedSubmissionBriefChange.claims:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeClaims
+	224, // 186: octomanager.v2.DomainArchivedSubmissionBriefChange.limitations:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeLimitations
+	225, // 187: octomanager.v2.DomainArchivedSubmissionBriefChange.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChangeBlockers
+	74,  // 188: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem.status:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItemStatus
+	227, // 189: octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks.items:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecksItem
+	228, // 190: octomanager.v2.DomainArchivedSubmissionBriefDraft.requirement_checks:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftRequirementChecks
+	229, // 191: octomanager.v2.DomainArchivedSubmissionBriefDraft.blockers:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraftBlockers
+	216, // 192: octomanager.v2.DomainArchivedSubmissionBrief.schema_version:type_name -> octomanager.v2.DomainArchivedSubmissionBriefSchemaVersion
+	220, // 193: octomanager.v2.DomainArchivedSubmissionBrief.request:type_name -> octomanager.v2.DomainArchivedSubmissionBriefRequest
+	226, // 194: octomanager.v2.DomainArchivedSubmissionBrief.change:type_name -> octomanager.v2.DomainArchivedSubmissionBriefChange
+	230, // 195: octomanager.v2.DomainArchivedSubmissionBrief.draft:type_name -> octomanager.v2.DomainArchivedSubmissionBriefDraft
+	187, // 196: octomanager.v2.DomainArchivedSubmission.request:type_name -> octomanager.v2.DomainArchivedSubmissionRequest
+	57,  // 197: octomanager.v2.DomainArchivedSubmission.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
+	191, // 198: octomanager.v2.DomainArchivedSubmission.snapshot:type_name -> octomanager.v2.DomainArchivedSubmissionSnapshot
+	215, // 199: octomanager.v2.DomainArchivedSubmission.stages:type_name -> octomanager.v2.DomainArchivedSubmissionStages
+	231, // 200: octomanager.v2.DomainArchivedSubmission.brief:type_name -> octomanager.v2.DomainArchivedSubmissionBrief
+	232, // 201: octomanager.v2.DomainArchivedSubmission.worker_pids:type_name -> octomanager.v2.DomainArchivedSubmissionWorkerPids
+	234, // 202: octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutineAdvisory
+	236, // 203: octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandardAdvisory
+	238, // 204: octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex.advisory:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplexAdvisory
+	235, // 205: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.routine:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesRoutine
+	237, // 206: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.standard:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesStandard
+	239, // 207: octomanager.v2.DomainRepositoryPolicyComplexityProfiles.complex:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfilesComplex
+	242, // 208: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant1
+	243, // 209: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant2
+	244, // 210: octomanager.v2.DomainRepositoryPolicyAnalystVersion.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersionVariant3
+	247, // 211: octomanager.v2.DomainRepositoryPolicyCitationCorrections.items:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrectionsItem
+	249, // 212: octomanager.v2.DomainRepositoryPolicySources.items:type_name -> octomanager.v2.DomainRepositoryPolicySourcesItem
+	77,  // 213: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1Kind
+	78,  // 214: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Kind
+	252, // 215: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2.prefixes:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2Prefixes
+	79,  // 216: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3Kind
+	80,  // 217: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4Kind
+	81,  // 218: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5.kind:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5Kind
+	251, // 219: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_1:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant1
+	253, // 220: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_2:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant2
+	254, // 221: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_3:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant3
+	255, // 222: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_4:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant4
+	256, // 223: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck.variant_5:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheckVariant5
+	75,  // 224: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.strength:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemStrength
+	76,  // 225: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.category:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCategory
+	257, // 226: octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem.check:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItemCheck
+	258, // 227: octomanager.v2.DomainRepositoryPolicyAnalysisRequirements.items:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirementsItem
+	259, // 228: octomanager.v2.DomainRepositoryPolicyAnalysis.requirements:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisRequirements
+	260, // 229: octomanager.v2.DomainRepositoryPolicyAnalysis.blockers:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysisBlockers
+	240, // 230: octomanager.v2.DomainRepositoryPolicy.complexity_profiles:type_name -> octomanager.v2.DomainRepositoryPolicyComplexityProfiles
+	241, // 231: octomanager.v2.DomainRepositoryPolicy.schema_version:type_name -> octomanager.v2.DomainRepositoryPolicySchemaVersion
+	245, // 232: octomanager.v2.DomainRepositoryPolicy.analyst_version:type_name -> octomanager.v2.DomainRepositoryPolicyAnalystVersion
+	246, // 233: octomanager.v2.DomainRepositoryPolicy.stock_version:type_name -> octomanager.v2.DomainRepositoryPolicyStockVersion
+	248, // 234: octomanager.v2.DomainRepositoryPolicy.citation_corrections:type_name -> octomanager.v2.DomainRepositoryPolicyCitationCorrections
+	250, // 235: octomanager.v2.DomainRepositoryPolicy.sources:type_name -> octomanager.v2.DomainRepositoryPolicySources
+	261, // 236: octomanager.v2.DomainRepositoryPolicy.analysis:type_name -> octomanager.v2.DomainRepositoryPolicyAnalysis
+	82,  // 237: octomanager.v2.QueueMergeChainRequestInputEntriesItem.method:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemMethod
+	264, // 238: octomanager.v2.QueueMergeChainRequestInputEntriesItem.checks:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItemChecks
+	265, // 239: octomanager.v2.QueueMergeChainRequestInputEntries.items:type_name -> octomanager.v2.QueueMergeChainRequestInputEntriesItem
+	266, // 240: octomanager.v2.QueueMergeChainRequestInput.entries:type_name -> octomanager.v2.QueueMergeChainRequestInputEntries
+	267, // 241: octomanager.v2.QueueMergeChainRequest.input:type_name -> octomanager.v2.QueueMergeChainRequestInput
+	83,  // 242: octomanager.v2.DecidePRReferenceRequest.decision:type_name -> octomanager.v2.DecidePRReferenceRequestDecision
+	275, // 243: octomanager.v2.SetMergePolicyRequest.checks:type_name -> octomanager.v2.SetMergePolicyRequestChecks
+	244, // [244:244] is the sub-list for method output_type
+	244, // [244:244] is the sub-list for method input_type
+	244, // [244:244] is the sub-list for extension type_name
+	244, // [244:244] is the sub-list for extension extendee
+	0,   // [0:244] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_domain_proto_init() }
@@ -21010,7 +21140,7 @@ func file_octomanager_v2_domain_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_domain_proto_rawDesc), len(file_octomanager_v2_domain_proto_rawDesc)),
-			NumEnums:      82,
+			NumEnums:      84,
 			NumMessages:   198,
 			NumExtensions: 0,
 			NumServices:   0,

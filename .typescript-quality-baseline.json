@@ -2573,22 +2573,6 @@
       "file": "src/tracking/policy.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (r && [\"APPROVED\", \"DISMISSED\"].includes(r.state))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (r && r.id !== b.reviewId)",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "evidenceUrl: c.url || url,",
       "count": 1
@@ -2772,14 +2756,6 @@
     {
       "file": "src/tracking/store.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `SQLInputValue`.",
-      "source": ".get(r.id);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": ": { harnessVersion: r.harness_version }),",
@@ -2814,23 +2790,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "baseSha: r.base_sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
       "source": "blocker: parse(r.blocker_json),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "checks: parse(r.checks_json),",
       "count": 1
     },
     {
@@ -2878,32 +2838,8 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "headSha: r.head_sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
       "source": "id: r.id,",
-      "count": 5
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "lifecycle: r.lifecycle,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "mergeability: r.mergeability,",
-      "count": 1
+      "count": 4
     },
     {
       "file": "src/tracking/store.ts",
@@ -2919,14 +2855,6 @@
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "number: r.number,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "observedAt: r.observed_at_ms,",
       "count": 1
     },
     {
@@ -2975,7 +2903,7 @@
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "prId: r.pr_id,",
-      "count": 2
+      "count": 1
     },
     {
       "file": "src/tracking/store.ts",
@@ -3007,14 +2935,6 @@
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
       "source": "retryCount: r.retry_count,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "reviews: parse(r.reviews_json),",
       "count": 1
     },
     {
@@ -3094,14 +3014,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "...(o ? { observation: this.observation(o) } : {}),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!a) throw new Error(\"Action not found\");",
       "count": 1
     },
@@ -3173,24 +3085,8 @@
       "file": "src/tracking/store.ts",
       "tool": "tsc",
       "rule": "TS4111",
-      "message": "Property 'base_sha' comes from an index signature, so it must be accessed with ['base_sha'].",
-      "source": "baseSha: r.base_sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
       "message": "Property 'blocker_json' comes from an index signature, so it must be accessed with ['blocker_json'].",
       "source": "blocker: parse(r.blocker_json),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'checks_json' comes from an index signature, so it must be accessed with ['checks_json'].",
-      "source": "checks: parse(r.checks_json),",
       "count": 1
     },
     {
@@ -3269,25 +3165,9 @@
       "file": "src/tracking/store.ts",
       "tool": "tsc",
       "rule": "TS4111",
-      "message": "Property 'head_sha' comes from an index signature, so it must be accessed with ['head_sha'].",
-      "source": "headSha: r.head_sha,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": ".get(r.id);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
       "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
       "source": "id: r.id,",
-      "count": 5
+      "count": 4
     },
     {
       "file": "src/tracking/store.ts",
@@ -3325,32 +3205,8 @@
       "file": "src/tracking/store.ts",
       "tool": "tsc",
       "rule": "TS4111",
-      "message": "Property 'lifecycle' comes from an index signature, so it must be accessed with ['lifecycle'].",
-      "source": "lifecycle: r.lifecycle,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'mergeability' comes from an index signature, so it must be accessed with ['mergeability'].",
-      "source": "mergeability: r.mergeability,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
       "message": "Property 'number' comes from an index signature, so it must be accessed with ['number'].",
       "source": "number: r.number,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'observed_at_ms' comes from an index signature, so it must be accessed with ['observed_at_ms'].",
-      "source": "observedAt: r.observed_at_ms,",
       "count": 1
     },
     {
@@ -3391,7 +3247,7 @@
       "rule": "TS4111",
       "message": "Property 'pr_id' comes from an index signature, so it must be accessed with ['pr_id'].",
       "source": "prId: r.pr_id,",
-      "count": 2
+      "count": 1
     },
     {
       "file": "src/tracking/store.ts",
@@ -3423,14 +3279,6 @@
       "rule": "TS4111",
       "message": "Property 'retry_count' comes from an index signature, so it must be accessed with ['retry_count'].",
       "source": "retryCount: r.retry_count,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'reviews_json' comes from an index signature, so it must be accessed with ['reviews_json'].",
-      "source": "reviews: parse(r.reviews_json),",
       "count": 1
     },
     {

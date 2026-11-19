@@ -378,8 +378,14 @@ enum DomainMergeEntryState {
   DOMAIN_MERGE_ENTRY_STATE_UNCERTAIN = 9;
   DOMAIN_MERGE_ENTRY_STATE_CANCELLED = 10;
 }
+enum DomainMergeEntryReadySource {
+  DOMAIN_MERGE_ENTRY_READY_SOURCE_UNSPECIFIED = 0;
+  DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER = 1;
+  DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT = 2;
+}
 // DomainMergeEntryReady contains the ready value of DomainMergeEntry.
 message DomainMergeEntryReady {
+  optional DomainMergeEntryReadySource source = 8;
   optional int64 epoch = 1;
   optional string head = 2;
   optional string base_ref = 3;
@@ -920,8 +926,14 @@ enum DomainMergeOverviewEntriesItemState {
   DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_UNCERTAIN = 9;
   DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_CANCELLED = 10;
 }
+enum DomainMergeOverviewEntriesItemReadySource {
+  DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_UNSPECIFIED = 0;
+  DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER = 1;
+  DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT = 2;
+}
 // DomainMergeOverviewEntriesItemReady contains the ready value of DomainMergeOverviewEntriesItem.
 message DomainMergeOverviewEntriesItemReady {
+  optional DomainMergeOverviewEntriesItemReadySource source = 8;
   optional int64 epoch = 1;
   optional string head = 2;
   optional string base_ref = 3;
