@@ -1,3 +1,4 @@
+import { currentMergeChecks } from "./checks.js";
 import {
   NoticeReadinessSchema,
   type NoticeReadiness,
@@ -14,11 +15,15 @@ import {
   feedbackKey,
   fingerprint,
   graphKey,
+  pendingReviewReason,
+  reviewGate,
+  readyFor,
   references,
   type ReferenceSource,
 } from "./policy.js";
 import {
   ChainState,
+  ReviewAssessmentSource,
   EntryState,
   OperationState,
   ReferenceDecision,
@@ -291,7 +296,7 @@ export class MergeStore {
     );
     return next;
   }
-  queue(input: QueueInput): MergeChain {
+  queue(input: QueueInput, autoMerge = true): MergeChain {
     return this.transaction(() => {
       const digest = fingerprint(input),
         existing = this.chains().find(
@@ -344,7 +349,7 @@ export class MergeStore {
           );
         this.saveEntry({
           id: randomUUID(),
-          autoMerge: true,
+          autoMerge,
           trackingEpoch: pr.trackingEpoch,
           chainId: chain.id,
           prId: pr.id,
@@ -359,7 +364,9 @@ export class MergeStore {
       });
       this.event(
         "merge_chain_queued",
-        `Queued ${String(prs.length)} explicitly authorized PRs`,
+        autoMerge
+          ? `Queued ${String(prs.length)} explicitly authorized PRs`
+          : "Recorded manual merge policy; automatic merging remains off",
       );
       return chain;
     });
@@ -728,6 +735,15 @@ export class MergeStore {
       );
     });
   }
+  ownerAssessment(pr: TrackedPR): MergeEntry["ready"] {
+    const entry = this.entries().find(
+      (item) => item.prId === pr.id && !terminal(item.state),
+    );
+    return entry?.ready?.source === ReviewAssessmentSource.Owner &&
+      readyFor(entry, pr, this.dependencies())
+      ? entry.ready
+      : undefined;
+  }
   ready(
     prValue: string,
     actorId: string,
@@ -745,26 +761,67 @@ export class MergeStore {
         observation.headSha !== head
       )
         throw new Error("Readiness head does not match current enrolled PR");
+      const pending = pendingReviewReason(observation);
+      if (pending !== undefined) throw new Error(pending);
       const feedback = feedbackKey(observation);
       if (feedback === undefined)
         throw new Error(
           "Complete review evidence is required before marking ready",
         );
-      const entry = { ...this.entry(pr.id) };
+      let previous = this.entries().find(
+        (entry) => entry.prId === pr.id && !terminal(entry.state),
+      );
+      if (previous === undefined) {
+        if (receipt !== undefined)
+          throw new Error("Receipt merge policy is missing");
+        this.queue(
+          {
+            requestId: `assessment:${randomUUID()}`,
+            actorId: owner,
+            entries: [
+              {
+                prUrl: pr.url,
+                checks: [
+                  ...new Set(
+                    currentMergeChecks(observation).map((check) => check.name),
+                  ),
+                ],
+              },
+            ],
+          },
+          false,
+        );
+        previous = this.entry(pr.id);
+      }
+      const entry = { ...previous };
+      const inheritedOwnerAssessment =
+        entry.ready?.source === ReviewAssessmentSource.Owner &&
+        readyFor(entry, pr, this.dependencies());
+      if (receipt !== undefined) {
+        const gate = reviewGate(
+          observation,
+          inheritedOwnerAssessment ? entry.ready : undefined,
+        );
+        if (gate !== undefined) throw new Error(gate);
+      }
       if (receipt === undefined) {
         delete entry.receiptId;
         delete entry.receiptContext;
       }
-      if (!entry.autoMerge && receipt === undefined)
-        throw new Error("Auto-merge is off");
       if (this.chain(entry.chainId).state !== ChainState.Active)
         throw new Error("Merge chain is not active");
       return this.state(
         entry,
         EntryState.WaitingChecks,
-        "Owner assessed this head; waiting for GitHub checks",
+        receipt === undefined && !entry.autoMerge
+          ? "Owner assessed this head; automatic merging is off; use the Ready merge command when available"
+          : "Owner assessed this head; waiting for GitHub checks",
         {
           ready: {
+            source:
+              receipt === undefined || inheritedOwnerAssessment
+                ? ReviewAssessmentSource.Owner
+                : ReviewAssessmentSource.Receipt,
             epoch: pr.trackingEpoch,
             head,
             baseRef: observation.targetBase?.ref ?? "",

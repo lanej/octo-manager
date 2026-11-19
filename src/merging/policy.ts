@@ -1,17 +1,20 @@
+import { pendingReview, ReviewState, reviewState } from "../tracking/states.js";
+import { ReviewAssessmentSource, type MergeEntry } from "./contracts.js";
 import { currentMergeChecks } from "./checks.js";
 import { createHash } from "node:crypto";
 import { canonicalPR } from "../tracking/github.js";
 import { actionableFeedback } from "../tracking/review-signals.js";
 import { compact } from "../tracking/messages.js";
-import type { PRObservation, TrackedPR } from "../tracking/types.js";
+import type { ObservationInput, TrackedPR } from "../tracking/types.js";
 import type { Dependency, PRReference } from "./contracts.js";
 export function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
-export function feedbackKey(observation: PRObservation): string | undefined {
+export function feedbackKey(observation: ObservationInput): string | undefined {
   if (
     observation.feedback?.state !== "complete" ||
-    observation.reviews.state !== "complete"
+    observation.reviews.state !== "complete" ||
+    observation.reviews.value.some((review) => pendingReview(review.state))
   )
     return undefined;
   return fingerprint([
@@ -20,10 +23,39 @@ export function feedbackKey(observation: PRObservation): string | undefined {
       .map((item) => [item.source, item.id, item.revision])
       .sort(),
     observation.reviews.value
-      .filter((item) => item.state === "CHANGES_REQUESTED")
+      .filter(
+        (item) => reviewState(item.state) === ReviewState.ChangesRequested,
+      )
       .map((item) => [item.id, item.author, item.headSha])
       .sort(),
   ]);
+}
+export function pendingReviewReason(
+  observation: ObservationInput,
+): string | undefined {
+  if (observation.reviews.state !== "complete")
+    return "Complete review evidence is required";
+  if (observation.reviews.value.some((review) => pendingReview(review.state)))
+    return "A pending review must be submitted or dismissed";
+  return undefined;
+}
+export function reviewGate(
+  observation: ObservationInput,
+  assessment?: MergeEntry["ready"],
+): string | undefined {
+  const pending = pendingReviewReason(observation);
+  if (pending !== undefined) return pending;
+  const feedback = feedbackKey(observation);
+  if (feedback === undefined) return "Complete review evidence is required";
+  if (
+    observation.feedback?.state === "complete" &&
+    observation.feedback.value.some(actionableFeedback) &&
+    (assessment?.source !== ReviewAssessmentSource.Owner ||
+      assessment.head !== observation.headSha ||
+      assessment.feedback !== feedback)
+  )
+    return "Review feedback requires owner assessment";
+  return undefined;
 }
 export function graphKey(dependencies: Dependency[], prId: string): string {
   return fingerprint(
@@ -165,11 +197,13 @@ export function readyFor(
 export function checkGate(
   entry: Pick<
     import("./contracts.js").MergeEntry,
-    "method" | "checks" | "noCi"
+    "method" | "checks" | "noCi" | "ready"
   >,
   snapshot: import("./github.js").MergeSnapshot,
 ): string | undefined {
   const observation = snapshot.observation;
+  const review = reviewGate(observation, entry.ready);
+  if (review !== undefined) return review;
   if (snapshot.draft) return "PR is a draft";
   if ((snapshot.nativePrerequisites?.length ?? 0) > 0)
     return `Waiting for native stack predecessor: ${snapshot.nativePrerequisites?.[0] ?? ""}`;

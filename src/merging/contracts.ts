@@ -1,5 +1,9 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { Check } from "typebox/value";
+export enum ReviewAssessmentSource {
+  Owner = "owner",
+  Receipt = "receipt",
+}
 export enum ChainState {
   Active = "active",
   Paused = "paused",
@@ -91,6 +95,7 @@ export const DependencySchema = object({
 });
 export type Dependency = Static<typeof DependencySchema>;
 export const ReadySchema = object({
+  source: Type.Optional(Type.Enum(ReviewAssessmentSource)),
   epoch: Type.Integer(),
   head: Sha,
   baseRef: text(300),

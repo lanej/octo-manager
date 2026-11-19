@@ -5,11 +5,11 @@ Octo retires GitHub polling independently of durable notification delivery. A cl
 | State | Meaning |
 | --- | --- |
 | `watching` | Poll an enrolled PR normally. |
-| `draining` | The PR is merged or closed; finish existing watches and obtain a final complete refresh. |
+| `draining` | The PR is merged or closed; finish existing watches and pending reviews, then obtain a final complete refresh. |
 | `archived` | Automatic polling has stopped. Applicable unread notifications remain deliverable. |
 | `disabled` | An explicit `untrack` stopped polling and delivery. Notifications cannot resume it. |
 
-The first confirmed closed/merged observation starts a persisted 24-hour deadline. Repeated observations, failed reads and restarts do not extend it. A subsequent complete check/review refresh with no waiting watches archives the PR with reason `settled`. A deadline archives it with reason `deadline`, retains incomplete evidence and expires outstanding watches. Expiry is not a successful or completed GitHub result. Tracking and Activity show the incomplete-results warning. Retirement does not accept or resolve an action; existing applicability rules still supersede obsolete notices and withdraw their queued copies.
+The first confirmed closed/merged observation starts a persisted 24-hour deadline. Repeated observations, failed reads and restarts do not extend it. A subsequent complete check/review refresh with no waiting watches or `PENDING` reviews archives the PR with reason `settled`. Successfully fetching a draft review does not mean that review has been submitted. Pending reviews keep both normal draining and startup reconciliation active until submission or the original deadline. Newly observed actionable feedback on a closed or merged PR remains deliverable after archival; feedback actions already opened before closure remain superseded, and repeated observations do not create another copy. A deadline archives it with reason `deadline`, retains incomplete evidence and expires outstanding watches. Expiry is not a successful or completed GitHub result. Tracking and Activity show the incomplete-results warning. Retirement does not accept or resolve an action; existing applicability rules still supersede obsolete notices and withdraw their queued copies.
 
 The coordinator fences observations by tracking epoch so a delayed response cannot undo manual disabling, retirement or a later enrollment. Explicit tracking resumes an archived/disabled PR under the existing ownership rules. Reopening during draining clears the old deadline; a later closure starts a new cycle. A reopened archived PR gets an appropriate new check-watch generation while prior results remain historical.
 
@@ -22,6 +22,8 @@ Cursors are account-scoped and persisted. Completed scan watermarks advance only
 This deliberately uses notifications only: there is no daily archive sweep or webhook receiver. Unsubscribed, missing or otherwise unavailable notifications can require explicit retracking. Changing accounts cannot reuse another account's cursor. Current GitHub notification authentication limitations remain visible rather than causing credential or permission changes.
 
 ## Persistence and API
+
+Tracking uses canonical lifecycle and review-state enums with exhaustive terminal/pending decisions. GitHub and persisted review states are validated before entering those decisions; unsupported states remain explicit read failures. SQLite observation persistence owns append, latest-observation decoding and historical lifecycle lookup. Tracking retains the transaction around observations, actions, deliveries and retirement, so a failed transition cannot leave only part of that update committed.
 
 Schema 11 adds the tracking enum, epoch, drain deadline, archive timestamp/reason, notification cursors, deduplication identities and pending refreshes. Timestamps remain integer Unix milliseconds. It extends check watches with `expired`; it preserves existing PR, agent, action, message, receipt and watch identities. On migration, enrolled closed PRs receive a fresh drain deadline and refresh; explicitly disabled records stay disabled. The existing API `enabled` field remains the manual-enrollment projection, including archived records, while `tracking_state` determines polling. Generated Go and TypeScript bindings carry retirement metadata and watch expiry.
 

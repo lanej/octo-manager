@@ -1,3 +1,4 @@
+import { ReviewState } from "../src/tracking/states.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -128,7 +129,7 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
       id: "r1",
       author: "alice",
       headSha: "head1",
-      state: "CHANGES_REQUESTED",
+      state: ReviewState.ChangesRequested,
       at: 10,
       url,
     };
@@ -187,7 +188,10 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
         mergeability: "mergeable",
         reviews: {
           state: "complete",
-          value: [review, { ...review, id: "r2", state: "APPROVED", at: 20 }],
+          value: [
+            review,
+            { ...review, id: "r2", state: ReviewState.Approved, at: 20 },
+          ],
         },
       }),
       config,
@@ -238,7 +242,7 @@ test("incomplete check and review histories do not create falsely effective bloc
               id: "old-review",
               author: "alice",
               headSha: "head1",
-              state: "CHANGES_REQUESTED",
+              state: ReviewState.ChangesRequested,
               at: 1,
               url,
             },
