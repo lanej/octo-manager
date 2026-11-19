@@ -84,6 +84,9 @@ const scalarFields = new Set([
   "harness",
   "cwd",
   "total",
+  "count",
+  "migrated",
+  "backup",
   "hasMore",
   "applicable",
   "digest",
@@ -269,6 +272,12 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (command === "issue-storage-migrate")
+    return [
+      "issue-storage-migrate",
+      "--dry-run",
+      ...(values.cwd === undefined ? [] : ["--cwd", values.cwd]),
+    ];
   if (command.startsWith("issue-") && !readOnlyCommand(positionals)) {
     const root = record(raw) ? raw : {};
     const issue = record(root["issue"]) ? root["issue"] : {};

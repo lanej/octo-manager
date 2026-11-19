@@ -1,3 +1,5 @@
+import type { IssueRepository } from "../src/issues/repository.js";
+import { type IssueContent } from "../src/issues/repository.js";
 import { join } from "node:path";
 import { test, expect } from "bun:test";
 import { DatabaseSync } from "node:sqlite";
@@ -29,7 +31,10 @@ const brief = {
   questions: [],
   blockingQuestions: false,
 };
-function fixture(overrides: Partial<IssuePolicy> = {}) {
+function fixture(
+  overrides: Partial<IssuePolicy> = {},
+  repository?: IssueRepository,
+) {
   let now = 100000;
   const db = new DatabaseSync(":memory:");
   const store = new IssueStore(db, () => now);
@@ -63,10 +68,18 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     complete: true,
     revision: "1",
   };
+  let beforeObserve: (() => void) | undefined;
   const posts = new Map<string, string>();
+  const updates: { title: string; body: string; closed: boolean }[] = [];
   let closeCount = 0;
   let createCount = 0;
   const tracker: IssueTracker = {
+    update: (_ref, content, _signal, authorize) => {
+      authorize();
+      updates.push(content);
+      observation = { ...observation, ...content };
+      return Promise.resolve();
+    },
     provider: "test",
     verifyRepository: () => {},
     identify: (url) => ({
@@ -75,7 +88,10 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
       externalId: "1",
       url,
     }),
-    observe: () => Promise.resolve(observation),
+    observe: () => {
+      beforeObserve?.();
+      return Promise.resolve(observation);
+    },
     post: (_ref, key, body) => {
       posts.set(key, body);
       return Promise.resolve(`https://test/${key}`);
@@ -148,6 +164,7 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
   const service = new IssueService(
     store,
     {
+      ...(repository === undefined ? {} : { repository: () => repository }),
       trackers: [tracker],
       dispatchers: [dispatcher],
       workspace: { allocate: () => Promise.resolve("/isolated/work") },
@@ -182,6 +199,7 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     store,
     policy,
     assignments,
+    updates,
     results,
     posts,
     enrolled,
@@ -191,6 +209,9 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     },
     advance: (ms: number) => {
       now += ms;
+    },
+    beforeObserve: (callback: () => void) => {
+      beforeObserve = callback;
     },
     observe: (value: Partial<TrackerObservation>) => {
       observation = { ...observation, ...value };
@@ -830,6 +851,203 @@ test("adding an initially empty issue description supersedes active implementati
       "Also preserve compatibility",
     );
   } finally {
+    f.close();
+  }
+});
+
+test("storage outages prevent dispatch and effects; direct edits survive unchanged GitHub observations", async () => {
+  let failing = false;
+  const documents = new Map<string, IssueContent>();
+  const repository: IssueRepository = {
+    identity: "controlled",
+    read: (id) =>
+      failing
+        ? Promise.reject(new Error("Storage offline"))
+        : Promise.resolve(structuredClone(documents.get(id))),
+    write: (content) => {
+      documents.set(content.id, structuredClone(content));
+      return Promise.resolve();
+    },
+  };
+  const f = fixture({}, repository);
+  try {
+    failing = true;
+    await f.service.tick();
+    expect(f.assignments).toHaveLength(0);
+    expect(f.store.get(f.enrolled.id).detail).toBe("Storage offline");
+    failing = false;
+    f.advance(1000000);
+    f.service.command(f.enrolled.id, "resume", "", 0, "resume-after-storage");
+    await f.service.tick();
+    expect(f.assignments).toHaveLength(1);
+    const content = documents.get(f.enrolled.id);
+    if (content === undefined) throw new Error("Missing stored content");
+    documents.set(f.enrolled.id, {
+      ...content,
+      body: "Direct store edit",
+      updatedAt: Date.now(),
+    });
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.store.get(f.enrolled.id).body).toBe("Direct store edit");
+    expect(f.store.get(f.enrolled.id).epoch).toBeGreaterThan(f.enrolled.epoch);
+  } finally {
+    await f.service.close();
+    f.close();
+  }
+});
+
+test("paused issues synchronize closure and recover storage without losing their waiting condition", async () => {
+  let failing = false;
+  const documents = new Map<string, IssueContent>();
+  const repository: IssueRepository = {
+    identity: "controlled",
+    read: (id) =>
+      failing
+        ? Promise.reject(new Error("Storage offline"))
+        : Promise.resolve(structuredClone(documents.get(id))),
+    write: (content) => {
+      documents.set(content.id, structuredClone(content));
+      return Promise.resolve();
+    },
+  };
+  const f = fixture({}, repository);
+  try {
+    await f.service.tick();
+    f.service.command(f.enrolled.id, "pause", "", 0, "pause-before-outage");
+    failing = true;
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.store.get(f.enrolled.id).waiting).toBe(Waiting.Paused);
+    failing = false;
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.store.repository.ready(f.enrolled.id)).toBe(true);
+    expect(f.store.get(f.enrolled.id).waiting).toBe(Waiting.Paused);
+    const content = documents.get(f.enrolled.id);
+    if (content === undefined) throw new Error("Missing stored content");
+    documents.set(f.enrolled.id, {
+      ...content,
+      externalClosed: true,
+      updatedAt: Date.now(),
+    });
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.updates.at(-1)?.closed).toBe(true);
+    expect(f.store.get(f.enrolled.id).waiting).toBe(Waiting.Paused);
+    expect(f.assignments).toHaveLength(1);
+  } finally {
+    await f.service.close();
+    f.close();
+  }
+});
+
+test("native comments project once and their reflected GitHub post is not assessed again", async () => {
+  const documents = new Map<string, IssueContent>();
+  const repository: IssueRepository = {
+    identity: "controlled",
+    read: (id) => Promise.resolve(structuredClone(documents.get(id))),
+    write: (content) => {
+      documents.set(content.id, structuredClone(content));
+      return Promise.resolve();
+    },
+  };
+  const f = fixture({}, repository);
+  try {
+    await f.service.tick();
+    f.service.command(f.enrolled.id, "pause", "", 0, "pause-comment-check");
+    const content = documents.get(f.enrolled.id);
+    if (content === undefined) throw new Error("Missing stored content");
+    const comment = {
+      id: "local:native-id",
+      revision: "2026-11-19T01:00:00Z",
+      author: "another harness",
+      body: "Preserve this input",
+      url: f.enrolled.ref.url,
+    };
+    documents.set(f.enrolled.id, {
+      ...content,
+      comments: [...content.comments, comment],
+      updatedAt: Date.now(),
+    });
+    f.advance(1000000);
+    await f.service.tick();
+    const posts = f.store.ownPosts(f.enrolled.id);
+    expect(posts).toHaveLength(1);
+    const projected = posts[0];
+    if (projected === undefined) throw new Error("Missing projected comment");
+    f.observe({
+      comments: [
+        {
+          id: "github:999",
+          revision: "new",
+          author: "Octo",
+          body: projected.body,
+          url: projected.url,
+        },
+      ],
+    });
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.store.get(f.enrolled.id).comments).toHaveLength(1);
+    expect(
+      f.store
+        .get(f.enrolled.id)
+        .pendingComments.filter((item) => item.id === "github:999"),
+    ).toHaveLength(0);
+    expect(f.store.ownPosts(f.enrolled.id)).toHaveLength(1);
+  } finally {
+    await f.service.close();
+    f.close();
+  }
+});
+
+test("projection reobserves newer GitHub input before writing a stored edit", async () => {
+  const documents = new Map<string, IssueContent>();
+  const repository: IssueRepository = {
+    identity: "controlled",
+    read: (id) => Promise.resolve(structuredClone(documents.get(id))),
+    write: (content) => {
+      documents.set(content.id, structuredClone(content));
+      return Promise.resolve();
+    },
+  };
+  const f = fixture({}, repository);
+  try {
+    await f.service.tick();
+    f.service.command(f.enrolled.id, "pause", "", 0, "pause-target-edit");
+    const content = documents.get(f.enrolled.id);
+    if (content === undefined) throw new Error("Missing stored content");
+    const at = Date.now();
+    documents.set(f.enrolled.id, {
+      ...content,
+      body: "Stored edit",
+      updatedAt: at,
+    });
+    let reads = 0;
+    f.beforeObserve(() => {
+      reads++;
+      if (reads === 2)
+        f.observe({
+          body: "Newer GitHub input",
+          revision: new Date(at + 10000).toISOString(),
+        });
+    });
+    f.advance(1000000);
+    await f.service.tick();
+    expect(f.updates.at(-1)?.body).toBe("Newer GitHub input");
+    expect(documents.get(f.enrolled.id)?.body).toBe("Newer GitHub input");
+    expect(
+      f.store
+        .events(f.enrolled.id)
+        .some(
+          (item) =>
+            item.kind === "sync_conflict" &&
+            item.detail.includes("Stored edit"),
+        ),
+    ).toBe(true);
+  } finally {
+    await f.service.close();
     f.close();
   }
 });

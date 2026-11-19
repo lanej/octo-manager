@@ -95,6 +95,7 @@ export interface Profile {
   timeoutMs: number;
 }
 export interface IssuePolicy {
+  storage?: "sqlite" | "beads";
   hash: string;
   stage: string;
   timeoutMs: number | undefined;

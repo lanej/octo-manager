@@ -177,3 +177,16 @@ test("mutation results point to read-only inspection and JSON escaping cannot ex
   );
   expect(activity.next).toContain("'--after' '2344'");
 });
+
+test("storage migration output retains bounded counts and points only to dry-run inspection", () => {
+  const parsed = parseCommand(
+    ["issue", "storage", "migrate", "--cwd", "/tmp/repository"],
+    { OCTO_MANAGER_AGENT: "1" },
+  );
+  const response = decode(
+    agentResponse(parsed, { state: "dry_run", count: 0, migrated: 0 }),
+  );
+  expect(response.data).toEqual({ state: "dry_run", count: 0, migrated: 0 });
+  expect(response.next).toContain("'--dry-run'");
+  expect(response.next).not.toContain("'show' ''");
+});

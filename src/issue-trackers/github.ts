@@ -179,6 +179,23 @@ export class GitHubIssueTracker implements IssueTracker {
     );
     return response.html_url;
   }
+  async update(
+    ref: IssueReference,
+    content: { title: string; body: string; closed: boolean },
+    signal: AbortSignal,
+    authorize: () => void,
+  ): Promise<void> {
+    await this.reads.patch(
+      `${base(ref)}/${ref.externalId}`,
+      {
+        title: content.title,
+        body: content.body,
+        state: content.closed ? "closed" : "open",
+      },
+      signal,
+      authorize,
+    );
+  }
   async close(
     ref: IssueReference,
     signal: AbortSignal,

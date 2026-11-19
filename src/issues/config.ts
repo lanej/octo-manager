@@ -17,6 +17,14 @@ const profile = Type.Object(
 );
 export const IssueConfigSchema = Type.Object(
   {
+    storage: Type.Optional(
+      Type.Object(
+        {
+          backend: Type.Union([Type.Literal("sqlite"), Type.Literal("beads")]),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     auto_implement: Type.Optional(Type.Boolean()),
     auto_publish: Type.Optional(Type.Boolean()),
     proceed_under_assumptions: Type.Optional(Type.Boolean()),
@@ -80,6 +88,7 @@ export function loadIssuePolicy(root: string): IssuePolicy {
     timeoutMs: value.timeout_ms ?? 1800000,
   });
   return {
+    storage: config.storage?.backend ?? "sqlite",
     hash: createHash("sha256").update(source).update(stage).digest("hex"),
     stage,
     timeoutMs:

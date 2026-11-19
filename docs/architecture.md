@@ -9,6 +9,8 @@ flowchart LR
     CLI[CLI and calling agents] -->|Connect over Unix socket| App[Bun application services]
     TUI[Charmed Go dashboard] -->|Generated Connect client| App
     App --> Store[(SQLite state, intentions, evidence)]
+    App --> RepositoryPort[Issue repository]
+    RepositoryPort --> Beads[Beads persistence adapter]
     App --> TrackerPort[Issue-tracker port]
     App --> DispatchPort[Agent-dispatcher port]
     App --> CodePort[Code-host port and existing PR services]
@@ -18,7 +20,7 @@ flowchart LR
     App --> Pi[Bounded Pi job and repair workers]
 ```
 
-Pragmatic hexagonal architecture keeps lifecycle decisions in a functional core with explicit state and observations. Application services coordinate persistence and effects. Issue-tracker, dispatcher, workspace, and code-host ports isolate demonstrated replacement boundaries; they do not form a universal plugin framework. The first issue tracker is GitHub and the first issue dispatcher is Codex. A different issue tracker can still deliver fixes through GitHub PRs. Provider payloads and protocol details stay in adapters. See [issue flows](issue-flows.md) for the review-level state machines and authority boundaries.
+Pragmatic hexagonal architecture keeps lifecycle decisions in a functional core with explicit state and observations. Application services coordinate persistence and effects. Issue repository, issue-tracker, dispatcher, workspace, and code-host ports isolate demonstrated replacement boundaries; they do not form a universal plugin framework. The first issue tracker is GitHub and the first issue dispatcher is Codex. A different issue tracker can still deliver fixes through GitHub PRs. Provider payloads and protocol details stay in adapters. Beads is an internal persistence adapter, not a separate issue identity or lifecycle. SQLite retains execution state, content intentions and the GitHub outbox; see [issue storage](issue-storage.md) for ownership, migration and recovery. See [issue flows](issue-flows.md) for the review-level state machines and authority boundaries.
 
 | Capability | Owns | Important separation |
 | --- | --- | --- |

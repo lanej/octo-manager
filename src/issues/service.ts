@@ -1,3 +1,6 @@
+import type { IssueRepository } from "./repository.js";
+import { contentOf, IssueStorageError } from "./repository.js";
+import { synchronizeIssue } from "./storage.js";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { realpathSync as realpath } from "node:fs";
@@ -24,6 +27,7 @@ import { IssueStore } from "./store.js";
 import { applyResult, canImplement } from "./decisions.js";
 import { assignmentPrompt, assignmentLabel } from "./prompts.js";
 export interface IssueOptions {
+  repository?: (root: string) => IssueRepository | undefined;
   trackers: IssueTracker[];
   dispatchers: AgentDispatcher[];
   workspace: IssueWorkspace;
@@ -44,6 +48,7 @@ export class IssueService {
   private authorize(expected: IssueRecord): IssueRecord {
     const current = this.store.get(expected.id);
     if (
+      !this.store.repository.ready(current.id) ||
       current.epoch !== expected.epoch ||
       current.stage !== expected.stage ||
       current.brief?.version !== expected.brief?.version ||
@@ -56,6 +61,15 @@ export class IssueService {
     )
       throw new Error("Issue authority changed during operation");
     return current;
+  }
+  private authorizeProjection(expected: IssueRecord): void {
+    const current = this.store.get(expected.id);
+    if (
+      current.epoch !== expected.epoch ||
+      !this.store.repository.ready(current.id) ||
+      this.options.policy(current.root).hash !== current.policyHash
+    )
+      throw new Error("Issue synchronization authority changed");
   }
   private tracker(issue: IssueRecord): IssueTracker {
     const tracker = this.options.trackers.find(
@@ -147,6 +161,9 @@ export class IssueService {
       pollIntervalMs: 60000,
     };
     this.store.save(issue, "enrolled", issue.detail);
+    const repository = this.options.repository?.(verifiedRoot);
+    if (repository !== undefined)
+      this.store.repository.bind(contentOf(issue), repository.identity);
     this.store.remember(requestId, input, issue.id);
     return issue;
   }
@@ -156,6 +173,7 @@ export class IssueService {
       .filter((issue) => issue.prUrl === url)
       .every(
         (issue) =>
+          this.store.repository.ready(issue.id) &&
           issue.stage === IssueStage.InReview &&
           issue.waiting === Waiting.None &&
           issue.pendingComments.length === 0 &&
@@ -246,6 +264,16 @@ export class IssueService {
         issue = {
           ...issue,
           epoch: issue.epoch + 1,
+          comments: [
+            ...issue.comments,
+            {
+              id: `local:${requestId}`,
+              revision: String(this.now()),
+              author: "operator",
+              body: text,
+              url: issue.ref.url,
+            },
+          ],
           pendingComments: [
             ...issue.pendingComments,
             {
@@ -334,6 +362,21 @@ export class IssueService {
       url: "",
     });
   }
+  private async synchronize(issue: IssueRecord): Promise<void> {
+    try {
+      await synchronizeIssue(
+        this.store,
+        issue,
+        this.options.repository?.(issue.root),
+        AbortSignal.any([this.abort.signal, AbortSignal.timeout(30000)]),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Issue storage unavailable";
+      this.store.repository.fail(issue.id, message);
+      throw new IssueStorageError(message, { cause: error });
+    }
+  }
   private async effects(): Promise<void> {
     const pending = this.store.effects();
     const ids = new Set(pending.map((effect) => effect.id));
@@ -342,13 +385,42 @@ export class IssueService {
     for (const effect of pending) {
       if ((this.effectChecks.get(effect.id) ?? 0) > this.now()) continue;
       this.effectChecks.set(effect.id, this.now() + 60000);
-      const issue = this.store.get(effect.issueId);
+      let issue = this.store.get(effect.issueId);
       const tracker = this.tracker(issue);
       const signal = AbortSignal.any([
         this.abort.signal,
         AbortSignal.timeout(30000),
       ]);
       try {
+        await this.synchronize(issue);
+        issue = this.store.get(issue.id);
+        if (!this.store.repository.ready(issue.id)) continue;
+        if (effect.kind === "sync_content") {
+          if (tracker.update === undefined)
+            throw new Error("Tracker does not support content synchronization");
+          // Reconcile target edits before a retry or projection can overwrite them.
+          await this.refresh(issue, true);
+          issue = this.store.get(issue.id);
+          await this.synchronize(issue);
+          issue = this.store.get(issue.id);
+          const current = this.store.repository.get(issue.id)?.baseline;
+          if (current === undefined)
+            throw new Error("Stored issue content unavailable");
+          await tracker.update(
+            issue.ref,
+            {
+              title: current.title,
+              body: current.body,
+              closed: current.externalClosed,
+            },
+            signal,
+            () => {
+              this.authorizeProjection(issue);
+            },
+          );
+          this.store.effect({ ...effect, state: "completed" });
+          continue;
+        }
         const briefVersion = /:brief:(\d+)$/u.exec(effect.id)?.[1];
         if (
           effect.kind === "post" &&
@@ -530,7 +602,15 @@ export class IssueService {
         }
         if (effect.state === "uncertain") continue;
         // rationale: An interrupted write remains uncertain; absence from a later read does not prove GitHub rejected it.
-        this.authorize(issue);
+        const authorize =
+          effect.kind === "sync_comment"
+            ? () => {
+                this.authorizeProjection(issue);
+              }
+            : () => {
+                this.authorize(issue);
+              };
+        authorize();
         this.store.effect({ ...effect, state: "uncertain" });
         const created =
           effect.kind === "follow_up"
@@ -549,9 +629,7 @@ export class IssueService {
                 effect.id,
                 effect.body,
                 signal,
-                () => {
-                  this.authorize(issue);
-                },
+                authorize,
               );
         this.store.effect({ ...effect, state: "completed", url: created });
       } catch (error) {
@@ -569,17 +647,65 @@ export class IssueService {
       }
     }
   }
-  private async refresh(issue: IssueRecord): Promise<IssueRecord> {
+  private async refresh(
+    issue: IssueRecord,
+    includeTerminal = false,
+  ): Promise<IssueRecord> {
     const observed = await this.tracker(issue).observe(
       issue.ref,
       AbortSignal.any([this.abort.signal, AbortSignal.timeout(30000)]),
     );
     issue = this.store.get(issue.id);
-    if (terminal(issue.stage)) return issue;
+    if (terminal(issue.stage) && !includeTerminal) return issue;
     if (!observed.complete)
       throw new Error(
         "Incomplete issue comment evidence; retaining previous lifecycle",
       );
+    const binding = this.store.repository.get(issue.id);
+    const previous = this.store.repository.tracker(issue.id);
+    const storedAt = binding?.baseline?.updatedAt ?? 0;
+    const trackerAt = Date.parse(observed.revision);
+    const select = <T extends string | boolean>(
+      field: "title" | "body" | "externalClosed",
+      local: T,
+      remote: T,
+      old: T | undefined,
+    ): T => {
+      if (binding === undefined || previous === undefined) return remote;
+      if (remote === old) return local;
+      if (local !== old && local !== remote) {
+        const fieldAt = binding.baseline?.fieldTimes?.[field] ?? storedAt;
+        const keepStored = !Number.isFinite(trackerAt) || fieldAt >= trackerAt;
+        this.store.save(
+          issue,
+          "sync_conflict",
+          JSON.stringify({
+            field,
+            stored: local,
+            tracker: remote,
+            storedAt,
+            trackerAt,
+            winner: keepStored ? "stored" : "tracker",
+          }),
+        );
+        return keepStored ? local : remote;
+      }
+      return remote;
+    };
+    const title = select("title", issue.title, observed.title, previous?.title);
+    const body = select("body", issue.body, observed.body, previous?.body);
+    const externalClosed = select(
+      "externalClosed",
+      issue.externalClosed,
+      observed.closed,
+      previous?.closed,
+    );
+    this.store.repository.observedTracker(issue.id, {
+      title: observed.title,
+      body: observed.body,
+      closed: observed.closed,
+      revision: observed.revision,
+    });
     const ownPosts = this.store.ownPosts(issue.id);
     const comments = observed.comments.filter(
       (comment) =>
@@ -587,12 +713,20 @@ export class IssueService {
           (post) => post.url === comment.url && post.body === comment.body,
         ),
     );
+    if (binding !== undefined)
+      for (const local of issue.comments.filter((item) =>
+        item.id.startsWith("local:"),
+      )) {
+        if (!comments.some((item) => item.id === local.id))
+          comments.push(local);
+      }
     const changed = comments.filter(
       (comment) =>
         !issue.reviewedComments.includes(`${comment.id}:${comment.revision}`),
     );
     // The empty title identifies enrollment before its first observation; an empty body is valid observed input.
-    const bodyChanged = issue.title !== "" && issue.body !== observed.body;
+    const bodyChanged =
+      issue.title !== "" && (issue.body !== body || issue.title !== title);
     const pending = [...issue.pendingComments];
     for (const item of changed)
       if (
@@ -606,7 +740,7 @@ export class IssueService {
         id: "issue-body",
         revision: observed.revision,
         author: "issue author",
-        body: observed.body,
+        body,
         url: issue.ref.url,
       });
     const hasNew = pending.length !== issue.pendingComments.length;
@@ -618,19 +752,19 @@ export class IssueService {
         : Math.min(issue.pollIntervalMs * 2, 900000);
     const next = {
       ...issue,
-      title: observed.title,
-      body: observed.body,
+      title,
+      body,
       comments,
-      externalClosed: observed.closed,
+      externalClosed,
       pendingComments: pending,
       epoch: issue.epoch + (hasNew ? 1 : 0),
       waiting:
-        observed.closed || issue.waiting === Waiting.Paused
+        externalClosed || issue.waiting === Waiting.Paused
           ? Waiting.Paused
           : hasNew
             ? Waiting.None
             : issue.waiting,
-      detail: observed.closed
+      detail: externalClosed
         ? "Issue closed externally; dispatch paused"
         : issue.detail,
       nextAt: this.now() + interval,
@@ -643,19 +777,53 @@ export class IssueService {
         ? "New issue input requires assessment"
         : "Tracker observation retained",
     );
+    if (
+      binding !== undefined &&
+      Number.isFinite(trackerAt) &&
+      (title !== issue.title ||
+        body !== issue.body ||
+        externalClosed !== issue.externalClosed)
+    ) {
+      const pendingContent = this.store.repository.get(issue.id)?.pending;
+      if (pendingContent !== undefined)
+        this.store.repository.retime(issue.id, trackerAt, [
+          ...(title !== issue.title ? ["title" as const] : []),
+          ...(body !== issue.body ? ["body" as const] : []),
+          ...(externalClosed !== issue.externalClosed
+            ? ["externalClosed" as const]
+            : []),
+        ]);
+    }
     return next;
   }
   private async run(): Promise<void> {
     for (const original of this.store.list()) {
       let issue = original;
-      if (terminal(issue.stage) && issue.assignmentId === "") continue;
+      const storageError = this.store.repository.get(issue.id)?.error;
       if (
-        issue.waiting === Waiting.Blocked &&
-        issue.assignmentId === "" &&
+        storageError !== undefined &&
+        storageError !== "" &&
         issue.nextAt > this.now()
       )
         continue;
+      if (
+        terminal(issue.stage) &&
+        issue.assignmentId === "" &&
+        this.store.repository.get(issue.id) === undefined
+      )
+        continue;
+      if (
+        issue.waiting === Waiting.Blocked &&
+        issue.assignmentId === "" &&
+        issue.nextAt > this.now() &&
+        (storageError === undefined || storageError === "")
+      )
+        continue;
       try {
+        await this.synchronize(issue);
+        issue = this.store.get(issue.id);
+        if (!this.store.repository.ready(issue.id)) continue;
+        if (terminal(issue.stage) && issue.assignmentId === "") continue;
         if (!terminal(issue.stage) && issue.nextAt <= this.now())
           issue = await this.refresh(issue);
         const policy = this.options.policy(issue.root);
@@ -784,11 +952,19 @@ export class IssueService {
           error instanceof Error
             ? error.message
             : "Issue operation unavailable";
-        if (current.waiting !== Waiting.Blocked || current.detail !== detail)
+        const repositoryError = this.store.repository.get(issue.id)?.error;
+        const storageFailure =
+          error instanceof IssueStorageError ||
+          (repositoryError !== undefined && repositoryError !== "");
+        if (
+          (!storageFailure && current.waiting !== Waiting.Blocked) ||
+          current.detail !== detail ||
+          current.nextAt <= this.now()
+        )
           this.store.save(
             {
               ...current,
-              waiting: Waiting.Blocked,
+              waiting: storageFailure ? current.waiting : Waiting.Blocked,
               nextAt: this.now() + Math.min(current.pollIntervalMs * 2, 900000),
               epoch: current.epoch + 1,
               detail,
@@ -843,6 +1019,8 @@ export class IssueService {
     role: Role,
     purpose: Assignment["purpose"],
   ): Promise<void> {
+    await this.synchronize(issue);
+    this.authorize(issue);
     const active = this.store
       .assignments()
       .filter((item) =>

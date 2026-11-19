@@ -147,6 +147,27 @@ export function issueRoutes(
           effects: service.store
             .effects()
             .filter((effect) => effect.issueId === issue.id)
+            .concat(
+              (() => {
+                const storage = service.store.repository.get(issue.id);
+                if (
+                  storage === undefined ||
+                  (storage.pending === undefined && storage.error === "")
+                )
+                  return [];
+                return [
+                  {
+                    id: `${issue.id}:storage`,
+                    issueId: issue.id,
+                    kind: "persist_content",
+                    state: storage.error === "" ? "pending" : "failed",
+                    body: "",
+                    title: "",
+                    url: "",
+                  },
+                ];
+              })(),
+            )
             .slice(0, 20)
             .map((effect) => ({
               id: effect.id,

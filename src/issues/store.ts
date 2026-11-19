@@ -1,3 +1,5 @@
+import { RepositoryJournal } from "./repository-store.js";
+import { contentOf } from "./repository.js";
 import {
   decodeIssue,
   decodeAssignment,
@@ -14,10 +16,12 @@ import type {
 } from "./contracts.js";
 import { AttemptState, Waiting, IssueStage } from "./contracts.js";
 export class IssueStore {
+  readonly repository: RepositoryJournal;
   constructor(
     private db: DatabaseSync,
     private now: () => number,
   ) {
+    this.repository = new RepositoryJournal(db);
     db.exec(`CREATE TABLE IF NOT EXISTS issue_briefs(issue_id TEXT NOT NULL, version INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(issue_id,version));
 CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_assignments(id TEXT PRIMARY KEY, issue_id TEXT NOT NULL, data TEXT NOT NULL);
@@ -39,7 +43,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
   ownPosts(issueId: string): { url: string; body: string }[] {
     return this.db
       .prepare(
-        "SELECT id,url,body FROM issue_effects WHERE issue_id=? AND kind='post' AND state='completed'",
+        "SELECT id,url,body FROM issue_effects WHERE issue_id=? AND kind IN ('post','sync_comment') AND state='completed'",
       )
       .all(issueId)
       .map((row) => ({
@@ -122,6 +126,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
           .prepare("INSERT OR IGNORE INTO issue_briefs VALUES(?,?,?)")
           .run(issue.id, issue.brief.version, JSON.stringify(issue.brief));
       }
+      this.repository.intend(contentOf(issue));
       this.notice(issue);
       this.db.exec("RELEASE issue_save");
     } catch (error) {

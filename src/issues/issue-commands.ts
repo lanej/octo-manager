@@ -11,6 +11,14 @@ const actions = [
 ];
 export const commands: CommandSpec[] = [
   {
+    path: "issue storage migrate",
+    route: "issue-storage-migrate",
+    capability: "issues",
+    description:
+      "Migrate internal issue content to configured storage; coordinator must be stopped",
+    options: ["--dry-run"],
+  },
+  {
     path: "issue track <url>",
     route: "issue-track",
     capability: "issues",

@@ -1,3 +1,5 @@
+import { migrateIssueStorage } from "./migration.js";
+import { configuredIssueRepositories } from "../issue-storage/configuration.js";
 import { toJson } from "@bufbuild/protobuf";
 import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
@@ -26,6 +28,23 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
   const { values, positionals } = parsed;
   const command = positionals[0];
   const id = positionals[1] ?? "";
+  if (command === "issue-storage-migrate") {
+    const directory = resolve(
+      values.state ??
+        process.env["OCTO_MANAGER_STATE"] ??
+        join(homedir(), ".local/state/octo-manager"),
+    );
+    const root = resolve(values.cwd ?? process.cwd());
+    const repositories = configuredIssueRepositories();
+    const report = await migrateIssueStorage(
+      directory,
+      root,
+      values["dry-run"] === true,
+      () => repositories(root),
+    );
+    printResult(parsed, report);
+    return;
+  }
   const client = schedulerClient(
     resolve(
       values.state ??

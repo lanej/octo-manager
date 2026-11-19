@@ -1,6 +1,6 @@
 # Issue lifecycle
 
-Octo coordinates explicitly enrolled issues through investigation, implementation, testing, review, and acceptance verification. The issue application owns lifecycle decisions and evidence. Issue trackers, agent dispatchers, workspaces, and code hosts are separate ports; GitHub issues and Codex app-server are the installed adapters. A different tracker does not require replacing GitHub PR coordination. The coordinator owns tracker writes and publication; agents operate in isolated local checkouts.
+Octo coordinates explicitly enrolled issues through investigation, implementation, testing, review, and acceptance verification. The issue application owns lifecycle decisions and evidence. Issue trackers, agent dispatchers, workspaces, and code hosts are separate ports; GitHub issues and Codex app-server are the installed external adapters. Issue content can use [Beads-backed storage](issue-storage.md) without changing Octo issue identities or selecting a different tracker. A different tracker does not require replacing GitHub PR coordination. The coordinator owns tracker writes and publication; agents operate in isolated local checkouts.
 
 ## Repository configuration
 

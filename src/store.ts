@@ -90,6 +90,10 @@ export class Store {
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }
   }
+  backup(destination: string): void {
+    this.db.prepare("VACUUM INTO ?").run(destination);
+    chmodSync(destination, 0o600);
+  }
   jobs(): Job[] { return this.db.prepare("SELECT data FROM jobs ORDER BY rowid").all().map(r => JSON.parse(r.data as string) as Job); }
   get(id: string): Job {
     const row = this.db.prepare("SELECT data FROM jobs WHERE id=?").get(id);

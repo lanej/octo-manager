@@ -8,6 +8,12 @@ import type {
 // Write adapters must invoke authorize immediately before dispatch, after any awaited preparation.
 export interface IssueTracker {
   provider: string;
+  update?(
+    ref: IssueReference,
+    content: { title: string; body: string; closed: boolean },
+    signal: AbortSignal,
+    authorize: () => void,
+  ): Promise<void>;
   identify(url: string): IssueReference;
   verifyRepository(root: string, ref: IssueReference): void;
   observe(
