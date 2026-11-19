@@ -11,6 +11,15 @@ const trackerSchema = Type.Object({
   revision: Type.String(),
 });
 
+export enum StorageMigrationState {
+  Started = "started",
+  Completed = "completed",
+}
+export interface StorageMigration {
+  state: StorageMigrationState;
+  backup: string;
+}
+
 export interface ContentBinding {
   repository: string;
   baseline: IssueContent | undefined;
@@ -23,7 +32,45 @@ export class RepositoryJournal {
     db.exec(`CREATE TABLE IF NOT EXISTS issue_storage (
       issue_id TEXT PRIMARY KEY, repository TEXT NOT NULL, baseline TEXT, pending TEXT,
       error TEXT NOT NULL DEFAULT ''
-    ); CREATE TABLE IF NOT EXISTS issue_tracker_baselines(issue_id TEXT PRIMARY KEY, data TEXT NOT NULL)`);
+    ); CREATE TABLE IF NOT EXISTS issue_tracker_baselines(issue_id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS issue_storage_migrations (
+        issue_id TEXT NOT NULL, repository TEXT NOT NULL,
+        state TEXT NOT NULL CHECK(state IN ('started','completed')),
+        backup TEXT NOT NULL,
+        PRIMARY KEY(issue_id,repository)
+      )`);
+  }
+  migration(id: string, repository: string): StorageMigration | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT state,backup FROM issue_storage_migrations WHERE issue_id=? AND repository=?",
+      )
+      .get(id, repository);
+    if (row === undefined) return undefined;
+    const state = row["state"];
+    if (
+      state !== StorageMigrationState.Started &&
+      state !== StorageMigrationState.Completed
+    )
+      throw new Error("Invalid issue storage migration receipt");
+    return { state, backup: String(row["backup"]) };
+  }
+  beginMigration(id: string, repository: string, backup: string): void {
+    this.db
+      .prepare("INSERT OR IGNORE INTO issue_storage_migrations VALUES(?,?,?,?)")
+      .run(id, repository, StorageMigrationState.Started, backup);
+  }
+  completeMigration(id: string, repository: string): void {
+    this.db
+      .prepare(
+        "UPDATE issue_storage_migrations SET state=? WHERE issue_id=? AND repository=? AND state=?",
+      )
+      .run(
+        StorageMigrationState.Completed,
+        id,
+        repository,
+        StorageMigrationState.Started,
+      );
   }
   get(id: string): ContentBinding | undefined {
     const row = this.db

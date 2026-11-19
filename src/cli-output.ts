@@ -86,6 +86,7 @@ const scalarFields = new Set([
   "total",
   "count",
   "migrated",
+  "alreadyMigrated",
   "backup",
   "hasMore",
   "applicable",

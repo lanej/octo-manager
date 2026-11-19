@@ -1,7 +1,17 @@
+import { StorageMigrationState } from "../src/issues/repository-store.js";
 import { test, expect } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  mkdirSync,
+  rmdirSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { IssueStore } from "../src/issues/store.js";
@@ -253,12 +263,38 @@ test("migration backs up internal records, preserves identifiers, pauses work an
     );
     expect(result.migrated).toBe(1);
     expect(existsSync(result.backup ?? "")).toBe(true);
-    await migrateIssueStorage(directory, value.root, false, () => repository);
+    const paused = new Store(directory);
+    const resumed = {
+      ...paused.issues.get(value.id),
+      waiting: Waiting.None,
+      epoch: 42,
+      detail: "Resumed after migration",
+    };
+    paused.issues.save(resumed, "resumed", resumed.detail);
+    const events = paused.issues.events(value.id);
+    paused.close();
+    const writes = repository.writes;
+    const before = readdirSync(join(directory, "migration-backups"));
+    const replay = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    expect(replay).toMatchObject({
+      state: "already_migrated",
+      migrated: 0,
+      alreadyMigrated: 1,
+      backup: result.backup,
+    });
     expect(repository.documents.size).toBe(1);
+    expect(repository.writes).toBe(writes);
+    expect(readdirSync(join(directory, "migration-backups"))).toEqual(before);
     const check = new Store(directory);
     try {
       expect(check.issues.get(value.id).ref).toEqual(value.ref);
-      expect(check.issues.get(value.id).waiting).toBe(Waiting.Paused);
+      expect(check.issues.get(value.id)).toEqual(resumed);
+      expect(check.issues.events(value.id)).toEqual(events);
       expect(check.issues.assignments()).toEqual([]);
     } finally {
       check.close();
@@ -460,5 +496,258 @@ test("an unchanged stored field retains its original clock across unrelated nati
     );
   } finally {
     f.db.close();
+  }
+});
+
+test("an interrupted migration reuses its backup and pause receipt without repeating a committed provider write", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-resume-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "enrolled", "Migration fixture");
+  setup.close();
+  const write = repository.write.bind(repository);
+  let loseReply = true;
+  repository.write = async (content) => {
+    await write(content);
+    if (loseReply) {
+      loseReply = false;
+      throw new Error("Write reply lost");
+    }
+  };
+  try {
+    expect(
+      await rejected(
+        migrateIssueStorage(directory, value.root, false, () => repository),
+      ),
+    ).toContain("Write reply lost");
+    const backups = readdirSync(join(directory, "migration-backups"));
+    expect(backups).toHaveLength(1);
+    const interrupted = new Store(directory);
+    const epoch = interrupted.issues.get(value.id).epoch;
+    const receipt = interrupted.issues.repository.migration(
+      value.id,
+      repository.identity,
+    );
+    expect(receipt?.state).toBe(StorageMigrationState.Started);
+    interrupted.close();
+    const result = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    expect(result.migrated).toBe(1);
+    expect(result.backup).toBe(receipt?.backup);
+    expect(repository.writes).toBe(1);
+    expect(readdirSync(join(directory, "migration-backups"))).toEqual(backups);
+    const verified = new Store(directory);
+    try {
+      expect(verified.issues.get(value.id).epoch).toBe(epoch);
+      expect(
+        verified.issues.repository.migration(value.id, repository.identity)
+          ?.state,
+      ).toBe(StorageMigrationState.Completed);
+      expect(
+        verified.issues
+          .events(value.id)
+          .filter((event) => event.kind === "storage_migration"),
+      ).toHaveLength(1);
+    } finally {
+      verified.close();
+    }
+    const location = join(
+      directory,
+      "migration-backups",
+      backups[0] ?? "missing",
+      "manifest.json",
+    );
+    const manifest = readFileSync(location, "utf8");
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    expect(readFileSync(location, "utf8")).toBe(manifest);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("migration processes newly added internal issues without touching completed issues", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-additive-"));
+  const repository = new MemoryRepository();
+  const first = issue();
+  const setup = new Store(directory);
+  setup.issues.save(first, "enrolled", "First issue");
+  setup.close();
+  try {
+    await migrateIssueStorage(directory, first.root, false, () => repository);
+    const updated = new Store(directory);
+    const before = updated.issues.get(first.id);
+    const second = {
+      ...issue(),
+      ref: {
+        ...first.ref,
+        externalId: "48",
+        url: "https://github.com/lanej/octo-manager/issues/48",
+      },
+    };
+    updated.issues.save(second, "enrolled", "New issue");
+    updated.close();
+    const result = await migrateIssueStorage(
+      directory,
+      first.root,
+      false,
+      () => repository,
+    );
+    expect(result).toMatchObject({ migrated: 1, alreadyMigrated: 1, count: 2 });
+    expect(repository.writes).toBe(2);
+    const verified = new Store(directory);
+    try {
+      expect(verified.issues.get(first.id)).toEqual(before);
+    } finally {
+      verified.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("confirmation before receipt completion replays bookkeeping without re-pausing resumed work", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-confirmed-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "enrolled", "Migration fixture");
+  setup.close();
+  const raw = new DatabaseSync(join(directory, "jobs.sqlite"));
+  raw.exec(
+    "CREATE TRIGGER fail_completion BEFORE UPDATE ON issue_storage_migrations WHEN NEW.state='completed' BEGIN SELECT RAISE(ABORT,'completion reply lost'); END",
+  );
+  raw.close();
+  try {
+    expect(
+      await rejected(
+        migrateIssueStorage(directory, value.root, false, () => repository),
+      ),
+    ).toContain("completion reply lost");
+    const raw = new DatabaseSync(join(directory, "jobs.sqlite"));
+    raw.exec("DROP TRIGGER fail_completion");
+    raw.close();
+    const resumedStore = new Store(directory);
+    const resumed = {
+      ...resumedStore.issues.get(value.id),
+      waiting: Waiting.None,
+      epoch: 99,
+      detail: "Resumed by operator",
+    };
+    resumedStore.issues.save(resumed, "resumed", resumed.detail);
+    resumedStore.close();
+    const result = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    expect(result).toMatchObject({
+      state: "already_migrated",
+      migrated: 0,
+      alreadyMigrated: 1,
+    });
+    expect(repository.writes).toBe(1);
+    const verified = new Store(directory);
+    try {
+      expect(verified.issues.get(value.id)).toEqual(resumed);
+      expect(
+        verified.issues.repository.migration(value.id, repository.identity)
+          ?.state,
+      ).toBe(StorageMigrationState.Completed);
+    } finally {
+      verified.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("an unfinished migration refuses to resume when its original backup has disappeared", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-backup-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "enrolled", "Migration fixture");
+  setup.close();
+  const write = repository.write.bind(repository);
+  repository.write = () => Promise.reject(new Error("Provider unavailable"));
+  try {
+    expect(
+      await rejected(
+        migrateIssueStorage(directory, value.root, false, () => repository),
+      ),
+    ).toContain("Provider unavailable");
+    const paused = new Store(directory);
+    const receipt = paused.issues.repository.migration(
+      value.id,
+      repository.identity,
+    );
+    paused.close();
+    if (receipt === undefined) throw new Error("Missing fixture receipt");
+    unlinkSync(receipt.backup);
+    repository.write = write;
+    expect(
+      await rejected(
+        migrateIssueStorage(directory, value.root, false, () => repository),
+      ),
+    ).toContain("Migration backup is missing");
+    expect(repository.writes).toBe(0);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("completed migration receipts repair a lost manifest without repeating migration", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-manifest-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "enrolled", "Migration fixture");
+  setup.close();
+  const write = repository.write.bind(repository);
+  let path = "";
+  repository.write = async (content) => {
+    await write(content);
+    const backup = readdirSync(join(directory, "migration-backups"))[0];
+    if (backup === undefined) throw new Error("Missing fixture backup");
+    path = join(directory, "migration-backups", backup, "manifest.json");
+    unlinkSync(path);
+    mkdirSync(path);
+  };
+  try {
+    const failure = await rejected(
+      migrateIssueStorage(directory, value.root, false, () => repository),
+    );
+    expect(failure).toContain("EISDIR");
+    const completed = new Store(directory);
+    expect(
+      completed.issues.repository.migration(value.id, repository.identity)
+        ?.state,
+    ).toBe(StorageMigrationState.Completed);
+    const before = completed.issues.get(value.id);
+    completed.close();
+    rmdirSync(path);
+    const result = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    expect(result.migrated).toBe(0);
+    expect(repository.writes).toBe(1);
+    expect(readFileSync(path, "utf8")).toContain('"state": "completed"');
+    const checked = new Store(directory);
+    try {
+      expect(checked.issues.get(value.id)).toEqual(before);
+    } finally {
+      checked.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
   }
 });

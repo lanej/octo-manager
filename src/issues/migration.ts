@@ -1,12 +1,35 @@
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync, writeFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { randomUUID } from "node:crypto";
+import {
+  mkdirSync,
+  writeFileSync,
+  statSync,
+  readFileSync,
+  existsSync,
+  renameSync,
+  unlinkSync,
+} from "node:fs";
+import { join, resolve, dirname } from "node:path";
+import { randomUUID, createHash } from "node:crypto";
 import { Store } from "../store.js";
 import { decodeIssue } from "./validation.js";
 import { contentOf, sameContent, type IssueRepository } from "./repository.js";
 import { Waiting, AttemptState } from "./contracts.js";
+import { StorageMigrationState } from "./repository-store.js";
 import { synchronizeIssue } from "./storage.js";
+
+function verifyBackup(path: string): void {
+  if (!existsSync(path) || !statSync(path).isFile())
+    throw new Error("Migration backup is missing; restore it before resuming");
+  const saved = new DatabaseSync(path);
+  try {
+    saved.exec("PRAGMA query_only=ON");
+    const integrity = saved.prepare("PRAGMA integrity_check").get();
+    if (integrity?.["integrity_check"] !== "ok")
+      throw new Error("Migration backup failed integrity check");
+  } finally {
+    saved.close();
+  }
+}
 
 /** Internal records only. Dry-run queries the existing database read-only and performs no provider writes. */
 export async function migrateIssueStorage(
@@ -18,6 +41,7 @@ export async function migrateIssueStorage(
   state: string;
   count: number;
   migrated: number;
+  alreadyMigrated?: number;
   backup?: string;
 }> {
   const filename = join(directory, "jobs.sqlite");
@@ -55,7 +79,22 @@ export async function migrateIssueStorage(
     const issues = store.issues
       .list()
       .filter((issue) => resolve(issue.root) === resolve(root));
-    const selected = new Set(issues.map((issue) => issue.id));
+    const journal = store.issues.repository;
+    const verifiedBackups = new Set<string>();
+    const checkpoint = (path: string) => {
+      if (verifiedBackups.has(path)) return;
+      verifyBackup(path);
+      verifiedBackups.add(path);
+    };
+    const complete = issues.filter((issue) => {
+      const binding = journal.get(issue.id);
+      if (binding !== undefined && binding.repository !== target.identity)
+        throw new Error("Issue storage identity changed; migrate explicitly");
+      return binding?.baseline !== undefined;
+    });
+    const completedIds = new Set(complete.map((issue) => issue.id));
+    const pending = issues.filter((issue) => !completedIds.has(issue.id));
+    const selected = new Set(pending.map((issue) => issue.id));
     if (
       store.issues
         .assignments()
@@ -72,70 +111,137 @@ export async function migrateIssueStorage(
       throw new Error(
         "Pause selected issues and confirm all assignments terminal before migration",
       );
-    const location = join(
-      directory,
-      "migration-backups",
-      `issue-storage-${randomUUID()}`,
-    );
-    mkdirSync(location, { recursive: true, mode: 0o700 });
-    const backup = join(location, "jobs.sqlite");
-    store.backup(backup);
-    const migrated: string[] = [];
-    const manifest = () => {
-      writeFileSync(
-        join(location, "manifest.json"),
-        JSON.stringify(
-          {
-            repository: target.identity,
-            ids: issues.map((issue) => issue.id),
-            migrated,
-            backup,
-          },
-          null,
-          2,
-        ),
-        { mode: 0o600 },
-      );
-    };
-    manifest();
-    for (const issue of issues) {
-      const signal = AbortSignal.timeout(30000);
-      const original = contentOf(issue);
-      const existing = await target.read(issue.id, signal);
-      if (
-        store.issues.repository.get(issue.id) === undefined &&
-        existing !== undefined &&
-        !sameContent(original, existing)
-      )
-        throw new Error(
-          "Conflicting issue content already exists in target storage",
-        );
-      store.issues.atomic(() => {
-        const paused = {
-          ...issue,
-          waiting: Waiting.Paused,
-          epoch: issue.epoch + 1,
-          detail: "Issue storage migration; resume explicitly",
-        };
-        store.issues.save(paused, "storage_migration", paused.detail);
-        store.issues.repository.bind(contentOf(paused), target.identity);
+
+    const manifest = (backup: string) => {
+      const entries = issues.flatMap((issue) => {
+        const receipt = journal.migration(issue.id, target.identity);
+        return receipt?.backup === backup
+          ? [{ id: issue.id, state: receipt.state }]
+          : [];
       });
+      const path = join(dirname(backup), "manifest.json");
+      const text = JSON.stringify(
+        { repository: target.identity, backup, issues: entries },
+        null,
+        2,
+      );
+      if (existsSync(path) && readFileSync(path, "utf8") === text) return;
+      const temporary = `${path}.${randomUUID()}.tmp`;
+      try {
+        writeFileSync(temporary, text, { mode: 0o600, flag: "wx" });
+        renameSync(temporary, path);
+      } finally {
+        if (existsSync(temporary)) unlinkSync(temporary);
+      }
+    };
+
+    // Completion is the confirmed binding, not a frozen source snapshot. A replay
+    // must not overwrite legitimate content or workflow changes made after cutover.
+    for (const issue of complete) {
+      const existing = await target.read(issue.id, AbortSignal.timeout(30000));
+      if (existing === undefined)
+        throw new Error(
+          "Previously migrated issue is missing from authoritative storage",
+        );
+      const receipt = journal.migration(issue.id, target.identity);
+      if (receipt !== undefined) {
+        if (receipt.state === StorageMigrationState.Started) {
+          checkpoint(receipt.backup);
+          journal.completeMigration(issue.id, target.identity);
+        }
+        manifest(receipt.backup);
+      }
+    }
+    const fresh = pending.filter(
+      (issue) => journal.migration(issue.id, target.identity) === undefined,
+    );
+    let backup = issues.flatMap((issue) => {
+      const receipt = journal.migration(issue.id, target.identity);
+      return receipt === undefined ? [] : [receipt.backup];
+    })[0];
+    if (fresh.length > 0) {
+      for (const issue of fresh) {
+        const existing = await target.read(
+          issue.id,
+          AbortSignal.timeout(30000),
+        );
+        if (
+          journal.get(issue.id) === undefined &&
+          existing !== undefined &&
+          !sameContent(contentOf(issue), existing)
+        )
+          throw new Error(
+            "Conflicting issue content already exists in target storage",
+          );
+      }
+      const key = createHash("sha256")
+        .update(
+          JSON.stringify([
+            1,
+            target.identity,
+            fresh
+              .slice()
+              .sort((left, right) => left.id.localeCompare(right.id)),
+          ]),
+        )
+        .digest("hex");
+      const location = join(
+        directory,
+        "migration-backups",
+        `issue-storage-${key}`,
+      );
+      mkdirSync(location, { recursive: true, mode: 0o700 });
+      backup = join(location, "jobs.sqlite");
+      if (!existsSync(backup)) {
+        const temporary = `${backup}.${randomUUID()}.tmp`;
+        try {
+          store.backup(temporary);
+          renameSync(temporary, backup);
+        } finally {
+          if (existsSync(temporary)) unlinkSync(temporary);
+        }
+      } else {
+        checkpoint(backup);
+      }
+      const backupPath = backup;
+      store.issues.atomic(() => {
+        for (const issue of fresh) {
+          const paused = {
+            ...issue,
+            waiting: Waiting.Paused,
+            epoch: issue.epoch + 1,
+            detail: "Issue storage migration; resume explicitly",
+          };
+          store.issues.save(paused, "storage_migration", paused.detail);
+          journal.bind(contentOf(paused), target.identity);
+          journal.beginMigration(issue.id, target.identity, backupPath);
+        }
+      });
+      manifest(backup);
+    }
+    for (const issue of pending) {
+      const receipt = journal.migration(issue.id, target.identity);
+      if (receipt === undefined) throw new Error("Migration receipt missing");
+      if (receipt.state === StorageMigrationState.Completed)
+        throw new Error("Completed migration has no confirmed storage binding");
+      checkpoint(receipt.backup);
       await synchronizeIssue(
         store.issues,
         store.issues.get(issue.id),
         target,
-        signal,
+        AbortSignal.timeout(30000),
       );
-      if (!store.issues.repository.ready(issue.id))
+      if (!journal.ready(issue.id))
         throw new Error("Issue migration remains unconfirmed");
-      migrated.push(issue.id);
-      manifest();
+      journal.completeMigration(issue.id, target.identity);
+      manifest(receipt.backup);
     }
     return {
-      state: "migrated",
+      state: pending.length === 0 ? "already_migrated" : "migrated",
       count: issues.length,
-      migrated: migrated.length,
-      backup,
+      migrated: pending.length,
+      alreadyMigrated: complete.length,
+      ...(backup === undefined ? {} : { backup }),
     };
   } finally {
     store.close();
