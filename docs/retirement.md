@@ -5,11 +5,11 @@ Octo retires GitHub polling independently of durable notification delivery. A cl
 | State | Meaning |
 | --- | --- |
 | `watching` | Poll an enrolled PR normally. |
-| `draining` | The PR is merged or closed; finish existing watches and obtain a final complete refresh. |
+| `draining` | The PR is merged or closed; finish existing watches and pending reviews, then obtain a final complete refresh. |
 | `archived` | Automatic polling has stopped. Applicable unread notifications remain deliverable. |
 | `disabled` | An explicit `untrack` stopped polling and delivery. Notifications cannot resume it. |
 
-The first confirmed closed/merged observation starts a persisted 24-hour deadline. Repeated observations, failed reads and restarts do not extend it. A subsequent complete check/review refresh with no waiting watches archives the PR with reason `settled`. A deadline archives it with reason `deadline`, retains incomplete evidence and expires outstanding watches. Expiry is not a successful or completed GitHub result. Tracking and Activity show the incomplete-results warning. Retirement does not accept or resolve an action; existing applicability rules still supersede obsolete notices and withdraw their queued copies.
+The first confirmed closed/merged observation starts a persisted 24-hour deadline. Repeated observations, failed reads and restarts do not extend it. A subsequent complete check/review refresh with no waiting watches or `PENDING` reviews archives the PR with reason `settled`. Successfully fetching a draft review does not mean that review has been submitted. Pending reviews keep both normal draining and startup reconciliation active until submission or the original deadline. Newly observed actionable feedback on a closed or merged PR remains deliverable after archival; feedback actions already opened before closure remain superseded, and repeated observations do not create another copy. A deadline archives it with reason `deadline`, retains incomplete evidence and expires outstanding watches. Expiry is not a successful or completed GitHub result. Tracking and Activity show the incomplete-results warning. Retirement does not accept or resolve an action; existing applicability rules still supersede obsolete notices and withdraw their queued copies.
 
 The coordinator fences observations by tracking epoch so a delayed response cannot undo manual disabling, retirement or a later enrollment. Explicit tracking resumes an archived/disabled PR under the existing ownership rules. Reopening during draining clears the old deadline; a later closure starts a new cycle. A reopened archived PR gets an appropriate new check-watch generation while prior results remain historical.
 

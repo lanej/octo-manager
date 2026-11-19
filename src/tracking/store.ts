@@ -65,7 +65,7 @@ export class TrackingStore {
         if (!unfinished(action)) continue;
         const observation = observations.get(action.prId);
         if (observation?.lifecycle === "merged") {
-          const progress = closeProgress(action, observation, this.now());
+          const progress = this.closeProgress(action, observation);
           if (progress !== undefined) {
             this.saveAction(
               { ...action, progress, updatedAt: this.now() },
@@ -639,7 +639,7 @@ export class TrackingStore {
       for (const a of this.actions().filter(
         (a) => a.prId === p.id && unfinished(a),
       )) {
-        const progress = closeProgress(a, o, this.now());
+        const progress = this.closeProgress(a, o);
         if (progress) {
           this.saveAction(
             { ...a, progress, updatedAt: this.now() },
@@ -758,6 +758,20 @@ export class TrackingStore {
       this.retirement.observeInside(p.id, o);
       return this.pr(p.id);
     });
+  }
+  private closeProgress(action: Action, observation: PRObservation) {
+    const openedLifecycle =
+      action.blocker.kind === "review_feedback"
+        ? this.db
+            .prepare("SELECT lifecycle FROM pr_observations WHERE id=?")
+            .get(action.openedObservationId)?.["lifecycle"]
+        : undefined;
+    return closeProgress(
+      action,
+      observation,
+      this.now(),
+      openedLifecycle === "closed" || openedLifecycle === "merged",
+    );
   }
   refreshError(id: string, message: string): void {
     this.transaction(() => {

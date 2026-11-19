@@ -54,4 +54,4 @@ Forecasts use changes in GitHub's reported remaining balance within the same res
 
 ## Upgrading older installs
 
-Startup applies retirement to cached, settled **merged** PRs before polling. Complete terminal check evidence, complete review/feedback coverage, and no waiting check watch are required; history, ownership, and unread deliveries remain intact. Incomplete merged PRs keep draining, while closed-but-unmerged PRs still receive fresh verification and can be reactivated by notifications. Explicitly disabled records stay disabled. This avoids fetching every old merged PR just to retire it after an upgrade.
+Startup applies retirement to cached, settled **merged** PRs before polling. Complete terminal check evidence, complete review/feedback coverage with no pending reviews, and no waiting check watch are required; history, ownership, and unread deliveries remain intact. Incomplete merged PRs keep draining, while closed-but-unmerged PRs still receive fresh verification and can be reactivated by notifications. Explicitly disabled records stay disabled. This avoids fetching every old merged PR just to retire it after an upgrade.

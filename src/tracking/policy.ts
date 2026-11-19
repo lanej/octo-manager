@@ -54,7 +54,7 @@ export function currentReviews(o: PRObservation) {
       );
 }
 export function findings(o: PRObservation, url: string): Finding[] {
-  if (o.lifecycle !== "open") return [];
+  if (o.lifecycle !== "open") return feedbackFindings(o);
   const found: Finding[] = [];
   const baseSha = o.targetBase?.sha ?? o.baseSha;
   if (o.mergeability === "conflicting")
@@ -96,6 +96,10 @@ export function findings(o: PRObservation, url: string): Finding[] {
         summary: `Changes requested by ${r.author}`,
         evidenceUrl: r.url || url,
       });
+  return [...found, ...feedbackFindings(o)];
+}
+function feedbackFindings(o: PRObservation): Finding[] {
+  const found: Finding[] = [];
   for (const feedback of o.feedback?.state === "complete"
     ? o.feedback.value
     : []) {
@@ -113,6 +117,7 @@ export function closeProgress(
   a: Action,
   o: PRObservation,
   now: number,
+  openedOnTerminalPR = false,
 ): ActionProgress | undefined {
   const supersede = (reason: string): ActionProgress => ({
     state: ActionState.Superseded,
@@ -125,6 +130,23 @@ export function closeProgress(
     observationId: o.id,
     reason,
   });
+  const b = a.blocker;
+  if (b.kind === "review_feedback") {
+    if (o.lifecycle !== "open" && !openedOnTerminalPR)
+      return supersede(`PR ${o.lifecycle}`);
+    if (!actionableFeedback(b.feedback))
+      return supersede("Review lifecycle update has no findings");
+    if (o.feedback?.state === "complete") {
+      const newer = o.feedback.value.find(
+        (f) => f.source === b.feedback.source && f.id === b.feedback.id,
+      );
+      if (newer !== undefined && newer.revision !== b.feedback.revision)
+        return supersede(
+          "Comment edited; newer feedback replaces this revision",
+        );
+    }
+    return undefined;
+  }
   if (o.lifecycle === "merged") return supersede("PR merged");
   if (a.blocker.kind === "check_results") {
     if (a.blocker.headSha !== o.headSha) return supersede("PR head changed");
@@ -144,21 +166,6 @@ export function closeProgress(
     return undefined;
   }
   if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
-  const b = a.blocker;
-  if (b.kind === "review_feedback") {
-    if (!actionableFeedback(b.feedback))
-      return supersede("Review lifecycle update has no findings");
-    if (o.feedback?.state === "complete") {
-      const newer = o.feedback.value.find(
-        (f) => f.source === b.feedback.source && f.id === b.feedback.id,
-      );
-      if (newer !== undefined && newer.revision !== b.feedback.revision)
-        return supersede(
-          "Comment edited; newer feedback replaces this revision",
-        );
-    }
-    return undefined;
-  }
   if (b.kind !== "changes_requested" && b.headSha !== o.headSha)
     return supersede("PR head changed");
   if (b.kind === "conflict") {

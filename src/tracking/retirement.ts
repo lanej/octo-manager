@@ -156,7 +156,7 @@ export class RetirementStore {
       this.set(id, TrackingState.Draining, this.now() + 86400000, null);
       this.event(
         "pr_draining",
-        "PR closed; finishing existing check watches for at most 24 hours",
+        "PR closed; finishing checks and pending reviews for at most 24 hours",
         id,
       );
       return;
@@ -164,6 +164,7 @@ export class RetirementStore {
     if (
       checkEvidence(observation).state === "complete" &&
       observation.reviews.state === "complete" &&
+      !observation.reviews.value.some((review) => review.state === "PENDING") &&
       (observation.feedback === undefined ||
         observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
@@ -191,6 +192,7 @@ export class RetirementStore {
       evidence.state === "complete" &&
       (evidence.value.length === 0 || checksFinished(evidence)) &&
       observation.reviews.state === "complete" &&
+      !observation.reviews.value.some((review) => review.state === "PENDING") &&
       (observation.feedback === undefined ||
         observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
