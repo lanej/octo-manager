@@ -1,3 +1,4 @@
+import { actionNotice, renderNotice } from "../src/security/notifications.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readFailureExcerpt } from "../src/tracking/messages.js";
@@ -321,7 +322,7 @@ test("queue admission preserves its receipt across restart without acknowledging
   }
 });
 
-test("optional log enrichment expires during cooldown without starving cached notifications", async () => {
+test("automatic notices do not request external log enrichment during cooldown", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-enrichment-"));
   const store = new Store(dir, () => 1000);
   const scheduler = new GitHubScheduler(
@@ -375,8 +376,18 @@ test("optional log enrichment expires during cooldown without starving cached no
     .find((value) => store.tracking.action(value.actionId).prId === second.id);
   assert.ok(other !== undefined);
   for (const delivery of store.tracking.deliveries())
-    if (delivery.id !== firstDelivery.id)
-      store.tracking.inbox.record(delivery.id, "Cached notification");
+    if (delivery.id !== firstDelivery.id) {
+      const cachedAction = store.tracking.action(delivery.actionId);
+      const notice = actionNotice(
+        cachedAction,
+        store.tracking.pr(cachedAction.prId).url,
+      );
+      store.tracking.inbox.freezeNotice(delivery.id, notice);
+      store.tracking.inbox.record(
+        delivery.id,
+        renderNotice(notice, delivery.id, cachedAction.id),
+      );
+    }
   const completed = Promise.withResolvers<undefined>();
   let dispatched = 0;
   const sent: string[] = [];
@@ -406,8 +417,7 @@ test("optional log enrichment expires during cooldown without starving cached no
   try {
     service.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(scheduler.status().queuedRequests, 1);
-    await completed.promise;
+    assert.equal(scheduler.status().queuedRequests, 0);
     await until(() => sent.includes(firstDelivery.id));
     service.tick();
     await until(() => sent.includes(other.id));

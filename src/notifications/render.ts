@@ -1,55 +1,57 @@
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { cleanText } from "../domain.js";
+import {
+  noticeView,
+  renderReference,
+  type NoticeReference,
+  type NoticeView,
+  type SafeNotice,
+} from "../security/notifications.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
-function entry(message: AgentMessage): { group: string; lines: string[] } {
-  const lines = message.body
-    .split("\n")
-    .filter((line) => line !== "" && !line.startsWith("[octo-delivery:"));
-  const first = lines[0] ?? "Octo update",
-    heading = first.match(
-      /^(\[[^\]]+\]\(https:\/\/github\.com\/[^)]+\/pull\/\d+\)) · (.*)$/u,
-    );
-  const role = lines.find((line) => line.startsWith("Role:"));
-  const excerpt = lines
-    .filter((line) => line.startsWith("> "))
-    .map((line) => line.slice(2))
-    .filter((line) => !line.startsWith("<!--") && line.trim() !== "")
-    .join(" ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/gu, "")
-    .replace(/<[^>]*>/gu, "")
-    .replaceAll("**", "")
-    .trim();
-  const evidence = lines.find(
-    (line) =>
-      line.startsWith("[Evidence](") || line.startsWith("[Failed run]("),
-  );
-  const reference = lines.find(
-    (line) =>
-      line.startsWith("Action:") ||
-      line.startsWith("Submission:") ||
-      line.startsWith("Merge chain:"),
-  );
-  return {
-    group: heading?.[1] ?? "Submissions",
-    lines: [
-      `- ${cleanText(heading?.[2] ?? first, 240)}${reference === undefined ? "" : ` · ${reference.toLowerCase()}`}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
-      ...(message.participantPRId !== undefined
-        ? lines
-            .filter((line) => line.startsWith("> "))
-            .slice(0, 9)
-            .map((line) => `  ${cleanText(line, 180)}`)
-        : excerpt === ""
-          ? []
-          : [`  > ${cleanText(excerpt, 180)}`]),
-      ...(evidence === undefined ? [] : [`  ${evidence}`]),
-    ],
-  };
+
+export interface DigestGroup {
+  reference: NoticeReference;
+  entries: NoticeView[];
 }
+export function digestGroups(messages: AgentMessage[]): DigestGroup[] {
+  const groups = new Map<string, DigestGroup>();
+  for (const message of messages) {
+    const notice: SafeNotice = message.notice ?? {
+      version: 1,
+      kind: "update",
+      assessment: "not_required",
+    };
+    const entry = noticeView(notice, message.actionId);
+    const key = entry.group.url ?? "octo";
+    let group = groups.get(key);
+    if (group === undefined) {
+      group = { reference: entry.group, entries: [] };
+      groups.set(key, group);
+    }
+    group.entries.push(entry);
+  }
+  return [...groups.values()];
+}
+function renderGroup(group: DigestGroup): string {
+  return [
+    renderReference(group.reference),
+    ...group.entries.map((entry) => {
+      const reference =
+        entry.reference.url === group.reference.url
+          ? ""
+          : ` · ${renderReference(entry.reference)}`;
+      return [
+        `- ${entry.title}${reference}`,
+        ...entry.fields.map((field) => `  ${field.label}: ${field.value}`),
+      ].join("\n");
+    }),
+  ].join("\n");
+}
+
 export function renderDigest(
   id: string,
   number: number,
@@ -69,15 +71,8 @@ export function renderDigest(
   const footer = `Receipt: ${fence}${command}${fence}\nUse current returned items for triage.`;
   const selected: AgentMessage[] = [];
   function body(rows: AgentMessage[]): string {
-    const groups = new Map<string, string[]>();
-    for (const row of rows) {
-      const item = entry(row);
-      groups.set(item.group, [
-        ...(groups.get(item.group) ?? []),
-        ...item.lines,
-      ]);
-    }
-    return `[octo-digest:${shortId(id)}:${String(number)}]\nOcto · ${String(rows.length)} updates\n\n${[...groups].map(([heading, lines]) => `${heading}\n${lines.join("\n")}`).join("\n\n")}\n\n${footer}`;
+    const groups = digestGroups(rows);
+    return `[octo-digest:${shortId(id)}:${String(number)}]\nOcto · ${String(rows.length)} updates\n\n${groups.map(renderGroup).join("\n\n")}\n\n${footer}`;
   }
   for (const message of messages) {
     if (

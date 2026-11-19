@@ -131,8 +131,8 @@ test("subscription catchup is idempotent, roster changes supersede chatter and l
       .list(observer.id, 0, false, true)
       .messages.find((item) => item.participantPRId === pr.id);
     if (roster === undefined) throw new Error("Missing roster");
-    expect(roster.body).toContain("owner: Octo implementation");
-    expect(roster.body).toContain("observer: Independent review");
+    expect(roster.body).toContain("Role: observer");
+    expect(roster.body).not.toContain("Independent review");
     store.tracking.acknowledgeMessage(roster.id, observer.id);
     const copy = copies.find((item) => item.recipientAgentId === observer.id);
     if (copy === undefined) throw new Error("Missing catchup");

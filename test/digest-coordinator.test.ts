@@ -77,11 +77,7 @@ test("coordinator combines both producers and atomically receipts exact members 
       state: SubmissionState.NeedsInput,
       notificationRevision: 1,
     });
-    coordinator.store.submissions.notify(
-      submission,
-      actor.id,
-      "PR submission needs_input: Synthetic request",
-    );
+    coordinator.store.submissions.notify(submission, actor.id);
     await coordinator.start();
     for (let attempt = 0; attempt < 100; attempt++) {
       const current = coordinator.store.digests.active(actor.id);

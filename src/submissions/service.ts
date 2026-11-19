@@ -1,5 +1,4 @@
 import { Check } from "typebox/value";
-import { shortId } from "../tracking/identifiers.js";
 import {
   SubmissionState as State,
   SubmissionInputSchema,
@@ -434,18 +433,7 @@ export class SubmissionService {
     const value = this.store.get(id);
     if (value.notificationRevision > 0) return;
     const owner = this.tracking.store.registerAgent(value.request.owner);
-    this.store.notify(
-      value,
-      owner.id,
-      value.state === State.Succeeded && value.request.mode === "policy"
-        ? `Contribution policy v${String(value.policyVersion)} stored for ${value.request.repository}.`
-        : value.state === State.Succeeded
-          ? `[PR #${value.prUrl?.split("/").at(-1) ?? ""}](${value.prUrl ?? ""}) · Published; tracking active.`
-          : `PR submission ${value.state}: ${value.detail.slice(0, 400)}\nNext: octo-manager submission ${shortId(
-              id,
-              this.store.list().map((item) => item.id),
-            )}`,
-    );
+    this.store.notify(value, owner.id);
     this.update(id, { notificationRevision: 1 });
   }
   async close(): Promise<void> {

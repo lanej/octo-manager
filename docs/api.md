@@ -91,3 +91,13 @@ Tracking observations may read private metadata through existing GitHub authenti
 `WatchDashboard({url, reviews})` streams an initial cached frame and subsequent frames on the shared coordinator tick. Each frame contains the current `Snapshot`, optional cached `PullRequestDetails`, and `RefreshStatus` for the selected view. Review subscriptions register view interest without enrolling the PR; cancellation releases that interest. Other view data remains local to the coordinator. The original event `Watch` RPC remains available to event consumers.
 
 `RefreshStatus.state` is an enum: queued, running or deferred, with a separate eligibility deadline, latest attempt time and error. `Snapshot.github_scheduler` carries tick/request-spacing settings, tick sequence, next tick and dispatch times, queued/in-flight request counts and resource cooldowns. These timestamps remain Unix milliseconds; the TUI applies the configured presentation timezone.
+
+## Evidence assessment
+
+`GetAction` and `ListActions` return safe action metadata by default; `GetAction` also includes the latest typed `EvidenceAssessment` metadata. `full=true` explicitly returns the action's untrusted evidence and assessment result. `GetAssessment` reads an assessment by collision-aware ID; its default response excludes disposition, analysis and raw evidence. `full=true` exposes the explicitly named `untrusted_analysis` and `untrusted_evidence` fields. `RetryAssessment` accepts only a currently applicable failed or interrupted record. None of these responses grant execution authority.
+
+`ListAgentMessages` returns safe projected bodies by default, including during hook recovery. `full=true` is explicit historical inspection. Exact-body receipt checks continue comparing against the immutable historical notification, independently of projection. Agent CLI `--full` selects the full read-only interface.
+
+The additive `evidence_assessments`, `safe_agent_notices` and `safe_notice_replacements` feature tables preserve the existing database schema version and have an explicit assessment/notification policy version. Safe notification snapshots cannot be updated; existing message bodies and receipts remain immutable. See [the security model](security.md) for the startup retirement and uncertain-delivery policy.
+
+Notification inbox queries, immutable safe projections, replacement links and receipts are owned by the shared notification repository. The root store runs their migrations before composing producers and the inbox service. Assessment schema setup and interrupted-work recovery likewise run explicitly at startup. Direct notices and digest groups render the same typed notification view; digest grouping does not parse rendered message bodies.

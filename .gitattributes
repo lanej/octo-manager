@@ -1,0 +1,5 @@
+# Review the source definitions; generated artifacts remain tracked and reproducible.
+/gen/** linguist-generated=true -diff
+/src/gen/** linguist-generated=true -diff
+/src/agents/protocol/** linguist-generated=true -diff
+/schemas/*.schema.json linguist-generated=true -diff

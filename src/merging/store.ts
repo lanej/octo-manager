@@ -1,3 +1,4 @@
+import { renderNotice, type SafeNotice } from "../security/notifications.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -758,7 +759,7 @@ export class MergeStore {
     kind: "reference" | "entry",
     subjectId: string,
     revision: string,
-    body: string,
+    _body: string,
     applicable: boolean,
   ): void {
     this.transaction(() => {
@@ -777,19 +778,32 @@ export class MergeStore {
             .get(kind, subjectId, participant.agentId, revision) !== undefined
         )
           continue;
+        const id = randomUUID();
+        const notice: SafeNotice = {
+          version: 1,
+          kind: "merge",
+          prUrl: pr.url,
+          role: participant.agentId === pr.ownerAgentId ? "owner" : "observer",
+          assessment: "not_required",
+        };
+        notice.subject = {
+          kind: kind === "entry" ? "merge_entry" : "reference",
+          id: subjectId,
+        };
+        this.tracking.inbox.freezeNotice(id, notice);
         this.db
           .prepare(
             "INSERT OR IGNORE INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
           )
           .run(
             nextInboxSequence(this.db),
-            randomUUID(),
+            id,
             pr.id,
             participant.agentId,
             kind,
             subjectId,
             revision,
-            compact(body, 6000),
+            renderNotice(notice, id, ""),
             this.now(),
             null,
             this.now(),

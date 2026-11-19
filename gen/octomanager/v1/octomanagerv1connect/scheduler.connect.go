@@ -117,6 +117,12 @@ const (
 	// SchedulerServiceGetActionProcedure is the fully-qualified name of the SchedulerService's
 	// GetAction RPC.
 	SchedulerServiceGetActionProcedure = "/octomanager.v1.SchedulerService/GetAction"
+	// SchedulerServiceGetAssessmentProcedure is the fully-qualified name of the SchedulerService's
+	// GetAssessment RPC.
+	SchedulerServiceGetAssessmentProcedure = "/octomanager.v1.SchedulerService/GetAssessment"
+	// SchedulerServiceRetryAssessmentProcedure is the fully-qualified name of the SchedulerService's
+	// RetryAssessment RPC.
+	SchedulerServiceRetryAssessmentProcedure = "/octomanager.v1.SchedulerService/RetryAssessment"
 	// SchedulerServiceAcknowledgeActionProcedure is the fully-qualified name of the SchedulerService's
 	// AcknowledgeAction RPC.
 	SchedulerServiceAcknowledgeActionProcedure = "/octomanager.v1.SchedulerService/AcknowledgeAction"
@@ -195,6 +201,8 @@ type SchedulerServiceClient interface {
 	UntrackPullRequest(context.Context, *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error)
 	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
 	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	GetAssessment(context.Context, *connect.Request[v1.GetAssessmentRequest]) (*connect.Response[v1.GetAssessmentResponse], error)
+	RetryAssessment(context.Context, *connect.Request[v1.RetryAssessmentRequest]) (*connect.Response[v1.RetryAssessmentResponse], error)
 	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
 	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
 	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
@@ -392,6 +400,18 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(schedulerServiceMethods.ByName("GetAction")),
 			connect.WithClientOptions(opts...),
 		),
+		getAssessment: connect.NewClient[v1.GetAssessmentRequest, v1.GetAssessmentResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetAssessmentProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetAssessment")),
+			connect.WithClientOptions(opts...),
+		),
+		retryAssessment: connect.NewClient[v1.RetryAssessmentRequest, v1.RetryAssessmentResponse](
+			httpClient,
+			baseURL+SchedulerServiceRetryAssessmentProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RetryAssessment")),
+			connect.WithClientOptions(opts...),
+		),
 		acknowledgeAction: connect.NewClient[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse](
 			httpClient,
 			baseURL+SchedulerServiceAcknowledgeActionProcedure,
@@ -521,6 +541,8 @@ type schedulerServiceClient struct {
 	untrackPullRequest        *connect.Client[v1.UntrackPullRequestRequest, v1.UntrackPullRequestResponse]
 	listActions               *connect.Client[v1.ListActionsRequest, v1.ListActionsResponse]
 	getAction                 *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
+	getAssessment             *connect.Client[v1.GetAssessmentRequest, v1.GetAssessmentResponse]
+	retryAssessment           *connect.Client[v1.RetryAssessmentRequest, v1.RetryAssessmentResponse]
 	acknowledgeAction         *connect.Client[v1.AcknowledgeActionRequest, v1.AcknowledgeActionResponse]
 	startAction               *connect.Client[v1.StartActionRequest, v1.StartActionResponse]
 	retryDelivery             *connect.Client[v1.RetryDeliveryRequest, v1.RetryDeliveryResponse]
@@ -679,6 +701,16 @@ func (c *schedulerServiceClient) GetAction(ctx context.Context, req *connect.Req
 	return c.getAction.CallUnary(ctx, req)
 }
 
+// GetAssessment calls octomanager.v1.SchedulerService.GetAssessment.
+func (c *schedulerServiceClient) GetAssessment(ctx context.Context, req *connect.Request[v1.GetAssessmentRequest]) (*connect.Response[v1.GetAssessmentResponse], error) {
+	return c.getAssessment.CallUnary(ctx, req)
+}
+
+// RetryAssessment calls octomanager.v1.SchedulerService.RetryAssessment.
+func (c *schedulerServiceClient) RetryAssessment(ctx context.Context, req *connect.Request[v1.RetryAssessmentRequest]) (*connect.Response[v1.RetryAssessmentResponse], error) {
+	return c.retryAssessment.CallUnary(ctx, req)
+}
+
 // AcknowledgeAction calls octomanager.v1.SchedulerService.AcknowledgeAction.
 func (c *schedulerServiceClient) AcknowledgeAction(ctx context.Context, req *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error) {
 	return c.acknowledgeAction.CallUnary(ctx, req)
@@ -789,6 +821,8 @@ type SchedulerServiceHandler interface {
 	UntrackPullRequest(context.Context, *connect.Request[v1.UntrackPullRequestRequest]) (*connect.Response[v1.UntrackPullRequestResponse], error)
 	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
 	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
+	GetAssessment(context.Context, *connect.Request[v1.GetAssessmentRequest]) (*connect.Response[v1.GetAssessmentResponse], error)
+	RetryAssessment(context.Context, *connect.Request[v1.RetryAssessmentRequest]) (*connect.Response[v1.RetryAssessmentResponse], error)
 	AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error)
 	StartAction(context.Context, *connect.Request[v1.StartActionRequest]) (*connect.Response[v1.StartActionResponse], error)
 	RetryDelivery(context.Context, *connect.Request[v1.RetryDeliveryRequest]) (*connect.Response[v1.RetryDeliveryResponse], error)
@@ -982,6 +1016,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		connect.WithSchema(schedulerServiceMethods.ByName("GetAction")),
 		connect.WithHandlerOptions(opts...),
 	)
+	schedulerServiceGetAssessmentHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetAssessmentProcedure,
+		svc.GetAssessment,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetAssessment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceRetryAssessmentHandler := connect.NewUnaryHandler(
+		SchedulerServiceRetryAssessmentProcedure,
+		svc.RetryAssessment,
+		connect.WithSchema(schedulerServiceMethods.ByName("RetryAssessment")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceAcknowledgeActionHandler := connect.NewUnaryHandler(
 		SchedulerServiceAcknowledgeActionProcedure,
 		svc.AcknowledgeAction,
@@ -1136,6 +1182,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceListActionsHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetActionProcedure:
 			schedulerServiceGetActionHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetAssessmentProcedure:
+			schedulerServiceGetAssessmentHandler.ServeHTTP(w, r)
+		case SchedulerServiceRetryAssessmentProcedure:
+			schedulerServiceRetryAssessmentHandler.ServeHTTP(w, r)
 		case SchedulerServiceAcknowledgeActionProcedure:
 			schedulerServiceAcknowledgeActionHandler.ServeHTTP(w, r)
 		case SchedulerServiceStartActionProcedure:
@@ -1287,6 +1337,14 @@ func (UnimplementedSchedulerServiceHandler) ListActions(context.Context, *connec
 
 func (UnimplementedSchedulerServiceHandler) GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAction is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetAssessment(context.Context, *connect.Request[v1.GetAssessmentRequest]) (*connect.Response[v1.GetAssessmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.GetAssessment is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) RetryAssessment(context.Context, *connect.Request[v1.RetryAssessmentRequest]) (*connect.Response[v1.RetryAssessmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v1.SchedulerService.RetryAssessment is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) AcknowledgeAction(context.Context, *connect.Request[v1.AcknowledgeActionRequest]) (*connect.Response[v1.AcknowledgeActionResponse], error) {

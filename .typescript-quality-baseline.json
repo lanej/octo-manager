@@ -2029,14 +2029,6 @@
       "file": "src/rpc.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
-      "message": "Async method 'listActions' has no 'await' expression.",
-      "source": "async listActions(r){return {actions:tracking.store.actions().filter(a=>!r.prId||a.prId===r.prId).map(wireAction)};},",
-      "count": 1
-    },
-    {
-      "file": "src/rpc.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/require-await",
       "message": "Async method 'listTrackedPullRequests' has no 'await' expression.",
       "source": "async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},",
       "count": 1
@@ -2047,14 +2039,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if(!value)throw new ConnectError(\"Owner is required\",Code.InvalidArgument);",
-      "count": 1
-    },
-    {
-      "file": "src/rpc.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "source": "async listActions(r){return {actions:tracking.store.actions().filter(a=>!r.prId||a.prId===r.prId).map(wireAction)};},",
       "count": 1
     },
     {

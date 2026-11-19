@@ -1,6 +1,6 @@
 # Queued agent digests
 
-Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving separate findings, a short excerpt and the failed-run or review link. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
+Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR using typed fixed status fields and action or operation references. External excerpts, arbitrary evidence links and model analysis require explicit untrusted-evidence inspection. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
 ## Replacement and cancellation
 

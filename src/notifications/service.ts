@@ -62,6 +62,7 @@ export class DigestService {
     return this.work;
   }
   private pending(agentId: string): AgentMessage[] {
+    this.tracking.store.prepareSafeRecovery();
     return this.tracking.store.inbox.list(agentId, 0, false, true).messages;
   }
   private async run(): Promise<void> {

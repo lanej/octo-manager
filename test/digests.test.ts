@@ -137,14 +137,10 @@ async function fixture() {
       store.submissions.save({
         ...value,
         state: SubmissionState.NeedsInput,
-        detail: "Synthetic fixture",
+        detail: label,
         notificationRevision: 1,
       });
-      store.submissions.notify(
-        value,
-        actor.id,
-        `[PR #1](https://github.com/owner/repo/pull/1) · ${label}`,
-      );
+      store.submissions.notify(value, actor.id);
       const message = store.submissions.notices().at(-1);
       if (message === undefined) throw new Error("Missing fixture notice");
       return { id: message.id, submissionId: value.id };
@@ -493,14 +489,14 @@ test("consumption during terminal revision cleanup reconciles before a fresh dig
     await f.close();
   }
 });
-test("failed-run evidence survives compact digest rendering", async () => {
+test("failed-run prose and links stay out of automatic digest rendering", async () => {
   const f = await fixture();
   try {
     f.notice(
       "macOS failed\n> Error: build failed\n[Failed run](https://github.com/owner/repo/actions/runs/123/job/456)\nAction: abcdef12",
     );
     await f.flush();
-    expect(f.queue.slots[0]?.body).toContain(
+    expect(f.queue.slots[0]?.body).not.toContain(
       "[Failed run](https://github.com/owner/repo/actions/runs/123/job/456)",
     );
   } finally {

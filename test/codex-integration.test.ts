@@ -555,10 +555,20 @@ test("automatic recovery skips a full historical page before selecting current u
       hook_event_name: "SessionStart",
       source: "resume",
     });
-    assert(
-      output.includes("Current notification after a full historical page"),
+    assert(output.includes("Merge conflict"));
+    assert(store.inbox.get(current.id)?.acknowledgedAt === undefined);
+    assert.equal(
+      store.inbox.get(current.id)?.body,
+      "Current notification after a full historical page",
     );
-    assert(store.inbox.get(current.id)?.acknowledgedAt !== undefined);
+    assert(
+      store.inbox
+        .list(pr.ownerAgentId, 200, true)
+        .messages.some(
+          (message) =>
+            message.id !== current.id && message.acknowledgedAt !== undefined,
+        ),
+    );
     assert.equal(store.inbox.list(pr.ownerAgentId).messages.length, 200);
     assert.equal(
       store.inbox.list(pr.ownerAgentId, 0, false, true).messages.length,

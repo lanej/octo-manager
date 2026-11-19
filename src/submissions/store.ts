@@ -1,3 +1,5 @@
+import type { NotificationRepository } from "../notifications/repository.js";
+import { renderNotice, type SafeNotice } from "../security/notifications.js";
 import { parseNotice, type Notice } from "./notifications.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -15,13 +17,14 @@ import {
   type Submission,
   type SubmissionInput,
 } from "./contracts.js";
-import { resolveId, shortId } from "../tracking/identifiers.js";
+import { resolveId } from "../tracking/identifiers.js";
 import { nextInboxSequence } from "./schema.js";
 export class SubmissionStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
     private event: (kind: string, detail: string) => void,
+    private noticesRepository: NotificationRepository,
   ) {}
   list(): Submission[] {
     return this.db
@@ -228,7 +231,7 @@ export class SubmissionStore {
       )
       .run(id);
   }
-  notify(value: Submission, agentId: string, body: string): void {
+  notify(value: Submission, agentId: string): void {
     if (
       this.db
         .prepare(
@@ -238,6 +241,13 @@ export class SubmissionStore {
     )
       return;
     const id = randomUUID();
+    const notice: SafeNotice = {
+      version: 1,
+      kind: "submission",
+      assessment: "not_required",
+      subject: { kind: "submission", id: value.id },
+      ...(value.prUrl === undefined ? {} : { prUrl: value.prUrl }),
+    };
     this.db
       .prepare(
         "INSERT INTO operation_notifications(sequence,id,submission_id,recipient_agent_id,body,created_at_ms,next_check_at_ms,applicable,state,attempts) VALUES(?,?,?,?,?,?,?,1,'pending','[]')",
@@ -247,21 +257,11 @@ export class SubmissionStore {
         id,
         value.id,
         agentId,
-        `[octo-delivery:${shortId(
-          id,
-          this.db
-            .prepare(
-              "SELECT delivery_id AS id FROM delivery_messages UNION ALL SELECT id FROM operation_notifications",
-            )
-            .all()
-            .map((row) => String(row["id"])),
-        )}]\n${body}\nSubmission: ${shortId(
-          value.id,
-          this.list().map((item) => item.id),
-        )}`,
+        renderNotice(notice, id, ""),
         this.now(),
         this.now(),
       );
+    this.noticesRepository.freezeNotice(id, notice);
     this.event("submission_notification", value.id);
   }
 }

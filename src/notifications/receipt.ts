@@ -1,7 +1,7 @@
 import type { DigestService } from "./service.js";
 import type { TrackingStore } from "../tracking/store.js";
 import type { AgentMessage } from "../tracking/inbox.js";
-import { compact } from "../tracking/messages.js";
+import { noticeLabel } from "../security/notifications.js";
 export function digestReceipt(
   service: DigestService,
   tracking: TrackingStore,
@@ -40,12 +40,12 @@ export function digestReceipt(
           message.acknowledgedAt === undefined
             ? undefined
             : BigInt(message.acknowledgedAt),
-        summary: compact(
-          action?.summary ??
-            (message.participantPRId === undefined
-              ? (message.body.split("\n")[0] ?? "Octo update")
-              : "PR participants changed"),
-          160,
+        summary: noticeLabel(
+          tracking.inbox.automatic(message).notice ?? {
+            version: 1,
+            kind: "update",
+            assessment: "not_required",
+          },
         ),
         prUrl: pr?.url ?? "",
         recipientRole:

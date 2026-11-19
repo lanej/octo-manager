@@ -1,3 +1,4 @@
+import { actionNotice, renderNotice } from "../security/notifications.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
 import {
@@ -7,11 +8,9 @@ import {
   type PollPolicy,
 } from "./polling.js";
 import { GitHubRateLimitError } from "../github-api.js";
-import { compact } from "./messages.js";
-import { shortId } from "./identifiers.js";
 import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
-import { agentMessage, readFailureExcerpt } from "./messages.js";
+import { readFailureExcerpt } from "./messages.js";
 import {
   DeliveryState,
   unfinished,
@@ -52,7 +51,6 @@ export class TrackingService {
   private deliveryWork?: Promise<void>;
   private refreshControllers = new Map<string, AbortController>();
   private stopped = false;
-  private deliveryAbort = new AbortController();
   private connections = new Set<AgentConnection>();
   constructor(
     readonly store: TrackingStore,
@@ -93,6 +91,10 @@ export class TrackingService {
           );
         }
     });
+    store.prepareSafeRecovery();
+  }
+  get failureExcerpt(): typeof readFailureExcerpt {
+    return this.options.failureExcerpt ?? readFailureExcerpt;
   }
   start(): void {
     this.timer = setInterval(() => this.tick(), 1000);
@@ -376,29 +378,16 @@ export class TrackingService {
         d.progress.state === DeliveryState.Pending &&
         this.store.inbox.get(d.id) === undefined
       ) {
-        const excerpt = await (
-          this.options.failureExcerpt ?? readFailureExcerpt
-        )(
-          action,
-          pr.url,
-          AbortSignal.any([
-            this.deliveryAbort.signal,
-            AbortSignal.timeout(5000),
-          ]),
-        );
-        if (!this.current(d)) return;
-        const message = agentMessage(action, pr.url, d.id, excerpt, {
-          actions: this.store.actions().map((action) => action.id),
-          messages: this.store.deliveries().map((delivery) => delivery.id),
-        });
-        const role = agent.id === action.ownerAgentId ? "owner" : "observer";
-        const owner = this.store.agent(action.ownerAgentId);
-        const context =
-          role === "observer"
-            ? `\nRole: observer · Owner: ${compact(owner.label ?? owner.harness, 120).replaceAll("\n", " ")} (${shortId(owner.id)})`
-            : "";
+        const notice = {
+          ...actionNotice(action, pr.url),
+          role:
+            agent.id === action.ownerAgentId
+              ? ("owner" as const)
+              : ("observer" as const),
+        };
         this.store.transaction(() => {
-          this.store.inbox.record(d.id, message + context);
+          this.store.inbox.freezeNotice(d.id, notice);
+          this.store.inbox.record(d.id, renderNotice(notice, d.id, action.id));
         });
       }
     } catch (error) {
@@ -516,7 +505,12 @@ export class TrackingService {
           );
         return;
       }
-      if (!this.current(d) || message === undefined) return;
+      if (
+        !this.current(d) ||
+        message === undefined ||
+        message.notice === undefined
+      )
+        return;
       const previous = this.store
         .attempts()
         .filter((a) => a.deliveryId === d.id);
@@ -675,7 +669,6 @@ export class TrackingService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    this.deliveryAbort.abort();
     if (this.timer) clearInterval(this.timer);
     for (const controller of this.refreshControllers.values())
       controller.abort();

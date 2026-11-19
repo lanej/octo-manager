@@ -135,8 +135,8 @@ test("check watches notify completed success once and report each failure once",
       await until(() => sent.length === 1);
       const body = sent[0];
       assert(body !== undefined);
-      assert(body.includes("Checks passed; no merge conflicts"));
-      assert(!body.includes("Failed run"));
+      assert(body.includes("Checks passed"));
+      assert(!body.includes("Checks completed"));
     } finally {
       await service.close();
     }
@@ -340,7 +340,7 @@ test("large failure names retain full evidence while outgoing messages stay comp
     const body = sent[0];
     assert(body !== undefined);
     assert(Buffer.byteLength(body) < 2048);
-    assert(body.includes("Failed run"));
+    assert(body.includes("Checks failed"));
     const action = store.tracking.actions()[0];
     assert(action?.blocker.kind === "check_failed");
     assert.equal(action.blocker.checkName.length, 1100000);
@@ -446,8 +446,8 @@ test("the coordinator reports failed workflow completion without a waiting calle
     assert.equal(pr.url, url);
     const body = await delivered;
     assert(reads >= 2);
-    assert(body.includes("Failed check:"));
-    assert(body.includes("head"));
+    assert(body.includes("Checks failed"));
+    assert(!body.includes(" at head"));
     assert.equal(
       store.tracking.checks.list()[0]?.state,
       CheckWatchState.Completed,

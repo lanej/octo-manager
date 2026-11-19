@@ -20,6 +20,7 @@ function wire(message: AgentMessage) {
 export function inboxRoutes(store: TrackingStore) {
   return {
     listAgentMessages(request: ListAgentMessagesRequest) {
+      if (!request.full) store.prepareSafeRecovery();
       const agentId = resolveId(
         request.agentId,
         store.agents().map((agent) => agent.id),
@@ -39,7 +40,9 @@ export function inboxRoutes(store: TrackingStore) {
         request.applicableOnly,
       );
       return {
-        messages: page.messages.map(wire),
+        messages: page.messages.map((message) =>
+          wire(request.full ? message : store.inbox.automatic(message)),
+        ),
         nextSequence: BigInt(page.nextSequence),
         hasMore: page.hasMore,
       };
@@ -67,7 +70,11 @@ export function inboxRoutes(store: TrackingStore) {
             Code.InvalidArgument,
           );
         return {
-          message: wire(store.acknowledgeMessage(request.id, agentId)),
+          message: wire(
+            store.inbox.automatic(
+              store.acknowledgeMessage(request.id, agentId),
+            ),
+          ),
         };
       });
     },

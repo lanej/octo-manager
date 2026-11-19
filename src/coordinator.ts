@@ -1,3 +1,5 @@
+import { AssessmentService } from "./assessments/service.js";
+import type { Assess } from "./assessments/runner.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
 import {githubReads} from "./github-api.js";
@@ -25,7 +27,7 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions { assess?: Assess; mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -41,6 +43,7 @@ export function transient(error: string): boolean {
 export class Coordinator extends EventEmitter {
   readonly store: Store;
   readonly tracking: TrackingService;
+  readonly assessments: AssessmentService;
   readonly githubScheduler: GitHubScheduler;
   private releaseDispatch: (()=>void) | undefined;
   readonly merging:MergeService;
@@ -70,6 +73,7 @@ export class Coordinator extends EventEmitter {
       this.merging.tick().catch(()=>{});
     });
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
@@ -106,6 +110,7 @@ export class Coordinator extends EventEmitter {
       this.timer = setInterval(() => this.tick(), 100);
       this.tick();
       this.releaseDispatch=githubReads.setDispatcher(this.githubScheduler);
+      this.assessments.start();
       this.repairs.start();
       this.submissions.start();
       this.submissionNotifications.start();
@@ -274,6 +279,7 @@ export class Coordinator extends EventEmitter {
       this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();
       if(this.active)this.abort(this.active);
       this.notifications.stop();
+      await this.assessments.close();
       await this.githubScheduler.close();
 
     await this.merging.close();

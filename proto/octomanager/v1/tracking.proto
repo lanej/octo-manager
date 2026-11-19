@@ -123,6 +123,8 @@ message PendingAction {
   optional string close_reason = 16;
   int64 created_at_ms = 17;
   int64 updated_at_ms = 18;
+  string notification_kind = 22;
+  string evidence_head_sha = 23;
 }
 message ActionDelivery {
   string id = 1;
@@ -154,7 +156,7 @@ message TrackPullRequestRequest { string url = 1; AgentTarget owner = 2; }
 message ListTrackedPullRequestsRequest {}
 message ListTrackedPullRequestsResponse { repeated TrackedPullRequest prs = 1; }
 message AssignPullRequestRequest { string id = 1; AgentTarget owner = 2; }
-message ListActionsRequest { optional string pr_id = 1; }
+message ListActionsRequest { optional string pr_id = 1; bool full = 2; }
 message ListActionsResponse { repeated PendingAction actions = 1; }
 message RetryDeliveryRequest { string id = 1; }
 message RetryDeliveryResponse { ActionDelivery delivery = 1; }
@@ -167,8 +169,8 @@ message RefreshTrackedPullRequestResponse { TrackedPullRequest pr = 1; RefreshSt
 message AssignPullRequestResponse { TrackedPullRequest pr = 1; }
 message UntrackPullRequestRequest { string id = 1; }
 message UntrackPullRequestResponse { TrackedPullRequest pr = 1; }
-message GetActionRequest { string id = 1; }
-message GetActionResponse { PendingAction action = 1; }
+message GetActionRequest { string id = 1; bool full = 2; }
+message GetActionResponse { PendingAction action = 1; EvidenceAssessment assessment = 2; }
 message AcknowledgeActionRequest { string id = 1; string agent_id = 2; }
 message AcknowledgeActionResponse { PendingAction action = 1; }
 message StartActionRequest { string id = 1; string agent_id = 2; }
@@ -187,7 +189,7 @@ message AgentMessage {
   bool applicable = 8;
   optional string submission_id = 9;
 }
-message ListAgentMessagesRequest { string agent_id = 1; uint64 after_sequence = 2; bool include_acknowledged = 3; bool applicable_only = 4; }
+message ListAgentMessagesRequest { string agent_id = 1; uint64 after_sequence = 2; bool include_acknowledged = 3; bool applicable_only = 4; bool full = 5; }
 message ListAgentMessagesResponse { repeated AgentMessage messages = 1; uint64 next_sequence = 2; bool has_more = 3; }
 message AcknowledgeMessageRequest { string id = 1; string agent_id = 2; optional string expected_body = 3; }
 message AcknowledgeMessageResponse { AgentMessage message = 1; }
@@ -203,3 +205,41 @@ message ListPRParticipantsResponse { repeated PRParticipant participants=1; uint
 
 message SubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
 message UnsubscribePullRequestResponse { repeated PRParticipant participants=1; uint32 total=2; bool has_more=3; }
+
+// Assessments are advisory. Their results never authorize effects.
+enum AssessmentState {
+  ASSESSMENT_STATE_UNSPECIFIED = 0;
+  ASSESSMENT_STATE_PENDING = 1;
+  ASSESSMENT_STATE_RUNNING = 2;
+  ASSESSMENT_STATE_COMPLETED = 3;
+  ASSESSMENT_STATE_FAILED = 4;
+  ASSESSMENT_STATE_INTERRUPTED = 5;
+  ASSESSMENT_STATE_SUPERSEDED = 6;
+}
+enum AssessmentDisposition {
+  ASSESSMENT_DISPOSITION_UNSPECIFIED = 0;
+  ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE = 1;
+  ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED = 2;
+  ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT = 3;
+}
+message EvidenceAssessment {
+  string id = 1;
+  string action_id = 2;
+  AssessmentState state = 3;
+  string head_sha = 4;
+  uint32 policy_version = 5;
+  bool truncated = 6;
+  int64 created_at_ms = 7;
+  int64 updated_at_ms = 8;
+  // Included only for explicit full inspection; never trusted instructions.
+  optional AssessmentDisposition disposition = 9;
+  optional string untrusted_analysis = 10;
+  optional string untrusted_evidence = 11;
+  repeated AssessmentTransition history = 12;
+}
+message GetAssessmentRequest { string id = 1; bool full = 2; }
+message GetAssessmentResponse { EvidenceAssessment assessment = 1; }
+message RetryAssessmentRequest { string id = 1; }
+message RetryAssessmentResponse { EvidenceAssessment assessment = 1; }
+
+message AssessmentTransition { AssessmentState state = 1; int64 at_ms = 2; }

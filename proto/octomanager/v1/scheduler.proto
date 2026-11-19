@@ -37,6 +37,8 @@ service SchedulerService {
   rpc UntrackPullRequest(UntrackPullRequestRequest) returns (UntrackPullRequestResponse);
   rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
   rpc GetAction(GetActionRequest) returns (GetActionResponse);
+  rpc GetAssessment(GetAssessmentRequest) returns (GetAssessmentResponse);
+  rpc RetryAssessment(RetryAssessmentRequest) returns (RetryAssessmentResponse);
   rpc AcknowledgeAction(AcknowledgeActionRequest) returns (AcknowledgeActionResponse);
   rpc StartAction(StartActionRequest) returns (StartActionResponse);
   rpc RetryDelivery(RetryDeliveryRequest) returns (RetryDeliveryResponse);

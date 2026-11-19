@@ -1,3 +1,9 @@
+import type { NotificationRepository } from "../notifications/repository.js";
+import {
+  actionNotice,
+  renderNotice,
+  type SafeNotice,
+} from "../security/notifications.js";
 import { compact } from "./messages.js";
 import { Subscriptions } from "./subscriptions.js";
 import { RetirementStore, lifecycle, TrackingState } from "./retirement.js";
@@ -33,7 +39,6 @@ import type { TrackingConfig } from "./config.js";
 import { selectProfile } from "./config.js";
 import { canonicalPR } from "./github.js";
 import { closeProgress, findings } from "./policy.js";
-import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
@@ -51,10 +56,15 @@ export class TrackingStore {
       actionId?: string,
       context?: ActionEventContext,
     ) => void,
+    notificationRepository: NotificationRepository,
   ) {
-    migrateTracking(db);
-    this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id));
-    this.inbox = new AgentInbox(db, now);
+    this.subscriptions = new Subscriptions(
+      db,
+      now,
+      (id) => this.agent(id),
+      notificationRepository,
+    );
+    this.inbox = new AgentInbox(notificationRepository);
     this.checks = new CheckWatches(db, now);
     this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
@@ -422,6 +432,123 @@ export class TrackingStore {
       },
       "delivery_pending",
     );
+  }
+  prepareSafeRecovery(): void {
+    this.transaction(() => {
+      for (const delivery of this.deliveries()) {
+        const message = this.inbox.get(delivery.id);
+        if (
+          message === undefined ||
+          message.notice !== undefined ||
+          !message.applicable ||
+          message.acknowledgedAt !== undefined
+        )
+          continue;
+        const action = this.action(delivery.actionId),
+          pr = this.pr(action.prId);
+        const id = randomUUID(),
+          at = this.now();
+        const uncertain =
+          delivery.progress.state === DeliveryState.Uncertain ||
+          delivery.progress.state === DeliveryState.Delivered ||
+          this.attempts().some(
+            (attempt) =>
+              attempt.deliveryId === delivery.id &&
+              (attempt.outcome.state === "accepted" ||
+                attempt.outcome.state === "uncertain" ||
+                attempt.outcome.state === "sending"),
+          );
+        if (!uncertain)
+          this.saveDelivery(
+            {
+              ...delivery,
+              progress: {
+                state: DeliveryState.Cancelled,
+                at,
+                reason: "Legacy notification retired by security policy",
+              },
+              updatedAt: at,
+            },
+            "legacy_notification_retired",
+          );
+        this.saveDelivery(
+          {
+            id,
+            actionId: action.id,
+            recipientAgentId: delivery.recipientAgentId,
+            progress: { state: DeliveryState.Pending, nextAttemptAt: at },
+            createdAt: at,
+            updatedAt: at,
+          },
+          "safe_recovery_pending",
+        );
+        const notice = {
+          ...actionNotice(action, pr.url),
+          role:
+            delivery.recipientAgentId === action.ownerAgentId
+              ? ("owner" as const)
+              : ("observer" as const),
+        };
+        this.inbox.freezeNotice(id, notice);
+        this.inbox.record(id, renderNotice(notice, id, action.id));
+        this.inbox.markReplacement(delivery.id, id);
+      }
+    });
+  }
+  notifyAssessment(
+    action: Action,
+    status: SafeNotice["assessment"],
+    assessment: { id: string; head: string },
+  ): void {
+    for (const participant of this.subscriptions.list(this.pr(action.prId))) {
+      const at = this.now(),
+        id = randomUUID();
+      this.saveDelivery(
+        {
+          id,
+          actionId: action.id,
+          recipientAgentId: participant.agentId,
+          progress: { state: DeliveryState.Pending, nextAttemptAt: at },
+          createdAt: at,
+          updatedAt: at,
+        },
+        "assessment_notification_pending",
+      );
+      const notice = {
+        ...actionNotice(action, this.pr(action.prId).url, status),
+        assessmentId: assessment.id,
+        ...(/^[a-f0-9]{40,64}$/u.test(assessment.head)
+          ? { head: assessment.head }
+          : {}),
+        role:
+          participant.agentId === action.ownerAgentId
+            ? ("owner" as const)
+            : ("observer" as const),
+      };
+      this.inbox.freezeNotice(id, notice);
+      this.inbox.record(id, renderNotice(notice, id, action.id));
+    }
+  }
+  cancelAssessmentNotices(assessmentId: string): void {
+    for (const delivery of this.deliveries()) {
+      if (
+        delivery.progress.state === DeliveryState.Cancelled ||
+        this.inbox.notice(delivery.id)?.assessmentId !== assessmentId
+      )
+        continue;
+      this.saveDelivery(
+        {
+          ...delivery,
+          progress: {
+            state: DeliveryState.Cancelled,
+            at: this.now(),
+            reason: "Assessment superseded",
+          },
+          updatedAt: this.now(),
+        },
+        "assessment_notification_superseded",
+      );
+    }
   }
   participants(id: string) {
     return this.subscriptions.list(this.pr(id));

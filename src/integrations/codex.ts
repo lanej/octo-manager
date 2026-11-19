@@ -229,7 +229,7 @@ export async function codexHook(
   const lines: string[] = [];
   if (event === "SessionStart")
     lines.push(
-      "Octo monitors enrolled PRs and returns actionable evidence through its inbox. Existing task authorization still applies; receipts are tracked automatically. Full evidence: octo-manager action ACTION_ID.",
+      "Octo monitors enrolled PRs and returns fixed status fields and references through its inbox. Existing task authorization still applies; receipts are tracked automatically. Untrusted evidence requires explicit inspection: octo-manager action ACTION_ID --full.",
     );
   if (status.pending.length > 0)
     lines.push(
