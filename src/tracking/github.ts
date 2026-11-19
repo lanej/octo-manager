@@ -1,3 +1,4 @@
+import { PRLifecycle, pendingReview, prLifecycle } from "./states.js";
 import {
   commentFeedback,
   feedbackRevision,
@@ -162,7 +163,7 @@ export async function readObservation(
       : reviews.value
           .filter(
             (r) =>
-              r.state !== "PENDING" &&
+              !pendingReview(r.state) &&
               r.body !== undefined &&
               r.body.trim() !== "",
           )
@@ -182,7 +183,7 @@ export async function readObservation(
           (c) =>
             reviews.state !== "unavailable" &&
             reviews.value.some(
-              (r) => r.id === c.reviewId && r.state !== "PENDING",
+              (r) => r.id === c.reviewId && !pendingReview(r.state),
             ),
         )),
     ...(conversation.state === "unavailable" ? [] : conversation.value),
@@ -242,7 +243,7 @@ export async function readObservation(
     ...(initial?.description === undefined
       ? {}
       : { description: initial.description }),
-    lifecycle: pr.merged ? "merged" : pr.state,
+    lifecycle: pr.merged ? PRLifecycle.Merged : prLifecycle(pr.state),
     mergeability:
       pr.mergeable === true
         ? "mergeable"

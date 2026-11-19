@@ -1177,9 +1177,29 @@ export const shapes: Record<string, Shape> = {
       "DOMAIN_MERGE_ENTRY_STATE_CANCELLED"
     ]
   },
+  "DomainMergeEntryReadySource": {
+    "kind": "enum",
+    "values": [
+      "owner",
+      "receipt"
+    ],
+    "numbers": [
+      1,
+      2
+    ],
+    "wireNames": [
+      "DOMAIN_MERGE_ENTRY_READY_SOURCE_OWNER",
+      "DOMAIN_MERGE_ENTRY_READY_SOURCE_RECEIPT"
+    ]
+  },
   "DomainMergeEntryReady": {
     "kind": "object",
     "fields": [
+      {
+        "key": "source",
+        "type": "DomainMergeEntryReadySource",
+        "required": false
+      },
       {
         "key": "epoch",
         "type": "int64",
@@ -3019,9 +3039,29 @@ export const shapes: Record<string, Shape> = {
       "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_STATE_CANCELLED"
     ]
   },
+  "DomainMergeOverviewEntriesItemReadySource": {
+    "kind": "enum",
+    "values": [
+      "owner",
+      "receipt"
+    ],
+    "numbers": [
+      1,
+      2
+    ],
+    "wireNames": [
+      "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_OWNER",
+      "DOMAIN_MERGE_OVERVIEW_ENTRIES_ITEM_READY_SOURCE_RECEIPT"
+    ]
+  },
   "DomainMergeOverviewEntriesItemReady": {
     "kind": "object",
     "fields": [
+      {
+        "key": "source",
+        "type": "DomainMergeOverviewEntriesItemReadySource",
+        "required": false
+      },
       {
         "key": "epoch",
         "type": "int64",

@@ -1,3 +1,11 @@
+import {
+  PRLifecycle,
+  ReviewState,
+  terminalPR,
+  effectiveReview,
+  prLifecycle,
+  reviewState,
+} from "./states.js";
 import { actionableFeedback } from "./review-signals.js";
 import { checkEvidence, checksFinished, successfulCheck } from "./checks.js";
 import {
@@ -46,15 +54,13 @@ export function currentReviews(o: PRObservation) {
   return o.reviews.state === "unavailable"
     ? []
     : latest(
-        o.reviews.value.filter((r) =>
-          ["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(r.state),
-        ),
+        o.reviews.value.filter((r) => effectiveReview(r.state)),
         (r) => r.author,
         (r) => r.at,
       );
 }
 export function findings(o: PRObservation, url: string): Finding[] {
-  if (o.lifecycle !== "open") return feedbackFindings(o);
+  if (terminalPR(o.lifecycle)) return feedbackFindings(o);
   const found: Finding[] = [];
   const baseSha = o.targetBase?.sha ?? o.baseSha;
   if (o.mergeability === "conflicting")
@@ -84,7 +90,7 @@ export function findings(o: PRObservation, url: string): Finding[] {
         evidenceUrl: c.url || url,
       });
   for (const r of o.reviews.state === "complete" ? currentReviews(o) : [])
-    if (r.state === "CHANGES_REQUESTED")
+    if (reviewState(r.state) === ReviewState.ChangesRequested)
       found.push({
         sourceKey: r.id,
         blocker: {
@@ -132,7 +138,7 @@ export function closeProgress(
   });
   const b = a.blocker;
   if (b.kind === "review_feedback") {
-    if (o.lifecycle !== "open" && !openedOnTerminalPR)
+    if (terminalPR(o.lifecycle) && !openedOnTerminalPR)
       return supersede(`PR ${o.lifecycle}`);
     if (!actionableFeedback(b.feedback))
       return supersede("Review lifecycle update has no findings");
@@ -147,11 +153,12 @@ export function closeProgress(
     }
     return undefined;
   }
-  if (o.lifecycle === "merged") return supersede("PR merged");
+  if (prLifecycle(o.lifecycle) === PRLifecycle.Merged)
+    return supersede("PR merged");
   if (a.blocker.kind === "check_results") {
     if (a.blocker.headSha !== o.headSha) return supersede("PR head changed");
     if (a.blocker.checks.every(successfulCheck)) {
-      if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
+      if (terminalPR(o.lifecycle)) return supersede(`PR ${o.lifecycle}`);
       const evidence = checkEvidence(o);
       if (
         evidence.state !== "unavailable" &&
@@ -165,7 +172,7 @@ export function closeProgress(
     }
     return undefined;
   }
-  if (o.lifecycle !== "open") return supersede(`PR ${o.lifecycle}`);
+  if (terminalPR(o.lifecycle)) return supersede(`PR ${o.lifecycle}`);
   if (b.kind !== "changes_requested" && b.headSha !== o.headSha)
     return supersede("PR head changed");
   if (b.kind === "conflict") {
@@ -185,9 +192,13 @@ export function closeProgress(
   }
   if (b.kind === "changes_requested" && o.reviews.state === "complete") {
     const r = currentReviews(o).find((r) => r.author === b.reviewer);
-    if (r && ["APPROVED", "DISMISSED"].includes(r.state))
+    if (
+      r !== undefined &&
+      (reviewState(r.state) === ReviewState.Approved ||
+        reviewState(r.state) === ReviewState.Dismissed)
+    )
       return resolve("GitHub confirms review approved or dismissed");
-    if (r && r.id !== b.reviewId)
+    if (r !== undefined && r.id !== b.reviewId)
       return supersede("A newer review replaced this request");
   }
 }

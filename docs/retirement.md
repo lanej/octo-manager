@@ -23,6 +23,8 @@ This deliberately uses notifications only: there is no daily archive sweep or we
 
 ## Persistence and API
 
+Tracking uses canonical lifecycle and review-state enums with exhaustive terminal/pending decisions. GitHub and persisted review states are validated before entering those decisions; unsupported states remain explicit read failures. SQLite observation persistence owns append, latest-observation decoding and historical lifecycle lookup. Tracking retains the transaction around observations, actions, deliveries and retirement, so a failed transition cannot leave only part of that update committed.
+
 Schema 11 adds the tracking enum, epoch, drain deadline, archive timestamp/reason, notification cursors, deduplication identities and pending refreshes. Timestamps remain integer Unix milliseconds. It extends check watches with `expired`; it preserves existing PR, agent, action, message, receipt and watch identities. On migration, enrolled closed PRs receive a fresh drain deadline and refresh; explicitly disabled records stay disabled. The existing API `enabled` field remains the manual-enrollment projection, including archived records, while `tracking_state` determines polling. Generated Go and TypeScript bindings carry retirement metadata and watch expiry.
 
 Back up state before upgrading; older coordinators reject schema 11. No result is inferred from a missing observation or rewritten from an old notification body.

@@ -1,3 +1,4 @@
+import { ReviewState, reviewState } from "./states.js";
 import { createHash } from "node:crypto";
 import type { ReviewFeedback, ReviewObservation } from "./types.js";
 
@@ -36,15 +37,16 @@ export function reviewObservation(
 ): ReviewObservation {
   if (!object(value) || !object(value["user"]))
     throw new Error("Invalid GitHub review");
+  const state = reviewState(value["state"]);
   const submittedAt = Date.parse(text(value["submitted_at"] ?? "", 100));
   return {
     id: identifier(value["id"]),
     author: text(value["user"]["login"], 200),
     headSha: text(value["commit_id"] ?? "", 200),
-    state: text(value["state"], 100),
+    state,
     at: Number.isNaN(submittedAt) ? 0 : submittedAt,
     url: feedbackUrl(value["html_url"] ?? prUrl, prUrl),
-    ...(value["body"] === undefined || value["state"] === "PENDING"
+    ...(value["body"] === undefined || state === ReviewState.Pending
       ? {}
       : { body: text(value["body"], 65536) }),
   };
@@ -145,4 +147,40 @@ export function storedFeedback(
   return state === "complete"
     ? { state, value: decoded }
     : { state, value: decoded, reason: text(raw["reason"], 4000) };
+}
+
+export function storedReviews(
+  value: unknown,
+): import("./types.js").ObservationPart<ReviewObservation[]> {
+  const raw: unknown = typeof value === "string" ? JSON.parse(value) : value;
+  if (!object(raw)) throw new Error("Invalid stored reviews");
+  const state = raw["state"];
+  if (state === "unavailable")
+    return { state, reason: text(raw["reason"], 4000) };
+  if (
+    (state !== "complete" && state !== "partial") ||
+    !Array.isArray(raw["value"])
+  )
+    throw new Error("Invalid stored review coverage");
+  const items: unknown[] = raw["value"];
+  const reviews = items.map((item): ReviewObservation => {
+    if (!object(item)) throw new Error("Invalid stored review");
+    const at = item["at"];
+    if (typeof at !== "number" || !Number.isSafeInteger(at))
+      throw new Error("Invalid stored review timestamp");
+    return {
+      id: identifier(item["id"]),
+      author: text(item["author"], 200),
+      headSha: text(item["headSha"], 200),
+      state: reviewState(item["state"]),
+      at,
+      url: text(item["url"], 4000),
+      ...(item["body"] === undefined
+        ? {}
+        : { body: text(item["body"], 65536) }),
+    };
+  });
+  return state === "complete"
+    ? { state, value: reviews }
+    : { state, value: reviews, reason: text(raw["reason"], 4000) };
 }

@@ -921,6 +921,10 @@
     "at": {
       "number": 7,
       "type": "int64"
+    },
+    "source": {
+      "number": 8,
+      "type": "DomainMergeEntryReadySource"
     }
   },
   "DomainMergeOperation": {
@@ -2189,6 +2193,10 @@
     "at": {
       "number": 7,
       "type": "int64"
+    },
+    "source": {
+      "number": 8,
+      "type": "DomainMergeOverviewEntriesItemReadySource"
     }
   },
   "DomainMergeOverviewOperationsItem": {
@@ -4149,6 +4157,26 @@
       "type": "enum"
     },
     "inherited": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeEntryReadySource": {
+    "owner": {
+      "number": 1,
+      "type": "enum"
+    },
+    "receipt": {
+      "number": 2,
+      "type": "enum"
+    }
+  },
+  "DomainMergeOverviewEntriesItemReadySource": {
+    "owner": {
+      "number": 1,
+      "type": "enum"
+    },
+    "receipt": {
       "number": 2,
       "type": "enum"
     }

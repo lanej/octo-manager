@@ -1,3 +1,5 @@
+import { feedbackRevision } from "../src/tracking/feedback.js";
+import { ReviewState } from "../src/tracking/states.js";
 import { parseCommand } from "../src/arguments.js";
 import { mergeRequest } from "../src/api/merge-client.js";
 import {
@@ -1343,3 +1345,62 @@ test("workflow invocation numbers establish replacement when timestamps tie", ()
     assert.match(checkGate(entry, value) ?? "", /passing check/);
     return Promise.resolve();
   }));
+
+for (const kind of ["pending", "submitted"] as const)
+  test(`new ${kind} review input immediately before dispatch cancels automatic merge authority`, () =>
+    fixture(
+      async (coordinator, _advance, _snapshots, writes) => {
+        const pr = enroll(coordinator, first);
+        coordinator.store.merging.queue({
+          requestId: `review-dispatch-${kind}`,
+          actorId: pr.ownerAgentId,
+          entries: [{ prUrl: first, checks: ["CI"] }],
+        });
+        coordinator.store.merging.ready(first, pr.ownerAgentId, a);
+        await coordinator.merging.tick();
+        assert.deepEqual(writes, []);
+        assert.notEqual(
+          coordinator.store.merging.entry(first).state,
+          EntryState.Merged,
+        );
+      },
+      {
+        beforeSend(coordinator) {
+          const pr = coordinator.store.tracking.pr(first);
+          const value = observation();
+          if (kind === "pending")
+            value.reviews = {
+              state: "complete",
+              value: [
+                {
+                  id: "draft",
+                  author: "reviewer",
+                  state: ReviewState.Pending,
+                  headSha: a,
+                  at: 0,
+                  url: first,
+                },
+              ],
+            };
+          else
+            value.feedback = {
+              state: "complete",
+              value: [
+                feedbackRevision({
+                  source: "inline",
+                  id: "late",
+                  author: "reviewer",
+                  body: "Validate the persistence boundary",
+                  url: `${first}#discussion_r1`,
+                  headSha: a,
+                }),
+              ],
+            };
+          coordinator.store.tracking.observe(
+            pr.id,
+            value,
+            coordinator.tracking.config,
+          );
+        },
+      },
+    ));
