@@ -457,6 +457,7 @@ export class TrackingStore {
   }
   prepareSafeRecovery(): void {
     this.transaction(() => {
+      this.inbox.recoverWorkflows();
       for (const delivery of this.deliveries()) {
         const message = this.inbox.get(delivery.id);
         if (
@@ -938,7 +939,10 @@ export class TrackingStore {
         this.event("message_acknowledged", message.id, message.workflowPRId);
       } else if (message.participantPRId !== undefined) {
         this.event("message_acknowledged", message.id, message.participantPRId);
-      } else if (message.submissionId === undefined) {
+      } else if (
+        message.submissionId === undefined &&
+        message.issueId === undefined
+      ) {
         const action = this.action(message.actionId);
         this.event("message_acknowledged", message.id, action.prId, action.id);
       } else this.event("message_acknowledged", message.id, "");

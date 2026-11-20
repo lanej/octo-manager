@@ -5,6 +5,9 @@ export type { AgentMessage } from "../notifications/message.js";
 
 export class AgentInbox {
   constructor(private repository: NotificationRepository) {}
+  recoverWorkflows(): void {
+    this.repository.recoverWorkflows();
+  }
   isReplaced(id: string): boolean {
     return this.repository.isReplaced(id);
   }

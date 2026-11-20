@@ -698,3 +698,106 @@ test("assessment completion during transport preparation fences the obsolete not
     await f.close();
   }
 });
+
+for (const kind of ["issue", "submission"] as const) {
+  test(`legacy ${kind} recovery gives safe content an independent immutable receipt`, async () => {
+    const f = await fixture();
+    const oldId = crypto.randomUUID(),
+      subjectId = crypto.randomUUID();
+    const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+    try {
+      await f.tracking.close();
+      let submissionId: string = subjectId;
+      if (kind === "submission") {
+        const submission = f.store.submissions.request({
+          requestId: subjectId,
+          repository: "owner/repo",
+          headRef: "synthetic",
+          headSha: head,
+          baseRef: "main",
+          purpose: "Synthetic migration fixture",
+          validation: [],
+          draft: false,
+          owner: {
+            harness: "codex",
+            endpoint: "local",
+            sessionId: "synthetic-security-test",
+          },
+        });
+        submissionId = submission.id;
+      }
+      const sequence = db
+        .prepare(
+          "UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value",
+        )
+        .get()?.["value"];
+      if (typeof sequence !== "number") throw new Error("Missing sequence");
+      if (kind === "issue")
+        db.prepare(
+          "INSERT INTO issue_notices VALUES(?,?,?,?,?,?,NULL,?,1)",
+        ).run(sequence, oldId, subjectId, f.pr.ownerAgentId, attack, 1, 1);
+      else
+        db.prepare(
+          "INSERT INTO operation_notifications(sequence,id,submission_id,recipient_agent_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,applicable,state,attempts) VALUES(?,?,?,?,?,?,NULL,?,1,'uncertain','[]')",
+        ).run(sequence, oldId, submissionId, f.pr.ownerAgentId, attack, 1, 1);
+      const routes = inboxRoutes(f.store.tracking);
+      const request = create(ListAgentMessagesRequestSchema, {
+        agentId: f.pr.ownerAgentId,
+        applicableOnly: true,
+      });
+      const messages = routes.listAgentMessages(request).messages;
+      const safe = messages.find((message) =>
+        kind === "issue"
+          ? message.issueId === subjectId
+          : message.submissionId === submissionId,
+      );
+      if (safe === undefined)
+        throw new Error("Missing safe workflow replacement");
+      expect(safe.id).not.toBe(oldId);
+      expect(safe.body).not.toContain(attack);
+      expect(f.store.tracking.inbox.get(safe.id)?.body).toBe(safe.body);
+      expect(f.store.tracking.inbox.get(oldId)?.body).toBe(attack);
+      expect(f.store.tracking.inbox.get(oldId)?.applicable).toBe(false);
+      expect(
+        routes.listAgentMessages(request).messages.map((message) => message.id),
+      ).toEqual(messages.map((message) => message.id));
+      const receipt = await routes.acknowledgeMessage(
+        create(AcknowledgeMessageRequestSchema, {
+          id: safe.id,
+          agentId: f.pr.ownerAgentId,
+          expectedBody: safe.body,
+        }),
+      );
+      expect(receipt.message.acknowledgedAtMs).toBeDefined();
+      expect(f.store.tracking.inbox.get(oldId)?.acknowledgedAt).toBeUndefined();
+      expect(
+        routes
+          .listAgentMessages(request)
+          .messages.some((message) => message.id === safe.id),
+      ).toBe(false);
+      f.store.close();
+      const reopened = new Store(f.directory);
+      try {
+        reopened.tracking.prepareSafeRecovery();
+        expect(reopened.tracking.inbox.get(safe.id)?.body).toBe(safe.body);
+        expect(
+          reopened.tracking.inbox.get(safe.id)?.acknowledgedAt,
+        ).toBeDefined();
+        expect(
+          reopened.tracking.inbox.get(oldId)?.acknowledgedAt,
+        ).toBeUndefined();
+      } finally {
+        reopened.close();
+      }
+      if (kind === "submission")
+        expect(
+          db
+            .prepare("SELECT state FROM operation_notifications WHERE id=?")
+            .get(oldId)?.["state"],
+        ).toBe("uncertain");
+    } finally {
+      db.close();
+      await f.close();
+    }
+  });
+}

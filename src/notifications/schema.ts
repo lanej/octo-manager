@@ -80,6 +80,9 @@ export function migrateInbox(db: DatabaseSync): void {
 
 export function migrateNotificationEvidence(db: DatabaseSync): void {
   db.exec(`BEGIN IMMEDIATE;
+    CREATE TABLE IF NOT EXISTS safe_recovery_messages (sequence INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, original_id TEXT UNIQUE NOT NULL, body TEXT NOT NULL, created_at_ms INTEGER NOT NULL, acknowledged_at_ms INTEGER, next_check_at_ms INTEGER NOT NULL) STRICT;
+    CREATE TRIGGER IF NOT EXISTS immutable_safe_recovery BEFORE UPDATE OF sequence,id,original_id,body,created_at_ms ON safe_recovery_messages BEGIN SELECT RAISE(ABORT,'Recovery message is immutable'); END;
+    CREATE TRIGGER IF NOT EXISTS monotonic_safe_recovery_receipt BEFORE UPDATE OF acknowledged_at_ms ON safe_recovery_messages WHEN OLD.acknowledged_at_ms IS NOT NULL AND NEW.acknowledged_at_ms IS NOT OLD.acknowledged_at_ms BEGIN SELECT RAISE(ABORT,'Recovery receipt is immutable'); END;
     CREATE TABLE IF NOT EXISTS safe_notice_supersessions (original_id TEXT PRIMARY KEY, replacement_id TEXT NOT NULL) STRICT;
     CREATE TABLE IF NOT EXISTS safe_notice_replacements (original_id TEXT PRIMARY KEY, replacement_id TEXT NOT NULL UNIQUE) STRICT;
     CREATE TABLE IF NOT EXISTS safe_agent_notices (message_id TEXT PRIMARY KEY, notice_json TEXT NOT NULL CHECK(json_valid(notice_json))) STRICT;
