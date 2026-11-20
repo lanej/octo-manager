@@ -26,11 +26,60 @@ export class SubmissionStore {
     private event: (kind: string, detail: string) => void,
     private noticesRepository: NotificationRepository,
   ) {}
+  reconciliation(id: string): { attempts: number; nextAt: number } {
+    const row = this.db
+      .prepare(
+        "SELECT json_extract(value,'$.attempts') AS attempts,json_extract(value,'$.nextAt') AS nextAt FROM settings WHERE key=?",
+      )
+      .get(`submission-recovery:${id}`);
+    if (row === undefined) return { attempts: 0, nextAt: 0 };
+    const attempts = row["attempts"],
+      nextAt = row["nextAt"];
+    if (
+      typeof attempts !== "number" ||
+      !Number.isSafeInteger(attempts) ||
+      attempts < 0 ||
+      typeof nextAt !== "number" ||
+      !Number.isSafeInteger(nextAt) ||
+      nextAt < 0
+    )
+      throw new Error("Invalid submission recovery state");
+    return { attempts, nextAt };
+  }
+  deferReconciliation(id: string, attempts: number, nextAt: number): void {
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(`submission-recovery:${id}`, JSON.stringify({ attempts, nextAt }));
+  }
   list(): Submission[] {
     return this.db
       .prepare("SELECT data FROM pr_submissions ORDER BY rowid")
       .all()
       .map((row) => parse(SubmissionSchema, JSON.parse(String(row["data"]))));
+  }
+  summaryPage(
+    before = Number.MAX_SAFE_INTEGER,
+    limit = 20,
+  ): { items: Record<string, unknown>[]; next: number | undefined } {
+    const count = Math.max(1, Math.min(limit, 20));
+    const rows = this.db
+      .prepare(
+        "SELECT rowid,id,state,substr(json_extract(data,'$.detail'),1,160) AS detail,json_extract(data,'$.prUrl') AS url FROM pr_submissions WHERE rowid<? ORDER BY rowid DESC LIMIT ?",
+      )
+      .all(before, count + 1);
+    return {
+      items: rows
+        .slice(0, count)
+        .map((row) =>
+          Object.fromEntries(
+            Object.entries(row).filter(([key]) => key !== "rowid"),
+          ),
+        ),
+      next:
+        rows.length > count ? Number(rows[count - 1]?.["rowid"]) : undefined,
+    };
   }
   get(id: string): Submission {
     const all = this.list(),
@@ -248,6 +297,7 @@ export class SubmissionStore {
       subject: { kind: "submission", id: value.id },
       ...(value.prUrl === undefined ? {} : { prUrl: value.prUrl }),
     };
+    this.noticesRepository.freezeNotice(id, notice);
     this.db
       .prepare(
         "INSERT INTO operation_notifications(sequence,id,submission_id,recipient_agent_id,body,created_at_ms,next_check_at_ms,applicable,state,attempts) VALUES(?,?,?,?,?,?,?,1,'pending','[]')",
@@ -257,11 +307,10 @@ export class SubmissionStore {
         id,
         value.id,
         agentId,
-        renderNotice(notice, id, ""),
+        renderNotice(this.noticesRepository.notice(id) ?? notice, id, ""),
         this.now(),
         this.now(),
       );
-    this.noticesRepository.freezeNotice(id, notice);
     this.event("submission_notification", value.id);
   }
 }

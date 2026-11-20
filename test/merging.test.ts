@@ -1,3 +1,6 @@
+import { feedbackRevision } from "../src/tracking/feedback.js";
+import { ReviewState } from "../src/tracking/states.js";
+import { mergeRequest } from "../src/api/merge-client.js";
 import {
   checkRunObservation,
   workflowObservation,
@@ -231,18 +234,14 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
       agentId: upstream.ownerAgentId.replaceAll("-", "").slice(0, 8),
       afterSequence: 0n,
     });
-    const queued = await client.mergeCommand({
-      inputJson: JSON.stringify({ op: "queue", input }),
-    });
-    const raw: unknown = JSON.parse(queued.resultJson);
+    const queued = await mergeRequest(client, { op: "queue", input });
+    const raw: unknown = queued;
     const chain = checked(ChainSchema, raw);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "ready",
-        pr: first,
-        actorId: upstream.ownerAgentId,
-        head: a,
-      }),
+    await mergeRequest(client, {
+      op: "ready",
+      pr: first,
+      actorId: upstream.ownerAgentId,
+      head: a,
     });
     await c.merging.tick();
     assert.deepEqual(
@@ -267,13 +266,11 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
     advance();
     await c.merging.tick();
     assert.equal(writes.length, 2);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "ready",
-        pr: second,
-        actorId: downstream.ownerAgentId,
-        head: e,
-      }),
+    await mergeRequest(client, {
+      op: "ready",
+      pr: second,
+      actorId: downstream.ownerAgentId,
+      head: e,
     });
     await c.merging.tick();
     assert.equal(writes.at(-1), `${second}@${e}`);
@@ -314,6 +311,13 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
     assert.equal(store.chains().length, 0);
     assert.equal(coordinator.store.tracking.prs().length, 2);
     assert.equal(store.refs().length, 2);
+    const notice = coordinator.store.tracking.inbox
+      .list(downstream.ownerAgentId, 0, false, true)
+      .messages.find(
+        (message) => message.notice?.subject?.kind === "reference",
+      );
+    assert(notice !== undefined);
+    assert(notice.body.includes("Reference:"));
     const ref = store.refs().find((ref) => ref.targetUrl === first);
     assert(ref !== undefined);
     store.confirm(
@@ -645,6 +649,11 @@ test("resume republishes the current owner handoff once while preserving withdra
     assert.equal(pending().length, 1);
     const old = pending()[0];
     assert(old !== undefined);
+    assert.equal(old.notice?.subject?.kind, "merge_entry");
+    assert.equal(
+      old.notice.subject.id,
+      c.store.merging.entries().find((entry) => entry.chainId === chain.id)?.id,
+    );
     c.store.merging.control(chain.id, ChainState.Paused);
     assert.equal(pending().length, 0);
     c.store.merging.control(chain.id, ChainState.Active);
@@ -877,14 +886,12 @@ test("auto-merge is opt-in, owner-controlled and can be turned off before dispat
     assert.equal(c.store.merging.entries().length, 0);
     await c.start();
     const client = schedulerClient(c.directory);
-    await client.mergeCommand({
-      inputJson: JSON.stringify({
-        op: "auto_merge",
-        pr: first,
-        enabled: true,
-        actorId: pr.ownerAgentId,
-        requestId: "switch-on",
-      }),
+    await mergeRequest(client, {
+      op: "auto_merge",
+      pr: first,
+      enabled: true,
+      actorId: pr.ownerAgentId,
+      requestId: "switch-on",
     });
     assert.equal(c.store.merging.entry(first).autoMerge, true);
     assert.equal(
@@ -1333,3 +1340,62 @@ test("workflow invocation numbers establish replacement when timestamps tie", ()
     assert.match(checkGate(entry, value) ?? "", /passing check/);
     return Promise.resolve();
   }));
+
+for (const kind of ["pending", "submitted"] as const)
+  test(`new ${kind} review input immediately before dispatch cancels automatic merge authority`, () =>
+    fixture(
+      async (coordinator, _advance, _snapshots, writes) => {
+        const pr = enroll(coordinator, first);
+        coordinator.store.merging.queue({
+          requestId: `review-dispatch-${kind}`,
+          actorId: pr.ownerAgentId,
+          entries: [{ prUrl: first, checks: ["CI"] }],
+        });
+        coordinator.store.merging.ready(first, pr.ownerAgentId, a);
+        await coordinator.merging.tick();
+        assert.deepEqual(writes, []);
+        assert.notEqual(
+          coordinator.store.merging.entry(first).state,
+          EntryState.Merged,
+        );
+      },
+      {
+        beforeSend(coordinator) {
+          const pr = coordinator.store.tracking.pr(first);
+          const value = observation();
+          if (kind === "pending")
+            value.reviews = {
+              state: "complete",
+              value: [
+                {
+                  id: "draft",
+                  author: "reviewer",
+                  state: ReviewState.Pending,
+                  headSha: a,
+                  at: 0,
+                  url: first,
+                },
+              ],
+            };
+          else
+            value.feedback = {
+              state: "complete",
+              value: [
+                feedbackRevision({
+                  source: "inline",
+                  id: "late",
+                  author: "reviewer",
+                  body: "Validate the persistence boundary",
+                  url: `${first}#discussion_r1`,
+                  headSha: a,
+                }),
+              ],
+            };
+          coordinator.store.tracking.observe(
+            pr.id,
+            value,
+            coordinator.tracking.config,
+          );
+        },
+      },
+    ));

@@ -1,17 +1,20 @@
+import { pendingReview, ReviewState, reviewState } from "../tracking/states.js";
+import { ReviewAssessmentSource, type MergeEntry } from "./contracts.js";
 import { currentMergeChecks } from "./checks.js";
 import { createHash } from "node:crypto";
 import { canonicalPR } from "../tracking/github.js";
 import { actionableFeedback } from "../tracking/review-signals.js";
 import { compact } from "../tracking/messages.js";
-import type { PRObservation, TrackedPR } from "../tracking/types.js";
+import type { ObservationInput, TrackedPR } from "../tracking/types.js";
 import type { Dependency, PRReference } from "./contracts.js";
 export function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
-export function feedbackKey(observation: PRObservation): string | undefined {
+export function feedbackKey(observation: ObservationInput): string | undefined {
   if (
     observation.feedback?.state !== "complete" ||
-    observation.reviews.state !== "complete"
+    observation.reviews.state !== "complete" ||
+    observation.reviews.value.some((review) => pendingReview(review.state))
   )
     return undefined;
   return fingerprint([
@@ -20,10 +23,39 @@ export function feedbackKey(observation: PRObservation): string | undefined {
       .map((item) => [item.source, item.id, item.revision])
       .sort(),
     observation.reviews.value
-      .filter((item) => item.state === "CHANGES_REQUESTED")
+      .filter(
+        (item) => reviewState(item.state) === ReviewState.ChangesRequested,
+      )
       .map((item) => [item.id, item.author, item.headSha])
       .sort(),
   ]);
+}
+export function pendingReviewReason(
+  observation: ObservationInput,
+): string | undefined {
+  if (observation.reviews.state !== "complete")
+    return "Complete review evidence is required";
+  if (observation.reviews.value.some((review) => pendingReview(review.state)))
+    return "A pending review must be submitted or dismissed";
+  return undefined;
+}
+export function reviewGate(
+  observation: ObservationInput,
+  assessment?: MergeEntry["ready"],
+): string | undefined {
+  const pending = pendingReviewReason(observation);
+  if (pending !== undefined) return pending;
+  const feedback = feedbackKey(observation);
+  if (feedback === undefined) return "Complete review evidence is required";
+  if (
+    observation.feedback?.state === "complete" &&
+    observation.feedback.value.some(actionableFeedback) &&
+    (assessment?.source !== ReviewAssessmentSource.Owner ||
+      assessment.head !== observation.headSha ||
+      assessment.feedback !== feedback)
+  )
+    return "Review feedback requires owner assessment";
+  return undefined;
 }
 export function graphKey(dependencies: Dependency[], prId: string): string {
   return fingerprint(
@@ -53,6 +85,37 @@ export interface ReferenceSource {
   text: string;
   url: string;
 }
+// Preserve character offsets so evidence excerpts still point at the original line.
+function referenceProse(text: string): string {
+  let fence: string | undefined;
+  return text
+    .split("\n")
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})/u.exec(line)?.[1];
+      if (fence !== undefined) {
+        if (
+          marker !== undefined &&
+          marker[0] === fence[0] &&
+          marker.length >= fence.length &&
+          line.trim() === marker
+        )
+          fence = undefined;
+        return " ".repeat(line.length);
+      }
+      if (marker !== undefined) {
+        fence = marker;
+        return " ".repeat(line.length);
+      }
+      return line
+        .replace(/(`+)(.*?)\1/gu, (value: string) => " ".repeat(value.length))
+        .replace(
+          /\[[^\]\n]*\]\((https:\/\/github\.com\/[^)]+)\)/gu,
+          (value: string, url: string) =>
+            " ".repeat(value.length - url.length - 1) + url + ")",
+        );
+    })
+    .join("\n");
+}
 export function references(
   pr: TrackedPR,
   sources: ReferenceSource[],
@@ -64,8 +127,9 @@ export function references(
   >();
   const repository = new URL(pr.url).pathname.split("/").slice(1, 3).join("/");
   for (const source of sources) {
+    const prose = referenceProse(source.text);
     const matches = [
-      ...source.text.matchAll(
+      ...prose.matchAll(
         /https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*\b|(?<![\w/])(?:[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)?#[1-9][0-9]*\b/gu,
       ),
     ];
@@ -83,7 +147,7 @@ export function references(
           targetKind = "issue_or_pr";
         }
       }
-      if (target === pr.url) continue;
+      if (target === pr.url || target.length > 512) continue;
       const at = match.index,
         begin = source.text.lastIndexOf("\n", at) + 1,
         end = source.text.indexOf("\n", at);
@@ -131,10 +195,15 @@ export function readyFor(
   );
 }
 export function checkGate(
-  entry: import("./contracts.js").MergeEntry,
+  entry: Pick<
+    import("./contracts.js").MergeEntry,
+    "method" | "checks" | "noCi" | "ready"
+  >,
   snapshot: import("./github.js").MergeSnapshot,
 ): string | undefined {
   const observation = snapshot.observation;
+  const review = reviewGate(observation, entry.ready);
+  if (review !== undefined) return review;
   if (snapshot.draft) return "PR is a draft";
   if ((snapshot.nativePrerequisites?.length ?? 0) > 0)
     return `Waiting for native stack predecessor: ${snapshot.nativePrerequisites?.[0] ?? ""}`;

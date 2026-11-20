@@ -20,7 +20,7 @@ import { renderDigest } from "../../src/notifications/render.js";
 import { DigestService } from "../../src/notifications/service.js";
 import { digestReceipt } from "../../src/notifications/receipt.js";
 import { inboxRoutes } from "../../src/tracking/inbox-rpc.js";
-import { ListAgentMessagesRequestSchema } from "../../src/gen/octomanager/v1/tracking_pb.js";
+import { ListAgentMessagesRequestSchema } from "../../src/gen/octomanager/v2/tracking_pb.js";
 import { agentMessage as legacyMessage } from "../fixtures/security-before/message.js";
 import { renderDigest as legacyDigest } from "../fixtures/security-before/digest.js";
 
@@ -85,7 +85,8 @@ async function deliver(tracking: TrackingService, store: Store): Promise<void> {
         .every(
           (item) =>
             item.progress.state === DeliveryState.Delivered ||
-            item.progress.state === DeliveryState.Cancelled,
+            item.progress.state === DeliveryState.Cancelled ||
+            store.tracking.inbox.isReplaced(item.id),
         )
     )
       return;
@@ -144,8 +145,7 @@ async function current(body: string, assess: Assess) {
     const record = store.digests.create(
       pr.ownerAgentId,
       { kind: "codex_queue", socket: "/synthetic-unused" },
-      (id, number) =>
-        renderDigest(id, number, pr.ownerAgentId, messages, directory),
+      (id) => renderDigest(messages, directory, id),
     );
     const digest = store.digests.version(record.id, record.revision);
     const members = digests.acknowledge(

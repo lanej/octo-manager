@@ -1,3 +1,4 @@
+import { shortId } from "../tracking/identifiers.js";
 import { parseNotice, type SafeNotice } from "../security/notifications.js";
 import type { AgentMessage } from "./message.js";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -15,12 +16,13 @@ function text(value: unknown): string {
   return value;
 }
 const applicable =
-  "(NOT EXISTS(SELECT 1 FROM safe_notice_replacements r WHERE r.original_id=m.delivery_id) AND p.enabled=1 AND (p.owner_agent_id=d.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=d.recipient_agent_id)) AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
+  "(NOT EXISTS(SELECT 1 FROM safe_notice_replacements r WHERE r.original_id=m.delivery_id) AND NOT EXISTS(SELECT 1 FROM safe_notice_supersessions s WHERE s.original_id=m.delivery_id) AND p.enabled=1 AND (p.owner_agent_id=d.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=d.recipient_agent_id)) AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
 const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
   NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id, ${applicable} AS applicable
   FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
   JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
-const messagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
+const workflowMessagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (substr(m.subject_id,1,6)!='ready:' OR EXISTS(SELECT 1 FROM actions a WHERE a.id=substr(m.subject_id,7) AND a.state IN ('open','acknowledged','working'))) AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
+const messagesQuery = `SELECT * FROM (SELECT *,NULL AS issue_id FROM (${workflowMessagesQuery}) UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable,issue_id FROM issue_notices)`;
 function decode(row: Record<string, unknown>): AgentMessage {
   return {
     sequence: integer(row["sequence"]),
@@ -34,6 +36,9 @@ function decode(row: Record<string, unknown>): AgentMessage {
       : {}),
     ...(typeof row["workflow_pr_id"] === "string"
       ? { workflowPRId: row["workflow_pr_id"] }
+      : {}),
+    ...(typeof row["issue_id"] === "string"
+      ? { issueId: row["issue_id"] }
       : {}),
     recipientAgentId: text(row["recipient_agent_id"]),
     body: text(row["body"]),
@@ -50,6 +55,22 @@ export class NotificationRepository {
     private db: DatabaseSync,
     private now: () => number,
   ) {}
+  isReplaced(id: string): boolean {
+    return (
+      this.db
+        .prepare(
+          "SELECT 1 FROM safe_notice_replacements WHERE original_id=? UNION ALL SELECT 1 FROM safe_notice_supersessions WHERE original_id=?",
+        )
+        .get(id, id) !== undefined
+    );
+  }
+  supersede(originalId: string, replacementId: string): void {
+    this.db
+      .prepare(
+        "INSERT OR IGNORE INTO safe_notice_supersessions(original_id,replacement_id) VALUES(?,?)",
+      )
+      .run(originalId, replacementId);
+  }
   markReplacement(originalId: string, replacementId: string): void {
     this.db
       .prepare(
@@ -59,6 +80,62 @@ export class NotificationRepository {
   }
   freezeNotice(id: string, notice: SafeNotice): void {
     parseNotice(notice);
+    const ids = (table: string, column = "id") =>
+      this.db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+        .get(table) === undefined
+        ? []
+        : this.db
+            .prepare(`SELECT ${column} FROM ${table}`)
+            .all()
+            .map((row) => String(row[column]));
+    const messages = [
+      ...ids("deliveries"),
+      ...ids("operation_notifications"),
+      ...ids("participant_messages"),
+      ...ids("merge_notices"),
+      ...ids("issue_notices"),
+      id,
+    ];
+    const action = this.db
+      .prepare("SELECT action_id FROM deliveries WHERE id=?")
+      .get(id)?.["action_id"];
+    const reference = (value: string, namespace: string[]) =>
+      /^[a-f0-9-]{8,36}$/u.test(value)
+        ? shortId(value, namespace)
+        : "unavailable";
+    const references = {
+      message: reference(id, messages),
+      action:
+        typeof action === "string" ? reference(action, ids("actions")) : "none",
+      ...(notice.assessmentId === undefined
+        ? {}
+        : {
+            assessment: reference(
+              notice.assessmentId,
+              ids("evidence_assessments"),
+            ),
+          }),
+      ...(notice.subject === undefined
+        ? {}
+        : {
+            subject: reference(
+              notice.subject.id,
+              ids(
+                notice.subject.kind === "action"
+                  ? "actions"
+                  : notice.subject.kind === "issue"
+                    ? "managed_issues"
+                    : notice.subject.kind === "submission"
+                      ? "pr_submissions"
+                      : notice.subject.kind === "merge_entry"
+                        ? "merge_entries"
+                        : "pr_references",
+              ),
+            ),
+          }),
+    };
+    notice = { ...notice, references };
     this.db
       .prepare(
         "INSERT OR IGNORE INTO safe_agent_notices(message_id,notice_json) VALUES(?,?)",
@@ -136,13 +213,15 @@ export class NotificationRepository {
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        message.workflowPRId !== undefined
-          ? "UPDATE merge_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
-          : message.participantPRId !== undefined
-            ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
-            : message.submissionId === undefined
-              ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
-              : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
+        message.issueId !== undefined
+          ? "UPDATE issue_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+          : message.workflowPRId !== undefined
+            ? "UPDATE merge_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+            : message.participantPRId !== undefined
+              ? "UPDATE participant_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
+              : message.submissionId === undefined
+                ? "UPDATE delivery_messages SET acknowledged_at_ms=? WHERE delivery_id=? AND acknowledged_at_ms IS NULL"
+                : "UPDATE operation_notifications SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL",
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);

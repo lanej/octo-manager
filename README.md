@@ -1,10 +1,10 @@
 # Octo Manager
 
-A GitHub pull request dashboard backed by bounded Pi workers. Codex submits and observes jobs through a local CLI; Pi reasons with scoped tools; the coordinator owns Git/GitHub effects. The working path covers public PR reviews and discussion, worker summaries, and an actual disposable merge conflict.
+Octo Manager coordinates issue remediation and GitHub PR delivery through a local CLI and Charmed dashboard. Versioned issue briefs guide investigation, implementation and testing, followed by separate acceptance verification. The coordinator owns durable decisions and authorized tracker/Git/GitHub effects; scoped agents perform the work. Existing PR tracking, review delivery, repairs, dependencies and guarded auto-merge remain independently usable.
 
 ![Tracking dashboard with explicit auto-merge status and grouped ownership and actions](docs/images/dashboard-tracking.png)
 
-See the [live acceptance record](docs/live-acceptance.md) for the actual conflict, PR summary, and detach/reattach evidence.
+Start with [issue setup](docs/issues.md) and the [state-machine and flow guide](docs/issue-flows.md). The [live acceptance record](docs/live-acceptance.md) distinguishes provider trials from controlled tests and representative renderings.
 
 ## Run
 
@@ -25,9 +25,9 @@ bin/octo-manager dashboard
 From Codex or a third terminal:
 
 ```sh
-bin/octo-manager submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
-bin/octo-manager get JOB_ID --json
-bin/octo-manager events JOB_ID --watch
+bin/octo-manager job submit summarize-pr --url https://github.com/earendil-works/pi/pull/11546 --request-id first-pr --json
+bin/octo-manager job show JOB_ID --json
+bin/octo-manager job events JOB_ID --watch
 ```
 
 All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. For a persistent macOS service and automatic Codex enrollment, use the [local installation guide](docs/local-install.md). Manual runs remain available on both platforms. Codex notifications attach to an already running local Codex app-server; installation does not change MCP configuration.
@@ -39,13 +39,40 @@ Dashboard timestamps use local time, honoring `TZ` when set and otherwise the OS
 
 ## Existing authentication
 
-The worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
+The Pi worker uses existing Pi ChatGPT authentication when configured, otherwise a read-only in-memory reference to a fresh file-backed Codex ChatGPT session under `CODEX_HOME` (default `~/.codex`). It does not create a Pi credential file or pass through Codex refresh/identity tokens. Codex owns its session refresh. File-backed ChatGPT authentication is supported; keychain-only and API-key Codex sessions are not supported by this fallback.
 
-If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub reads use the existing `gh` login. Private or indeterminate repository visibility is rejected before content reaches the model. Public PR content goes to the selected model provider. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
+If no usable session exists, `bin/octo-manager login` opens Pi with tools and discovery disabled. Enter `/login openai-codex`, complete sign-in, and `/quit`. GitHub adapters use the existing `gh` login for accessible public and private repositories. The Pi summary demo separately rejects private or indeterminate repository visibility before content reaches its model. Public demo PR content goes to the selected model provider. Issue dispatch uses the configured Codex app-server and stage profiles. The default model is `gpt-6.1-terra`; pass `--model MODEL` to `serve` to select another OpenAI Codex provider model.
+
+### Amazon Bedrock
+
+Use a provider-qualified model, such as `serve --model amazon-bedrock/us.anthropic.claude-sonnet-5-5`. Unqualified model names retain the OpenAI Codex provider. Bedrock workers use Pi's native AWS credential resolution and an empty read-only credential store; they do not require ChatGPT authentication or copy credentials. Supply an explicit `AWS_PROFILE`, AWS access-key variables, ECS/web-identity configuration, or `AWS_BEARER_TOKEN_BEDROCK`. Missing Bedrock configuration fails without falling back to Codex.
+
+Persist the default worker model in `$XDG_CONFIG_HOME/octo-manager/config.json` (normally `~/.config/octo-manager/config.json`) so a managed reinstall does not replace your selection. `serve --model` overrides this value. PR drafting and repair profiles have separate model settings:
+
+```json
+{
+  "workerModel": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+  "submissionModels": {
+    "policy": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+    "change": "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
+    "writer": "amazon-bedrock/us.anthropic.claude-sonnet-5-5"
+  }
+}
+```
+
+Merge these keys into your existing configuration. Services must also receive your existing AWS environment. On Linux, a user-owned systemd drop-in survives regeneration of the managed unit. For an existing trusted shell environment file, `systemctl --user edit octo-manager.service` can select the installed launcher without pinning an old release:
+
+```ini
+[Service]
+ExecStart=
+ExecStart=/bin/bash -c '. "$$HOME/.config/bedrock/env" && exec "$$HOME/.local/bin/octo-manager" serve'
+```
+
+The environment file remains your credential source; keep it private. Reload the user service manager and restart Octo after changing service settings. On macOS, configure AWS credentials in the launchd service environment before starting Octo.
 
 ## PR tracking
 
-Enroll public or private PRs with `bin/octo-manager track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
+Enroll public or private PRs with `bin/octo-manager pr track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
 
 ## Dashboard and commands
 
@@ -59,21 +86,22 @@ The dashboard opens on Tracking and gives each tab a dedicated workspace:
 | **4 Tracking** | Ownership, automation, blockers and delivery | PR navigation; nested automation/ownership and actions/delivery sections |
 | **5 Activity** | Reported agent operations across sessions | Global timeline without PR or worker panes |
 | **6 GitHub** | API budgets, forecasts and traffic | Global view; nested REST and GraphQL quota sections |
+| **7 Issues** | Issue stages, agent assignments and briefs | Global view; selected issue criteria and clarification |
 
 Auto-merge status stays visible in the PR list and Tracking/Reviews context, including paused chains and cancelled chains with in-flight operations. Tracking retains the opt-in `a` switch and shows the next merge step; an enabled switch does not imply checks or owner assessment have passed. Confirmed merged/closed PRs show their outcome. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
 
-Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Reads are public-only and capped at the first 100 records per message source, with explicit partial-history and truncated-body markers. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
+Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Review observations retain explicit partial-history and truncated-body markers; accessible public and private PRs are supported. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
 Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
 
-The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`6` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
+The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`7` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
 
 ```text
-octo-manager submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
-octo-manager get JOB_ID --json
-octo-manager events JOB_ID --after SEQUENCE [--watch]
-octo-manager cancel JOB_ID
-octo-manager retry JOB_ID
+octo-manager job submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
+octo-manager job show JOB_ID --json
+octo-manager job events JOB_ID --after SEQUENCE [--watch]
+octo-manager job cancel JOB_ID
+octo-manager job retry JOB_ID
 octo-manager pause
 octo-manager resume
 ```
@@ -82,15 +110,15 @@ CLI responses are JSON; `--json` selects compact output. Event pages contain at 
 
 ## API and architecture
 
-The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and Codex integration. The [Protobuf contract](proto/octomanager/v1/scheduler.proto) generates Go and TypeScript bindings. ConnectRPC runs over HTTP/1.1 on an owner-only Unix socket. The [API guide](docs/api.md) defines cursor/replay semantics, idempotency, errors, deadlines, and disconnect behavior. The [architecture guide](docs/architecture.md) includes ownership and state diagrams.
+The [Pi harness guide](docs/pi-guide.md) explains the SDK, bounded worker, and Codex integration. The [Protobuf contract](proto/octomanager/v2/scheduler.proto) generates Go and TypeScript bindings. ConnectRPC runs over HTTP/1.1 on an owner-only Unix socket. The [API guide](docs/api.md) defines cursor/replay semantics, idempotency, errors, deadlines, and disconnect behavior. The [architecture guide](docs/architecture.md) includes ownership and state diagrams.
 
 `demo` first creates a real merge conflict in `retry-policy.json`, then queues a summary of public Pi PR 11546. The required merge keeps `maxAttempts=3` from the target and `timeoutSeconds=60` from the source, with `retryDelaySeconds=1`. The coordinator rejects either unchanged side, extra keys/paths, invalid values, and conflict markers, then commits and checks a clean two-parent merge. Only generated repositories are changed, and user hooks/signing are disabled for these fixtures.
 
-Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. This thread has no concurrent worker pool, recurring schedules, or remote GitHub mutation operations.
+Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls, and bounded displayed output. Transient errors get at most three attempts with one- and five-second delays. Scheduler retries, cancellation, and crash recovery remain independently tested. These limits apply to Pi jobs. Issue assignment concurrency, timeouts and remote effects follow the separate [issue lifecycle](docs/issue-flows.md).
 
 ## Polling and auto-merge
 
-[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
+[Adaptive polling and quota forecasts](docs/polling-and-auto-merge.md) reduce idle traffic and show whether the shared hourly budget is at risk. Auto-merge is an Octo-owned per-PR switch in Tracking (press `a`) or `pr auto-merge PR --on|--off --agent-id ID`; exact-head owner readiness still gates dispatch.
 
 ## Dependency-aware merge chains
 
@@ -122,6 +150,18 @@ Agent notifications follow the [agent message standard](docs/agent-messages.md):
 
 ## PR submission
 
-Octo can run a dedicated PR writer, publish, and enroll a pushed branch for its calling Codex session, including private repositories. Use `submit-pr --intent-file FILE`; inspect operations with `submission ID`. Contribution analysis is cached as immutable source-cited policy versions, and structured briefs retain falsifiable claims and validation facts. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
+Octo accepts caller-written PR titles and descriptions, validates local format rules, and returns a durable pending receipt before a short-lived publisher contacts GitHub. Use `pr init`, `pr validate --title TITLE --body-file FILE`, then `submit-pr --title TITLE --body-file FILE`; inspect completion with `submission ID`. No daemon or model is required for submission. Optional `pr init --derive` samples bounded repository guidance and recent PRs to propose advisory writing guidance. Tracking requires explicit `--track --thread-id SESSION`. See [the submission contract and acceptance evidence](docs/pr-submission.md). The public-only restriction above applies to the older PR-summary demo.
 
 `bun run check` gives the typed TypeScript analyzer an explicit 4 GiB Node heap budget on both local machines and CI; Octokit declarations exceed the default roughly 2 GiB heap on hosted macOS. Individual lint runs use `node --max-old-space-size=4096 scripts/check-typescript.mjs lint`. This changes analysis memory limits, without disabling rules or growing the retrofit baseline.
+
+The [CLI guide](docs/cli.md) describes capability groups and agent shortcuts. The [local API](docs/api.md) uses typed v2 contracts shared by the coordinator and dashboard.
+
+## Protobuf quality
+
+The managed source-code profile selects beta-stage Protobuf checks with owned authority and adoption hold. Existing Go/TypeScript checks and the application stack remain in place. Run `python3 scripts/check-protobuf.py tools` once to provision pinned Buf and build its native JSON-string rule, then `bun run generate` to regenerate formatted schemas and Go/TypeScript bindings. Domain-message documentation comes from the canonical contracts and exporter; edit those inputs rather than generated files.
+
+Run `PROTOBUF_AGAINST='.git#ref=origin/main' bun run check` for full verification against the integration branch. The standalone gate is `python3 scripts/check-protobuf.py all --against '.git#ref=origin/main'`. Use the actual PR base or released revision when checking a change; there is no ratchet or ignored-field exception. CI uses the PR base SHA or the previous push SHA, and manual runs require a baseline revision. These checks preserve the v2 contract and do not require restarting the daemon or migrating stored state.
+
+## Issue lifecycle
+
+Explicitly enroll issues for investigation, versioned briefs, clarification, implementation, testing, review, and post-merge acceptance verification. Repository policy controls each authority gate; tracker and dispatcher ports keep GitHub and Codex replaceable. See the [issue lifecycle guide](docs/issues.md) for configuration, commands, evidence, and recovery. The **7 Issues** dashboard tab shows current issue work.

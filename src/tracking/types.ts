@@ -1,3 +1,4 @@
+import type { PRLifecycleValue, ReviewStateValue } from "./states.js";
 import type { Lifecycle } from "./retirement.js";
 import type { CheckWatch, CheckWatchState } from "./checks.js";
 export type UnixMillis = number;
@@ -49,7 +50,7 @@ export interface ReviewObservation {
   id: string;
   author: string;
   headSha: string;
-  state: string;
+  state: ReviewStateValue;
   at: number;
   url: string;
 }
@@ -85,7 +86,7 @@ export interface PRObservation {
   headSha: string;
   baseSha: string;
   targetBase?: TargetBase;
-  lifecycle: "open" | "closed" | "merged";
+  lifecycle: PRLifecycleValue;
   mergeability: "mergeable" | "conflicting" | "unknown";
   checks: ObservationPart<CheckObservation[]>;
   reviews: ObservationPart<ReviewObservation[]>;

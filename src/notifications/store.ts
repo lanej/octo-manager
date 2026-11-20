@@ -1,3 +1,4 @@
+import type { ReceiptTarget } from "../merging/receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
@@ -17,7 +18,48 @@ export class DigestStore {
     private db: DatabaseSync,
     private now: () => number,
     private eventSink: (kind: string, detail: string) => void,
-  ) {}
+  ) {
+    // Index immutable delivery identities without rewriting historical records.
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)",
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)",
+    );
+  }
+  private dispatchId(): string {
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const id = randomUUID();
+      if (
+        this.db
+          .prepare(
+            "SELECT 1 FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? LIMIT 1",
+          )
+          .get(id.slice(0, 8)) === undefined
+      )
+        return id;
+    }
+    throw new Error("Unable to allocate a unique message receipt ID");
+  }
+  delivery(id: string): DigestRevision {
+    if (!/^[a-f0-9-]{8,36}$/u.test(id))
+      throw new Error("Invalid message receipt ID");
+    const rows = this.db
+      .prepare(
+        "SELECT data FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? AND replace(json_extract(data,'$.dispatchId'),'-','') LIKE ? LIMIT 2",
+      )
+      .all(id.slice(0, 8), `${id.replaceAll("-", "")}%`);
+    if (rows.length !== 1)
+      throw new Error(
+        rows.length === 0
+          ? "Message receipt not found"
+          : "Invalid ambiguous message receipt ID",
+      );
+    return revision(JSON.parse(String(rows[0]?.["data"])));
+  }
   list(agentId?: string): Digest[] {
     return this.db
       .prepare(
@@ -52,32 +94,53 @@ export class DigestStore {
     if (value === undefined) throw new Error("Digest revision not found");
     return value;
   }
-  events(id: string): DigestEvent[] {
-    return this.db
+  hasEvent(id: string, kind: string): boolean {
+    return (
+      this.db
+        .prepare(
+          "SELECT 1 FROM agent_digest_events WHERE digest_id=? AND kind=? LIMIT 1",
+        )
+        .get(id, kind) !== undefined
+    );
+  }
+  events(id: string, kinds?: readonly string[], limit?: number): DigestEvent[] {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0))
+      throw new Error("Invalid digest event limit");
+    if (kinds?.length === 0 || limit === 0) return [];
+    const filter =
+      kinds === undefined
+        ? ""
+        : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
+    const index =
+      kinds === undefined ? "digest_events_by_digest" : "digest_events_by_kind";
+    const rows = this.db
       .prepare(
-        "SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events WHERE digest_id=? ORDER BY sequence",
+        `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY ${index} WHERE digest_id=?${filter} ORDER BY sequence${limit === undefined ? "" : " DESC LIMIT ?"}`,
       )
-      .all(id)
-      .map((row) =>
-        digestEvent({
-          ...row,
-          detail: JSON.parse(String(row["detail"])) as unknown,
-        }),
-      );
+      .all(id, ...(kinds ?? []), ...(limit === undefined ? [] : [limit]));
+    if (limit !== undefined) rows.reverse();
+    return rows.map((row) =>
+      digestEvent({
+        ...row,
+        detail: JSON.parse(String(row["detail"])) as unknown,
+      }),
+    );
   }
   create(
     agentId: string,
     transport: QueueTransport,
-    render: (
-      id: string,
-      number: number,
-    ) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => {
+      body: string;
+      messageIds: string[];
+      mergeTarget?: ReceiptTarget;
+    },
   ): Digest {
     const existing = this.active(agentId);
     if (existing !== undefined) return existing;
     const at = this.now(),
       id = randomUUID(),
-      content = render(id, 1),
+      dispatchId = this.dispatchId(),
+      content = render(dispatchId),
       value: Digest = {
         id,
         agentId,
@@ -93,7 +156,7 @@ export class DigestStore {
       this.write(value);
       this.insertVersion({
         ...content,
-        dispatchId: randomUUID(),
+        dispatchId,
         digestId: id,
         revision: 1,
         createdAt: at,
@@ -107,19 +170,24 @@ export class DigestStore {
   }
   revise(
     value: Digest,
-    render: (
-      id: string,
-      number: number,
-    ) => { body: string; messageIds: string[] },
+    render: (receiptId: string) => {
+      body: string;
+      messageIds: string[];
+      mergeTarget?: ReceiptTarget;
+    },
   ): Digest {
-    const content = render(value.id, value.revision + 1),
-      previous = this.version(value.id, value.revision);
+    const previous = this.version(value.id, value.revision);
+    const current = render(previous.dispatchId);
     if (
-      JSON.stringify(content.messageIds) ===
+      JSON.stringify(current.messageIds) ===
         JSON.stringify(previous.messageIds) &&
-      render(value.id, value.revision).body === previous.body
+      current.body === previous.body &&
+      JSON.stringify(current.mergeTarget) ===
+        JSON.stringify(previous.mergeTarget)
     )
       return value;
+    const dispatchId = this.dispatchId();
+    const content = render(dispatchId);
     const next = {
       ...value,
       revision: value.revision + 1,
@@ -130,7 +198,7 @@ export class DigestStore {
       this.write(next);
       this.insertVersion({
         ...content,
-        dispatchId: randomUUID(),
+        dispatchId,
         digestId: value.id,
         revision: next.revision,
         createdAt: this.now(),
@@ -164,6 +232,9 @@ export class DigestStore {
     });
     return next;
   }
+  defer(value: Digest, nextCheckAt: number): void {
+    this.write({ ...value, nextCheckAt });
+  }
   event(
     agentId: string,
     digestId: string | undefined,
@@ -175,7 +246,17 @@ export class DigestStore {
         "INSERT INTO agent_digest_events(digest_id,agent_id,at_ms,kind,detail) VALUES(?,?,?,?,?)",
       )
       .run(digestId ?? null, agentId, this.now(), kind, JSON.stringify(detail));
-    this.eventSink(kind, kind.replaceAll("_", " "));
+    const reason =
+      typeof detail === "object" &&
+      detail !== null &&
+      "reason" in detail &&
+      typeof detail.reason === "string"
+        ? detail.reason
+        : undefined;
+    this.eventSink(
+      kind,
+      `${kind.replaceAll("_", " ")} · agent ${agentId}${reason === undefined ? "" : ` · ${reason}`}`,
+    );
   }
   transaction<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");

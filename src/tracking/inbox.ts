@@ -5,6 +5,12 @@ export type { AgentMessage } from "../notifications/message.js";
 
 export class AgentInbox {
   constructor(private repository: NotificationRepository) {}
+  isReplaced(id: string): boolean {
+    return this.repository.isReplaced(id);
+  }
+  supersede(originalId: string, replacementId: string): void {
+    this.repository.supersede(originalId, replacementId);
+  }
   markReplacement(originalId: string, replacementId: string): void {
     this.repository.markReplacement(originalId, replacementId);
   }
@@ -46,14 +52,19 @@ export class AgentInbox {
       ({
         version: 1,
         kind:
-          message.submissionId !== undefined
-            ? "submission"
-            : message.participantPRId !== undefined
-              ? "participants"
-              : message.workflowPRId !== undefined
-                ? "merge"
-                : "update",
+          message.issueId !== undefined
+            ? "issue"
+            : message.submissionId !== undefined
+              ? "submission"
+              : message.participantPRId !== undefined
+                ? "participants"
+                : message.workflowPRId !== undefined
+                  ? "merge"
+                  : "update",
         assessment: "not_required",
+        ...(message.issueId !== undefined
+          ? { subject: { kind: "issue" as const, id: message.issueId } }
+          : {}),
         ...(message.submissionId === undefined
           ? {}
           : {

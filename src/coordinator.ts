@@ -1,5 +1,12 @@
 import { AssessmentService } from "./assessments/service.js";
 import type { Assess } from "./assessments/runner.js";
+import type { IssueOptions } from "./issues/service.js";
+import { IssueService } from "./issues/service.js";
+import { GitHubIssueTracker } from "./issue-trackers/github.js";
+import { CodexDispatcher } from "./dispatch/codex.js";
+import { ManagedIssueWorkspace } from "./dispatch/workspace.js";
+import { loadIssuePolicy } from "./issues/config.js";
+import { trackedCodeHost } from "./issues/composition.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
 import {githubReads} from "./github-api.js";
@@ -27,7 +34,8 @@ import { createFixture, readConflict, writeResolution, validateResolution, finis
 import { readPullRequest, readPullRequestDetails } from "./github.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
-export interface CoordinatorOptions { assess?: Assess; mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
+export interface CoordinatorOptions {
+  assess?: Assess; issueOptions?: IssueOptions; mergeOptions?:MergeOptions; notificationReader?:NotificationReader; digestOptions?: DigestOptions; submissionOptions?: SubmissionOptions; repairOptions?: RepairOptions; trackingConfig?: TrackingConfig; trackingOptions?: TrackingOptions; now?: () => number; workerPath?: string; model?: string; workerEnv?: NodeJS.ProcessEnv; reviewReader?: typeof readPullRequestDetails }
 export function processAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
@@ -55,6 +63,7 @@ export class Coordinator extends EventEmitter {
   readonly socketPath: string;
   private server?: Server;
   private sockets = new Set<Socket>();
+  readonly issues: IssueService;
   private timer?: NodeJS.Timeout;
   private active?: Active;
   private stopping = false;
@@ -68,16 +77,20 @@ export class Coordinator extends EventEmitter {
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now);
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
+      this.store.repositories.tick();
       this.tracking.tick();
+      this.issues.tick().catch((error: unknown) => { this.store.event("", "issue_scheduler_error", error instanceof Error ? error.message : "Issue tick failed"); });
+      this.submissions.reconcileLegacy(this.now());
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
-    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,options.mergeOptions);
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
+    this.issues=new IssueService(this.store.issues,options.issueOptions ?? {trackers:[new GitHubIssueTracker()],dispatchers:[new CodexDispatcher()],workspace:new ManagedIssueWorkspace(),codeHost:trackedCodeHost(this.tracking,directory),policy:loadIssuePolicy},this.now);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,options.digestOptions);
+    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,...options.digestOptions});
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
     this.socketPath = join(directory, "run.sock");
@@ -216,7 +229,7 @@ export class Coordinator extends EventEmitter {
       const pendingTools = new Set<Promise<void>>();
       let outputBytes = 0;
       const deadline = setTimeout(() => { failure = "Attempt deadline exceeded"; this.abort(active); }, 180000);
-      const exit = new Promise<void>((resolve, reject) => { child.once("error", reject); child.once("exit", (code, signal) => { active.childExited = true; if (!done && !active.abort.signal.aborted) failure = `Worker exited before completion (${signal ?? code})`; resolve(); }); });
+      const exit = new Promise<void>((resolve, reject) => { child.once("error", reject); child.once("exit", (code, signal) => { active.childExited = true; if ((!done || code !== 0) && !active.abort.signal.aborted && failure === undefined) failure = `Worker exited before completion (${String(signal ?? code)})`; resolve(); }); });
       child.stderr?.on("data", () => { /* WHY: SDK diagnostics can contain provider responses; the structured failure channel is authoritative. */ });
       child.on("message", (message: unknown) => {
         if (!message || typeof message !== "object") return;
@@ -225,8 +238,8 @@ export class Coordinator extends EventEmitter {
         if (m.type === "progress" && typeof m.text === "string" && outputBytes < 32000) {
           const text = cleanText(m.text, Math.min(2000, 32000 - outputBytes)); outputBytes += text.length;
           this.store.event(job.id, "progress", text); this.notify();
-        } else if (m.type === "done" && typeof m.text === "string" && !done) { done = true; result = cleanText(m.text); }
-        else if (m.type === "failure" && typeof m.error === "string" && !done) { done = true; failure = cleanText(m.error, 2000); }
+        } else if (m["type"] === "done" && typeof m["text"] === "string" && !done) { done = true; result = cleanText(m["text"]); if (child.connected) child.send({ type: "result_ack", attempt: active.attempt }, () => {}); }
+        else if (m["type"] === "failure" && typeof m["error"] === "string" && !done) { done = true; failure = cleanText(m["error"], 2000); if (child.connected) child.send({ type: "result_ack", attempt: active.attempt }, () => {}); }
         else if (m.type === "tool" && typeof m.id === "string" && typeof m.name === "string") {
           const work = (async () => {
             try {
@@ -282,6 +295,7 @@ export class Coordinator extends EventEmitter {
       await this.assessments.close();
       await this.githubScheduler.close();
 
+    await this.issues.close();
     await this.merging.close();
     await this.digests.close();
       await this.submissions.close();

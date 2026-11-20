@@ -1,8 +1,10 @@
+import { unwire } from "../api/codec.js";
+import { DomainDigestReceiptSchema } from "../gen/octomanager/v2/domain_pb.js";
 import { Type } from "typebox";
 import { Check } from "typebox/value";
 import { compact } from "../tracking/messages.js";
 import { shortId } from "../tracking/identifiers.js";
-import type { AcknowledgeAgentDigestResponse } from "../gen/octomanager/v1/notifications_pb.js";
+import type { AcknowledgeAgentDigestResponse } from "../gen/octomanager/v2/notifications_pb.js";
 const ReceiptSchema = Type.Object(
   {
     id: Type.String({ minLength: 1, maxLength: 200 }),
@@ -17,7 +19,8 @@ export function receiptOutput(
   response: AcknowledgeAgentDigestResponse,
   state?: string,
 ) {
-  const receipt: unknown = JSON.parse(response.recordJson);
+  if (response.receipt === undefined) throw new Error("Missing digest receipt");
+  const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);
   if (!Check(ReceiptSchema, receipt))
     throw new Error("Invalid digest receipt response");
   const ids = response.messages
@@ -55,7 +58,7 @@ export function receiptOutput(
     },
     items: candidates.slice(0, 20),
     omittedItems: Math.max(0, candidates.length - 20),
-    inspect: `octo-manager digest ${shortId(receipt.id)} --revision ${String(receipt.revision)}${stateFits ? stateSuffix : ""}`,
+    inspect: `octo-manager messages inspect ${shortId(receipt.id)} --revision ${String(receipt.revision)}${stateFits ? stateSuffix : ""}`,
     ...(stateFits ? {} : { inspectState: "Reuse the same --state argument" }),
   };
   while (

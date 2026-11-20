@@ -75,6 +75,11 @@ export interface MergeSnapshot {
   nativePrerequisites?: string[];
 }
 export interface MergeProvider {
+  readiness?(
+    url: string,
+    observation: ObservationInput,
+    signal: AbortSignal,
+  ): Promise<MergeSnapshot>;
   inspect(url: string, signal: AbortSignal): Promise<MergeSnapshot>;
   merge(
     url: string,
@@ -97,86 +102,112 @@ function location(url: string) {
     throw new Error("Invalid PR location");
   return { owner, repo, number, root: `repos/${owner}/${repo}` };
 }
-export const mergeProvider: MergeProvider = {
-  async inspect(url, signal) {
-    const { owner, repo, number, root } = location(url);
-    const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
-    const observation = await readObservation(url, signal);
-    const result = await githubReads.query(query, signal);
-    if (result.errors.length > 0)
-      throw new Error("Merge eligibility unavailable");
-    const repository = checked(RepoSchema, result.data["repository"]),
-      pr = repository.pullRequest;
-    if (
-      pr.headRefOid !== observation.headSha ||
-      (pr.baseRefName !== observation.targetBase?.ref &&
-        observation.lifecycle === "open") ||
-      (pr.baseRef?.target.oid !== observation.targetBase?.sha &&
-        observation.lifecycle === "open")
-    )
-      throw new Error("PR changed during eligibility inspection");
-    const rules =
-      pr.state === "OPEN"
-        ? checked(
-            RulesSchema,
-            await githubReads.read(
-              `${root}/rules/branches/${encodeURIComponent(pr.baseRefName)}`,
-              signal,
-            ),
-          )
-        : [];
-    const nativePrerequisites: string[] = [];
-    if (pr.stack !== undefined && pr.stack !== null) {
-      if (pr.stack.entries.pageInfo.hasNextPage)
-        throw new Error(
-          "Native stack exceeds bounded inspection; owner intervention required",
-        );
-      let found = false;
-      for (const entry of pr.stack.entries.nodes) {
-        if (entry.pullRequest.url === canonicalPR(url)) {
-          found = true;
-          break;
-        }
-        if (entry.pullRequest.state === "OPEN")
-          nativePrerequisites.push(entry.pullRequest.url);
-      }
-      if (!found)
-        throw new Error("Current PR missing from native stack evidence");
-      if (
-        nativePrerequisites.length === 0 &&
-        pr.baseRefName !== pr.stack.baseRefName
-      )
-        throw new Error("Native stack target branch has not settled");
-    }
-    const methods: MergeEntry["method"][] = [];
-    if (repository.squashMergeAllowed) methods.push("squash");
-    if (repository.mergeCommitAllowed) methods.push("merge");
-    if (repository.rebaseMergeAllowed) methods.push("rebase");
-    return {
-      observation,
-      nativePrerequisites,
-      draft: pr.isDraft,
-      gate: pr.mergeStateStatus,
-      review: pr.reviewDecision,
-      required: [
-        ...new Set([
-          ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ??
-            []),
-          ...rules.flatMap((rule) =>
-            rule.type === "required_status_checks"
-              ? (rule.parameters?.required_status_checks?.map(
-                  (check) => check.context,
-                ) ?? [])
-              : [],
+export async function readMergeReadiness(
+  url: string,
+  observation: ObservationInput,
+  signal: AbortSignal,
+  reads: Pick<typeof githubReads, "query" | "read"> = githubReads,
+): Promise<MergeSnapshot> {
+  const { owner, repo, number, root } = location(url);
+  const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
+  const result = await reads.query(query, signal);
+  if (result.errors.length > 0)
+    throw new Error("Merge eligibility unavailable");
+  const repository = checked(RepoSchema, result.data["repository"]),
+    pr = repository.pullRequest;
+  const lifecycle = pr.merged
+    ? "merged"
+    : pr.state === "OPEN"
+      ? "open"
+      : "closed";
+  const mergeability =
+    pr.mergeable === "MERGEABLE"
+      ? "mergeable"
+      : pr.mergeable === "CONFLICTING"
+        ? "conflicting"
+        : "unknown";
+  if (
+    !["OPEN", "CLOSED", "MERGED"].includes(pr.state) ||
+    !["MERGEABLE", "CONFLICTING", "UNKNOWN"].includes(pr.mergeable)
+  )
+    throw new Error("Merge eligibility unavailable");
+  if (
+    lifecycle !== observation.lifecycle ||
+    mergeability !== observation.mergeability ||
+    pr.headRefOid !== observation.headSha ||
+    (pr.baseRefName !== observation.targetBase?.ref &&
+      observation.lifecycle === "open") ||
+    (pr.baseRef?.target.oid !== observation.targetBase?.sha &&
+      observation.lifecycle === "open")
+  )
+    throw new Error("PR changed during eligibility inspection");
+  const rules =
+    pr.state === "OPEN"
+      ? checked(
+          RulesSchema,
+          await reads.read(
+            `${root}/rules/branches/${encodeURIComponent(pr.baseRefName)}`,
+            signal,
           ),
-        ]),
-      ],
-      queueRequired: rules.some((rule) => rule.type === "merge_queue"),
-      methods,
-      ...(pr.merged && pr.mergeCommit !== null
-        ? { mergeCommit: pr.mergeCommit.oid }
-        : {}),
-    };
+        )
+      : [];
+  const nativePrerequisites: string[] = [];
+  if (pr.stack !== undefined && pr.stack !== null) {
+    if (pr.stack.entries.pageInfo.hasNextPage)
+      throw new Error(
+        "Native stack exceeds bounded inspection; owner intervention required",
+      );
+    let found = false;
+    for (const entry of pr.stack.entries.nodes) {
+      if (entry.pullRequest.url === canonicalPR(url)) {
+        found = true;
+        break;
+      }
+      if (entry.pullRequest.state === "OPEN")
+        nativePrerequisites.push(entry.pullRequest.url);
+    }
+    if (!found)
+      throw new Error("Current PR missing from native stack evidence");
+    if (
+      nativePrerequisites.length === 0 &&
+      pr.baseRefName !== pr.stack.baseRefName
+    )
+      throw new Error("Native stack target branch has not settled");
+  }
+  const methods: MergeEntry["method"][] = [];
+  if (repository.squashMergeAllowed) methods.push("squash");
+  if (repository.mergeCommitAllowed) methods.push("merge");
+  if (repository.rebaseMergeAllowed) methods.push("rebase");
+  return {
+    observation,
+    nativePrerequisites,
+    draft: pr.isDraft,
+    gate: pr.mergeStateStatus,
+    review: pr.reviewDecision,
+    required: [
+      ...new Set([
+        ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ??
+          []),
+        ...rules.flatMap((rule) =>
+          rule.type === "required_status_checks"
+            ? (rule.parameters?.required_status_checks?.map(
+                (check) => check.context,
+              ) ?? [])
+            : [],
+        ),
+      ]),
+    ],
+    queueRequired: rules.some((rule) => rule.type === "merge_queue"),
+    methods,
+    ...(pr.merged && pr.mergeCommit !== null
+      ? { mergeCommit: pr.mergeCommit.oid }
+      : {}),
+  };
+}
+export const mergeProvider: MergeProvider = {
+  readiness: readMergeReadiness,
+  async inspect(url, signal) {
+    return readMergeReadiness(url, await readObservation(url, signal), signal);
   },
   async merge(url, head, method, signal, beforeSend) {
     const { root, number } = location(url);

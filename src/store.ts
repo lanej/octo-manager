@@ -2,6 +2,8 @@ import { migrateTracking } from "./tracking/schema.js";
 import { NotificationRepository } from "./notifications/repository.js";
 import { migrateAssessments } from "./assessments/schema.js";
 import { AssessmentStore } from "./assessments/store.js";
+import { IssueStore } from "./issues/store.js";
+import { RepositoryPolicies } from "./repository/policy.js";
 import {migrateScheduling,ScheduleStore} from "./scheduling/store.js";
 import {migrateAutoMerge} from "./merging/upgrade.js";
 import {migrateMerging} from "./merging/schema.js";
@@ -37,6 +39,8 @@ export class Store {
   readonly tracking: TrackingStore;
   readonly notificationRepository: NotificationRepository;
   readonly assessments: AssessmentStore;
+  readonly issues: IssueStore;
+  readonly repositories: RepositoryPolicies;
   readonly schedules: ScheduleStore;
   readonly merging: MergeStore;
   readonly activity: ActivityStore;
@@ -63,10 +67,13 @@ export class Store {
       this.db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
       migrateTracking(this.db);
       migrateNotificationEvidence(this.db);
+      migrateAssessments(this.db);
+      this.assessments = new AssessmentStore(this.db, this.now);
+      this.assessments.recoverInterrupted();
       this.notificationRepository = new NotificationRepository(this.db, this.now);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
-      }, this.notificationRepository);
+      }, this.notificationRepository, this.assessments);
       this.activity = new ActivityStore(this.db, this.now);
       migrateEvidence(this.db);
       this.repairs = new RepairStore(this.db, this.now);
@@ -81,15 +88,14 @@ export class Store {
       migrateMerging(this.db);
       migrateAutoMerge(this.db);
       migrateScheduling(this.db);
+      this.issues=new IssueStore(this.db,this.now,this.notificationRepository);
       this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
+      this.repositories=new RepositoryPolicies(this.db,this.tracking,this.merging,(kind,detail,prId)=>this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null));
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); }, this.notificationRepository);
-      migrateAssessments(this.db);
-      this.assessments = new AssessmentStore(this.db, this.now);
-      this.assessments.recoverInterrupted();
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
@@ -140,6 +146,9 @@ export class Store {
       ? this.db.prepare("SELECT * FROM events WHERE seq>? ORDER BY seq LIMIT 200").all(after)
       : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
     return rows.map(storedEvent);
+  }
+  activityBefore(before: number): JobEvent[] {
+    return this.db.prepare("SELECT * FROM events WHERE seq<? AND kind!='progress' ORDER BY seq DESC LIMIT 201").all(before).map(storedEvent);
   }
   paused(): boolean { return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.value === "true"; }
   setPaused(value: boolean): void {

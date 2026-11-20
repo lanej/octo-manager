@@ -1,6 +1,10 @@
 # Queued agent digests
 
-Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR using typed fixed status fields and action or operation references. External excerpts, arbitrary evidence links and model analysis require explicit untrusted-evidence inspection. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
+Queue reconciliation runs only when an agent has applicable unread messages, a live digest, pending digest cleanup, or historical inbox messages outside digest membership that may still have legacy queue entries. Successful idle legacy cleanup is reinspected once per minute to catch late native admission; local membership, receipt, applicability, or transport changes can trigger an earlier inspection. Repeated failures retain their first error event and retry with delays of 5, 10, 20, 40, and at most 60 seconds. Error events include the agent identity and actual rejection. Sessions with no inbox or digest work are not polled.
+
+Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses and action/assessment references without forwarding external prose or model analysis. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
+
+Identical displayed entries within a PR share one line. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
 
 ## Replacement and cancellation
 
@@ -40,19 +44,34 @@ The notification capability owns these records and transport reconciliation. Pro
 
 ## Inspection and receipt
 
+Agent-facing messages carry one opaque ID for their exact frozen content, without a digest marker, revision, update count or recipient ID. A PR with one update uses a single line; multiple updates for that PR use bullets. The footer is one bare, copyable command:
+
 ```sh
-octo-manager digests --agent-id AGENT_ID
-octo-manager digest DIGEST_ID --revision 2
+octo-manager merge RECEIPT_ID # One Ready notice, current owner only.
+octo-manager ack RECEIPT_ID   # Receipt without merging.
+octo-manager message RECEIPT_ID
+```
+
+`ack` resolves `OCTO_MANAGER_AGENT_ID`, or the registered session identified by `CODEX_THREAD_ID`. Explicit `--agent-id` overrides environment identity. Use `OCTO_MANAGER_ENDPOINT` or `--endpoint` when the same session has multiple registered endpoints. Missing, unknown or ambiguous identity fails; receipt never creates an agent. Each receipt ID resolves to one immutable dispatch, including after replacement or restart. An additive prefix index supports lookup without rewriting old records. New dispatches reserve historically unused eight-character prefixes; ambiguous older IDs require a longer prefix.
+
+Administrative inspection exposes the internal envelope and revision:
+
+```sh
+octo-manager messages list --agent-id AGENT_ID
+octo-manager messages inspect DIGEST_ID --revision 2
 octo-manager acknowledge-digest DIGEST_ID --revision 2 --agent-id AGENT_ID
 ```
 
-Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and receipt-agent prefixes are accepted; ambiguous prefixes fail. Receipt commands render as inline code, using collision-aware short agent IDs. Inspection returns the selected immutable revision, revision numbers, receipts and the latest 100 journal events. The complete journal remains stored. `GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` are generated Connect RPCs; receipt can require `expected_body` and returns each member's current applicability. Treat obsolete members as historical evidence, not new work.
+Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and receipt-agent prefixes are accepted; ambiguous prefixes fail. Agent-facing receipt commands use the opaque dispatch ID and infer the recipient. Inspection returns the selected immutable revision, revision numbers, receipts and the latest 100 journal events. The complete journal remains stored. `GetAgentDigest`, `ListAgentDigests` and `AcknowledgeAgentDigest` are generated Connect RPCs; receipt can require `expected_body` and returns each member's current applicability. Treat obsolete members as historical evidence, not new work.
 
 The optional Codex hook acknowledges an exact incoming digest body before unread recovery. Automatic native history reconciliation also works without hooks. Neither path accepts or resolves the underlying actions. There is no model call, new agent session, setting change or mandatory PR submission in this path.
 
 
-Acknowledgment output is deliberately smaller than inspection: `record_json` now contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
+Acknowledgment output is deliberately smaller than inspection: the typed receipt contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
 
 PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.
 
-Merged PRs supersede outstanding actions and withdraw their queued notifications; immutable check snapshots, messages and receipts remain available as history. Startup reconciles existing actions against cached merged observations without a GitHub request. Closed, unmerged PRs still deliver final check failures while draining.
+Merged PRs supersede actions opened before merge and withdraw their queued notifications; actionable review feedback first observed after closure creates a separate delivery that remains applicable after archival. Immutable check snapshots, messages and receipts remain available as history. Startup reconciles existing actions against cached merged observations without a GitHub request. Closed, unmerged PRs still deliver final check failures while draining.
+
+
+A frozen revision can contain a validated merge target: PR, owner, tracking epoch, exact head, merge method, action, evidence-context and policy fingerprints. It is included only when the selected members contain one unambiguous owner Ready target. Changing that target creates another immutable dispatch even if the visible summary stays the same. [Receipt merges](receipt-merges.md) preserve separate receipt and merge outcomes; the public ID remains sufficient for either command.

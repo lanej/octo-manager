@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/diagram"
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func transitionStatus(kind string) (v1.JobStatus, bool) {

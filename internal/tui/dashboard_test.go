@@ -8,13 +8,13 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func TestEachTabDeclaresItsWholeResponsiveScreen(t *testing.T) {
 	t.Parallel()
 
-	for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel} {
+	for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
 		m := model(t, theme.Dark)
 		address := "https://github.com/owner/repo/pull/31"
 		m.snapshot.Jobs = []*v1.Job{prJob("run", address)}
@@ -84,7 +84,7 @@ func TestReadOnlyTabsCannotIssueWorkerControls(t *testing.T) {
 	t.Parallel()
 
 	m := model(t, theme.Dark)
-	for _, panel := range []panelView{reviewsPanel, trackingPanel, activityPanel, githubPanel} {
+	for _, panel := range []panelView{reviewsPanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
 		m.panel = panel
 		for _, key := range []string{"p", "c", "r"} {
 			if m.key(tea.KeyPressMsg{Code: rune(key[0]), Text: key}) != nil || m.commandPending {
@@ -162,5 +162,15 @@ func TestQueuedReviewCacheMissIsPendingAndRetainsExistingContent(t *testing.T) {
 
 	if !m.reviewLoading[address] || m.reviewErrors[address] != "" || m.reviews[address].GetTitle() != "Existing review" {
 		t.Fatal("queued refresh discarded cached view or became an error")
+	}
+}
+
+func TestInheritedAutoMergeLabel(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+
+	m.snapshot.MergeStatuses = []*v1.MergeStatus{{PrId: "pr", AutoMerge: true, State: "waiting_owner", ChainState: "active", AutoMergeSource: "inherited", AutoMergeStage: "alpha"}}
+	if got := m.automationLabel("pr"); got != "Auto-merge ON · inherited (alpha)" {
+		t.Fatalf("unexpected inherited label: %s", got)
 	}
 }

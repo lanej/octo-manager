@@ -1,4 +1,10 @@
 import { wireAssessment } from "./assessments/rpc.js";
+import { issueRoutes, wireIssue } from "./issues/rpc.js";
+import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
+import {mergeRoutes} from "./api/merge-routes.js";
+import {wire} from "./api/codec.js";
+import {DomainAgentDigestSchema,DomainDigestInspectionSchema,DomainMergeReceiptResultSchema,DomainArchivedSubmissionSchema,DomainArchivedSubmissionSummarySchema,DomainRepositoryPolicySchema} from "./gen/octomanager/v2/domain_pb.js";
+import {archiveSubmission,digestInspection} from "./api/projections.js";
 import {dashboardRoutes,wireScheduler,wireRefresh,wireDetails} from "./scheduling/rpc.js";
 import {digestReceipt} from "./notifications/receipt.js";
 import { complexity, renderTemplate } from "./submissions/contracts.js";
@@ -9,7 +15,7 @@ import { actionStates, wirePR, wireAction,wireAgent, wireDelivery, wireTracking,
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { setTimeout as delay } from "node:timers/promises";
-import { SchedulerService, JobSchema, AttemptSchema, JobEventSchema, SnapshotSchema, JobStatus, SchedulerState, WorkerState, type Task as WireTask } from "./gen/octomanager/v1/scheduler_pb.js";
+import { SchedulerService, JobSchema, AttemptSchema, JobEventSchema, SnapshotSchema, JobStatus, SchedulerState, WorkerState, type Task as WireTask } from "./gen/octomanager/v2/scheduler_pb.js";
 import { jobTransitions, parseTask, type Job, type JobEvent, type Status } from "./domain.js";
 import type { Coordinator } from "./coordinator.js";
 import { githubReads } from "./github-api.js";
@@ -37,10 +43,11 @@ export function wireSnapshot(coordinator: Coordinator) {
     instanceId: coordinator.store.instanceId(), sequence: BigInt(coordinator.store.sequence()),
     scheduler: { running: SchedulerState.RUNNING, paused: SchedulerState.PAUSED, stopping: SchedulerState.STOPPING, stopped: SchedulerState.STOPPED }[snapshot.scheduler],
     worker: { idle: WorkerState.IDLE, busy: WorkerState.BUSY, recovering: WorkerState.RECOVERING }[snapshot.worker],
+    issues: coordinator.store.issues.list().slice(0,50).map(issue=>wireIssue(issue,coordinator.store.issues.assignments(issue.id).at(-1))),
     tracking: wireTracking(coordinator.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
     githubScheduler:wireScheduler(coordinator.githubScheduler),
-    mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,chainState:coordinator.store.merging.chain(entry.chainId).state,autoMerge:entry.autoMerge,state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
+    mergeStatuses:coordinator.store.merging.entries().map(entry=>({prId:entry.prId,chainId:entry.chainId,chainState:coordinator.store.merging.chain(entry.chainId).state,autoMerge:entry.autoMerge,autoMergeSource:entry.autoMergeSource??"explicit",autoMergeStage:entry.autoMergeStage??"",state:entry.state,detail:entry.detail,prerequisiteUrls:coordinator.store.merging.dependencies().filter(edge=>edge.dependentId===entry.prId).map(edge=>coordinator.store.tracking.pr(edge.prerequisiteId).url)})),
     repairs: coordinator.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob), recentEvents: snapshot.events.map(wireEvent), recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
     allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) => targets.map(to => ({ from: statuses[from as Status], to: statuses[to] }))),
@@ -71,41 +78,47 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
   };
   router.service(SchedulerService, {
+    ...issueRoutes(coordinator.issues),
     ...dashboardRoutes(coordinator),
-    mergeCommand(r){return trackingOperation(()=>({resultJson:JSON.stringify(coordinator.merging.command(JSON.parse(r.inputJson)))}));},
+    getServerInfo(){return {apiVersion:2};},
+    ...mergeRoutes(coordinator),
     subscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.subscribe(r.id,owner(r.agent));return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     unsubscribePullRequest(r){return trackingOperation(()=>{const participants=tracking.store.unsubscribe(r.id,r.agentId);return {participants:participants.slice(0,20),total:participants.length,hasMore:participants.length>20};});},
     listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},
-    getAgentDigest(r) {return trackingOperation(()=>({recordJson:JSON.stringify(coordinator.digests.inspect(r.id,r.revision))}));},
-    listAgentDigests(r) {return {digestsJson:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>JSON.stringify(value))};},
-    acknowledgeAgentDigest(r) {return trackingOperation(()=>{
-      const messages=coordinator.digests.acknowledge(r.id,r.revision,r.agentId,r.expectedBody);
-      return digestReceipt(coordinator.digests,tracking.store,r.id,r.revision,messages);
+    mergeAgentMessage(r) {return trackingOperation(()=>{
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const version=coordinator.store.digests.delivery(r.receiptId);
+      const agentId=r.agentTarget===undefined?r.agentId:
+        tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      const recipient=r.agentId===""?agentId:coordinator.store.merging.actor(r.agentId);
+      coordinator.digests.acknowledge(version.digestId,version.revision,recipient);
+      const target=version.mergeTarget;
+      if(target===undefined)return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,state:"blocked",reason:"This message has no merge target"})};
+      const result=coordinator.store.merging.transaction(()=>coordinator.merging.receipts.request(target,version.dispatchId,recipient));
+      return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,...result})};
     });},
-    submitPullRequest(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(
-          coordinator.submissions.submit(JSON.parse(r.inputJson)),
-        ),
-      }));
-    },
+    getAgentDigest(r) {return trackingOperation(()=>{
+      if(r.receiptId!=="" && (r.id!=="" || r.revision!==undefined))throw new Error("Invalid mixed message receipt references");
+      const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
+      return {inspection:wire(DomainDigestInspectionSchema,digestInspection(coordinator.digests.inspect(version?.digestId??r.id,version?.revision??r.revision)))};
+    });},
+    listAgentDigests(r) {return {digests:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>wire(DomainAgentDigestSchema,value))};},
+    acknowledgeAgentDigest(r) {return trackingOperation(()=>{
+      if(r.receiptId!=="" && (r.id!=="" || r.revision!==0))throw new Error("Invalid mixed message receipt references");
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
+      const id=version?.digestId??r.id,number=version?.revision??r.revision;
+      const agentId=r.agentTarget===undefined?r.agentId:tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      const messages=coordinator.digests.acknowledge(id,number,agentId,r.expectedBody);
+      return digestReceipt(coordinator.digests,tracking.store,id,number,messages);
+    });},
     getSubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.store.submissions.get(r.id)),
+        submission: wire(DomainArchivedSubmissionSchema,archiveSubmission(coordinator.store.submissions.get(r.id))),
       }));
     },
-    listSubmissions() {
-      return {
-        submissionsJson: coordinator.store.submissions
-          .list()
-          .map((value) => JSON.stringify(value)),
-      };
-    },
-    retrySubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.submissions.retry(r.id)),
-      }));
-    },
-    cancelSubmission(r){return trackingOperation(()=>({
-        submissionJson: JSON.stringify(coordinator.submissions.cancel(r.id)),
-      }));
+    listSubmissions(r) {
+      const page = coordinator.store.submissions.summaryPage(r.beforeRowId === 0n ? Number.MAX_SAFE_INTEGER : Number(r.beforeRowId), r.limit === 0 ? 20 : r.limit);
+      return { submissions: page.items.map((value) => wire(DomainArchivedSubmissionSummarySchema,{id:value["id"],state:value["state"],detail:value["detail"],...(typeof value["url"]==="string"?{url:value["url"]}:{})})), nextBeforeRowId: BigInt(page.next ?? 0) };
     },
     getRepositoryPolicy(r){return trackingOperation(()=> {
         const policy = coordinator.store.submissions.policy(
@@ -119,7 +132,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
           );
         const tier = complexity(r.tier === "" ? "standard" : r.tier);
         return {
-          policyJson: JSON.stringify(policy),
+          policy: wire(DomainRepositoryPolicySchema,policy),
           template: renderTemplate(policy, tier),
         };
       });
@@ -127,10 +140,10 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     registerAgent(r){return trackingOperation(()=>({agent:wireAgent(tracking.registerAgent(owner(r.target)))}));},
     ...inboxRoutes(tracking.store),
     ...repairRoutes(coordinator.repairs),
-    ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent)),
-    async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner)))}));},
+    ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent), (before) => coordinator.store.activityBefore(before).map(wireEvent)),
+    async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner),r.cwd))}));},
     async listTrackedPullRequests(){return {prs:tracking.store.prs().map(wirePR)};},
-    async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id))}));},
+    async getTrackedPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.pr(r.id)),...(coordinator.store.repositories.get(tracking.store.pr(r.id).id)===undefined?{}:{repositoryPolicy:wire(DomainRepositoryAutomationPolicySchema,coordinator.store.repositories.get(tracking.store.pr(r.id).id))})}));},
     refreshTrackedPullRequest(r){return trackingOperation(()=>{tracking.requestRefresh(r.id);return {pr:wirePR(tracking.store.pr(r.id)),refresh:wireRefresh(coordinator.store.schedules.get(`tracking:${tracking.store.pr(r.id).id}`))};});},
     async assignPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.assign(r.id,owner(r.owner)))}));},
     async untrackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.untrack(r.id))}));},

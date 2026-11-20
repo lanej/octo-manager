@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func repairTone(state v1.RepairState) text.Tone {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func (m *Model) field(label, value string) string {
@@ -28,6 +28,10 @@ func webLink(value string) (text.Link, error) {
 		parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
 		if len(parts) == 4 && parts[2] == "commit" && validCommit(parts[3]) {
 			label = parts[0] + "/" + parts[1] + "@" + parts[3][:8]
+		}
+
+		if len(parts) == 4 && parts[2] == "issues" {
+			label = parts[0] + "/" + parts[1] + "#" + parts[3]
 		}
 
 		if len(parts) >= 5 && parts[2] == "actions" && parts[3] == "runs" {

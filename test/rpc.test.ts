@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { Coordinator } from '../src/coordinator.js';
 import { schedulerClient } from '../src/client.js';
-import { JobStatus } from '../src/gen/octomanager/v1/scheduler_pb.js';
+import { JobStatus } from '../src/gen/octomanager/v2/scheduler_pb.js';
 
 const code = (expected: Code) => (error: unknown) => error instanceof ConnectError && error.code === expected;
 test('generated Connect contract has typed failures, atomic snapshot cursors, replay and bounded pagination', async () => {

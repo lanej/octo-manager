@@ -45,6 +45,9 @@ export function migrateDigests(db: DatabaseSync): void {
 }
 
 export function migrateInbox(db: DatabaseSync): void {
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS issue_notices(sequence INTEGER PRIMARY KEY,id TEXT UNIQUE NOT NULL,issue_id TEXT NOT NULL,recipient_agent_id TEXT NOT NULL,body TEXT NOT NULL,created_at_ms INTEGER NOT NULL,acknowledged_at_ms INTEGER,next_check_at_ms INTEGER NOT NULL,applicable INTEGER NOT NULL)",
+  );
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (
     version === 7 ||
@@ -77,6 +80,7 @@ export function migrateInbox(db: DatabaseSync): void {
 
 export function migrateNotificationEvidence(db: DatabaseSync): void {
   db.exec(`BEGIN IMMEDIATE;
+    CREATE TABLE IF NOT EXISTS safe_notice_supersessions (original_id TEXT PRIMARY KEY, replacement_id TEXT NOT NULL) STRICT;
     CREATE TABLE IF NOT EXISTS safe_notice_replacements (original_id TEXT PRIMARY KEY, replacement_id TEXT NOT NULL UNIQUE) STRICT;
     CREATE TABLE IF NOT EXISTS safe_agent_notices (message_id TEXT PRIMARY KEY, notice_json TEXT NOT NULL CHECK(json_valid(notice_json))) STRICT;
     CREATE TRIGGER IF NOT EXISTS immutable_safe_notice BEFORE UPDATE ON safe_agent_notices BEGIN SELECT RAISE(ABORT,'Safe notification is immutable'); END;

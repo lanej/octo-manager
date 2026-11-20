@@ -24,6 +24,7 @@ export function boundedInput(
   prUrl: string,
   headSha: string,
   excerpt?: string,
+  epoch = 0,
 ): AssessmentInput {
   let evidence = JSON.stringify({
     blocker: action.blocker,
@@ -35,6 +36,7 @@ export function boundedInput(
     headSha,
     sourceKey: action.sourceKey,
     policyVersion,
+    epoch,
     evidence,
     truncated: false,
   };
@@ -80,6 +82,7 @@ export class AssessmentService {
     const action = this.tracking.store.action(item.input.actionId),
       pr = this.tracking.store.pr(action.prId);
     return (
+      item.input.epoch === pr.trackingEpoch &&
       pr.enabled &&
       unfinished(action) &&
       pr.observation?.headSha === item.input.headSha &&
@@ -108,7 +111,13 @@ export class AssessmentService {
         pr.observation !== undefined
       )
         this.store.ensure(
-          boundedInput(action, pr.url, pr.observation.headSha),
+          boundedInput(
+            action,
+            pr.url,
+            pr.observation.headSha,
+            undefined,
+            pr.trackingEpoch,
+          ),
           this.model,
         );
     }
@@ -146,6 +155,7 @@ export class AssessmentService {
           item.input.prUrl,
           item.input.headSha,
           excerpt,
+          item.input.epoch,
         );
       }
       if (this.stopped || !this.current(item)) return;
@@ -180,7 +190,15 @@ export class AssessmentService {
     const item = this.store.get(id);
     if (!this.current(item)) throw new Error("Assessment no longer applies");
     if (this.stopped) throw new Error("Coordinator is stopping");
-    return this.store.retry(id);
+    return this.tracking.store.transaction(() => {
+      const next = this.store.retry(id);
+      this.tracking.store.notifyAssessment(
+        this.tracking.store.action(item.input.actionId),
+        "pending",
+        { id: item.id, head: item.input.headSha },
+      );
+      return next;
+    });
   }
   async close(): Promise<void> {
     this.stopped = true;

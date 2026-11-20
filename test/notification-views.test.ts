@@ -76,13 +76,7 @@ test("digests group typed entries by PR while retaining each pinned commit and f
     label: "Role",
     value: "owner",
   });
-  const digest = renderDigest(
-    actionId,
-    1,
-    actionId,
-    [first, second],
-    "/tmp/synthetic",
-  );
+  const digest = renderDigest([first, second], "/tmp/synthetic", actionId);
   expect(digest.messageIds).toEqual([first.id, second.id]);
   expect(digest.body).toContain(`${pr}/commits/${"a".repeat(40)}`);
   expect(digest.body).toContain(`${pr}/commits/${"b".repeat(40)}`);
@@ -130,7 +124,9 @@ test("repository persistence preserves safe frozen bytes and independent receipt
     const stored = store.tracking.inbox.get(delivery.id);
     if (stored === undefined) throw new Error("Missing frozen message");
     expect(store.tracking.inbox.automatic(stored).body).toBe(frozen);
-    expect(store.notificationRepository.notice(delivery.id)).toEqual(notice);
+    expect(store.notificationRepository.notice(delivery.id)).toMatchObject(
+      notice,
+    );
     const received = store.tracking.acknowledgeMessage(
       delivery.id,
       prRecord.ownerAgentId,

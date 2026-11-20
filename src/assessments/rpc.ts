@@ -1,7 +1,7 @@
 import {
   AssessmentState,
   AssessmentDisposition,
-} from "../gen/octomanager/v1/tracking_pb.js";
+} from "../gen/octomanager/v2/tracking_pb.js";
 import type { Assessment, AssessmentResult } from "./contracts.js";
 const states: Record<Assessment["state"], AssessmentState> = {
   pending: AssessmentState.PENDING,

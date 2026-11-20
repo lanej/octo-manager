@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
-import { AssessmentState } from "../src/gen/octomanager/v1/tracking_pb.js";
+import { AssessmentState } from "../src/gen/octomanager/v2/tracking_pb.js";
 import { ActionState, type ObservationInput } from "../src/tracking/types.js";
 test("versioned API keeps untrusted evidence behind full inspection and assessment stays advisory", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-security-api-"));

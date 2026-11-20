@@ -13,7 +13,7 @@ The report command exits unsuccessfully if the acceptance conditions fail. It wr
 
 ## Method
 
-The baseline is commit `3142760ac951c667bde382044d1814cbdec3a682`. Preserved [message](../test/fixtures/security-before/message.ts) and [digest](../test/fixtures/security-before/digest.ts) renderers represent the old owner-context exposure; their [provenance](../test/fixtures/security-before/provenance.json) records the original source-file hashes and adaptations. Shared pure helpers are reused from the current source tree and were unchanged from the baseline in this run. This is a historical rendering replay rather than a complete deployment of the old coordinator.
+The baseline is commit `3142760ac951c667bde382044d1814cbdec3a682`. Preserved [message](../test/fixtures/security-before/message.ts) and [digest](../test/fixtures/security-before/digest.ts) renderers represent the old owner-context exposure; their [provenance](../test/fixtures/security-before/provenance.json) records the original source-file hashes and adaptations. Shared pure helpers are reused from the current source tree; their current behavior participates in the replay. This is a historical rendering replay rather than a complete deployment of the old coordinator.
 
 Both sides receive this same feedback:
 

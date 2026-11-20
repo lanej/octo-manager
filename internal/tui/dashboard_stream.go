@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 type dashboardOpened struct {

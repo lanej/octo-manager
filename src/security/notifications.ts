@@ -1,3 +1,5 @@
+import { EntryState } from "../merging/contracts.js";
+import { IssueStage, Waiting } from "../issues/contracts.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { Action } from "../tracking/types.js";
 import { successfulCheck } from "../tracking/checks.js";
@@ -8,6 +10,17 @@ import { Check } from "typebox/value";
 export const NoticeSchema = Type.Object(
   {
     version: Type.Literal(1),
+    references: Type.Optional(
+      Type.Object(
+        {
+          message: Type.String(),
+          action: Type.String(),
+          assessment: Type.Optional(Type.String()),
+          subject: Type.Optional(Type.String()),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     kind: Type.Union([
       Type.Literal("conflict"),
       Type.Literal("check_failed"),
@@ -19,9 +32,14 @@ export const NoticeSchema = Type.Object(
       Type.Literal("submission"),
       Type.Literal("merge"),
       Type.Literal("update"),
+      Type.Literal("issue"),
     ]),
     prUrl: Type.Optional(Type.String()),
     head: Type.Optional(Type.String()),
+    mergeState: Type.Optional(Type.Enum(EntryState)),
+    issueStage: Type.Optional(Type.Enum(IssueStage)),
+    issueWaiting: Type.Optional(Type.Enum(Waiting)),
+    issueRevision: Type.Optional(Type.String()),
     assessmentId: Type.Optional(Type.String()),
     subject: Type.Optional(
       Type.Object(
@@ -30,6 +48,8 @@ export const NoticeSchema = Type.Object(
             Type.Literal("submission"),
             Type.Literal("merge_entry"),
             Type.Literal("reference"),
+            Type.Literal("issue"),
+            Type.Literal("action"),
           ]),
           id: Type.String(),
         },
@@ -60,6 +80,7 @@ const labels: Record<SafeNotice["kind"], string> = {
   submission: "Submission update",
   merge: "Merge workflow update",
   update: "Octo update",
+  issue: "Issue update",
 };
 export function noticeLabel(notice: SafeNotice): string {
   return labels[notice.kind];
@@ -124,7 +145,10 @@ export interface NoticeField {
     | "Submission"
     | "Merge entry"
     | "Reference"
-    | "Action";
+    | "Action"
+    | "Issue"
+    | "Issue stage"
+    | "Waiting";
   value: string;
 }
 export interface NoticeView {
@@ -159,28 +183,49 @@ export function noticeView(
   const fields: NoticeField[] = [
     { label: "Assessment", value: notice.assessment },
   ];
+  if (notice.issueStage !== undefined)
+    fields.push({ label: "Issue stage", value: notice.issueStage });
+  if (notice.issueWaiting !== undefined && notice.issueWaiting !== Waiting.None)
+    fields.push({ label: "Waiting", value: notice.issueWaiting });
   if (notice.role !== undefined)
     fields.push({ label: "Role", value: notice.role });
   if (notice.assessmentId !== undefined)
     fields.push({
       label: "Assessment record",
-      value: id(notice.assessmentId, []),
+      value: notice.references?.assessment ?? id(notice.assessmentId, []),
     });
-  if (notice.subject !== undefined)
+  if (notice.subject !== undefined && notice.subject.kind !== "action")
     fields.push({
       label:
-        notice.subject.kind === "submission"
-          ? "Submission"
-          : notice.subject.kind === "merge_entry"
-            ? "Merge entry"
-            : "Reference",
-      value: id(notice.subject.id, []),
+        notice.subject.kind === "issue"
+          ? "Issue"
+          : notice.subject.kind === "submission"
+            ? "Submission"
+            : notice.subject.kind === "merge_entry"
+              ? "Merge entry"
+              : "Reference",
+      value: notice.references?.subject ?? id(notice.subject.id, []),
     });
   fields.push({
     label: "Action",
-    value: actionId === "" ? "none" : id(actionId, identities?.actions ?? []),
+    value:
+      notice.subject?.kind === "action"
+        ? (notice.references?.subject ??
+          id(notice.subject.id, identities?.actions ?? []))
+        : actionId === ""
+          ? "none"
+          : (notice.references?.action ??
+            id(actionId, identities?.actions ?? [])),
   });
-  return { group, reference, title: noticeLabel(notice), fields };
+  return {
+    group,
+    reference,
+    title:
+      notice.mergeState === EntryState.Merged
+        ? "GitHub confirmed merge"
+        : noticeLabel(notice),
+    fields,
+  };
 }
 export function renderReference(reference: NoticeReference): string {
   return reference.url === undefined
@@ -194,9 +239,11 @@ export function renderNotice(
   identities?: { actions: string[]; messages: string[] },
 ): string {
   const view = noticeView(notice, actionId, identities);
-  const id = /^[a-f0-9-]{8,36}$/u.test(messageId)
-    ? shortId(messageId, identities?.messages ?? [])
-    : "unavailable";
+  const id =
+    notice.references?.message ??
+    (/^[a-f0-9-]{8,36}$/u.test(messageId)
+      ? shortId(messageId, identities?.messages ?? [])
+      : "unavailable");
   return [
     `[octo-delivery:${id}]`,
     "[octo-notice:v1]",

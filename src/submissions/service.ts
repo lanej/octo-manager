@@ -49,6 +49,7 @@ function alive(pid: number): boolean {
   }
 }
 export interface SubmissionOptions {
+  allowLegacyExecution?: boolean;
   github?: SubmissionGitHub;
   run?: RunStage;
   instructions?: typeof stageInstructions;
@@ -67,6 +68,7 @@ export class SubmissionService {
     private options: SubmissionOptions = {},
   ) {
     this.github = options.github ?? new GitHubSubmissions();
+    if (options.allowLegacyExecution !== true) return;
     for (const value of store.list())
       if (!terminal.has(value.state) && value.state !== State.Queued)
         store.save({
@@ -80,6 +82,21 @@ export class SubmissionService {
         });
   }
   start(): void {
+    if (this.options.allowLegacyExecution !== true) {
+      for (const value of this.store.list()) {
+        if (
+          [State.Queued, State.Analyzing, State.Writing].includes(value.state)
+        ) {
+          this.store.save({
+            ...value,
+            state: State.NeedsInput,
+            detail:
+              "Legacy drafting retired. Read pr-description and submit the final title/body with submit-pr.",
+          });
+        }
+      }
+      return;
+    }
     for (const value of this.store.list())
       if (
         terminal.has(value.state) &&
@@ -92,7 +109,38 @@ export class SubmissionService {
     }, 1000);
     this.tick();
   }
+  reconcileLegacy(now: number): void {
+    if (
+      this.options.allowLegacyExecution === true ||
+      this.stopped ||
+      this.active !== undefined
+    )
+      return;
+    const value = this.store
+      .list()
+      .find(
+        (item) =>
+          item.brief !== undefined &&
+          [State.Uncertain, State.Publishing, State.Enrolling].includes(
+            item.state,
+          ) &&
+          this.store.reconciliation(item.id).nextAt <= now,
+      );
+    if (value === undefined) return;
+    const previous = this.store.reconciliation(value.id),
+      delays = [60000, 300000, 900000];
+    this.store.deferReconciliation(
+      value.id,
+      previous.attempts + 1,
+      now + (delays[previous.attempts] ?? 3600000),
+    );
+    this.retry(value.id);
+  }
   submit(raw: unknown): Submission {
+    if (this.options.allowLegacyExecution !== true)
+      throw new Error(
+        "Legacy drafting retired; run pr init, pr validate, then submit-pr --title TITLE --body-file FILE.",
+      );
     if (this.stopped) throw new Error("Coordinator is stopping");
     if (Buffer.byteLength(JSON.stringify(raw)) > 12000)
       throw new Error("Submission input exceeds 12000 bytes");
@@ -109,6 +157,57 @@ export class SubmissionService {
   }
   retry(id: string): Submission {
     const value = this.store.get(id);
+    if (this.options.allowLegacyExecution !== true) {
+      if (
+        value.brief === undefined ||
+        ![State.Uncertain, State.Publishing, State.Enrolling].includes(
+          value.state,
+        )
+      )
+        throw new Error(
+          "Legacy drafting is retired; submit a caller-written title/body.",
+        );
+      if (this.active !== undefined)
+        throw new Error("A legacy reconciliation is already active.");
+      const abort = new AbortController();
+      const active = { id, abort, work: Promise.resolve() };
+      this.active = active;
+      active.work = this.github
+        .find(
+          value.request,
+          `<!-- octo-submission:${id} -->`,
+          AbortSignal.any([abort.signal, AbortSignal.timeout(15000)]),
+        )
+        .then((published) => {
+          if (published === undefined)
+            this.store.save({
+              ...value,
+              state: State.Uncertain,
+              detail:
+                "No matching PR confirmed; inspect GitHub before a new submission.",
+            });
+          else {
+            this.verifyPublished(
+              value,
+              published,
+              `<!-- octo-submission:${id} -->`,
+            );
+            this.enroll(id, published.url);
+          }
+        })
+        .catch(() => {
+          this.store.save({
+            ...value,
+            state: State.Uncertain,
+            detail:
+              "Legacy publication could not be confirmed; retry reconciliation.",
+          });
+        })
+        .finally(() => {
+          this.active = undefined;
+        });
+      return value;
+    }
     if (
       this.stopped ||
       this.active?.id === value.id ||

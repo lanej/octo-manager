@@ -34,27 +34,34 @@ export class AssessmentStore {
     return item;
   }
   latest(actionId: string): Assessment | undefined {
-    return this.list()
-      .filter((item) => item.input.actionId === actionId)
-      .at(-1);
+    const row = this.db
+      .prepare(
+        "SELECT data FROM evidence_assessments WHERE action_id=? ORDER BY rowid DESC LIMIT 1",
+      )
+      .get(actionId);
+    return row === undefined
+      ? undefined
+      : assessment(JSON.parse(String(row["data"])));
   }
   ensure(input: AssessmentInput, model: string): Assessment {
+    const row = this.db
+      .prepare(
+        "SELECT data FROM evidence_assessments WHERE action_id=? AND json_extract(data,'$.state')!='superseded' AND json_extract(data,'$.input.sourceKey')=? AND json_extract(data,'$.input.headSha')=? AND COALESCE(json_extract(data,'$.input.epoch'),-1)=? ORDER BY rowid DESC LIMIT 1",
+      )
+      .get(input.actionId, input.sourceKey, input.headSha, input.epoch ?? -1);
+    if (row !== undefined) return assessment(JSON.parse(String(row["data"])));
     const fingerprint = createHash("sha256")
       .update(
         JSON.stringify({
           actionId: input.actionId,
           sourceKey: input.sourceKey,
           headSha: input.headSha,
+          epoch: input.epoch,
           policyVersion,
+          previous: this.latest(input.actionId)?.id,
         }),
       )
       .digest("hex");
-    const previous = this.list().find(
-      (item) =>
-        item.input.actionId === input.actionId &&
-        item.fingerprint === fingerprint,
-    );
-    if (previous !== undefined) return previous;
     const item: Assessment = {
       id: randomUUID(),
       input,

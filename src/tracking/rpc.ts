@@ -1,6 +1,15 @@
 import { actionNotice, noticeLabel } from "../security/notifications.js";
+import { wire } from "../api/codec.js";
+import {
+  DomainCheckRecordSchema,
+  DomainCheckEvidenceSchema,
+  DomainReviewEvidenceSchema,
+  DomainFeedbackEvidenceSchema,
+  DomainDeliveryProgressSchema,
+  DomainDeliveryOutcomeSchema,
+} from "../gen/octomanager/v2/domain_pb.js";
 import { TrackingState } from "./retirement.js";
-import { TrackingState as WireTrackingState } from "../gen/octomanager/v1/tracking_pb.js";
+import { TrackingState as WireTrackingState } from "../gen/octomanager/v2/tracking_pb.js";
 import { CheckWatchState, type CheckWatch } from "./checks.js";
 import type { AgentMessage } from "./inbox.js";
 import { create } from "@bufbuild/protobuf";
@@ -14,7 +23,7 @@ import {
   TrackingSnapshotSchema,
   ActionState as WireActionState,
   DeliveryState as WireDeliveryState,
-} from "../gen/octomanager/v1/tracking_pb.js";
+} from "../gen/octomanager/v2/tracking_pb.js";
 import {
   ActionState,
   DeliveryState,
@@ -48,7 +57,7 @@ export function wireCheckWatch(watch: CheckWatch) {
   return {
     ...watch,
     state: checkWatchStates[watch.state],
-    evidenceJson: JSON.stringify(watch.evidence),
+    evidence: wire(DomainCheckEvidenceSchema, watch.evidence),
     createdAtMs: BigInt(watch.createdAt),
     updatedAtMs: BigInt(watch.updatedAt),
   };
@@ -88,14 +97,24 @@ export function wirePR(p: TrackedPR) {
           targetBase: p.observation.targetBase,
           lifecycle: p.observation.lifecycle,
           mergeability: p.observation.mergeability,
-          checksJson: JSON.stringify(p.observation.checks),
-          reviewsJson: JSON.stringify(p.observation.reviews),
+          checks: wire(DomainCheckEvidenceSchema, p.observation.checks),
+          reviews: wire(DomainReviewEvidenceSchema, p.observation.reviews),
           ...(p.observation.workflows === undefined
             ? {}
-            : { workflowsJson: JSON.stringify(p.observation.workflows) }),
+            : {
+                workflows: wire(
+                  DomainCheckEvidenceSchema,
+                  p.observation.workflows,
+                ),
+              }),
           ...(p.observation.feedback === undefined
             ? {}
-            : { feedbackJson: JSON.stringify(p.observation.feedback) }),
+            : {
+                feedback: wire(
+                  DomainFeedbackEvidenceSchema,
+                  p.observation.feedback,
+                ),
+              }),
         }
       : undefined,
   });
@@ -149,7 +168,9 @@ export function wireAction(a: Action, full = false) {
                   watchId: b.watchId,
                   headSha: b.headSha,
                   state: checkWatchStates[b.state],
-                  checksJson: JSON.stringify(b.checks),
+                  checks: b.checks.map((check) =>
+                    wire(DomainCheckRecordSchema, check),
+                  ),
                   ...(b.replacementHeadSha === undefined
                     ? {}
                     : { replacementHeadSha: b.replacementHeadSha }),
@@ -190,7 +211,7 @@ export function wireDelivery(d: Delivery, message?: AgentMessage) {
     ...(message?.acknowledgedAt === undefined
       ? {}
       : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
-    progressJson: JSON.stringify(d.progress),
+    progress: wire(DomainDeliveryProgressSchema, d.progress),
     createdAtMs: BigInt(d.createdAt),
     updatedAtMs: BigInt(d.updatedAt),
   });
@@ -227,7 +248,7 @@ export function wireTracking(service: TrackingService) {
       number: a.number,
       startedAtMs: BigInt(a.startedAt),
       harnessVersion: a.harnessVersion,
-      outcomeJson: JSON.stringify(a.outcome),
+      outcome: wire(DomainDeliveryOutcomeSchema, a.outcome),
     })),
   });
 }

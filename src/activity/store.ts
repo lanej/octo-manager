@@ -93,7 +93,14 @@ export class ActivityStore {
       throw error;
     }
   }
-  list(after: number): ActivityReport[] {
+  list(after: number, before?: number): ActivityReport[] {
+    if (before !== undefined)
+      return this.db
+        .prepare(
+          "SELECT * FROM agent_activity WHERE sequence<? ORDER BY sequence DESC LIMIT 200",
+        )
+        .all(integer(before))
+        .map(report);
     return this.db
       .prepare(
         "SELECT * FROM agent_activity WHERE sequence>? ORDER BY sequence LIMIT 200",

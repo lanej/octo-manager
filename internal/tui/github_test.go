@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 func usageExample() *v1.GitHubReadUsage {
@@ -25,6 +25,15 @@ func usageExample() *v1.GitHubReadUsage {
 		usage.Minutes = append(usage.Minutes, &v1.GitHubReadMinute{StartedAtMs: usage.GetStartedAtMs() + int64(i)*60000, Rest: uint64(3 + i%7), Graphql: uint64(i % 3), CacheReuses: uint64(i % 5)})
 	}
 
+	hour := &v1.GitHubReadHour{StartedAtMs: time.UnixMilli(usage.GetStartedAtMs()).Truncate(time.Hour).UnixMilli()}
+	for _, minute := range usage.GetMinutes() {
+		hour.Rest += minute.GetRest()
+		hour.Graphql += minute.GetGraphql()
+		hour.CacheReuses += minute.GetCacheReuses()
+	}
+
+	usage.Hours = []*v1.GitHubReadHour{hour}
+
 	return usage
 }
 
@@ -36,7 +45,7 @@ func TestGitHubViewKeepsQuotaTrafficAndUncertaintyDistinct(t *testing.T) {
 	m.Resize(layout.Size{Width: 132, Height: 42})
 
 	content := ansi.Strip(m.githubContent(124))
-	for _, value := range []string{"4200 / 5000 remaining", "84.0%", "4900 / 5000 remaining", "Shared authentication budget", "GraphQL uses points", "205 attempts", "60 cache reuses", "current minute is partial", "REST attempts", "GraphQL attempts"} {
+	for _, value := range []string{"4200 / 5000 remaining", "84.0%", "4900 / 5000 remaining", "Shared authentication budget", "GraphQL uses points", "205 attempts", "60 cache reuses", "current hour is partial", "REST attempts", "GraphQL attempts"} {
 		if !strings.Contains(content, value) {
 			t.Fatalf("missing %q in %s", value, content)
 		}
@@ -69,15 +78,15 @@ func TestGitHubViewKeepsQuotaTrafficAndUncertaintyDistinct(t *testing.T) {
 	}
 }
 
-func TestRequestSeriesPreservesCountsAndMinuteTimes(t *testing.T) {
+func TestRequestSeriesPreservesCountsAndHourTimes(t *testing.T) {
 	t.Parallel()
 
-	minutes := []*v1.GitHubReadMinute{
-		{StartedAtMs: 120000, Rest: 7, Graphql: 2, CacheReuses: 4},
-		{StartedAtMs: 180000, Rest: 3, Graphql: 0, CacheReuses: 1},
+	hours := []*v1.GitHubReadHour{
+		{StartedAtMs: 3600000, Rest: 7, Graphql: 2, CacheReuses: 4},
+		{StartedAtMs: 7200000, Rest: 3, Graphql: 0, CacheReuses: 1},
 	}
 
-	series, peak := requestSeries(minutes)
+	series, peak := requestSeries(hours)
 	if peak != 7 || len(series) != 3 {
 		t.Fatal("incorrect chart range or series")
 	}
@@ -85,7 +94,7 @@ func TestRequestSeriesPreservesCountsAndMinuteTimes(t *testing.T) {
 	expected := [3][2]float64{{7, 3}, {2, 0}, {4, 1}}
 	for i, values := range expected {
 		if len(series[i].Points) != 2 || series[i].Points[0].Value != values[0] || series[i].Points[1].Value != values[1] ||
-			series[i].Points[0].Time.UnixMilli() != 120000 || series[i].Points[1].Time.UnixMilli() != 180000 {
+			series[i].Points[0].Time.UnixMilli() != 3600000 || series[i].Points[1].Time.UnixMilli() != 7200000 {
 			t.Fatal("chart changed supplied count or observation time")
 		}
 	}
@@ -187,5 +196,64 @@ func TestGitHubForecastDistinguishesRiskCapacityAndUnknownHistory(t *testing.T) 
 	m.snapshot.GithubUsage.Rest.Forecast = &v1.GitHubQuotaForecast{State: v1.GitHubForecastState_GIT_HUB_FORECAST_STATE_UNKNOWN, Reason: "Quota observation is stale"}
 	if !strings.Contains(ansi.Strip(m.githubContent(124)), "Quota observation is stale") {
 		t.Fatal("stale forecast presented as current")
+	}
+}
+
+func TestHourlyTrafficWindowKeepsPreviousHourAtRollover(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+	m.location = time.UTC
+	m.panel = githubPanel
+
+	m.snapshot.GithubUsage = &v1.GitHubReadUsage{SampledAtMs: 10799000, Hours: []*v1.GitHubReadHour{{StartedAtMs: 3600000, Rest: 7}, {StartedAtMs: 7200000, Rest: 4}}}
+	if err := m.SetGitHubHours(2); err != nil {
+		t.Fatal(err)
+	}
+
+	m.Resize(layout.Size{Width: 132, Height: 60})
+	m.snapshot.GithubUsage.SampledAtMs = 10800000
+	m.snapshot.GithubUsage.Hours = append(m.snapshot.GithubUsage.Hours, &v1.GitHubReadHour{StartedAtMs: 10800000})
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	content := ansi.Strip(m.githubContent(124))
+	for _, want := range []string{"Last 2 hourly buckets", "01-01 02:00 +0000 · REST 4", "01-01 03:00 +0000 · REST 0", "current hour is partial", "complete"} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("missing %q after hour rollover", want)
+		}
+	}
+
+	if strings.Contains(content, "01-01 01:00 +0000 · REST 7") {
+		t.Fatal("history ignored the configured window")
+	}
+
+	for _, invalid := range []int{0, -1, MaxGitHubHours + 1} {
+		if m.SetGitHubHours(invalid) == nil || m.githubHours != 2 {
+			t.Fatal("invalid history size changed the window")
+		}
+	}
+
+	if m.usageChart.plot.View() == "" {
+		t.Fatal("rollover blanked the retained chart")
+	}
+}
+
+func TestHourlyTrafficDistinguishesRepeatedLocalHour(t *testing.T) {
+	t.Parallel()
+	m := model(t, theme.Dark)
+
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m.location = location
+	first := time.Date(2026, time.November, 1, 8, 0, 0, 0, time.UTC).UnixMilli()
+	usage := &v1.GitHubReadUsage{StartedAtMs: first, SampledAtMs: first + 5400000, Hours: []*v1.GitHubReadHour{{StartedAtMs: first, Rest: 7}, {StartedAtMs: first + 3600000, Rest: 4}}}
+
+	content := ansi.Strip(m.hourlyTotals(usage.GetHours(), usage))
+	for _, want := range []string{"11-01 01:00 -0700 · REST 7", "11-01 01:00 -0800 · REST 4"} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("hourly log lost DST identity %q", want)
+		}
 	}
 }

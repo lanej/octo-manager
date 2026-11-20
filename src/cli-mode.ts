@@ -7,6 +7,8 @@ export function agentMode(explicit: boolean, env: NodeJS.ProcessEnv): boolean {
   );
 }
 const reads = new Set([
+  "issue-list",
+  "issue-show",
   "chains",
   "references",
   "dependencies",
@@ -18,7 +20,9 @@ const reads = new Set([
   "assessment",
   "tracking",
   "inbox",
+  "agents",
   "digest",
+  "message",
   "digests",
   "participants",
   "activity",
@@ -28,9 +32,19 @@ const reads = new Set([
   "submission",
   "submissions",
   "events",
+  "legacy-submissions",
+  "legacy-submission",
+  "legacy-policy",
 ]);
 export function readOnlyCommand(positionals: string[]): boolean {
   const command = positionals[0] ?? "";
+  if (command === "pr" && ["init", "refresh"].includes(positionals[1] ?? ""))
+    return false;
+  if (
+    command === "pr" &&
+    ["init", "refresh", "validate"].includes(positionals[1] ?? "")
+  )
+    return false;
   return (
     reads.has(command) ||
     (command === "repo-policy" &&

@@ -23,6 +23,7 @@ export const InputSchema = Type.Object(
     headSha: Type.String(),
     sourceKey: Type.String(),
     policyVersion: Type.Literal(1),
+    epoch: Type.Optional(Type.Integer()),
     evidence: Type.String(),
     truncated: Type.Boolean(),
   },

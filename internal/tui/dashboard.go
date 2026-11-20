@@ -9,7 +9,7 @@ import (
 	"github.com/lanej/charmed/navigation"
 	"github.com/lanej/charmed/text"
 	charmedui "github.com/lanej/charmed/tui"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 type dashboardTab struct {
@@ -29,6 +29,8 @@ func tabDefinition(panel panelView) dashboardTab {
 		return dashboardTab{id: "tracking", label: "4 Tracking", title: "PR TRACKING", purpose: "See ownership, blockers and the next merge step", region: "pr-tracking"}
 	case activityPanel:
 		return dashboardTab{id: "agent-activity", label: "5 Activity", title: "AGENT ACTIVITY", purpose: "Follow reported agent operations across sessions", region: "agent-activity", global: true}
+	case issuesPanel:
+		return dashboardTab{id: "issues", label: "7 Issues", title: "ISSUE LIFECYCLE", purpose: "Coordinate investigation, implementation and acceptance", region: "issue-lifecycle", global: true}
 	case githubPanel:
 		return dashboardTab{id: "github", label: "6 GitHub", title: "GITHUB BUDGET", purpose: "Check API consumption, cooldowns and quota forecasts", region: "github-budget", global: true}
 	default:
@@ -87,17 +89,33 @@ func (m *Model) dashboardRecipe() layout.Node {
 	return &layout.Responsive{Name: "dashboard-" + tab.id, Variants: []layout.Variant{wide, focused, {Name: "recovery", Root: emergency, Hidden: hidden}}}
 }
 
+type dashboardLayoutKey struct {
+	panel        panelView
+	expanded     bool
+	headerHeight int
+}
+
 func (m *Model) dashboardScreen() (*charmedui.Screen, error) {
-	screen, err := charmedui.NewScreen("header", "navigation", "context", "pull-requests", m.tab().region, "worker", "footer", "notice")
-	if err != nil {
+	key := dashboardLayoutKey{panel: m.panel, expanded: m.expanded, headerHeight: len(m.header())}
+	if m.screen == nil || m.layoutKey != key {
+		screen, err := charmedui.NewScreen("header", "navigation", "context", "pull-requests", m.tab().region, "worker", "footer", "notice")
+		if err != nil {
+			return nil, err
+		}
+
+		compiled, err := layout.Compile(m.dashboardRecipe())
+		if err != nil {
+			return nil, err
+		}
+
+		m.screen, m.compiled, m.layoutKey = screen, compiled, key
+	}
+
+	if err := m.screen.ArrangeCompiled(m.compiled, layout.Size{Width: max(1, m.size.Width), Height: max(1, m.size.Height)}); err != nil {
 		return nil, err
 	}
 
-	if err = screen.Arrange(m.dashboardRecipe(), layout.Size{Width: max(1, m.size.Width), Height: max(1, m.size.Height)}); err != nil {
-		return nil, err
-	}
-
-	return screen, nil
+	return m.screen, nil
 }
 
 func (m *Model) dashboardContext(width int) string {
@@ -119,10 +137,12 @@ func (m *Model) dashboardContext(width int) string {
 		detail = "Dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_") + " · worker " + stateName(m.snapshot.GetWorker().String(), "WORKER_STATE_")
 	case activityPanel:
 		detail = "All sessions · named operations, outcomes and related PRs"
+	case issuesPanel:
+		detail = "h/l select issue · j/k scroll · CLI records approvals and answers"
 	case githubPanel:
 		detail = m.githubSummary()
 	default:
-		detail = "Choose a tab using 1–6"
+		detail = "Choose a tab using 1–7"
 	}
 
 	return layout.Fit(ansi.Truncate(m.theme.Subtle().Render(tab.purpose), width, "…")+"\n"+ansi.Truncate(text.Label(detail, m.theme), width, "…"), layout.Size{Width: width, Height: 2})
@@ -135,81 +155,87 @@ func (m *Model) dashboardView() string {
 	}
 
 	tab := m.tab()
-	views := map[string]string{}
+	views := map[string]charmedui.RegionView{}
 
 	for _, region := range screen.Plan().Regions() {
-		size := layout.Size{Width: region.Bounds.Dx(), Height: region.Bounds.Dy()}
-		switch region.ID {
-		case "header":
-			views[region.ID] = strings.Join(m.header(), "\n")
-		case "navigation":
-			items := []navigation.Tab{}
+		id := region.ID
+		input := m.regionInput(id)
+		revision := m.memo("region:" + id).update(input)
+		views[id] = charmedui.RegionView{Revision: revision, Render: func(size layout.Size) string {
+			switch id {
+			case "header":
+				return strings.Join(m.header(), "\n")
+			case "navigation":
+				items := []navigation.Tab{}
 
-			for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel} {
-				definition := tabDefinition(panel)
-				items = append(items, navigation.Tab{ID: definition.id, Label: definition.label})
-			}
-
-			tabs := navigation.NewTabs(items, m.theme)
-			tabs.Select(tab.id)
-			tabs.SetWidth(size.Width)
-			views[region.ID] = tabs.View()
-		case "context":
-			views[region.ID] = m.dashboardContext(size.Width)
-		case "pull-requests":
-			views[region.ID] = m.queue(geometry{left: size.Width, body: size.Height})
-		case "worker":
-			inner := layout.PanelContentSize(size)
-			lines := m.workerLines()
-
-			worker := strings.Join(lines, "\n")
-			if inner.Height > len(lines) {
-				worker += "\n" + m.activity.View()
-			}
-
-			views[region.ID] = layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, size, m.theme, m.focus.Current() == "activity")
-		case "footer":
-			views[region.ID] = (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
-		case "notice":
-			notice := "j/k PRs · u refresh · 1–6 tabs · q quit"
-			if m.panel == trackingPanel {
-				notice = "j/k PRs · a auto-merge · 1–6 tabs · q quit"
-			} else if tab.global {
-				notice = "j/k scroll · u refresh · 1–6 tabs · q quit"
-			}
-
-			if size.Width < 80 {
-				notice = "1–6 tabs · q quit · j/k PRs"
-				if m.panel == trackingPanel {
-					notice = "a auto-merge · 1–6 tabs · q quit"
-				} else if tab.global {
-					notice = "j/k scroll · 1–6 tabs · q quit"
+				for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
+					definition := tabDefinition(panel)
+					items = append(items, navigation.Tab{ID: definition.id, Label: definition.label})
 				}
-			} else if tab.worker {
-				notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–6 tabs · q quit"
-			}
 
-			if m.connectionError != "" {
-				notice = m.connectionError
-			}
+				tabs := navigation.NewTabs(items, m.theme)
+				tabs.Select(tab.id)
+				tabs.SetWidth(size.Width)
 
-			if m.commandError != "" {
-				notice = m.commandError
-			}
+				return tabs.View()
+			case "context":
+				return m.dashboardContext(size.Width)
+			case "pull-requests":
+				return m.queue(geometry{left: size.Width, body: size.Height})
+			case "worker":
+				inner := layout.PanelContentSize(size)
+				lines := m.workerLines()
 
-			if screen.Plan().Variant() == "recovery" {
-				notice = strings.Repeat("\n", max(0, size.Height-1)) + "q quit"
-			}
+				worker := strings.Join(lines, "\n")
+				if inner.Height > len(lines) {
+					worker += "\n" + m.activity.View()
+				}
 
-			views[region.ID] = layout.Fit(m.theme.Subtle().Render(notice), size)
-		default:
-			bar := feedback.Scrollbar{Total: m.result.TotalLineCount(), Visible: m.result.Height(), Offset: m.result.YOffset(), Height: m.result.Height()}
-			content := layout.Row(m.result.View(), bar.View(m.theme))
-			views[region.ID] = layout.Panel(tab.title, content, size, m.theme, m.focus.Current() == "result")
-		}
+				return layout.Panel("WORKER · recent tools · "+m.zoneLabel(), worker, size, m.theme, m.focus.Current() == "activity")
+			case "footer":
+				return (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
+			case "notice":
+				notice := "j/k PRs · u refresh · 1–7 tabs · q quit"
+				if m.panel == trackingPanel {
+					notice = "j/k PRs · a auto-merge · 1–7 tabs · q quit"
+				} else if tab.global {
+					notice = "j/k scroll · u refresh · 1–7 tabs · q quit"
+				}
+
+				if size.Width < 80 {
+					notice = "1–7 tabs · q quit · j/k PRs"
+					if m.panel == trackingPanel {
+						notice = "a auto-merge · 1–7 tabs · q quit"
+					} else if tab.global {
+						notice = "j/k scroll · 1–7 tabs · q quit"
+					}
+				} else if tab.worker {
+					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–7 tabs · q quit"
+				}
+
+				if m.connectionError != "" {
+					notice = m.connectionError
+				}
+
+				if m.commandError != "" {
+					notice = m.commandError
+				}
+
+				if screen.Plan().Variant() == "recovery" {
+					notice = strings.Repeat("\n", max(0, size.Height-1)) + "q quit"
+				}
+
+				return layout.Fit(m.theme.Subtle().Render(notice), size)
+			default:
+				bar := feedback.Scrollbar{Total: m.result.TotalLineCount(), Visible: m.result.Height(), Offset: m.result.YOffset(), Height: m.result.Height()}
+				content := layout.Row(m.result.View(), bar.View(m.theme))
+
+				return layout.Panel(tab.title, content, size, m.theme, m.focus.Current() == "result")
+			}
+		}}
 	}
 
-	frame, err := screen.Render(views)
+	frame, err := screen.RenderRetained(views)
 	if err != nil {
 		return layout.Fit("Dashboard rendering unavailable: "+safe(err.Error())+"\nq quit", m.size)
 	}
@@ -269,11 +295,23 @@ func (m *Model) automationLabel(id string) string {
 	}
 
 	if !merge.GetAutoMerge() {
+		if merge.GetAutoMergeSource() == "inherited" {
+			return "Manual merge · inherited"
+		}
+
 		return "Manual merge"
 	}
 
 	if merge.GetChainState() == "paused" {
 		return "Auto-merge paused"
+	}
+
+	if merge.GetAutoMergeSource() == "inherited" {
+		if merge.GetAutoMergeStage() != "" {
+			return "Auto-merge ON · inherited (" + merge.GetAutoMergeStage() + ")"
+		}
+
+		return "Auto-merge ON · inherited"
 	}
 
 	return "Auto-merge ON"

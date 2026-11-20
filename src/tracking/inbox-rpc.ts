@@ -4,7 +4,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import type {
   AcknowledgeMessageRequest,
   ListAgentMessagesRequest,
-} from "../gen/octomanager/v1/tracking_pb.js";
+} from "../gen/octomanager/v2/tracking_pb.js";
 import type { AgentMessage } from "./inbox.js";
 import type { TrackingStore } from "./store.js";
 function wire(message: AgentMessage) {

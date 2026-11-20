@@ -7,12 +7,12 @@ Octo owns auto-merge. It does not need GitHub's repository-wide auto-merge setti
 In **Tracking**, press **a** to toggle the Charmed **Auto merge** switch for the selected PR. Agents use:
 
 ```sh
-octo-manager auto-merge https://github.com/owner/repo/pull/42 --on --agent-id OWNER_ID
-octo-manager merge-ready https://github.com/owner/repo/pull/42 --head FULL_SHA --agent-id OWNER_ID
-octo-manager auto-merge https://github.com/owner/repo/pull/42 --off --agent-id OWNER_ID
+octo-manager pr auto-merge https://github.com/owner/repo/pull/42 --on --agent-id OWNER_ID
+octo-manager pr ready https://github.com/owner/repo/pull/42 --head FULL_SHA --agent-id OWNER_ID
+octo-manager pr auto-merge https://github.com/owner/repo/pull/42 --off --agent-id OWNER_ID
 ```
 
-Turning the switch on explicitly queues that PR and discovers expected check names from its complete cached check/workflow evidence. An empty check set still requires the owner to declare a no-CI policy; it never silently passes. The switch does not replace the owning agent's assessment of the exact head. New heads, target/owner/enrollment changes, actionable feedback, or policy changes invalidate readiness. Existing dependency and GitHub eligibility gates remain in force. A paused or cancelled chain takes precedence over the switch.
+Turning the switch on explicitly queues that PR and discovers expected check names from its complete cached check/workflow evidence. An empty check set still requires the owner to declare a no-CI policy; it never silently passes. The switch does not replace the owning agent's assessment of the exact head. Pending provider reviews block assessment and merging; actionable feedback requires an explicit current-head/current-feedback owner assessment. Manual `pr ready` records assessment while leaving auto-merge off and does not resolve or acknowledge review actions. New heads, target/owner/enrollment changes, actionable feedback, or policy changes invalidate readiness. Existing dependency and GitHub eligibility gates remain in force. A paused or cancelled chain takes precedence over the switch.
 
 Turning the switch off revokes future dispatch and clears readiness. A push or merge already accepted by the remote may finish; Octo keeps observing and reporting its outcome. Schema 14 stores `autoMerge` on merge entries. The upgrade preserves older **explicitly queued** entries as enabled and never creates entries for other tracked PRs. Earlier coordinators cannot reopen this schema.
 
@@ -54,4 +54,4 @@ Forecasts use changes in GitHub's reported remaining balance within the same res
 
 ## Upgrading older installs
 
-Startup applies retirement to cached, settled **merged** PRs before polling. Complete terminal check evidence, complete review/feedback coverage, and no waiting check watch are required; history, ownership, and unread deliveries remain intact. Incomplete merged PRs keep draining, while closed-but-unmerged PRs still receive fresh verification and can be reactivated by notifications. Explicitly disabled records stay disabled. This avoids fetching every old merged PR just to retire it after an upgrade.
+Startup applies retirement to cached, settled **merged** PRs before polling. Complete terminal check evidence, complete review/feedback coverage with no pending reviews, and no waiting check watch are required; history, ownership, and unread deliveries remain intact. Incomplete merged PRs keep draining, while closed-but-unmerged PRs still receive fresh verification and can be reactivated by notifications. Explicitly disabled records stay disabled. This avoids fetching every old merged PR just to retire it after an upgrade.

@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 const activityPageSize = 50
@@ -30,6 +30,7 @@ type activityMsg struct {
 	entries         []*v1.ActivityReport
 	events          []*v1.JobEvent
 	next            uint64
+	before          uint64
 	more            bool
 	err             error
 }
@@ -42,6 +43,12 @@ type activityHistory struct {
 	entries                      []*v1.ActivityReport
 	events                       []*v1.JobEvent
 	err                          error
+	oldest                       uint64
+	hasOlder                     bool
+	loaded                       bool
+	retryBefore                  uint64
+	cursors                      []uint64
+	shownPage                    int
 }
 
 func (m *Model) loadActivity() tea.Cmd {
@@ -55,25 +62,43 @@ func (m *Model) loadActivity() tea.Cmd {
 		m.resizeContent()
 	}
 
-	if m.agentActivity.loading || (m.agentActivity.seenThrough >= m.snapshot.GetSequence() && m.agentActivity.err == nil) {
+	if m.agentActivity.loading {
 		return nil
 	}
 
+	if m.agentActivity.err != nil {
+		return nil
+	}
+
+	if m.agentActivity.page > 0 || (m.agentActivity.seenThrough >= m.snapshot.GetSequence() && (m.agentActivity.loaded || m.agentActivity.cursor != 0 || m.agentActivity.seenThrough != 0)) {
+		return nil
+	}
+
+	return m.requestActivity(m.snapshot.GetSequence() + 1)
+}
+
+func (m *Model) requestActivity(before uint64) tea.Cmd {
 	m.agentActivity.loading = true
+
+	m.agentActivity.version++
+	if m.agentActivity.page == 0 {
+		m.agentActivity.cursors = []uint64{before}
+	}
+
 	m.activityRender.valid = false
 	m.resizeContent()
-	instance, version, cursor, target := m.instance, m.agentActivity.version, m.agentActivity.cursor, m.snapshot.GetSequence()
+	instance, version, target := m.instance, m.agentActivity.version, m.snapshot.GetSequence()
 
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()
 
-		response, err := m.api.RPC.ListActivity(ctx, connect.NewRequest(&v1.ListActivityRequest{AfterSequence: cursor}))
+		response, err := m.api.RPC.ListActivity(ctx, connect.NewRequest(&v1.ListActivityRequest{BeforeSequence: new(before), Limit: activityPageSize}))
 		if err != nil {
-			return activityMsg{instance: instance, version: version, target: target, err: err}
+			return activityMsg{instance: instance, version: version, target: target, before: before, err: err}
 		}
 
-		return activityMsg{instance: instance, version: version, target: target, entries: response.Msg.GetActivities(), events: response.Msg.GetEvents(), next: response.Msg.GetNextSequence(), more: response.Msg.GetHasMore()}
+		return activityMsg{instance: instance, version: version, target: target, before: before, entries: response.Msg.GetActivities(), events: response.Msg.GetEvents(), next: response.Msg.GetNextSequence(), more: response.Msg.GetHasMore()}
 	}
 }
 
@@ -84,44 +109,59 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 
 	m.agentActivity.loading = false
 	m.agentActivity.err = msg.err
-	m.activityRender.valid = false
+	m.agentActivity.retryBefore = msg.before
 
+	m.activityRender.valid = false
 	if msg.err != nil {
 		m.resizeContent()
 		return nil
 	}
 
-	if msg.next < m.agentActivity.cursor || (msg.more && msg.next == m.agentActivity.cursor) {
-		m.agentActivity.err = errors.New("activity page did not advance its cursor")
+	if msg.before == 0 || msg.next >= msg.before || (msg.more && msg.next == 0) || len(msg.entries)+len(msg.events) > activityPageSize {
+		m.agentActivity.err = errors.New("activity page exceeded its bound or did not advance its cursor")
 		m.resizeContent()
 
 		return nil
 	}
+	// Replace the visible page. Durable history stays on the coordinator.
+	m.agentActivity.entries = msg.entries
+	m.agentActivity.events = msg.events
+	m.agentActivity.oldest = msg.next
+	m.agentActivity.hasOlder = msg.more
+	m.agentActivity.loaded = true
 
-	for _, entry := range msg.entries {
-		if entry.GetSequence() > m.agentActivity.cursor {
-			m.agentActivity.entries = append(m.agentActivity.entries, entry)
-		}
-	}
-
-	for _, event := range msg.events {
-		if event.GetSequence() > m.agentActivity.cursor {
-			m.agentActivity.events = append(m.agentActivity.events, event)
-		}
-	}
-
-	m.agentActivity.cursor = msg.next
-	if !msg.more {
+	m.agentActivity.shownPage = m.agentActivity.page
+	if m.agentActivity.page == 0 {
+		m.agentActivity.cursor = msg.target
 		m.agentActivity.seenThrough = msg.target
 	}
 
 	m.resizeContent()
 
-	if msg.more {
+	return nil
+}
+
+func (m *Model) refreshActivity() tea.Cmd {
+	if m.instance == "" {
+		return nil
+	}
+
+	if m.agentActivity.instance != m.instance {
 		return m.loadActivity()
 	}
 
-	return nil
+	if m.agentActivity.loading {
+		return nil
+	}
+
+	if m.agentActivity.err != nil {
+		return m.requestActivity(m.agentActivity.retryBefore)
+	}
+
+	m.agentActivity.page = 0
+	m.result.GotoTop()
+
+	return m.requestActivity(m.snapshot.GetSequence() + 1)
 }
 
 func activityTitle(name v1.ActivityName) string {
@@ -160,62 +200,45 @@ func activityOutcome(outcome v1.ActivityOutcome) string {
 	}
 }
 
-func (m *Model) activityContent() string {
-	history := m.agentActivity
+type activityLogRow struct {
+	at               int64
+	subject, message string
+	prURL            string
+}
 
-	parts := []string{text.Badge("Agent activity", m.theme), m.muted("Newest first · unchanged PR checks grouped · " + m.zoneLabel()), text.Label("Coordinator observations and agent reports. Reported success is not independent verification.", m.theme)}
-	if history.err != nil {
-		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+text.Label(safe(history.err.Error()), m.theme), text.KeyHint("u", "retry", m.theme))
-	}
+func oneLine(value string) string { return strings.Join(strings.Fields(value), " ") }
 
-	if history.loading {
-		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Loading activity history…")
-	}
+func (m *Model) activityRows() []activityLogRow {
+	items := activityItems(m.agentActivity)
 
-	items := activityItems(history)
-	if len(items) == 0 {
-		return strings.Join(append(parts, "No agent activity recorded yet. Use record-activity --help from an agent session."), "\n")
-	}
-
-	start := min(history.page*activityPageSize, ((len(items)-1)/activityPageSize)*activityPageSize)
-
-	end := min(start+activityPageSize, len(items))
-	if len(items) > activityPageSize {
-		parts = append(parts, text.Pill(fmt.Sprintf("%d–%d of %d", start+1, end, len(items)), text.Neutral, m.theme, text.Dim)+" "+text.KeyHint("h", "older", m.theme)+" · "+text.KeyHint("l", "newer", m.theme))
-	}
-
-	parts = append(parts, "")
-
-	for _, item := range items[start:end] {
-		if item.event != nil {
-			event := item.event
+	rows := make([]activityLogRow, 0, min(activityPageSize, len(items)))
+	for _, item := range items[:min(activityPageSize, len(items))] {
+		if event := item.event; event != nil {
+			presentation := m.presentEvent(event)
 			context := event.GetActionContext()
 
-			row := m.presentEvent(event)
-
-			title := text.Log(row.title, m.theme)
-			if context != nil {
-				title += " " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
-			}
-
-			parts = append(parts, title, m.activityTime(event.GetAtMs()), row.detail)
-			if row.prURL != "" {
-				parts = append(parts, m.link(row.prURL))
+			subject := "coordinator"
+			if presentation.prURL != "" {
+				subject = m.link(presentation.prURL)
 			} else if event.GetPrId() != "" {
-				parts = append(parts, m.muted("PR context unavailable"))
+				subject = "PR context unavailable"
 			}
 
+			message := text.Log(presentation.title, m.theme)
 			if context != nil {
+				message += " · " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
 				if context.GetActorAgentId() != "" {
-					parts = append(parts, text.Badge(safe(context.GetActorHarness()), m.theme)+" "+text.Label(sessionContext(context.GetActorLabel(), "", context.GetActorSessionId()), m.theme))
-				} else {
-					parts = append(parts, m.muted("Coordinator-observed transition."))
+					message += " · " + safe(context.GetActorHarness()) + " " + sessionContext(context.GetActorLabel(), "", context.GetActorSessionId())
 				}
 			} else if event.GetKind() == "action_progress" {
-				parts = append(parts, text.Pill("transition unknown", text.Neutral, m.theme, text.Dim)+" Legacy event: transition state and actor were not recorded.")
+				message += " · transition unknown · Legacy event: transition state and actor were not recorded."
 			}
 
-			parts = append(parts, "")
+			if presentation.detail != "" {
+				message += " · " + presentation.detail
+			}
+
+			rows = append(rows, activityLogRow{at: event.GetAtMs(), subject: subject, prURL: presentation.prURL, message: oneLine(message)})
 
 			continue
 		}
@@ -223,27 +246,103 @@ func (m *Model) activityContent() string {
 		entry := item.report
 		report := entry.GetReport()
 		actor := report.GetActor()
-		parts = append(parts, text.Log(activityTitle(report.GetName()), m.theme)+" "+text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.activityTime(entry.GetRecordedAtMs()), text.Label(safe(report.GetDetail()), m.theme))
 
 		identity := safe(actor.GetHarness())
 		if actor.GetVersion() != "" {
 			identity += " " + safe(actor.GetVersion())
 		}
 
-		parts = append(parts, text.Badge(identity, m.theme)+" "+text.Label(sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId()), m.theme))
-		if actor.GetModel() != "" {
-			parts = append(parts, m.field("Model", actor.GetModel()))
+		identity += " " + sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId())
+
+		subject := sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId())
+		if report.GetPrUrl() != "" {
+			subject = m.link(report.GetPrUrl())
 		}
 
-		if report.GetPrUrl() != "" {
-			parts = append(parts, m.link(report.GetPrUrl()))
+		message := text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal) + " · " + text.Log(activityTitle(report.GetName()), m.theme)
+		message += " · " + safe(report.GetDetail())
+
+		message += " · " + identity
+		if actor.GetModel() != "" {
+			message += " · model " + safe(actor.GetModel())
 		}
 
 		if report.GetEvidenceUrl() != "" {
-			parts = append(parts, m.muted("Evidence: ")+m.link(report.GetEvidenceUrl()))
+			message += " · Evidence: " + m.link(report.GetEvidenceUrl())
 		}
 
-		parts = append(parts, "")
+		rows = append(rows, activityLogRow{at: entry.GetRecordedAtMs(), subject: oneLine(subject), prURL: report.GetPrUrl(), message: oneLine(message)})
+	}
+
+	return rows
+}
+
+func (m *Model) activitySubject(row activityLogRow, width int) string {
+	if row.prURL != "" {
+		link, err := webLink(row.prURL)
+		if err == nil {
+			if _, label := parsePRURL(row.prURL); label != "" {
+				link.Label = label
+			}
+
+			marker := strings.LastIndex(link.Label, "#")
+			if marker >= 0 && ansi.StringWidth(link.Label) > width {
+				suffix := link.Label[marker:]
+				link.Label = ansi.Truncate(link.Label[:marker], max(0, width-ansi.StringWidth(suffix)), "…") + suffix
+			}
+
+			if value, viewErr := link.View(m.theme); viewErr == nil {
+				return ansi.Truncate(value, width, "…")
+			}
+		}
+	}
+
+	return ansi.Truncate(row.subject, width, "…")
+}
+
+func (m *Model) activityContent() string { return m.activityContentAt(0) }
+
+func (m *Model) activityContentAt(width int) string {
+	history := m.agentActivity
+
+	parts := []string{text.Badge("Agent activity", m.theme) + " · newest first · " + m.zoneLabel(), fmt.Sprintf("Page %d · h older · l newer · u latest", history.shownPage+1)}
+	if history.err != nil {
+		parts = append(parts, feedback.Warn.View(text.Normal, m.theme)+" History incomplete: "+oneLine(safe(history.err.Error()))+" · u retry")
+	}
+
+	if history.loading {
+		parts = append(parts, "Loading activity page…")
+	}
+
+	rows := m.activityRows()
+	if len(rows) == 0 && !history.loading && history.err == nil {
+		parts = append(parts, "No agent activity recorded yet. Use record-activity --help from an agent session.")
+	}
+
+	for _, row := range rows {
+		stamp := m.timestamp(row.at, "2006-01-02 15:04:05 -0700")
+
+		subjectWidth := 24
+		if width > 0 {
+			subjectWidth = max(6, min(24, width/5))
+			if width < 100 {
+				stamp = m.timestamp(row.at, "01-02 15:04 -0700")
+			}
+
+			if width < 70 {
+				stamp = m.timestamp(row.at, "15:04:05")
+			}
+		}
+
+		subject := m.activitySubject(row, subjectWidth)
+		subject += strings.Repeat(" ", max(0, subjectWidth-ansi.StringWidth(subject)))
+		parts = append(parts, m.muted(stamp)+" │ "+subject+" │ "+row.message)
+	}
+
+	if width > 0 {
+		for i, line := range parts {
+			parts[i] = ansi.Truncate(line, width, "…")
+		}
 	}
 
 	return strings.Join(parts, "\n")
@@ -294,25 +393,42 @@ func (m *Model) activitySource() string {
 }
 
 func (m *Model) renderedActivity(width int) string {
-	source := m.activitySource()
+	m.activitySource()
+
 	if m.activityRender.width != width {
-		m.activityRender.rendered = ansi.Wrap(source, width, " ")
+		m.activityRender.rendered = m.activityContentAt(max(1, width))
 		m.activityRender.width = width
 	}
 
 	return m.activityRender.rendered
 }
 
-func (m *Model) moveActivityPage(delta int) {
-	count := len(m.agentActivity.entries) + len(m.agentActivity.events)
-
-	page := min(max(0, m.agentActivity.page+delta), max(0, (count-1)/activityPageSize))
-	if page == m.agentActivity.page {
-		return
+func (m *Model) moveActivityPage(delta int) tea.Cmd {
+	history := &m.agentActivity
+	if history.loading || history.err != nil || delta == 0 {
+		return nil
 	}
 
-	m.agentActivity.page = page
-	m.activityRender.valid = false
+	if delta > 0 {
+		if !history.hasOlder || history.oldest == 0 {
+			return nil
+		}
+
+		history.cursors = append(history.cursors[:min(history.page+1, len(history.cursors))], history.oldest)
+		history.page++
+	} else {
+		if history.page == 0 {
+			return nil
+		}
+
+		history.page--
+	}
+
 	m.result.GotoTop()
-	m.resizeContent()
+
+	if history.page == 0 {
+		return m.requestActivity(m.snapshot.GetSequence() + 1)
+	}
+
+	return m.requestActivity(history.cursors[history.page])
 }

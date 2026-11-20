@@ -1,4 +1,4 @@
-import { actionNotice, renderNotice } from "../security/notifications.js";
+import { renderNotice } from "../security/notifications.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
 import {
@@ -29,6 +29,7 @@ import {
   type AgentConnection,
 } from "../agents/codex.js";
 export interface TrackingOptions {
+  repositoryEnrollment?: (prId: string, agentId: string, cwd?: string) => void;
   stateDirectory?: string;
   schedules?: ScheduleStore;
   interactive?: <T>(work: () => T) => T;
@@ -111,9 +112,14 @@ export class TrackingService {
     this.validateTarget(target);
     return this.store.registerAgent(target);
   }
-  track(url: string, target: AgentTarget) {
+  track(url: string, target: AgentTarget, cwd?: string) {
     this.validateTarget(target);
     const p = this.store.track(url, target);
+    this.options.repositoryEnrollment?.(
+      p.id,
+      this.store.registerAgent(target).id,
+      cwd,
+    );
     this.requestRefresh(p.id);
     return p;
   }
@@ -296,7 +302,7 @@ export class TrackingService {
                   "PR already belongs to another agent; explicit reassignment is required",
               };
           }
-          this.track(request.url, request.owner);
+          this.track(request.url, request.owner, request.cwd);
           return { accepted: true };
         })
         .catch(() => {})
@@ -344,6 +350,7 @@ export class TrackingService {
   }
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveries().find((d) => {
+      if (this.store.inbox.isReplaced(d.id)) return false;
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||
@@ -378,16 +385,17 @@ export class TrackingService {
         d.progress.state === DeliveryState.Pending &&
         this.store.inbox.get(d.id) === undefined
       ) {
-        const notice = {
-          ...actionNotice(action, pr.url),
-          role:
-            agent.id === action.ownerAgentId
-              ? ("owner" as const)
-              : ("observer" as const),
-        };
+        const notice = this.store.noticeForAction(action, agent.id);
         this.store.transaction(() => {
           this.store.inbox.freezeNotice(d.id, notice);
-          this.store.inbox.record(d.id, renderNotice(notice, d.id, action.id));
+          this.store.inbox.record(
+            d.id,
+            renderNotice(
+              this.store.inbox.notice(d.id) ?? notice,
+              d.id,
+              action.id,
+            ),
+          );
         });
       }
     } catch (error) {
@@ -507,6 +515,7 @@ export class TrackingService {
       }
       if (
         !this.current(d) ||
+        this.store.inbox.isReplaced(d.id) ||
         message === undefined ||
         message.notice === undefined
       )

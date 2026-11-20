@@ -6,11 +6,13 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/lanej/octo-manager/gen/octomanager/v1/octomanagerv1connect"
+	"connectrpc.com/connect"
+
+	"github.com/lanej/octo-manager/gen/octomanager/v2/octomanagerv2connect"
 )
 
 type Client struct {
-	RPC  octomanagerv1connect.SchedulerServiceClient
+	RPC  octomanagerv2connect.SchedulerServiceClient
 	http *http.Client
 }
 
@@ -21,7 +23,10 @@ func New(socket string) *Client {
 	}}
 	httpClient := &http.Client{Transport: transport}
 
-	return &Client{RPC: octomanagerv1connect.NewSchedulerServiceClient(httpClient, "http://localhost"), http: httpClient}
+	raw := octomanagerv2connect.NewSchedulerServiceClient(httpClient, "http://localhost")
+	interceptor := &versionInterceptor{raw: raw}
+
+	return &Client{RPC: octomanagerv2connect.NewSchedulerServiceClient(httpClient, "http://localhost", connect.WithInterceptors(interceptor)), http: httpClient}
 }
 
 func (c *Client) Close() { c.http.CloseIdleConnections() }

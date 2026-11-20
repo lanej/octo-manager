@@ -14,7 +14,7 @@ import (
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
-	v1 "github.com/lanej/octo-manager/gen/octomanager/v1"
+	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
 type geometry struct {
@@ -170,33 +170,35 @@ func (m *Model) resizeContent() {
 	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
 	inner.Width = max(1, inner.Width-1)
 
-	var content string
-
-	switch m.panel {
-	case reviewsPanel:
-		content = m.reviewsMarkdown()
-	case outputPanel:
-		if job := m.job(); job != nil {
-			content = markdown(job, m.events())
-		} else {
-			content = "No worker runs for this PR. Tracking and automated merging do not require a worker run."
+	content := m.memo("pane-source").render(m.contentInput(inner.Width), func() string {
+		switch m.panel {
+		case reviewsPanel:
+			return m.reviewsMarkdown()
+		case outputPanel:
+			if job := m.job(); job != nil {
+				return markdown(job, m.events())
+			} else {
+				return "No worker runs for this PR. Tracking and automated merging do not require a worker run."
+			}
+		case statePanel:
+			return m.stateView(inner.Width)
+		case trackingPanel:
+			return m.trackingContent()
+		case activityPanel:
+			return ""
+		case issuesPanel:
+			return m.issuesContent()
+		case githubPanel:
+			return m.githubContent(inner.Width)
+		default:
+			return "Unknown view"
 		}
-	case statePanel:
-		content = m.stateView(inner.Width)
-	case trackingPanel:
-		content = m.trackingContent()
-	case activityPanel:
-		content = m.activitySource()
-	case githubPanel:
-		content = m.githubContent(inner.Width)
-	default:
-		content = "Unknown view"
-	}
+	})
 
 	rendered := content
 	if m.panel == activityPanel {
 		rendered = m.renderedActivity(max(1, inner.Width))
-	} else if m.panel == trackingPanel || m.panel == githubPanel {
+	} else if m.panel == trackingPanel || m.panel == githubPanel || m.panel == issuesPanel {
 		rendered = m.renderedContent(content, inner.Width, false)
 	} else if m.panel != statePanel {
 		rendered = m.renderedContent(content, inner.Width, true)
@@ -204,23 +206,41 @@ func (m *Model) resizeContent() {
 
 	m.result.SetWidth(max(1, inner.Width))
 	m.result.SetHeight(max(1, inner.Height))
-	m.result.SetContent(rendered)
 
-	if m.globalPanel() {
+	if m.resultContent != rendered {
+		m.result.SetContent(rendered)
+		m.resultContent = rendered
+	}
+
+	if !m.tab().worker {
 		return
 	}
 
+	tools := []*v1.JobEvent{}
+
+	for _, event := range m.events() {
+		if event.GetKind() == "tool" {
+			tools = append(tools, event)
+		}
+	}
+
+	tools = tools[max(0, len(tools)-500):]
+	input := m.input(m.selected, &v1.Snapshot{RecentEvents: tools})
+	memo := m.memo("worker-content")
+	previous := memo.revision
+	changed := memo.update(input) != previous
 	oldOffset, follow := m.activity.YOffset(), m.activity.AtBottom()
 	logSize := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.activity})
 
-	m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
-	for _, event := range m.events() {
-		if event.GetKind() != "tool" {
-			continue
+	if changed {
+		m.activity = collection.NewLogViewer(max(1, logSize.Width), max(1, logSize.Height-len(m.workerLines())), m.theme)
+		for _, event := range tools {
+			m.activity.Append(collection.LogEntry{Time: m.displayTime(event.GetAtMs()), Level: log.InfoLevel, Message: m.timestamp(event.GetAtMs(), "MST -0700") + " · " + strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
 		}
-
-		m.activity.Append(collection.LogEntry{Time: m.displayTime(event.GetAtMs()), Level: log.InfoLevel, Message: m.timestamp(event.GetAtMs(), "MST -0700") + " · " + strings.ReplaceAll(safe(event.GetDetail()), "_", " ")})
 	}
+
+	m.activity.SetWidth(max(1, logSize.Width))
+	m.activity.SetHeight(max(1, logSize.Height-len(m.workerLines())))
 
 	if follow {
 		m.activity.GotoBottom()
@@ -318,6 +338,8 @@ func (m *Model) header() []string {
 	switch m.panel {
 	case activityPanel:
 		identity = "All agent sessions"
+	case issuesPanel:
+		identity = "Issue investigation and remediation"
 	case githubPanel:
 		identity = "GitHub traffic and rate limits"
 	case reviewsPanel, outputPanel, statePanel, trackingPanel:

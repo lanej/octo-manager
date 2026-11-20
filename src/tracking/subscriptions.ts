@@ -133,7 +133,6 @@ export class Subscriptions {
         role: recipient.agentId === pr.ownerAgentId ? "owner" : "observer",
         assessment: "not_required",
       };
-      const body = renderNotice(notice, id, "");
       this.notices.freezeNotice(id, notice);
       this.db
         .prepare("INSERT INTO participant_messages VALUES(?,?,?,?,?,?,?,?,?)")
@@ -143,7 +142,7 @@ export class Subscriptions {
           pr.id,
           recipient.agentId,
           revision,
-          body,
+          renderNotice(this.notices.notice(id) ?? notice, id, ""),
           this.now(),
           null,
           this.now(),

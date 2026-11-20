@@ -1,3 +1,4 @@
+import { DatabaseSync } from "node:sqlite";
 import { rejects } from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -18,7 +19,7 @@ import { create } from "@bufbuild/protobuf";
 import {
   ListAgentMessagesRequestSchema,
   AcknowledgeMessageRequestSchema,
-} from "../src/gen/octomanager/v1/tracking_pb.js";
+} from "../src/gen/octomanager/v2/tracking_pb.js";
 import {
   ActionState,
   DeliveryState,
@@ -105,13 +106,7 @@ test("external content and malicious assessor output never enter automatic notif
       ActionState.Open,
     );
     const messages = f.store.tracking.inbox.list(f.pr.ownerAgentId).messages;
-    const digest = renderDigest(
-      crypto.randomUUID(),
-      1,
-      f.pr.ownerAgentId,
-      messages,
-      f.directory,
-    );
+    const digest = renderDigest(messages, f.directory, crypto.randomUUID());
     expect(digest.body).not.toContain(attack);
     expect(digest.body).toContain("Assessment: completed");
     const rpc = inboxRoutes(f.store.tracking).listAgentMessages(
@@ -243,6 +238,7 @@ test("legacy uncertain bodies remain immutable and reconcilable but are never re
     "delivery_uncertain",
   );
   let sends = 0;
+  const sent: string[] = [];
   const service = new TrackingService(f.store.tracking, f.config, Date.now, {
     read: () => Promise.resolve(observation),
     connect: () => ({
@@ -261,7 +257,8 @@ test("legacy uncertain bodies remain immutable and reconcilable but are never re
   try {
     service.tick();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(sends).toBe(0);
+    expect(sends).toBe(1);
+    expect(sent.every((text) => !text.includes(attack))).toBe(true);
     expect(
       f.store.tracking.deliveries().find((value) => value.id === delivery.id)
         ?.progress.state,
@@ -429,6 +426,275 @@ test("check names, log excerpts, paths, arbitrary links and invalid revisions ar
       ),
     ).not.toContain("attacker.example");
   } finally {
+    await f.close();
+  }
+});
+
+test("head reversion and retracking create new assessment episodes without reviving superseded results", async () => {
+  const f = await fixture();
+  let executions = 0;
+  const service = new AssessmentService(
+    f.store.assessments,
+    f.tracking,
+    "synthetic",
+    () => {
+      executions++;
+      return Promise.resolve({
+        disposition: "potential_change",
+        analysis: "Synthetic",
+      });
+    },
+  );
+  try {
+    await service.tick();
+    f.store.tracking.observe(
+      f.pr.id,
+      { ...observation, observedAt: 2, headSha: "b".repeat(40) },
+      f.config,
+    );
+    await service.tick();
+    f.store.tracking.observe(
+      f.pr.id,
+      { ...observation, observedAt: 3 },
+      f.config,
+    );
+    await service.tick();
+    expect(executions).toBe(3);
+    expect(f.store.assessments.list().map((item) => item.state)).toEqual([
+      "superseded",
+      "superseded",
+      "completed",
+    ]);
+    const previous = f.store.assessments.latest(f.action.id);
+    f.store.tracking.untrack(f.pr.id);
+    f.store.tracking.track(url, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "synthetic-security-test",
+    });
+    await service.tick();
+    expect(executions).toBe(4);
+    expect(f.store.assessments.latest(f.action.id)?.id).not.toBe(previous?.id);
+    expect(f.store.assessments.latest(f.action.id)?.state).toBe("completed");
+  } finally {
+    await service.close();
+    await f.close();
+  }
+});
+test("fast completion, retry and observer catchup expose only current assessment status", async () => {
+  const f = await fixture();
+  let fail = true;
+  const service = new AssessmentService(
+    f.store.assessments,
+    f.tracking,
+    "synthetic",
+    () =>
+      fail
+        ? Promise.reject(new Error("Synthetic failure"))
+        : Promise.resolve({
+            disposition: "potential_change",
+            analysis: "Synthetic",
+          }),
+  );
+  try {
+    await service.tick();
+    const item = f.store.assessments.latest(f.action.id);
+    if (item === undefined) throw new Error("Missing assessment");
+    const failedMessages = f.store.tracking.inbox.list(
+      f.pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    expect(
+      failedMessages.every(
+        (message) => message.notice?.assessment === "unavailable",
+      ),
+    ).toBe(true);
+    const frozen = failedMessages[0];
+    fail = false;
+    service.retry(item.id);
+    await service.tick();
+    for (let i = 0; i < 5; i++) {
+      f.tracking.tick();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    const current = f.store.tracking.inbox.list(
+      f.pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    expect(current.length).toBeGreaterThan(0);
+    expect(
+      current.every((message) => message.notice?.assessment === "completed"),
+    ).toBe(true);
+    if (frozen !== undefined)
+      expect(f.store.tracking.inbox.get(frozen.id)?.body).toBe(frozen.body);
+    const listener = f.store.tracking.registerAgent({
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "synthetic-catchup",
+    });
+    f.store.tracking.subscribe(f.pr.id, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: listener.sessionId,
+    });
+    for (let i = 0; i < 10; i++) {
+      f.tracking.tick();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    const catchup = f.store.tracking.inbox
+      .list(listener.id, 0, false, true)
+      .messages.filter((message) => message.actionId === f.action.id);
+    expect(catchup.length).toBeGreaterThan(0);
+    expect(
+      catchup.every((message) => message.notice?.assessment === "completed"),
+    ).toBe(true);
+  } finally {
+    await service.close();
+    await f.close();
+  }
+});
+
+test("live capture and digest preserve collision-aware action, delivery and assessment references", async () => {
+  const f = await fixture();
+  await f.tracking.close();
+  const ids = [
+    "facefeed-1111-4567-89ab-0123456789ab",
+    "facefeed-2222-4567-89ab-0123456789ab",
+  ];
+  const messages = [
+    "deadbeef-1111-4567-89ab-0123456789ab",
+    "deadbeef-2222-4567-89ab-0123456789ab",
+  ];
+  for (let i = 0; i < 2; i++) {
+    const id = ids[i],
+      deliveryId = messages[i];
+    if (id === undefined || deliveryId === undefined)
+      throw new Error("Missing fixture ID");
+    const action = { ...f.action, id, sourceKey: `collision-${String(i)}` };
+    const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+    try {
+      db.prepare(
+        "INSERT INTO actions(id,pr_id,opened_observation_id,owner_agent_id,kind,source_key,blocker_json,summary,evidence_url,profile_json,state,progress_json,resolved_observation_id,created_at_ms,updated_at_ms) SELECT ?,pr_id,opened_observation_id,owner_agent_id,kind,?,blocker_json,summary,evidence_url,profile_json,state,progress_json,resolved_observation_id,created_at_ms,updated_at_ms FROM actions WHERE id=?",
+      ).run(id, action.sourceKey, f.action.id);
+    } finally {
+      db.close();
+    }
+    const input = boundedInput(action, url, head);
+    f.store.assessments.save({
+      id: `a55e55ed-${i === 0 ? "1111" : "2222"}-4567-89ab-0123456789ab`,
+      input,
+      fingerprint: `collision-${String(i)}`,
+      state: "completed",
+      model: "synthetic",
+      createdAt: 1,
+      updatedAt: 1,
+      completionNotified: true,
+      history: [],
+      result: { disposition: "potential_change", analysis: "Synthetic" },
+    });
+    f.store.tracking.saveDelivery(
+      {
+        id: deliveryId,
+        actionId: id,
+        recipientAgentId: f.pr.ownerAgentId,
+        progress: { state: DeliveryState.Pending, nextAttemptAt: 0 },
+        createdAt: 1,
+        updatedAt: 1,
+      },
+      "delivery_pending",
+    );
+  }
+  const tracking = new TrackingService(f.store.tracking, f.config, Date.now, {
+    read: () => Promise.reject(new Error("Synthetic offline")),
+    connect: () => ({
+      prepare: () => Promise.resolve({ busy: false }),
+      send: () => Promise.resolve({ turnId: "synthetic" }),
+      find: () => Promise.resolve({ found: false }),
+      close: () => {},
+    }),
+  });
+  try {
+    for (let i = 0; i < 10; i++) {
+      tracking.tick();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    const first = f.store.tracking.inbox.get(messages[0] ?? ""),
+      second = f.store.tracking.inbox.get(messages[1] ?? "");
+    if (first === undefined || second === undefined)
+      throw new Error("Missing captured notices");
+    expect(first.body).toContain("[octo-delivery:deadbeef1]");
+    expect(second.body).toContain("[octo-delivery:deadbeef2]");
+    expect(first.body).toContain("Action: facefeed1");
+    expect(second.body).toContain("Action: facefeed2");
+    expect(first.body).toContain("Assessment record: a55e55ed1");
+    expect(second.body).toContain("Assessment record: a55e55ed2");
+    const digest = renderDigest(
+      [first, second],
+      f.directory,
+      crypto.randomUUID(),
+    );
+    expect(digest.body).toContain("Action: facefeed1");
+    expect(digest.body).toContain("Action: facefeed2");
+  } finally {
+    await tracking.close();
+    await f.close();
+  }
+});
+
+test("assessment completion during transport preparation fences the obsolete notice", async () => {
+  const f = await fixture();
+  await f.tracking.close();
+  let release: (() => void) | undefined;
+  const prepared = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let entered = false;
+  const sent: string[] = [];
+  const tracking = new TrackingService(f.store.tracking, f.config, Date.now, {
+    read: () => Promise.resolve(observation),
+    connect: () => ({
+      prepare: async () => {
+        entered = true;
+        await prepared;
+        return { busy: false };
+      },
+      send: (_agent, id) => {
+        sent.push(id);
+        return Promise.resolve({ turnId: "synthetic" });
+      },
+      find: () => Promise.resolve({ found: false }),
+      close: () => {},
+    }),
+  });
+  try {
+    tracking.tick();
+    for (let i = 0; i < 20; i++)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(entered).toBe(true);
+    const old = f.store.tracking.inbox.list(f.pr.ownerAgentId, 0, false, true)
+      .messages[0];
+    if (old === undefined) throw new Error("Missing prepared notice");
+    f.store.tracking.notifyAssessment(f.action, "completed", {
+      id: crypto.randomUUID(),
+      head,
+    });
+    expect(f.store.tracking.inbox.isReplaced(old.id)).toBe(true);
+    release?.();
+    for (let i = 0; i < 10; i++)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(sent).not.toContain(old.id);
+    expect(
+      f.store.tracking
+        .attempts()
+        .some((attempt) => attempt.deliveryId === old.id),
+    ).toBe(false);
+  } finally {
+    release?.();
+    await tracking.close();
     await f.close();
   }
 });

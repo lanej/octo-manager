@@ -1,9 +1,25 @@
+import { displayArguments } from "./command-tree.js";
 import type { parseCommand } from "./arguments.js";
 import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
+  "version",
+  "scope",
+  "blockingQuestions",
+  "waiting",
+  "briefVersion",
+  "approvedVersion",
+  "externalId",
+  "provider",
+  "project",
+  "clarificationDueAtMs",
+  "externallyClosed",
   "autoMerge",
+  "autoMergeSource",
+  "autoMergeStage",
+  "stage",
+  "root",
   "chainId",
   "entryId",
   "dependentId",
@@ -90,6 +106,19 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "issue",
+  "issues",
+  "reference",
+  "brief",
+  "briefs",
+  "assignments",
+  "assignment",
+  "effects",
+  "criteria",
+  "questions",
+  "assumptions",
+  "evidence",
+  "repositoryPolicy",
   "refresh",
   "chains",
   "entries",
@@ -247,6 +276,20 @@ function inspectArgs(
 ): string[] {
   const { values, positionals } = parsed,
     command = positionals[0] ?? "";
+  if (command.startsWith("issue-") && !readOnlyCommand(positionals)) {
+    const root = record(raw) ? raw : {};
+    const issue = record(root["issue"]) ? root["issue"] : {};
+    return [
+      "issue-show",
+      lookup(issue, "id") ?? positionals[1] ?? "",
+      "--full",
+    ];
+  }
+  if (command === "dependency-confirm")
+    return ["dependencies", values.pr ?? ""];
+  if (command === "dependency-remove") return ["dependencies"];
+  if (command === "reference-dismiss") return ["references"];
+  if (command === "merge-policy") return ["pr", positionals[1] ?? ""];
   if (
     [
       "auto-merge",
@@ -269,6 +312,7 @@ function inspectArgs(
       ["after", values.after],
       ["revision", values.revision],
       ["version", values.version],
+      ["policy-version", values["policy-version"]],
       ["tier", values.tier],
       ["repo", values.repo],
       ["url", values.url],
@@ -296,6 +340,10 @@ function inspectArgs(
     return ["action", lookup(action, "id") ?? positionals[1] ?? "", "--full"];
   if (command === "subscribe" || command === "unsubscribe")
     return ["participants", positionals[1] ?? values.url ?? "", "--full"];
+  if (command === "merge" && lookup(root, "chain") !== undefined)
+    return ["chains", lookup(root, "chain") ?? "", "--full"];
+  if (command === "ack" || command === "merge")
+    return ["message", positionals[1] ?? "", "--full"];
   if (command === "acknowledge-digest") {
     const receipt = record(root["receipt"]) ? root["receipt"] : {};
     return [
@@ -345,7 +393,7 @@ export function agentResponse(
       JSON.stringify(raw === undefined ? null : raw, cliJSON),
     ),
     omission: Omission = { remaining: 8, items: 0, details: false };
-  const args = inspectArgs(parsed, normalized);
+  const args = displayArguments(inspectArgs(parsed, normalized));
   if (parsed.values.state !== undefined && !args.includes("--state"))
     args.push("--state", parsed.values.state);
 
@@ -400,10 +448,13 @@ export function printResult(
       : JSON.stringify(
           result,
           cliJSON,
-          parsed.values.json ||
-            ["acknowledge-digest", "acknowledge-message"].includes(
-              parsed.positionals[0] ?? "",
-            )
+          parsed.values.json === true ||
+            [
+              "ack",
+              "merge",
+              "acknowledge-digest",
+              "acknowledge-message",
+            ].includes(parsed.positionals[0] ?? "")
             ? undefined
             : 2,
         ),

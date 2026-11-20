@@ -1,4 +1,9 @@
 import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import { currentMergeChecks } from "./checks.js";
+import {
+  NoticeReadinessSchema,
+  type NoticeReadiness,
+} from "./receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -11,11 +16,15 @@ import {
   feedbackKey,
   fingerprint,
   graphKey,
+  pendingReviewReason,
+  reviewGate,
+  readyFor,
   references,
   type ReferenceSource,
 } from "./policy.js";
 import {
   ChainState,
+  ReviewAssessmentSource,
   EntryState,
   OperationState,
   ReferenceDecision,
@@ -41,6 +50,78 @@ export class MergeStore {
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
+  noticeReadiness(prId: string): NoticeReadiness | undefined {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-readiness:${prId}`);
+    return row === undefined
+      ? undefined
+      : checked(NoticeReadinessSchema, JSON.parse(String(row["value"])));
+  }
+  saveNoticeReadiness(value: NoticeReadiness): void {
+    checked(NoticeReadinessSchema, value);
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(`merge-readiness:${value.target.prId}`, JSON.stringify(value));
+  }
+  receiptRequest(
+    id: string,
+  ): { entry: MergeEntry; current: boolean } | undefined {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`receipt-merge:${id}`);
+    if (row === undefined) return undefined;
+    const entry = this.entries().find(
+      (value) => value.id === String(row["value"]),
+    );
+    if (entry === undefined) throw new Error("Receipt merge entry not found");
+    return { entry, current: entry.receiptId === id };
+  }
+  saveReceiptRequest(id: string, entry: MergeEntry): void {
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING",
+      )
+      .run(`receipt-merge:${id}`, entry.id);
+  }
+  readinessAction(messageId: string): string | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
+      )
+      .get(messageId);
+    const subject = row?.["subject_id"];
+    return typeof subject === "string" && subject.startsWith("ready:")
+      ? subject.slice(6)
+      : undefined;
+  }
+  agentInstructions(prId: string, agentId: string): string | undefined {
+    const pr = this.tracking.pr(prId);
+    if (pr.ownerAgentId !== agentId) return undefined;
+    const entry = this.entries()
+      .filter((value) => value.prId === pr.id)
+      .sort((a, b) => {
+        const priority = Number(terminal(a.state)) - Number(terminal(b.state));
+        return priority !== 0
+          ? priority
+          : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
+      })[0];
+    const instructions = entry?.agentInstructions;
+    return instructions?.agentId === agentId &&
+      instructions.epoch === pr.trackingEpoch
+      ? instructions.text
+      : undefined;
+  }
+  noticeEntry(messageId: string): MergeEntry | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
+      )
+      .get(messageId);
+    return this.entries().find((entry) => entry.id === row?.["subject_id"]);
+  }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
     this.db.exec("BEGIN IMMEDIATE");
@@ -174,6 +255,12 @@ export class MergeStore {
       ...entry,
       ...patch,
       autoMerge: current?.autoMerge ?? entry.autoMerge,
+      ...(current?.autoMergeSource === undefined
+        ? {}
+        : { autoMergeSource: current.autoMergeSource }),
+      ...(current?.autoMergeStage === undefined
+        ? {}
+        : { autoMergeStage: current.autoMergeStage }),
       state,
       detail: compact(detail, 1000),
     };
@@ -192,7 +279,7 @@ export class MergeStore {
     this.saveEntry(next);
     this.event("merge_entry_updated", `${state}: ${next.detail}`, entry.prId);
     const pr = this.tracking.pr(entry.prId);
-    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: octo-manager chains ${shortId(entry.chainId)}`;
+    const body = `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${next.detail}\nMerge chain: ${shortId(entry.chainId)} · Entry: ${shortId(entry.id)}\nInspect: \`octo-manager chain show ${shortId(entry.chainId)}\``;
     this.notice(
       pr,
       "entry",
@@ -210,7 +297,7 @@ export class MergeStore {
     );
     return next;
   }
-  queue(input: QueueInput): MergeChain {
+  queue(input: QueueInput, autoMerge = true): MergeChain {
     return this.transaction(() => {
       const digest = fingerprint(input),
         existing = this.chains().find(
@@ -249,13 +336,22 @@ export class MergeStore {
       input.entries.forEach((item, index) => {
         const pr = prs[index];
         if (pr === undefined) throw new Error("Missing merge target");
+        this.db
+          .prepare(
+            "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          )
+          .run(
+            `merge-setting:${pr.id}`,
+            JSON.stringify({ source: "explicit", epoch: pr.trackingEpoch }),
+          );
         if (item.noCi === true && (item.checks?.length ?? 0) > 0)
           throw new Error(
             "Choose expected checks or an explicit no-CI declaration",
           );
         this.saveEntry({
           id: randomUUID(),
-          autoMerge: true,
+          autoMerge,
+          trackingEpoch: pr.trackingEpoch,
           chainId: chain.id,
           prId: pr.id,
           method: item.method ?? "squash",
@@ -269,20 +365,105 @@ export class MergeStore {
       });
       this.event(
         "merge_chain_queued",
-        `Queued ${String(prs.length)} explicitly authorized PRs`,
+        autoMerge
+          ? `Queued ${String(prs.length)} explicitly authorized PRs`
+          : "Recorded manual merge policy; automatic merging remains off",
       );
       return chain;
     });
+  }
+  settingSource(prId: string): "explicit" | "inherited" {
+    const pr = this.tracking.pr(prId);
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-setting:${pr.id}`);
+    if (row !== undefined) {
+      const value: unknown = JSON.parse(String(row["value"]));
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "source" in value &&
+        value.source === "explicit"
+      )
+        return "explicit";
+      return "inherited";
+    }
+    return this.entries().some(
+      (entry) =>
+        entry.prId === pr.id &&
+        !terminal(entry.state) &&
+        entry.autoMergeSource !== "inherited",
+    )
+      ? "explicit"
+      : "inherited";
+  }
+  useDefault(
+    prValue: string,
+    actorId: string,
+    requestId: string,
+    instructions?: string,
+  ) {
+    const pr = this.tracking.pr(prValue);
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`repository-policy:${pr.id}`);
+    const value: unknown =
+      row === undefined ? undefined : JSON.parse(String(row["value"]));
+    const enabled =
+      typeof value === "object" &&
+      value !== null &&
+      "autoMerge" in value &&
+      value.autoMerge === true &&
+      "ownerId" in value &&
+      value.ownerId === pr.ownerAgentId &&
+      "epoch" in value &&
+      value.epoch === pr.trackingEpoch;
+    return this.autoMerge(
+      pr.id,
+      actorId,
+      enabled,
+      requestId,
+      instructions,
+      "inherited",
+    );
+  }
+  policyStage(prId: string, stage?: string): void {
+    const entry = this.entries().find(
+      (value) => value.prId === prId && !terminal(value.state),
+    );
+    if (entry === undefined || entry.autoMergeSource !== "inherited") return;
+    const next = { ...entry };
+    if (stage === undefined) delete next.autoMergeStage;
+    else next.autoMergeStage = stage;
+    this.saveEntry(next);
   }
   autoMerge(
     prValue: string,
     actorId: string,
     enabled: boolean,
     requestId: string,
+    instructions?: string,
+    source: "explicit" | "inherited" = "explicit",
   ) {
     return this.transaction(() => {
       const pr = this.tracking.pr(prValue);
-      this.owner(pr, actorId);
+      const actor = this.owner(pr, actorId);
+      if (
+        instructions !== undefined &&
+        ((instructions !== "" && (!enabled || instructions.trim() === "")) ||
+          Buffer.byteLength(instructions) > 1000)
+      )
+        throw new Error(
+          "Instructions require auto-merge on and 1-1000 UTF-8 bytes",
+        );
+      this.db
+        .prepare(
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        )
+        .run(
+          `merge-setting:${pr.id}`,
+          JSON.stringify({ source, epoch: pr.trackingEpoch }),
+        );
       let entry = this.entries().find(
         (value) => value.prId === pr.id && !terminal(value.state),
       );
@@ -309,6 +490,31 @@ export class MergeStore {
         });
         entry = this.entry(pr.id);
       }
+      this.db
+        .prepare(
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        )
+        .run(
+          `merge-setting:${pr.id}`,
+          JSON.stringify({ source, epoch: pr.trackingEpoch }),
+        );
+      if (instructions !== undefined) {
+        entry = { ...entry };
+        if (instructions === "") delete entry.agentInstructions;
+        else
+          entry.agentInstructions = {
+            agentId: actor,
+            epoch: pr.trackingEpoch,
+            text: instructions,
+          };
+        this.saveEntry(entry);
+      }
+      entry = {
+        ...entry,
+        autoMergeSource: source,
+        trackingEpoch: pr.trackingEpoch,
+      };
+      this.saveEntry(entry);
       if (entry.autoMerge === enabled) return { prId: pr.id, enabled, entry };
       const next = { ...entry, autoMerge: enabled, nextAt: 0 };
       delete next.ready;
@@ -362,7 +568,7 @@ export class MergeStore {
             "entry",
             entry.id,
             String(next.version),
-            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: octo-manager chains ${shortId(chain.id)}`,
+            `[PR #${new URL(pr.url).pathname.split("/").at(-1) ?? ""}](${pr.url}) · ${entry.detail}\nMerge chain: ${shortId(chain.id)}\nInspect: \`octo-manager chain show ${shortId(chain.id)}\``,
             [
               EntryState.WaitingOwner,
               EntryState.Blocked,
@@ -530,7 +736,21 @@ export class MergeStore {
       );
     });
   }
-  ready(prValue: string, actorId: string, head: string): MergeEntry {
+  ownerAssessment(pr: TrackedPR): MergeEntry["ready"] {
+    const entry = this.entries().find(
+      (item) => item.prId === pr.id && !terminal(item.state),
+    );
+    return entry?.ready?.source === ReviewAssessmentSource.Owner &&
+      readyFor(entry, pr, this.dependencies())
+      ? entry.ready
+      : undefined;
+  }
+  ready(
+    prValue: string,
+    actorId: string,
+    head: string,
+    receipt?: { id: string; context: string },
+  ): MergeEntry {
     return this.transaction(() => {
       const pr = this.tracking.pr(prValue),
         owner = this.owner(pr, actorId);
@@ -542,21 +762,67 @@ export class MergeStore {
         observation.headSha !== head
       )
         throw new Error("Readiness head does not match current enrolled PR");
+      const pending = pendingReviewReason(observation);
+      if (pending !== undefined) throw new Error(pending);
       const feedback = feedbackKey(observation);
       if (feedback === undefined)
         throw new Error(
           "Complete review evidence is required before marking ready",
         );
-      const entry = this.entry(pr.id);
-      if (!entry.autoMerge) throw new Error("Auto-merge is off");
+      let previous = this.entries().find(
+        (entry) => entry.prId === pr.id && !terminal(entry.state),
+      );
+      if (previous === undefined) {
+        if (receipt !== undefined)
+          throw new Error("Receipt merge policy is missing");
+        this.queue(
+          {
+            requestId: `assessment:${randomUUID()}`,
+            actorId: owner,
+            entries: [
+              {
+                prUrl: pr.url,
+                checks: [
+                  ...new Set(
+                    currentMergeChecks(observation).map((check) => check.name),
+                  ),
+                ],
+              },
+            ],
+          },
+          false,
+        );
+        previous = this.entry(pr.id);
+      }
+      const entry = { ...previous };
+      const inheritedOwnerAssessment =
+        entry.ready?.source === ReviewAssessmentSource.Owner &&
+        readyFor(entry, pr, this.dependencies());
+      if (receipt !== undefined) {
+        const gate = reviewGate(
+          observation,
+          inheritedOwnerAssessment ? entry.ready : undefined,
+        );
+        if (gate !== undefined) throw new Error(gate);
+      }
+      if (receipt === undefined) {
+        delete entry.receiptId;
+        delete entry.receiptContext;
+      }
       if (this.chain(entry.chainId).state !== ChainState.Active)
         throw new Error("Merge chain is not active");
       return this.state(
         entry,
         EntryState.WaitingChecks,
-        "Owner assessed this head; waiting for GitHub checks",
+        receipt === undefined && !entry.autoMerge
+          ? "Owner assessed this head; automatic merging is off; use the Ready merge command when available"
+          : "Owner assessed this head; waiting for GitHub checks",
         {
           ready: {
+            source:
+              receipt === undefined || inheritedOwnerAssessment
+                ? ReviewAssessmentSource.Owner
+                : ReviewAssessmentSource.Receipt,
             epoch: pr.trackingEpoch,
             head,
             baseRef: observation.targetBase?.ref ?? "",
@@ -565,6 +831,9 @@ export class MergeStore {
             graph: graphKey(this.dependencies(), pr.id),
             at: this.now(),
           },
+          ...(receipt === undefined
+            ? {}
+            : { receiptId: receipt.id, receiptContext: receipt.context }),
           nextAt: 0,
           preparationHold: false,
         },
@@ -693,7 +962,7 @@ export class MergeStore {
       return next;
     });
   }
-  scan(pr: TrackedPR): void {
+  scan(pr: TrackedPR, tracked = this.tracking.prs()): void {
     const observation = pr.observation;
     if (observation === undefined) return;
     const sources: ReferenceSource[] = [];
@@ -710,7 +979,7 @@ export class MergeStore {
           text: item.body,
           url: item.url,
         });
-    const found = references(pr, sources, this.tracking.prs()),
+    const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
       for (const prior of this.refs().filter(
@@ -747,7 +1016,7 @@ export class MergeStore {
             "reference",
             ref.id,
             ref.revision,
-            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: ${ref.targetUrl}\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: octo-manager references ${pr.url}`,
+            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: \`octo-manager reference list ${pr.url}\``,
             true,
           );
         }
@@ -761,9 +1030,15 @@ export class MergeStore {
     revision: string,
     _body: string,
     applicable: boolean,
+    recipients?: readonly string[],
   ): void {
     this.transaction(() => {
       for (const participant of this.tracking.subscriptions.list(pr)) {
+        if (
+          recipients !== undefined &&
+          !recipients.includes(participant.agentId)
+        )
+          continue;
         this.db
           .prepare(
             "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=?",
@@ -787,9 +1062,19 @@ export class MergeStore {
           assessment: "not_required",
         };
         notice.subject = {
-          kind: kind === "entry" ? "merge_entry" : "reference",
-          id: subjectId,
+          kind:
+            kind === "entry"
+              ? subjectId.startsWith("ready:")
+                ? "action"
+                : "merge_entry"
+              : "reference",
+          id: subjectId.startsWith("ready:") ? subjectId.slice(6) : subjectId,
         };
+        const entry =
+          kind === "entry"
+            ? this.entries().find((value) => value.id === subjectId)
+            : undefined;
+        if (entry !== undefined) notice.mergeState = entry.state;
         this.tracking.inbox.freezeNotice(id, notice);
         this.db
           .prepare(
@@ -803,7 +1088,7 @@ export class MergeStore {
             kind,
             subjectId,
             revision,
-            renderNotice(notice, id, ""),
+            renderNotice(this.tracking.inbox.notice(id) ?? notice, id, ""),
             this.now(),
             null,
             this.now(),

@@ -178,6 +178,7 @@ async function harness(run: RunStage, github = new GitHub()) {
       { read: () => Promise.reject(new Error("Offline test")) },
     );
   let service = new SubmissionService(store.submissions, tracking, {
+    allowLegacyExecution: true,
     github,
     run,
     instructions: (role) => Promise.resolve(`Bounded ${role}`),
@@ -206,6 +207,7 @@ async function harness(run: RunStage, github = new GitHub()) {
         { read: () => Promise.reject(new Error("Offline test")) },
       );
       service = new SubmissionService(store.submissions, tracking, {
+        allowLegacyExecution: true,
         github,
         run,
         instructions: (role) => Promise.resolve(`Bounded ${role}`),
@@ -855,6 +857,42 @@ test("ambiguous exact quotes cannot repair an invalid citation anchor", async ()
   expect(policyBlockers(anchored.analysis, sources)).toContain(
     "Unverified requirement citation: behavior",
   );
+});
+
+test("policy citations preserve literal Markdown instead of rendered link text", async () => {
+  const stage = await runner([])(
+    "policy",
+    {},
+    PolicyAnalysisSchema,
+    "Policy",
+    "test-model",
+    new AbortController().signal,
+    () => {},
+  );
+  const analysis = parse(PolicyAnalysisSchema, stage.result);
+  const rule = analysis.requirements[0];
+  if (rule === undefined) throw new Error("Missing fixture requirement");
+  const suffix =
+    "Start with what changes and the resulting behavior, then explain why it matters.";
+  const source = {
+    path: "CONTRIBUTING.md",
+    sha: "policy-v1",
+    text: `[Explain what changes and why](https://example.com/guidance). ${suffix}`,
+  };
+  const rendered = {
+    ...analysis,
+    requirements: [
+      { ...rule, line: 1, quote: `Explain what changes and why. ${suffix}` },
+    ],
+  };
+  expect(
+    policyBlockers(anchorPolicy(rendered, [source]).analysis, [source]),
+  ).toContain("Unverified requirement citation: behavior");
+  const literal = {
+    ...analysis,
+    requirements: [{ ...rule, line: 1, quote: suffix }],
+  };
+  expect(policyBlockers(literal, [source])).toEqual([]);
 });
 
 test("retry reruns invalid worker results without discarding failed output or repeating valid stages", async () => {

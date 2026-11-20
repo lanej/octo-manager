@@ -5,6 +5,7 @@ export interface AgentMessage {
   id: string;
   actionId: string;
   submissionId?: string;
+  issueId?: string;
   participantPRId?: string;
   workflowPRId?: string;
   recipientAgentId: string;

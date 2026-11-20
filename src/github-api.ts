@@ -118,6 +118,25 @@ export class GitHubReads {
       );
     });
   }
+  patch(
+    path: string,
+    fields: Record<string, string | boolean>,
+    signal: AbortSignal,
+    beforeSend?: () => void,
+  ): Promise<unknown> {
+    return this.enqueue(async () =>
+      json(
+        (
+          await this.exchange(
+            { method: "PATCH", path, data: fields },
+            "core",
+            signal,
+            beforeSend,
+          )
+        ).body,
+      ),
+    );
+  }
   raw(
     path: string,
     headers: Record<string, string>,
@@ -131,6 +150,7 @@ export class GitHubReads {
     path: string,
     fields: Record<string, string | boolean>,
     signal: AbortSignal,
+    beforeSend?: () => void,
   ): Promise<unknown> {
     return this.enqueue(async () =>
       json(
@@ -139,6 +159,7 @@ export class GitHubReads {
             { method: "POST", path, data: fields },
             "core",
             signal,
+            beforeSend,
           )
         ).body,
       ),

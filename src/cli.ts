@@ -1,4 +1,7 @@
 #!/usr/bin/env bun
+import { issuesCLI } from "./issues/cli.js";
+import { commandTree, CommanderError } from "./command-tree.js";
+import { publicationCLI } from "./publication/cli.js";
 import {mergingCLI} from "./merging/cli.js";
 import {printResult,printFailure} from "./cli-output.js";
 import {subscriptionsCLI} from "./tracking/subscriptions-cli.js";
@@ -7,34 +10,35 @@ import { submissionsCLI } from "./submissions/cli.js";
 import { codexHookCLI } from "./integrations/codex.js";
 import { repairsCLI } from "./repairs/cli.js";
 import { activityCLI } from "./activity/cli.js";
-import { directoryLabel, parseCommand } from "./arguments.js";
+import { directoryLabel, type ParsedCommand } from "./arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { Coordinator } from "./coordinator.js";
 import { loadTrackingConfig } from "./tracking/config.js";
 import { request, trackingRequest } from "./client.js";
 import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
 process.umask(0o077);
-async function main(): Promise<void> {
-  const parsed = parseCommand(process.argv.slice(2));
-  if (await mergingCLI(parsed)) return;
-  if (await notificationsCLI(parsed)) return;
-  if (await subscriptionsCLI(parsed)) return;
-  if (await submissionsCLI(parsed)) return;
-  if (await activityCLI(parsed)) return;
-  if (await repairsCLI(parsed)) return;
+async function execute(parsed: ParsedCommand): Promise<void> {
+  switch(parsed.capability){
+    case "issues": await issuesCLI(parsed); return;
+    case "publication": await publicationCLI(parsed); return;
+    case "merging": await mergingCLI(parsed); return;
+    case "notifications": await notificationsCLI(parsed); return;
+    case "subscriptions": await subscriptionsCLI(parsed); return;
+    case "activity": await activityCLI(parsed); return;
+    case "repairs": await repairsCLI(parsed); return;
+    case "history": await submissionsCLI(parsed); return;
+    case "tracking": break;
+    case "application": break;
+  }
   const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
-  const [command, argument] = positionals;
+  const command = positionals[0]??"", argument=positionals[1];
   if (command === "codex-hook") { await codexHookCLI(directory); return; }
-  if (!command || values.help) {
-    console.log("octo-manager dashboard | serve | login | demo | submit summarize-pr --url URL | get ID | events ID [--watch] [--after N] | cancel ID | retry ID | pause | resume\nOptions: --state DIR --model MODEL --theme terminal|dark|light|contrast|mono --timezone IANA_ZONE --request-id ID --json --agent --full (read-only inspection)\nAuto-merge: auto-merge PR --on|--off --agent-id OWNER_ID. Merge chains: queue-chain --intent-file FILE | chains [ID] | references [PR] | dependencies [PR] | merge-command --intent-file FILE | merge-ready PR --head SHA --agent-id ID | pause-chain ID | resume-chain ID | cancel-chain ID | reconcile-operation ID.\nDefault model: openai-codex/gpt-6.1-terra. Agent activity: record-activity --help | activity [--after N]. Tracking: track --url URL --thread-id ID | tracked | pr ID | refresh ID | assign ID --thread-id ID | untrack ID | actions [PR_ID] | action ID [--full] | assessment ID [--full] | retry-assessment ID | acknowledge ID --agent-id ID | working ID --agent-id ID | retry-delivery ID | reprofile ID | tracking | inbox --agent-id ID [--after N] [--include-acknowledged] | acknowledge-message ID --agent-id ID. Tracking accepts private PRs; Pi summary workers remain public-only."); return;
-  }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
     const child = spawn(process.execPath, [fileURLToPath(new URL("../node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js", import.meta.url)), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
@@ -44,12 +48,15 @@ async function main(): Promise<void> {
     if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
     const binary = fileURLToPath(new URL("../build/octo-manager-tui", import.meta.url));
     if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
-    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone])], { stdio: "inherit" });
+    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone]), ...(values["github-hours"] === undefined ? [] : ["--github-hours", values["github-hours"]])], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });
     return;
   }
   if (command === "serve") {
-    const coordinator = new Coordinator(directory, { model: values.model, trackingConfig: loadTrackingConfig(values.config) });
+    const { Coordinator } = await import("./coordinator.js");
+    const trackingConfig = loadTrackingConfig(values.config);
+    const model = values.model ?? trackingConfig.workerModel;
+    const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
     console.log(JSON.stringify({ ready: true, state: directory }));
     await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
@@ -57,9 +64,10 @@ async function main(): Promise<void> {
   }
   const id = argument;
   let result: unknown;
-  if (["track","tracked","pr","refresh","assign","untrack","actions","action","assessment","retry-assessment","acknowledge","working","retry-delivery","reprofile","tracking","inbox","acknowledge-message"].includes(command)) {
+  if (["track","tracked","pr","refresh","assign","untrack","actions","action","assessment","retry-assessment","acknowledge","working","retry-delivery","reprofile","register-agent","agents","tracking","inbox","acknowledge-message"].includes(command)) {
     result = await trackingRequest(directory, command, id, {
       full: parsed.output.full,
+      cwd: values.cwd ?? process.cwd(),
       ...(values.url === undefined ? {} : { url: values.url }),
       ...(values.harness === undefined ? {} : { harness: values.harness }),
       ...(values.endpoint === undefined ? {} : { endpoint: values.endpoint }),
@@ -93,4 +101,7 @@ async function main(): Promise<void> {
   } else throw new Error("Unsupported command; see --help");
   printResult(parsed,result);
 }
-main().catch((error:unknown) => { printFailure(error,process.argv.slice(2),process.env); process.exitCode = 1; });
+commandTree(process.env,execute).parseAsync(process.argv.slice(2),{from:"user"}).catch((error:unknown)=>{
+  if(error instanceof CommanderError && error.exitCode===0)return;
+  printFailure(error,process.argv.slice(2),process.env);process.exitCode=1;
+});

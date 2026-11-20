@@ -222,6 +222,21 @@ export class CodexConnection implements AgentConnection {
       });
     });
   }
+  async dispatch(
+    method:
+      | "thread/start"
+      | "thread/name/set"
+      | "thread/read"
+      | "thread/turns/list"
+      | "thread/resume"
+      | "turn/start"
+      | "turn/interrupt",
+    params: object,
+  ): Promise<unknown> {
+    await this.ready;
+    const value: unknown = await this.call(method, params);
+    return value;
+  }
   async prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }> {
     const info = await this.ready;
     const version = codexVersion(info);
