@@ -165,6 +165,15 @@ export class RepositoryJournal {
       throw new Error("Invalid issue tracker baseline");
     return value;
   }
+  seedTracker(
+    id: string,
+    value: { title: string; body: string; closed: boolean },
+  ): void {
+    // A migration snapshot has known values, but no retained GitHub revision.
+    this.db
+      .prepare("INSERT OR IGNORE INTO issue_tracker_baselines VALUES(?,?)")
+      .run(id, JSON.stringify({ ...value, revision: "" }));
+  }
   observedTracker(
     id: string,
     value: { title: string; body: string; closed: boolean; revision: string },

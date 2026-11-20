@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { Store } from "../src/store.js";
+import { migrateIssueStorage } from "../src/issues/migration.js";
 import type { IssueRepository } from "../src/issues/repository.js";
 import { type IssueContent } from "../src/issues/repository.js";
 import { join } from "node:path";
@@ -1049,5 +1053,99 @@ test("projection reobserves newer GitHub input before writing a stored edit", as
   } finally {
     await f.service.close();
     f.close();
+  }
+});
+
+test("the first refresh after migration preserves native title, body and status edits while paused", async () => {
+  for (const change of [
+    { title: "Native title" },
+    { body: "Native body" },
+    { externalClosed: true },
+  ]) {
+    const documents = new Map<string, IssueContent>();
+    const repository: IssueRepository = {
+      identity: "controlled-migration",
+      read: (id) => Promise.resolve(structuredClone(documents.get(id))),
+      write: (content) => {
+        documents.set(content.id, structuredClone(content));
+        return Promise.resolve();
+      },
+    };
+    const f = fixture();
+    const directory = mkdtempSync(join(tmpdir(), "octo-first-refresh-"));
+    const source = new Store(directory);
+    source.issues.save(
+      {
+        ...f.enrolled,
+        title: "Wrong result",
+        body: "Calculate 42",
+        waiting: Waiting.Paused,
+      },
+      "observed",
+      "Pre-migration tracker snapshot",
+    );
+    source.close();
+    let runtime: Store | undefined;
+    let service: IssueService | undefined;
+    try {
+      await migrateIssueStorage(
+        directory,
+        f.enrolled.root,
+        false,
+        () => repository,
+      );
+      const before = documents.get(f.enrolled.id);
+      if (before === undefined) throw new Error("Missing migrated content");
+      documents.set(f.enrolled.id, {
+        ...before,
+        ...change,
+        updatedAt: Date.now() + 1000,
+      });
+      runtime = new Store(directory);
+      service = new IssueService(runtime.issues, {
+        ...f.options,
+        repository: () => repository,
+      });
+      await service.tick();
+      expect(documents.get(f.enrolled.id)).toMatchObject(change);
+      expect(runtime.issues.get(f.enrolled.id)).toMatchObject(change);
+      expect(runtime.issues.get(f.enrolled.id).waiting).toBe(Waiting.Paused);
+      expect(f.assignments).toHaveLength(0);
+      if ("body" in change) {
+        const stored = documents.get(f.enrolled.id);
+        if (stored === undefined) throw new Error("Missing migrated content");
+        const nativeAt = Date.now() + 10000;
+        documents.set(f.enrolled.id, {
+          ...stored,
+          body: "Competing native edit",
+          updatedAt: nativeAt,
+          fieldTimes: { ...stored.fieldTimes, body: nativeAt },
+        });
+        f.observe({
+          body: "Newer GitHub input",
+          revision: new Date(nativeAt + 10000).toISOString(),
+        });
+        service.command(
+          f.enrolled.id,
+          "refresh",
+          "",
+          0,
+          "refresh-competing-input",
+        );
+        await service.tick();
+        expect(documents.get(f.enrolled.id)?.body).toBe("Newer GitHub input");
+        const conflict = runtime.issues
+          .events(f.enrolled.id)
+          .find((event) => event.kind === "sync_conflict");
+        expect(conflict?.detail).toContain("Competing native edit");
+        expect(conflict?.detail).toContain("Newer GitHub input");
+      }
+    } finally {
+      await service?.close();
+      runtime?.close();
+      await f.service.close();
+      f.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
   }
 });

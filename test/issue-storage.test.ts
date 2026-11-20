@@ -523,6 +523,10 @@ test("an interrupted migration reuses its backup and pause receipt without repea
     ).toContain("Write reply lost");
     const backups = readdirSync(join(directory, "migration-backups"));
     expect(backups).toHaveLength(1);
+    // Simulate a started migration produced before tracker baseline seeding existed.
+    const legacy = new DatabaseSync(join(directory, "jobs.sqlite"));
+    legacy.exec("DELETE FROM issue_tracker_baselines");
+    legacy.close();
     const interrupted = new Store(directory);
     const epoch = interrupted.issues.get(value.id).epoch;
     const receipt = interrupted.issues.repository.migration(
@@ -544,6 +548,12 @@ test("an interrupted migration reuses its backup and pause receipt without repea
     const verified = new Store(directory);
     try {
       expect(verified.issues.get(value.id).epoch).toBe(epoch);
+      expect(verified.issues.repository.tracker(value.id)).toEqual({
+        title: value.title,
+        body: value.body,
+        closed: value.externalClosed,
+        revision: "",
+      });
       expect(
         verified.issues.repository.migration(value.id, repository.identity)
           ?.state,
@@ -744,6 +754,164 @@ test("completed migration receipts repair a lost manifest without repeating migr
     const checked = new Store(directory);
     try {
       expect(checked.issues.get(value.id)).toEqual(before);
+    } finally {
+      checked.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("migration seeds observed tracker values once without fabricating a source revision", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-migration-baseline-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "observed", "Known tracker input");
+  setup.close();
+  try {
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    const migrated = new Store(directory);
+    try {
+      expect(migrated.issues.repository.tracker(value.id)).toEqual({
+        title: value.title,
+        body: value.body,
+        closed: value.externalClosed,
+        revision: "",
+      });
+      const newer = {
+        title: "New tracker input",
+        body: "Updated remotely",
+        closed: true,
+        revision: "2026-11-20T00:00:00Z",
+      };
+      migrated.issues.repository.observedTracker(value.id, newer);
+      migrated.issues.repository.seedTracker(value.id, {
+        title: "Old",
+        body: "Old",
+        closed: false,
+      });
+      expect(migrated.issues.repository.tracker(value.id)).toEqual(newer);
+    } finally {
+      migrated.close();
+    }
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    const replayed = new Store(directory);
+    try {
+      expect(replayed.issues.repository.tracker(value.id)?.revision).toBe(
+        "2026-11-20T00:00:00Z",
+      );
+    } finally {
+      replayed.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("completed migration recovers a missing baseline from the original checkpoint rather than edited content", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-baseline-recovery-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "observed", "Known tracker input");
+  setup.close();
+  try {
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    const raw = new DatabaseSync(join(directory, "jobs.sqlite"));
+    raw.exec("DELETE FROM issue_tracker_baselines");
+    raw.close();
+    const edited = new Store(directory);
+    edited.issues.save(
+      { ...edited.issues.get(value.id), body: "Edited after migration" },
+      "input",
+      "Later input",
+    );
+    edited.close();
+    const stored = repository.documents.get(value.id);
+    if (stored === undefined) throw new Error("Missing fixture content");
+    repository.documents.set(value.id, {
+      ...stored,
+      title: "Native edit",
+      body: "Native body",
+      updatedAt: Date.now(),
+    });
+    const writes = repository.writes;
+    const replay = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    expect(replay.state).toBe("already_migrated");
+    expect(repository.writes).toBe(writes);
+    const checked = new Store(directory);
+    try {
+      expect(checked.issues.repository.tracker(value.id)).toEqual({
+        title: value.title,
+        body: value.body,
+        closed: value.externalClosed,
+        revision: "",
+      });
+      expect(checked.issues.get(value.id).body).toBe("Edited after migration");
+    } finally {
+      checked.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("baseline recovery refuses a missing original checkpoint without guessing from current content", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-baseline-missing-"));
+  const repository = new MemoryRepository();
+  const value = issue();
+  const setup = new Store(directory);
+  setup.issues.save(value, "observed", "Known tracker input");
+  setup.close();
+  try {
+    const result = await migrateIssueStorage(
+      directory,
+      value.root,
+      false,
+      () => repository,
+    );
+    const raw = new DatabaseSync(join(directory, "jobs.sqlite"));
+    raw.exec("DELETE FROM issue_tracker_baselines");
+    raw.close();
+    if (result.backup === undefined)
+      throw new Error("Missing fixture checkpoint");
+    unlinkSync(result.backup);
+    expect(
+      await rejected(
+        migrateIssueStorage(directory, value.root, false, () => repository),
+      ),
+    ).toContain("Migration backup is missing");
+    expect(repository.writes).toBe(1);
+    const checked = new Store(directory);
+    try {
+      expect(checked.issues.repository.tracker(value.id)).toBeUndefined();
+    } finally {
+      checked.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("never-observed enrollment leaves its tracker baseline uninitialized", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "octo-baseline-unobserved-"));
+  const repository = new MemoryRepository();
+  const value = { ...issue(), title: "", body: "" };
+  const setup = new Store(directory);
+  setup.issues.save(value, "enrolled", "No observation yet");
+  setup.close();
+  try {
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    await migrateIssueStorage(directory, value.root, false, () => repository);
+    const checked = new Store(directory);
+    try {
+      expect(checked.issues.repository.tracker(value.id)).toBeUndefined();
     } finally {
       checked.close();
     }

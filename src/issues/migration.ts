@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { DatabaseSync } from "node:sqlite";
 import {
   mkdirSync,
@@ -13,7 +14,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { Store } from "../store.js";
 import { decodeIssue } from "./validation.js";
 import { contentOf, sameContent, type IssueRepository } from "./repository.js";
-import { Waiting, AttemptState } from "./contracts.js";
+import { Waiting, AttemptState, type IssueRecord } from "./contracts.js";
 import { StorageMigrationState } from "./repository-store.js";
 import { synchronizeIssue } from "./storage.js";
 
@@ -86,6 +87,47 @@ export async function migrateIssueStorage(
       verifyBackup(path);
       verifiedBackups.add(path);
     };
+    const seedTracker = (issue: IssueRecord) => {
+      // Empty title is the enrollment sentinel: no tracker observation exists yet.
+      if (issue.title !== "")
+        journal.seedTracker(issue.id, {
+          title: issue.title,
+          body: issue.body,
+          closed: issue.externalClosed,
+        });
+    };
+    const recoverTracker = (issue: IssueRecord, backup: string | undefined) => {
+      if (journal.tracker(issue.id) !== undefined) return;
+      if (backup === undefined) {
+        if (issue.title === "") return;
+        throw new Error(
+          `Original migration checkpoint required to recover tracker baseline for ${issue.id.slice(0, 8)}`,
+        );
+      }
+      checkpoint(backup);
+      const saved = new DatabaseSync(backup);
+      try {
+        saved.exec("PRAGMA query_only=ON");
+        const row = saved
+          .prepare("SELECT data FROM managed_issues WHERE id=?")
+          .get(issue.id);
+        if (row === undefined)
+          throw new Error(
+            "Original issue snapshot is missing from migration checkpoint",
+          );
+        const original = decodeIssue(row["data"]);
+        if (
+          original.id !== issue.id ||
+          !isDeepStrictEqual(original.ref, issue.ref)
+        )
+          throw new Error(
+            "Migration checkpoint issue identity differs from the current issue",
+          );
+        seedTracker(original);
+      } finally {
+        saved.close();
+      }
+    };
     const complete = issues.filter((issue) => {
       const binding = journal.get(issue.id);
       if (binding !== undefined && binding.repository !== target.identity)
@@ -144,6 +186,7 @@ export async function migrateIssueStorage(
           "Previously migrated issue is missing from authoritative storage",
         );
       const receipt = journal.migration(issue.id, target.identity);
+      recoverTracker(issue, receipt?.backup);
       if (receipt !== undefined) {
         if (receipt.state === StorageMigrationState.Started) {
           checkpoint(receipt.backup);
@@ -214,6 +257,7 @@ export async function migrateIssueStorage(
           };
           store.issues.save(paused, "storage_migration", paused.detail);
           journal.bind(contentOf(paused), target.identity);
+          seedTracker(issue);
           journal.beginMigration(issue.id, target.identity, backupPath);
         }
       });
@@ -225,6 +269,7 @@ export async function migrateIssueStorage(
       if (receipt.state === StorageMigrationState.Completed)
         throw new Error("Completed migration has no confirmed storage binding");
       checkpoint(receipt.backup);
+      recoverTracker(issue, receipt.backup);
       await synchronizeIssue(
         store.issues,
         store.issues.get(issue.id),
