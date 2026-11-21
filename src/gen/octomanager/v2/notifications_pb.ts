@@ -2,11 +2,13 @@
 // @generated from file octomanager/v2/notifications.proto (package octomanager.v2, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { DomainAgentDigest, DomainDigestInspection, DomainDigestReceipt, DomainMergeReceiptResult } from "./domain_pb.js";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { DomainAgentDigest, DomainArchivedSubmission, DomainArchivedSubmissionState, DomainDigestInspection, DomainDigestReceipt, DomainMergeEntry, DomainMergeEntryState, DomainMergeReceiptResult, DomainPRReference, DomainReceiptTarget } from "./domain_pb.js";
 import { file_octomanager_v2_domain } from "./domain_pb.js";
-import type { AgentTarget } from "./tracking_pb.js";
+import type { IssueStage, IssueWaiting, ManagedIssue } from "./issues_pb.js";
+import { file_octomanager_v2_issues } from "./issues_pb.js";
+import type { AgentTarget, GetActionResponse, PRParticipant } from "./tracking_pb.js";
 import { file_octomanager_v2_tracking } from "./tracking_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v2/notifications.proto.
  */
 export const file_octomanager_v2_notifications: GenFile = /*@__PURE__*/
-  fileDesc("CiJvY3RvbWFuYWdlci92Mi9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MiJbChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbiJUChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEjoKCmluc3BlY3Rpb24YASABKAsyJi5vY3RvbWFuYWdlci52Mi5Eb21haW5EaWdlc3RJbnNwZWN0aW9uIj0KF0xpc3RBZ2VudERpZ2VzdHNSZXF1ZXN0EhUKCGFnZW50X2lkGAEgASgJSACIAQFCCwoJX2FnZW50X2lkIk4KGExpc3RBZ2VudERpZ2VzdHNSZXNwb25zZRIyCgdkaWdlc3RzGAEgAygLMiEub2N0b21hbmFnZXIudjIuRG9tYWluQWdlbnREaWdlc3QixAEKHUFja25vd2xlZGdlQWdlbnREaWdlc3RSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgNEhAKCGFnZW50X2lkGAMgASgJEhoKDWV4cGVjdGVkX2JvZHkYBCABKAlIAIgBARISCgpyZWNlaXB0X2lkGAUgASgJEjEKDGFnZW50X3RhcmdldBgGIAEoCzIbLm9jdG9tYW5hZ2VyLnYyLkFnZW50VGFyZ2V0QhAKDl9leHBlY3RlZF9ib2R5IoUCChFBZ2VudERpZ2VzdE1lbWJlchISCgptZXNzYWdlX2lkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIaCg1zdWJtaXNzaW9uX2lkGAMgASgJSACIAQESDwoHc3VtbWFyeRgGIAEoCRIOCgZwcl91cmwYByABKAkSFgoOcmVjaXBpZW50X3JvbGUYCCABKAkSFgoOb3duZXJfYWdlbnRfaWQYCSABKAkSEgoKYXBwbGljYWJsZRgEIAEoCBIfChJhY2tub3dsZWRnZWRfYXRfbXMYBSABKANIAYgBAUIQCg5fc3VibWlzc2lvbl9pZEIVChNfYWNrbm93bGVkZ2VkX2F0X21zIosBCh5BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVzcG9uc2USNAoHcmVjZWlwdBgBIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkRpZ2VzdFJlY2VpcHQSMwoIbWVzc2FnZXMYAiADKAsyIS5vY3RvbWFuYWdlci52Mi5BZ2VudERpZ2VzdE1lbWJlciJzChhNZXJnZUFnZW50TWVzc2FnZVJlcXVlc3QSEgoKcmVjZWlwdF9pZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIxCgxhZ2VudF90YXJnZXQYAyABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldCJVChlNZXJnZUFnZW50TWVzc2FnZVJlc3BvbnNlEjgKBnJlc3VsdBgBIAEoCzIoLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbk1lcmdlUmVjZWlwdFJlc3VsdEJAWj5naXRodWIuY29tL2xhbmVqL29jdG8tbWFuYWdlci9nZW4vb2N0b21hbmFnZXIvdjI7b2N0b21hbmFnZXJ2MmIGcHJvdG8z", [file_octomanager_v2_domain, file_octomanager_v2_tracking]);
+  fileDesc("CiJvY3RvbWFuYWdlci92Mi9ub3RpZmljYXRpb25zLnByb3RvEg5vY3RvbWFuYWdlci52MiJnChVHZXRBZ2VudERpZ2VzdFJlcXVlc3QSCgoCaWQYASABKAkSFQoIcmV2aXNpb24YAiABKA1IAIgBARISCgpyZWNlaXB0X2lkGAMgASgJQgsKCV9yZXZpc2lvbkoECAQQBVIEZnVsbCJkChZHZXRBZ2VudERpZ2VzdFJlc3BvbnNlEjoKCmluc3BlY3Rpb24YASABKAsyJi5vY3RvbWFuYWdlci52Mi5Eb21haW5EaWdlc3RJbnNwZWN0aW9uSgQIAhADUghmaW5kaW5ncyI9ChdMaXN0QWdlbnREaWdlc3RzUmVxdWVzdBIVCghhZ2VudF9pZBgBIAEoCUgAiAEBQgsKCV9hZ2VudF9pZCJOChhMaXN0QWdlbnREaWdlc3RzUmVzcG9uc2USMgoHZGlnZXN0cxgBIAMoCzIhLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkFnZW50RGlnZXN0IsQBCh1BY2tub3dsZWRnZUFnZW50RGlnZXN0UmVxdWVzdBIKCgJpZBgBIAEoCRIQCghyZXZpc2lvbhgCIAEoDRIQCghhZ2VudF9pZBgDIAEoCRIaCg1leHBlY3RlZF9ib2R5GAQgASgJSACIAQESEgoKcmVjZWlwdF9pZBgFIAEoCRIxCgxhZ2VudF90YXJnZXQYBiABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldEIQCg5fZXhwZWN0ZWRfYm9keSKFAgoRQWdlbnREaWdlc3RNZW1iZXISEgoKbWVzc2FnZV9pZBgBIAEoCRIRCglhY3Rpb25faWQYAiABKAkSGgoNc3VibWlzc2lvbl9pZBgDIAEoCUgAiAEBEg8KB3N1bW1hcnkYBiABKAkSDgoGcHJfdXJsGAcgASgJEhYKDnJlY2lwaWVudF9yb2xlGAggASgJEhYKDm93bmVyX2FnZW50X2lkGAkgASgJEhIKCmFwcGxpY2FibGUYBCABKAgSHwoSYWNrbm93bGVkZ2VkX2F0X21zGAUgASgDSAGIAQFCEAoOX3N1Ym1pc3Npb25faWRCFQoTX2Fja25vd2xlZGdlZF9hdF9tcyKLAQoeQWNrbm93bGVkZ2VBZ2VudERpZ2VzdFJlc3BvbnNlEjQKB3JlY2VpcHQYASABKAsyIy5vY3RvbWFuYWdlci52Mi5Eb21haW5EaWdlc3RSZWNlaXB0EjMKCG1lc3NhZ2VzGAIgAygLMiEub2N0b21hbmFnZXIudjIuQWdlbnREaWdlc3RNZW1iZXIicwoYTWVyZ2VBZ2VudE1lc3NhZ2VSZXF1ZXN0EhIKCnJlY2VpcHRfaWQYASABKAkSEAoIYWdlbnRfaWQYAiABKAkSMQoMYWdlbnRfdGFyZ2V0GAMgASgLMhsub2N0b21hbmFnZXIudjIuQWdlbnRUYXJnZXQiVQoZTWVyZ2VBZ2VudE1lc3NhZ2VSZXNwb25zZRI4CgZyZXN1bHQYASABKAsyKC5vY3RvbWFuYWdlci52Mi5Eb21haW5NZXJnZVJlY2VpcHRSZXN1bHQigQIKE05vdGlmaWNhdGlvbk1lc3NhZ2USCgoCaWQYASABKAkSGgoScmVjaXBpZW50X2FnZW50X2lkGAIgASgJEg8KB3N1bW1hcnkYAyABKAkSLwoFaXRlbXMYBCADKAsyIC5vY3RvbWFuYWdlci52Mi5Ob3RpZmljYXRpb25JdGVtEhUKDWNyZWF0ZWRfYXRfbXMYBSABKAMSOQoMbWVyZ2VfdGFyZ2V0GAYgASgLMiMub2N0b21hbmFnZXIudjIuRG9tYWluUmVjZWlwdFRhcmdldBIbCg51bnRydXN0ZWRfYm9keRgHIAEoCUgAiAEBQhEKD191bnRydXN0ZWRfYm9keSLmBAoQTm90aWZpY2F0aW9uSXRlbRIKCgJpZBgBIAEoCRISCgphcHBsaWNhYmxlGAIgASgIEh8KEmFja25vd2xlZGdlZF9hdF9tcxgDIAEoA0gBiAEBEg8KB3N1bW1hcnkYBCABKAkSMwoGYWN0aW9uGAogASgLMiEub2N0b21hbmFnZXIudjIuR2V0QWN0aW9uUmVzcG9uc2VIABI2CgVtZXJnZRgLIAEoCzIlLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvbk1lcmdlSXRlbUgAEjYKBWlzc3VlGAwgASgLMiUub2N0b21hbmFnZXIudjIuTm90aWZpY2F0aW9uSXNzdWVJdGVtSAASQAoKc3VibWlzc2lvbhgNIAEoCzIqLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvblN1Ym1pc3Npb25JdGVtSAASRAoMcGFydGljaXBhbnRzGA4gASgLMiwub2N0b21hbmFnZXIudjIuTm90aWZpY2F0aW9uUGFydGljaXBhbnRzSXRlbUgAEj4KCXJlZmVyZW5jZRgPIAEoCzIpLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvblJlZmVyZW5jZUl0ZW1IABJCCgt1bmF2YWlsYWJsZRgQIAEoCzIrLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvblVuYXZhaWxhYmxlSXRlbUgAEhsKDnVudHJ1c3RlZF9ib2R5GBQgASgJSAKIAQFCCAoGc291cmNlQhUKE19hY2tub3dsZWRnZWRfYXRfbXNCEQoPX3VudHJ1c3RlZF9ib2R5IqMBChVOb3RpZmljYXRpb25NZXJnZUl0ZW0SEAoIZW50cnlfaWQYASABKAkSEAoIY2hhaW5faWQYAiABKAkSNAoFc3RhdGUYAyABKA4yJS5vY3RvbWFuYWdlci52Mi5Eb21haW5NZXJnZUVudHJ5U3RhdGUSMAoGZGV0YWlsGAQgASgLMiAub2N0b21hbmFnZXIudjIuRG9tYWluTWVyZ2VFbnRyeSKxAQoVTm90aWZpY2F0aW9uSXNzdWVJdGVtEhAKCGlzc3VlX2lkGAEgASgJEikKBXN0YWdlGAIgASgOMhoub2N0b21hbmFnZXIudjIuSXNzdWVTdGFnZRItCgd3YWl0aW5nGAMgASgOMhwub2N0b21hbmFnZXIudjIuSXNzdWVXYWl0aW5nEiwKBmRldGFpbBgEIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZSKrAQoaTm90aWZpY2F0aW9uU3VibWlzc2lvbkl0ZW0SFQoNc3VibWlzc2lvbl9pZBgBIAEoCRI8CgVzdGF0ZRgCIAEoDjItLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkFyY2hpdmVkU3VibWlzc2lvblN0YXRlEjgKBmRldGFpbBgDIAEoCzIoLm9jdG9tYW5hZ2VyLnYyLkRvbWFpbkFyY2hpdmVkU3VibWlzc2lvbiJrChxOb3RpZmljYXRpb25QYXJ0aWNpcGFudHNJdGVtEg0KBXByX2lkGAEgASgJEg0KBWNvdW50GAIgASgNEi0KBmRldGFpbBgDIAMoCzIdLm9jdG9tYW5hZ2VyLnYyLlBSUGFydGljaXBhbnQiZAoZTm90aWZpY2F0aW9uUmVmZXJlbmNlSXRlbRIUCgxyZWZlcmVuY2VfaWQYASABKAkSMQoGZGV0YWlsGAIgASgLMiEub2N0b21hbmFnZXIudjIuRG9tYWluUFJSZWZlcmVuY2UibwobTm90aWZpY2F0aW9uVW5hdmFpbGFibGVJdGVtEj0KBnJlYXNvbhgBIAEoDjItLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvblVuYXZhaWxhYmxlUmVhc29uEhEKCXNvdXJjZV9pZBgCIAEoCSI5Ch1HZXROb3RpZmljYXRpb25NZXNzYWdlUmVxdWVzdBIKCgJpZBgBIAEoCRIMCgRmdWxsGAIgASgIIlYKHkdldE5vdGlmaWNhdGlvbk1lc3NhZ2VSZXNwb25zZRI0CgdtZXNzYWdlGAEgASgLMiMub2N0b21hbmFnZXIudjIuTm90aWZpY2F0aW9uTWVzc2FnZSKmAQolQWNrbm93bGVkZ2VOb3RpZmljYXRpb25NZXNzYWdlUmVxdWVzdBIKCgJpZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIxCgxhZ2VudF90YXJnZXQYAyABKAsyGy5vY3RvbWFuYWdlci52Mi5BZ2VudFRhcmdldBIaCg1leHBlY3RlZF9ib2R5GAQgASgJSACIAQFCEAoOX2V4cGVjdGVkX2JvZHkiXgomQWNrbm93bGVkZ2VOb3RpZmljYXRpb25NZXNzYWdlUmVzcG9uc2USNAoHbWVzc2FnZRgBIAEoCzIjLm9jdG9tYW5hZ2VyLnYyLk5vdGlmaWNhdGlvbk1lc3NhZ2UquAEKHU5vdGlmaWNhdGlvblVuYXZhaWxhYmxlUmVhc29uEi8KK05PVElGSUNBVElPTl9VTkFWQUlMQUJMRV9SRUFTT05fVU5TUEVDSUZJRUQQABIyCi5OT1RJRklDQVRJT05fVU5BVkFJTEFCTEVfUkVBU09OX01JU1NJTkdfU09VUkNFEAESMgouTk9USUZJQ0FUSU9OX1VOQVZBSUxBQkxFX1JFQVNPTl9VTktOT1dOX1NPVVJDRRACQkBaPmdpdGh1Yi5jb20vbGFuZWovb2N0by1tYW5hZ2VyL2dlbi9vY3RvbWFuYWdlci92MjtvY3RvbWFuYWdlcnYyYgZwcm90bzM", [file_octomanager_v2_domain, file_octomanager_v2_issues, file_octomanager_v2_tracking]);
 
 /**
  * Frozen content and exact receipts are separate typed records.
@@ -276,4 +278,445 @@ export type MergeAgentMessageResponse = Message<"octomanager.v2.MergeAgentMessag
  */
 export const MergeAgentMessageResponseSchema: GenMessage<MergeAgentMessageResponse> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_notifications, 8);
+
+/**
+ * NotificationMessage is one immutable delivery containing one or more typed items.
+ *
+ * @generated from message octomanager.v2.NotificationMessage
+ */
+export type NotificationMessage = Message<"octomanager.v2.NotificationMessage"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string recipient_agent_id = 2;
+   */
+  recipientAgentId: string;
+
+  /**
+   * Coordinator-owned metadata, independent of the original rendered body.
+   *
+   * @generated from field: string summary = 3;
+   */
+  summary: string;
+
+  /**
+   * @generated from field: repeated octomanager.v2.NotificationItem items = 4;
+   */
+  items: NotificationItem[];
+
+  /**
+   * @generated from field: int64 created_at_ms = 5;
+   */
+  createdAtMs: bigint;
+
+  /**
+   * An offer remains subject to the separate owner-authorized merge operation.
+   *
+   * @generated from field: octomanager.v2.DomainReceiptTarget merge_target = 6;
+   */
+  mergeTarget?: DomainReceiptTarget | undefined;
+
+  /**
+   * The exact historical delivery text is available only with explicit full inspection.
+   *
+   * @generated from field: optional string untrusted_body = 7;
+   */
+  untrustedBody?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationMessage.
+ * Use `create(NotificationMessageSchema)` to create a new message.
+ */
+export const NotificationMessageSchema: GenMessage<NotificationMessage> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 9);
+
+/**
+ * NotificationItem retains one frozen member's identity and its current applicability.
+ *
+ * @generated from message octomanager.v2.NotificationItem
+ */
+export type NotificationItem = Message<"octomanager.v2.NotificationItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bool applicable = 2;
+   */
+  applicable: boolean;
+
+  /**
+   * @generated from field: optional int64 acknowledged_at_ms = 3;
+   */
+  acknowledgedAtMs?: bigint | undefined;
+
+  /**
+   * @generated from field: string summary = 4;
+   */
+  summary: string;
+
+  /**
+   * @generated from oneof octomanager.v2.NotificationItem.source
+   */
+  source: {
+    /**
+     * @generated from field: octomanager.v2.GetActionResponse action = 10;
+     */
+    value: GetActionResponse;
+    case: "action";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationMergeItem merge = 11;
+     */
+    value: NotificationMergeItem;
+    case: "merge";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationIssueItem issue = 12;
+     */
+    value: NotificationIssueItem;
+    case: "issue";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationSubmissionItem submission = 13;
+     */
+    value: NotificationSubmissionItem;
+    case: "submission";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationParticipantsItem participants = 14;
+     */
+    value: NotificationParticipantsItem;
+    case: "participants";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationReferenceItem reference = 15;
+     */
+    value: NotificationReferenceItem;
+    case: "reference";
+  } | {
+    /**
+     * @generated from field: octomanager.v2.NotificationUnavailableItem unavailable = 16;
+     */
+    value: NotificationUnavailableItem;
+    case: "unavailable";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * @generated from field: optional string untrusted_body = 20;
+   */
+  untrustedBody?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationItem.
+ * Use `create(NotificationItemSchema)` to create a new message.
+ */
+export const NotificationItemSchema: GenMessage<NotificationItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 10);
+
+/**
+ * NotificationMergeItem identifies an existing merge entry and its current state.
+ *
+ * @generated from message octomanager.v2.NotificationMergeItem
+ */
+export type NotificationMergeItem = Message<"octomanager.v2.NotificationMergeItem"> & {
+  /**
+   * @generated from field: string entry_id = 1;
+   */
+  entryId: string;
+
+  /**
+   * @generated from field: string chain_id = 2;
+   */
+  chainId: string;
+
+  /**
+   * @generated from field: octomanager.v2.DomainMergeEntryState state = 3;
+   */
+  state: DomainMergeEntryState;
+
+  /**
+   * Full inspection may include untrusted producer detail.
+   *
+   * @generated from field: octomanager.v2.DomainMergeEntry detail = 4;
+   */
+  detail?: DomainMergeEntry | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationMergeItem.
+ * Use `create(NotificationMergeItemSchema)` to create a new message.
+ */
+export const NotificationMergeItemSchema: GenMessage<NotificationMergeItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 11);
+
+/**
+ * NotificationIssueItem identifies an issue without forwarding its title or discussion by default.
+ *
+ * @generated from message octomanager.v2.NotificationIssueItem
+ */
+export type NotificationIssueItem = Message<"octomanager.v2.NotificationIssueItem"> & {
+  /**
+   * @generated from field: string issue_id = 1;
+   */
+  issueId: string;
+
+  /**
+   * @generated from field: octomanager.v2.IssueStage stage = 2;
+   */
+  stage: IssueStage;
+
+  /**
+   * @generated from field: octomanager.v2.IssueWaiting waiting = 3;
+   */
+  waiting: IssueWaiting;
+
+  /**
+   * @generated from field: octomanager.v2.ManagedIssue detail = 4;
+   */
+  detail?: ManagedIssue | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationIssueItem.
+ * Use `create(NotificationIssueItemSchema)` to create a new message.
+ */
+export const NotificationIssueItemSchema: GenMessage<NotificationIssueItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 12);
+
+/**
+ * NotificationSubmissionItem retains archived submission identity and state.
+ *
+ * @generated from message octomanager.v2.NotificationSubmissionItem
+ */
+export type NotificationSubmissionItem = Message<"octomanager.v2.NotificationSubmissionItem"> & {
+  /**
+   * @generated from field: string submission_id = 1;
+   */
+  submissionId: string;
+
+  /**
+   * @generated from field: octomanager.v2.DomainArchivedSubmissionState state = 2;
+   */
+  state: DomainArchivedSubmissionState;
+
+  /**
+   * @generated from field: octomanager.v2.DomainArchivedSubmission detail = 3;
+   */
+  detail?: DomainArchivedSubmission | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationSubmissionItem.
+ * Use `create(NotificationSubmissionItemSchema)` to create a new message.
+ */
+export const NotificationSubmissionItemSchema: GenMessage<NotificationSubmissionItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 13);
+
+/**
+ * NotificationParticipantsItem describes the current participant roster for a tracked PR.
+ *
+ * @generated from message octomanager.v2.NotificationParticipantsItem
+ */
+export type NotificationParticipantsItem = Message<"octomanager.v2.NotificationParticipantsItem"> & {
+  /**
+   * @generated from field: string pr_id = 1;
+   */
+  prId: string;
+
+  /**
+   * @generated from field: uint32 count = 2;
+   */
+  count: number;
+
+  /**
+   * @generated from field: repeated octomanager.v2.PRParticipant detail = 3;
+   */
+  detail: PRParticipant[];
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationParticipantsItem.
+ * Use `create(NotificationParticipantsItemSchema)` to create a new message.
+ */
+export const NotificationParticipantsItemSchema: GenMessage<NotificationParticipantsItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 14);
+
+/**
+ * NotificationReferenceItem preserves explicit access to a discovered reference.
+ *
+ * @generated from message octomanager.v2.NotificationReferenceItem
+ */
+export type NotificationReferenceItem = Message<"octomanager.v2.NotificationReferenceItem"> & {
+  /**
+   * @generated from field: string reference_id = 1;
+   */
+  referenceId: string;
+
+  /**
+   * @generated from field: octomanager.v2.DomainPRReference detail = 2;
+   */
+  detail?: DomainPRReference | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationReferenceItem.
+ * Use `create(NotificationReferenceItemSchema)` to create a new message.
+ */
+export const NotificationReferenceItemSchema: GenMessage<NotificationReferenceItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 15);
+
+/**
+ * NotificationUnavailableItem preserves membership when a producer source cannot be resolved.
+ *
+ * @generated from message octomanager.v2.NotificationUnavailableItem
+ */
+export type NotificationUnavailableItem = Message<"octomanager.v2.NotificationUnavailableItem"> & {
+  /**
+   * @generated from field: octomanager.v2.NotificationUnavailableReason reason = 1;
+   */
+  reason: NotificationUnavailableReason;
+
+  /**
+   * @generated from field: string source_id = 2;
+   */
+  sourceId: string;
+};
+
+/**
+ * Describes the message octomanager.v2.NotificationUnavailableItem.
+ * Use `create(NotificationUnavailableItemSchema)` to create a new message.
+ */
+export const NotificationUnavailableItemSchema: GenMessage<NotificationUnavailableItem> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 16);
+
+/**
+ * GetNotificationMessageRequest selects a frozen public message, including a single direct delivery.
+ *
+ * @generated from message octomanager.v2.GetNotificationMessageRequest
+ */
+export type GetNotificationMessageRequest = Message<"octomanager.v2.GetNotificationMessageRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: bool full = 2;
+   */
+  full: boolean;
+};
+
+/**
+ * Describes the message octomanager.v2.GetNotificationMessageRequest.
+ * Use `create(GetNotificationMessageRequestSchema)` to create a new message.
+ */
+export const GetNotificationMessageRequestSchema: GenMessage<GetNotificationMessageRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 17);
+
+/**
+ * GetNotificationMessageResponse returns safe metadata unless full inspection was requested.
+ *
+ * @generated from message octomanager.v2.GetNotificationMessageResponse
+ */
+export type GetNotificationMessageResponse = Message<"octomanager.v2.GetNotificationMessageResponse"> & {
+  /**
+   * @generated from field: octomanager.v2.NotificationMessage message = 1;
+   */
+  message?: NotificationMessage | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.GetNotificationMessageResponse.
+ * Use `create(GetNotificationMessageResponseSchema)` to create a new message.
+ */
+export const GetNotificationMessageResponseSchema: GenMessage<GetNotificationMessageResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 18);
+
+/**
+ * AcknowledgeNotificationMessageRequest records receipt without accepting contained work.
+ *
+ * @generated from message octomanager.v2.AcknowledgeNotificationMessageRequest
+ */
+export type AcknowledgeNotificationMessageRequest = Message<"octomanager.v2.AcknowledgeNotificationMessageRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: octomanager.v2.AgentTarget agent_target = 3;
+   */
+  agentTarget?: AgentTarget | undefined;
+
+  /**
+   * @generated from field: optional string expected_body = 4;
+   */
+  expectedBody?: string | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.AcknowledgeNotificationMessageRequest.
+ * Use `create(AcknowledgeNotificationMessageRequestSchema)` to create a new message.
+ */
+export const AcknowledgeNotificationMessageRequestSchema: GenMessage<AcknowledgeNotificationMessageRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 19);
+
+/**
+ * AcknowledgeNotificationMessageResponse retains the exact message and updated member receipts.
+ *
+ * @generated from message octomanager.v2.AcknowledgeNotificationMessageResponse
+ */
+export type AcknowledgeNotificationMessageResponse = Message<"octomanager.v2.AcknowledgeNotificationMessageResponse"> & {
+  /**
+   * @generated from field: octomanager.v2.NotificationMessage message = 1;
+   */
+  message?: NotificationMessage | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.AcknowledgeNotificationMessageResponse.
+ * Use `create(AcknowledgeNotificationMessageResponseSchema)` to create a new message.
+ */
+export const AcknowledgeNotificationMessageResponseSchema: GenMessage<AcknowledgeNotificationMessageResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_notifications, 20);
+
+/**
+ * NotificationUnavailableReason distinguishes missing history from an unrecognized legacy source.
+ *
+ * @generated from enum octomanager.v2.NotificationUnavailableReason
+ */
+export enum NotificationUnavailableReason {
+  /**
+   * @generated from enum value: NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE = 1;
+   */
+  MISSING_SOURCE = 1,
+
+  /**
+   * @generated from enum value: NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE = 2;
+   */
+  UNKNOWN_SOURCE = 2,
+}
+
+/**
+ * Describes the enum octomanager.v2.NotificationUnavailableReason.
+ */
+export const NotificationUnavailableReasonSchema: GenEnum<NotificationUnavailableReason> = /*@__PURE__*/
+  enumDesc(file_octomanager_v2_notifications, 0);
 

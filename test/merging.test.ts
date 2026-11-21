@@ -316,8 +316,7 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
       .messages.find(
         (message) => message.notice?.subject?.kind === "reference",
       );
-    assert(notice !== undefined);
-    assert(notice.body.includes("Reference:"));
+    assert.equal(notice, undefined);
     const ref = store.refs().find((ref) => ref.targetUrl === first);
     assert(ref !== undefined);
     store.confirm(

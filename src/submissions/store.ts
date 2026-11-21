@@ -289,7 +289,7 @@ export class SubmissionStore {
         .get(value.id) !== undefined
     )
       return;
-    const id = randomUUID();
+    const id = this.noticesRepository.newMessageId();
     const notice: SafeNotice = {
       version: 1,
       kind: "submission",

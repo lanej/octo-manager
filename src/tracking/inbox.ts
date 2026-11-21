@@ -5,6 +5,9 @@ export type { AgentMessage } from "../notifications/message.js";
 
 export class AgentInbox {
   constructor(private repository: NotificationRepository) {}
+  newMessageId(): string {
+    return this.repository.newMessageId();
+  }
   recoverWorkflows(): void {
     this.repository.recoverWorkflows();
   }

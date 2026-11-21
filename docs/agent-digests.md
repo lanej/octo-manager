@@ -2,9 +2,9 @@
 
 Queue reconciliation runs only when an agent has applicable unread messages, a live digest, pending digest cleanup, or historical inbox messages outside digest membership that may still have legacy queue entries. Successful idle legacy cleanup is reinspected once per minute to catch late native admission; local membership, receipt, applicability, or transport changes can trigger an earlier inspection. Repeated failures retain their first error event and retry with delays of 5, 10, 20, 40, and at most 60 seconds. Error events include the agent identity and actual rejection. Sessions with no inbox or digest work are not polled.
 
-Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses and action/assessment references without forwarding external prose or model analysis. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
+Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses without forwarding external prose or model analysis. Per-action and per-assessment identifiers remain available through explicit typed inspection. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Identical displayed entries within a PR share one line. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
+Identical displayed entries within a PR share one line. Distinct action updates with the same title, pinned reference, assessment status, role and other non-identity fields share one heading and metadata line, using one public inspection/receipt ID. Per-action and assessment record IDs remain in the immutable source messages and explicit inspection; the compact digest retains every selected receipt member. Different revisions, statuses and roles remain separate. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
 
 ## Replacement and cancellation
 
@@ -52,6 +52,8 @@ octo-manager ack RECEIPT_ID   # Receipt without merging.
 octo-manager message RECEIPT_ID
 ```
 
+`octo-manager message RECEIPT_ID` returns the generic message and every typed item as safe metadata. The same interface supports a one-item direct delivery. `--full` explicitly includes untrusted producer detail and original text; neither inspection mode acknowledges or resolves work. Individual tracking IDs stay out of the unsolicited digest. Receipt output confirms one ID and item count; full item inspection remains separate.
+
 `ack` resolves `OCTO_MANAGER_AGENT_ID`, or the registered session identified by `CODEX_THREAD_ID`. Explicit `--agent-id` overrides environment identity. Use `OCTO_MANAGER_ENDPOINT` or `--endpoint` when the same session has multiple registered endpoints. Missing, unknown or ambiguous identity fails; receipt never creates an agent. Each receipt ID resolves to one immutable dispatch, including after replacement or restart. An additive prefix index supports lookup without rewriting old records. New dispatches reserve historically unused eight-character prefixes; ambiguous older IDs require a longer prefix.
 
 Administrative inspection exposes the internal envelope and revision:
@@ -67,7 +69,7 @@ Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and re
 The optional Codex hook acknowledges an exact incoming digest body before unread recovery. Automatic native history reconciliation also works without hooks. Neither path accepts or resolves the underlying actions. There is no model call, new agent session, setting change or mandatory PR submission in this path.
 
 
-Acknowledgment output is deliberately smaller than inspection: the typed receipt contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
+`ack ID` uses the generic message interface and prints one receipt confirmation and item count. The administrative digest receipt RPC and compatibility commands retain their bounded member summaries, applicability, PR/owner/role metadata and revision information. Neither form echoes original bodies or the journal merely to acknowledge receipt. Use `message ID` for typed item inspection, `--full` deliberately for untrusted text, and administrative digest inspection for revision/journal history. See the [message content catalog](agent-messages.md).
 
 PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.
 

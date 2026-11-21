@@ -55,7 +55,11 @@ service SchedulerService {
 
   // Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
   rpc MergeAgentMessage(MergeAgentMessageRequest) returns (MergeAgentMessageResponse);
-  // Inspects a digest or frozen receipt without acknowledging its messages.
+  // Inspects one public message and every typed member without recording receipt.
+  rpc GetNotificationMessage(GetNotificationMessageRequest) returns (GetNotificationMessageResponse);
+  // Records receipt for one frozen message without resolving its items.
+  rpc AcknowledgeNotificationMessage(AcknowledgeNotificationMessageRequest) returns (AcknowledgeNotificationMessageResponse);
+  // Retains administrative inspection of immutable digest revisions.
   rpc GetAgentDigest(GetAgentDigestRequest) returns (GetAgentDigestResponse);
   // Lists retained notification digests for a recipient.
   rpc ListAgentDigests(ListAgentDigestsRequest) returns (ListAgentDigestsResponse);
