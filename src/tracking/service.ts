@@ -350,7 +350,6 @@ export class TrackingService {
   }
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveries().find((d) => {
-      if (this.store.inbox.isReplaced(d.id)) return false;
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||
@@ -358,6 +357,13 @@ export class TrackingService {
           this.options.managedQueue?.(d.recipientAgentId) === true)
       )
         return false;
+      if (this.store.inbox.isReplaced(d.id))
+        return (
+          message !== undefined &&
+          (d.progress.state === DeliveryState.Uncertain ||
+            d.progress.state === DeliveryState.Delivered) &&
+          message.nextCheckAt <= this.now()
+        );
       return (
         (d.progress.state === DeliveryState.Pending &&
           d.progress.nextAttemptAt <= this.now()) ||
@@ -371,6 +377,10 @@ export class TrackingService {
       );
     });
     if (!d) return;
+    if (this.store.inbox.isReplaced(d.id)) {
+      await this.reconcileReplaced(d);
+      return;
+    }
     const action = this.store.action(d.actionId),
       pr = this.store.pr(action.prId),
       agent = this.store.agent(d.recipientAgentId);
@@ -656,6 +666,58 @@ export class TrackingService {
         this.nextUncertainCheck.set(d.id, this.now() + 60000);
         this.store.inbox.defer(d.id, this.now() + 60000);
       }
+    } finally {
+      this.connections.delete(connection);
+      connection.close();
+    }
+  }
+  private async reconcileReplaced(delivery: Delivery): Promise<void> {
+    const message = this.store.inbox.get(delivery.id);
+    const agent = this.store.agent(delivery.recipientAgentId);
+    const endpoint = this.config.endpoints[agent.endpoint];
+    if (message === undefined || endpoint === undefined) return;
+    const connection =
+      this.options.connect?.(agent) ??
+      new CodexConnection(endpoint.socket, endpoint.delivery);
+    this.connections.add(connection);
+    // A replacement fences sends, while exact historical receipt evidence remains independently reconcilable.
+    this.store.inbox.defer(delivery.id, this.now() + 60000);
+    const stopped = () => this.stopped;
+    try {
+      await connection.prepare(agent);
+      if (stopped()) return;
+      const found = await connection.find(agent, delivery.id, message.body);
+      if (stopped() || !found.found) return;
+      this.store.transaction(() => {
+        if (found.received === true)
+          this.store.acknowledgeMessageInside(delivery.id, agent.id);
+        const current = this.store
+          .deliveries()
+          .find((value) => value.id === delivery.id);
+        if (
+          current === undefined ||
+          current.progress.state === DeliveryState.Cancelled
+        )
+          return;
+        this.store.saveDelivery(
+          {
+            ...current,
+            progress: {
+              state: DeliveryState.Delivered,
+              at: this.now(),
+              ...(found.turnId === undefined ? {} : { turnId: found.turnId }),
+              ...(found.queueId === undefined
+                ? {}
+                : { queueId: found.queueId }),
+              ...(found.note === undefined ? {} : { note: found.note }),
+            },
+            updatedAt: this.now(),
+          },
+          "delivery_reconciled",
+        );
+      });
+    } catch {
+      // Missing history or transport failure leaves the original outcome unknown for a later read-only retry.
     } finally {
       this.connections.delete(connection);
       connection.close();

@@ -255,8 +255,10 @@ test("legacy uncertain bodies remain immutable and reconcilable but are never re
     }),
   });
   try {
-    service.tick();
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    for (let i = 0; i < 5; i++) {
+      service.tick();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
     expect(sends).toBe(1);
     expect(sent.every((text) => !text.includes(attack))).toBe(true);
     expect(
@@ -801,3 +803,150 @@ for (const kind of ["issue", "submission"] as const) {
     }
   });
 }
+
+for (const state of [
+  DeliveryState.Uncertain,
+  DeliveryState.Delivered,
+] as const) {
+  test(`replaced ${state} direct delivery can receipt its exact historical body without resending`, async () => {
+    const f = await fixture();
+    await f.tracking.close();
+    const original = f.store.tracking.deliveries()[0];
+    if (original === undefined) throw new Error("Missing delivery");
+    f.store.tracking.inbox.record(original.id, attack);
+    f.store.tracking.saveDelivery(
+      {
+        ...original,
+        progress:
+          state === DeliveryState.Uncertain
+            ? { state, at: 1, reason: "Lost response" }
+            : { state, at: 1 },
+        updatedAt: 1,
+      },
+      "synthetic_sent",
+    );
+    f.store.tracking.prepareSafeRecovery();
+    const replacement = f.store.tracking.inbox
+      .list(f.pr.ownerAgentId, 0, false, true)
+      .messages.find((message) => message.id !== original.id);
+    if (replacement === undefined) throw new Error("Missing replacement");
+    let lookups = 0;
+    const sent: string[] = [];
+    const tracking = new TrackingService(f.store.tracking, f.config, Date.now, {
+      read: () => Promise.resolve(observation),
+      connect: () => ({
+        prepare: () => Promise.resolve({ busy: false }),
+        find: (_agent, id, body) => {
+          if (id === original.id) {
+            lookups++;
+            expect(body).toBe(attack);
+            return Promise.resolve({
+              found: true,
+              received: true,
+              turnId: "historical",
+            });
+          }
+          return Promise.resolve({ found: false });
+        },
+        send: (_agent, id) => {
+          sent.push(id);
+          return Promise.resolve({ turnId: "safe" });
+        },
+        close: () => {},
+      }),
+    });
+    try {
+      for (let i = 0; i < 10; i++) {
+        tracking.tick();
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+      expect(lookups).toBe(1);
+      expect(sent).not.toContain(original.id);
+      expect(
+        f.store.tracking.inbox.get(original.id)?.acknowledgedAt,
+      ).toBeDefined();
+      expect(f.store.tracking.inbox.get(original.id)?.body).toBe(attack);
+      expect(
+        f.store.tracking.inbox.get(replacement.id)?.acknowledgedAt,
+      ).toBeUndefined();
+      expect(
+        f.store.tracking
+          .deliveries()
+          .find((delivery) => delivery.id === original.id)?.progress.state,
+      ).toBe(DeliveryState.Delivered);
+    } finally {
+      await tracking.close();
+      await f.close();
+    }
+  });
+}
+
+test("late historical receipt preserves cancellation during lookup", async () => {
+  const f = await fixture();
+  await f.tracking.close();
+  const original = f.store.tracking.deliveries()[0];
+  if (original === undefined) throw new Error("Missing delivery");
+  f.store.tracking.inbox.record(original.id, attack);
+  f.store.tracking.saveDelivery(
+    {
+      ...original,
+      progress: {
+        state: DeliveryState.Uncertain,
+        at: 1,
+        reason: "Lost response",
+      },
+    },
+    "synthetic_uncertain",
+  );
+  f.store.tracking.prepareSafeRecovery();
+  let release: (() => void) | undefined;
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let entered = false,
+    sends = 0;
+  const tracking = new TrackingService(f.store.tracking, f.config, Date.now, {
+    read: () => Promise.resolve(observation),
+    connect: () => ({
+      prepare: () => Promise.resolve({ busy: false }),
+      find: async (_agent, id, body) => {
+        expect(id).toBe(original.id);
+        expect(body).toBe(attack);
+        entered = true;
+        await blocked;
+        return { found: true, received: true };
+      },
+      send: () => {
+        sends++;
+        return Promise.resolve({});
+      },
+      close: () => {},
+    }),
+  });
+  try {
+    tracking.tick();
+    for (let i = 0; i < 20; i++)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(entered).toBe(true);
+    f.store.tracking.untrack(f.pr.id);
+    expect(
+      f.store.tracking.deliveries().find((value) => value.id === original.id)
+        ?.progress.state,
+    ).toBe(DeliveryState.Cancelled);
+    release?.();
+    for (let i = 0; i < 10; i++)
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(
+      f.store.tracking.deliveries().find((value) => value.id === original.id)
+        ?.progress.state,
+    ).toBe(DeliveryState.Cancelled);
+    expect(
+      f.store.tracking.inbox.get(original.id)?.acknowledgedAt,
+    ).toBeDefined();
+    expect(sends).toBe(0);
+  } finally {
+    release?.();
+    await tracking.close();
+    await f.close();
+  }
+});

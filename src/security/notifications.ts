@@ -7,6 +7,14 @@ import { canonicalPR } from "../tracking/github.js";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 
+export const NoticeSubjectKind = {
+  Submission: "submission",
+  MergeEntry: "merge_entry",
+  Reference: "reference",
+  Issue: "issue",
+  Action: "action",
+} as const;
+
 export const NoticeSchema = Type.Object(
   {
     version: Type.Literal(1),
@@ -44,13 +52,7 @@ export const NoticeSchema = Type.Object(
     subject: Type.Optional(
       Type.Object(
         {
-          kind: Type.Union([
-            Type.Literal("submission"),
-            Type.Literal("merge_entry"),
-            Type.Literal("reference"),
-            Type.Literal("issue"),
-            Type.Literal("action"),
-          ]),
+          kind: Type.Enum(NoticeSubjectKind),
           id: Type.String(),
         },
         { additionalProperties: false },

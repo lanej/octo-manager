@@ -17,15 +17,174 @@ function text(value: unknown): string {
     throw new Error("Invalid inbox text");
   return value;
 }
-const applicable =
-  "(NOT EXISTS(SELECT 1 FROM safe_notice_replacements r WHERE r.original_id=m.delivery_id) AND NOT EXISTS(SELECT 1 FROM safe_notice_supersessions s WHERE s.original_id=m.delivery_id) AND p.enabled=1 AND (p.owner_agent_id=d.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=d.recipient_agent_id)) AND a.state IN ('open','acknowledged','working') AND d.state!='cancelled')";
-const query = `SELECT m.*,d.action_id,d.recipient_agent_id,
-  NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id, ${applicable} AS applicable
-  FROM delivery_messages m JOIN deliveries d ON d.id=m.delivery_id
-  JOIN actions a ON a.id=d.action_id JOIN tracked_prs p ON p.id=a.pr_id`;
-const workflowMessagesQuery = `SELECT * FROM (${query} UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable FROM operation_notifications UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,m.pr_id AS participant_pr_id,NULL AS workflow_pr_id,(p.enabled=1 AND m.revision=r.revision AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM participant_messages m JOIN tracked_prs p ON p.id=m.pr_id JOIN pr_participant_revisions r ON r.pr_id=p.id UNION ALL SELECT m.sequence,m.id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,'' AS action_id,m.recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,m.pr_id AS workflow_pr_id,(m.applicable=1 AND p.enabled=1 AND (substr(m.subject_id,1,6)!='ready:' OR EXISTS(SELECT 1 FROM actions a WHERE a.id=substr(m.subject_id,7) AND a.state IN ('open','acknowledged','working'))) AND (p.owner_agent_id=m.recipient_agent_id OR EXISTS(SELECT 1 FROM pr_subscriptions s WHERE s.pr_id=p.id AND s.agent_id=m.recipient_agent_id))) AS applicable FROM merge_notices m JOIN tracked_prs p ON p.id=m.pr_id)`;
-const canonicalMessagesQuery = `SELECT * FROM (SELECT *,NULL AS issue_id FROM (${workflowMessagesQuery}) UNION ALL SELECT sequence,id AS delivery_id,body,created_at_ms,acknowledged_at_ms,next_check_at_ms,'' AS action_id,recipient_agent_id,NULL AS submission_id,NULL AS participant_pr_id,NULL AS workflow_pr_id,applicable,issue_id FROM issue_notices)`;
-const messagesQuery = `SELECT * FROM (SELECT m.sequence,m.delivery_id,m.body,m.created_at_ms,m.acknowledged_at_ms,m.next_check_at_ms,m.action_id,m.recipient_agent_id,m.submission_id,m.participant_pr_id,m.workflow_pr_id,(m.applicable AND NOT EXISTS(SELECT 1 FROM safe_notice_replacements r WHERE r.original_id=m.delivery_id)) AS applicable,m.issue_id FROM (${canonicalMessagesQuery}) m UNION ALL SELECT r.sequence,r.id,r.body,r.created_at_ms,r.acknowledged_at_ms,r.next_check_at_ms,m.action_id,m.recipient_agent_id,m.submission_id,m.participant_pr_id,m.workflow_pr_id,m.applicable,m.issue_id FROM safe_recovery_messages r JOIN (${canonicalMessagesQuery}) m ON m.delivery_id=r.original_id)`;
+const applicable = /* sql */ `
+  (NOT EXISTS(
+  SELECT 1
+  FROM safe_notice_replacements r
+  WHERE r.original_id=m.delivery_id)
+  AND NOT EXISTS(
+  SELECT 1
+  FROM safe_notice_supersessions s
+  WHERE s.original_id=m.delivery_id)
+  AND p.enabled=1
+  AND (p.owner_agent_id=d.recipient_agent_id
+  OR EXISTS(
+  SELECT 1
+  FROM pr_subscriptions s
+  WHERE s.pr_id=p.id
+  AND s.agent_id=d.recipient_agent_id))
+  AND a.state IN ('open',
+    'acknowledged',
+    'working')
+  AND d.state!='cancelled')
+`;
+const query = /* sql */ `
+  SELECT m.*,
+    d.action_id,
+    d.recipient_agent_id,
+     NULL AS submission_id,
+    NULL AS participant_pr_id,
+    NULL AS workflow_pr_id,
+     ${applicable} AS applicable
+  FROM delivery_messages m
+  JOIN deliveries d ON d.id=m.delivery_id
+  JOIN actions a ON a.id=d.action_id
+  JOIN tracked_prs p ON p.id=a.pr_id
+`;
+const workflowMessagesQuery = /* sql */ `
+  SELECT *
+  FROM (${query}
+  UNION ALL
+  SELECT sequence,
+    id AS delivery_id,
+    body,
+    created_at_ms,
+    acknowledged_at_ms,
+    next_check_at_ms,
+    '' AS action_id,
+    recipient_agent_id,
+    submission_id,
+    NULL AS participant_pr_id,
+    NULL AS workflow_pr_id,
+    applicable
+  FROM operation_notifications
+  UNION ALL
+  SELECT m.sequence,
+    m.id,
+    m.body,
+    m.created_at_ms,
+    m.acknowledged_at_ms,
+    m.next_check_at_ms,
+    '' AS action_id,
+    m.recipient_agent_id,
+    NULL AS submission_id,
+    m.pr_id AS participant_pr_id,
+    NULL AS workflow_pr_id,
+    (p.enabled=1
+  AND m.revision=r.revision
+  AND (p.owner_agent_id=m.recipient_agent_id
+  OR EXISTS(
+  SELECT 1
+  FROM pr_subscriptions s
+  WHERE s.pr_id=p.id
+  AND s.agent_id=m.recipient_agent_id))) AS applicable
+  FROM participant_messages m
+  JOIN tracked_prs p ON p.id=m.pr_id
+  JOIN pr_participant_revisions r ON r.pr_id=p.id
+  UNION ALL
+  SELECT m.sequence,
+    m.id,
+    m.body,
+    m.created_at_ms,
+    m.acknowledged_at_ms,
+    m.next_check_at_ms,
+    '' AS action_id,
+    m.recipient_agent_id,
+    NULL AS submission_id,
+    NULL AS participant_pr_id,
+    m.pr_id AS workflow_pr_id,
+    (m.applicable=1
+  AND p.enabled=1
+  AND (substr(m.subject_id,
+    1,
+    6)!='ready:'
+  OR EXISTS(
+  SELECT 1
+  FROM actions a
+  WHERE a.id=substr(m.subject_id,
+    7)
+  AND a.state IN ('open',
+    'acknowledged',
+    'working')))
+  AND (p.owner_agent_id=m.recipient_agent_id
+  OR EXISTS(
+  SELECT 1
+  FROM pr_subscriptions s
+  WHERE s.pr_id=p.id
+  AND s.agent_id=m.recipient_agent_id))) AS applicable
+  FROM merge_notices m
+  JOIN tracked_prs p ON p.id=m.pr_id)
+`;
+const canonicalMessagesQuery = /* sql */ `
+  SELECT *
+  FROM (
+  SELECT *,
+    NULL AS issue_id
+  FROM (${workflowMessagesQuery})
+  UNION ALL
+  SELECT sequence,
+    id AS delivery_id,
+    body,
+    created_at_ms,
+    acknowledged_at_ms,
+    next_check_at_ms,
+    '' AS action_id,
+    recipient_agent_id,
+    NULL AS submission_id,
+    NULL AS participant_pr_id,
+    NULL AS workflow_pr_id,
+    applicable,
+    issue_id
+  FROM issue_notices)
+`;
+const messagesQuery = /* sql */ `
+  SELECT *
+  FROM (
+  SELECT m.sequence,
+    m.delivery_id,
+    m.body,
+    m.created_at_ms,
+    m.acknowledged_at_ms,
+    m.next_check_at_ms,
+    m.action_id,
+    m.recipient_agent_id,
+    m.submission_id,
+    m.participant_pr_id,
+    m.workflow_pr_id,
+    (m.applicable
+  AND NOT EXISTS(
+  SELECT 1
+  FROM safe_notice_replacements r
+  WHERE r.original_id=m.delivery_id)) AS applicable,
+    m.issue_id
+  FROM (${canonicalMessagesQuery}) m
+  UNION ALL
+  SELECT r.sequence,
+    r.id,
+    r.body,
+    r.created_at_ms,
+    r.acknowledged_at_ms,
+    r.next_check_at_ms,
+    m.action_id,
+    m.recipient_agent_id,
+    m.submission_id,
+    m.participant_pr_id,
+    m.workflow_pr_id,
+    m.applicable,
+    m.issue_id
+  FROM safe_recovery_messages r
+  JOIN (${canonicalMessagesQuery}) m ON m.delivery_id=r.original_id)
+`;
 
 function decode(row: Record<string, unknown>): AgentMessage {
   return {

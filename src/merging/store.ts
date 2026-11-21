@@ -1,4 +1,8 @@
-import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import {
+  NoticeSubjectKind,
+  renderNotice,
+  type SafeNotice,
+} from "../security/notifications.js";
 import { currentMergeChecks } from "./checks.js";
 import {
   NoticeReadinessSchema,
@@ -1065,9 +1069,9 @@ export class MergeStore {
           kind:
             kind === "entry"
               ? subjectId.startsWith("ready:")
-                ? "action"
-                : "merge_entry"
-              : "reference",
+                ? NoticeSubjectKind.Action
+                : NoticeSubjectKind.MergeEntry
+              : NoticeSubjectKind.Reference,
           id: subjectId.startsWith("ready:") ? subjectId.slice(6) : subjectId,
         };
         const entry =
