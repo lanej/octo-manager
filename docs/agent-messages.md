@@ -7,6 +7,7 @@ An unsolicited message must give the receiving agent a decision to make or work 
 - Deliver failed checks, conflicts, and new or edited review feedback that needs assessment. Filter known bot lifecycle summaries (queued, running, inconclusive) and completed reviews without findings.
 - Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Keep superseded watches silent.
 - Do not send a second completion summary for a job failure already reported. Suppress its corresponding failed workflow summary, while retaining unrelated failures.
+- Keep discovered PR/issue links in explicit reference inspection. A discovered link alone does not create work or merit an unsolicited merge-workflow notice. Existing reference-only notices stay in history and are excluded from automatic delivery without recording a receipt.
 - Do not infer new authority from a notification. Standing task authority and evidence-handling rules belong in session/integration setup, once.
 
 Successful completion is actionable as a merge-assessment signal. Report the exact revision and distinguish check conclusions from GitHub conflict status. Check completion alone does not establish required approvals or branch-protection compliance; the scheduler confirms eligibility before using “Ready.” Repeated observations and restarts do not repeat a completion; newly observed executions can create another watch generation. Completion for an already closed or merged PR stays in history without a readiness notice.

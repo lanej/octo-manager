@@ -1012,18 +1012,6 @@ export class MergeStore {
             createdAt: this.now(),
           });
         else if (!prior.active) this.saveReference({ ...prior, active: true });
-        const current = this.refs().find((item) => item.id === ref.id);
-        if (current?.decision === ReferenceDecision.Suggested) {
-          const number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
-          this.notice(
-            pr,
-            "reference",
-            ref.id,
-            ref.revision,
-            `[PR #${number}](${pr.url}) · ${ref.hint === "depends_on" ? "Possible dependency" : "PR reference"}: [${compact(new URL(ref.targetUrl).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#"), 120)}](${ref.targetUrl})\n> ${ref.excerpt}\n[Evidence](${ref.evidenceUrl})\nInspect: \`octo-manager reference list ${pr.url}\``,
-            true,
-          );
-        }
       }
     });
   }

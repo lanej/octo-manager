@@ -372,7 +372,7 @@ test("reference discovery ignores examples and link labels while keeping cross-r
       .list(f.pr.ownerAgentId, 0, false, true)
       .messages.filter((m) => m.workflowPRId !== undefined);
     expect(notices.some((m) => m.notice?.subject?.kind === "reference")).toBe(
-      true,
+      false,
     );
     expect(
       f.coordinator.store.merging

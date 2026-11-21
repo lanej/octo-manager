@@ -104,6 +104,7 @@ const workflowMessagesQuery = /* sql */ `
     NULL AS participant_pr_id,
     m.pr_id AS workflow_pr_id,
     (m.applicable=1
+  AND m.subject_kind='entry'
   AND p.enabled=1
   AND (substr(m.subject_id,
     1,

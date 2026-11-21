@@ -1,3 +1,5 @@
+import { DatabaseSync } from "node:sqlite";
+import { EntryState } from "../src/merging/contracts.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
@@ -213,5 +215,93 @@ test("compact updates retain separate revisions, assessment statuses and recipie
     expect(rendered.body).not.toContain("2 updates");
     expect(rendered.body).toContain("Action: deadbeef");
     expect(rendered.messageIds).toEqual([first.id, second.id]);
+  }
+});
+
+test("legacy reference chatter stays inspectable without starving a concrete merge decision", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-reference-chatter-"));
+  const store = new Store(directory);
+  const db = new DatabaseSync(join(directory, "jobs.sqlite"));
+  try {
+    const tracked = store.tracking.track(pr, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "synthetic-reference-chatter",
+    });
+    const oldIds: string[] = [];
+    for (let index = 0; index < 201; index++) {
+      const id = crypto.randomUUID();
+      oldIds.push(id);
+      const sequence = db
+        .prepare(
+          "UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value",
+        )
+        .get()?.["value"];
+      if (typeof sequence !== "number") throw new Error("Missing sequence");
+      const subject = index.toString(16).padStart(64, "0");
+      const notice: SafeNotice = {
+        version: 1,
+        kind: "merge",
+        assessment: "not_required",
+        prUrl: pr,
+        role: "owner",
+        subject: { kind: "reference", id: subject },
+      };
+      store.tracking.inbox.freezeNotice(id, notice);
+      db.prepare(
+        "INSERT INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,NULL,?,1)",
+      ).run(
+        sequence,
+        id,
+        tracked.id,
+        tracked.ownerAgentId,
+        "reference",
+        subject,
+        "1",
+        renderNotice(store.tracking.inbox.notice(id) ?? notice, id, ""),
+        1,
+        1,
+      );
+    }
+    const chain = store.merging.queue({
+      requestId: "concrete-merge",
+      actorId: tracked.ownerAgentId,
+      entries: [{ prUrl: pr }],
+    });
+    const entry = store.merging
+      .entries()
+      .find((value) => value.chainId === chain.id);
+    if (entry === undefined) throw new Error("Missing merge entry");
+    store.merging.state(
+      entry,
+      EntryState.WaitingOwner,
+      "Synthetic owner assessment needed",
+    );
+    store.tracking.prepareSafeRecovery();
+    const page = store.tracking.inbox.list(
+      tracked.ownerAgentId,
+      0,
+      false,
+      true,
+    );
+    expect(page.messages).toHaveLength(1);
+    expect(page.messages[0]?.notice?.subject).toEqual({
+      kind: "merge_entry",
+      id: entry.id,
+    });
+    expect(page.hasMore).toBe(false);
+    const old = store.tracking.inbox.get(oldIds[0] ?? "");
+    expect(old?.applicable).toBe(false);
+    expect(old?.acknowledgedAt).toBeUndefined();
+    expect(old?.body).toContain("Reference: unavailable");
+    expect(
+      db
+        .prepare("SELECT COUNT(*) AS count FROM safe_notice_replacements")
+        .get()?.["count"],
+    ).toBe(0);
+  } finally {
+    db.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
   }
 });
