@@ -4,6 +4,12 @@ import { agentMode, readOnlyCommand } from "./cli-mode.js";
 import { cliJSON } from "./client.js";
 import { compact } from "./tracking/messages.js";
 const scalarFields = new Set([
+  "itemCount",
+  "issueId",
+  "referenceId",
+  "sourceId",
+  "count",
+  "createdAtMs",
   "version",
   "scope",
   "blockingQuestions",
@@ -106,6 +112,9 @@ const scalarFields = new Set([
   "mechanicalRepairs",
 ]);
 const containers = new Set([
+  "merge",
+  "submission",
+  "unavailable",
   "issue",
   "issues",
   "reference",

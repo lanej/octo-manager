@@ -372,7 +372,7 @@ test("reference discovery ignores examples and link labels while keeping cross-r
       .list(f.pr.ownerAgentId, 0, false, true)
       .messages.filter((m) => m.workflowPRId !== undefined);
     expect(notices.some((m) => m.notice?.subject?.kind === "reference")).toBe(
-      true,
+      false,
     );
     expect(
       f.coordinator.store.merging
@@ -1395,5 +1395,48 @@ test("fresh review evidence blocks a queued receipt before merge and cannot be a
     } finally {
       await f.close();
     }
+  }
+});
+
+test("a readiness-only receipt inspects its underlying action through the one public handle", async () => {
+  const f = await fixture();
+  try {
+    const ready = f.coordinator.store.tracking.inbox
+      .list(f.pr.ownerAgentId, 0, false, true)
+      .messages.find((message) => message.notice?.subject?.kind === "action");
+    if (ready === undefined || ready.notice?.subject === undefined)
+      throw new Error("Missing readiness notice");
+    expect(ready.actionId).toBe("");
+    const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    if (envelope === undefined) throw new Error("Missing envelope");
+    const digest = f.coordinator.store.digests.revise(envelope, (id) =>
+      renderDigest(
+        [ready],
+        f.directory,
+        id,
+        f.coordinator.merging.receipts.presentation,
+      ),
+    );
+    const version = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    );
+    expect(version.messageIds).toEqual([ready.id]);
+    const response = await schedulerClient(f.directory).getNotificationMessage({
+      id: version.dispatchId,
+      full: true,
+    });
+    expect(response.message?.items).toHaveLength(1);
+    const item = response.message?.items[0];
+    if (item?.source.case !== "action")
+      throw new Error("Missing readiness action");
+    expect(item.source.value.action?.id).toBe(ready.notice.subject.id);
+    expect(item.source.value.action?.blocker.case).toBe("checkResults");
+    expect(
+      f.coordinator.store.tracking.inbox.get(ready.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
   }
 });

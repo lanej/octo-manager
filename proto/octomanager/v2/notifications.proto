@@ -2,6 +2,7 @@ syntax = "proto3";
 package octomanager.v2;
 
 import "octomanager/v2/domain.proto";
+import "octomanager/v2/issues.proto";
 import "octomanager/v2/tracking.proto";
 
 option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
@@ -11,10 +12,14 @@ message GetAgentDigestRequest {
   string id = 1;
   optional uint32 revision = 2;
   string receipt_id = 3;
+  reserved 4;
+  reserved "full";
 }
 // GetAgentDigestResponse returns the result for the following operation: Inspects a digest or frozen receipt without acknowledging its messages.
 message GetAgentDigestResponse {
   DomainDigestInspection inspection = 1;
+  reserved 2;
+  reserved "findings";
 }
 // ListAgentDigestsRequest supplies arguments for the following operation: Lists retained notification digests for a recipient.
 message ListAgentDigestsRequest {
@@ -60,4 +65,98 @@ message MergeAgentMessageRequest {
 // MergeAgentMessageResponse returns the result for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 message MergeAgentMessageResponse {
   DomainMergeReceiptResult result = 1;
+}
+
+// NotificationMessage is one immutable delivery containing one or more typed items.
+message NotificationMessage {
+  string id = 1;
+  string recipient_agent_id = 2;
+  // Coordinator-owned metadata, independent of the original rendered body.
+  string summary = 3;
+  repeated NotificationItem items = 4;
+  int64 created_at_ms = 5;
+  // An offer remains subject to the separate owner-authorized merge operation.
+  DomainReceiptTarget merge_target = 6;
+  // The exact historical delivery text is available only with explicit full inspection.
+  optional string untrusted_body = 7;
+}
+// NotificationItem retains one frozen member's identity and its current applicability.
+message NotificationItem {
+  string id = 1;
+  bool applicable = 2;
+  optional int64 acknowledged_at_ms = 3;
+  string summary = 4;
+  oneof source {
+    GetActionResponse action = 10;
+    NotificationMergeItem merge = 11;
+    NotificationIssueItem issue = 12;
+    NotificationSubmissionItem submission = 13;
+    NotificationParticipantsItem participants = 14;
+    NotificationReferenceItem reference = 15;
+    NotificationUnavailableItem unavailable = 16;
+  }
+  optional string untrusted_body = 20;
+}
+// NotificationMergeItem identifies an existing merge entry and its current state.
+message NotificationMergeItem {
+  string entry_id = 1;
+  string chain_id = 2;
+  DomainMergeEntryState state = 3;
+  // Full inspection may include untrusted producer detail.
+  DomainMergeEntry detail = 4;
+}
+// NotificationIssueItem identifies an issue without forwarding its title or discussion by default.
+message NotificationIssueItem {
+  string issue_id = 1;
+  IssueStage stage = 2;
+  IssueWaiting waiting = 3;
+  ManagedIssue detail = 4;
+}
+// NotificationSubmissionItem retains archived submission identity and state.
+message NotificationSubmissionItem {
+  string submission_id = 1;
+  DomainArchivedSubmissionState state = 2;
+  DomainArchivedSubmission detail = 3;
+}
+// NotificationParticipantsItem describes the current participant roster for a tracked PR.
+message NotificationParticipantsItem {
+  string pr_id = 1;
+  uint32 count = 2;
+  repeated PRParticipant detail = 3;
+}
+// NotificationReferenceItem preserves explicit access to a discovered reference.
+message NotificationReferenceItem {
+  string reference_id = 1;
+  DomainPRReference detail = 2;
+}
+// NotificationUnavailableReason distinguishes missing history from an unrecognized legacy source.
+enum NotificationUnavailableReason {
+  NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED = 0;
+  NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE = 1;
+  NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE = 2;
+}
+// NotificationUnavailableItem preserves membership when a producer source cannot be resolved.
+message NotificationUnavailableItem {
+  NotificationUnavailableReason reason = 1;
+  string source_id = 2;
+}
+// GetNotificationMessageRequest selects a frozen public message, including a single direct delivery.
+message GetNotificationMessageRequest {
+  string id = 1;
+  bool full = 2;
+}
+// GetNotificationMessageResponse returns safe metadata unless full inspection was requested.
+message GetNotificationMessageResponse {
+  NotificationMessage message = 1;
+}
+// AcknowledgeNotificationMessageRequest records receipt without accepting contained work.
+message AcknowledgeNotificationMessageRequest {
+  string id = 1;
+  string agent_id = 2;
+  AgentTarget agent_target = 3;
+  optional string expected_body = 4;
+}
+// AcknowledgeNotificationMessageResponse retains the exact message and updated member receipts.
+message AcknowledgeNotificationMessageResponse {
+  NotificationMessage message = 1;
 }

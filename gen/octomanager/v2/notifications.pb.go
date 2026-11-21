@@ -21,6 +21,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// NotificationUnavailableReason distinguishes missing history from an unrecognized legacy source.
+type NotificationUnavailableReason int32
+
+const (
+	NotificationUnavailableReason_NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED    NotificationUnavailableReason = 0
+	NotificationUnavailableReason_NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE NotificationUnavailableReason = 1
+	NotificationUnavailableReason_NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE NotificationUnavailableReason = 2
+)
+
+// Enum value maps for NotificationUnavailableReason.
+var (
+	NotificationUnavailableReason_name = map[int32]string{
+		0: "NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED",
+		1: "NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE",
+		2: "NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE",
+	}
+	NotificationUnavailableReason_value = map[string]int32{
+		"NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED":    0,
+		"NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE": 1,
+		"NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE": 2,
+	}
+)
+
+func (x NotificationUnavailableReason) Enum() *NotificationUnavailableReason {
+	p := new(NotificationUnavailableReason)
+	*p = x
+	return p
+}
+
+func (x NotificationUnavailableReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NotificationUnavailableReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_notifications_proto_enumTypes[0].Descriptor()
+}
+
+func (NotificationUnavailableReason) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_notifications_proto_enumTypes[0]
+}
+
+func (x NotificationUnavailableReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NotificationUnavailableReason.Descriptor instead.
+func (NotificationUnavailableReason) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{0}
+}
+
 // Frozen content and exact receipts are separate typed records.
 type GetAgentDigestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -570,21 +620,899 @@ func (x *MergeAgentMessageResponse) GetResult() *DomainMergeReceiptResult {
 	return nil
 }
 
+// NotificationMessage is one immutable delivery containing one or more typed items.
+type NotificationMessage struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	RecipientAgentId string                 `protobuf:"bytes,2,opt,name=recipient_agent_id,json=recipientAgentId,proto3" json:"recipient_agent_id,omitempty"`
+	// Coordinator-owned metadata, independent of the original rendered body.
+	Summary     string              `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
+	Items       []*NotificationItem `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
+	CreatedAtMs int64               `protobuf:"varint,5,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	// An offer remains subject to the separate owner-authorized merge operation.
+	MergeTarget *DomainReceiptTarget `protobuf:"bytes,6,opt,name=merge_target,json=mergeTarget,proto3" json:"merge_target,omitempty"`
+	// The exact historical delivery text is available only with explicit full inspection.
+	UntrustedBody *string `protobuf:"bytes,7,opt,name=untrusted_body,json=untrustedBody,proto3,oneof" json:"untrusted_body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationMessage) Reset() {
+	*x = NotificationMessage{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationMessage) ProtoMessage() {}
+
+func (x *NotificationMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationMessage.ProtoReflect.Descriptor instead.
+func (*NotificationMessage) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *NotificationMessage) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *NotificationMessage) GetRecipientAgentId() string {
+	if x != nil {
+		return x.RecipientAgentId
+	}
+	return ""
+}
+
+func (x *NotificationMessage) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *NotificationMessage) GetItems() []*NotificationItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *NotificationMessage) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *NotificationMessage) GetMergeTarget() *DomainReceiptTarget {
+	if x != nil {
+		return x.MergeTarget
+	}
+	return nil
+}
+
+func (x *NotificationMessage) GetUntrustedBody() string {
+	if x != nil && x.UntrustedBody != nil {
+		return *x.UntrustedBody
+	}
+	return ""
+}
+
+// NotificationItem retains one frozen member's identity and its current applicability.
+type NotificationItem struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Applicable       bool                   `protobuf:"varint,2,opt,name=applicable,proto3" json:"applicable,omitempty"`
+	AcknowledgedAtMs *int64                 `protobuf:"varint,3,opt,name=acknowledged_at_ms,json=acknowledgedAtMs,proto3,oneof" json:"acknowledged_at_ms,omitempty"`
+	Summary          string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
+	// Types that are valid to be assigned to Source:
+	//
+	//	*NotificationItem_Action
+	//	*NotificationItem_Merge
+	//	*NotificationItem_Issue
+	//	*NotificationItem_Submission
+	//	*NotificationItem_Participants
+	//	*NotificationItem_Reference
+	//	*NotificationItem_Unavailable
+	Source        isNotificationItem_Source `protobuf_oneof:"source"`
+	UntrustedBody *string                   `protobuf:"bytes,20,opt,name=untrusted_body,json=untrustedBody,proto3,oneof" json:"untrusted_body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationItem) Reset() {
+	*x = NotificationItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationItem) ProtoMessage() {}
+
+func (x *NotificationItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationItem.ProtoReflect.Descriptor instead.
+func (*NotificationItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *NotificationItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *NotificationItem) GetApplicable() bool {
+	if x != nil {
+		return x.Applicable
+	}
+	return false
+}
+
+func (x *NotificationItem) GetAcknowledgedAtMs() int64 {
+	if x != nil && x.AcknowledgedAtMs != nil {
+		return *x.AcknowledgedAtMs
+	}
+	return 0
+}
+
+func (x *NotificationItem) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *NotificationItem) GetSource() isNotificationItem_Source {
+	if x != nil {
+		return x.Source
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetAction() *GetActionResponse {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Action); ok {
+			return x.Action
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetMerge() *NotificationMergeItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Merge); ok {
+			return x.Merge
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetIssue() *NotificationIssueItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Issue); ok {
+			return x.Issue
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetSubmission() *NotificationSubmissionItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Submission); ok {
+			return x.Submission
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetParticipants() *NotificationParticipantsItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Participants); ok {
+			return x.Participants
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetReference() *NotificationReferenceItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Reference); ok {
+			return x.Reference
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetUnavailable() *NotificationUnavailableItem {
+	if x != nil {
+		if x, ok := x.Source.(*NotificationItem_Unavailable); ok {
+			return x.Unavailable
+		}
+	}
+	return nil
+}
+
+func (x *NotificationItem) GetUntrustedBody() string {
+	if x != nil && x.UntrustedBody != nil {
+		return *x.UntrustedBody
+	}
+	return ""
+}
+
+type isNotificationItem_Source interface {
+	isNotificationItem_Source()
+}
+
+type NotificationItem_Action struct {
+	Action *GetActionResponse `protobuf:"bytes,10,opt,name=action,proto3,oneof"`
+}
+
+type NotificationItem_Merge struct {
+	Merge *NotificationMergeItem `protobuf:"bytes,11,opt,name=merge,proto3,oneof"`
+}
+
+type NotificationItem_Issue struct {
+	Issue *NotificationIssueItem `protobuf:"bytes,12,opt,name=issue,proto3,oneof"`
+}
+
+type NotificationItem_Submission struct {
+	Submission *NotificationSubmissionItem `protobuf:"bytes,13,opt,name=submission,proto3,oneof"`
+}
+
+type NotificationItem_Participants struct {
+	Participants *NotificationParticipantsItem `protobuf:"bytes,14,opt,name=participants,proto3,oneof"`
+}
+
+type NotificationItem_Reference struct {
+	Reference *NotificationReferenceItem `protobuf:"bytes,15,opt,name=reference,proto3,oneof"`
+}
+
+type NotificationItem_Unavailable struct {
+	Unavailable *NotificationUnavailableItem `protobuf:"bytes,16,opt,name=unavailable,proto3,oneof"`
+}
+
+func (*NotificationItem_Action) isNotificationItem_Source() {}
+
+func (*NotificationItem_Merge) isNotificationItem_Source() {}
+
+func (*NotificationItem_Issue) isNotificationItem_Source() {}
+
+func (*NotificationItem_Submission) isNotificationItem_Source() {}
+
+func (*NotificationItem_Participants) isNotificationItem_Source() {}
+
+func (*NotificationItem_Reference) isNotificationItem_Source() {}
+
+func (*NotificationItem_Unavailable) isNotificationItem_Source() {}
+
+// NotificationMergeItem identifies an existing merge entry and its current state.
+type NotificationMergeItem struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	EntryId string                 `protobuf:"bytes,1,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
+	ChainId string                 `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	State   DomainMergeEntryState  `protobuf:"varint,3,opt,name=state,proto3,enum=octomanager.v2.DomainMergeEntryState" json:"state,omitempty"`
+	// Full inspection may include untrusted producer detail.
+	Detail        *DomainMergeEntry `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationMergeItem) Reset() {
+	*x = NotificationMergeItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationMergeItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationMergeItem) ProtoMessage() {}
+
+func (x *NotificationMergeItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationMergeItem.ProtoReflect.Descriptor instead.
+func (*NotificationMergeItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *NotificationMergeItem) GetEntryId() string {
+	if x != nil {
+		return x.EntryId
+	}
+	return ""
+}
+
+func (x *NotificationMergeItem) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *NotificationMergeItem) GetState() DomainMergeEntryState {
+	if x != nil {
+		return x.State
+	}
+	return DomainMergeEntryState_DOMAIN_MERGE_ENTRY_STATE_UNSPECIFIED
+}
+
+func (x *NotificationMergeItem) GetDetail() *DomainMergeEntry {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+// NotificationIssueItem identifies an issue without forwarding its title or discussion by default.
+type NotificationIssueItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	Stage         IssueStage             `protobuf:"varint,2,opt,name=stage,proto3,enum=octomanager.v2.IssueStage" json:"stage,omitempty"`
+	Waiting       IssueWaiting           `protobuf:"varint,3,opt,name=waiting,proto3,enum=octomanager.v2.IssueWaiting" json:"waiting,omitempty"`
+	Detail        *ManagedIssue          `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationIssueItem) Reset() {
+	*x = NotificationIssueItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationIssueItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationIssueItem) ProtoMessage() {}
+
+func (x *NotificationIssueItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationIssueItem.ProtoReflect.Descriptor instead.
+func (*NotificationIssueItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *NotificationIssueItem) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *NotificationIssueItem) GetStage() IssueStage {
+	if x != nil {
+		return x.Stage
+	}
+	return IssueStage_ISSUE_STAGE_UNSPECIFIED
+}
+
+func (x *NotificationIssueItem) GetWaiting() IssueWaiting {
+	if x != nil {
+		return x.Waiting
+	}
+	return IssueWaiting_ISSUE_WAITING_UNSPECIFIED
+}
+
+func (x *NotificationIssueItem) GetDetail() *ManagedIssue {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+// NotificationSubmissionItem retains archived submission identity and state.
+type NotificationSubmissionItem struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	SubmissionId  string                        `protobuf:"bytes,1,opt,name=submission_id,json=submissionId,proto3" json:"submission_id,omitempty"`
+	State         DomainArchivedSubmissionState `protobuf:"varint,2,opt,name=state,proto3,enum=octomanager.v2.DomainArchivedSubmissionState" json:"state,omitempty"`
+	Detail        *DomainArchivedSubmission     `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationSubmissionItem) Reset() {
+	*x = NotificationSubmissionItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationSubmissionItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationSubmissionItem) ProtoMessage() {}
+
+func (x *NotificationSubmissionItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationSubmissionItem.ProtoReflect.Descriptor instead.
+func (*NotificationSubmissionItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *NotificationSubmissionItem) GetSubmissionId() string {
+	if x != nil {
+		return x.SubmissionId
+	}
+	return ""
+}
+
+func (x *NotificationSubmissionItem) GetState() DomainArchivedSubmissionState {
+	if x != nil {
+		return x.State
+	}
+	return DomainArchivedSubmissionState_DOMAIN_ARCHIVED_SUBMISSION_STATE_UNSPECIFIED
+}
+
+func (x *NotificationSubmissionItem) GetDetail() *DomainArchivedSubmission {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+// NotificationParticipantsItem describes the current participant roster for a tracked PR.
+type NotificationParticipantsItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PrId          string                 `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3" json:"pr_id,omitempty"`
+	Count         uint32                 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	Detail        []*PRParticipant       `protobuf:"bytes,3,rep,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationParticipantsItem) Reset() {
+	*x = NotificationParticipantsItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationParticipantsItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationParticipantsItem) ProtoMessage() {}
+
+func (x *NotificationParticipantsItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationParticipantsItem.ProtoReflect.Descriptor instead.
+func (*NotificationParticipantsItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *NotificationParticipantsItem) GetPrId() string {
+	if x != nil {
+		return x.PrId
+	}
+	return ""
+}
+
+func (x *NotificationParticipantsItem) GetCount() uint32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *NotificationParticipantsItem) GetDetail() []*PRParticipant {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+// NotificationReferenceItem preserves explicit access to a discovered reference.
+type NotificationReferenceItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ReferenceId   string                 `protobuf:"bytes,1,opt,name=reference_id,json=referenceId,proto3" json:"reference_id,omitempty"`
+	Detail        *DomainPRReference     `protobuf:"bytes,2,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationReferenceItem) Reset() {
+	*x = NotificationReferenceItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationReferenceItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationReferenceItem) ProtoMessage() {}
+
+func (x *NotificationReferenceItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationReferenceItem.ProtoReflect.Descriptor instead.
+func (*NotificationReferenceItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *NotificationReferenceItem) GetReferenceId() string {
+	if x != nil {
+		return x.ReferenceId
+	}
+	return ""
+}
+
+func (x *NotificationReferenceItem) GetDetail() *DomainPRReference {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+// NotificationUnavailableItem preserves membership when a producer source cannot be resolved.
+type NotificationUnavailableItem struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Reason        NotificationUnavailableReason `protobuf:"varint,1,opt,name=reason,proto3,enum=octomanager.v2.NotificationUnavailableReason" json:"reason,omitempty"`
+	SourceId      string                        `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationUnavailableItem) Reset() {
+	*x = NotificationUnavailableItem{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationUnavailableItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationUnavailableItem) ProtoMessage() {}
+
+func (x *NotificationUnavailableItem) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationUnavailableItem.ProtoReflect.Descriptor instead.
+func (*NotificationUnavailableItem) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *NotificationUnavailableItem) GetReason() NotificationUnavailableReason {
+	if x != nil {
+		return x.Reason
+	}
+	return NotificationUnavailableReason_NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED
+}
+
+func (x *NotificationUnavailableItem) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+// GetNotificationMessageRequest selects a frozen public message, including a single direct delivery.
+type GetNotificationMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Full          bool                   `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNotificationMessageRequest) Reset() {
+	*x = GetNotificationMessageRequest{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNotificationMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNotificationMessageRequest) ProtoMessage() {}
+
+func (x *GetNotificationMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNotificationMessageRequest.ProtoReflect.Descriptor instead.
+func (*GetNotificationMessageRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetNotificationMessageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetNotificationMessageRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
+}
+
+// GetNotificationMessageResponse returns safe metadata unless full inspection was requested.
+type GetNotificationMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *NotificationMessage   `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNotificationMessageResponse) Reset() {
+	*x = GetNotificationMessageResponse{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNotificationMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNotificationMessageResponse) ProtoMessage() {}
+
+func (x *GetNotificationMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNotificationMessageResponse.ProtoReflect.Descriptor instead.
+func (*GetNotificationMessageResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetNotificationMessageResponse) GetMessage() *NotificationMessage {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+// AcknowledgeNotificationMessageRequest records receipt without accepting contained work.
+type AcknowledgeNotificationMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentTarget   *AgentTarget           `protobuf:"bytes,3,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
+	ExpectedBody  *string                `protobuf:"bytes,4,opt,name=expected_body,json=expectedBody,proto3,oneof" json:"expected_body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcknowledgeNotificationMessageRequest) Reset() {
+	*x = AcknowledgeNotificationMessageRequest{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcknowledgeNotificationMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcknowledgeNotificationMessageRequest) ProtoMessage() {}
+
+func (x *AcknowledgeNotificationMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcknowledgeNotificationMessageRequest.ProtoReflect.Descriptor instead.
+func (*AcknowledgeNotificationMessageRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *AcknowledgeNotificationMessageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AcknowledgeNotificationMessageRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *AcknowledgeNotificationMessageRequest) GetAgentTarget() *AgentTarget {
+	if x != nil {
+		return x.AgentTarget
+	}
+	return nil
+}
+
+func (x *AcknowledgeNotificationMessageRequest) GetExpectedBody() string {
+	if x != nil && x.ExpectedBody != nil {
+		return *x.ExpectedBody
+	}
+	return ""
+}
+
+// AcknowledgeNotificationMessageResponse retains the exact message and updated member receipts.
+type AcknowledgeNotificationMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *NotificationMessage   `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcknowledgeNotificationMessageResponse) Reset() {
+	*x = AcknowledgeNotificationMessageResponse{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcknowledgeNotificationMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcknowledgeNotificationMessageResponse) ProtoMessage() {}
+
+func (x *AcknowledgeNotificationMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcknowledgeNotificationMessageResponse.ProtoReflect.Descriptor instead.
+func (*AcknowledgeNotificationMessageResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *AcknowledgeNotificationMessageResponse) GetMessage() *NotificationMessage {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
 var File_octomanager_v2_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\n" +
-	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1boctomanager/v2/domain.proto\x1a\x1doctomanager/v2/tracking.proto\"t\n" +
+	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1boctomanager/v2/domain.proto\x1a\x1boctomanager/v2/issues.proto\x1a\x1doctomanager/v2/tracking.proto\"\x80\x01\n" +
 	"\x15GetAgentDigestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\brevision\x18\x02 \x01(\rH\x00R\brevision\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"receipt_id\x18\x03 \x01(\tR\treceiptIdB\v\n" +
-	"\t_revision\"`\n" +
+	"\t_revisionJ\x04\b\x04\x10\x05R\x04full\"p\n" +
 	"\x16GetAgentDigestResponse\x12F\n" +
 	"\n" +
 	"inspection\x18\x01 \x01(\v2&.octomanager.v2.DomainDigestInspectionR\n" +
-	"inspection\"F\n" +
+	"inspectionJ\x04\b\x02\x10\x03R\bfindings\"F\n" +
 	"\x17ListAgentDigestsRequest\x12\x1e\n" +
 	"\bagent_id\x18\x01 \x01(\tH\x00R\aagentId\x88\x01\x01B\v\n" +
 	"\t_agent_id\"W\n" +
@@ -623,7 +1551,78 @@ const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12>\n" +
 	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v2.AgentTargetR\vagentTarget\"]\n" +
 	"\x19MergeAgentMessageResponse\x12@\n" +
-	"\x06result\x18\x01 \x01(\v2(.octomanager.v2.DomainMergeReceiptResultR\x06resultB@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
+	"\x06result\x18\x01 \x01(\v2(.octomanager.v2.DomainMergeReceiptResultR\x06result\"\xd0\x02\n" +
+	"\x13NotificationMessage\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
+	"\x12recipient_agent_id\x18\x02 \x01(\tR\x10recipientAgentId\x12\x18\n" +
+	"\asummary\x18\x03 \x01(\tR\asummary\x126\n" +
+	"\x05items\x18\x04 \x03(\v2 .octomanager.v2.NotificationItemR\x05items\x12\"\n" +
+	"\rcreated_at_ms\x18\x05 \x01(\x03R\vcreatedAtMs\x12F\n" +
+	"\fmerge_target\x18\x06 \x01(\v2#.octomanager.v2.DomainReceiptTargetR\vmergeTarget\x12*\n" +
+	"\x0euntrusted_body\x18\a \x01(\tH\x00R\runtrustedBody\x88\x01\x01B\x11\n" +
+	"\x0f_untrusted_body\"\xe8\x05\n" +
+	"\x10NotificationItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1e\n" +
+	"\n" +
+	"applicable\x18\x02 \x01(\bR\n" +
+	"applicable\x121\n" +
+	"\x12acknowledged_at_ms\x18\x03 \x01(\x03H\x01R\x10acknowledgedAtMs\x88\x01\x01\x12\x18\n" +
+	"\asummary\x18\x04 \x01(\tR\asummary\x12;\n" +
+	"\x06action\x18\n" +
+	" \x01(\v2!.octomanager.v2.GetActionResponseH\x00R\x06action\x12=\n" +
+	"\x05merge\x18\v \x01(\v2%.octomanager.v2.NotificationMergeItemH\x00R\x05merge\x12=\n" +
+	"\x05issue\x18\f \x01(\v2%.octomanager.v2.NotificationIssueItemH\x00R\x05issue\x12L\n" +
+	"\n" +
+	"submission\x18\r \x01(\v2*.octomanager.v2.NotificationSubmissionItemH\x00R\n" +
+	"submission\x12R\n" +
+	"\fparticipants\x18\x0e \x01(\v2,.octomanager.v2.NotificationParticipantsItemH\x00R\fparticipants\x12I\n" +
+	"\treference\x18\x0f \x01(\v2).octomanager.v2.NotificationReferenceItemH\x00R\treference\x12O\n" +
+	"\vunavailable\x18\x10 \x01(\v2+.octomanager.v2.NotificationUnavailableItemH\x00R\vunavailable\x12*\n" +
+	"\x0euntrusted_body\x18\x14 \x01(\tH\x02R\runtrustedBody\x88\x01\x01B\b\n" +
+	"\x06sourceB\x15\n" +
+	"\x13_acknowledged_at_msB\x11\n" +
+	"\x0f_untrusted_body\"\xc4\x01\n" +
+	"\x15NotificationMergeItem\x12\x19\n" +
+	"\bentry_id\x18\x01 \x01(\tR\aentryId\x12\x19\n" +
+	"\bchain_id\x18\x02 \x01(\tR\achainId\x12;\n" +
+	"\x05state\x18\x03 \x01(\x0e2%.octomanager.v2.DomainMergeEntryStateR\x05state\x128\n" +
+	"\x06detail\x18\x04 \x01(\v2 .octomanager.v2.DomainMergeEntryR\x06detail\"\xd2\x01\n" +
+	"\x15NotificationIssueItem\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x120\n" +
+	"\x05stage\x18\x02 \x01(\x0e2\x1a.octomanager.v2.IssueStageR\x05stage\x126\n" +
+	"\awaiting\x18\x03 \x01(\x0e2\x1c.octomanager.v2.IssueWaitingR\awaiting\x124\n" +
+	"\x06detail\x18\x04 \x01(\v2\x1c.octomanager.v2.ManagedIssueR\x06detail\"\xc8\x01\n" +
+	"\x1aNotificationSubmissionItem\x12#\n" +
+	"\rsubmission_id\x18\x01 \x01(\tR\fsubmissionId\x12C\n" +
+	"\x05state\x18\x02 \x01(\x0e2-.octomanager.v2.DomainArchivedSubmissionStateR\x05state\x12@\n" +
+	"\x06detail\x18\x03 \x01(\v2(.octomanager.v2.DomainArchivedSubmissionR\x06detail\"\x80\x01\n" +
+	"\x1cNotificationParticipantsItem\x12\x13\n" +
+	"\x05pr_id\x18\x01 \x01(\tR\x04prId\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\rR\x05count\x125\n" +
+	"\x06detail\x18\x03 \x03(\v2\x1d.octomanager.v2.PRParticipantR\x06detail\"y\n" +
+	"\x19NotificationReferenceItem\x12!\n" +
+	"\freference_id\x18\x01 \x01(\tR\vreferenceId\x129\n" +
+	"\x06detail\x18\x02 \x01(\v2!.octomanager.v2.DomainPRReferenceR\x06detail\"\x81\x01\n" +
+	"\x1bNotificationUnavailableItem\x12E\n" +
+	"\x06reason\x18\x01 \x01(\x0e2-.octomanager.v2.NotificationUnavailableReasonR\x06reason\x12\x1b\n" +
+	"\tsource_id\x18\x02 \x01(\tR\bsourceId\"C\n" +
+	"\x1dGetNotificationMessageRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04full\x18\x02 \x01(\bR\x04full\"_\n" +
+	"\x1eGetNotificationMessageResponse\x12=\n" +
+	"\amessage\x18\x01 \x01(\v2#.octomanager.v2.NotificationMessageR\amessage\"\xce\x01\n" +
+	"%AcknowledgeNotificationMessageRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12>\n" +
+	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v2.AgentTargetR\vagentTarget\x12(\n" +
+	"\rexpected_body\x18\x04 \x01(\tH\x00R\fexpectedBody\x88\x01\x01B\x10\n" +
+	"\x0e_expected_body\"g\n" +
+	"&AcknowledgeNotificationMessageResponse\x12=\n" +
+	"\amessage\x18\x01 \x01(\v2#.octomanager.v2.NotificationMessageR\amessage*\xb8\x01\n" +
+	"\x1dNotificationUnavailableReason\x12/\n" +
+	"+NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED\x10\x00\x122\n" +
+	".NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE\x10\x01\x122\n" +
+	".NOTIFICATION_UNAVAILABLE_REASON_UNKNOWN_SOURCE\x10\x02B@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
 
 var (
 	file_octomanager_v2_notifications_proto_rawDescOnce sync.Once
@@ -637,36 +1636,83 @@ func file_octomanager_v2_notifications_proto_rawDescGZIP() []byte {
 	return file_octomanager_v2_notifications_proto_rawDescData
 }
 
-var file_octomanager_v2_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_octomanager_v2_notifications_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_octomanager_v2_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_octomanager_v2_notifications_proto_goTypes = []any{
-	(*GetAgentDigestRequest)(nil),          // 0: octomanager.v2.GetAgentDigestRequest
-	(*GetAgentDigestResponse)(nil),         // 1: octomanager.v2.GetAgentDigestResponse
-	(*ListAgentDigestsRequest)(nil),        // 2: octomanager.v2.ListAgentDigestsRequest
-	(*ListAgentDigestsResponse)(nil),       // 3: octomanager.v2.ListAgentDigestsResponse
-	(*AcknowledgeAgentDigestRequest)(nil),  // 4: octomanager.v2.AcknowledgeAgentDigestRequest
-	(*AgentDigestMember)(nil),              // 5: octomanager.v2.AgentDigestMember
-	(*AcknowledgeAgentDigestResponse)(nil), // 6: octomanager.v2.AcknowledgeAgentDigestResponse
-	(*MergeAgentMessageRequest)(nil),       // 7: octomanager.v2.MergeAgentMessageRequest
-	(*MergeAgentMessageResponse)(nil),      // 8: octomanager.v2.MergeAgentMessageResponse
-	(*DomainDigestInspection)(nil),         // 9: octomanager.v2.DomainDigestInspection
-	(*DomainAgentDigest)(nil),              // 10: octomanager.v2.DomainAgentDigest
-	(*AgentTarget)(nil),                    // 11: octomanager.v2.AgentTarget
-	(*DomainDigestReceipt)(nil),            // 12: octomanager.v2.DomainDigestReceipt
-	(*DomainMergeReceiptResult)(nil),       // 13: octomanager.v2.DomainMergeReceiptResult
+	(NotificationUnavailableReason)(0),             // 0: octomanager.v2.NotificationUnavailableReason
+	(*GetAgentDigestRequest)(nil),                  // 1: octomanager.v2.GetAgentDigestRequest
+	(*GetAgentDigestResponse)(nil),                 // 2: octomanager.v2.GetAgentDigestResponse
+	(*ListAgentDigestsRequest)(nil),                // 3: octomanager.v2.ListAgentDigestsRequest
+	(*ListAgentDigestsResponse)(nil),               // 4: octomanager.v2.ListAgentDigestsResponse
+	(*AcknowledgeAgentDigestRequest)(nil),          // 5: octomanager.v2.AcknowledgeAgentDigestRequest
+	(*AgentDigestMember)(nil),                      // 6: octomanager.v2.AgentDigestMember
+	(*AcknowledgeAgentDigestResponse)(nil),         // 7: octomanager.v2.AcknowledgeAgentDigestResponse
+	(*MergeAgentMessageRequest)(nil),               // 8: octomanager.v2.MergeAgentMessageRequest
+	(*MergeAgentMessageResponse)(nil),              // 9: octomanager.v2.MergeAgentMessageResponse
+	(*NotificationMessage)(nil),                    // 10: octomanager.v2.NotificationMessage
+	(*NotificationItem)(nil),                       // 11: octomanager.v2.NotificationItem
+	(*NotificationMergeItem)(nil),                  // 12: octomanager.v2.NotificationMergeItem
+	(*NotificationIssueItem)(nil),                  // 13: octomanager.v2.NotificationIssueItem
+	(*NotificationSubmissionItem)(nil),             // 14: octomanager.v2.NotificationSubmissionItem
+	(*NotificationParticipantsItem)(nil),           // 15: octomanager.v2.NotificationParticipantsItem
+	(*NotificationReferenceItem)(nil),              // 16: octomanager.v2.NotificationReferenceItem
+	(*NotificationUnavailableItem)(nil),            // 17: octomanager.v2.NotificationUnavailableItem
+	(*GetNotificationMessageRequest)(nil),          // 18: octomanager.v2.GetNotificationMessageRequest
+	(*GetNotificationMessageResponse)(nil),         // 19: octomanager.v2.GetNotificationMessageResponse
+	(*AcknowledgeNotificationMessageRequest)(nil),  // 20: octomanager.v2.AcknowledgeNotificationMessageRequest
+	(*AcknowledgeNotificationMessageResponse)(nil), // 21: octomanager.v2.AcknowledgeNotificationMessageResponse
+	(*DomainDigestInspection)(nil),                 // 22: octomanager.v2.DomainDigestInspection
+	(*DomainAgentDigest)(nil),                      // 23: octomanager.v2.DomainAgentDigest
+	(*AgentTarget)(nil),                            // 24: octomanager.v2.AgentTarget
+	(*DomainDigestReceipt)(nil),                    // 25: octomanager.v2.DomainDigestReceipt
+	(*DomainMergeReceiptResult)(nil),               // 26: octomanager.v2.DomainMergeReceiptResult
+	(*DomainReceiptTarget)(nil),                    // 27: octomanager.v2.DomainReceiptTarget
+	(*GetActionResponse)(nil),                      // 28: octomanager.v2.GetActionResponse
+	(DomainMergeEntryState)(0),                     // 29: octomanager.v2.DomainMergeEntryState
+	(*DomainMergeEntry)(nil),                       // 30: octomanager.v2.DomainMergeEntry
+	(IssueStage)(0),                                // 31: octomanager.v2.IssueStage
+	(IssueWaiting)(0),                              // 32: octomanager.v2.IssueWaiting
+	(*ManagedIssue)(nil),                           // 33: octomanager.v2.ManagedIssue
+	(DomainArchivedSubmissionState)(0),             // 34: octomanager.v2.DomainArchivedSubmissionState
+	(*DomainArchivedSubmission)(nil),               // 35: octomanager.v2.DomainArchivedSubmission
+	(*PRParticipant)(nil),                          // 36: octomanager.v2.PRParticipant
+	(*DomainPRReference)(nil),                      // 37: octomanager.v2.DomainPRReference
 }
 var file_octomanager_v2_notifications_proto_depIdxs = []int32{
-	9,  // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
-	10, // 1: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
-	11, // 2: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	12, // 3: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
-	5,  // 4: octomanager.v2.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v2.AgentDigestMember
-	11, // 5: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	13, // 6: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
-	7,  // [7:7] is the sub-list for method output_type
-	7,  // [7:7] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	22, // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
+	23, // 1: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
+	24, // 2: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	25, // 3: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
+	6,  // 4: octomanager.v2.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v2.AgentDigestMember
+	24, // 5: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	26, // 6: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
+	11, // 7: octomanager.v2.NotificationMessage.items:type_name -> octomanager.v2.NotificationItem
+	27, // 8: octomanager.v2.NotificationMessage.merge_target:type_name -> octomanager.v2.DomainReceiptTarget
+	28, // 9: octomanager.v2.NotificationItem.action:type_name -> octomanager.v2.GetActionResponse
+	12, // 10: octomanager.v2.NotificationItem.merge:type_name -> octomanager.v2.NotificationMergeItem
+	13, // 11: octomanager.v2.NotificationItem.issue:type_name -> octomanager.v2.NotificationIssueItem
+	14, // 12: octomanager.v2.NotificationItem.submission:type_name -> octomanager.v2.NotificationSubmissionItem
+	15, // 13: octomanager.v2.NotificationItem.participants:type_name -> octomanager.v2.NotificationParticipantsItem
+	16, // 14: octomanager.v2.NotificationItem.reference:type_name -> octomanager.v2.NotificationReferenceItem
+	17, // 15: octomanager.v2.NotificationItem.unavailable:type_name -> octomanager.v2.NotificationUnavailableItem
+	29, // 16: octomanager.v2.NotificationMergeItem.state:type_name -> octomanager.v2.DomainMergeEntryState
+	30, // 17: octomanager.v2.NotificationMergeItem.detail:type_name -> octomanager.v2.DomainMergeEntry
+	31, // 18: octomanager.v2.NotificationIssueItem.stage:type_name -> octomanager.v2.IssueStage
+	32, // 19: octomanager.v2.NotificationIssueItem.waiting:type_name -> octomanager.v2.IssueWaiting
+	33, // 20: octomanager.v2.NotificationIssueItem.detail:type_name -> octomanager.v2.ManagedIssue
+	34, // 21: octomanager.v2.NotificationSubmissionItem.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
+	35, // 22: octomanager.v2.NotificationSubmissionItem.detail:type_name -> octomanager.v2.DomainArchivedSubmission
+	36, // 23: octomanager.v2.NotificationParticipantsItem.detail:type_name -> octomanager.v2.PRParticipant
+	37, // 24: octomanager.v2.NotificationReferenceItem.detail:type_name -> octomanager.v2.DomainPRReference
+	0,  // 25: octomanager.v2.NotificationUnavailableItem.reason:type_name -> octomanager.v2.NotificationUnavailableReason
+	10, // 26: octomanager.v2.GetNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	24, // 27: octomanager.v2.AcknowledgeNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	10, // 28: octomanager.v2.AcknowledgeNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	29, // [29:29] is the sub-list for method output_type
+	29, // [29:29] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_notifications_proto_init() }
@@ -675,23 +1721,36 @@ func file_octomanager_v2_notifications_proto_init() {
 		return
 	}
 	file_octomanager_v2_domain_proto_init()
+	file_octomanager_v2_issues_proto_init()
 	file_octomanager_v2_tracking_proto_init()
 	file_octomanager_v2_notifications_proto_msgTypes[0].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[2].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[4].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[5].OneofWrappers = []any{}
+	file_octomanager_v2_notifications_proto_msgTypes[9].OneofWrappers = []any{}
+	file_octomanager_v2_notifications_proto_msgTypes[10].OneofWrappers = []any{
+		(*NotificationItem_Action)(nil),
+		(*NotificationItem_Merge)(nil),
+		(*NotificationItem_Issue)(nil),
+		(*NotificationItem_Submission)(nil),
+		(*NotificationItem_Participants)(nil),
+		(*NotificationItem_Reference)(nil),
+		(*NotificationItem_Unavailable)(nil),
+	}
+	file_octomanager_v2_notifications_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_notifications_proto_rawDesc), len(file_octomanager_v2_notifications_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   9,
+			NumEnums:      1,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_octomanager_v2_notifications_proto_goTypes,
 		DependencyIndexes: file_octomanager_v2_notifications_proto_depIdxs,
+		EnumInfos:         file_octomanager_v2_notifications_proto_enumTypes,
 		MessageInfos:      file_octomanager_v2_notifications_proto_msgTypes,
 	}.Build()
 	File_octomanager_v2_notifications_proto = out.File

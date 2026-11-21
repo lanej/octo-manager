@@ -1,3 +1,4 @@
+import { allocateMessageId } from "./identifiers.js";
 import type { ReceiptTarget } from "../merging/receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -31,20 +32,10 @@ export class DigestStore {
     );
   }
   private dispatchId(): string {
-    for (let attempt = 0; attempt < 32; attempt++) {
-      const id = randomUUID();
-      if (
-        this.db
-          .prepare(
-            "SELECT 1 FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? LIMIT 1",
-          )
-          .get(id.slice(0, 8)) === undefined
-      )
-        return id;
-    }
-    throw new Error("Unable to allocate a unique message receipt ID");
+    return allocateMessageId(this.db);
   }
-  delivery(id: string): DigestRevision {
+
+  findDelivery(id: string): DigestRevision | undefined {
     if (!/^[a-f0-9-]{8,36}$/u.test(id))
       throw new Error("Invalid message receipt ID");
     const rows = this.db
@@ -52,13 +43,15 @@ export class DigestStore {
         "SELECT data FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? AND replace(json_extract(data,'$.dispatchId'),'-','') LIKE ? LIMIT 2",
       )
       .all(id.slice(0, 8), `${id.replaceAll("-", "")}%`);
-    if (rows.length !== 1)
-      throw new Error(
-        rows.length === 0
-          ? "Message receipt not found"
-          : "Invalid ambiguous message receipt ID",
-      );
+    if (rows.length === 0) return undefined;
+    if (rows.length > 1)
+      throw new Error("Invalid ambiguous message receipt ID");
     return revision(JSON.parse(String(rows[0]?.["data"])));
+  }
+  delivery(id: string): DigestRevision {
+    const found = this.findDelivery(id);
+    if (found === undefined) throw new Error("Message receipt not found");
+    return found;
   }
   list(agentId?: string): Digest[] {
     return this.db

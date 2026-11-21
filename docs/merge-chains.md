@@ -15,7 +15,7 @@ Octo can watch a dependency across repositories, prepare its dependent PR with a
 
 Schema 13 adds `pr_references`, `pr_dependencies`, `merge_chains`, `merge_entries`, `merge_operations`, `merge_conflict_cases`, and `merge_notices`, plus cached description text on observations. State columns use checked string enums; payloads are validated JSON. Existing identifiers survive migration; timestamps remain integer Unix milliseconds. Operation identity and preparation inputs are immutable after recording.
 
-Descriptions and comments already fetched by tracking supply references without extra discovery requests. Full PR URLs are recognized directly; shorthand links remain ambiguous issue-or-PR references until tracked/confirmed. Unknown targets are saved but neither fetched recursively nor enrolled. Use `track` normally before confirming an unknown prerequisite. Reference hints never decide dependency direction.
+Descriptions and comments already fetched by tracking supply references without extra discovery requests. Full PR URLs are recognized directly; shorthand links remain ambiguous issue-or-PR references until tracked/confirmed. Unknown targets are saved but neither fetched recursively nor enrolled. Use `track` normally before confirming an unknown prerequisite. Reference hints never decide dependency direction. Discovered links remain available through explicit reference inspection and do not create unsolicited workflow notifications.
 
 ## Queue and assess
 

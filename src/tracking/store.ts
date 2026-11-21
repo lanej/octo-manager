@@ -423,7 +423,7 @@ export class TrackingStore {
     const at = this.now();
     this.saveDelivery(
       {
-        id: randomUUID(),
+        id: this.inbox.newMessageId(),
         actionId: a.id,
         recipientAgentId,
         progress: { state: DeliveryState.Pending, nextAttemptAt: at },
@@ -469,7 +469,7 @@ export class TrackingStore {
           continue;
         const action = this.action(delivery.actionId),
           pr = this.pr(action.prId);
-        const id = randomUUID(),
+        const id = this.inbox.newMessageId(),
           at = this.now();
         const uncertain =
           delivery.progress.state === DeliveryState.Uncertain ||
@@ -528,7 +528,7 @@ export class TrackingStore {
   ): void {
     for (const participant of this.subscriptions.list(this.pr(action.prId))) {
       const at = this.now(),
-        id = randomUUID();
+        id = this.inbox.newMessageId();
       this.saveDelivery(
         {
           id,

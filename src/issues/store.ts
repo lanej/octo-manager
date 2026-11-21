@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     if (installed == null) return;
     const actionable =
       issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
-    const id = randomUUID();
+    const id = this.notifications?.newMessageId() ?? randomUUID();
     const notice: SafeNotice = {
       version: 1,
       kind: "issue",
