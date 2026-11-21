@@ -1422,13 +1422,16 @@ test("a readiness-only receipt inspects its underlying action through the one pu
       digest.revision,
     );
     expect(version.messageIds).toEqual([ready.id]);
-    const response = await schedulerClient(f.directory).getAgentDigest({
-      receiptId: version.dispatchId,
+    const response = await schedulerClient(f.directory).getNotificationMessage({
+      id: version.dispatchId,
       full: true,
     });
-    expect(response.findings).toHaveLength(1);
-    expect(response.findings[0]?.action?.id).toBe(ready.notice.subject.id);
-    expect(response.findings[0]?.action?.blocker.case).toBe("checkResults");
+    expect(response.message?.items).toHaveLength(1);
+    const item = response.message?.items[0];
+    if (item?.source.case !== "action")
+      throw new Error("Missing readiness action");
+    expect(item.source.value.action?.id).toBe(ready.notice.subject.id);
+    expect(item.source.value.action?.blocker.case).toBe("checkResults");
     expect(
       f.coordinator.store.tracking.inbox.get(ready.id)?.acknowledgedAt,
     ).toBeUndefined();

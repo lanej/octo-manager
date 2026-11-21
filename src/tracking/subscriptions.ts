@@ -1,7 +1,6 @@
 import type { NotificationRepository } from "../notifications/repository.js";
 import { renderNotice, type SafeNotice } from "../security/notifications.js";
 import type { DatabaseSync } from "node:sqlite";
-import { randomUUID } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "./messages.js";
 import { shortId } from "./identifiers.js";
@@ -125,7 +124,7 @@ export class Subscriptions {
     );
     const participants = this.list(pr);
     for (const recipient of participants) {
-      const id = randomUUID();
+      const id = this.notices.newMessageId();
       const notice: SafeNotice = {
         version: 1,
         kind: "participants",

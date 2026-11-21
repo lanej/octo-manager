@@ -1,4 +1,4 @@
-import { inspectFindings } from "./notifications/inspection.js";
+import { Messages } from "./notifications/messages.js";
 import { wireAssessment } from "./assessments/rpc.js";
 import { issueRoutes, wireIssue } from "./issues/rpc.js";
 import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
@@ -74,6 +74,7 @@ function command(coordinator: Coordinator, value: object): unknown {
 }
 export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter): void {
   const tracking=coordinator.tracking;
+  const messages=new Messages(coordinator.store,coordinator.digests);
   const owner=(value?:{harness:string;endpoint:string;sessionId:string;label?:string|undefined})=>{
     if(!value)throw new ConnectError("Owner is required",Code.InvalidArgument);
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
@@ -98,11 +99,17 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       const result=coordinator.store.merging.transaction(()=>coordinator.merging.receipts.request(target,version.dispatchId,recipient));
       return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,...result})};
     });},
+    getNotificationMessage(r) {return trackingOperation(()=>({message:messages.get(r.id,r.full)}));},
+    acknowledgeNotificationMessage(r) {return trackingOperation(()=>{
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const agentId=r.agentTarget===undefined ? coordinator.store.merging.actor(r.agentId) : tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      return {message:messages.acknowledge(r.id,agentId,r.expectedBody)};
+    });},
     getAgentDigest(r) {return trackingOperation(()=>{
       if(r.receiptId!=="" && (r.id!=="" || r.revision!==undefined))throw new Error("Invalid mixed message receipt references");
       const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
       const inspection=coordinator.digests.inspect(version?.digestId??r.id,version?.revision??r.revision);
-      return {inspection:wire(DomainDigestInspectionSchema,digestInspection(inspection)),findings:inspectFindings(tracking.store,coordinator.store.assessments,inspection.revision.messageIds,r.full)};
+      return {inspection:wire(DomainDigestInspectionSchema,digestInspection(inspection))};
     });},
     listAgentDigests(r) {return {digests:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>wire(DomainAgentDigestSchema,value))};},
     acknowledgeAgentDigest(r) {return trackingOperation(()=>{

@@ -93,6 +93,12 @@ const (
 	// SchedulerServiceMergeAgentMessageProcedure is the fully-qualified name of the SchedulerService's
 	// MergeAgentMessage RPC.
 	SchedulerServiceMergeAgentMessageProcedure = "/octomanager.v2.SchedulerService/MergeAgentMessage"
+	// SchedulerServiceGetNotificationMessageProcedure is the fully-qualified name of the
+	// SchedulerService's GetNotificationMessage RPC.
+	SchedulerServiceGetNotificationMessageProcedure = "/octomanager.v2.SchedulerService/GetNotificationMessage"
+	// SchedulerServiceAcknowledgeNotificationMessageProcedure is the fully-qualified name of the
+	// SchedulerService's AcknowledgeNotificationMessage RPC.
+	SchedulerServiceAcknowledgeNotificationMessageProcedure = "/octomanager.v2.SchedulerService/AcknowledgeNotificationMessage"
 	// SchedulerServiceGetAgentDigestProcedure is the fully-qualified name of the SchedulerService's
 	// GetAgentDigest RPC.
 	SchedulerServiceGetAgentDigestProcedure = "/octomanager.v2.SchedulerService/GetAgentDigest"
@@ -261,7 +267,11 @@ type SchedulerServiceClient interface {
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
 	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
-	// Inspects a digest or frozen receipt without acknowledging its messages.
+	// Inspects one public message and every typed member without recording receipt.
+	GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error)
+	// Records receipt for one frozen message without resolving its items.
+	AcknowledgeNotificationMessage(context.Context, *connect.Request[v2.AcknowledgeNotificationMessageRequest]) (*connect.Response[v2.AcknowledgeNotificationMessageResponse], error)
+	// Retains administrative inspection of immutable digest revisions.
 	GetAgentDigest(context.Context, *connect.Request[v2.GetAgentDigestRequest]) (*connect.Response[v2.GetAgentDigestResponse], error)
 	// Lists retained notification digests for a recipient.
 	ListAgentDigests(context.Context, *connect.Request[v2.ListAgentDigestsRequest]) (*connect.Response[v2.ListAgentDigestsResponse], error)
@@ -476,6 +486,18 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceMergeAgentMessageProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("MergeAgentMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		getNotificationMessage: connect.NewClient[v2.GetNotificationMessageRequest, v2.GetNotificationMessageResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetNotificationMessageProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetNotificationMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		acknowledgeNotificationMessage: connect.NewClient[v2.AcknowledgeNotificationMessageRequest, v2.AcknowledgeNotificationMessageResponse](
+			httpClient,
+			baseURL+SchedulerServiceAcknowledgeNotificationMessageProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeNotificationMessage")),
 			connect.WithClientOptions(opts...),
 		),
 		getAgentDigest: connect.NewClient[v2.GetAgentDigestRequest, v2.GetAgentDigestResponse](
@@ -735,68 +757,70 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
-	enrollIssue               *connect.Client[v2.EnrollIssueRequest, v2.EnrollIssueResponse]
-	listIssues                *connect.Client[v2.ListIssuesRequest, v2.ListIssuesResponse]
-	getIssue                  *connect.Client[v2.GetIssueRequest, v2.GetIssueResponse]
-	updateIssue               *connect.Client[v2.UpdateIssueRequest, v2.UpdateIssueResponse]
-	getServerInfo             *connect.Client[v2.GetServerInfoRequest, v2.GetServerInfoResponse]
-	setAutoMerge              *connect.Client[v2.SetAutoMergeRequest, v2.SetAutoMergeResponse]
-	queueMergeChain           *connect.Client[v2.QueueMergeChainRequest, v2.QueueMergeChainResponse]
-	inspectMergeChains        *connect.Client[v2.InspectMergeChainsRequest, v2.InspectMergeChainsResponse]
-	listPRReferences          *connect.Client[v2.ListPRReferencesRequest, v2.ListPRReferencesResponse]
-	listPRDependencies        *connect.Client[v2.ListPRDependenciesRequest, v2.ListPRDependenciesResponse]
-	confirmPRDependency       *connect.Client[v2.ConfirmPRDependencyRequest, v2.ConfirmPRDependencyResponse]
-	removePRDependency        *connect.Client[v2.RemovePRDependencyRequest, v2.RemovePRDependencyResponse]
-	decidePRReference         *connect.Client[v2.DecidePRReferenceRequest, v2.DecidePRReferenceResponse]
-	setMergePolicy            *connect.Client[v2.SetMergePolicyRequest, v2.SetMergePolicyResponse]
-	setMergeReady             *connect.Client[v2.SetMergeReadyRequest, v2.SetMergeReadyResponse]
-	pauseMergeChain           *connect.Client[v2.PauseMergeChainRequest, v2.PauseMergeChainResponse]
-	resumeMergeChain          *connect.Client[v2.ResumeMergeChainRequest, v2.ResumeMergeChainResponse]
-	cancelMergeChain          *connect.Client[v2.CancelMergeChainRequest, v2.CancelMergeChainResponse]
-	reconcileMergeOperation   *connect.Client[v2.ReconcileMergeOperationRequest, v2.ReconcileMergeOperationResponse]
-	mergeAgentMessage         *connect.Client[v2.MergeAgentMessageRequest, v2.MergeAgentMessageResponse]
-	getAgentDigest            *connect.Client[v2.GetAgentDigestRequest, v2.GetAgentDigestResponse]
-	listAgentDigests          *connect.Client[v2.ListAgentDigestsRequest, v2.ListAgentDigestsResponse]
-	acknowledgeAgentDigest    *connect.Client[v2.AcknowledgeAgentDigestRequest, v2.AcknowledgeAgentDigestResponse]
-	getSubmission             *connect.Client[v2.GetSubmissionRequest, v2.GetSubmissionResponse]
-	listSubmissions           *connect.Client[v2.ListSubmissionsRequest, v2.ListSubmissionsResponse]
-	getRepositoryPolicy       *connect.Client[v2.GetRepositoryPolicyRequest, v2.GetRepositoryPolicyResponse]
-	listConflictCases         *connect.Client[v2.ListConflictCasesRequest, v2.ListConflictCasesResponse]
-	getConflictCase           *connect.Client[v2.GetConflictCaseRequest, v2.GetConflictCaseResponse]
-	requestRebase             *connect.Client[v2.RequestRebaseRequest, v2.RequestRebaseResponse]
-	listRepairs               *connect.Client[v2.ListRepairsRequest, v2.ListRepairsResponse]
-	recordActivity            *connect.Client[v2.RecordActivityRequest, v2.RecordActivityResponse]
-	listActivity              *connect.Client[v2.ListActivityRequest, v2.ListActivityResponse]
-	registerAgent             *connect.Client[v2.RegisterAgentRequest, v2.RegisterAgentResponse]
-	subscribePullRequest      *connect.Client[v2.SubscribePullRequestRequest, v2.SubscribePullRequestResponse]
-	unsubscribePullRequest    *connect.Client[v2.UnsubscribePullRequestRequest, v2.UnsubscribePullRequestResponse]
-	listPRParticipants        *connect.Client[v2.ListPRParticipantsRequest, v2.ListPRParticipantsResponse]
-	trackPullRequest          *connect.Client[v2.TrackPullRequestRequest, v2.TrackPullRequestResponse]
-	listTrackedPullRequests   *connect.Client[v2.ListTrackedPullRequestsRequest, v2.ListTrackedPullRequestsResponse]
-	getTrackedPullRequest     *connect.Client[v2.GetTrackedPullRequestRequest, v2.GetTrackedPullRequestResponse]
-	refreshTrackedPullRequest *connect.Client[v2.RefreshTrackedPullRequestRequest, v2.RefreshTrackedPullRequestResponse]
-	assignPullRequest         *connect.Client[v2.AssignPullRequestRequest, v2.AssignPullRequestResponse]
-	untrackPullRequest        *connect.Client[v2.UntrackPullRequestRequest, v2.UntrackPullRequestResponse]
-	listActions               *connect.Client[v2.ListActionsRequest, v2.ListActionsResponse]
-	getAction                 *connect.Client[v2.GetActionRequest, v2.GetActionResponse]
-	getAssessment             *connect.Client[v2.GetAssessmentRequest, v2.GetAssessmentResponse]
-	retryAssessment           *connect.Client[v2.RetryAssessmentRequest, v2.RetryAssessmentResponse]
-	acknowledgeAction         *connect.Client[v2.AcknowledgeActionRequest, v2.AcknowledgeActionResponse]
-	startAction               *connect.Client[v2.StartActionRequest, v2.StartActionResponse]
-	retryDelivery             *connect.Client[v2.RetryDeliveryRequest, v2.RetryDeliveryResponse]
-	listAgentMessages         *connect.Client[v2.ListAgentMessagesRequest, v2.ListAgentMessagesResponse]
-	acknowledgeMessage        *connect.Client[v2.AcknowledgeMessageRequest, v2.AcknowledgeMessageResponse]
-	reprofileAction           *connect.Client[v2.ReprofileActionRequest, v2.ReprofileActionResponse]
-	submitJob                 *connect.Client[v2.SubmitJobRequest, v2.SubmitJobResponse]
-	getJob                    *connect.Client[v2.GetJobRequest, v2.GetJobResponse]
-	getPullRequest            *connect.Client[v2.GetPullRequestRequest, v2.GetPullRequestResponse]
-	watchDashboard            *connect.Client[v2.WatchDashboardRequest, v2.WatchDashboardResponse]
-	getSnapshot               *connect.Client[v2.GetSnapshotRequest, v2.GetSnapshotResponse]
-	listEvents                *connect.Client[v2.ListEventsRequest, v2.ListEventsResponse]
-	watch                     *connect.Client[v2.WatchRequest, v2.WatchResponse]
-	cancelJob                 *connect.Client[v2.CancelJobRequest, v2.CancelJobResponse]
-	retryJob                  *connect.Client[v2.RetryJobRequest, v2.RetryJobResponse]
-	setPaused                 *connect.Client[v2.SetPausedRequest, v2.SetPausedResponse]
+	enrollIssue                    *connect.Client[v2.EnrollIssueRequest, v2.EnrollIssueResponse]
+	listIssues                     *connect.Client[v2.ListIssuesRequest, v2.ListIssuesResponse]
+	getIssue                       *connect.Client[v2.GetIssueRequest, v2.GetIssueResponse]
+	updateIssue                    *connect.Client[v2.UpdateIssueRequest, v2.UpdateIssueResponse]
+	getServerInfo                  *connect.Client[v2.GetServerInfoRequest, v2.GetServerInfoResponse]
+	setAutoMerge                   *connect.Client[v2.SetAutoMergeRequest, v2.SetAutoMergeResponse]
+	queueMergeChain                *connect.Client[v2.QueueMergeChainRequest, v2.QueueMergeChainResponse]
+	inspectMergeChains             *connect.Client[v2.InspectMergeChainsRequest, v2.InspectMergeChainsResponse]
+	listPRReferences               *connect.Client[v2.ListPRReferencesRequest, v2.ListPRReferencesResponse]
+	listPRDependencies             *connect.Client[v2.ListPRDependenciesRequest, v2.ListPRDependenciesResponse]
+	confirmPRDependency            *connect.Client[v2.ConfirmPRDependencyRequest, v2.ConfirmPRDependencyResponse]
+	removePRDependency             *connect.Client[v2.RemovePRDependencyRequest, v2.RemovePRDependencyResponse]
+	decidePRReference              *connect.Client[v2.DecidePRReferenceRequest, v2.DecidePRReferenceResponse]
+	setMergePolicy                 *connect.Client[v2.SetMergePolicyRequest, v2.SetMergePolicyResponse]
+	setMergeReady                  *connect.Client[v2.SetMergeReadyRequest, v2.SetMergeReadyResponse]
+	pauseMergeChain                *connect.Client[v2.PauseMergeChainRequest, v2.PauseMergeChainResponse]
+	resumeMergeChain               *connect.Client[v2.ResumeMergeChainRequest, v2.ResumeMergeChainResponse]
+	cancelMergeChain               *connect.Client[v2.CancelMergeChainRequest, v2.CancelMergeChainResponse]
+	reconcileMergeOperation        *connect.Client[v2.ReconcileMergeOperationRequest, v2.ReconcileMergeOperationResponse]
+	mergeAgentMessage              *connect.Client[v2.MergeAgentMessageRequest, v2.MergeAgentMessageResponse]
+	getNotificationMessage         *connect.Client[v2.GetNotificationMessageRequest, v2.GetNotificationMessageResponse]
+	acknowledgeNotificationMessage *connect.Client[v2.AcknowledgeNotificationMessageRequest, v2.AcknowledgeNotificationMessageResponse]
+	getAgentDigest                 *connect.Client[v2.GetAgentDigestRequest, v2.GetAgentDigestResponse]
+	listAgentDigests               *connect.Client[v2.ListAgentDigestsRequest, v2.ListAgentDigestsResponse]
+	acknowledgeAgentDigest         *connect.Client[v2.AcknowledgeAgentDigestRequest, v2.AcknowledgeAgentDigestResponse]
+	getSubmission                  *connect.Client[v2.GetSubmissionRequest, v2.GetSubmissionResponse]
+	listSubmissions                *connect.Client[v2.ListSubmissionsRequest, v2.ListSubmissionsResponse]
+	getRepositoryPolicy            *connect.Client[v2.GetRepositoryPolicyRequest, v2.GetRepositoryPolicyResponse]
+	listConflictCases              *connect.Client[v2.ListConflictCasesRequest, v2.ListConflictCasesResponse]
+	getConflictCase                *connect.Client[v2.GetConflictCaseRequest, v2.GetConflictCaseResponse]
+	requestRebase                  *connect.Client[v2.RequestRebaseRequest, v2.RequestRebaseResponse]
+	listRepairs                    *connect.Client[v2.ListRepairsRequest, v2.ListRepairsResponse]
+	recordActivity                 *connect.Client[v2.RecordActivityRequest, v2.RecordActivityResponse]
+	listActivity                   *connect.Client[v2.ListActivityRequest, v2.ListActivityResponse]
+	registerAgent                  *connect.Client[v2.RegisterAgentRequest, v2.RegisterAgentResponse]
+	subscribePullRequest           *connect.Client[v2.SubscribePullRequestRequest, v2.SubscribePullRequestResponse]
+	unsubscribePullRequest         *connect.Client[v2.UnsubscribePullRequestRequest, v2.UnsubscribePullRequestResponse]
+	listPRParticipants             *connect.Client[v2.ListPRParticipantsRequest, v2.ListPRParticipantsResponse]
+	trackPullRequest               *connect.Client[v2.TrackPullRequestRequest, v2.TrackPullRequestResponse]
+	listTrackedPullRequests        *connect.Client[v2.ListTrackedPullRequestsRequest, v2.ListTrackedPullRequestsResponse]
+	getTrackedPullRequest          *connect.Client[v2.GetTrackedPullRequestRequest, v2.GetTrackedPullRequestResponse]
+	refreshTrackedPullRequest      *connect.Client[v2.RefreshTrackedPullRequestRequest, v2.RefreshTrackedPullRequestResponse]
+	assignPullRequest              *connect.Client[v2.AssignPullRequestRequest, v2.AssignPullRequestResponse]
+	untrackPullRequest             *connect.Client[v2.UntrackPullRequestRequest, v2.UntrackPullRequestResponse]
+	listActions                    *connect.Client[v2.ListActionsRequest, v2.ListActionsResponse]
+	getAction                      *connect.Client[v2.GetActionRequest, v2.GetActionResponse]
+	getAssessment                  *connect.Client[v2.GetAssessmentRequest, v2.GetAssessmentResponse]
+	retryAssessment                *connect.Client[v2.RetryAssessmentRequest, v2.RetryAssessmentResponse]
+	acknowledgeAction              *connect.Client[v2.AcknowledgeActionRequest, v2.AcknowledgeActionResponse]
+	startAction                    *connect.Client[v2.StartActionRequest, v2.StartActionResponse]
+	retryDelivery                  *connect.Client[v2.RetryDeliveryRequest, v2.RetryDeliveryResponse]
+	listAgentMessages              *connect.Client[v2.ListAgentMessagesRequest, v2.ListAgentMessagesResponse]
+	acknowledgeMessage             *connect.Client[v2.AcknowledgeMessageRequest, v2.AcknowledgeMessageResponse]
+	reprofileAction                *connect.Client[v2.ReprofileActionRequest, v2.ReprofileActionResponse]
+	submitJob                      *connect.Client[v2.SubmitJobRequest, v2.SubmitJobResponse]
+	getJob                         *connect.Client[v2.GetJobRequest, v2.GetJobResponse]
+	getPullRequest                 *connect.Client[v2.GetPullRequestRequest, v2.GetPullRequestResponse]
+	watchDashboard                 *connect.Client[v2.WatchDashboardRequest, v2.WatchDashboardResponse]
+	getSnapshot                    *connect.Client[v2.GetSnapshotRequest, v2.GetSnapshotResponse]
+	listEvents                     *connect.Client[v2.ListEventsRequest, v2.ListEventsResponse]
+	watch                          *connect.Client[v2.WatchRequest, v2.WatchResponse]
+	cancelJob                      *connect.Client[v2.CancelJobRequest, v2.CancelJobResponse]
+	retryJob                       *connect.Client[v2.RetryJobRequest, v2.RetryJobResponse]
+	setPaused                      *connect.Client[v2.SetPausedRequest, v2.SetPausedResponse]
 }
 
 // EnrollIssue calls octomanager.v2.SchedulerService.EnrollIssue.
@@ -897,6 +921,17 @@ func (c *schedulerServiceClient) ReconcileMergeOperation(ctx context.Context, re
 // MergeAgentMessage calls octomanager.v2.SchedulerService.MergeAgentMessage.
 func (c *schedulerServiceClient) MergeAgentMessage(ctx context.Context, req *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error) {
 	return c.mergeAgentMessage.CallUnary(ctx, req)
+}
+
+// GetNotificationMessage calls octomanager.v2.SchedulerService.GetNotificationMessage.
+func (c *schedulerServiceClient) GetNotificationMessage(ctx context.Context, req *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error) {
+	return c.getNotificationMessage.CallUnary(ctx, req)
+}
+
+// AcknowledgeNotificationMessage calls
+// octomanager.v2.SchedulerService.AcknowledgeNotificationMessage.
+func (c *schedulerServiceClient) AcknowledgeNotificationMessage(ctx context.Context, req *connect.Request[v2.AcknowledgeNotificationMessageRequest]) (*connect.Response[v2.AcknowledgeNotificationMessageResponse], error) {
+	return c.acknowledgeNotificationMessage.CallUnary(ctx, req)
 }
 
 // GetAgentDigest calls octomanager.v2.SchedulerService.GetAgentDigest.
@@ -1151,7 +1186,11 @@ type SchedulerServiceHandler interface {
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
 	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
-	// Inspects a digest or frozen receipt without acknowledging its messages.
+	// Inspects one public message and every typed member without recording receipt.
+	GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error)
+	// Records receipt for one frozen message without resolving its items.
+	AcknowledgeNotificationMessage(context.Context, *connect.Request[v2.AcknowledgeNotificationMessageRequest]) (*connect.Response[v2.AcknowledgeNotificationMessageResponse], error)
+	// Retains administrative inspection of immutable digest revisions.
 	GetAgentDigest(context.Context, *connect.Request[v2.GetAgentDigestRequest]) (*connect.Response[v2.GetAgentDigestResponse], error)
 	// Lists retained notification digests for a recipient.
 	ListAgentDigests(context.Context, *connect.Request[v2.ListAgentDigestsRequest]) (*connect.Response[v2.ListAgentDigestsResponse], error)
@@ -1362,6 +1401,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceMergeAgentMessageProcedure,
 		svc.MergeAgentMessage,
 		connect.WithSchema(schedulerServiceMethods.ByName("MergeAgentMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetNotificationMessageHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetNotificationMessageProcedure,
+		svc.GetNotificationMessage,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetNotificationMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceAcknowledgeNotificationMessageHandler := connect.NewUnaryHandler(
+		SchedulerServiceAcknowledgeNotificationMessageProcedure,
+		svc.AcknowledgeNotificationMessage,
+		connect.WithSchema(schedulerServiceMethods.ByName("AcknowledgeNotificationMessage")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceGetAgentDigestHandler := connect.NewUnaryHandler(
@@ -1658,6 +1709,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceReconcileMergeOperationHandler.ServeHTTP(w, r)
 		case SchedulerServiceMergeAgentMessageProcedure:
 			schedulerServiceMergeAgentMessageHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetNotificationMessageProcedure:
+			schedulerServiceGetNotificationMessageHandler.ServeHTTP(w, r)
+		case SchedulerServiceAcknowledgeNotificationMessageProcedure:
+			schedulerServiceAcknowledgeNotificationMessageHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetAgentDigestProcedure:
 			schedulerServiceGetAgentDigestHandler.ServeHTTP(w, r)
 		case SchedulerServiceListAgentDigestsProcedure:
@@ -1829,6 +1884,14 @@ func (UnimplementedSchedulerServiceHandler) ReconcileMergeOperation(context.Cont
 
 func (UnimplementedSchedulerServiceHandler) MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.MergeAgentMessage is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.GetNotificationMessage is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) AcknowledgeNotificationMessage(context.Context, *connect.Request[v2.AcknowledgeNotificationMessageRequest]) (*connect.Response[v2.AcknowledgeNotificationMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.AcknowledgeNotificationMessage is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetAgentDigest(context.Context, *connect.Request[v2.GetAgentDigestRequest]) (*connect.Response[v2.GetAgentDigestResponse], error) {

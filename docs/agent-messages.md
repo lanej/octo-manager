@@ -2,6 +2,12 @@
 
 An unsolicited message must give the receiving agent a decision to make or work to consider. Optimize the initial context for that decision; keep full observations and recovery state in Octo.
 
+## Message and item model
+
+A public message contains one or more typed items under one immutable ID. The message belongs to one recipient and provides a safe summary; each item identifies its producer source and retains independent applicability and receipt information. Review feedback and check results refer to actions; other variants refer to merge entries, issues, archived submissions, participants or historical references. Missing history is an explicit unavailable item, not an omitted member.
+
+`octo-manager message ID` inspects the whole message, whether it was delivered directly as one item or queued as a group. `--full` deliberately exposes untrusted evidence and original text. `octo-manager ack ID` records delivery only. Work acceptance, resolution and owner-authorized merging retain their separate operations. The existing digest revision stores grouped membership; direct messages use their existing immutable item. No second queue or regrouping migration is required.
+
 ## What merits delivery
 
 - Deliver failed checks, conflicts, and new or edited review feedback that needs assessment. Filter known bot lifecycle summaries (queued, running, inconclusive) and completed reviews without findings.

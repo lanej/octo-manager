@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { allocateMessageId } from "./identifiers.js";
 import { renderNotice } from "../security/notifications.js";
 import { shortId } from "../tracking/identifiers.js";
 import { parseNotice, type SafeNotice } from "../security/notifications.js";
-import type { AgentMessage } from "./message.js";
+import type { AgentMessage, NotificationSource } from "./message.js";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compactId } from "../tracking/identifiers.js";
 import type { DatabaseSync } from "node:sqlite";
@@ -219,6 +219,9 @@ export class NotificationRepository {
     private db: DatabaseSync,
     private now: () => number,
   ) {}
+  newMessageId(): string {
+    return allocateMessageId(this.db);
+  }
   recoverWorkflows(): void {
     const rows = this.db
       .prepare(
@@ -227,7 +230,7 @@ export class NotificationRepository {
       .all();
     for (const row of rows) {
       const message = decode(row),
-        id = randomUUID();
+        id = this.newMessageId();
       const subject: SafeNotice["subject"] =
         message.issueId !== undefined
           ? { kind: "issue", id: message.issueId }
@@ -310,6 +313,7 @@ export class NotificationRepository {
       ...ids("merge_notices"),
       ...ids("issue_notices"),
       ...ids("safe_recovery_messages"),
+      ...ids("agent_digest_revisions", "json_extract(data,'$.dispatchId')"),
       id,
     ];
     const action = this.db
@@ -365,10 +369,63 @@ export class NotificationRepository {
       ? undefined
       : parseNotice(JSON.parse(String(row["notice_json"])));
   }
+  private source(
+    message: AgentMessage,
+    notice: SafeNotice | undefined,
+  ): NotificationSource {
+    if (message.actionId !== "")
+      return { kind: "action", id: message.actionId };
+    if (message.issueId !== undefined)
+      return { kind: "issue", id: message.issueId };
+    if (message.submissionId !== undefined)
+      return { kind: "submission", id: message.submissionId };
+    if (message.participantPRId !== undefined)
+      return { kind: "participants", id: message.participantPRId };
+    if (notice?.subject !== undefined) {
+      switch (notice.subject.kind) {
+        case "action":
+          return { kind: "action", id: notice.subject.id };
+        case "merge_entry":
+          return { kind: "merge", id: notice.subject.id };
+        case "reference":
+          return { kind: "reference", id: notice.subject.id };
+        case "issue":
+          return { kind: "issue", id: notice.subject.id };
+        case "submission":
+          return { kind: "submission", id: notice.subject.id };
+      }
+    }
+    if (message.workflowPRId !== undefined) {
+      const row = this.db
+        .prepare(
+          /* sql */ `SELECT subject_kind, subject_id
+          FROM merge_notices
+          WHERE id=COALESCE(
+            (SELECT original_id FROM safe_recovery_messages WHERE id=?), ?
+          )`,
+        )
+        .get(message.id, message.id);
+      const id = row?.["subject_id"];
+      if (typeof id === "string") {
+        if (row?.["subject_kind"] === "reference")
+          return { kind: "reference", id };
+        if (row?.["subject_kind"] === "entry")
+          return id.startsWith("ready:")
+            ? { kind: "action", id: id.slice(6) }
+            : { kind: "merge", id };
+      }
+    }
+    return { kind: "unavailable" };
+  }
   private withNotice(message: AgentMessage): AgentMessage {
     const notice = this.notice(message.id);
-    return notice === undefined ? message : { ...message, notice };
+    return {
+      ...message,
+      source: this.source(message, notice),
+      ...(notice === undefined ? {} : { notice }),
+    };
   }
+
   get(id: string): AgentMessage | undefined {
     const row = this.db.prepare(`${messagesQuery} WHERE delivery_id=?`).get(id);
     if (row !== undefined) return this.withNotice(decode(row));

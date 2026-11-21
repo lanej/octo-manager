@@ -1045,7 +1045,7 @@ export class MergeStore {
             .get(kind, subjectId, participant.agentId, revision) !== undefined
         )
           continue;
-        const id = randomUUID();
+        const id = this.tracking.inbox.newMessageId();
         const notice: SafeNotice = {
           version: 1,
           kind: "merge",

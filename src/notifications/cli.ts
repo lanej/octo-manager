@@ -1,10 +1,14 @@
-import { unwire } from "../api/codec.js";
+import { toJson } from "@bufbuild/protobuf";
+import { NotificationMessageSchema } from "../gen/octomanager/v2/notifications_pb.js";
+import { checked } from "../merging/contracts.js";
+import { ReceiptTargetSchema } from "../merging/receipt-types.js";
+import { unwire, record } from "../api/codec.js";
 import {
   DomainMergeReceiptResultSchema,
   DomainDigestInspectionSchema,
   DomainAgentDigestSchema,
+  DomainReceiptTargetSchema,
 } from "../gen/octomanager/v2/domain_pb.js";
-import { revision as digestRevision } from "./types.js";
 import { printResult } from "../cli-output.js";
 import { shortId } from "../tracking/identifiers.js";
 import { receiptOutput } from "./receipt-output.js";
@@ -49,7 +53,6 @@ export async function notificationsCLI(
         "Cannot identify this session; set CODEX_THREAD_ID or pass --agent-id",
       );
     const request = {
-      receiptId: id,
       ...(agentId === undefined
         ? {
             agentTarget: {
@@ -62,50 +65,49 @@ export async function notificationsCLI(
         : { agentId }),
     };
     if (command === "merge") {
-      const response = await client.mergeAgentMessage(request);
+      const response = await client.mergeAgentMessage({
+        receiptId: id,
+        ...request,
+      });
       if (response.result === undefined)
         throw new Error("Missing merge result");
       const result = unwire(DomainMergeReceiptResultSchema, response.result);
       printResult(parsed, result);
       return true;
     }
-    const response = await client.acknowledgeAgentDigest(request);
-    const compact = receiptOutput(response, directory);
+    const response = await client.acknowledgeNotificationMessage({
+      id,
+      ...request,
+    });
+    if (response.message === undefined)
+      throw new Error("Missing message receipt");
     printResult(parsed, {
       receipt: { id },
-      items: compact.items,
-      omittedItems: compact.omittedItems,
+      itemCount: response.message.items.length,
     });
     return true;
   }
   if (command === "message") {
-    const response = await client.getAgentDigest({
-      receiptId: id ?? "",
+    const response = await client.getNotificationMessage({
+      id: id ?? "",
       full: parsed.output.full,
     });
-    if (response.inspection === undefined)
-      throw new Error("Missing message inspection");
-    const value = unwire(DomainDigestInspectionSchema, response.inspection);
-    if (typeof value !== "object" || value === null || !("revision" in value))
-      throw new Error("Invalid message inspection response");
-    const stored = digestRevision(value.revision);
+    const message = response.message;
+    if (message === undefined) throw new Error("Missing message inspection");
     let merge: { pr: string; head: string; method: string } | undefined;
-    if (values.full === true && stored.mergeTarget !== undefined) {
-      const tracked = await client.getTrackedPullRequest({
-        id: stored.mergeTarget.prId,
-      });
+    if (message.mergeTarget !== undefined) {
+      const target = checked(
+        ReceiptTargetSchema,
+        unwire(DomainReceiptTargetSchema, message.mergeTarget),
+      );
+      const tracked = await client.getTrackedPullRequest({ id: target.prId });
       if (tracked.pr === undefined)
         throw new Error("Merge target PR not found");
-      merge = {
-        pr: tracked.pr.url,
-        head: stored.mergeTarget.head,
-        method: stored.mergeTarget.method,
-      };
+      merge = { pr: tracked.pr.url, head: target.head, method: target.method };
     }
     printResult(parsed, {
-      id: shortId(stored.dispatchId),
-      body: stored.body,
-      items: response.findings,
+      ...record(toJson(NotificationMessageSchema, message)),
+      id: id ?? message.id,
       ...(merge === undefined ? {} : { merge }),
     });
     return true;

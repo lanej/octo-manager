@@ -52,7 +52,7 @@ octo-manager ack RECEIPT_ID   # Receipt without merging.
 octo-manager message RECEIPT_ID
 ```
 
-`octo-manager message RECEIPT_ID` returns the covered action records as safe metadata. `--full` explicitly includes their untrusted evidence and assessment analysis; neither inspection mode acknowledges or resolves them. Individual tracking IDs stay out of the unsolicited digest.
+`octo-manager message RECEIPT_ID` returns the generic message and every typed item as safe metadata. The same interface supports a one-item direct delivery. `--full` explicitly includes untrusted producer detail and original text; neither inspection mode acknowledges or resolves work. Individual tracking IDs stay out of the unsolicited digest. Receipt output confirms one ID and item count; full item inspection remains separate.
 
 `ack` resolves `OCTO_MANAGER_AGENT_ID`, or the registered session identified by `CODEX_THREAD_ID`. Explicit `--agent-id` overrides environment identity. Use `OCTO_MANAGER_ENDPOINT` or `--endpoint` when the same session has multiple registered endpoints. Missing, unknown or ambiguous identity fails; receipt never creates an agent. Each receipt ID resolves to one immutable dispatch, including after replacement or restart. An additive prefix index supports lookup without rewriting old records. New dispatches reserve historically unused eight-character prefixes; ambiguous older IDs require a longer prefix.
 

@@ -77,26 +77,33 @@ test("versioned API keeps untrusted evidence behind full inspection and assessme
       digest.id,
       digest.revision,
     ).dispatchId;
-    const groupedSafe = await client.getAgentDigest({ receiptId: receipt });
-    expect(groupedSafe.findings).toHaveLength(5);
-    expect(
-      new Set(groupedSafe.findings.map((item) => item.action?.id)),
-    ).toEqual(
+    const groupedSafeResponse = await client.getNotificationMessage({
+      id: receipt,
+    });
+    const groupedSafe = groupedSafeResponse.message;
+    if (groupedSafe === undefined) throw new Error("Missing message");
+    expect(groupedSafe.items).toHaveLength(5);
+    const actions = groupedSafe.items.map((item) => {
+      if (item.source.case !== "action")
+        throw new Error("Expected action item");
+      return item.source.value;
+    });
+    expect(new Set(actions.map((item) => item.action?.id))).toEqual(
       new Set(coordinator.store.tracking.actions().map((item) => item.id)),
     );
-    expect(groupedSafe.findings[0]?.action?.id).toBe(action.id);
-    expect(groupedSafe.findings[0]?.action?.blocker.case).toBeUndefined();
-    expect(
-      groupedSafe.findings[0]?.assessment?.untrustedAnalysis,
-    ).toBeUndefined();
-    const groupedFull = await client.getAgentDigest({
-      receiptId: receipt,
+    expect(actions[0]?.action?.id).toBe(action.id);
+    expect(actions[0]?.action?.blocker.case).toBeUndefined();
+    expect(actions[0]?.assessment?.untrustedAnalysis).toBeUndefined();
+    expect(groupedSafe.untrustedBody).toBeUndefined();
+    const groupedFull = await client.getNotificationMessage({
+      id: receipt,
       full: true,
     });
-    expect(groupedFull.findings[0]?.action?.blocker.case).toBe(
-      "reviewFeedback",
-    );
-    expect(groupedFull.findings[0]?.assessment?.untrustedAnalysis).toBe(text);
+    const first = groupedFull.message?.items[0];
+    if (first?.source.case !== "action")
+      throw new Error("Expected action detail");
+    expect(first.source.value.action?.blocker.case).toBe("reviewFeedback");
+    expect(first.source.value.assessment?.untrustedAnalysis).toBe(text);
     const inspect = async (full: boolean) => {
       const child = Bun.spawn(
         [
