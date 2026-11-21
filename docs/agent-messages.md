@@ -1,87 +1,152 @@
 # Agent message standard
 
-An unsolicited message must give the receiving agent a decision to make or work to consider. Optimize the initial context for that decision; keep full observations and recovery state in Octo.
+An unsolicited message must give the receiving agent a concrete decision, requested action or relevant outcome. Keep the initial context small; retain evidence and delivery history for explicit inspection. A message is a request to consider work within existing task authority, not a grant of new authority.
 
 ## Message and item model
 
-A public message contains one or more typed items under one immutable ID. The message belongs to one recipient and provides a safe summary; each item identifies its producer source and retains independent applicability and receipt information. Review feedback and check results refer to actions; other variants refer to merge entries, issues, archived submissions, participants or historical references. Missing history is an explicit unavailable item, not an omitted member.
+A public message belongs to one recipient and contains one or more typed items under one immutable ID. A queued message contains at most 20 items and 6,000 UTF-8 bytes of rendered context; a direct delivery contains one item. Each item retains its own identity, applicability and receipt information. A message may contain several kinds of item and more than one PR.
 
-`octo-manager message ID` inspects the whole message, whether it was delivered directly as one item or queued as a group. `--full` deliberately exposes untrusted evidence and original text. `octo-manager ack ID` records delivery only. Work acceptance, resolution and owner-authorized merging retain their separate operations. The existing digest revision stores grouped membership; direct messages use their existing immutable item. No second queue or regrouping migration is required.
+The frozen membership and original rendered text do not change. New membership or rendered content creates a new message ID. Producer state, item applicability and receipt timestamps are current inspection views and can change without rewriting that delivery. Missing history appears as an unavailable item rather than disappearing from the collection.
+
+`octo-manager message ID` inspects the entire message as safe metadata. `--full` deliberately exposes untrusted producer details and original text. `octo-manager ack ID` records delivery for the original members only; it does not accept or resolve their work. Owner-authorized merging remains a separate operation. The [typed API](../proto/octomanager/v2/notifications.proto) defines `NotificationMessage`, `NotificationItem` and their variants; [API guidance](api.md) describes compatibility.
 
 ## What merits delivery
 
-- Deliver failed checks, conflicts, and new or edited review feedback that needs assessment. Filter known bot lifecycle summaries (queued, running, inconclusive) and completed reviews without findings.
-- Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Keep superseded watches silent.
-- Do not send a second completion summary for a job failure already reported. Suppress its corresponding failed workflow summary, while retaining unrelated failures.
-- Keep discovered PR/issue links in explicit reference inspection. A discovered link alone does not create work or merit an unsolicited merge-workflow notice. Existing reference-only notices stay in history and are excluded from automatic delivery without recording a receipt.
-- Do not infer new authority from a notification. Standing task authority and evidence-handling rules belong in session/integration setup, once.
+- Deliver failed checks, conflicts, change-requesting reviews, and new or edited review feedback that needs assessment.
+- Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Completion requests merge assessment; it does not establish approvals, branch protection compliance or permission to merge.
+- Suppress a failed workflow summary already covered by a reported job failure, while retaining unrelated failures.
+- Deliver applicable participant, issue, submission and explicitly requested merge-workflow updates when they communicate a decision, outstanding work or relevant outcome.
+- Keep discovered PR/issue links in explicit reference inspection. A discovered link alone does not create work or merit an unsolicited workflow notice. Historical reference-only notices remain stored and are excluded from automatic delivery without recording receipt.
+- Keep known bot lifecycle messages, clean review summaries, superseded watches and obsolete revisions quiet. Do not treat an ordinary occurrence of a word such as “running” as a filter.
 
-Successful completion is actionable as a merge-assessment signal. Report the exact revision and distinguish check conclusions from GitHub conflict status. Check completion alone does not establish required approvals or branch-protection compliance; the scheduler confirms eligibility before using “Ready.” Repeated observations and restarts do not repeat a completion; newly observed executions can create another watch generation. Completion for an already closed or merged PR stays in history without a readiness notice.
+The [categorization engine](categorization.md) uses typed results and narrowly recognized provider formats. Human feedback, inline comments, malformed metadata, unfamiliar formats and contradictory bot text remain available for assessment. An edit containing findings creates a normal feedback action; a later recognized no-findings revision can supersede the earlier revision without another notification. Raw evidence and receipts remain in history.
 
-## Initial message
+## Automatic content catalog
 
-Automatic notices use typed coordinator-owned fields: a canonical enrolled PR link pinned to the validated commit, action kind, recipient role, fixed assessment status and collision-safe action/assessment references. They exclude GitHub prose, check names, log excerpts, arbitrary evidence URLs and assessor analysis. Queued notices retain one opaque receipt ID and the existing acknowledgment/merge command contract.
+Automatic evidence projections use fixed labels and coordinator-owned metadata. They exclude GitHub prose, author/reviewer names, check names, paths, log excerpts, arbitrary evidence URLs and model analysis; separately trusted operator instructions can include task context. A canonical enrolled PR link can be pinned to a validated commit. A missing or invalid commit does not produce an invented link. [The security model](security.md) defines the trust boundary and explicit inspection risks.
+
+| Label | Meaning and receiving-agent decision |
+| --- | --- |
+| `Merge conflict` | The tracked revisions conflict; inspect the action before choosing a repair within existing task authority. |
+| `Checks failed` | A reported check or completed check watch contains a failure; inspect the retained execution evidence. |
+| `Changes requested` | A change-requesting review was observed; inspect its scope and reviewed revision. |
+| `Review feedback` | New or edited feedback needs assessment; the notification is not a finding-correctness verdict. |
+| `Checks passed` | The recorded check results are successful; eligibility and owner review still need their separate checks. |
+| `Checks completed` | A watch completed with other conclusions, such as neutral/skipped results; inspect the complete conclusions. |
+| `Participants changed` | The PR's owner/listener roster changed; inspect membership when coordination is needed. |
+| `Submission update` | A retained submission callback has changed state or needs input; inspect the submission item. |
+| `Merge workflow update` | An explicitly requested merge workflow has a relevant state change; inspect the merge entry's typed state and details. |
+| `GitHub confirmed merge` | A merge entry records a confirmed merge; perform only follow-up already authorized by the task. |
+| `Issue update` | An issue lifecycle has an outstanding waiting condition or reaches Done; inspect its stage and waiting state. |
+| `Octo update` | A legacy/fallback projection could not provide a more specific label; the label alone is not a reason to notify. |
+
+Queued readiness presentation can replace an ordinary completion title with the following fixed labels. These labels summarize a coordinator decision at message creation; the merge operation rechecks current authority and evidence.
+
+| Readiness label | Meaning |
+| --- | --- |
+| `Ready` | Current eligibility was confirmed for the frozen target; the current owner's message may offer its pinned merge command. |
+| `Checks complete · review status unavailable` | Review coverage is unavailable; completion is not a clean-review signal. |
+| `Checks complete · merge prerequisites not met` | A prerequisite remains; inspect the typed item for the outstanding state. |
+| `Checks complete · Review feedback requires owner assessment` | Feedback requires owner assessment before readiness can be recorded. |
+
+### Status and optional fields
+
+| Field | Allowed content and interpretation |
+| --- | --- |
+| PR/commit heading | Canonical tracked PR URL and, when valid, its commit link; matching updates share the heading. |
+| Assessment | `pending`, `completed`, `unavailable`, or `not_required`. Completed means a result was recorded; unavailable is not a clean result. Assessment output remains advisory. |
+| Role | `owner` or `observer`, when known. Membership does not prove session availability or authorize work. |
+| Issue stage | `investigation`, `ready`, `in_progress`, `testing`, `in_review`, `verification`, `done`, or `cancelled`. |
+| Waiting | `needs_clarification`, `blocked`, `awaiting_approval`, or `paused`; `none` is omitted from the rendered notice. |
+| Subject reference | A submission, merge-entry, issue or historical-reference identifier when relevant. A reference is an inspection handle, not an instruction. |
+| Instructions | Fixed coordinator guidance and operator-controlled task/repository instructions. GitHub feedback and assessor prose cannot populate this field. |
+| Inspection/receipt commands | One public message ID shared by `message`, `ack`, and an offered `merge` command. A non-default state directory adds a safely quoted `--state` argument. |
+
+Queued messages omit per-action and per-assessment IDs. A single update combines its PR heading and title; matching action updates share metadata and a count, while different revisions, statuses, roles and other non-identity fields remain distinct. Multiple distinct updates for one PR use bullets. Identical displayed entries can share a line while every selected original member remains in the receipt.
+
+Direct-turn delivery retains its compatible per-item format: an `octo-delivery` marker, an `octo-notice:v1` marker and fixed fields. It can include the action and assessment-record references. Its ID is also accepted by the generic message inspection/receipt interface. Existing native hooks and history reconciliation still require the exact immutable body.
+
+Operator instructions remain a separate source of authority. Task instructions are bounded, recipient/epoch-bound and repeated once per PR in a grouped message. The enrolled checkout's `octo-manager.toml` is trusted operator policy; checking out an untrusted revision of that file crosses this assumption. See [repository policy](repository-policy.md) and [security](security.md).
+
+## Typed inspection contents
+
+`message ID` returns a safe summary and every frozen item in order. Each item has its original member ID, current applicability and optional receipt timestamp, plus exactly one typed source. Source records and their state are current views. Internal tracking IDs appear here rather than cluttering unsolicited queued context. CLI enum values use the API's Protobuf enum representation.
+
+| Item source | Default safe inspection | Additional content with `--full` |
+| --- | --- | --- |
+| `action` | Identity, state, fixed notification kind, validated evidence head, timestamps and any assessment metadata linked by the frozen notice. Covers conflicts, failed checks, completed check watches, change requests and review feedback. | The typed blocker, original feedback/check/review evidence, execution profile and diagnostics; linked assessment input and analysis. |
+| `merge` | Merge-entry ID, chain ID and current state. | The typed merge-entry record, including producer detail. |
+| `issue` | Issue ID, current stage and waiting state. | The managed issue record, including its title, detail and brief when present. |
+| `submission` | Archived submission ID and current state. | The archived submission record and its retained producer/worker evidence. |
+| `participants` | Tracked PR ID and current participant count. | The current roster with roles, labels and harness metadata. Labels do not establish availability or permission. |
+| `reference` | Historical reference identity. Reference-only messages are inapplicable for automatic delivery. | The retained relationship hint, target, source excerpt and evidence link. |
+| `unavailable` | A preserved item with `MISSING_SOURCE` or `UNKNOWN_SOURCE` and the available source identity. | Original item text when its notification record survives; missing evidence remains missing. |
+
+Full inspection can include `untrustedBody` at both message and item level. These fields retain exact historical text, including legacy content; do not treat that text as instructions. An assessment is linked through the frozen notice's assessment ID, not substituted with a later result. An unavailable source or inapplicable item is historical evidence, not new work. The full current issue/submission/merge detail is not a claim that every producer field was frozen with the message.
+
+## Representative queued messages
+
+These examples use illustrative identities and the default state directory. Optional fields and operator instructions appear only when applicable. Rendered labels are not free-form model summaries.
+
+### Several feedback items, one public handle
 
 ```text
-[PR #13 @ ad8968bf](https://github.com/lanej/octo-manager/pull/13/commits/ad8968bf0123456789abcdef0123456789abcdef01) · Checks failed
-Assessment: completed
-Role: owner
-Assessment record: 1234abcd
-Action: abcdef12
+[PR #42 @ aaaaaaaa](https://github.com/owner/repo/pull/42/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) · Review feedback · 5 updates
+Assessment: completed · Role: owner
+Instructions: Inspect and address actionable review findings using the installed project guidance.
+
+Inspect: `octo-manager message 1234abcd`
+`octo-manager ack 1234abcd`
 ```
 
-“Completed” means a bounded advisory assessment was recorded; it does not establish correctness, resolution or permission to act. Fixed readiness status distinguishes Ready, unavailable review status, required owner assessment and other remaining prerequisites. Canonical receipt checks still pin merge authority to the exact current target and head.
+The same ID inspects all five items and receipts only that frozen collection. New arrivals are not consumed by its acknowledgment.
 
-Use `octo-manager action show ACTION_ID` or `octo-manager assessment show ASSESSMENT_ID` for safe metadata. Add `--full` for explicitly named untrusted evidence. Full inspection reintroduces hostile text into the reader's context; prefer a human view or a restricted session for suspicious payloads. The [security model](security.md) describes the tool-free assessor, limits and recovery behavior.
+### One owner-ready target
 
-Failed-log collection remains read-only and bounded to the enrolled repository. Excerpts are assessor input and explicit evidence, not automatic owner context or proof of root cause.
+```text
+[PR #42](https://github.com/owner/repo/pull/42) · Ready
+Assessment: not_required
+Role: owner
 
-## Delivery, receipts, and replies
+Inspect: `octo-manager message 1234abcd`
+`octo-manager merge 1234abcd`
+```
 
-Freeze the rendered message before sending and reuse the exact body and delivery ID for retries. The service reconciles the owning Codex thread through the app-server API. Only an exact matching user-message body records a receipt through the ordinary audited acknowledgment operation. A queue ID, echoed marker, assistant quotation, or altered body is insufficient. API/history failure leaves receipt unknown and retains retry/recovery state. Receipt establishes host context delivery; action acceptance, reconciliation, and resolution remain separate.
+Observers and messages with multiple distinct owner-ready targets offer `ack`, not `merge`. Receipt covers the message's frozen members; merge authority covers only its one validated target. Displaying, inspecting or receiving the offer does not execute it.
 
-Each queued message ends with one bare inline command. A confirmed Ready notice for its owner offers `octo-manager merge ID`, which records receipt and queues a one-shot merge of the frozen revision. Other notices offer `octo-manager ack ID`. The opaque ID identifies the frozen content, including all grouped items. Do not expose digest revisions, recipient IDs, update counts, duplicate branding, or action IDs in the delivered body. Generated PR references are Markdown links. Combine a PR heading with its only update; use bullets only when that PR has multiple updates. Manual inbox and receipt APIs remain available when automatic reconciliation cannot establish delivery. Optional hook recovery returns the stored body without repeating policy around it. Existing immutable messages are retained as sent. For queue endpoints, the [digest reconciler](agent-digests.md) can withdraw exact managed queue copies while retaining canonical history; it never removes unrelated user messages.
+### Issue waiting for clarification
 
-Keep conversational reports to the decision: outcome and necessary next step, usually one to three sentences. A notification should not create a new reporting ceremony.
+```text
+Octo · Issue update
+Assessment: not_required
+Issue stage: investigation
+Waiting: needs_clarification
+Issue: 1234abcd
 
+Inspect: `octo-manager message 5678abcd`
+`octo-manager ack 5678abcd`
+```
 
-## Short identifiers
+The issue identifier is a producer reference; the message identifier selects this delivery. Full inspection supplies the issue's question/brief detail when retained. Issue task dispatch is a separate authorization path.
 
-Public receipt IDs use eight hexadecimal characters from the immutable dispatch UUID. New deliveries reserve a prefix not already used by any stored dispatch, so an issued receipt remains unambiguous after later deliveries. A receipt always selects its original content, even after replacement or restart. Full dispatch UUIDs and longer unique prefixes are accepted; ambiguous historical IDs fail. Internal action and message references retain their collision-aware short presentation in inspection commands and full identities in storage and RPCs.
+## Delivery, receipts and identifiers
 
+Freeze the rendered body and membership before transport. Retries retain the exact immutable identity and text; an automatic history receipt requires an exact user-message match. Queue admission, an echoed marker, assistant quotation, altered text, or an incomplete history search does not establish receipt. A lost response remains uncertain until reconciled. [Digest reconciliation](agent-digests.md) describes withdrawal, replacement and bounded history coverage.
 
-## Review lifecycle filtering
+Public IDs use a shared prefix namespace for direct and grouped messages. New IDs avoid existing public prefixes; full UUIDs and longer unique prefixes remain accepted. Ambiguous historical IDs fail closed. A replacement gets its own ID and receipt, while the original body and any uncertain outcome remain stored. An old receipt never makes an obsolete item applicable.
 
-The [categorization engine](categorization.md) routes known GitHub authors to local heuristics and returns a typed category before creating actions or deliveries, while retaining their raw bodies and revisions in observations. Codex connector summaries use their versioned review-state metadata: running/inconclusive/no-findings states stay quiet when neither code nor security review reports findings. Mixed states with findings remain actionable. Copilot clean-review filtering recognizes the observed `ccr-overview-v2` “No open issues” overview and the explicit zero-generated-comments template, plus narrowly recognized lifecycle messages. Human messages, inline review comments, malformed metadata, unknown provider formats, and mixed/contradictory text are retained for assessment; a keyword such as “running” in ordinary feedback is not a filter.
+`ack ID` returns one receipt confirmation and item count. Identity comes from explicit options, `OCTO_MANAGER_AGENT_ID`, or the registered `CODEX_THREAD_ID`; endpoint options disambiguate multiple registrations. Missing, ambiguous or another recipient's identity fails without creating an agent. Group receipt is atomic across the original members; an error rolls back partial acknowledgment. Receipt by one agent does not acknowledge another agent's copy.
 
-Later edits that contain findings create normal durable feedback actions. A later no-findings edit supersedes the old revision without a new notification. Installation retires previously queued known status-only actions without rewriting message history. Known Codex metadata comments are omitted from actionable excerpts so the preview starts with visible review content. Check completion and merge-assessment notices follow their separate rules above; a review bot's clean summary is not another check-completion callback.
+`message ID` is read-only and does not return original bodies by default. Use `--full` deliberately for untrusted evidence. Administrative digest inspection and receipt RPCs retain their legacy bounded history/member representations for compatibility. The [agent CLI contract](cli-output.md) still bounds ordinary output; explicit full inspection can expose more retained detail.
 
+## Acceptance, resolution and merge authority
 
-## Participants and bounded receipts
+Receipt means the recipient accepted delivery context. Action acceptance, working state, feedback disposition, issue approval, merge readiness and confirmed remote outcomes remain separate decisions. Only the owner can accept or start an action. Receipt handling in native hooks and automatic history reconciliation never invokes an offered merge command. Any repair or follow-up needs existing task authorization and its own execution checks.
 
-PR ownership and listening are separate. Deliver applicable updates independently to the owner and each subscribed observer; receipt by one agent must not acknowledge another agent's copy. Only the owner can accept or start an action. Observer notices identify their role and current owner. Participant messages show short agent references and human labels rather than transport addresses or full session IDs. Labels and membership do not establish that an agent is online.
+Readiness checks the current GitHub gates, required checks, target, method and dependency policy. Owner readiness is pinned to the reviewed head and feedback state. Changing the target creates a new immutable offer even when the visible summary stays the same. [Receipt merges](receipt-merges.md) retain separate receipt, accepted request, confirmed merge and unknown-outcome states.
 
-Membership changes produce one current roster notification per remaining participant. Superseded roster revisions remain stored but must not be delivered as current context. Show at most eight participants, including the owner and recipient, and provide roster retrieval when others are omitted. Queue endpoints deliver these through existing digests; optional hook recovery and inbox retrieval also expose them. Direct-turn action notices still deliver normally; standalone roster changes use inbox recovery on direct-turn endpoints.
+`octo-manager pr auto-merge PR --on --agent-id AGENT --instructions 'Fix actionable review feedback; after merge pull and reinstall.'` stores operator-provided follow-up instructions. Instructions persist through restart, are limited to 1,000 UTF-8 bytes, and can be cleared with `--instructions ''`. They remain bound to the configuring agent and tracking epoch. Changing them does not assess feedback, record readiness or authorize a newer head. Octo delivers the instruction; its receipt does not prove the follow-up happened.
 
-`ack ID` returns a receipt and compact metadata for that frozen message, including current applicability and recipient role. Agent identity comes from `OCTO_MANAGER_AGENT_ID` or the registered `CODEX_THREAD_ID`; `--agent-id` is an explicit override, and `OCTO_MANAGER_ENDPOINT` or `--endpoint` disambiguates a session registered at multiple endpoints. Missing or ambiguous identity fails without registering an agent or acknowledging another recipient. Its default and JSON output contain at most 20 items and 6,000 bytes before the final newline, with an omitted-item count and an explicit inspection command. If quoting an unusually long state path would exhaust the budget, instruct the caller to reuse its state argument rather than echoing that path. Single-message acknowledgment likewise prints only receipt metadata. Never echo stored message bodies, all revisions, queue transport details or event history merely to acknowledge receipt. Keep full identities in storage and RPCs and use collision-aware short references in CLI presentation. `message ID` retrieves that frozen body. Administrative `digest` inspection retains the selected immutable revision and bounded journal history. A stale receipt never makes a superseded item current, and a receipt still does not accept or resolve an action.
+## Contract sources
 
-
-Agent CLI calls automatically select the tighter [agent output contract](cli-output.md); `--json` stays available explicitly, and full evidence requires an explicit read-only inspection.
-
-Known Codex status summaries and boilerplate review receipts are informational even when summary metadata says findings exist. Actual finding comments remain eligible for delivery; unfamiliar substantive feedback and inline comments are preserved. On restart, existing informational actions become superseded and pending deliveries are cancelled while raw evidence and receipts remain in history.
-
-
-
-## Ready notices and merge commands
-
-A completed check watch becomes “Ready” only after the scheduler confirms the current GitHub gates, required checks, target, merge method and dependency policy. Check completion alone is labeled “Checks passed” or “Checks complete,” with the remaining blocker when known. Routine conflict-free wording and check totals are omitted. The [receipt merge contract](receipt-merges.md) describes freshness, pinned authority and recovery.
-
-A message with one unambiguous Ready target for its current owner ends with `octo-manager merge ID`; observers and messages with multiple owner Ready targets retain `octo-manager ack ID`. Receipt covers every frozen member, while merge authority covers only that one target. Hooks and history reconciliation acknowledge incoming content only. They never invoke the offered merge command. A calling agent explicitly chooses whether to merge after reviewing the notice and its current task authority. Explicit merge preserves the automatic-merge switch and cannot select a newer head implicitly. Request acceptance, confirmed merge and unknown remote outcomes remain separate.
-
-## Delegated instructions
-
-`octo-manager pr auto-merge PR --on --agent-id AGENT --instructions 'Fix actionable review feedback, record readiness after reviewing the current head, and after merge pull and reinstall.'` stores a calling-agent instruction with the merge entry. The text accompanies that agent’s queued PR updates, including confirmed merge outcomes, once per PR in a grouped message. It is separate from GitHub evidence and the receipt command: acknowledging delivery does not complete the requested follow-up. Octo delivers the instruction; it does not execute a shell command or change the agent’s settings.
-
-Instructions are limited to 1,000 UTF-8 bytes and persist through restart. Use `--instructions ''` to clear them. Changing instruction text does not record owner readiness or authorize another head. Instructions remain bound to the configuring agent and tracking epoch; they are not handed to a new owner or reused when a PR is reopened. Existing frozen messages retain their original content.
-
-Repository-specific defaults and stage-based auto-merge inheritance are configured in [`octo-manager.toml`](repository-policy.md).
+The [notice schema and fixed labels](../src/security/notifications.ts), [queued renderer](../src/notifications/render.ts), [typed message API](../proto/octomanager/v2/notifications.proto) and [inspection projection](../src/notifications/inspection.ts) define the content surface. Renderer and message acceptance examples live in [notification view tests](../test/notification-views.test.ts), [message tests](../test/messages.test.ts), [security API tests](../test/security-api.test.ts) and [receipt/merge tests](../test/receipt-merge.test.ts). Update this catalog when introducing a kind, field, item source or command behavior.
