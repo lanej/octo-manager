@@ -79,7 +79,10 @@ export async function notificationsCLI(
     return true;
   }
   if (command === "message") {
-    const response = await client.getAgentDigest({ receiptId: id ?? "" });
+    const response = await client.getAgentDigest({
+      receiptId: id ?? "",
+      full: parsed.output.full,
+    });
     if (response.inspection === undefined)
       throw new Error("Missing message inspection");
     const value = unwire(DomainDigestInspectionSchema, response.inspection);
@@ -102,6 +105,7 @@ export async function notificationsCLI(
     printResult(parsed, {
       id: shortId(stored.dispatchId),
       body: stored.body,
+      items: response.findings,
       ...(merge === undefined ? {} : { merge }),
     });
     return true;

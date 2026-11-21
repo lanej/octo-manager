@@ -1397,3 +1397,43 @@ test("fresh review evidence blocks a queued receipt before merge and cannot be a
     }
   }
 });
+
+test("a readiness-only receipt inspects its underlying action through the one public handle", async () => {
+  const f = await fixture();
+  try {
+    const ready = f.coordinator.store.tracking.inbox
+      .list(f.pr.ownerAgentId, 0, false, true)
+      .messages.find((message) => message.notice?.subject?.kind === "action");
+    if (ready === undefined || ready.notice?.subject === undefined)
+      throw new Error("Missing readiness notice");
+    expect(ready.actionId).toBe("");
+    const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    if (envelope === undefined) throw new Error("Missing envelope");
+    const digest = f.coordinator.store.digests.revise(envelope, (id) =>
+      renderDigest(
+        [ready],
+        f.directory,
+        id,
+        f.coordinator.merging.receipts.presentation,
+      ),
+    );
+    const version = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    );
+    expect(version.messageIds).toEqual([ready.id]);
+    const response = await schedulerClient(f.directory).getAgentDigest({
+      receiptId: version.dispatchId,
+      full: true,
+    });
+    expect(response.findings).toHaveLength(1);
+    expect(response.findings[0]?.action?.id).toBe(ready.notice.subject.id);
+    expect(response.findings[0]?.action?.blocker.case).toBe("checkResults");
+    expect(
+      f.coordinator.store.tracking.inbox.get(ready.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});

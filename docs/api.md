@@ -21,3 +21,5 @@ Legacy drafting and publication execution RPCs are retired. Typed historical rea
 ## Advisory assessments and explicit evidence
 
 `GetAction`, `ListActions` and `ListAgentMessages` return safe projections by default; `full` explicitly exposes untrusted evidence or historical bodies. `GetAssessment` returns typed identity, applicability, state and history, with `full` enabling the exact untrusted input snapshot and model result. Snapshot text is an opaque, potentially truncated LLM-input artifact, not a domain record encoded in a string. `RetryAssessment` requests another bounded attempt on the same applicable failed/interrupted record; it grants no execution or merge authority. See [the security model](security.md).
+
+`GetAgentDigest` accepts the single frozen `receipt_id` and returns its covered action records in `findings`. Metadata is safe by default; `full` explicitly includes untrusted action evidence and assessment analysis. Inspection does not acknowledge the receipt or resolve work, and the frozen membership remains the basis for later acknowledgment.

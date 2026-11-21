@@ -300,7 +300,7 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     expect(previous.body).not.toContain("octo-digest");
     expect(previous.body).not.toContain(" updates");
     expect(previous.body).not.toContain("\n- ");
-    expect(previous.body).toContain("Action:");
+    expect(previous.body).not.toContain("Action:");
     expect(previous.body).not.toContain("--agent-id");
     expect(previous.body).not.toContain("--revision");
     const second = coordinator.store.tracking.track(

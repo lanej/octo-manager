@@ -11,10 +11,14 @@ message GetAgentDigestRequest {
   string id = 1;
   optional uint32 revision = 2;
   string receipt_id = 3;
+  // Explicitly includes untrusted finding evidence and assessment analysis.
+  bool full = 4;
 }
 // GetAgentDigestResponse returns the result for the following operation: Inspects a digest or frozen receipt without acknowledging its messages.
 message GetAgentDigestResponse {
   DomainDigestInspection inspection = 1;
+  // Action records covered by the exact frozen receipt, with safe metadata by default.
+  repeated GetActionResponse findings = 2;
 }
 // ListAgentDigestsRequest supplies arguments for the following operation: Lists retained notification digests for a recipient.
 message ListAgentDigestsRequest {

@@ -4,7 +4,7 @@ Queue reconciliation runs only when an agent has applicable unread messages, a l
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses and action/assessment references without forwarding external prose or model analysis. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Identical displayed entries within a PR share one line. Distinct action updates with the same title, pinned reference, assessment status, role and other non-identity fields share one heading and metadata line, followed by their unique action references. Per-assessment record IDs remain in the immutable source messages and explicit inspection; the compact digest retains every selected receipt member. Different revisions, statuses and roles remain separate. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
+Identical displayed entries within a PR share one line. Distinct action updates with the same title, pinned reference, assessment status, role and other non-identity fields share one heading and metadata line, using one public inspection/receipt ID. Per-action and assessment record IDs remain in the immutable source messages and explicit inspection; the compact digest retains every selected receipt member. Different revisions, statuses and roles remain separate. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
 
 ## Replacement and cancellation
 
@@ -51,6 +51,8 @@ octo-manager merge RECEIPT_ID # One Ready notice, current owner only.
 octo-manager ack RECEIPT_ID   # Receipt without merging.
 octo-manager message RECEIPT_ID
 ```
+
+`octo-manager message RECEIPT_ID` returns the covered action records as safe metadata. `--full` explicitly includes their untrusted evidence and assessment analysis; neither inspection mode acknowledges or resolves them. Individual tracking IDs stay out of the unsolicited digest.
 
 `ack` resolves `OCTO_MANAGER_AGENT_ID`, or the registered session identified by `CODEX_THREAD_ID`. Explicit `--agent-id` overrides environment identity. Use `OCTO_MANAGER_ENDPOINT` or `--endpoint` when the same session has multiple registered endpoints. Missing, unknown or ambiguous identity fails; receipt never creates an agent. Each receipt ID resolves to one immutable dispatch, including after replacement or restart. An additive prefix index supports lookup without rewriting old records. New dispatches reserve historically unused eight-character prefixes; ambiguous older IDs require a longer prefix.
 

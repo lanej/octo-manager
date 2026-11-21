@@ -23,10 +23,12 @@ const (
 
 // Frozen content and exact receipts are separate typed records.
 type GetAgentDigestRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Revision      *uint32                `protobuf:"varint,2,opt,name=revision,proto3,oneof" json:"revision,omitempty"`
-	ReceiptId     string                 `protobuf:"bytes,3,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Revision  *uint32                `protobuf:"varint,2,opt,name=revision,proto3,oneof" json:"revision,omitempty"`
+	ReceiptId string                 `protobuf:"bytes,3,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	// Explicitly includes untrusted finding evidence and assessment analysis.
+	Full          bool `protobuf:"varint,4,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -82,10 +84,19 @@ func (x *GetAgentDigestRequest) GetReceiptId() string {
 	return ""
 }
 
+func (x *GetAgentDigestRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
+}
+
 // GetAgentDigestResponse returns the result for the following operation: Inspects a digest or frozen receipt without acknowledging its messages.
 type GetAgentDigestResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Inspection    *DomainDigestInspection `protobuf:"bytes,1,opt,name=inspection,proto3" json:"inspection,omitempty"`
+	state      protoimpl.MessageState  `protogen:"open.v1"`
+	Inspection *DomainDigestInspection `protobuf:"bytes,1,opt,name=inspection,proto3" json:"inspection,omitempty"`
+	// Action records covered by the exact frozen receipt, with safe metadata by default.
+	Findings      []*GetActionResponse `protobuf:"bytes,2,rep,name=findings,proto3" json:"findings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,6 +134,13 @@ func (*GetAgentDigestResponse) Descriptor() ([]byte, []int) {
 func (x *GetAgentDigestResponse) GetInspection() *DomainDigestInspection {
 	if x != nil {
 		return x.Inspection
+	}
+	return nil
+}
+
+func (x *GetAgentDigestResponse) GetFindings() []*GetActionResponse {
+	if x != nil {
+		return x.Findings
 	}
 	return nil
 }
@@ -574,17 +592,19 @@ var File_octomanager_v2_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\n" +
-	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1boctomanager/v2/domain.proto\x1a\x1doctomanager/v2/tracking.proto\"t\n" +
+	"\"octomanager/v2/notifications.proto\x12\x0eoctomanager.v2\x1a\x1boctomanager/v2/domain.proto\x1a\x1doctomanager/v2/tracking.proto\"\x88\x01\n" +
 	"\x15GetAgentDigestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\brevision\x18\x02 \x01(\rH\x00R\brevision\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"receipt_id\x18\x03 \x01(\tR\treceiptIdB\v\n" +
-	"\t_revision\"`\n" +
+	"receipt_id\x18\x03 \x01(\tR\treceiptId\x12\x12\n" +
+	"\x04full\x18\x04 \x01(\bR\x04fullB\v\n" +
+	"\t_revision\"\x9f\x01\n" +
 	"\x16GetAgentDigestResponse\x12F\n" +
 	"\n" +
 	"inspection\x18\x01 \x01(\v2&.octomanager.v2.DomainDigestInspectionR\n" +
-	"inspection\"F\n" +
+	"inspection\x12=\n" +
+	"\bfindings\x18\x02 \x03(\v2!.octomanager.v2.GetActionResponseR\bfindings\"F\n" +
 	"\x17ListAgentDigestsRequest\x12\x1e\n" +
 	"\bagent_id\x18\x01 \x01(\tH\x00R\aagentId\x88\x01\x01B\v\n" +
 	"\t_agent_id\"W\n" +
@@ -649,24 +669,26 @@ var file_octomanager_v2_notifications_proto_goTypes = []any{
 	(*MergeAgentMessageRequest)(nil),       // 7: octomanager.v2.MergeAgentMessageRequest
 	(*MergeAgentMessageResponse)(nil),      // 8: octomanager.v2.MergeAgentMessageResponse
 	(*DomainDigestInspection)(nil),         // 9: octomanager.v2.DomainDigestInspection
-	(*DomainAgentDigest)(nil),              // 10: octomanager.v2.DomainAgentDigest
-	(*AgentTarget)(nil),                    // 11: octomanager.v2.AgentTarget
-	(*DomainDigestReceipt)(nil),            // 12: octomanager.v2.DomainDigestReceipt
-	(*DomainMergeReceiptResult)(nil),       // 13: octomanager.v2.DomainMergeReceiptResult
+	(*GetActionResponse)(nil),              // 10: octomanager.v2.GetActionResponse
+	(*DomainAgentDigest)(nil),              // 11: octomanager.v2.DomainAgentDigest
+	(*AgentTarget)(nil),                    // 12: octomanager.v2.AgentTarget
+	(*DomainDigestReceipt)(nil),            // 13: octomanager.v2.DomainDigestReceipt
+	(*DomainMergeReceiptResult)(nil),       // 14: octomanager.v2.DomainMergeReceiptResult
 }
 var file_octomanager_v2_notifications_proto_depIdxs = []int32{
 	9,  // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
-	10, // 1: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
-	11, // 2: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	12, // 3: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
-	5,  // 4: octomanager.v2.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v2.AgentDigestMember
-	11, // 5: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	13, // 6: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
-	7,  // [7:7] is the sub-list for method output_type
-	7,  // [7:7] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	10, // 1: octomanager.v2.GetAgentDigestResponse.findings:type_name -> octomanager.v2.GetActionResponse
+	11, // 2: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
+	12, // 3: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	13, // 4: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
+	5,  // 5: octomanager.v2.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v2.AgentDigestMember
+	12, // 6: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	14, // 7: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_notifications_proto_init() }

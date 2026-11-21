@@ -1,3 +1,4 @@
+import { inspectFindings } from "./notifications/inspection.js";
 import { wireAssessment } from "./assessments/rpc.js";
 import { issueRoutes, wireIssue } from "./issues/rpc.js";
 import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
@@ -100,7 +101,8 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     getAgentDigest(r) {return trackingOperation(()=>{
       if(r.receiptId!=="" && (r.id!=="" || r.revision!==undefined))throw new Error("Invalid mixed message receipt references");
       const version=r.receiptId===""?undefined:coordinator.store.digests.delivery(r.receiptId);
-      return {inspection:wire(DomainDigestInspectionSchema,digestInspection(coordinator.digests.inspect(version?.digestId??r.id,version?.revision??r.revision)))};
+      const inspection=coordinator.digests.inspect(version?.digestId??r.id,version?.revision??r.revision);
+      return {inspection:wire(DomainDigestInspectionSchema,digestInspection(inspection)),findings:inspectFindings(tracking.store,coordinator.store.assessments,inspection.revision.messageIds,r.full)};
     });},
     listAgentDigests(r) {return {digests:coordinator.store.digests.list(r.agentId).slice(-100).map(value=>wire(DomainAgentDigestSchema,value))};},
     acknowledgeAgentDigest(r) {return trackingOperation(()=>{

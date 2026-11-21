@@ -70,7 +70,12 @@ function renderGroup(group: DigestGroup): string {
   if (single !== undefined)
     return [
       `${renderReference(single.reference)} · ${single.title}`,
-      ...single.fields.map((field) => `${field.label}: ${field.value}`),
+      ...single.fields
+        .filter(
+          (field) =>
+            field.label !== "Action" && field.label !== "Assessment record",
+        )
+        .map((field) => `${field.label}: ${field.value}`),
       ...instructions,
     ].join("\n");
   const first = group.entries[0];
@@ -101,7 +106,6 @@ function renderGroup(group: DigestGroup): string {
       sharedFields(first)
         .map((field) => `${field.label}: ${field.value}`)
         .join(" · "),
-      `Actions: ${[...new Set(actions)].join(", ")}`,
       ...instructions,
     ].join("\n");
   return [
@@ -109,7 +113,12 @@ function renderGroup(group: DigestGroup): string {
     ...group.entries.map((entry) =>
       [
         `- ${entry.title}${entry.reference.url === group.reference.url ? "" : ` · ${renderReference(entry.reference)}`}`,
-        ...entry.fields.map((field) => `  ${field.label}: ${field.value}`),
+        ...entry.fields
+          .filter(
+            (field) =>
+              field.label !== "Action" && field.label !== "Assessment record",
+          )
+          .map((field) => `  ${field.label}: ${field.value}`),
       ].join("\n"),
     ),
     ...instructions,
@@ -141,7 +150,8 @@ export function renderDigest(
     return selected;
   }
   function footer(rows: AgentMessage[]): string {
-    const command = `octo-manager ${target(rows) === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+    const args = `${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+    const command = `octo-manager ${target(rows) === undefined ? "ack" : "merge"} ${args}`;
     const fence = "`".repeat(
       1 +
         Math.max(
@@ -149,7 +159,7 @@ export function renderDigest(
           ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
         ),
     );
-    return `${fence}${command}${fence}`;
+    return `Inspect: ${fence}octo-manager message ${args}${fence}\n${fence}${command}${fence}`;
   }
   function body(rows: AgentMessage[]): string {
     const groups = digestGroups(

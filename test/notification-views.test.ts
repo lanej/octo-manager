@@ -83,7 +83,7 @@ test("digests group typed entries by PR while retaining each pinned commit and f
   expect(digest.body).toContain(`${pr}/commits/${"a".repeat(40)}`);
   expect(digest.body).toContain(`${pr}/commits/${"b".repeat(40)}`);
   expect(digest.body).not.toContain(first.body);
-  expect(digest.body).toContain("  Action: deadbeef");
+  expect(digest.body).not.toContain("Action:");
 });
 test("repository persistence preserves safe frozen bytes and independent receipts after a renderer upgrade", async () => {
   const directory = await mkdtemp(
@@ -186,9 +186,9 @@ test("five matching review updates share one pinned heading and status without l
     [
       `[PR #213 @ f466172e](${url}/commits/${head}) · Review feedback · 5 updates`,
       "Assessment: completed · Role: owner",
-      "Actions: 25704da1, e0ff583a, 56bddeec, 2351c492, 27f07523",
       "Instructions: Inspect and address actionable review findings using the installed project guidance.",
       "",
+      "Inspect: `octo-manager message 7f2d5103`",
       "`octo-manager ack 7f2d5103`",
     ].join("\n"),
   );
@@ -213,7 +213,7 @@ test("compact updates retain separate revisions, assessment statuses and recipie
   ]) {
     const rendered = renderDigest([first, changed], "/tmp/state", "12345678");
     expect(rendered.body).not.toContain("2 updates");
-    expect(rendered.body).toContain("Action: deadbeef");
+    expect(rendered.body).not.toContain("Action:");
     expect(rendered.messageIds).toEqual([first.id, second.id]);
   }
 });

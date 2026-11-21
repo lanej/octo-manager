@@ -1,10 +1,11 @@
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 import { AssessmentState } from "../src/gen/octomanager/v2/tracking_pb.js";
+import { renderDigest } from "../src/notifications/render.js";
 import { ActionState, type ObservationInput } from "../src/tracking/types.js";
 test("versioned API keeps untrusted evidence behind full inspection and assessment stays advisory", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-security-api-"));
@@ -19,17 +20,15 @@ test("versioned API keeps untrusted evidence behind full inspection and assessme
     reviews: { state: "complete", value: [] },
     feedback: {
       state: "complete",
-      value: [
-        {
-          source: "conversation",
-          id: "1",
-          revision: "1",
-          author: "synthetic",
-          body: text,
-          headSha: "a".repeat(40),
-          url: "https://github.com/owner/repo/pull/1#issuecomment-1",
-        },
-      ],
+      value: Array.from({ length: 5 }, (_, index) => ({
+        source: "conversation",
+        id: String(index + 1),
+        revision: "1",
+        author: "synthetic",
+        body: text,
+        headSha: "a".repeat(40),
+        url: "https://github.com/owner/repo/pull/1#issuecomment-1",
+      })),
     },
   };
   const coordinator = new Coordinator(directory, {
@@ -57,11 +56,87 @@ test("versioned API keeps untrusted evidence behind full inspection and assessme
       input,
       coordinator.tracking.config,
     );
-    await coordinator.assessments.tick();
+    for (let i = 0; i < 5; i++) await coordinator.assessments.tick();
     await coordinator.start();
     const action = coordinator.store.tracking.actions()[0];
     if (action === undefined) throw new Error("Missing action");
     const client = schedulerClient(directory);
+    const messages = coordinator.store.tracking.inbox.list(
+      pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    expect(messages.length).toBeGreaterThan(0);
+    const digest = coordinator.store.digests.create(
+      pr.ownerAgentId,
+      { kind: "codex_queue", socket: "/synthetic-inspection" },
+      (receiptId) => renderDigest(messages, directory, receiptId),
+    );
+    const receipt = coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    ).dispatchId;
+    const groupedSafe = await client.getAgentDigest({ receiptId: receipt });
+    expect(groupedSafe.findings).toHaveLength(5);
+    expect(
+      new Set(groupedSafe.findings.map((item) => item.action?.id)),
+    ).toEqual(
+      new Set(coordinator.store.tracking.actions().map((item) => item.id)),
+    );
+    expect(groupedSafe.findings[0]?.action?.id).toBe(action.id);
+    expect(groupedSafe.findings[0]?.action?.blocker.case).toBeUndefined();
+    expect(
+      groupedSafe.findings[0]?.assessment?.untrustedAnalysis,
+    ).toBeUndefined();
+    const groupedFull = await client.getAgentDigest({
+      receiptId: receipt,
+      full: true,
+    });
+    expect(groupedFull.findings[0]?.action?.blocker.case).toBe(
+      "reviewFeedback",
+    );
+    expect(groupedFull.findings[0]?.assessment?.untrustedAnalysis).toBe(text);
+    const inspect = async (full: boolean) => {
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          resolve("src/cli.ts"),
+          "message",
+          receipt,
+          "--state",
+          directory,
+          "--json",
+          ...(full ? ["--full"] : []),
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      const [code, output, error] = await Promise.all([
+        child.exited,
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+      ]);
+      expect(code, error + output).toBe(0);
+      return output;
+    };
+    expect(await inspect(false)).not.toContain(text);
+    const output = await inspect(true);
+    const inspected: unknown = JSON.parse(output);
+    if (
+      typeof inspected !== "object" ||
+      inspected === null ||
+      !("items" in inspected) ||
+      !Array.isArray(inspected.items)
+    )
+      throw new Error("Missing grouped CLI findings");
+    expect(inspected.items).toHaveLength(5);
+    expect(output).toContain(text);
+
+    expect(
+      coordinator.store.tracking.inbox.get(messages[0]?.id ?? "")
+        ?.acknowledgedAt,
+    ).toBeUndefined();
+
     const safeList = await client.listActions({});
     expect(safeList.actions[0]?.blocker.case).toBeUndefined();
     expect(

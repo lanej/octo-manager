@@ -639,8 +639,8 @@ test("live capture and digest preserve collision-aware action, delivery and asse
       f.directory,
       crypto.randomUUID(),
     );
-    expect(digest.body).toContain("facefeed1");
-    expect(digest.body).toContain("facefeed2");
+    expect(digest.body).not.toContain("facefeed1");
+    expect(digest.body).not.toContain("facefeed2");
   } finally {
     await tracking.close();
     await f.close();
