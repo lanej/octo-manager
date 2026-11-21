@@ -73,6 +73,37 @@ function renderGroup(group: DigestGroup): string {
       ...single.fields.map((field) => `${field.label}: ${field.value}`),
       ...instructions,
     ].join("\n");
+  const first = group.entries[0];
+  const sharedFields = (entry: NoticeView) =>
+    entry.fields.filter(
+      (field) =>
+        field.label !== "Action" && field.label !== "Assessment record",
+    );
+  const actions = group.entries.map(
+    (entry) => entry.fields.find((field) => field.label === "Action")?.value,
+  );
+  if (
+    first !== undefined &&
+    actions.every(
+      (action) =>
+        action !== undefined && action !== "none" && action !== "unavailable",
+    ) &&
+    group.entries.every(
+      (entry) =>
+        entry.title === first.title &&
+        JSON.stringify(entry.reference) === JSON.stringify(first.reference) &&
+        JSON.stringify(sharedFields(entry)) ===
+          JSON.stringify(sharedFields(first)),
+    )
+  )
+    return [
+      `${renderReference(first.reference)} · ${first.title} · ${String(group.entries.length)} updates`,
+      sharedFields(first)
+        .map((field) => `${field.label}: ${field.value}`)
+        .join(" · "),
+      `Actions: ${[...new Set(actions)].join(", ")}`,
+      ...instructions,
+    ].join("\n");
   return [
     renderReference(group.reference),
     ...group.entries.map((entry) =>

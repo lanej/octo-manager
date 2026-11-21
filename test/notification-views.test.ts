@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { ActionState } from "../src/tracking/types.js";
 import { Store } from "../src/store.js";
@@ -139,5 +139,79 @@ test("repository persistence preserves safe frozen bytes and independent receipt
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("five matching review updates share one pinned heading and status without losing receipt members", () => {
+  const actions = ["25704da1", "e0ff583a", "56bddeec", "2351c492", "27f07523"];
+  const assessments = [
+    "b518824a",
+    "407b7046",
+    "ecdb898c",
+    "7d66a47f",
+    "a5870534",
+  ];
+  const url = "https://github.com/lanej/dotfiles/pull/213";
+  const head = "f466172e710601f04ffa6dfad4785db8d3ef972c";
+  const messages = actions.map((id, index) => {
+    const assessmentId = assessments[index];
+    if (assessmentId === undefined)
+      throw new Error("Missing fixture assessment");
+    return {
+      ...message(head, id),
+      actionId: id,
+      notice: {
+        version: 1 as const,
+        kind: "review_feedback" as const,
+        assessment: "completed" as const,
+        role: "owner" as const,
+        prUrl: url,
+        head,
+        assessmentId,
+      },
+    };
+  });
+  const rendered = renderDigest(
+    messages,
+    join(homedir(), ".local/state/octo-manager"),
+    "7f2d5103",
+    () => ({
+      instructions:
+        "Inspect and address actionable review findings using the installed project guidance.",
+    }),
+  );
+  expect(rendered.body).toBe(
+    [
+      `[PR #213 @ f466172e](${url}/commits/${head}) · Review feedback · 5 updates`,
+      "Assessment: completed · Role: owner",
+      "Actions: 25704da1, e0ff583a, 56bddeec, 2351c492, 27f07523",
+      "Instructions: Inspect and address actionable review findings using the installed project guidance.",
+      "",
+      "`octo-manager ack 7f2d5103`",
+    ].join("\n"),
+  );
+  expect(rendered.messageIds).toEqual(actions);
+  expect(rendered.body).not.toContain(messages[0]?.body ?? "Hostile");
+  expect(messages.map((row) => row.notice.assessmentId)).toEqual(assessments);
+  expect(Buffer.byteLength(rendered.body)).toBeLessThan(500);
+});
+
+test("compact updates retain separate revisions, assessment statuses and recipient roles", () => {
+  const first = message("a".repeat(40), "11111111");
+  const second = message("a".repeat(40), "22222222");
+  const notice = second.notice;
+  if (notice === undefined) throw new Error("Missing fixture notice");
+  for (const changed of [
+    { ...second, notice: { ...notice, head: "b".repeat(40) } },
+    {
+      ...second,
+      notice: { ...notice, assessment: "completed" as const },
+    },
+    { ...second, notice: { ...notice, role: "observer" as const } },
+  ]) {
+    const rendered = renderDigest([first, changed], "/tmp/state", "12345678");
+    expect(rendered.body).not.toContain("2 updates");
+    expect(rendered.body).toContain("Action: deadbeef");
+    expect(rendered.messageIds).toEqual([first.id, second.id]);
   }
 });

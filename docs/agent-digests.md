@@ -4,7 +4,7 @@ Queue reconciliation runs only when an agent has applicable unread messages, a l
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses and action/assessment references without forwarding external prose or model analysis. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Identical displayed entries within a PR share one line. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
+Identical displayed entries within a PR share one line. Distinct action updates with the same title, pinned reference, assessment status, role and other non-identity fields share one heading and metadata line, followed by their unique action references. Per-assessment record IDs remain in the immutable source messages and explicit inspection; the compact digest retains every selected receipt member. Different revisions, statuses and roles remain separate. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
 
 ## Replacement and cancellation
 
