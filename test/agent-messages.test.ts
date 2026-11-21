@@ -21,7 +21,7 @@ const action: Action = {
     sourceId: "run:10",
     checkName: "macOS",
     checkKey: "macos",
-    headSha: "ad8968bf1234",
+    headSha: "ad8968bf" + "1".repeat(32),
   },
   summary: "macOS check failed",
   evidenceUrl: "https://github.com/owner/repo/actions/runs/20/job/10",
@@ -34,7 +34,7 @@ const action: Action = {
   createdAt: 1,
   updatedAt: 1,
 };
-test("agent notices contain bounded actionable evidence without execution policy or receipt commands", () => {
+test("agent notices contain fixed fields without external evidence, execution policy or receipt commands", () => {
   const body = agentMessage(
     action,
     pr,
@@ -44,14 +44,14 @@ test("agent notices contain bounded actionable evidence without execution policy
   assert(Buffer.byteLength(body) < 4096);
   assert(body.includes("PR #13"));
   assert(body.includes("ad8968bf"));
-  assert(body.includes("> ENOENT: handoff disappeared"));
-  assert(body.includes(action.evidenceUrl));
+  assert(!body.includes("ENOENT"));
+  assert(!body.includes(action.evidenceUrl));
   assert(!body.includes("Standing policy"));
   assert(!body.includes("cheap-model"));
   assert(!body.includes("acknowledge"));
   assert(!body.includes("instructions"));
   assert(!body.includes("authoriz"));
-  assert(body.includes("…"));
+  assert(!body.includes("…"));
 });
 test("failure excerpts use bounded job logs and preserve a run link when diagnostics are unavailable", async () => {
   const log = `setup\tcheck\t2026-11-11T00:00:00Z ENOENT: handoff disappeared\nsetup\tcheck\t2026-11-11T00:00:00Z at status (handoffs.ts:203)`;
@@ -77,7 +77,7 @@ test("failure excerpts use bounded job logs and preserve a run link when diagnos
     ),
     undefined,
   );
-  assert(agentMessage(action, pr, "delivery").includes(action.evidenceUrl));
+  assert(!agentMessage(action, pr, "delivery").includes(action.evidenceUrl));
   assert.equal(
     await readFailureExcerpt(
       {
@@ -101,7 +101,7 @@ test("success completion is a compact readiness signal rather than a failed-run 
       blocker: {
         kind: "check_results",
         watchId: "watch",
-        headSha: "ad8968bf1234",
+        headSha: "ad8968bf" + "1".repeat(32),
         state: CheckWatchState.Completed,
         checks: [],
       },
@@ -111,7 +111,7 @@ test("success completion is a compact readiness signal rather than a failed-run 
     pr,
     "delivery",
   );
-  assert(body.includes("Checks passed; no merge conflicts"));
+  assert(body.includes("Checks passed"));
   assert(body.includes(pr));
   assert(!body.includes("Failed run"));
   assert(Buffer.byteLength(body) < 512);

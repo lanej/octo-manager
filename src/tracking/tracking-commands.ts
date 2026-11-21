@@ -1,6 +1,18 @@
 import type { CommandSpec } from "../cli/contracts.js";
 export const commands: CommandSpec[] = [
   {
+    path: "assessment show <id>",
+    route: "assessment",
+    capability: "tracking",
+    description: "Inspect a bounded evidence assessment",
+  },
+  {
+    path: "assessment retry <id>",
+    route: "retry-assessment",
+    capability: "tracking",
+    description: "Retry a failed or interrupted assessment",
+  },
+  {
     path: "agent list",
     route: "agents",
     capability: "tracking",

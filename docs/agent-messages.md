@@ -13,19 +13,21 @@ Successful completion is actionable as a merge-assessment signal. Report the exa
 
 ## Initial message
 
-Show the PR, short revision, failed check or other issue, a short evidence excerpt when available, and a direct evidence link. Include a file and line for inline feedback. A grouped result names its first failure and reports the total failure count; the referenced action retains every unreported failure. Queued delivery carries one opaque receipt ID; omit profile/model preferences, JSON evidence dumps, command arrays, acknowledgments, defensive paragraphs, and requested-response boilerplate.
+Automatic notices use typed coordinator-owned fields: a canonical enrolled PR link pinned to the validated commit, action kind, recipient role, fixed assessment status and collision-safe action/assessment references. They exclude GitHub prose, check names, log excerpts, arbitrary evidence URLs and assessor analysis. Queued notices retain one opaque receipt ID and the existing acknowledgment/merge command contract.
 
 ```text
-PR #13 · macOS check failed at ad8968bf
-> ENOENT: handoff file disappeared during status read
-Failed run: https://github.com/lanej/octo-manager/actions/runs/43135409074/job/130909441931
+[PR #13 @ ad8968bf](https://github.com/lanej/octo-manager/pull/13/commits/ad8968bf0123456789abcdef0123456789abcdef01) · Checks failed
+Assessment: completed
+Role: owner
+Assessment record: 1234abcd
+Action: abcdef12
 ```
 
-A confirmed eligible completion is shorter: a linked PR followed by “Ready” and its merge command. Other completions retain “Checks passed” or “Checks complete” with the remaining blocker when known. Neutral/skipped conclusions are labeled explicitly, and unknown/conflicting GitHub merge status is preserved. Temporary coverage loss does not erase a confirmed completion; positively observed pending/failing executions, a changed revision, or PR closure retire an outdated readiness action.
+“Completed” means a bounded advisory assessment was recorded; it does not establish correctness, resolution or permission to act. Fixed readiness status distinguishes Ready, unavailable review status, required owner assessment and other remaining prerequisites. Canonical receipt checks still pin merge authority to the exact current target and head.
 
-The renderer budgets 120 UTF-8 bytes for the heading, 480 for the excerpt, 120 for an inline location, and 512 per rendered HTTPS link. Excerpts end with an ellipsis when truncated and are presented as quoted data. Control sequences are removed. These component limits keep the message below 4 KiB; typical messages are substantially smaller. Truncation changes presentation, not the stored action or watch evidence.
+Use `octo-manager action show ACTION_ID` or `octo-manager assessment show ASSESSMENT_ID` for safe metadata. Add `--full` for explicitly named untrusted evidence. Full inspection reintroduces hostile text into the reader's context; prefer a human view or a restricted session for suspicious payloads. The [security model](security.md) describes the tool-free assessor, limits and recovery behavior.
 
-For GitHub Actions job failures, the service attempts a read-only failed-log excerpt with a five-second deadline and a 512 KiB process-output limit. It reads only the repository named by the tracked PR. It searches the final 100 log lines for an error and includes up to four lines. A missing, oversized, or unavailable log omits the excerpt while retaining the failed-run link; an excerpt is not a claim of root cause. Other check providers retain their evidence link without an invented error. Agents fetch additional evidence only when needed with `octo-manager action show ACTION_ID` or the linked run.
+Failed-log collection remains read-only and bounded to the enrolled repository. Excerpts are assessor input and explicit evidence, not automatic owner context or proof of root cause.
 
 ## Delivery, receipts, and replies
 
@@ -61,7 +63,6 @@ Agent CLI calls automatically select the tighter [agent output contract](cli-out
 
 Known Codex status summaries and boilerplate review receipts are informational even when summary metadata says findings exist. Actual finding comments remain eligible for delivery; unfamiliar substantive feedback and inline comments are preserved. On restart, existing informational actions become superseded and pending deliveries are cancelled while raw evidence and receipts remain in history.
 
-Failed-run excerpts use validated job step timings to select failed-step log lines before finding a diagnostic. Fatal runtime diagnostics take precedence over generic error lines, and timestamp prefixes are removed. The final excerpt remains bounded to 480 bytes; missing step timing, ambiguous second-level boundaries or inaccessible logs yield the failed-run link without a guessed excerpt.
 
 
 ## Ready notices and merge commands

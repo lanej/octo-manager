@@ -140,12 +140,11 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     }
     assert.equal(sent.length, 3);
     assert(
-      sent.some(
+      sent.every(
         (message) =>
-          message.includes("src/parser.ts") &&
-          message.includes("42") &&
-          message.includes("discussion_r3") &&
-          message.includes("existing parser"),
+          !message.includes("src/parser.ts") &&
+          !message.includes("discussion_r3") &&
+          !message.includes("existing parser"),
       ),
     );
     assert(

@@ -118,6 +118,19 @@ export class SubmissionNotifications {
         "Sending to caller",
         Date.now() + 30000,
       );
+      const message = this.tracking.store.inbox.get(notice.id);
+      if (
+        message === undefined ||
+        this.tracking.store.inbox.automatic(message).body !== notice.body
+      ) {
+        this.store.saveNotice(
+          notice,
+          "unavailable",
+          "Legacy notification requires explicit inspection",
+          Date.now() + 300000,
+        );
+        return;
+      }
       const sent = await connection.send(agent, notice.id, notice.body);
       this.store.saveNotice(
         notice,

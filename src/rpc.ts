@@ -1,3 +1,4 @@
+import { wireAssessment } from "./assessments/rpc.js";
 import { issueRoutes, wireIssue } from "./issues/rpc.js";
 import { DomainRepositoryAutomationPolicySchema } from "./gen/octomanager/v2/domain_pb.js";
 import {mergeRoutes} from "./api/merge-routes.js";
@@ -146,8 +147,13 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     refreshTrackedPullRequest(r){return trackingOperation(()=>{tracking.requestRefresh(r.id);return {pr:wirePR(tracking.store.pr(r.id)),refresh:wireRefresh(coordinator.store.schedules.get(`tracking:${tracking.store.pr(r.id).id}`))};});},
     async assignPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.assign(r.id,owner(r.owner)))}));},
     async untrackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.store.untrack(r.id))}));},
-    async listActions(r){return {actions:tracking.store.actions().filter(a=>!r.prId||a.prId===r.prId).map(wireAction)};},
-    async getAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.action(r.id))}));},
+    listActions(r){return {actions:tracking.store.actions().filter(a=>r.prId===undefined||r.prId===""||a.prId===r.prId).map(a=>wireAction(a,r.full))};},
+    getAction(r){return trackingOperation(()=>{
+      const action = tracking.store.action(r.id), assessment = coordinator.store.assessments.latest(action.id);
+      return {action:wireAction(action,r.full), ...(assessment === undefined ? {} : {assessment:wireAssessment(assessment,r.full)})};
+    });},
+    getAssessment(r){return trackingOperation(()=>({assessment:wireAssessment(coordinator.store.assessments.get(r.id),r.full)}));},
+    retryAssessment(r){return trackingOperation(()=>({assessment:wireAssessment(coordinator.assessments.retry(r.id))}));},
     async acknowledgeAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.progress(r.id,r.agentId,false))}));},
     async startAction(r){return trackingOperation(()=>({action:wireAction(tracking.store.progress(r.id,r.agentId,true))}));},
     async retryDelivery(r){return trackingOperation(()=>({delivery:wireDelivery(tracking.store.retryDelivery(r.id))}));},

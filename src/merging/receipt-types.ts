@@ -31,6 +31,7 @@ export const NoticeReadinessSchema = Type.Object(
 );
 export type NoticeReadiness = Static<typeof NoticeReadinessSchema>;
 export interface MessagePresentation {
+  status?: "ready" | "review_unavailable" | "blocked" | "feedback_assessment";
   defer?: boolean;
   instructions?: string;
   summary?: string;

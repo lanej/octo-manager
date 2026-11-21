@@ -171,6 +171,8 @@ message PendingAction {
   optional string close_reason = 16;
   int64 created_at_ms = 17;
   int64 updated_at_ms = 18;
+  string notification_kind = 22;
+  string evidence_head_sha = 23;
 }
 // ActionDelivery tracks one recipient’s delivery lifecycle and retained transport progress.
 message ActionDelivery {
@@ -221,6 +223,7 @@ message AssignPullRequestRequest {
 // ListActionsRequest supplies arguments for the following operation: Lists PR actions whose ownership is separate from notification receipt.
 message ListActionsRequest {
   optional string pr_id = 1;
+  bool full = 2;
 }
 // ListActionsResponse returns the result for the following operation: Lists PR actions whose ownership is separate from notification receipt.
 message ListActionsResponse {
@@ -272,10 +275,12 @@ message UntrackPullRequestResponse {
 // GetActionRequest supplies arguments for the following operation: Reads a durable action, its progress, and related delivery evidence.
 message GetActionRequest {
   string id = 1;
+  bool full = 2;
 }
 // GetActionResponse returns the result for the following operation: Reads a durable action, its progress, and related delivery evidence.
 message GetActionResponse {
   PendingAction action = 1;
+  EvidenceAssessment assessment = 2;
 }
 // AcknowledgeActionRequest supplies arguments for the following operation: Records the current owner’s acceptance of an applicable action.
 message AcknowledgeActionRequest {
@@ -324,6 +329,7 @@ message ListAgentMessagesRequest {
   uint64 after_sequence = 2;
   bool include_acknowledged = 3;
   bool applicable_only = 4;
+  bool full = 5;
 }
 // ListAgentMessagesResponse returns the result for the following operation: Pages recipient-specific messages and independent receipt state.
 message ListAgentMessagesResponse {
@@ -391,4 +397,60 @@ message UnsubscribePullRequestResponse {
   repeated PRParticipant participants = 1;
   uint32 total = 2;
   bool has_more = 3;
+}
+
+// Assessments are advisory. Their results never authorize effects.
+enum AssessmentState {
+  ASSESSMENT_STATE_UNSPECIFIED = 0;
+  ASSESSMENT_STATE_PENDING = 1;
+  ASSESSMENT_STATE_RUNNING = 2;
+  ASSESSMENT_STATE_COMPLETED = 3;
+  ASSESSMENT_STATE_FAILED = 4;
+  ASSESSMENT_STATE_INTERRUPTED = 5;
+  ASSESSMENT_STATE_SUPERSEDED = 6;
+}
+enum AssessmentDisposition {
+  ASSESSMENT_DISPOSITION_UNSPECIFIED = 0;
+  ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE = 1;
+  ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED = 2;
+  ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT = 3;
+}
+// EvidenceAssessment retains an advisory result and its exact untrusted model-input text.
+message EvidenceAssessment {
+  string id = 1;
+  string action_id = 2;
+  AssessmentState state = 3;
+  string head_sha = 4;
+  uint32 policy_version = 5;
+  bool truncated = 6;
+  int64 created_at_ms = 7;
+  int64 updated_at_ms = 8;
+  // Included only for explicit full inspection; never trusted instructions.
+  optional AssessmentDisposition disposition = 9;
+  optional string untrusted_analysis = 10;
+  optional string untrusted_evidence = 11;
+  repeated AssessmentTransition history = 12;
+}
+// GetAssessmentRequest selects an assessment and optional explicit evidence inspection.
+message GetAssessmentRequest {
+  string id = 1;
+  bool full = 2;
+}
+// GetAssessmentResponse returns assessment metadata and explicitly requested evidence.
+message GetAssessmentResponse {
+  EvidenceAssessment assessment = 1;
+}
+// RetryAssessmentRequest selects an applicable failed or interrupted assessment.
+message RetryAssessmentRequest {
+  string id = 1;
+}
+// RetryAssessmentResponse returns the assessment queued for an explicit retry.
+message RetryAssessmentResponse {
+  EvidenceAssessment assessment = 1;
+}
+
+// AssessmentTransition preserves an observed assessment state change.
+message AssessmentTransition {
+  AssessmentState state = 1;
+  int64 at_ms = 2;
 }

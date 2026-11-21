@@ -1,6 +1,5 @@
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ReviewState } from "../src/tracking/states.js";
-import { parseCommand } from "../src/arguments.js";
 import { mergeRequest } from "../src/api/merge-client.js";
 import {
   checkRunObservation,
@@ -314,14 +313,11 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
     assert.equal(store.refs().length, 2);
     const notice = coordinator.store.tracking.inbox
       .list(downstream.ownerAgentId, 0, false, true)
-      .messages.find((message) => message.body.includes("Inspect:"));
+      .messages.find(
+        (message) => message.notice?.subject?.kind === "reference",
+      );
     assert(notice !== undefined);
-    const inspection = notice.body.match(
-      /Inspect: `octo-manager ([^`]+)`/u,
-    )?.[1];
-    assert(inspection !== undefined);
-    const parsed = parseCommand(inspection.split(" "), {});
-    assert.deepEqual(parsed.positionals, ["references", second]);
+    assert(notice.body.includes("Reference:"));
     const ref = store.refs().find((ref) => ref.targetUrl === first);
     assert(ref !== undefined);
     store.confirm(
@@ -653,11 +649,10 @@ test("resume republishes the current owner handoff once while preserving withdra
     assert.equal(pending().length, 1);
     const old = pending()[0];
     assert(old !== undefined);
-    const inspection = old.body.match(/Inspect: `octo-manager ([^`]+)`/u)?.[1];
-    assert(inspection !== undefined);
+    assert.equal(old.notice?.subject?.kind, "merge_entry");
     assert.equal(
-      parseCommand(inspection.split(" "), {}).positionals[0],
-      "chains",
+      old.notice.subject.id,
+      c.store.merging.entries().find((entry) => entry.chainId === chain.id)?.id,
     );
     c.store.merging.control(chain.id, ChainState.Paused);
     assert.equal(pending().length, 0);

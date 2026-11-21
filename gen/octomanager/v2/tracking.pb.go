@@ -253,6 +253,120 @@ func (CheckWatchState) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{3}
 }
 
+// Assessments are advisory. Their results never authorize effects.
+type AssessmentState int32
+
+const (
+	AssessmentState_ASSESSMENT_STATE_UNSPECIFIED AssessmentState = 0
+	AssessmentState_ASSESSMENT_STATE_PENDING     AssessmentState = 1
+	AssessmentState_ASSESSMENT_STATE_RUNNING     AssessmentState = 2
+	AssessmentState_ASSESSMENT_STATE_COMPLETED   AssessmentState = 3
+	AssessmentState_ASSESSMENT_STATE_FAILED      AssessmentState = 4
+	AssessmentState_ASSESSMENT_STATE_INTERRUPTED AssessmentState = 5
+	AssessmentState_ASSESSMENT_STATE_SUPERSEDED  AssessmentState = 6
+)
+
+// Enum value maps for AssessmentState.
+var (
+	AssessmentState_name = map[int32]string{
+		0: "ASSESSMENT_STATE_UNSPECIFIED",
+		1: "ASSESSMENT_STATE_PENDING",
+		2: "ASSESSMENT_STATE_RUNNING",
+		3: "ASSESSMENT_STATE_COMPLETED",
+		4: "ASSESSMENT_STATE_FAILED",
+		5: "ASSESSMENT_STATE_INTERRUPTED",
+		6: "ASSESSMENT_STATE_SUPERSEDED",
+	}
+	AssessmentState_value = map[string]int32{
+		"ASSESSMENT_STATE_UNSPECIFIED": 0,
+		"ASSESSMENT_STATE_PENDING":     1,
+		"ASSESSMENT_STATE_RUNNING":     2,
+		"ASSESSMENT_STATE_COMPLETED":   3,
+		"ASSESSMENT_STATE_FAILED":      4,
+		"ASSESSMENT_STATE_INTERRUPTED": 5,
+		"ASSESSMENT_STATE_SUPERSEDED":  6,
+	}
+)
+
+func (x AssessmentState) Enum() *AssessmentState {
+	p := new(AssessmentState)
+	*p = x
+	return p
+}
+
+func (x AssessmentState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AssessmentState) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_tracking_proto_enumTypes[4].Descriptor()
+}
+
+func (AssessmentState) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_tracking_proto_enumTypes[4]
+}
+
+func (x AssessmentState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AssessmentState.Descriptor instead.
+func (AssessmentState) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{4}
+}
+
+type AssessmentDisposition int32
+
+const (
+	AssessmentDisposition_ASSESSMENT_DISPOSITION_UNSPECIFIED          AssessmentDisposition = 0
+	AssessmentDisposition_ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE     AssessmentDisposition = 1
+	AssessmentDisposition_ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED  AssessmentDisposition = 2
+	AssessmentDisposition_ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT AssessmentDisposition = 3
+)
+
+// Enum value maps for AssessmentDisposition.
+var (
+	AssessmentDisposition_name = map[int32]string{
+		0: "ASSESSMENT_DISPOSITION_UNSPECIFIED",
+		1: "ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE",
+		2: "ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED",
+		3: "ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT",
+	}
+	AssessmentDisposition_value = map[string]int32{
+		"ASSESSMENT_DISPOSITION_UNSPECIFIED":          0,
+		"ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE":     1,
+		"ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED":  2,
+		"ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT": 3,
+	}
+)
+
+func (x AssessmentDisposition) Enum() *AssessmentDisposition {
+	p := new(AssessmentDisposition)
+	*p = x
+	return p
+}
+
+func (x AssessmentDisposition) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AssessmentDisposition) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_tracking_proto_enumTypes[5].Descriptor()
+}
+
+func (AssessmentDisposition) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_tracking_proto_enumTypes[5]
+}
+
+func (x AssessmentDisposition) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AssessmentDisposition.Descriptor instead.
+func (AssessmentDisposition) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{5}
+}
+
 // AgentTarget identifies a harness session and delivery endpoint; it does not grant authority.
 type AgentTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1307,6 +1421,8 @@ type PendingAction struct {
 	CloseReason           *string                 `protobuf:"bytes,16,opt,name=close_reason,json=closeReason,proto3,oneof" json:"close_reason,omitempty"`
 	CreatedAtMs           int64                   `protobuf:"varint,17,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
 	UpdatedAtMs           int64                   `protobuf:"varint,18,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	NotificationKind      string                  `protobuf:"bytes,22,opt,name=notification_kind,json=notificationKind,proto3" json:"notification_kind,omitempty"`
+	EvidenceHeadSha       string                  `protobuf:"bytes,23,opt,name=evidence_head_sha,json=evidenceHeadSha,proto3" json:"evidence_head_sha,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1496,6 +1612,20 @@ func (x *PendingAction) GetUpdatedAtMs() int64 {
 		return x.UpdatedAtMs
 	}
 	return 0
+}
+
+func (x *PendingAction) GetNotificationKind() string {
+	if x != nil {
+		return x.NotificationKind
+	}
+	return ""
+}
+
+func (x *PendingAction) GetEvidenceHeadSha() string {
+	if x != nil {
+		return x.EvidenceHeadSha
+	}
+	return ""
 }
 
 type isPendingAction_Blocker interface {
@@ -2003,6 +2133,7 @@ func (x *AssignPullRequestRequest) GetOwner() *AgentTarget {
 type ListActionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PrId          *string                `protobuf:"bytes,1,opt,name=pr_id,json=prId,proto3,oneof" json:"pr_id,omitempty"`
+	Full          bool                   `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2042,6 +2173,13 @@ func (x *ListActionsRequest) GetPrId() string {
 		return *x.PrId
 	}
 	return ""
+}
+
+func (x *ListActionsRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
 }
 
 // ListActionsResponse returns the result for the following operation: Lists PR actions whose ownership is separate from notification receipt.
@@ -2559,6 +2697,7 @@ func (x *UntrackPullRequestResponse) GetPr() *TrackedPullRequest {
 type GetActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Full          bool                   `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2600,10 +2739,18 @@ func (x *GetActionRequest) GetId() string {
 	return ""
 }
 
+func (x *GetActionRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
+}
+
 // GetActionResponse returns the result for the following operation: Reads a durable action, its progress, and related delivery evidence.
 type GetActionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *PendingAction         `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
+	Assessment    *EvidenceAssessment    `protobuf:"bytes,2,opt,name=assessment,proto3" json:"assessment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2641,6 +2788,13 @@ func (*GetActionResponse) Descriptor() ([]byte, []int) {
 func (x *GetActionResponse) GetAction() *PendingAction {
 	if x != nil {
 		return x.Action
+	}
+	return nil
+}
+
+func (x *GetActionResponse) GetAssessment() *EvidenceAssessment {
+	if x != nil {
+		return x.Assessment
 	}
 	return nil
 }
@@ -3056,6 +3210,7 @@ type ListAgentMessagesRequest struct {
 	AfterSequence       uint64                 `protobuf:"varint,2,opt,name=after_sequence,json=afterSequence,proto3" json:"after_sequence,omitempty"`
 	IncludeAcknowledged bool                   `protobuf:"varint,3,opt,name=include_acknowledged,json=includeAcknowledged,proto3" json:"include_acknowledged,omitempty"`
 	ApplicableOnly      bool                   `protobuf:"varint,4,opt,name=applicable_only,json=applicableOnly,proto3" json:"applicable_only,omitempty"`
+	Full                bool                   `protobuf:"varint,5,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -3114,6 +3269,13 @@ func (x *ListAgentMessagesRequest) GetIncludeAcknowledged() bool {
 func (x *ListAgentMessagesRequest) GetApplicableOnly() bool {
 	if x != nil {
 		return x.ApplicableOnly
+	}
+	return false
+}
+
+func (x *ListAgentMessagesRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
 	}
 	return false
 }
@@ -3786,6 +3948,381 @@ func (x *UnsubscribePullRequestResponse) GetHasMore() bool {
 	return false
 }
 
+// EvidenceAssessment retains an advisory result and its exact untrusted model-input text.
+type EvidenceAssessment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActionId      string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	State         AssessmentState        `protobuf:"varint,3,opt,name=state,proto3,enum=octomanager.v2.AssessmentState" json:"state,omitempty"`
+	HeadSha       string                 `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
+	PolicyVersion uint32                 `protobuf:"varint,5,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
+	Truncated     bool                   `protobuf:"varint,6,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	CreatedAtMs   int64                  `protobuf:"varint,7,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	UpdatedAtMs   int64                  `protobuf:"varint,8,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	// Included only for explicit full inspection; never trusted instructions.
+	Disposition       *AssessmentDisposition  `protobuf:"varint,9,opt,name=disposition,proto3,enum=octomanager.v2.AssessmentDisposition,oneof" json:"disposition,omitempty"`
+	UntrustedAnalysis *string                 `protobuf:"bytes,10,opt,name=untrusted_analysis,json=untrustedAnalysis,proto3,oneof" json:"untrusted_analysis,omitempty"`
+	UntrustedEvidence *string                 `protobuf:"bytes,11,opt,name=untrusted_evidence,json=untrustedEvidence,proto3,oneof" json:"untrusted_evidence,omitempty"`
+	History           []*AssessmentTransition `protobuf:"bytes,12,rep,name=history,proto3" json:"history,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EvidenceAssessment) Reset() {
+	*x = EvidenceAssessment{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvidenceAssessment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvidenceAssessment) ProtoMessage() {}
+
+func (x *EvidenceAssessment) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvidenceAssessment.ProtoReflect.Descriptor instead.
+func (*EvidenceAssessment) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *EvidenceAssessment) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *EvidenceAssessment) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *EvidenceAssessment) GetState() AssessmentState {
+	if x != nil {
+		return x.State
+	}
+	return AssessmentState_ASSESSMENT_STATE_UNSPECIFIED
+}
+
+func (x *EvidenceAssessment) GetHeadSha() string {
+	if x != nil {
+		return x.HeadSha
+	}
+	return ""
+}
+
+func (x *EvidenceAssessment) GetPolicyVersion() uint32 {
+	if x != nil {
+		return x.PolicyVersion
+	}
+	return 0
+}
+
+func (x *EvidenceAssessment) GetTruncated() bool {
+	if x != nil {
+		return x.Truncated
+	}
+	return false
+}
+
+func (x *EvidenceAssessment) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *EvidenceAssessment) GetUpdatedAtMs() int64 {
+	if x != nil {
+		return x.UpdatedAtMs
+	}
+	return 0
+}
+
+func (x *EvidenceAssessment) GetDisposition() AssessmentDisposition {
+	if x != nil && x.Disposition != nil {
+		return *x.Disposition
+	}
+	return AssessmentDisposition_ASSESSMENT_DISPOSITION_UNSPECIFIED
+}
+
+func (x *EvidenceAssessment) GetUntrustedAnalysis() string {
+	if x != nil && x.UntrustedAnalysis != nil {
+		return *x.UntrustedAnalysis
+	}
+	return ""
+}
+
+func (x *EvidenceAssessment) GetUntrustedEvidence() string {
+	if x != nil && x.UntrustedEvidence != nil {
+		return *x.UntrustedEvidence
+	}
+	return ""
+}
+
+func (x *EvidenceAssessment) GetHistory() []*AssessmentTransition {
+	if x != nil {
+		return x.History
+	}
+	return nil
+}
+
+// GetAssessmentRequest selects an assessment and optional explicit evidence inspection.
+type GetAssessmentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Full          bool                   `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAssessmentRequest) Reset() {
+	*x = GetAssessmentRequest{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAssessmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAssessmentRequest) ProtoMessage() {}
+
+func (x *GetAssessmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAssessmentRequest.ProtoReflect.Descriptor instead.
+func (*GetAssessmentRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *GetAssessmentRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetAssessmentRequest) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
+}
+
+// GetAssessmentResponse returns assessment metadata and explicitly requested evidence.
+type GetAssessmentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Assessment    *EvidenceAssessment    `protobuf:"bytes,1,opt,name=assessment,proto3" json:"assessment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAssessmentResponse) Reset() {
+	*x = GetAssessmentResponse{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAssessmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAssessmentResponse) ProtoMessage() {}
+
+func (x *GetAssessmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAssessmentResponse.ProtoReflect.Descriptor instead.
+func (*GetAssessmentResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *GetAssessmentResponse) GetAssessment() *EvidenceAssessment {
+	if x != nil {
+		return x.Assessment
+	}
+	return nil
+}
+
+// RetryAssessmentRequest selects an applicable failed or interrupted assessment.
+type RetryAssessmentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryAssessmentRequest) Reset() {
+	*x = RetryAssessmentRequest{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryAssessmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryAssessmentRequest) ProtoMessage() {}
+
+func (x *RetryAssessmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryAssessmentRequest.ProtoReflect.Descriptor instead.
+func (*RetryAssessmentRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *RetryAssessmentRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+// RetryAssessmentResponse returns the assessment queued for an explicit retry.
+type RetryAssessmentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Assessment    *EvidenceAssessment    `protobuf:"bytes,1,opt,name=assessment,proto3" json:"assessment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryAssessmentResponse) Reset() {
+	*x = RetryAssessmentResponse{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryAssessmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryAssessmentResponse) ProtoMessage() {}
+
+func (x *RetryAssessmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryAssessmentResponse.ProtoReflect.Descriptor instead.
+func (*RetryAssessmentResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *RetryAssessmentResponse) GetAssessment() *EvidenceAssessment {
+	if x != nil {
+		return x.Assessment
+	}
+	return nil
+}
+
+// AssessmentTransition preserves an observed assessment state change.
+type AssessmentTransition struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	State         AssessmentState        `protobuf:"varint,1,opt,name=state,proto3,enum=octomanager.v2.AssessmentState" json:"state,omitempty"`
+	AtMs          int64                  `protobuf:"varint,2,opt,name=at_ms,json=atMs,proto3" json:"at_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssessmentTransition) Reset() {
+	*x = AssessmentTransition{}
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssessmentTransition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssessmentTransition) ProtoMessage() {}
+
+func (x *AssessmentTransition) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_tracking_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssessmentTransition.ProtoReflect.Descriptor instead.
+func (*AssessmentTransition) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_tracking_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *AssessmentTransition) GetState() AssessmentState {
+	if x != nil {
+		return x.State
+	}
+	return AssessmentState_ASSESSMENT_STATE_UNSPECIFIED
+}
+
+func (x *AssessmentTransition) GetAtMs() int64 {
+	if x != nil {
+		return x.AtMs
+	}
+	return 0
+}
+
 var File_octomanager_v2_tracking_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_tracking_proto_rawDesc = "" +
@@ -3904,7 +4441,7 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x05state\x18\x03 \x01(\x0e2\x1f.octomanager.v2.CheckWatchStateR\x05state\x129\n" +
 	"\x06checks\x18\x04 \x03(\v2!.octomanager.v2.DomainCheckRecordR\x06checks\x125\n" +
 	"\x14replacement_head_sha\x18\x05 \x01(\tH\x00R\x12replacementHeadSha\x88\x01\x01B\x17\n" +
-	"\x15_replacement_head_sha\"\xa3\b\n" +
+	"\x15_replacement_head_sha\"\xfc\b\n" +
 	"\rPendingAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x13\n" +
 	"\x05pr_id\x18\x02 \x01(\tR\x04prId\x122\n" +
@@ -3927,7 +4464,9 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x17resolved_observation_id\x18\x0f \x01(\x04H\x03R\x15resolvedObservationId\x88\x01\x01\x12&\n" +
 	"\fclose_reason\x18\x10 \x01(\tH\x04R\vcloseReason\x88\x01\x01\x12\"\n" +
 	"\rcreated_at_ms\x18\x11 \x01(\x03R\vcreatedAtMs\x12\"\n" +
-	"\rupdated_at_ms\x18\x12 \x01(\x03R\vupdatedAtMsB\t\n" +
+	"\rupdated_at_ms\x18\x12 \x01(\x03R\vupdatedAtMs\x12+\n" +
+	"\x11notification_kind\x18\x16 \x01(\tR\x10notificationKind\x12*\n" +
+	"\x11evidence_head_sha\x18\x17 \x01(\tR\x0fevidenceHeadShaB\t\n" +
 	"\ablockerB\x11\n" +
 	"\x0f_progress_at_msB\x14\n" +
 	"\x12_progress_agent_idB\x1a\n" +
@@ -3972,9 +4511,10 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x03prs\x18\x01 \x03(\v2\".octomanager.v2.TrackedPullRequestR\x03prs\"]\n" +
 	"\x18AssignPullRequestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
-	"\x05owner\x18\x02 \x01(\v2\x1b.octomanager.v2.AgentTargetR\x05owner\"8\n" +
+	"\x05owner\x18\x02 \x01(\v2\x1b.octomanager.v2.AgentTargetR\x05owner\"L\n" +
 	"\x12ListActionsRequest\x12\x18\n" +
-	"\x05pr_id\x18\x01 \x01(\tH\x00R\x04prId\x88\x01\x01B\b\n" +
+	"\x05pr_id\x18\x01 \x01(\tH\x00R\x04prId\x88\x01\x01\x12\x12\n" +
+	"\x04full\x18\x02 \x01(\bR\x04fullB\b\n" +
 	"\x06_pr_id\"N\n" +
 	"\x13ListActionsResponse\x127\n" +
 	"\aactions\x18\x01 \x03(\v2\x1d.octomanager.v2.PendingActionR\aactions\"&\n" +
@@ -3999,11 +4539,15 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x19UntrackPullRequestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"P\n" +
 	"\x1aUntrackPullRequestResponse\x122\n" +
-	"\x02pr\x18\x01 \x01(\v2\".octomanager.v2.TrackedPullRequestR\x02pr\"\"\n" +
+	"\x02pr\x18\x01 \x01(\v2\".octomanager.v2.TrackedPullRequestR\x02pr\"6\n" +
 	"\x10GetActionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"J\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04full\x18\x02 \x01(\bR\x04full\"\x8e\x01\n" +
 	"\x11GetActionResponse\x125\n" +
-	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v2.PendingActionR\x06action\"E\n" +
+	"\x06action\x18\x01 \x01(\v2\x1d.octomanager.v2.PendingActionR\x06action\x12B\n" +
+	"\n" +
+	"assessment\x18\x02 \x01(\v2\".octomanager.v2.EvidenceAssessmentR\n" +
+	"assessment\"E\n" +
 	"\x18AcknowledgeActionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bagent_id\x18\x02 \x01(\tR\aagentId\"R\n" +
@@ -4034,12 +4578,13 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	" \x01(\tH\x02R\aissueId\x88\x01\x01B\x15\n" +
 	"\x13_acknowledged_at_msB\x10\n" +
 	"\x0e_submission_idB\v\n" +
-	"\t_issue_id\"\xb8\x01\n" +
+	"\t_issue_id\"\xcc\x01\n" +
 	"\x18ListAgentMessagesRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12%\n" +
 	"\x0eafter_sequence\x18\x02 \x01(\x04R\rafterSequence\x121\n" +
 	"\x14include_acknowledged\x18\x03 \x01(\bR\x13includeAcknowledged\x12'\n" +
-	"\x0fapplicable_only\x18\x04 \x01(\bR\x0eapplicableOnly\"\x95\x01\n" +
+	"\x0fapplicable_only\x18\x04 \x01(\bR\x0eapplicableOnly\x12\x12\n" +
+	"\x04full\x18\x05 \x01(\bR\x04full\"\x95\x01\n" +
 	"\x19ListAgentMessagesResponse\x128\n" +
 	"\bmessages\x18\x01 \x03(\v2\x1c.octomanager.v2.AgentMessageR\bmessages\x12#\n" +
 	"\rnext_sequence\x18\x02 \x01(\x04R\fnextSequence\x12\x19\n" +
@@ -4080,7 +4625,40 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x1eUnsubscribePullRequestResponse\x12A\n" +
 	"\fparticipants\x18\x01 \x03(\v2\x1d.octomanager.v2.PRParticipantR\fparticipants\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\rR\x05total\x12\x19\n" +
-	"\bhas_more\x18\x03 \x01(\bR\ahasMore*\xb3\x01\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore\"\xd4\x04\n" +
+	"\x12EvidenceAssessment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\x125\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x1f.octomanager.v2.AssessmentStateR\x05state\x12\x19\n" +
+	"\bhead_sha\x18\x04 \x01(\tR\aheadSha\x12%\n" +
+	"\x0epolicy_version\x18\x05 \x01(\rR\rpolicyVersion\x12\x1c\n" +
+	"\ttruncated\x18\x06 \x01(\bR\ttruncated\x12\"\n" +
+	"\rcreated_at_ms\x18\a \x01(\x03R\vcreatedAtMs\x12\"\n" +
+	"\rupdated_at_ms\x18\b \x01(\x03R\vupdatedAtMs\x12L\n" +
+	"\vdisposition\x18\t \x01(\x0e2%.octomanager.v2.AssessmentDispositionH\x00R\vdisposition\x88\x01\x01\x122\n" +
+	"\x12untrusted_analysis\x18\n" +
+	" \x01(\tH\x01R\x11untrustedAnalysis\x88\x01\x01\x122\n" +
+	"\x12untrusted_evidence\x18\v \x01(\tH\x02R\x11untrustedEvidence\x88\x01\x01\x12>\n" +
+	"\ahistory\x18\f \x03(\v2$.octomanager.v2.AssessmentTransitionR\ahistoryB\x0e\n" +
+	"\f_dispositionB\x15\n" +
+	"\x13_untrusted_analysisB\x15\n" +
+	"\x13_untrusted_evidence\":\n" +
+	"\x14GetAssessmentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04full\x18\x02 \x01(\bR\x04full\"[\n" +
+	"\x15GetAssessmentResponse\x12B\n" +
+	"\n" +
+	"assessment\x18\x01 \x01(\v2\".octomanager.v2.EvidenceAssessmentR\n" +
+	"assessment\"(\n" +
+	"\x16RetryAssessmentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"]\n" +
+	"\x17RetryAssessmentResponse\x12B\n" +
+	"\n" +
+	"assessment\x18\x01 \x01(\v2\".octomanager.v2.EvidenceAssessmentR\n" +
+	"assessment\"b\n" +
+	"\x14AssessmentTransition\x125\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x1f.octomanager.v2.AssessmentStateR\x05state\x12\x13\n" +
+	"\x05at_ms\x18\x02 \x01(\x03R\x04atMs*\xb3\x01\n" +
 	"\vActionState\x12\x1c\n" +
 	"\x18ACTION_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ACTION_STATE_OPEN\x10\x01\x12\x1d\n" +
@@ -4108,7 +4686,20 @@ const file_octomanager_v2_tracking_proto_rawDesc = "" +
 	"\x1bCHECK_WATCH_STATE_COMPLETED\x10\x02\x12 \n" +
 	"\x1cCHECK_WATCH_STATE_SUPERSEDED\x10\x03\x12\x1f\n" +
 	"\x1bCHECK_WATCH_STATE_CANCELLED\x10\x04\x12\x1d\n" +
-	"\x19CHECK_WATCH_STATE_EXPIRED\x10\x05B@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
+	"\x19CHECK_WATCH_STATE_EXPIRED\x10\x05*\xef\x01\n" +
+	"\x0fAssessmentState\x12 \n" +
+	"\x1cASSESSMENT_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18ASSESSMENT_STATE_PENDING\x10\x01\x12\x1c\n" +
+	"\x18ASSESSMENT_STATE_RUNNING\x10\x02\x12\x1e\n" +
+	"\x1aASSESSMENT_STATE_COMPLETED\x10\x03\x12\x1b\n" +
+	"\x17ASSESSMENT_STATE_FAILED\x10\x04\x12 \n" +
+	"\x1cASSESSMENT_STATE_INTERRUPTED\x10\x05\x12\x1f\n" +
+	"\x1bASSESSMENT_STATE_SUPERSEDED\x10\x06*\xcd\x01\n" +
+	"\x15AssessmentDisposition\x12&\n" +
+	"\"ASSESSMENT_DISPOSITION_UNSPECIFIED\x10\x00\x12+\n" +
+	"'ASSESSMENT_DISPOSITION_POTENTIAL_CHANGE\x10\x01\x12.\n" +
+	"*ASSESSMENT_DISPOSITION_NO_CHANGE_SUGGESTED\x10\x02\x12/\n" +
+	"+ASSESSMENT_DISPOSITION_INSUFFICIENT_CONTEXT\x10\x03B@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
 
 var (
 	file_octomanager_v2_tracking_proto_rawDescOnce sync.Once
@@ -4122,134 +4713,149 @@ func file_octomanager_v2_tracking_proto_rawDescGZIP() []byte {
 	return file_octomanager_v2_tracking_proto_rawDescData
 }
 
-var file_octomanager_v2_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_octomanager_v2_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 54)
+var file_octomanager_v2_tracking_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_octomanager_v2_tracking_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_octomanager_v2_tracking_proto_goTypes = []any{
 	(ActionState)(0),                          // 0: octomanager.v2.ActionState
 	(DeliveryState)(0),                        // 1: octomanager.v2.DeliveryState
 	(TrackingState)(0),                        // 2: octomanager.v2.TrackingState
 	(CheckWatchState)(0),                      // 3: octomanager.v2.CheckWatchState
-	(*AgentTarget)(nil),                       // 4: octomanager.v2.AgentTarget
-	(*AgentReference)(nil),                    // 5: octomanager.v2.AgentReference
-	(*TargetBase)(nil),                        // 6: octomanager.v2.TargetBase
-	(*TrackingObservation)(nil),               // 7: octomanager.v2.TrackingObservation
-	(*TrackedPullRequest)(nil),                // 8: octomanager.v2.TrackedPullRequest
-	(*ExecutionProfile)(nil),                  // 9: octomanager.v2.ExecutionProfile
-	(*ConflictBlocker)(nil),                   // 10: octomanager.v2.ConflictBlocker
-	(*CheckBlocker)(nil),                      // 11: octomanager.v2.CheckBlocker
-	(*ReviewBlocker)(nil),                     // 12: octomanager.v2.ReviewBlocker
-	(*ReviewFeedback)(nil),                    // 13: octomanager.v2.ReviewFeedback
-	(*CheckWatch)(nil),                        // 14: octomanager.v2.CheckWatch
-	(*CheckResults)(nil),                      // 15: octomanager.v2.CheckResults
-	(*PendingAction)(nil),                     // 16: octomanager.v2.PendingAction
-	(*ActionDelivery)(nil),                    // 17: octomanager.v2.ActionDelivery
-	(*DeliveryAttempt)(nil),                   // 18: octomanager.v2.DeliveryAttempt
-	(*TrackingSnapshot)(nil),                  // 19: octomanager.v2.TrackingSnapshot
-	(*TrackPullRequestRequest)(nil),           // 20: octomanager.v2.TrackPullRequestRequest
-	(*ListTrackedPullRequestsRequest)(nil),    // 21: octomanager.v2.ListTrackedPullRequestsRequest
-	(*ListTrackedPullRequestsResponse)(nil),   // 22: octomanager.v2.ListTrackedPullRequestsResponse
-	(*AssignPullRequestRequest)(nil),          // 23: octomanager.v2.AssignPullRequestRequest
-	(*ListActionsRequest)(nil),                // 24: octomanager.v2.ListActionsRequest
-	(*ListActionsResponse)(nil),               // 25: octomanager.v2.ListActionsResponse
-	(*RetryDeliveryRequest)(nil),              // 26: octomanager.v2.RetryDeliveryRequest
-	(*RetryDeliveryResponse)(nil),             // 27: octomanager.v2.RetryDeliveryResponse
-	(*TrackPullRequestResponse)(nil),          // 28: octomanager.v2.TrackPullRequestResponse
-	(*GetTrackedPullRequestRequest)(nil),      // 29: octomanager.v2.GetTrackedPullRequestRequest
-	(*GetTrackedPullRequestResponse)(nil),     // 30: octomanager.v2.GetTrackedPullRequestResponse
-	(*RefreshTrackedPullRequestRequest)(nil),  // 31: octomanager.v2.RefreshTrackedPullRequestRequest
-	(*RefreshTrackedPullRequestResponse)(nil), // 32: octomanager.v2.RefreshTrackedPullRequestResponse
-	(*AssignPullRequestResponse)(nil),         // 33: octomanager.v2.AssignPullRequestResponse
-	(*UntrackPullRequestRequest)(nil),         // 34: octomanager.v2.UntrackPullRequestRequest
-	(*UntrackPullRequestResponse)(nil),        // 35: octomanager.v2.UntrackPullRequestResponse
-	(*GetActionRequest)(nil),                  // 36: octomanager.v2.GetActionRequest
-	(*GetActionResponse)(nil),                 // 37: octomanager.v2.GetActionResponse
-	(*AcknowledgeActionRequest)(nil),          // 38: octomanager.v2.AcknowledgeActionRequest
-	(*AcknowledgeActionResponse)(nil),         // 39: octomanager.v2.AcknowledgeActionResponse
-	(*StartActionRequest)(nil),                // 40: octomanager.v2.StartActionRequest
-	(*StartActionResponse)(nil),               // 41: octomanager.v2.StartActionResponse
-	(*ReprofileActionRequest)(nil),            // 42: octomanager.v2.ReprofileActionRequest
-	(*ReprofileActionResponse)(nil),           // 43: octomanager.v2.ReprofileActionResponse
-	(*AgentMessage)(nil),                      // 44: octomanager.v2.AgentMessage
-	(*ListAgentMessagesRequest)(nil),          // 45: octomanager.v2.ListAgentMessagesRequest
-	(*ListAgentMessagesResponse)(nil),         // 46: octomanager.v2.ListAgentMessagesResponse
-	(*AcknowledgeMessageRequest)(nil),         // 47: octomanager.v2.AcknowledgeMessageRequest
-	(*AcknowledgeMessageResponse)(nil),        // 48: octomanager.v2.AcknowledgeMessageResponse
-	(*RegisterAgentRequest)(nil),              // 49: octomanager.v2.RegisterAgentRequest
-	(*RegisterAgentResponse)(nil),             // 50: octomanager.v2.RegisterAgentResponse
-	(*PRParticipant)(nil),                     // 51: octomanager.v2.PRParticipant
-	(*SubscribePullRequestRequest)(nil),       // 52: octomanager.v2.SubscribePullRequestRequest
-	(*UnsubscribePullRequestRequest)(nil),     // 53: octomanager.v2.UnsubscribePullRequestRequest
-	(*ListPRParticipantsRequest)(nil),         // 54: octomanager.v2.ListPRParticipantsRequest
-	(*ListPRParticipantsResponse)(nil),        // 55: octomanager.v2.ListPRParticipantsResponse
-	(*SubscribePullRequestResponse)(nil),      // 56: octomanager.v2.SubscribePullRequestResponse
-	(*UnsubscribePullRequestResponse)(nil),    // 57: octomanager.v2.UnsubscribePullRequestResponse
-	(*DomainCheckEvidence)(nil),               // 58: octomanager.v2.DomainCheckEvidence
-	(*DomainReviewEvidence)(nil),              // 59: octomanager.v2.DomainReviewEvidence
-	(*DomainFeedbackEvidence)(nil),            // 60: octomanager.v2.DomainFeedbackEvidence
-	(*DomainCheckRecord)(nil),                 // 61: octomanager.v2.DomainCheckRecord
-	(*DomainDeliveryProgress)(nil),            // 62: octomanager.v2.DomainDeliveryProgress
-	(*DomainDeliveryOutcome)(nil),             // 63: octomanager.v2.DomainDeliveryOutcome
-	(*DomainRepositoryAutomationPolicy)(nil),  // 64: octomanager.v2.DomainRepositoryAutomationPolicy
-	(*RefreshStatus)(nil),                     // 65: octomanager.v2.RefreshStatus
+	(AssessmentState)(0),                      // 4: octomanager.v2.AssessmentState
+	(AssessmentDisposition)(0),                // 5: octomanager.v2.AssessmentDisposition
+	(*AgentTarget)(nil),                       // 6: octomanager.v2.AgentTarget
+	(*AgentReference)(nil),                    // 7: octomanager.v2.AgentReference
+	(*TargetBase)(nil),                        // 8: octomanager.v2.TargetBase
+	(*TrackingObservation)(nil),               // 9: octomanager.v2.TrackingObservation
+	(*TrackedPullRequest)(nil),                // 10: octomanager.v2.TrackedPullRequest
+	(*ExecutionProfile)(nil),                  // 11: octomanager.v2.ExecutionProfile
+	(*ConflictBlocker)(nil),                   // 12: octomanager.v2.ConflictBlocker
+	(*CheckBlocker)(nil),                      // 13: octomanager.v2.CheckBlocker
+	(*ReviewBlocker)(nil),                     // 14: octomanager.v2.ReviewBlocker
+	(*ReviewFeedback)(nil),                    // 15: octomanager.v2.ReviewFeedback
+	(*CheckWatch)(nil),                        // 16: octomanager.v2.CheckWatch
+	(*CheckResults)(nil),                      // 17: octomanager.v2.CheckResults
+	(*PendingAction)(nil),                     // 18: octomanager.v2.PendingAction
+	(*ActionDelivery)(nil),                    // 19: octomanager.v2.ActionDelivery
+	(*DeliveryAttempt)(nil),                   // 20: octomanager.v2.DeliveryAttempt
+	(*TrackingSnapshot)(nil),                  // 21: octomanager.v2.TrackingSnapshot
+	(*TrackPullRequestRequest)(nil),           // 22: octomanager.v2.TrackPullRequestRequest
+	(*ListTrackedPullRequestsRequest)(nil),    // 23: octomanager.v2.ListTrackedPullRequestsRequest
+	(*ListTrackedPullRequestsResponse)(nil),   // 24: octomanager.v2.ListTrackedPullRequestsResponse
+	(*AssignPullRequestRequest)(nil),          // 25: octomanager.v2.AssignPullRequestRequest
+	(*ListActionsRequest)(nil),                // 26: octomanager.v2.ListActionsRequest
+	(*ListActionsResponse)(nil),               // 27: octomanager.v2.ListActionsResponse
+	(*RetryDeliveryRequest)(nil),              // 28: octomanager.v2.RetryDeliveryRequest
+	(*RetryDeliveryResponse)(nil),             // 29: octomanager.v2.RetryDeliveryResponse
+	(*TrackPullRequestResponse)(nil),          // 30: octomanager.v2.TrackPullRequestResponse
+	(*GetTrackedPullRequestRequest)(nil),      // 31: octomanager.v2.GetTrackedPullRequestRequest
+	(*GetTrackedPullRequestResponse)(nil),     // 32: octomanager.v2.GetTrackedPullRequestResponse
+	(*RefreshTrackedPullRequestRequest)(nil),  // 33: octomanager.v2.RefreshTrackedPullRequestRequest
+	(*RefreshTrackedPullRequestResponse)(nil), // 34: octomanager.v2.RefreshTrackedPullRequestResponse
+	(*AssignPullRequestResponse)(nil),         // 35: octomanager.v2.AssignPullRequestResponse
+	(*UntrackPullRequestRequest)(nil),         // 36: octomanager.v2.UntrackPullRequestRequest
+	(*UntrackPullRequestResponse)(nil),        // 37: octomanager.v2.UntrackPullRequestResponse
+	(*GetActionRequest)(nil),                  // 38: octomanager.v2.GetActionRequest
+	(*GetActionResponse)(nil),                 // 39: octomanager.v2.GetActionResponse
+	(*AcknowledgeActionRequest)(nil),          // 40: octomanager.v2.AcknowledgeActionRequest
+	(*AcknowledgeActionResponse)(nil),         // 41: octomanager.v2.AcknowledgeActionResponse
+	(*StartActionRequest)(nil),                // 42: octomanager.v2.StartActionRequest
+	(*StartActionResponse)(nil),               // 43: octomanager.v2.StartActionResponse
+	(*ReprofileActionRequest)(nil),            // 44: octomanager.v2.ReprofileActionRequest
+	(*ReprofileActionResponse)(nil),           // 45: octomanager.v2.ReprofileActionResponse
+	(*AgentMessage)(nil),                      // 46: octomanager.v2.AgentMessage
+	(*ListAgentMessagesRequest)(nil),          // 47: octomanager.v2.ListAgentMessagesRequest
+	(*ListAgentMessagesResponse)(nil),         // 48: octomanager.v2.ListAgentMessagesResponse
+	(*AcknowledgeMessageRequest)(nil),         // 49: octomanager.v2.AcknowledgeMessageRequest
+	(*AcknowledgeMessageResponse)(nil),        // 50: octomanager.v2.AcknowledgeMessageResponse
+	(*RegisterAgentRequest)(nil),              // 51: octomanager.v2.RegisterAgentRequest
+	(*RegisterAgentResponse)(nil),             // 52: octomanager.v2.RegisterAgentResponse
+	(*PRParticipant)(nil),                     // 53: octomanager.v2.PRParticipant
+	(*SubscribePullRequestRequest)(nil),       // 54: octomanager.v2.SubscribePullRequestRequest
+	(*UnsubscribePullRequestRequest)(nil),     // 55: octomanager.v2.UnsubscribePullRequestRequest
+	(*ListPRParticipantsRequest)(nil),         // 56: octomanager.v2.ListPRParticipantsRequest
+	(*ListPRParticipantsResponse)(nil),        // 57: octomanager.v2.ListPRParticipantsResponse
+	(*SubscribePullRequestResponse)(nil),      // 58: octomanager.v2.SubscribePullRequestResponse
+	(*UnsubscribePullRequestResponse)(nil),    // 59: octomanager.v2.UnsubscribePullRequestResponse
+	(*EvidenceAssessment)(nil),                // 60: octomanager.v2.EvidenceAssessment
+	(*GetAssessmentRequest)(nil),              // 61: octomanager.v2.GetAssessmentRequest
+	(*GetAssessmentResponse)(nil),             // 62: octomanager.v2.GetAssessmentResponse
+	(*RetryAssessmentRequest)(nil),            // 63: octomanager.v2.RetryAssessmentRequest
+	(*RetryAssessmentResponse)(nil),           // 64: octomanager.v2.RetryAssessmentResponse
+	(*AssessmentTransition)(nil),              // 65: octomanager.v2.AssessmentTransition
+	(*DomainCheckEvidence)(nil),               // 66: octomanager.v2.DomainCheckEvidence
+	(*DomainReviewEvidence)(nil),              // 67: octomanager.v2.DomainReviewEvidence
+	(*DomainFeedbackEvidence)(nil),            // 68: octomanager.v2.DomainFeedbackEvidence
+	(*DomainCheckRecord)(nil),                 // 69: octomanager.v2.DomainCheckRecord
+	(*DomainDeliveryProgress)(nil),            // 70: octomanager.v2.DomainDeliveryProgress
+	(*DomainDeliveryOutcome)(nil),             // 71: octomanager.v2.DomainDeliveryOutcome
+	(*DomainRepositoryAutomationPolicy)(nil),  // 72: octomanager.v2.DomainRepositoryAutomationPolicy
+	(*RefreshStatus)(nil),                     // 73: octomanager.v2.RefreshStatus
 }
 var file_octomanager_v2_tracking_proto_depIdxs = []int32{
-	4,  // 0: octomanager.v2.AgentReference.target:type_name -> octomanager.v2.AgentTarget
-	58, // 1: octomanager.v2.TrackingObservation.checks:type_name -> octomanager.v2.DomainCheckEvidence
-	59, // 2: octomanager.v2.TrackingObservation.reviews:type_name -> octomanager.v2.DomainReviewEvidence
-	6,  // 3: octomanager.v2.TrackingObservation.target_base:type_name -> octomanager.v2.TargetBase
-	60, // 4: octomanager.v2.TrackingObservation.feedback:type_name -> octomanager.v2.DomainFeedbackEvidence
-	58, // 5: octomanager.v2.TrackingObservation.workflows:type_name -> octomanager.v2.DomainCheckEvidence
-	7,  // 6: octomanager.v2.TrackedPullRequest.observation:type_name -> octomanager.v2.TrackingObservation
+	6,  // 0: octomanager.v2.AgentReference.target:type_name -> octomanager.v2.AgentTarget
+	66, // 1: octomanager.v2.TrackingObservation.checks:type_name -> octomanager.v2.DomainCheckEvidence
+	67, // 2: octomanager.v2.TrackingObservation.reviews:type_name -> octomanager.v2.DomainReviewEvidence
+	8,  // 3: octomanager.v2.TrackingObservation.target_base:type_name -> octomanager.v2.TargetBase
+	68, // 4: octomanager.v2.TrackingObservation.feedback:type_name -> octomanager.v2.DomainFeedbackEvidence
+	66, // 5: octomanager.v2.TrackingObservation.workflows:type_name -> octomanager.v2.DomainCheckEvidence
+	9,  // 6: octomanager.v2.TrackedPullRequest.observation:type_name -> octomanager.v2.TrackingObservation
 	2,  // 7: octomanager.v2.TrackedPullRequest.tracking_state:type_name -> octomanager.v2.TrackingState
 	3,  // 8: octomanager.v2.CheckWatch.state:type_name -> octomanager.v2.CheckWatchState
-	58, // 9: octomanager.v2.CheckWatch.evidence:type_name -> octomanager.v2.DomainCheckEvidence
+	66, // 9: octomanager.v2.CheckWatch.evidence:type_name -> octomanager.v2.DomainCheckEvidence
 	3,  // 10: octomanager.v2.CheckResults.state:type_name -> octomanager.v2.CheckWatchState
-	61, // 11: octomanager.v2.CheckResults.checks:type_name -> octomanager.v2.DomainCheckRecord
-	10, // 12: octomanager.v2.PendingAction.conflict:type_name -> octomanager.v2.ConflictBlocker
-	11, // 13: octomanager.v2.PendingAction.check_failed:type_name -> octomanager.v2.CheckBlocker
-	12, // 14: octomanager.v2.PendingAction.changes_requested:type_name -> octomanager.v2.ReviewBlocker
-	13, // 15: octomanager.v2.PendingAction.review_feedback:type_name -> octomanager.v2.ReviewFeedback
-	15, // 16: octomanager.v2.PendingAction.check_results:type_name -> octomanager.v2.CheckResults
-	9,  // 17: octomanager.v2.PendingAction.profile:type_name -> octomanager.v2.ExecutionProfile
+	69, // 11: octomanager.v2.CheckResults.checks:type_name -> octomanager.v2.DomainCheckRecord
+	12, // 12: octomanager.v2.PendingAction.conflict:type_name -> octomanager.v2.ConflictBlocker
+	13, // 13: octomanager.v2.PendingAction.check_failed:type_name -> octomanager.v2.CheckBlocker
+	14, // 14: octomanager.v2.PendingAction.changes_requested:type_name -> octomanager.v2.ReviewBlocker
+	15, // 15: octomanager.v2.PendingAction.review_feedback:type_name -> octomanager.v2.ReviewFeedback
+	17, // 16: octomanager.v2.PendingAction.check_results:type_name -> octomanager.v2.CheckResults
+	11, // 17: octomanager.v2.PendingAction.profile:type_name -> octomanager.v2.ExecutionProfile
 	0,  // 18: octomanager.v2.PendingAction.state:type_name -> octomanager.v2.ActionState
 	1,  // 19: octomanager.v2.ActionDelivery.state:type_name -> octomanager.v2.DeliveryState
-	62, // 20: octomanager.v2.ActionDelivery.progress:type_name -> octomanager.v2.DomainDeliveryProgress
-	63, // 21: octomanager.v2.DeliveryAttempt.outcome:type_name -> octomanager.v2.DomainDeliveryOutcome
-	8,  // 22: octomanager.v2.TrackingSnapshot.prs:type_name -> octomanager.v2.TrackedPullRequest
-	5,  // 23: octomanager.v2.TrackingSnapshot.agents:type_name -> octomanager.v2.AgentReference
-	16, // 24: octomanager.v2.TrackingSnapshot.actions:type_name -> octomanager.v2.PendingAction
-	17, // 25: octomanager.v2.TrackingSnapshot.deliveries:type_name -> octomanager.v2.ActionDelivery
-	18, // 26: octomanager.v2.TrackingSnapshot.attempts:type_name -> octomanager.v2.DeliveryAttempt
-	14, // 27: octomanager.v2.TrackingSnapshot.check_watches:type_name -> octomanager.v2.CheckWatch
-	4,  // 28: octomanager.v2.TrackPullRequestRequest.owner:type_name -> octomanager.v2.AgentTarget
-	8,  // 29: octomanager.v2.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v2.TrackedPullRequest
-	4,  // 30: octomanager.v2.AssignPullRequestRequest.owner:type_name -> octomanager.v2.AgentTarget
-	16, // 31: octomanager.v2.ListActionsResponse.actions:type_name -> octomanager.v2.PendingAction
-	17, // 32: octomanager.v2.RetryDeliveryResponse.delivery:type_name -> octomanager.v2.ActionDelivery
-	8,  // 33: octomanager.v2.TrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	8,  // 34: octomanager.v2.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	64, // 35: octomanager.v2.GetTrackedPullRequestResponse.repository_policy:type_name -> octomanager.v2.DomainRepositoryAutomationPolicy
-	8,  // 36: octomanager.v2.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	65, // 37: octomanager.v2.RefreshTrackedPullRequestResponse.refresh:type_name -> octomanager.v2.RefreshStatus
-	8,  // 38: octomanager.v2.AssignPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	8,  // 39: octomanager.v2.UntrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
-	16, // 40: octomanager.v2.GetActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 41: octomanager.v2.AcknowledgeActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 42: octomanager.v2.StartActionResponse.action:type_name -> octomanager.v2.PendingAction
-	16, // 43: octomanager.v2.ReprofileActionResponse.action:type_name -> octomanager.v2.PendingAction
-	44, // 44: octomanager.v2.ListAgentMessagesResponse.messages:type_name -> octomanager.v2.AgentMessage
-	44, // 45: octomanager.v2.AcknowledgeMessageResponse.message:type_name -> octomanager.v2.AgentMessage
-	4,  // 46: octomanager.v2.RegisterAgentRequest.target:type_name -> octomanager.v2.AgentTarget
-	5,  // 47: octomanager.v2.RegisterAgentResponse.agent:type_name -> octomanager.v2.AgentReference
-	4,  // 48: octomanager.v2.SubscribePullRequestRequest.agent:type_name -> octomanager.v2.AgentTarget
-	51, // 49: octomanager.v2.ListPRParticipantsResponse.participants:type_name -> octomanager.v2.PRParticipant
-	51, // 50: octomanager.v2.SubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
-	51, // 51: octomanager.v2.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
-	52, // [52:52] is the sub-list for method output_type
-	52, // [52:52] is the sub-list for method input_type
-	52, // [52:52] is the sub-list for extension type_name
-	52, // [52:52] is the sub-list for extension extendee
-	0,  // [0:52] is the sub-list for field type_name
+	70, // 20: octomanager.v2.ActionDelivery.progress:type_name -> octomanager.v2.DomainDeliveryProgress
+	71, // 21: octomanager.v2.DeliveryAttempt.outcome:type_name -> octomanager.v2.DomainDeliveryOutcome
+	10, // 22: octomanager.v2.TrackingSnapshot.prs:type_name -> octomanager.v2.TrackedPullRequest
+	7,  // 23: octomanager.v2.TrackingSnapshot.agents:type_name -> octomanager.v2.AgentReference
+	18, // 24: octomanager.v2.TrackingSnapshot.actions:type_name -> octomanager.v2.PendingAction
+	19, // 25: octomanager.v2.TrackingSnapshot.deliveries:type_name -> octomanager.v2.ActionDelivery
+	20, // 26: octomanager.v2.TrackingSnapshot.attempts:type_name -> octomanager.v2.DeliveryAttempt
+	16, // 27: octomanager.v2.TrackingSnapshot.check_watches:type_name -> octomanager.v2.CheckWatch
+	6,  // 28: octomanager.v2.TrackPullRequestRequest.owner:type_name -> octomanager.v2.AgentTarget
+	10, // 29: octomanager.v2.ListTrackedPullRequestsResponse.prs:type_name -> octomanager.v2.TrackedPullRequest
+	6,  // 30: octomanager.v2.AssignPullRequestRequest.owner:type_name -> octomanager.v2.AgentTarget
+	18, // 31: octomanager.v2.ListActionsResponse.actions:type_name -> octomanager.v2.PendingAction
+	19, // 32: octomanager.v2.RetryDeliveryResponse.delivery:type_name -> octomanager.v2.ActionDelivery
+	10, // 33: octomanager.v2.TrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	10, // 34: octomanager.v2.GetTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	72, // 35: octomanager.v2.GetTrackedPullRequestResponse.repository_policy:type_name -> octomanager.v2.DomainRepositoryAutomationPolicy
+	10, // 36: octomanager.v2.RefreshTrackedPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	73, // 37: octomanager.v2.RefreshTrackedPullRequestResponse.refresh:type_name -> octomanager.v2.RefreshStatus
+	10, // 38: octomanager.v2.AssignPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	10, // 39: octomanager.v2.UntrackPullRequestResponse.pr:type_name -> octomanager.v2.TrackedPullRequest
+	18, // 40: octomanager.v2.GetActionResponse.action:type_name -> octomanager.v2.PendingAction
+	60, // 41: octomanager.v2.GetActionResponse.assessment:type_name -> octomanager.v2.EvidenceAssessment
+	18, // 42: octomanager.v2.AcknowledgeActionResponse.action:type_name -> octomanager.v2.PendingAction
+	18, // 43: octomanager.v2.StartActionResponse.action:type_name -> octomanager.v2.PendingAction
+	18, // 44: octomanager.v2.ReprofileActionResponse.action:type_name -> octomanager.v2.PendingAction
+	46, // 45: octomanager.v2.ListAgentMessagesResponse.messages:type_name -> octomanager.v2.AgentMessage
+	46, // 46: octomanager.v2.AcknowledgeMessageResponse.message:type_name -> octomanager.v2.AgentMessage
+	6,  // 47: octomanager.v2.RegisterAgentRequest.target:type_name -> octomanager.v2.AgentTarget
+	7,  // 48: octomanager.v2.RegisterAgentResponse.agent:type_name -> octomanager.v2.AgentReference
+	6,  // 49: octomanager.v2.SubscribePullRequestRequest.agent:type_name -> octomanager.v2.AgentTarget
+	53, // 50: octomanager.v2.ListPRParticipantsResponse.participants:type_name -> octomanager.v2.PRParticipant
+	53, // 51: octomanager.v2.SubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
+	53, // 52: octomanager.v2.UnsubscribePullRequestResponse.participants:type_name -> octomanager.v2.PRParticipant
+	4,  // 53: octomanager.v2.EvidenceAssessment.state:type_name -> octomanager.v2.AssessmentState
+	5,  // 54: octomanager.v2.EvidenceAssessment.disposition:type_name -> octomanager.v2.AssessmentDisposition
+	65, // 55: octomanager.v2.EvidenceAssessment.history:type_name -> octomanager.v2.AssessmentTransition
+	60, // 56: octomanager.v2.GetAssessmentResponse.assessment:type_name -> octomanager.v2.EvidenceAssessment
+	60, // 57: octomanager.v2.RetryAssessmentResponse.assessment:type_name -> octomanager.v2.EvidenceAssessment
+	4,  // 58: octomanager.v2.AssessmentTransition.state:type_name -> octomanager.v2.AssessmentState
+	59, // [59:59] is the sub-list for method output_type
+	59, // [59:59] is the sub-list for method input_type
+	59, // [59:59] is the sub-list for extension type_name
+	59, // [59:59] is the sub-list for extension extendee
+	0,  // [0:59] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_tracking_proto_init() }
@@ -4280,13 +4886,14 @@ func file_octomanager_v2_tracking_proto_init() {
 	file_octomanager_v2_tracking_proto_msgTypes[20].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[40].OneofWrappers = []any{}
 	file_octomanager_v2_tracking_proto_msgTypes[43].OneofWrappers = []any{}
+	file_octomanager_v2_tracking_proto_msgTypes[54].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_tracking_proto_rawDesc), len(file_octomanager_v2_tracking_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   54,
+			NumEnums:      6,
+			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

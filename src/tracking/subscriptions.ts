@@ -1,3 +1,5 @@
+import type { NotificationRepository } from "../notifications/repository.js";
+import { renderNotice, type SafeNotice } from "../security/notifications.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -42,6 +44,7 @@ export class Subscriptions {
     private db: DatabaseSync,
     private now: () => number,
     private agent: (id: string) => AgentRef,
+    private notices: NotificationRepository,
   ) {}
   includes(prId: string, agentId: string): boolean {
     return (
@@ -120,40 +123,26 @@ export class Subscriptions {
         .prepare("SELECT revision FROM pr_participant_revisions WHERE pr_id=?")
         .get(pr.id)?.["revision"],
     );
-    const participants = this.list(pr),
-      number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
+    const participants = this.list(pr);
     for (const recipient of participants) {
-      const priority = participants.filter(
-        (item) =>
-          item.role === ParticipantRole.Owner ||
-          item.agentId === recipient.agentId,
-      );
-      const visible = [
-        ...priority,
-        ...participants
-          .filter((item) => !priority.includes(item))
-          .slice(0, 8 - priority.length),
-      ];
-      const body = `[PR #${number}](${pr.url}) · Participants changed\n${visible
-        .map(
-          (item) =>
-            `> ${item.role}: ${item.label} (${shortId(
-              item.agentId,
-              participants.map((p) => p.agentId),
-            )})${item.agentId === recipient.agentId ? " · you" : ""}`,
-        )
-        .join(
-          "\n",
-        )}\n${participants.length > visible.length ? `> +${String(participants.length - visible.length)} more; use octo-manager participants ${pr.url} for the roster\n` : ""}`;
+      const id = randomUUID();
+      const notice: SafeNotice = {
+        version: 1,
+        kind: "participants",
+        prUrl: pr.url,
+        role: recipient.agentId === pr.ownerAgentId ? "owner" : "observer",
+        assessment: "not_required",
+      };
+      this.notices.freezeNotice(id, notice);
       this.db
         .prepare("INSERT INTO participant_messages VALUES(?,?,?,?,?,?,?,?,?)")
         .run(
           nextInboxSequence(this.db),
-          randomUUID(),
+          id,
           pr.id,
           recipient.agentId,
           revision,
-          body,
+          renderNotice(this.notices.notice(id) ?? notice, id, ""),
           this.now(),
           null,
           this.now(),

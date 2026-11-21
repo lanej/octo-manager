@@ -2,9 +2,9 @@
 
 Queue reconciliation runs only when an agent has applicable unread messages, a live digest, pending digest cleanup, or historical inbox messages outside digest membership that may still have legacy queue entries. Successful idle legacy cleanup is reinspected once per minute to catch late native admission; local membership, receipt, applicability, or transport changes can trigger an earlier inspection. Repeated failures retain their first error event and retry with delays of 5, 10, 20, 40, and at most 60 seconds. Error events include the agent identity and actual rejection. Sessions with no inbox or digest work are not polled.
 
-Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving separate findings, a short excerpt and the failed-run or review link. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
+Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses and action/assessment references without forwarding external prose or model analysis. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Identical displayed entries within a PR share one line. Submission notices asking for applicability verification share one request with distinct rule IDs listed once. These are presentation groups: every selected original message remains an immutable receipt member, and distinct evidence links remain visible.
+Identical displayed entries within a PR share one line. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
 
 ## Replacement and cancellation
 
@@ -67,7 +67,7 @@ Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and re
 The optional Codex hook acknowledges an exact incoming digest body before unread recovery. Automatic native history reconciliation also works without hooks. Neither path accepts or resolves the underlying actions. There is no model call, new agent session, setting change or mandatory PR submission in this path.
 
 
-Acknowledgment output is deliberately smaller than inspection: `record_json` contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
+Acknowledgment output is deliberately smaller than inspection: the typed receipt contains only the digest identity, acknowledged/current revisions, recipient and receipt timestamp. At most 20 member summaries carry current applicability, PR link, owner reference and recipient role; no stored bodies or journal events are returned. The CLI applies the stricter 6,000-byte presentation budget, reports omissions and supplies a state-aware inspection command. Callers that need audit history must explicitly use `GetAgentDigest` or `digest`.
 
 PR listeners are described in [subscriptions](subscriptions.md). Participant roster updates share the existing per-agent digest and its withdraw-before-replace protocol, with separate receipt records for each recipient.
 

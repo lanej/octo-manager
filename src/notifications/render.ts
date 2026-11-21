@@ -1,115 +1,90 @@
-import { linkPRReferences } from "./links.js";
 import type {
   MessagePresentation,
   ReceiptTarget,
 } from "../merging/receipt-types.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { cleanText } from "../domain.js";
+import {
+  noticeView,
+  renderReference,
+  type NoticeReference,
+  type NoticeView,
+  type SafeNotice,
+} from "../security/notifications.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
-function entry(
-  message: AgentMessage,
-  presentation?: MessagePresentation,
-): { group: string; lines: string[] } {
-  const lines = message.body
-    .split("\n")
-    .filter((line) => line !== "" && !line.startsWith("[octo-delivery:"));
-  const first = lines[0] ?? "Octo update",
-    heading = first.match(
-      /^(\[[^\]]+\]\(https:\/\/github\.com\/[^)]+\/pull\/\d+\)) · (.*)$/u,
-    );
-  const role = lines.find((line) => line.startsWith("Role:"));
-  const excerpt = lines
-    .filter((line) => line.startsWith("> "))
-    .map((line) => line.slice(2))
-    .filter((line) => !line.startsWith("<!--") && line.trim() !== "")
-    .join(" ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/gu, "")
-    .replace(/<[^>]*>/gu, "")
-    .replaceAll("**", "")
-    .trim();
-  const evidence = lines.find(
-    (line) =>
-      line.startsWith("[Evidence](") || line.startsWith("[Failed run]("),
-  );
 
-  const summary = (presentation?.summary ?? heading?.[2] ?? first)
-    .replace(
-      "Checks completed (includes neutral/skipped); no merge conflicts",
-      "Checks complete",
-    )
-    .replace("Checks passed; no merge conflicts", "Checks passed");
-  const sourceUrl = heading?.[1]?.match(
-    /\((https:\/\/github\.com\/[^)]+)\)$/u,
-  )?.[1];
-  const knownUrl = summary.match(
-    /https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*\b/u,
-  )?.[0];
-  return {
-    group: heading?.[1] ?? "",
-    lines: [
-      `- ${linkPRReferences(cleanText(summary), sourceUrl, knownUrl)}${role === undefined ? "" : ` · ${cleanText(role, 160)}`}`,
-      ...(message.participantPRId !== undefined
-        ? lines
-            .filter((line) => line.startsWith("> "))
-            .slice(0, 9)
-            .map((line) => `  ${cleanText(line, 180)}`)
-        : excerpt === ""
-          ? []
-          : [
-              `  > ${linkPRReferences(cleanText(excerpt), sourceUrl, knownUrl, 480)}`,
-            ]),
-      ...(evidence === undefined ? [] : [`  ${evidence}`]),
-    ],
-  };
+export interface DigestGroup {
+  reference: NoticeReference;
+  entries: NoticeView[];
+  instructions: string[];
 }
-// Collapse presentation only: every selected source remains in the receipt.
-function compactEntries(items: { group: string; lines: string[] }[]): {
-  group: string;
-  lines: string[];
-}[] {
-  const result: { group: string; lines: string[] }[] = [];
-  const conditions = new Set<string>();
-  let applicability: { group: string; lines: string[] } | undefined;
-  for (const item of items) {
-    const prefix = "- PR submission needs_input: ";
-    const reason = "Unverified applicability condition: ";
-    const summary = item.lines[0] ?? "";
-    const blockers = summary.slice(prefix.length).split("; ");
-    if (
-      item.group === "" &&
-      item.lines.length === 1 &&
-      summary.startsWith(prefix) &&
-      blockers.every(
-        (blocker) =>
-          blocker.startsWith(reason) && blocker.length > reason.length,
-      )
-    ) {
-      for (const blocker of blockers)
-        conditions.add(blocker.slice(reason.length));
-      if (applicability === undefined) {
-        applicability = { group: "", lines: [] };
-        result.push(applicability);
-      }
-      applicability.lines = [
-        `- PR submission needs input: verify applicability conditions: ${[...conditions].join(", ")}`,
-      ];
-    } else if (
-      !result.some(
-        (previous) =>
-          previous.group === item.group &&
-          JSON.stringify(previous.lines) === JSON.stringify(item.lines),
-      )
-    ) {
-      result.push(item);
+export function digestGroups(
+  messages: AgentMessage[],
+  presentation?: (message: AgentMessage) => MessagePresentation,
+): DigestGroup[] {
+  const groups = new Map<string, DigestGroup>();
+  for (const message of messages) {
+    const notice: SafeNotice = message.notice ?? {
+      version: 1,
+      kind: "update",
+      assessment: "not_required",
+    };
+    const entry = noticeView(notice, message.actionId);
+    const shown = presentation?.(message);
+    const status = shown?.status;
+    if (status !== undefined)
+      entry.title = {
+        ready: "Ready",
+        review_unavailable: "Checks complete · review status unavailable",
+        blocked: "Checks complete · merge prerequisites not met",
+        feedback_assessment:
+          "Checks complete · Review feedback requires owner assessment",
+      }[status];
+    const key = entry.group.url ?? "octo";
+    let group = groups.get(key);
+    if (group === undefined) {
+      group = { reference: entry.group, entries: [], instructions: [] };
+      groups.set(key, group);
     }
+    if (
+      !group.entries.some(
+        (previous) => JSON.stringify(previous) === JSON.stringify(entry),
+      )
+    )
+      group.entries.push(entry);
+    for (const instruction of shown?.instructions?.split("\n") ?? [])
+      if (instruction !== "" && !group.instructions.includes(instruction))
+        group.instructions.push(instruction);
   }
-  return result;
+  return [...groups.values()];
 }
+function renderGroup(group: DigestGroup): string {
+  const single = group.entries.length === 1 ? group.entries[0] : undefined;
+  const instructions = group.instructions.map(
+    (value) => `Instructions: ${value}`,
+  );
+  if (single !== undefined)
+    return [
+      `${renderReference(single.reference)} · ${single.title}`,
+      ...single.fields.map((field) => `${field.label}: ${field.value}`),
+      ...instructions,
+    ].join("\n");
+  return [
+    renderReference(group.reference),
+    ...group.entries.map((entry) =>
+      [
+        `- ${entry.title}${entry.reference.url === group.reference.url ? "" : ` · ${renderReference(entry.reference)}`}`,
+        ...entry.fields.map((field) => `  ${field.label}: ${field.value}`),
+      ].join("\n"),
+    ),
+    ...instructions,
+  ].join("\n");
+}
+
 export function renderDigest(
   messages: AgentMessage[],
   directory: string,
@@ -120,22 +95,22 @@ export function renderDigest(
   const presentations = new Map(
     candidates.map((message) => [message.id, presentation?.(message)]),
   );
-  function mergeTarget(rows: AgentMessage[]): ReceiptTarget | undefined {
+  function target(rows: AgentMessage[]): ReceiptTarget | undefined {
     let selected: ReceiptTarget | undefined;
     for (const row of rows) {
-      const target = presentations.get(row.id)?.mergeTarget;
-      if (target === undefined) continue;
+      const current = presentations.get(row.id)?.mergeTarget;
+      if (current === undefined) continue;
       if (
         selected !== undefined &&
-        JSON.stringify(selected) !== JSON.stringify(target)
+        JSON.stringify(selected) !== JSON.stringify(current)
       )
         return undefined;
-      selected = target;
+      selected = current;
     }
     return selected;
   }
   function footer(rows: AgentMessage[]): string {
-    const command = `octo-manager ${mergeTarget(rows) === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
+    const command = `octo-manager ${target(rows) === undefined ? "ack" : "merge"} ${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
     const fence = "`".repeat(
       1 +
         Math.max(
@@ -145,57 +120,25 @@ export function renderDigest(
     );
     return `${fence}${command}${fence}`;
   }
-  const selected: AgentMessage[] = [];
   function body(rows: AgentMessage[]): string {
-    const groups = new Map<string, string[]>();
-    const counts = new Map<string, number>();
-    const instructions = new Map<string, Set<string>>();
-    for (const row of rows) {
-      const text = presentations.get(row.id)?.instructions;
-      if (text === undefined) continue;
-      const group = entry(row, presentations.get(row.id)).group;
-      const texts = instructions.get(group) ?? new Set<string>();
-      for (const line of text.split("\n")) texts.add(line);
-      instructions.set(group, texts);
-    }
-    for (const item of compactEntries(
-      rows.map((row) => entry(row, presentations.get(row.id))),
-    )) {
-      counts.set(item.group, (counts.get(item.group) ?? 0) + 1);
-      groups.set(item.group, [
-        ...(groups.get(item.group) ?? []),
-        ...item.lines,
-      ]);
-    }
-    return `${[...groups]
-      .map(([heading, lines]) => {
-        const instruction = [...(instructions.get(heading) ?? [])]
-          .map((text) => `\nInstructions: ${cleanText(text, 1000)}`)
-          .join("");
-        const single = counts.get(heading) === 1;
-        if (single) {
-          const first = (lines[0] ?? "- Update").replace(/^- /u, "");
-          return `${heading === "" ? "" : heading + " · "}${first}${lines.length > 1 ? "\n" + lines.slice(1).join("\n") : ""}${instruction}`;
-        }
-        return `${heading === "" ? "" : heading + "\n"}${lines.join("\n")}${instruction}`;
-      })
-      .join("\n\n")}\n\n${footer(rows)}`;
+    const groups = digestGroups(
+      rows,
+      (message) => presentations.get(message.id) ?? {},
+    );
+    return `${groups.map(renderGroup).join("\n\n")}\n\n${footer(rows)}`;
   }
+  const selected: AgentMessage[] = [];
   for (const message of candidates) {
-    if (
-      selected.length === 20 ||
-      Buffer.byteLength(body([...selected, message])) > 6000
-    )
-      break;
+    if (Buffer.byteLength(body([...selected, message])) > 6000) break;
     selected.push(message);
   }
   if (selected.length === 0)
     throw new Error("No notification fits the digest size bound");
-  const target = mergeTarget(selected);
+  const mergeTarget = target(selected);
   return {
-    ...(target === undefined ? {} : { mergeTarget: target }),
     body: body(selected),
     messageIds: selected.map((message) => message.id),
+    ...(mergeTarget === undefined ? {} : { mergeTarget }),
   };
 }
 

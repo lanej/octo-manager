@@ -146,7 +146,10 @@ export class ReceiptMerges {
       pr.observation === undefined ||
       feedbackKey(pr.observation) === undefined
     )
-      return { summary: "Checks passed · review status unavailable" };
+      return {
+        summary: "Checks passed · review status unavailable",
+        status: "review_unavailable",
+      };
     const cached = this.store.noticeReadiness(pr.id);
     if (
       cached === undefined ||
@@ -160,11 +163,16 @@ export class ReceiptMerges {
     return cached.eligible
       ? {
           summary: "Ready",
+          status: "ready",
           ...(message.recipientAgentId === pr.ownerAgentId
             ? { mergeTarget: cached.target }
             : {}),
         }
       : {
+          status:
+            cached.reason === "Review feedback requires owner assessment"
+              ? "feedback_assessment"
+              : "blocked",
           summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${publicReason(cached.reason)}`,
           ...(cached.reason === "Review feedback requires owner assessment"
             ? {

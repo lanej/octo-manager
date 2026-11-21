@@ -1,5 +1,4 @@
-import { feedbackExcerpt } from "./review-signals.js";
-import { shortId } from "./identifiers.js";
+import { actionNotice, renderNotice } from "../security/notifications.js";
 import { stripVTControlCharacters } from "node:util";
 import type { Action } from "./types.js";
 import { successfulCheck } from "./checks.js";
@@ -104,58 +103,20 @@ export async function readFailureExcerpt(
     return undefined;
   }
 }
-function link(label: string, url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (
-      parsed.protocol !== "https:" ||
-      parsed.username !== "" ||
-      parsed.password !== "" ||
-      parsed.href.length > 512
-    )
-      return label;
-    return `[${label}](${parsed.href.replaceAll("(", "%28").replaceAll(")", "%29")})`;
-  } catch {
-    return label;
-  }
-}
 export function agentMessage(
   action: Action,
   prUrl: string,
   deliveryId: string,
-  excerpt?: string,
+  _excerpt?: string,
   identities: { actions: string[]; messages: string[] } = {
     actions: [],
     messages: [],
   },
 ): string {
-  const blocker = action.blocker;
-  const head =
-    blocker.kind === "changes_requested"
-      ? blocker.reviewedHeadSha
-      : blocker.kind === "review_feedback"
-        ? blocker.feedback.headSha
-        : blocker.headSha;
-  const failed =
-    blocker.kind === "check_results"
-      ? blocker.checks.find((check) => !successfulCheck(check))
-      : undefined;
-  const body =
-    blocker.kind === "review_feedback"
-      ? feedbackExcerpt(blocker.feedback)
-      : excerpt;
-  const detail =
-    body === undefined
-      ? ""
-      : compact(body, 480)
-          .split("\n")
-          .map((line) => `> ${line}`)
-          .join("\n") + "\n";
-  const location =
-    blocker.kind === "review_feedback" && blocker.feedback.path !== undefined
-      ? ` · ${compact(blocker.feedback.path.replace(/\s+/g, " "), 120)}${blocker.feedback.line === undefined ? "" : `:${String(blocker.feedback.line)}`}`
-      : "";
-  const evidence = failed?.url ?? action.evidenceUrl;
-  const completion = blocker.kind === "check_results" && failed === undefined;
-  return `[octo-delivery:${shortId(deliveryId, identities.messages)}]\n${link(`PR #${new URL(prUrl).pathname.split("/").at(-1) ?? ""}`, prUrl)} · ${compact(action.summary.replace(/\s+/g, " "), 120)}${head === undefined ? "" : ` at ${compact(head.replace(/\s+/g, " "), 200).slice(0, 8)}`}${location}\n${detail}${completion ? "" : link(blocker.kind === "check_failed" || blocker.kind === "check_results" ? "Failed run" : "Evidence", evidence) + "\n"}Action: ${shortId(action.id, identities.actions)}`;
+  return renderNotice(
+    actionNotice(action, prUrl),
+    deliveryId,
+    action.id,
+    identities,
+  );
 }

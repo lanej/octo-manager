@@ -17,6 +17,7 @@ const reads = new Set([
   "pr",
   "actions",
   "action",
+  "assessment",
   "tracking",
   "inbox",
   "agents",

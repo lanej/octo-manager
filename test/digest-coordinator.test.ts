@@ -82,11 +82,7 @@ test("coordinator combines both producers and atomically receipts exact members 
       state: SubmissionState.NeedsInput,
       notificationRevision: 1,
     });
-    coordinator.store.submissions.notify(
-      submission,
-      actor.id,
-      "[octo-delivery:11111111]\nPR submission needs_input: Synthetic request",
-    );
+    coordinator.store.submissions.notify(submission, actor.id);
     await coordinator.start();
     for (let attempt = 0; attempt < 100; attempt++) {
       const current = coordinator.store.digests.active(actor.id);
@@ -179,7 +175,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     expect(
       receipt.messages.find((message) => message.submissionId === submission.id)
         ?.summary,
-    ).toBe("PR submission needs_input: Synthetic request");
+    ).toBe("Submission update");
     expect(
       Buffer.byteLength(JSON.stringify(receipt.receipt, cliJSON)),
     ).toBeLessThan(300);
@@ -304,7 +300,7 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     expect(previous.body).not.toContain("octo-digest");
     expect(previous.body).not.toContain(" updates");
     expect(previous.body).not.toContain("\n- ");
-    expect(previous.body).not.toContain("Action:");
+    expect(previous.body).toContain("Action:");
     expect(previous.body).not.toContain("--agent-id");
     expect(previous.body).not.toContain("--revision");
     const second = coordinator.store.tracking.track(

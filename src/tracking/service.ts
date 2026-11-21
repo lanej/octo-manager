@@ -1,3 +1,4 @@
+import { renderNotice } from "../security/notifications.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
 import {
@@ -7,11 +8,9 @@ import {
   type PollPolicy,
 } from "./polling.js";
 import { GitHubRateLimitError } from "../github-api.js";
-import { compact } from "./messages.js";
-import { shortId } from "./identifiers.js";
 import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
-import { agentMessage, readFailureExcerpt } from "./messages.js";
+import { readFailureExcerpt } from "./messages.js";
 import {
   DeliveryState,
   unfinished,
@@ -53,7 +52,6 @@ export class TrackingService {
   private deliveryWork?: Promise<void>;
   private refreshControllers = new Map<string, AbortController>();
   private stopped = false;
-  private deliveryAbort = new AbortController();
   private connections = new Set<AgentConnection>();
   constructor(
     readonly store: TrackingStore,
@@ -94,6 +92,10 @@ export class TrackingService {
           );
         }
     });
+    store.prepareSafeRecovery();
+  }
+  get failureExcerpt(): typeof readFailureExcerpt {
+    return this.options.failureExcerpt ?? readFailureExcerpt;
   }
   start(): void {
     this.timer = setInterval(() => this.tick(), 1000);
@@ -355,6 +357,13 @@ export class TrackingService {
           this.options.managedQueue?.(d.recipientAgentId) === true)
       )
         return false;
+      if (this.store.inbox.isReplaced(d.id))
+        return (
+          message !== undefined &&
+          (d.progress.state === DeliveryState.Uncertain ||
+            d.progress.state === DeliveryState.Delivered) &&
+          message.nextCheckAt <= this.now()
+        );
       return (
         (d.progress.state === DeliveryState.Pending &&
           d.progress.nextAttemptAt <= this.now()) ||
@@ -368,6 +377,10 @@ export class TrackingService {
       );
     });
     if (!d) return;
+    if (this.store.inbox.isReplaced(d.id)) {
+      await this.reconcileReplaced(d);
+      return;
+    }
     const action = this.store.action(d.actionId),
       pr = this.store.pr(action.prId),
       agent = this.store.agent(d.recipientAgentId);
@@ -382,29 +395,17 @@ export class TrackingService {
         d.progress.state === DeliveryState.Pending &&
         this.store.inbox.get(d.id) === undefined
       ) {
-        const excerpt = await (
-          this.options.failureExcerpt ?? readFailureExcerpt
-        )(
-          action,
-          pr.url,
-          AbortSignal.any([
-            this.deliveryAbort.signal,
-            AbortSignal.timeout(5000),
-          ]),
-        );
-        if (!this.current(d)) return;
-        const message = agentMessage(action, pr.url, d.id, excerpt, {
-          actions: this.store.actions().map((action) => action.id),
-          messages: this.store.deliveries().map((delivery) => delivery.id),
-        });
-        const role = agent.id === action.ownerAgentId ? "owner" : "observer";
-        const owner = this.store.agent(action.ownerAgentId);
-        const context =
-          role === "observer"
-            ? `\nRole: observer · Owner: ${compact(owner.label ?? owner.harness, 120).replaceAll("\n", " ")} (${shortId(owner.id)})`
-            : "";
+        const notice = this.store.noticeForAction(action, agent.id);
         this.store.transaction(() => {
-          this.store.inbox.record(d.id, message + context);
+          this.store.inbox.freezeNotice(d.id, notice);
+          this.store.inbox.record(
+            d.id,
+            renderNotice(
+              this.store.inbox.notice(d.id) ?? notice,
+              d.id,
+              action.id,
+            ),
+          );
         });
       }
     } catch (error) {
@@ -522,7 +523,13 @@ export class TrackingService {
           );
         return;
       }
-      if (!this.current(d) || message === undefined) return;
+      if (
+        !this.current(d) ||
+        this.store.inbox.isReplaced(d.id) ||
+        message === undefined ||
+        message.notice === undefined
+      )
+        return;
       const previous = this.store
         .attempts()
         .filter((a) => a.deliveryId === d.id);
@@ -664,6 +671,58 @@ export class TrackingService {
       connection.close();
     }
   }
+  private async reconcileReplaced(delivery: Delivery): Promise<void> {
+    const message = this.store.inbox.get(delivery.id);
+    const agent = this.store.agent(delivery.recipientAgentId);
+    const endpoint = this.config.endpoints[agent.endpoint];
+    if (message === undefined || endpoint === undefined) return;
+    const connection =
+      this.options.connect?.(agent) ??
+      new CodexConnection(endpoint.socket, endpoint.delivery);
+    this.connections.add(connection);
+    // A replacement fences sends, while exact historical receipt evidence remains independently reconcilable.
+    this.store.inbox.defer(delivery.id, this.now() + 60000);
+    const stopped = () => this.stopped;
+    try {
+      await connection.prepare(agent);
+      if (stopped()) return;
+      const found = await connection.find(agent, delivery.id, message.body);
+      if (stopped() || !found.found) return;
+      this.store.transaction(() => {
+        if (found.received === true)
+          this.store.acknowledgeMessageInside(delivery.id, agent.id);
+        const current = this.store
+          .deliveries()
+          .find((value) => value.id === delivery.id);
+        if (
+          current === undefined ||
+          current.progress.state === DeliveryState.Cancelled
+        )
+          return;
+        this.store.saveDelivery(
+          {
+            ...current,
+            progress: {
+              state: DeliveryState.Delivered,
+              at: this.now(),
+              ...(found.turnId === undefined ? {} : { turnId: found.turnId }),
+              ...(found.queueId === undefined
+                ? {}
+                : { queueId: found.queueId }),
+              ...(found.note === undefined ? {} : { note: found.note }),
+            },
+            updatedAt: this.now(),
+          },
+          "delivery_reconciled",
+        );
+      });
+    } catch {
+      // Missing history or transport failure leaves the original outcome unknown for a later read-only retry.
+    } finally {
+      this.connections.delete(connection);
+      connection.close();
+    }
+  }
   private nextUncertainCheck = new Map<string, number>();
   private current(d: Delivery, includeReceived = false): boolean {
     const value = this.store.deliveries().find((x) => x.id === d.id);
@@ -681,7 +740,6 @@ export class TrackingService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    this.deliveryAbort.abort();
     if (this.timer) clearInterval(this.timer);
     for (const controller of this.refreshControllers.values())
       controller.abort();

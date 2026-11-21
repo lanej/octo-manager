@@ -1,3 +1,10 @@
+import type { AssessmentStore } from "../assessments/store.js";
+import type { NotificationRepository } from "../notifications/repository.js";
+import {
+  actionNotice,
+  renderNotice,
+  type SafeNotice,
+} from "../security/notifications.js";
 import {
   SQLiteObservationRepository,
   type ObservationRepository,
@@ -32,7 +39,6 @@ import type { TrackingConfig } from "./config.js";
 import { selectProfile } from "./config.js";
 import { canonicalPR } from "./github.js";
 import { closeProgress, findings } from "./policy.js";
-import { migrateTracking } from "./schema.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
@@ -51,11 +57,17 @@ export class TrackingStore {
       actionId?: string,
       context?: ActionEventContext,
     ) => void,
+    notificationRepository: NotificationRepository,
+    private assessments: AssessmentStore,
   ) {
-    migrateTracking(db);
     this.observations = new SQLiteObservationRepository(db);
-    this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id));
-    this.inbox = new AgentInbox(db, now);
+    this.subscriptions = new Subscriptions(
+      db,
+      now,
+      (id) => this.agent(id),
+      notificationRepository,
+    );
+    this.inbox = new AgentInbox(notificationRepository);
     this.checks = new CheckWatches(db, now);
     this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
@@ -421,6 +433,162 @@ export class TrackingStore {
       "delivery_pending",
     );
   }
+  noticeForAction(action: Action, recipient: string): SafeNotice {
+    const pr = this.pr(action.prId),
+      item = this.assessments.latest(action.id);
+    const current =
+      item !== undefined &&
+      item.state !== "superseded" &&
+      item.input.epoch === pr.trackingEpoch &&
+      item.input.headSha === pr.observation?.headSha &&
+      item.input.sourceKey === action.sourceKey;
+    const status = !current
+      ? undefined
+      : item.state === "completed"
+        ? "completed"
+        : item.state === "failed" || item.state === "interrupted"
+          ? "unavailable"
+          : "pending";
+    return {
+      ...actionNotice(action, pr.url, status),
+      ...(current ? { assessmentId: item.id, head: item.input.headSha } : {}),
+      role: recipient === action.ownerAgentId ? "owner" : "observer",
+    };
+  }
+  prepareSafeRecovery(): void {
+    this.transaction(() => {
+      this.inbox.recoverWorkflows();
+      for (const delivery of this.deliveries()) {
+        const message = this.inbox.get(delivery.id);
+        if (
+          message === undefined ||
+          message.notice !== undefined ||
+          !message.applicable ||
+          message.acknowledgedAt !== undefined
+        )
+          continue;
+        const action = this.action(delivery.actionId),
+          pr = this.pr(action.prId);
+        const id = randomUUID(),
+          at = this.now();
+        const uncertain =
+          delivery.progress.state === DeliveryState.Uncertain ||
+          delivery.progress.state === DeliveryState.Delivered ||
+          this.attempts().some(
+            (attempt) =>
+              attempt.deliveryId === delivery.id &&
+              (attempt.outcome.state === "accepted" ||
+                attempt.outcome.state === "uncertain" ||
+                attempt.outcome.state === "sending"),
+          );
+        if (!uncertain)
+          this.saveDelivery(
+            {
+              ...delivery,
+              progress: {
+                state: DeliveryState.Cancelled,
+                at,
+                reason: "Legacy notification retired by security policy",
+              },
+              updatedAt: at,
+            },
+            "legacy_notification_retired",
+          );
+        this.saveDelivery(
+          {
+            id,
+            actionId: action.id,
+            recipientAgentId: delivery.recipientAgentId,
+            progress: { state: DeliveryState.Pending, nextAttemptAt: at },
+            createdAt: at,
+            updatedAt: at,
+          },
+          "safe_recovery_pending",
+        );
+        const notice = {
+          ...actionNotice(action, pr.url),
+          role:
+            delivery.recipientAgentId === action.ownerAgentId
+              ? ("owner" as const)
+              : ("observer" as const),
+        };
+        this.inbox.freezeNotice(id, notice);
+        this.inbox.record(
+          id,
+          renderNotice(this.inbox.notice(id) ?? notice, id, action.id),
+        );
+        this.inbox.markReplacement(delivery.id, id);
+      }
+    });
+  }
+  notifyAssessment(
+    action: Action,
+    status: SafeNotice["assessment"],
+    assessment: { id: string; head: string },
+  ): void {
+    for (const participant of this.subscriptions.list(this.pr(action.prId))) {
+      const at = this.now(),
+        id = randomUUID();
+      this.saveDelivery(
+        {
+          id,
+          actionId: action.id,
+          recipientAgentId: participant.agentId,
+          progress: { state: DeliveryState.Pending, nextAttemptAt: at },
+          createdAt: at,
+          updatedAt: at,
+        },
+        "assessment_notification_pending",
+      );
+      const notice = {
+        ...actionNotice(action, this.pr(action.prId).url, status),
+        assessmentId: assessment.id,
+        ...(/^[a-f0-9]{40,64}$/u.test(assessment.head)
+          ? { head: assessment.head }
+          : {}),
+        role:
+          participant.agentId === action.ownerAgentId
+            ? ("owner" as const)
+            : ("observer" as const),
+      };
+      this.inbox.freezeNotice(id, notice);
+      this.inbox.record(
+        id,
+        renderNotice(this.inbox.notice(id) ?? notice, id, action.id),
+      );
+      for (const old of this.deliveries()) {
+        if (
+          old.id === id ||
+          old.actionId !== action.id ||
+          old.recipientAgentId !== participant.agentId ||
+          this.inbox.isReplaced(old.id)
+        )
+          continue;
+        this.inbox.supersede(old.id, id);
+      }
+    }
+  }
+  cancelAssessmentNotices(assessmentId: string): void {
+    for (const delivery of this.deliveries()) {
+      if (
+        delivery.progress.state === DeliveryState.Cancelled ||
+        this.inbox.notice(delivery.id)?.assessmentId !== assessmentId
+      )
+        continue;
+      this.saveDelivery(
+        {
+          ...delivery,
+          progress: {
+            state: DeliveryState.Cancelled,
+            at: this.now(),
+            reason: "Assessment superseded",
+          },
+          updatedAt: this.now(),
+        },
+        "assessment_notification_superseded",
+      );
+    }
+  }
   participants(id: string) {
     return this.subscriptions.list(this.pr(id));
   }
@@ -771,7 +939,10 @@ export class TrackingStore {
         this.event("message_acknowledged", message.id, message.workflowPRId);
       } else if (message.participantPRId !== undefined) {
         this.event("message_acknowledged", message.id, message.participantPRId);
-      } else if (message.submissionId === undefined) {
+      } else if (
+        message.submissionId === undefined &&
+        message.issueId === undefined
+      ) {
         const action = this.action(message.actionId);
         this.event("message_acknowledged", message.id, action.prId, action.id);
       } else this.event("message_acknowledged", message.id, "");

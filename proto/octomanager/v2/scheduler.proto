@@ -103,6 +103,10 @@ service SchedulerService {
   rpc ListActions(ListActionsRequest) returns (ListActionsResponse);
   // Reads a durable action, its progress, and related delivery evidence.
   rpc GetAction(GetActionRequest) returns (GetActionResponse);
+  // Reads advisory assessment evidence without granting execution authority.
+  rpc GetAssessment(GetAssessmentRequest) returns (GetAssessmentResponse);
+  // Retries an applicable failed or interrupted assessment.
+  rpc RetryAssessment(RetryAssessmentRequest) returns (RetryAssessmentResponse);
   // Records the current owner’s acceptance of an applicable action.
   rpc AcknowledgeAction(AcknowledgeActionRequest) returns (AcknowledgeActionResponse);
   // Records that the current owner has started work on an applicable action.

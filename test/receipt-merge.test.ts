@@ -371,12 +371,15 @@ test("reference discovery ignores examples and link labels while keeping cross-r
     const notices = f.coordinator.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
       .messages.filter((m) => m.workflowPRId !== undefined);
+    expect(notices.some((m) => m.notice?.subject?.kind === "reference")).toBe(
+      true,
+    );
     expect(
-      notices.some((m) =>
-        m.body.includes(
-          "[another/repo#13](https://github.com/another/repo/pull/13)",
+      f.coordinator.store.merging
+        .refs()
+        .some(
+          (ref) => ref.targetUrl === "https://github.com/another/repo/pull/13",
         ),
-      ),
     ).toBe(true);
   } finally {
     await f.close();
@@ -683,11 +686,19 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
     const deliveries = coordinator.store.tracking
       .deliveries()
       .filter((d) => d.actionId === completion.id);
-    for (const delivery of deliveries)
+    for (const delivery of deliveries) {
+      coordinator.store.tracking.inbox.freezeNotice(
+        delivery.id,
+        coordinator.store.tracking.noticeForAction(
+          completion,
+          delivery.recipientAgentId,
+        ),
+      );
       coordinator.store.tracking.inbox.record(
         delivery.id,
         agentMessage(completion, url, delivery.id),
       );
+    }
     await coordinator.merging.tick();
     const ownerDelivery = coordinator.store.tracking
       .deliveries()
@@ -859,7 +870,7 @@ test("agent presentation links native GitHub references while preserving existin
   expect(bounded.replace(/\[[^\]]*\]\([^)]*\)/gu, "")).not.toMatch(/#[0-9]/u);
 });
 
-test("rendered excerpts preserve complete existing links beyond the old plain-text cutoff", async () => {
+test("automatic digest excludes raw excerpts while explicit link rendering preserves links", async () => {
   const f = await fixture();
   try {
     const message = f.coordinator.store.tracking.inbox.get(
@@ -878,7 +889,8 @@ test("rendered excerpts preserve complete existing links beyond the old plain-te
       f.directory,
       "12345678-1234-4123-8123-123456789abc",
     );
-    expect(rendered.body).toContain(link);
+    expect(rendered.body).not.toContain(link);
+    expect(rendered.body).not.toContain("Context ");
     const plain = linkPRReferences(`See ${target}`, url);
     expect(plain).toContain(`](${target})`);
     expect(plain).not.toContain(")?diff=");
@@ -971,7 +983,7 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
       digest.id,
       digest.revision,
     );
-    expect(version.body).toContain("dependency requirements remain");
+    expect(version.body).toContain("merge prerequisites not met");
     const id = messageReceiptId(version.body);
     assert(id !== undefined);
     await schedulerClient(f.directory).acknowledgeAgentDigest({

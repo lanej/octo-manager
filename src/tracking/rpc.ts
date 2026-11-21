@@ -1,3 +1,4 @@
+import { actionNotice, noticeLabel } from "../security/notifications.js";
 import { wire } from "../api/codec.js";
 import {
   DomainCheckRecordSchema,
@@ -118,7 +119,20 @@ export function wirePR(p: TrackedPR) {
       : undefined,
   });
 }
-export function wireAction(a: Action) {
+export function wireAction(a: Action, full = false) {
+  const notice = actionNotice(a, "");
+  if (!full)
+    return create(PendingActionSchema, {
+      notificationKind: notice.kind,
+      evidenceHeadSha: notice.head ?? "",
+      id: a.id,
+      prId: a.prId,
+      ownerAgentId: a.ownerAgentId,
+      state: actionStates[a.progress.state],
+      summary: noticeLabel(actionNotice(a, "")),
+      createdAtMs: BigInt(a.createdAt),
+      updatedAtMs: BigInt(a.updatedAt),
+    });
   const b = a.blocker,
     p = a.progress;
   return create(PendingActionSchema, {
@@ -224,7 +238,7 @@ export function wireTracking(service: TrackingService) {
   return create(TrackingSnapshotSchema, {
     prs: s.prs.map(wirePR),
     agents: s.agents.map(wireAgent),
-    actions: s.actions.map(wireAction),
+    actions: s.actions.map((a) => wireAction(a, true)),
     deliveries: s.deliveries.map((delivery) =>
       wireDelivery(delivery, service.store.inbox.get(delivery.id)),
     ),
@@ -250,7 +264,7 @@ export async function trackingOperation<T>(
     if (message.includes("not found"))
       throw new ConnectError(message, Code.NotFound);
     if (
-      /another owner|another agent|closed|before starting|no longer|disabled|Only unavailable/.test(
+      /another owner|another agent|closed|before starting|no longer|disabled|Only unavailable|Only failed or interrupted assessments/.test(
         message,
       )
     )

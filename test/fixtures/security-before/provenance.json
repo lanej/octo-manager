@@ -1,0 +1,8 @@
+{
+  "commit": "3142760ac951c667bde382044d1814cbdec3a682",
+  "messageSource": "src/tracking/messages.ts",
+  "messageSourceSha256": "fbd5586fa257c6ef9a4cf66eaf8532149fd5a560c51dfcd4e4828c7fe90ea6e2",
+  "digestSource": "src/notifications/render.ts",
+  "digestSourceSha256": "ec1ab73af47fd464f62966663b53e98f79b9066ff2528f4e95cec142ecb530d3",
+  "adaptations": "Message fixture retains compact, link and agentMessage; imports use current shared pure helpers. Digest fixture changes import paths only. This is a historical renderer replay, not a full historical deployment."
+}

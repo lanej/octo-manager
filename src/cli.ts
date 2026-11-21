@@ -64,8 +64,9 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   }
   const id = argument;
   let result: unknown;
-  if (["track","tracked","pr","refresh","assign","untrack","actions","action","acknowledge","working","retry-delivery","reprofile","register-agent","agents","tracking","inbox","acknowledge-message"].includes(command)) {
+  if (["track","tracked","pr","refresh","assign","untrack","actions","action","assessment","retry-assessment","acknowledge","working","retry-delivery","reprofile","register-agent","agents","tracking","inbox","acknowledge-message"].includes(command)) {
     result = await trackingRequest(directory, command, id, {
+      full: parsed.output.full,
       cwd: values.cwd ?? process.cwd(),
       ...(values.url === undefined ? {} : { url: values.url }),
       ...(values.harness === undefined ? {} : { harness: values.harness }),

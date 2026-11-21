@@ -1,9 +1,11 @@
+import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import type { NotificationRepository } from "../notifications/repository.js";
 import {
   decodeIssue,
   decodeAssignment,
   decodeIssueBrief,
 } from "./validation.js";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { nextInboxSequence } from "../submissions/schema.js";
 import type { DatabaseSync } from "node:sqlite";
 import type {
@@ -17,6 +19,7 @@ export class IssueStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
+    private notifications?: NotificationRepository,
   ) {
     db.exec(`CREATE TABLE IF NOT EXISTS issue_briefs(issue_id TEXT NOT NULL, version INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(issue_id,version));
 CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
@@ -56,25 +59,48 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     if (installed == null) return;
     const actionable =
       issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
-    const body = `[Issue ${issue.ref.project}#${issue.ref.externalId}](${issue.ref.url}) · ${issue.stage.replaceAll("_", " ")}${issue.waiting === Waiting.None ? "" : ` · ${issue.waiting.replaceAll("_", " ")}`}${issue.brief === undefined ? "" : ` · brief ${String(issue.brief.version)}`}\n${issue.detail.slice(0, 480)}\nInspect: \`octo-manager issue show ${issue.id.slice(0, 8)}\``;
+    const id = randomUUID();
+    const notice: SafeNotice = {
+      version: 1,
+      kind: "issue",
+      assessment: "not_required",
+      subject: { kind: "issue", id: issue.id },
+      issueStage: issue.stage,
+      issueWaiting: issue.waiting,
+      issueRevision: createHash("sha256")
+        .update(
+          JSON.stringify([
+            issue.stage,
+            issue.waiting,
+            issue.brief?.version,
+            issue.detail,
+          ]),
+        )
+        .digest("hex"),
+    };
     const previous = this.db
       .prepare(
-        "SELECT body FROM issue_notices WHERE issue_id=? ORDER BY sequence DESC LIMIT 1",
+        "SELECT id FROM issue_notices WHERE issue_id=? ORDER BY sequence DESC LIMIT 1",
       )
       .get(issue.id);
-    if (previous?.["body"] === body) return;
+    const prior =
+      typeof previous?.["id"] === "string"
+        ? this.notifications?.notice(previous["id"])
+        : undefined;
+    if (prior?.issueRevision === notice.issueRevision) return;
     this.db
       .prepare("UPDATE issue_notices SET applicable=0 WHERE issue_id=?")
       .run(issue.id);
     if (!actionable) return;
+    this.notifications?.freezeNotice(id, notice);
     this.db
       .prepare("INSERT INTO issue_notices VALUES(?,?,?,?,?,?,NULL,?,1)")
       .run(
         nextInboxSequence(this.db),
-        randomUUID(),
+        id,
         issue.id,
         issue.ownerId,
-        body,
+        renderNotice(this.notifications?.notice(id) ?? notice, id, ""),
         this.now(),
         this.now(),
       );

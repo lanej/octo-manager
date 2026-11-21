@@ -588,7 +588,7 @@ test("recovers uncertain publication without repeating workers or creating anoth
     const messages = h.store.tracking.inbox.list(agent.id, 0, true).messages;
     expect(messages).toHaveLength(2);
     expect(messages[0]?.applicable).toBe(false);
-    expect(messages[1]?.body).toContain("tracking active");
+    expect(messages[1]?.body).toContain("Submission update");
   } finally {
     await h.close();
   }

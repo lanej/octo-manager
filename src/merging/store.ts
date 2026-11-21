@@ -1,3 +1,8 @@
+import {
+  NoticeSubjectKind,
+  renderNotice,
+  type SafeNotice,
+} from "../security/notifications.js";
 import { currentMergeChecks } from "./checks.js";
 import {
   NoticeReadinessSchema,
@@ -1027,7 +1032,7 @@ export class MergeStore {
     kind: "reference" | "entry",
     subjectId: string,
     revision: string,
-    body: string,
+    _body: string,
     applicable: boolean,
     recipients?: readonly string[],
   ): void {
@@ -1052,28 +1057,42 @@ export class MergeStore {
             .get(kind, subjectId, participant.agentId, revision) !== undefined
         )
           continue;
-        const messageId = randomUUID();
-        const owner = this.tracking.agent(pr.ownerAgentId);
-        const role =
-          participant.agentId === pr.ownerAgentId
-            ? ""
-            : `\nRole: observer · Owner: ${compact(owner.label ?? owner.harness, 120).replaceAll("\n", " ")} (${shortId(owner.id)})`;
-        const content = subjectId.startsWith("ready:")
-          ? `[octo-delivery:${shortId(messageId)}]\n${body}${role}`
-          : body;
+        const id = randomUUID();
+        const notice: SafeNotice = {
+          version: 1,
+          kind: "merge",
+          prUrl: pr.url,
+          role: participant.agentId === pr.ownerAgentId ? "owner" : "observer",
+          assessment: "not_required",
+        };
+        notice.subject = {
+          kind:
+            kind === "entry"
+              ? subjectId.startsWith("ready:")
+                ? NoticeSubjectKind.Action
+                : NoticeSubjectKind.MergeEntry
+              : NoticeSubjectKind.Reference,
+          id: subjectId.startsWith("ready:") ? subjectId.slice(6) : subjectId,
+        };
+        const entry =
+          kind === "entry"
+            ? this.entries().find((value) => value.id === subjectId)
+            : undefined;
+        if (entry !== undefined) notice.mergeState = entry.state;
+        this.tracking.inbox.freezeNotice(id, notice);
         this.db
           .prepare(
             "INSERT OR IGNORE INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
           )
           .run(
             nextInboxSequence(this.db),
-            messageId,
+            id,
             pr.id,
             participant.agentId,
             kind,
             subjectId,
             revision,
-            compact(content, 6000),
+            renderNotice(this.tracking.inbox.notice(id) ?? notice, id, ""),
             this.now(),
             null,
             this.now(),

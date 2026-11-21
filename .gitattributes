@@ -1,5 +1,6 @@
-# Collapse generated bindings in GitHub reviews while keeping their diffs available on demand.
-gen/** linguist-generated=true
-src/gen/** linguist-generated=true
-src/agents/protocol/** linguist-generated=true
-proto/octomanager/v2/domain.proto linguist-generated=true
+# Generated artifacts stay tracked; use git diff --text for an explicit inspection.
+/gen/** linguist-generated=true -diff
+/src/gen/** linguist-generated=true -diff
+/src/agents/protocol/** linguist-generated=true -diff
+/schemas/*.schema.json linguist-generated=true -diff
+/proto/octomanager/v2/domain.proto linguist-generated=true -diff
