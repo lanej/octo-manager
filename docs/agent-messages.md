@@ -16,6 +16,7 @@ The frozen membership and original rendered text do not change. New membership o
 ## What merits delivery
 
 - Deliver failed checks, conflicts, change-requesting reviews, and new or edited review feedback that needs assessment.
+- Reassess unchanged review feedback when its PR head changes. A recipient who already received a completed assessment notice for that comment revision in the same role does not receive another automatic assessment notice for the new head. Newly edited feedback and recipients who have not received the finding remain eligible.
 - Deliver one completion notice per completed check-watch generation for an open PR, including successful checks. Completion requests merge assessment; it does not establish approvals, branch protection compliance or permission to merge.
 - Suppress a failed workflow summary already covered by a reported job failure, while retaining unrelated failures.
 - Deliver applicable participant, issue, submission and explicitly requested merge-workflow updates when they communicate a decision, outstanding work or relevant outcome.

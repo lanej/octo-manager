@@ -950,3 +950,107 @@ test("late historical receipt preserves cancellation during lookup", async () =>
     await f.close();
   }
 });
+
+test("new head reassesses unchanged feedback without notifying its receipted recipient again", async () => {
+  const f = await fixture();
+  const service = new AssessmentService(
+    f.store.assessments,
+    f.tracking,
+    "synthetic",
+    () =>
+      Promise.resolve({
+        disposition: "potential_change",
+        analysis: "Check the review finding.",
+      }),
+  );
+  try {
+    const observer = f.store.tracking
+      .subscribe(f.pr.id, {
+        harness: "codex",
+        endpoint: "local",
+        sessionId: "unread-observer",
+      })
+      .find((participant) => participant.agentId !== f.pr.ownerAgentId);
+    if (observer === undefined) throw new Error("Missing observer");
+
+    const notices = (agent: string) =>
+      f.store.tracking.inbox
+        .list(agent, 0, false, true)
+        .messages.filter(
+          (message) => message.notice?.kind === "review_feedback",
+        );
+    await service.tick();
+    const first = notices(f.pr.ownerAgentId)[0];
+    if (first === undefined) throw new Error("Missing original notice");
+    const received = f.store.tracking.acknowledgeMessage(
+      first.id,
+      f.pr.ownerAgentId,
+    );
+
+    const newerHead = "c".repeat(40);
+    f.store.tracking.observe(
+      f.pr.id,
+      { ...observation, observedAt: 2, headSha: newerHead },
+      f.config,
+    );
+    await service.tick();
+
+    expect(f.store.assessments.latest(f.action.id)?.input.headSha).toBe(
+      newerHead,
+    );
+    expect(f.store.assessments.latest(f.action.id)?.state).toBe("completed");
+    expect(f.store.tracking.action(f.action.id).progress.state).toBe(
+      ActionState.Open,
+    );
+    expect(notices(f.pr.ownerAgentId)).toHaveLength(0);
+    expect(
+      notices(observer.agentId).map((message) => message.notice?.head),
+    ).toEqual([newerHead]);
+    expect(f.store.tracking.inbox.get(first.id)?.acknowledgedAt).toBe(
+      received.acknowledgedAt,
+    );
+
+    f.store.tracking.observe(
+      f.pr.id,
+      { ...observation, observedAt: 3 },
+      f.config,
+    );
+    await service.tick();
+    expect(f.store.assessments.latest(f.action.id)?.input.headSha).toBe(head);
+    expect(f.store.assessments.latest(f.action.id)?.id).not.toBe(
+      first.notice?.assessmentId,
+    );
+    expect(notices(f.pr.ownerAgentId)).toHaveLength(0);
+
+    const feedback =
+      observation.feedback?.state === "complete"
+        ? observation.feedback.value[0]
+        : undefined;
+    if (feedback === undefined) throw new Error("Missing fixture feedback");
+    f.store.tracking.observe(
+      f.pr.id,
+      {
+        ...observation,
+        observedAt: 4,
+        headSha: head,
+        feedback: {
+          state: "complete",
+          value: [
+            {
+              ...feedback,
+              revision: "revision-2",
+              body: "The example needs another change.",
+            },
+          ],
+        },
+      },
+      f.config,
+    );
+    await service.tick();
+    expect(notices(f.pr.ownerAgentId)).toHaveLength(1);
+    expect(notices(f.pr.ownerAgentId)[0]?.actionId).not.toBe(f.action.id);
+  } finally {
+    await service.close();
+    await f.close();
+  }
+});
