@@ -1,10 +1,6 @@
 import type { AssessmentStore } from "../assessments/store.js";
 import type { NotificationRepository } from "../notifications/repository.js";
-import {
-  actionNotice,
-  renderNotice,
-  type SafeNotice,
-} from "../security/notifications.js";
+import { actionNotice, type SafeNotice } from "../security/notifications.js";
 import {
   SQLiteObservationRepository,
   type ObservationRepository,
@@ -513,10 +509,7 @@ export class TrackingStore {
               : ("observer" as const),
         };
         this.inbox.freezeNotice(id, notice);
-        this.inbox.record(
-          id,
-          renderNotice(this.inbox.notice(id) ?? notice, id, action.id),
-        );
+        this.inbox.record(id, this.inbox.render(id, notice));
         this.inbox.markReplacement(delivery.id, id);
       }
     });
@@ -552,10 +545,7 @@ export class TrackingStore {
             : ("observer" as const),
       };
       this.inbox.freezeNotice(id, notice);
-      this.inbox.record(
-        id,
-        renderNotice(this.inbox.notice(id) ?? notice, id, action.id),
-      );
+      this.inbox.record(id, this.inbox.render(id, notice));
       for (const old of this.deliveries()) {
         if (
           old.id === id ||

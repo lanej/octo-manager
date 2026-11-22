@@ -721,7 +721,8 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
       .list(observer.id, 0, false, true)
       .messages.find((m) => m.workflowPRId === pr.id);
     if (queuedReady === undefined) throw new Error("No observer Ready notice");
-    expect(queuedReady.body).toContain("Role: observer");
+    expect(queuedReady.body).toContain("octo-manager read");
+    expect(queuedReady.notice?.role).toBe("observer");
     expect(
       coordinator.merging.receipts.presentation(queuedReady).mergeTarget,
     ).toBeUndefined();

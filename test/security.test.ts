@@ -628,12 +628,12 @@ test("live capture and digest preserve collision-aware action, delivery and asse
       second = f.store.tracking.inbox.get(messages[1] ?? "");
     if (first === undefined || second === undefined)
       throw new Error("Missing captured notices");
-    expect(first.body).toContain("[octo-delivery:deadbeef1]");
-    expect(second.body).toContain("[octo-delivery:deadbeef2]");
-    expect(first.body).toContain("Action: facefeed1");
-    expect(second.body).toContain("Action: facefeed2");
-    expect(first.body).toContain("Assessment record: a55e55ed1");
-    expect(second.body).toContain("Assessment record: a55e55ed2");
+    expect(first.body).toContain("octo-manager read deadbeef1");
+    expect(second.body).toContain("octo-manager read deadbeef2");
+    expect(first.notice?.references?.action).toBe("facefeed1");
+    expect(second.notice?.references?.action).toBe("facefeed2");
+    expect(first.notice?.references?.assessment).toBe("a55e55ed1");
+    expect(second.notice?.references?.assessment).toBe("a55e55ed2");
     const digest = renderDigest(
       [first, second],
       f.directory,

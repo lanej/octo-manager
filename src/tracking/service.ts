@@ -1,4 +1,3 @@
-import { renderNotice } from "../security/notifications.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
 import {
@@ -398,14 +397,7 @@ export class TrackingService {
         const notice = this.store.noticeForAction(action, agent.id);
         this.store.transaction(() => {
           this.store.inbox.freezeNotice(d.id, notice);
-          this.store.inbox.record(
-            d.id,
-            renderNotice(
-              this.store.inbox.notice(d.id) ?? notice,
-              d.id,
-              action.id,
-            ),
-          );
+          this.store.inbox.record(d.id, this.store.inbox.render(d.id, notice));
         });
       }
     } catch (error) {

@@ -1,5 +1,5 @@
 import type { NotificationRepository } from "../notifications/repository.js";
-import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import type { SafeNotice } from "../security/notifications.js";
 import type { DatabaseSync } from "node:sqlite";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "./messages.js";
@@ -141,7 +141,7 @@ export class Subscriptions {
           pr.id,
           recipient.agentId,
           revision,
-          renderNotice(this.notices.notice(id) ?? notice, id, ""),
+          this.notices.render(id, notice),
           this.now(),
           null,
           this.now(),

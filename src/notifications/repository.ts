@@ -1,5 +1,5 @@
 import { allocateMessageId } from "./identifiers.js";
-import { renderNotice } from "../security/notifications.js";
+import { renderDirectNotice } from "./render.js";
 import { shortId } from "../tracking/identifiers.js";
 import { parseNotice, type SafeNotice } from "../security/notifications.js";
 import type { AgentMessage, NotificationSource } from "./message.js";
@@ -218,9 +218,13 @@ export class NotificationRepository {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
+    private directory: string,
   ) {}
   newMessageId(): string {
     return allocateMessageId(this.db);
+  }
+  render(id: string, notice: SafeNotice): string {
+    return renderDirectNotice(this.notice(id) ?? notice, id, this.directory);
   }
   recoverWorkflows(): void {
     const rows = this.db
@@ -265,7 +269,7 @@ export class NotificationRepository {
           nextInboxSequence(this.db),
           id,
           message.id,
-          renderNotice(this.notice(id) ?? notice, id, ""),
+          this.render(id, notice),
           this.now(),
           this.now(),
         );

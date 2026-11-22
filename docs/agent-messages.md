@@ -52,7 +52,7 @@ Queued readiness presentation can replace an ordinary completion title with the 
 | `Checks complete · merge prerequisites not met` | A prerequisite remains; inspect the typed item for the outstanding state. |
 | `Checks complete · Review feedback requires owner assessment` | Feedback requires owner assessment before readiness can be recorded. |
 
-### Direct-notice and inspection fields
+### Inspection fields
 
 | Field | Allowed content and interpretation |
 | --- | --- |
@@ -63,11 +63,11 @@ Queued readiness presentation can replace an ordinary completion title with the 
 | Waiting | `needs_clarification`, `blocked`, `awaiting_approval`, or `paused`; `none` is omitted from the rendered notice. |
 | Subject reference | A submission, merge-entry, issue or historical-reference identifier when relevant. A reference is an inspection handle, not an instruction. |
 | Instructions | Fixed coordinator guidance and operator-controlled task/repository instructions. GitHub feedback and assessor prose cannot populate this field. |
-| Inspection/receipt commands | A queued notification carries only `read ID`; compatible `message`, `ack` and `merge` operations share the public ID. A non-default state directory adds a safely quoted `--state` argument. |
+| Inspection/receipt commands | A notification carries only `read ID`; compatible `message`, `ack` and `merge` operations share the public ID. A non-default state directory adds a safely quoted `--state` argument. |
 
-Queued messages contain only linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; different PRs, commits or reasons use separate lines above the shared command. Assessment, role, subject identifiers and operator instructions belong in retrieval, not the queued body. Every selected original member remains in the receipt.
+Notifications contain only linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; different PRs, commits or reasons use separate lines above the shared command. Assessment, role, subject identifiers and operator instructions belong in retrieval, not the notification body. Every selected original member remains in the receipt.
 
-Direct-turn delivery retains its compatible per-item format: an `octo-delivery` marker, an `octo-notice:v1` marker and fixed fields. It can include the action and assessment-record references. Its ID is also accepted by the generic message inspection/receipt interface. Existing native hooks and history reconciliation still require the exact immutable body.
+Direct delivery starts a turn with one item in the same format. Historical direct notices retain their original markers and fields. Hooks and history reconciliation still require the exact immutable body.
 
 Operator instructions remain a separate source of authority. Task instructions are bounded and recipient/epoch-bound; retrieval groups identical instruction text with the original item IDs to which it applies. The enrolled checkout's `octo-manager.toml` is trusted operator policy; checking out an untrusted revision of that file crosses this assumption. See [repository policy](repository-policy.md) and [security](security.md).
 
@@ -89,7 +89,7 @@ Full inspection can include `untrustedBody` at both message and item level. Thes
 
 ## Generated message examples
 
-The [generated catalog](generated/agent-message-examples.md) renders every notice kind, all readiness states, confirmed merge, grouping and link variants, and compatible direct notices through the production renderers. Examples use synthetic identities; they do not establish live applicability or merge authority.
+The [generated catalog](generated/agent-message-examples.md) renders every notice kind, all readiness states, confirmed merge, grouping and link variants, and a single-item direct notice through the production renderers. Examples use synthetic identities; they do not establish live applicability or merge authority.
 
 Run `bun scripts/generate-message-docs.ts` to refresh it or `bun scripts/generate-message-docs.ts --check` to verify it. The normal generation and check commands include these steps; CI rejects stale examples. Explanatory policy in this guide remains authored.
 

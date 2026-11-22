@@ -1,6 +1,5 @@
 import {
   NoticeSubjectKind,
-  renderNotice,
   type SafeNotice,
 } from "../security/notifications.js";
 import { currentMergeChecks } from "./checks.js";
@@ -1080,7 +1079,7 @@ export class MergeStore {
             kind,
             subjectId,
             revision,
-            renderNotice(this.tracking.inbox.notice(id) ?? notice, id, ""),
+            this.tracking.inbox.render(id, notice),
             this.now(),
             null,
             this.now(),

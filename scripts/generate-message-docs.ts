@@ -6,11 +6,12 @@ import { IssueStage, Waiting } from "../src/issues/contracts.js";
 import { EntryState } from "../src/merging/contracts.js";
 import type { MessagePresentation } from "../src/merging/receipt-types.js";
 import type { AgentMessage } from "../src/notifications/message.js";
-import { renderDigest } from "../src/notifications/render.js";
+import {
+  renderDigest,
+  renderDirectNotice,
+} from "../src/notifications/render.js";
 import {
   NoticeSchema,
-  noticeView,
-  renderNotice,
   type SafeNotice,
 } from "../src/security/notifications.js";
 
@@ -160,23 +161,21 @@ export function messageDocumentation(): string {
     "### Custom state directory",
     quoted(queued([message("review_feedback")], "/var/lib/octo demo")),
     "## Direct delivery",
-    "<details>\n<summary>Show compatible direct notices</summary>",
-  ];
-  for (const kind of kinds) {
-    const row = message(kind);
-    if (row.notice === undefined) throw new Error("Missing notice fixture");
-    const title = noticeView(row.notice, row.actionId).title;
-    lines.push(
-      `### ${title}`,
-      quoted(renderNotice(row.notice, row.id, row.actionId)),
-    );
-  }
-  lines.push(
-    "</details>",
+    "A direct turn contains one item and uses the same heading and read command.",
+    quoted(
+      renderDirectNotice(
+        message("review_feedback").notice ?? {
+          version: 1,
+          kind: "review_feedback",
+          assessment: "not_required",
+        },
+        receipt,
+      ),
+    ),
     "## Reference",
     "[Delivery rules and evidence retrieval](../agent-messages.md)",
     "Regenerate with `bun scripts/generate-message-docs.ts`. The project check rejects stale output.",
-  );
+  ];
   return lines.join("\n\n") + "\n";
 }
 export async function updateMessageDocumentation(

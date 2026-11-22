@@ -62,7 +62,7 @@ test("busy threads wait, delivery acceptance is not acknowledgment, and origin s
           sends++;
           assert.equal(agent.sessionId, "owner");
           assert(message.includes("Merge conflict"));
-          assert(message.includes(`[octo-delivery:${shortId(id)}]`));
+          assert(message.includes(`octo-manager read ${shortId(id)}`));
           return { turnId: "turn" };
         },
       }),

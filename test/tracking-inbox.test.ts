@@ -221,7 +221,7 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
     const page = await client.listAgentMessages({ agentId: pr.ownerAgentId });
     const message = page.messages[0];
     assert(message !== undefined);
-    assert(message.body.includes(`[octo-delivery:${shortId(message.id)}]`));
+    assert(message.body.includes(`octo-manager read ${shortId(message.id)}`));
     assert.equal(
       (await client.getAction({ id: shortId(message.actionId) })).action?.id,
       message.actionId,

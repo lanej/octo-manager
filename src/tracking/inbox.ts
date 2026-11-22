@@ -1,4 +1,4 @@
-import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import type { SafeNotice } from "../security/notifications.js";
 import type { AgentMessage } from "../notifications/message.js";
 import type { NotificationRepository } from "../notifications/repository.js";
 export type { AgentMessage } from "../notifications/message.js";
@@ -28,6 +28,9 @@ export class AgentInbox {
   }
   get(id: string): AgentMessage | undefined {
     return this.repository.get(id);
+  }
+  render(id: string, notice: SafeNotice): string {
+    return this.repository.render(id, notice);
   }
   record(id: string, body: string): AgentMessage {
     return this.repository.record(id, body);
@@ -85,9 +88,7 @@ export class AgentInbox {
       ...message,
       notice,
       body:
-        stored === undefined
-          ? renderNotice(notice, message.id, message.actionId)
-          : message.body,
+        stored === undefined ? this.render(message.id, notice) : message.body,
     };
   }
 }

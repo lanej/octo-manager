@@ -17,6 +17,36 @@ function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
 
+const defaultDirectory = () => join(homedir(), ".local/state/octo-manager");
+
+function readFooter(id: string, directory: string): string {
+  const args =
+    resolve(directory) === defaultDirectory()
+      ? id
+      : `${id} --state ${quote(directory)}`;
+  const command = `octo-manager read ${args}`;
+  const fence = "`".repeat(
+    1 +
+      Math.max(
+        0,
+        ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
+      ),
+  );
+  return `${fence}${command}${fence}`;
+}
+
+function heading(view: NoticeView): string {
+  return `${renderReference(view.reference)} · ${view.title}`;
+}
+
+export function renderDirectNotice(
+  notice: SafeNotice,
+  id: string,
+  directory = defaultDirectory(),
+): string {
+  return `${heading(noticeView(notice, ""))}\n${readFooter(notice.references?.message ?? shortId(id), directory)}`;
+}
+
 export interface DigestGroup {
   reference: NoticeReference;
   entries: NoticeView[];
@@ -60,8 +90,8 @@ export function digestGroups(
 function renderGroup(group: DigestGroup): string {
   const lines = new Map<string, number>();
   for (const entry of group.entries) {
-    const heading = `${renderReference(entry.reference)} · ${entry.title}`;
-    lines.set(heading, (lines.get(heading) ?? 0) + 1);
+    const line = heading(entry);
+    lines.set(line, (lines.get(line) ?? 0) + 1);
   }
   return [...lines]
     .map(([heading, count]) =>
@@ -94,24 +124,12 @@ export function renderDigest(
     }
     return selected;
   }
-  function footer(): string {
-    const args = `${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
-    const command = `octo-manager read ${args}`;
-    const fence = "`".repeat(
-      1 +
-        Math.max(
-          0,
-          ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
-        ),
-    );
-    return `${fence}${command}${fence}`;
-  }
   function body(rows: AgentMessage[]): string {
     const groups = digestGroups(
       rows,
       (message) => presentations.get(message.id) ?? {},
     );
-    return `${groups.map(renderGroup).join("\n")}\n${footer()}`;
+    return `${groups.map(renderGroup).join("\n")}\n${readFooter(shortId(receiptId), directory)}`;
   }
   const selected: AgentMessage[] = [];
   for (const message of candidates) {
