@@ -10,3 +10,4 @@ python3 scripts/check-protobuf.py lint
 bun node_modules/@bufbuild/buf/bin/buf generate
 
 bun scripts/export-pr-schemas.ts
+bun scripts/generate-message-docs.ts
