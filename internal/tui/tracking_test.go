@@ -259,3 +259,38 @@ func TestTrackingHasAnOptInAutoMergeSwitch(t *testing.T) {
 		t.Fatal("switch keyboard action was not wired")
 	}
 }
+
+func TestTrackingShowsLinkedRevisionRangesAndNewestWatches(t *testing.T) {
+	t.Parallel()
+
+	m := model(t, theme.Dark)
+	m.snapshot.Jobs = nil
+	head, base := strings.Repeat("a", 40), strings.Repeat("b", 40)
+	pr := &v1.TrackedPullRequest{
+		Id: "pr", Url: "https://github.com/owner/repo/pull/1", Enabled: true,
+		Observation: &v1.TrackingObservation{HeadSha: head, BaseSha: base},
+	}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{
+		Prs: []*v1.TrackedPullRequest{pr},
+		CheckWatches: []*v1.CheckWatch{
+			{PrId: pr.GetId(), HeadSha: base, CreatedAtMs: 1},
+			{PrId: pr.GetId(), HeadSha: head, CreatedAtMs: 2},
+		},
+	}
+	m.ensureSelection()
+	m.Resize(layout.Size{Width: 132, Height: 40})
+
+	content := m.trackingContent()
+	if !strings.Contains(content, ansi.SetHyperlink("https://github.com/owner/repo/compare/"+base+".."+head)) {
+		t.Fatal("Tracking lost the clickable base-to-head range")
+	}
+
+	watches := strings.Split(ansi.Strip(m.checkWatchContent(pr)), "\n")
+	if len(watches) != 2 || !strings.Contains(watches[0], head[:8]) || !strings.Contains(watches[1], base[:8]) {
+		t.Fatalf("wanted one row per watch, newest first: %q", watches)
+	}
+
+	if strings.Contains(ansi.Strip(m.trackingMarkdown("**Review note**", 40)), "**") {
+		t.Fatal("Tracking left Markdown emphasis markers visible")
+	}
+}
