@@ -19,7 +19,12 @@ func (m *Model) checkWatchContent(pr *v1.TrackedPullRequest) string {
 			continue
 		}
 
-		parts = append(parts, text.Pill(stateName(watch.GetState().String(), "CHECK_WATCH_STATE_"), text.Neutral, m.theme, text.Normal)+" "+m.commitLink(pr.GetUrl(), watch.GetHeadSha())+" · "+m.field("Check coverage", observationStatus(watch.GetEvidence())))
+		state := stateName(watch.GetState().String(), "CHECK_WATCH_STATE_")
+		status := text.Pill(state, text.Neutral, m.theme, text.Normal)
+		commit := m.commitLink(pr.GetUrl(), watch.GetHeadSha())
+		coverage := m.field("Check coverage", observationStatus(watch.GetEvidence()))
+
+		parts = append(parts, status+" "+commit+" · "+coverage)
 	}
 
 	if len(parts) == 0 {
