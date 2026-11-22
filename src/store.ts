@@ -70,7 +70,7 @@ export class Store {
       migrateAssessments(this.db);
       this.assessments = new AssessmentStore(this.db, this.now);
       this.assessments.recoverInterrupted();
-      this.notificationRepository = new NotificationRepository(this.db, this.now);
+      this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
       }, this.notificationRepository, this.assessments);

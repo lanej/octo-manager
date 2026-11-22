@@ -4,3 +4,4 @@
 /src/agents/protocol/** linguist-generated=true -diff
 /schemas/*.schema.json linguist-generated=true -diff
 /proto/octomanager/v2/domain.proto linguist-generated=true -diff
+/docs/generated/** linguist-generated=true -diff

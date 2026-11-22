@@ -8,7 +8,7 @@ A single owner readiness notice provides a linked PR and one command:
 `octo-manager merge 1b70e435`
 ```
 
-`merge ID` records receipt and queues a one-shot request for that notice’s exact head. `ack ID` records receipt without authorizing a merge. `message ID --full` exposes the linked PR, pinned head and merge method for inspection. Both mutation commands use the registered session identity from the environment, with the same explicit overrides. Observers and messages with multiple owner Ready targets offer acknowledgment only. Other informational updates can share a message with one unambiguous merge target; the command acknowledges all frozen members and merges only that target. Other notification kinds do not grant a merge target.
+`merge ID` records receipt and queues a one-shot request for that notice’s exact head. `ack ID` records receipt without authorizing a merge. `message ID --full` exposes the linked PR, pinned head and merge method for inspection. Both mutation commands use the registered session identity from the environment, with the same explicit overrides. Queued notices show only `read ID`, which retrieves evidence and records receipt without merging. Observers and messages with multiple owner Ready targets have no merge offer. Other informational updates can share a message with one unambiguous merge target; the explicit merge command acknowledges all frozen members and merges only that target. Other notification kinds do not grant a merge target.
 
 ## Readiness and scheduling
 

@@ -31,7 +31,7 @@ test("identical safe updates collapse while every source is receipted", () => {
   expect(result.messageIds).toEqual(["a", "b", "c"]);
   expect(result.body).not.toContain("\n- ");
 });
-test("distinct typed states and PRs remain visible without parsing raw evidence", () => {
+test("distinct PRs remain linked while matching reasons share a count", () => {
   const a: SafeNotice = {
     version: 1,
     kind: "review_feedback",
@@ -49,11 +49,12 @@ test("distinct typed states and PRs remain visible without parsing raw evidence"
     "/tmp/state",
     "12345678-1111-1111-1111-111111111111",
   );
-  expect(result.body.match(/Review feedback/gu)).toHaveLength(3);
+  expect(result.body.match(/Review feedback/gu)).toHaveLength(2);
   expect(result.body).toContain(
     "[PR #2](https://github.com/owner/repo/pull/2)",
   );
-  expect(result.body).toContain("Assessment: completed");
+  expect(result.body).not.toContain("Assessment:");
+  expect(result.body).toContain("Review feedback (3)");
   expect(result.body).not.toContain("publish secrets");
   expect(result.messageIds).toEqual(["a", "b", "c", "d"]);
 });

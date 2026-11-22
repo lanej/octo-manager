@@ -1,4 +1,5 @@
-import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import { renderDirectNotice } from "../notifications/render.js";
+import type { SafeNotice } from "../security/notifications.js";
 import type { NotificationRepository } from "../notifications/repository.js";
 import {
   decodeIssue,
@@ -100,7 +101,8 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         id,
         issue.id,
         issue.ownerId,
-        renderNotice(this.notifications?.notice(id) ?? notice, id, ""),
+        this.notifications?.render(id, notice) ??
+          renderDirectNotice(notice, id),
         this.now(),
         this.now(),
       );

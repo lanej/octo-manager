@@ -93,14 +93,15 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
       ).messages;
       if (
         unread.some((item) => item.actionId !== "") &&
-        slots.get(observer.agentId)?.body?.includes("Action:") === true
+        slots.get(observer.agentId)?.body?.includes("Merge conflict") === true
       )
         break;
       await Bun.sleep(20);
     }
     expect(slots.get(observer.agentId)?.body).not.toContain("Implementation");
     expect(slots.get(observer.agentId)?.body).not.toContain("Review");
-    expect(slots.get(observer.agentId)?.body).toContain("Role: observer");
+    expect(slots.get(observer.agentId)?.body).not.toContain("Role:");
+    expect(slots.get(observer.agentId)?.body).toContain("octo-manager read");
     const digest = coordinator.store.digests.active(observer.agentId);
     if (digest === undefined) throw new Error("Missing observer digest");
     for (let index = 0; index < 200; index++)

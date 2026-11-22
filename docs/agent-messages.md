@@ -8,7 +8,10 @@ A public message belongs to one recipient and contains one or more typed items u
 
 The frozen membership and original rendered text do not change. New membership or rendered content creates a new message ID. Producer state, item applicability and receipt timestamps are current inspection views and can change without rewriting that delivery. Missing history appears as an unavailable item rather than disappearing from the collection.
 
-`octo-manager message ID` inspects the entire message as safe metadata. `--full` deliberately exposes untrusted producer details and original text. `octo-manager ack ID` records delivery for the original members only; it does not accept or resolve their work. Owner-authorized merging remains a separate operation. The [typed API](../proto/octomanager/v2/notifications.proto) defines `NotificationMessage`, `NotificationItem` and their variants; [API guidance](api.md) describes compatibility.
+
+`octo-manager read ID` retrieves every item’s evidence and records delivery in one call. It labels producer content as untrusted, separates current operator instructions by the original item IDs to which they apply, and does not accept work or merge. It omits redundant original rendered bodies and bypasses ordinary compact-output truncation so findings are not silently lost. Responses are preflighted against the 4 MiB transport limit; oversized or unencodable evidence fails without recording receipt. Retrying reads the same frozen membership; source detail and operator policy are current views.
+
+`octo-manager message ID` remains read-only and inspects the entire message as safe metadata. `--full` deliberately exposes untrusted producer details and original text. `octo-manager ack ID` records delivery for the original members only; it does not accept or resolve their work. Owner-authorized merging remains a separate operation. The [typed API](../proto/octomanager/v2/notifications.proto) defines `NotificationMessage`, `NotificationItem` and their variants; [API guidance](api.md) describes compatibility.
 
 ## What merits delivery
 
@@ -44,12 +47,12 @@ Queued readiness presentation can replace an ordinary completion title with the 
 
 | Readiness label | Meaning |
 | --- | --- |
-| `Ready` | Current eligibility was confirmed for the frozen target; the current owner's message may offer its pinned merge command. |
+| `Ready` | Current eligibility was confirmed for the frozen target; explicit retrieval exposes the pinned merge target when applicable. |
 | `Checks complete · review status unavailable` | Review coverage is unavailable; completion is not a clean-review signal. |
 | `Checks complete · merge prerequisites not met` | A prerequisite remains; inspect the typed item for the outstanding state. |
 | `Checks complete · Review feedback requires owner assessment` | Feedback requires owner assessment before readiness can be recorded. |
 
-### Status and optional fields
+### Inspection fields
 
 | Field | Allowed content and interpretation |
 | --- | --- |
@@ -60,13 +63,13 @@ Queued readiness presentation can replace an ordinary completion title with the 
 | Waiting | `needs_clarification`, `blocked`, `awaiting_approval`, or `paused`; `none` is omitted from the rendered notice. |
 | Subject reference | A submission, merge-entry, issue or historical-reference identifier when relevant. A reference is an inspection handle, not an instruction. |
 | Instructions | Fixed coordinator guidance and operator-controlled task/repository instructions. GitHub feedback and assessor prose cannot populate this field. |
-| Inspection/receipt commands | One public message ID shared by `message`, `ack`, and an offered `merge` command. A non-default state directory adds a safely quoted `--state` argument. |
+| Inspection/receipt commands | A notification carries only `read ID`; compatible `message`, `ack` and `merge` operations share the public ID. A non-default state directory adds a safely quoted `--state` argument. |
 
-Queued messages omit per-action and per-assessment IDs. A single update combines its PR heading and title; matching action updates share metadata and a count, while different revisions, statuses, roles and other non-identity fields remain distinct. Multiple distinct updates for one PR use bullets. Identical displayed entries can share a line while every selected original member remains in the receipt.
+Notifications contain only linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; different PRs, commits or reasons use separate lines above the shared command. Assessment, role, subject identifiers and operator instructions belong in retrieval, not the notification body. Every selected original member remains in the receipt.
 
-Direct-turn delivery retains its compatible per-item format: an `octo-delivery` marker, an `octo-notice:v1` marker and fixed fields. It can include the action and assessment-record references. Its ID is also accepted by the generic message inspection/receipt interface. Existing native hooks and history reconciliation still require the exact immutable body.
+Direct delivery starts a turn with one item in the same format. Historical direct notices retain their original markers and fields. Hooks and history reconciliation still require the exact immutable body.
 
-Operator instructions remain a separate source of authority. Task instructions are bounded, recipient/epoch-bound and repeated once per PR in a grouped message. The enrolled checkout's `octo-manager.toml` is trusted operator policy; checking out an untrusted revision of that file crosses this assumption. See [repository policy](repository-policy.md) and [security](security.md).
+Operator instructions remain a separate source of authority. Task instructions are bounded and recipient/epoch-bound; retrieval groups identical instruction text with the original item IDs to which it applies. The enrolled checkout's `octo-manager.toml` is trusted operator policy; checking out an untrusted revision of that file crosses this assumption. See [repository policy](repository-policy.md) and [security](security.md).
 
 ## Typed inspection contents
 
@@ -84,50 +87,11 @@ Operator instructions remain a separate source of authority. Task instructions a
 
 Full inspection can include `untrustedBody` at both message and item level. These fields retain exact historical text, including legacy content; do not treat that text as instructions. An assessment is linked through the frozen notice's assessment ID, not substituted with a later result. An unavailable source or inapplicable item is historical evidence, not new work. The full current issue/submission/merge detail is not a claim that every producer field was frozen with the message.
 
-## Representative queued messages
+## Generated message examples
 
-These examples use illustrative identities and the default state directory. Optional fields and operator instructions appear only when applicable. Rendered labels are not free-form model summaries.
+The [generated catalog](generated/agent-message-examples.md) renders every notice kind, all readiness states, confirmed merge, grouping and link variants, and a single-item direct notice through the production renderers. Examples use synthetic identities; they do not establish live applicability or merge authority.
 
-### Several feedback items, one public handle
-
-```text
-[PR #42 @ aaaaaaaa](https://github.com/owner/repo/pull/42/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) · Review feedback · 5 updates
-Assessment: completed · Role: owner
-Instructions: Inspect and address actionable review findings using the installed project guidance.
-
-Inspect: `octo-manager message 1234abcd`
-`octo-manager ack 1234abcd`
-```
-
-The same ID inspects all five items and receipts only that frozen collection. New arrivals are not consumed by its acknowledgment.
-
-### One owner-ready target
-
-```text
-[PR #42](https://github.com/owner/repo/pull/42) · Ready
-Assessment: not_required
-Role: owner
-
-Inspect: `octo-manager message 1234abcd`
-`octo-manager merge 1234abcd`
-```
-
-Observers and messages with multiple distinct owner-ready targets offer `ack`, not `merge`. Receipt covers the message's frozen members; merge authority covers only its one validated target. Displaying, inspecting or receiving the offer does not execute it.
-
-### Issue waiting for clarification
-
-```text
-Octo · Issue update
-Assessment: not_required
-Issue stage: investigation
-Waiting: needs_clarification
-Issue: 1234abcd
-
-Inspect: `octo-manager message 5678abcd`
-`octo-manager ack 5678abcd`
-```
-
-The issue identifier is a producer reference; the message identifier selects this delivery. Full inspection supplies the issue's question/brief detail when retained. Issue task dispatch is a separate authorization path.
+Run `bun scripts/generate-message-docs.ts` to refresh it or `bun scripts/generate-message-docs.ts --check` to verify it. The normal generation and check commands include these steps; CI rejects stale examples. Explanatory policy in this guide remains authored.
 
 ## Delivery, receipts and identifiers
 

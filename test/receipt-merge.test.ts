@@ -204,11 +204,11 @@ async function fixture(initialReview: string | null = null) {
     },
   };
 }
-test("Ready offers one merge command; hook receipt alone cannot merge; explicit CLI request survives restart and replays once", async () => {
+test("Ready offers one read command; hook receipt alone cannot merge; explicit CLI request survives restart and replays once", async () => {
   const f = await fixture();
   try {
     expect(f.notice.body).toContain(`[PR #38](${url}) · Ready`);
-    expect(f.notice.body).toContain(`\`octo-manager merge ${f.id}`);
+    expect(f.notice.body).toContain(`\`octo-manager read ${f.id}`);
     expect(f.notice.body).not.toContain("Ack:");
     const before = f.reads;
     await f.coordinator.merging.tick();
@@ -593,7 +593,7 @@ test("an older offer receipt cannot consume a newer policy-bound Ready decision"
     await f.close();
   }
 });
-test("a collapsed message offers merge only for one unambiguous Ready PR", async () => {
+test("a collapsed message keeps one read command and only one unambiguous merge target", async () => {
   const f = await fixture();
   try {
     const message = f.coordinator.store.tracking.inbox.get(
@@ -615,7 +615,8 @@ test("a collapsed message offers merge only for one unambiguous Ready PR", async
       (row) =>
         row.id === message.id ? { summary: "Ready", mergeTarget: target } : {},
     );
-    expect(single.body).toContain("octo-manager merge 12345678");
+    expect(single.body).toContain("octo-manager read 12345678");
+    expect(single.mergeTarget).toEqual(target);
     expect(single.messageIds).toHaveLength(2);
     const multiple = renderDigest(
       [message, extra],
@@ -627,7 +628,7 @@ test("a collapsed message offers merge only for one unambiguous Ready PR", async
           row.id === message.id ? target : { ...target, prId: "another-pr" },
       }),
     );
-    expect(multiple.body).toContain("octo-manager ack 12345678");
+    expect(multiple.body).toContain("octo-manager read 12345678");
     expect(multiple.mergeTarget).toBeUndefined();
   } finally {
     await f.close();
@@ -720,7 +721,8 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
       .list(observer.id, 0, false, true)
       .messages.find((m) => m.workflowPRId === pr.id);
     if (queuedReady === undefined) throw new Error("No observer Ready notice");
-    expect(queuedReady.body).toContain("Role: observer");
+    expect(queuedReady.body).toContain("octo-manager read");
+    expect(queuedReady.notice?.role).toBe("observer");
     expect(
       coordinator.merging.receipts.presentation(queuedReady).mergeTarget,
     ).toBeUndefined();
@@ -1086,7 +1088,7 @@ test("caller instructions survive restart and accompany only its PR updates and 
       "12345678",
       f.coordinator.merging.receipts.presentation,
     ).body;
-    expect(body.split(instructions)).toHaveLength(2);
+    expect(body).not.toContain(instructions);
     f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head);
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -1098,7 +1100,17 @@ test("caller instructions survive restart and accompany only its PR updates and 
       digest.revision,
     ).body;
     expect(delivered).toContain("GitHub confirmed merge");
-    expect(delivered).toContain(`Instructions: ${instructions}`);
+    expect(delivered).not.toContain(instructions);
+    const read = await schedulerClient(f.directory).readNotificationMessage({
+      id: f.coordinator.store.digests.version(digest.id, digest.revision)
+        .dispatchId,
+      agentId: f.pr.ownerAgentId,
+    });
+    expect(
+      read.instructions.some((item) =>
+        item.instructions.includes(instructions),
+      ),
+    ).toBe(true);
   } finally {
     await f.close();
   }
@@ -1289,9 +1301,17 @@ test("delivery receipt and working state cannot authorize feedback; explicit CLI
     const blocked = await refreshedReceipt(f);
     expect(blocked.body).toContain("Review feedback requires owner assessment");
     expect(blocked.body).not.toContain("octo-manager merge");
-    expect(blocked.body).toContain(
-      `octo-manager pr ready ${url} --head ${head}`,
-    );
+    const read = await schedulerClient(f.directory).readNotificationMessage({
+      id: blocked.id,
+      agentId: f.pr.ownerAgentId,
+    });
+    expect(
+      read.instructions.some((item) =>
+        item.instructions.includes(
+          `octo-manager pr ready ${url} --head ${head}`,
+        ),
+      ),
+    ).toBe(true);
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     await ownerAssessment(f);
     const assessed = f.coordinator.store.merging.entry(url);
@@ -1302,7 +1322,15 @@ test("delivery receipt and working state cannot authorize feedback; explicit CLI
     await f.reopen();
     const ready = await refreshedReceipt(f);
     expect(ready.body).toContain("· Ready");
-    expect(ready.body).toContain("octo-manager merge");
+    expect(ready.body).toContain("octo-manager read");
+    expect(
+      (
+        await schedulerClient(f.directory).getNotificationMessage({
+          id: ready.id,
+          full: true,
+        })
+      ).message?.mergeTarget,
+    ).toBeDefined();
     const result = await schedulerClient(f.directory).mergeAgentMessage({
       receiptId: ready.id,
       agentTarget: owner,
@@ -1328,7 +1356,15 @@ test("edited feedback invalidates owner assessment and its previous Ready receip
     f.observe();
     await ownerAssessment(f);
     const ready = await refreshedReceipt(f);
-    expect(ready.body).toContain("octo-manager merge");
+    expect(ready.body).toContain("octo-manager read");
+    expect(
+      (
+        await schedulerClient(f.directory).getNotificationMessage({
+          id: ready.id,
+          full: true,
+        })
+      ).message?.mergeTarget,
+    ).toBeDefined();
     f.current.observation.feedback = {
       state: "complete",
       value: [reviewFeedback("Also validate the persisted review states")],

@@ -1,5 +1,5 @@
 import type { NotificationRepository } from "../notifications/repository.js";
-import { renderNotice, type SafeNotice } from "../security/notifications.js";
+import type { SafeNotice } from "../security/notifications.js";
 import { parseNotice, type Notice } from "./notifications.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -307,7 +307,7 @@ export class SubmissionStore {
         id,
         value.id,
         agentId,
-        renderNotice(this.noticesRepository.notice(id) ?? notice, id, ""),
+        this.noticesRepository.render(id, notice),
         this.now(),
         this.now(),
       );

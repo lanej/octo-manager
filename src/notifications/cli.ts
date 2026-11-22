@@ -1,5 +1,8 @@
 import { toJson } from "@bufbuild/protobuf";
-import { NotificationMessageSchema } from "../gen/octomanager/v2/notifications_pb.js";
+import {
+  ReadNotificationMessageResponseSchema,
+  NotificationMessageSchema,
+} from "../gen/octomanager/v2/notifications_pb.js";
 import { checked } from "../merging/contracts.js";
 import { ReceiptTargetSchema } from "../merging/receipt-types.js";
 import { unwire, record } from "../api/codec.js";
@@ -22,6 +25,7 @@ export async function notificationsCLI(
   const { values, positionals } = parsed,
     [command, id] = positionals;
   if (
+    command !== "read" &&
     command !== "merge" &&
     command !== "ack" &&
     command !== "message" &&
@@ -37,7 +41,7 @@ export async function notificationsCLI(
         join(homedir(), ".local/state/octo-manager"),
     ),
     client = schedulerClient(directory);
-  if (command === "ack" || command === "merge") {
+  if (command === "ack" || command === "merge" || command === "read") {
     if (id === undefined || id === "")
       throw new Error(`${command} requires a message receipt ID`);
     const environmentAgent = process.env["OCTO_MANAGER_AGENT_ID"]?.trim();
@@ -64,6 +68,16 @@ export async function notificationsCLI(
           }
         : { agentId }),
     };
+    if (command === "read") {
+      const response = await client.readNotificationMessage({ id, ...request });
+      if (response.message === undefined)
+        throw new Error("Missing message read result");
+      printResult(
+        { ...parsed, output: { ...parsed.output, full: true } },
+        record(toJson(ReadNotificationMessageResponseSchema, response)),
+      );
+      return true;
+    }
     if (command === "merge") {
       const response = await client.mergeAgentMessage({
         receiptId: id,

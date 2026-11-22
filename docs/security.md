@@ -53,14 +53,11 @@ Assume the assessor follows the attack completely and returns a valid result:
 }
 ```
 
-This result passes structural validation. It still grants no authority. The owner receives a fixed-field completion notice like the following; identifiers are illustrative and transport markers are omitted:
+This result passes structural validation. It still grants no authority. The owner receives a compact notice with illustrative identifiers.
 
 ```text
 [PR #42 @ aaaaaaaa](https://github.com/owner/repo/pull/42/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) · Review feedback
-Assessment: completed
-Role: owner
-Assessment record: 1234abcd
-Action: abcdef12
+`octo-manager read 1234abcd`
 ```
 
 The attacker URL, credential request, proposed code change and misleading disposition are absent. The feedback action remains open. “Completed” means an assessment result was recorded, not that the recommendation is correct or the feedback is resolved. If the worker instead sends a tool request, the parent rejects the message and the assessment becomes unavailable; there is no assessment tool dispatcher that can execute the request.
@@ -79,7 +76,7 @@ A [before-and-after replay](security-before-after.md) compares the preserved pre
 
 ## Automatic notifications
 
-Automatic direct messages, queued digests, inbox recovery and receipt summaries use a typed coordinator-owned projection. Action notices contain the action kind, enrolled canonical PR reference pinned to its validated commit when available, recipient role and fixed assessment status. Compatible direct notices also include action and assessment references; queued messages omit those per-item IDs and provide one public inspection/receipt handle. The [message content catalog](agent-messages.md) lists the labels, typed item sources and inspection fields. They omit external prose, author names, check names, paths, arbitrary evidence URLs, free-form diagnostics and model analysis. Participant, submission, issue and merge workflow notices also use fixed fields. Operator-controlled task and local repository instructions can accompany queued notices under existing policy; GitHub text cannot populate those instructions. Issue task dispatch is a separate existing authorization path and is not isolated by this change. Full evidence remains stored for explicit inspection; a receipt does not accept or resolve an action.
+Automatic direct messages, queued digests, inbox recovery and receipt summaries use a typed coordinator-owned projection. Action notices contain the action kind, enrolled canonical PR reference pinned to its validated commit when available, recipient role and fixed assessment status. New direct and queued messages show linked fixed reasons, optional counts and one `read ID` command. Historical direct notices retain their original action and assessment references. Explicit reading returns labelled untrusted evidence and current scoped operator instructions while recording receipt; it grants no work or merge authority. The [message content catalog](agent-messages.md) lists the labels, typed item sources and inspection fields. Automatic deliveries omit external prose, author names, check names, paths, arbitrary evidence URLs, free-form diagnostics and model analysis. Participant, submission, issue and merge workflow notices also use fixed fields. Operator-controlled task and local repository instructions accompany explicit retrieval under existing policy; GitHub text cannot populate those instructions. Issue task dispatch is a separate existing authorization path and is not isolated by this change. Full evidence remains stored for explicit inspection; a receipt does not accept or resolve an action.
 
 `octo-manager action show ID` returns safe action metadata and the latest assessment metadata. `octo-manager assessment show ID` inspects assessment metadata. Add `--full` to either read-only command to inspect explicitly named untrusted fields, including the raw feedback and assessment analysis. `octo-manager messages list --agent-id ID --full` can inspect historical immutable bodies. Explicitly fetching evidence into a powerful agent session reintroduces prompt-injection exposure; the projection does not make that evidence safe.
 

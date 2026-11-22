@@ -146,7 +146,7 @@ The quality compiler includes source, tests, and generation scripts. It uses Bun
 
 Rebase PRs with tools-first conflict repair using the [rebase repair guide](docs/rebase-repairs.md).
 
-Agent notifications follow the [agent message standard](docs/agent-messages.md): a content catalog, typed item possibilities, representative rendered messages and receipt/authority rules, with untrusted evidence available only through deliberate inspection. The [security guide](docs/security.md) includes a practical threat model and worked malicious-review example, and separates bounded assessment from execution authority.
+Agent notifications follow the [agent message standard](docs/agent-messages.md): a content catalog, typed item possibilities, representative rendered messages and receipt/authority rules, with untrusted evidence available only through deliberate inspection. The [generated message examples](docs/generated/agent-message-examples.md) come from the production renderers and are checked for freshness in CI. The [security guide](docs/security.md) includes a practical threat model and worked malicious-review example, and separates bounded assessment from execution authority.
 
 ## PR submission
 

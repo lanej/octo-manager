@@ -394,6 +394,12 @@ test("native PR attachment survives offline intake, preserves ownership and reco
     await until(() => store.inbox.list(pr.ownerAgentId).messages.length === 1);
     const incoming = store.inbox.list(pr.ownerAgentId).messages[0];
     assert(incoming !== undefined);
+    assert.equal(incoming.body.split("\n").length, 2);
+    assert(
+      incoming.body.includes(
+        `octo-manager read ${shortId(incoming.id)} --state `,
+      ),
+    );
     const altered = await hook(directory, {
       session_id: "owner",
       cwd: "/work/feature",

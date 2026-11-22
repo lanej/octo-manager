@@ -201,8 +201,8 @@ export async function codexHook(
       ? messageReceiptId(prompt)
       : undefined;
   if (receiptId !== undefined && typeof prompt === "string")
-    await client.acknowledgeAgentDigest(
-      { receiptId, agentId, expectedBody: prompt },
+    await client.acknowledgeNotificationMessage(
+      { id: receiptId, agentId, expectedBody: prompt },
       deadline,
     );
   const digestMarker =

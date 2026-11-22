@@ -74,7 +74,7 @@ function command(coordinator: Coordinator, value: object): unknown {
 }
 export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter): void {
   const tracking=coordinator.tracking;
-  const messages=new Messages(coordinator.store,coordinator.digests);
+  const messages=new Messages(coordinator.store,coordinator.digests,coordinator.merging.receipts.presentation);
   const owner=(value?:{harness:string;endpoint:string;sessionId:string;label?:string|undefined})=>{
     if(!value)throw new ConnectError("Owner is required",Code.InvalidArgument);
     return {harness:value.harness,endpoint:value.endpoint,sessionId:value.sessionId,...(value.label===undefined?{}:{label:value.label})};
@@ -98,6 +98,11 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       if(target===undefined)return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,state:"blocked",reason:"This message has no merge target"})};
       const result=coordinator.store.merging.transaction(()=>coordinator.merging.receipts.request(target,version.dispatchId,recipient));
       return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,...result})};
+    });},
+    readNotificationMessage(r) {return trackingOperation(()=>{
+      if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
+      const agentId=r.agentTarget===undefined ? coordinator.store.merging.actor(r.agentId) : tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
+      return messages.read(r.id,agentId);
     });},
     getNotificationMessage(r) {return trackingOperation(()=>({message:messages.get(r.id,r.full)}));},
     acknowledgeNotificationMessage(r) {return trackingOperation(()=>{
