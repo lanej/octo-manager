@@ -65,6 +65,7 @@ export const commands: CommandSpec[] = [
       "--base <branch>",
       "--draft",
       "--track",
+      "--no-track",
       "--agent-id <id>",
       "--thread-id <id>",
       "--harness <name>",

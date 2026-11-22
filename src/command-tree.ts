@@ -36,6 +36,7 @@ const publication = [
   "--base <branch>",
   "--draft",
   "--track",
+  "--no-track",
   ...identity,
   ...request,
 ];
