@@ -4,6 +4,7 @@ import type { AgentMessage } from "../tracking/inbox.js";
 import type { TrackingService } from "../tracking/service.js";
 import {
   ActionState,
+  TrackingHarness,
   type Action,
   type PRObservation,
   type TrackedPR,
@@ -216,17 +217,18 @@ export class ReceiptMerges {
           (authorized.autoMerge || authorized.receiptId !== undefined))
       )
         continue;
-      const queueRecipients = this.tracking.store.subscriptions
+      const readinessRecipients = this.tracking.store.subscriptions
         .list(pr)
         .filter((participant) => {
           const agent = this.tracking.store.agent(participant.agentId);
           return (
+            Object.is(agent.harness, TrackingHarness.Pi) ||
             this.tracking.config.endpoints[agent.endpoint]?.delivery === "queue"
           );
         })
         .map((participant) => participant.agentId)
         .sort();
-      if (queueRecipients.length === 0) continue;
+      if (readinessRecipients.length === 0) continue;
       const selected = this.tracking.store
         .actions()
         .filter((action) => action.prId === pr.id)
@@ -258,7 +260,8 @@ export class ReceiptMerges {
         old.target.context === context &&
         old.policy === policyKey &&
         (old.inspectionError !== undefined ||
-          JSON.stringify(old.recipients) === JSON.stringify(queueRecipients)) &&
+          JSON.stringify(old.recipients) ===
+            JSON.stringify(readinessRecipients)) &&
         old.retryAt > this.now()
       )
         continue;
@@ -336,7 +339,7 @@ export class ReceiptMerges {
                 target,
                 policy: policyKey,
                 generation: (old?.generation ?? 0) + 1,
-                recipients: queueRecipients,
+                recipients: readinessRecipients,
                 eligible: false,
                 reason: "readiness unavailable",
               }),
@@ -379,7 +382,7 @@ export class ReceiptMerges {
         const number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
         if (
           changed ||
-          JSON.stringify(old.recipients) !== JSON.stringify(queueRecipients)
+          JSON.stringify(old.recipients) !== JSON.stringify(readinessRecipients)
         ) {
           this.store.notice(
             pr,
@@ -388,7 +391,7 @@ export class ReceiptMerges {
             `${String(generation)}:${semantic}`,
             `[PR #${number}](${pr.url}) · ${eligible ? "Ready" : `Checks complete · ${publicReason(reason)}`}`,
             true,
-            queueRecipients,
+            readinessRecipients,
           );
         }
         for (const action of this.tracking.store
@@ -397,7 +400,7 @@ export class ReceiptMerges {
           if (this.candidate(action) !== undefined)
             this.tracking.store.replaceCompletionNotifications(
               action.id,
-              queueRecipients,
+              readinessRecipients,
             );
         }
         this.store.saveNoticeReadiness({
@@ -405,7 +408,7 @@ export class ReceiptMerges {
           policy: policyKey,
           checkedAt: this.now(),
           generation,
-          recipients: queueRecipients,
+          recipients: readinessRecipients,
           retryAt: this.now() + 300000,
           eligible,
           reason,
@@ -413,6 +416,53 @@ export class ReceiptMerges {
       });
       return; // One optional eligibility inspection per scheduler tick.
     }
+  }
+  inboxReadyHead(message: AgentMessage): string | undefined {
+    if (
+      message.workflowPRId === undefined ||
+      this.store.readinessAction(message.id) === undefined ||
+      !Object.is(
+        this.tracking.store.agent(message.recipientAgentId).harness,
+        TrackingHarness.Pi,
+      )
+    )
+      return undefined;
+    return this.presentation(message).mergeTarget?.head;
+  }
+  requestFromInbox(id: string, agentId: string, url: string, head: string) {
+    const agent = this.tracking.store.agent(agentId);
+    const pr = this.tracking.store.pr(url);
+    const message = this.tracking.store.inbox.get(id);
+    if (
+      !Object.is(agent.harness, TrackingHarness.Pi) ||
+      pr.ownerAgentId !== agentId ||
+      message?.recipientAgentId !== agentId ||
+      message.workflowPRId !== pr.id ||
+      this.store.readinessAction(message.id) === undefined ||
+      !/^[a-f0-9]{40}([a-f0-9]{24})?$/u.test(head)
+    )
+      throw new Error("Invalid Pi merge receipt or ownership");
+
+    const dispatchId = `pi-inbox:${message.id}:${head}`;
+    const previous = this.store.receiptRequest(dispatchId);
+    if (previous !== undefined) {
+      if (!previous.current)
+        return {
+          state: "blocked",
+          pr: url,
+          reason: "A newer owner decision superseded this merge request",
+        };
+      return this.result(previous.entry);
+    }
+    const target = this.presentation(message).mergeTarget;
+    if (target?.prId !== pr.id || target.head !== head)
+      return {
+        state: "blocked",
+        pr: url,
+        reason: "This Pi notice does not authorize the expected head",
+      };
+    this.tracking.store.acknowledgeMessageInside(message.id, agentId);
+    return this.request(target, dispatchId, agentId);
   }
   request(target: ReceiptTarget, dispatchId: string, agentId: string) {
     const previous = this.store.receiptRequest(dispatchId);

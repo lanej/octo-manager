@@ -532,6 +532,25 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     expect(JSON.stringify(unsupported.value)).toContain("tracking_harness");
     expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
     expect(existsSync(called)).toBe(false);
+    const moved = await run(
+      [
+        "submit-pr",
+        "--title",
+        "feat: explain",
+        "--body-file",
+        description,
+        "--base",
+        "main",
+        "--expected-head",
+        "a".repeat(40),
+      ],
+      h.root,
+      h.directory,
+      env,
+    );
+    expect(moved.code).toBe(1);
+    expect(JSON.stringify(moved.value)).toContain("head_changed");
+    expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
     const accepted = await run(
       [
         "submit-pr",
@@ -584,6 +603,19 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
       ],
       ["opt-out", ["--no-track"], "current-session", undefined],
       ["other-harness", ["--harness", "claude"], "current-session", undefined],
+      ["pi-opt-in-only", ["--harness", "pi"], "current-session", undefined],
+      [
+        "explicit-pi",
+        [
+          "--track",
+          "--harness",
+          "pi",
+          "--thread-id",
+          "00000000-0000-4000-8000-000000000211",
+        ],
+        "current-session",
+        "00000000-0000-4000-8000-000000000211",
+      ],
     ] as const) {
       const response = await run(
         [...publish, ...flags, "--request-id", request],
@@ -598,7 +630,11 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
       expect(item.input.track).toEqual(
         expected === undefined
           ? undefined
-          : { sessionId: expected, endpoint: "local" },
+          : {
+              sessionId: expected,
+              endpoint: "local",
+              ...(request === "explicit-pi" ? { harness: "pi" } : {}),
+            },
       );
       if (expected !== undefined)
         expect(response.value).toMatchObject({ tracking: "pending" });

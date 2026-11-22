@@ -1476,3 +1476,153 @@ test("a readiness-only receipt inspects its underlying action through the one pu
     await f.close();
   }
 });
+
+test("local Pi pulls a Ready notice and queues only its verified head through the CLI", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-pi-merge-"));
+  const config = defaultTrackingConfig();
+  config.endpoints["local"] = { delivery: "queue", socket: "/controlled" };
+  const pi = {
+    harness: "pi",
+    endpoint: "local",
+    sessionId: "00000000-0000-4000-8000-000000000017",
+  };
+  const state = snapshot();
+  let writes = 0;
+  let queueConnections = 0;
+  const coordinator = new Coordinator(directory, {
+    now: () => 1000,
+    trackingConfig: config,
+    trackingOptions: {
+      read: () => Promise.resolve(structuredClone(state.observation)),
+    },
+    mergeOptions: {
+      provider: {
+        inspect: () => Promise.resolve(structuredClone(state)),
+        merge: (_url, pinned, _method, _signal, beforeSend) => {
+          beforeSend();
+          expect(pinned).toBe(head);
+          writes++;
+          state.observation.lifecycle = "merged";
+          state.mergeCommit = "c".repeat(40);
+          return Promise.resolve(state.mergeCommit);
+        },
+      },
+    },
+    digestOptions: {
+      connect: () => {
+        queueConnections++;
+        throw new Error("Unexpected queue connection");
+      },
+    },
+  });
+  const cli = async (...args: string[]) => {
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        resolve("src/cli.ts"),
+        ...args,
+        "--state",
+        directory,
+        "--json",
+      ],
+      {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+      },
+    );
+    const [stdout, code, stderr] = await Promise.all([
+      new Response(child.stdout).text(),
+      child.exited,
+      new Response(child.stderr).text(),
+    ]);
+    expect(code, stderr).toBe(0);
+    return stdout;
+  };
+  try {
+    const registered = coordinator.store.tracking.track(url, pi);
+    coordinator.store.tracking.observe(
+      registered.id,
+      state.observation,
+      config,
+    );
+    await coordinator.merging.tick();
+    await coordinator.start();
+    const client = schedulerClient(directory);
+    const notices = await client.listAgentMessages({
+      agentId: registered.ownerAgentId,
+      applicableOnly: true,
+    });
+    const ready = notices.messages.find(
+      (message) => message.readyHead === head,
+    );
+    assert(ready !== undefined);
+    expect(ready.workflowPrId).toBe(registered.id);
+    const inbox = await cli(
+      "agent",
+      "inbox",
+      "--agent-id",
+      registered.ownerAgentId,
+      "--applicable-only",
+    );
+    expect(inbox).toContain(ready.id);
+    expect(inbox).toContain(head);
+    await cli(
+      "acknowledge-message",
+      ready.id,
+      "--agent-id",
+      registered.ownerAgentId,
+    );
+    await coordinator.digests.flush();
+    expect(writes).toBe(0);
+    expect(queueConnections).toBe(0);
+    const request = (expected: string) =>
+      cli(
+        "merge",
+        ready.id,
+        "--harness",
+        pi.harness,
+        "--endpoint",
+        pi.endpoint,
+        "--thread-id",
+        pi.sessionId,
+        "--expected-pr",
+        url,
+        "--expected-head",
+        expected,
+      );
+    expect(await request("e".repeat(40))).toContain("blocked");
+    expect(coordinator.store.merging.entries()).toHaveLength(0);
+    expect(await request(head)).toContain("queued");
+    await coordinator.merging.tick();
+    expect(writes).toBe(1);
+    const merged: unknown = JSON.parse(await request(head));
+    assert(
+      typeof merged === "object" &&
+        merged !== null &&
+        "state" in merged &&
+        "chain" in merged &&
+        typeof merged.chain === "string",
+    );
+    expect(merged.state).toBe("merged");
+    const archiveEvidence: unknown = JSON.parse(
+      await cli("chain", "show", merged.chain),
+    );
+    assert(
+      typeof archiveEvidence === "object" &&
+        archiveEvidence !== null &&
+        "entries" in archiveEvidence &&
+        Array.isArray(archiveEvidence.entries),
+    );
+    expect(archiveEvidence.entries[0]).toMatchObject({
+      prId: registered.id,
+      receiptId: `pi-inbox:${ready.id}:${head}`,
+      ready: { head },
+      mergeCommit: "c".repeat(40),
+    });
+    expect(writes).toBe(1);
+  } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

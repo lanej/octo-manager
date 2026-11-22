@@ -51,6 +51,8 @@ export const commands: CommandSpec[] = [
     capability: "notifications",
     description: "merge a frozen agent message",
     options: [
+      "--expected-pr <url>",
+      "--expected-head <sha>",
       "--agent-id <id>",
       "--thread-id <id>",
       "--harness <name>",
@@ -90,6 +92,8 @@ export const commands: CommandSpec[] = [
     capability: "notifications",
     description: "Acknowledge and queue the pinned merge",
     options: [
+      "--expected-pr <url>",
+      "--expected-head <sha>",
       "--agent-id <id>",
       "--thread-id <id>",
       "--harness <name>",

@@ -61,6 +61,9 @@ message MergeAgentMessageRequest {
   string receipt_id = 1;
   string agent_id = 2;
   AgentTarget agent_target = 3;
+  // Required together for an explicit local Pi inbox merge. The receipt ID is the inbox message ID.
+  optional string expected_pr = 4;
+  optional string expected_head = 5;
 }
 // MergeAgentMessageResponse returns the result for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 message MergeAgentMessageResponse {
