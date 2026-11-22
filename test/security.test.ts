@@ -108,7 +108,7 @@ test("external content and malicious assessor output never enter automatic notif
     const messages = f.store.tracking.inbox.list(f.pr.ownerAgentId).messages;
     const digest = renderDigest(messages, f.directory, crypto.randomUUID());
     expect(digest.body).not.toContain(attack);
-    expect(digest.body).toContain("Assessment: completed");
+    expect(digest.body).not.toContain("Assessment:");
     const rpc = inboxRoutes(f.store.tracking).listAgentMessages(
       create(ListAgentMessagesRequestSchema, { agentId: f.pr.ownerAgentId }),
     );

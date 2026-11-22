@@ -1,6 +1,18 @@
 import type { CommandSpec } from "../cli/contracts.js";
 export const commands: CommandSpec[] = [
   {
+    path: "read <id>",
+    route: "read",
+    capability: "notifications",
+    description: "Read untrusted evidence and record delivery",
+    options: [
+      "--agent-id <id>",
+      "--thread-id <id>",
+      "--harness <name>",
+      "--endpoint <name>",
+    ],
+  },
+  {
     path: "messages inspect <id>",
     route: "digest",
     capability: "notifications",

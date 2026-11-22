@@ -1498,6 +1498,181 @@ func (x *AcknowledgeNotificationMessageResponse) GetMessage() *NotificationMessa
 	return nil
 }
 
+// ReadNotificationMessageRequest retrieves evidence and records delivery for the original members.
+type ReadNotificationMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentTarget   *AgentTarget           `protobuf:"bytes,3,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadNotificationMessageRequest) Reset() {
+	*x = ReadNotificationMessageRequest{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadNotificationMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadNotificationMessageRequest) ProtoMessage() {}
+
+func (x *ReadNotificationMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadNotificationMessageRequest.ProtoReflect.Descriptor instead.
+func (*ReadNotificationMessageRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ReadNotificationMessageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ReadNotificationMessageRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *ReadNotificationMessageRequest) GetAgentTarget() *AgentTarget {
+	if x != nil {
+		return x.AgentTarget
+	}
+	return nil
+}
+
+// NotificationReadInstructions supplies current operator policy scoped to an original item.
+type NotificationReadInstructions struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ItemIds       []string               `protobuf:"bytes,1,rep,name=item_ids,json=itemIds,proto3" json:"item_ids,omitempty"`
+	Instructions  string                 `protobuf:"bytes,2,opt,name=instructions,proto3" json:"instructions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationReadInstructions) Reset() {
+	*x = NotificationReadInstructions{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationReadInstructions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationReadInstructions) ProtoMessage() {}
+
+func (x *NotificationReadInstructions) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationReadInstructions.ProtoReflect.Descriptor instead.
+func (*NotificationReadInstructions) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *NotificationReadInstructions) GetItemIds() []string {
+	if x != nil {
+		return x.ItemIds
+	}
+	return nil
+}
+
+func (x *NotificationReadInstructions) GetInstructions() string {
+	if x != nil {
+		return x.Instructions
+	}
+	return ""
+}
+
+// ReadNotificationMessageResponse returns all evidence without accepting, resolving or merging work.
+type ReadNotificationMessageResponse struct {
+	state           protoimpl.MessageState          `protogen:"open.v1"`
+	Message         *NotificationMessage            `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Instructions    []*NotificationReadInstructions `protobuf:"bytes,2,rep,name=instructions,proto3" json:"instructions,omitempty"`
+	EvidenceWarning string                          `protobuf:"bytes,3,opt,name=evidence_warning,json=evidenceWarning,proto3" json:"evidence_warning,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ReadNotificationMessageResponse) Reset() {
+	*x = ReadNotificationMessageResponse{}
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadNotificationMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadNotificationMessageResponse) ProtoMessage() {}
+
+func (x *ReadNotificationMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_notifications_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadNotificationMessageResponse.ProtoReflect.Descriptor instead.
+func (*ReadNotificationMessageResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_notifications_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ReadNotificationMessageResponse) GetMessage() *NotificationMessage {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *ReadNotificationMessageResponse) GetInstructions() []*NotificationReadInstructions {
+	if x != nil {
+		return x.Instructions
+	}
+	return nil
+}
+
+func (x *ReadNotificationMessageResponse) GetEvidenceWarning() string {
+	if x != nil {
+		return x.EvidenceWarning
+	}
+	return ""
+}
+
 var File_octomanager_v2_notifications_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_notifications_proto_rawDesc = "" +
@@ -1618,7 +1793,18 @@ const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\rexpected_body\x18\x04 \x01(\tH\x00R\fexpectedBody\x88\x01\x01B\x10\n" +
 	"\x0e_expected_body\"g\n" +
 	"&AcknowledgeNotificationMessageResponse\x12=\n" +
-	"\amessage\x18\x01 \x01(\v2#.octomanager.v2.NotificationMessageR\amessage*\xb8\x01\n" +
+	"\amessage\x18\x01 \x01(\v2#.octomanager.v2.NotificationMessageR\amessage\"\x8b\x01\n" +
+	"\x1eReadNotificationMessageRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12>\n" +
+	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v2.AgentTargetR\vagentTarget\"]\n" +
+	"\x1cNotificationReadInstructions\x12\x19\n" +
+	"\bitem_ids\x18\x01 \x03(\tR\aitemIds\x12\"\n" +
+	"\finstructions\x18\x02 \x01(\tR\finstructions\"\xdd\x01\n" +
+	"\x1fReadNotificationMessageResponse\x12=\n" +
+	"\amessage\x18\x01 \x01(\v2#.octomanager.v2.NotificationMessageR\amessage\x12P\n" +
+	"\finstructions\x18\x02 \x03(\v2,.octomanager.v2.NotificationReadInstructionsR\finstructions\x12)\n" +
+	"\x10evidence_warning\x18\x03 \x01(\tR\x0fevidenceWarning*\xb8\x01\n" +
 	"\x1dNotificationUnavailableReason\x12/\n" +
 	"+NOTIFICATION_UNAVAILABLE_REASON_UNSPECIFIED\x10\x00\x122\n" +
 	".NOTIFICATION_UNAVAILABLE_REASON_MISSING_SOURCE\x10\x01\x122\n" +
@@ -1637,7 +1823,7 @@ func file_octomanager_v2_notifications_proto_rawDescGZIP() []byte {
 }
 
 var file_octomanager_v2_notifications_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_octomanager_v2_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_octomanager_v2_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_octomanager_v2_notifications_proto_goTypes = []any{
 	(NotificationUnavailableReason)(0),             // 0: octomanager.v2.NotificationUnavailableReason
 	(*GetAgentDigestRequest)(nil),                  // 1: octomanager.v2.GetAgentDigestRequest
@@ -1661,58 +1847,64 @@ var file_octomanager_v2_notifications_proto_goTypes = []any{
 	(*GetNotificationMessageResponse)(nil),         // 19: octomanager.v2.GetNotificationMessageResponse
 	(*AcknowledgeNotificationMessageRequest)(nil),  // 20: octomanager.v2.AcknowledgeNotificationMessageRequest
 	(*AcknowledgeNotificationMessageResponse)(nil), // 21: octomanager.v2.AcknowledgeNotificationMessageResponse
-	(*DomainDigestInspection)(nil),                 // 22: octomanager.v2.DomainDigestInspection
-	(*DomainAgentDigest)(nil),                      // 23: octomanager.v2.DomainAgentDigest
-	(*AgentTarget)(nil),                            // 24: octomanager.v2.AgentTarget
-	(*DomainDigestReceipt)(nil),                    // 25: octomanager.v2.DomainDigestReceipt
-	(*DomainMergeReceiptResult)(nil),               // 26: octomanager.v2.DomainMergeReceiptResult
-	(*DomainReceiptTarget)(nil),                    // 27: octomanager.v2.DomainReceiptTarget
-	(*GetActionResponse)(nil),                      // 28: octomanager.v2.GetActionResponse
-	(DomainMergeEntryState)(0),                     // 29: octomanager.v2.DomainMergeEntryState
-	(*DomainMergeEntry)(nil),                       // 30: octomanager.v2.DomainMergeEntry
-	(IssueStage)(0),                                // 31: octomanager.v2.IssueStage
-	(IssueWaiting)(0),                              // 32: octomanager.v2.IssueWaiting
-	(*ManagedIssue)(nil),                           // 33: octomanager.v2.ManagedIssue
-	(DomainArchivedSubmissionState)(0),             // 34: octomanager.v2.DomainArchivedSubmissionState
-	(*DomainArchivedSubmission)(nil),               // 35: octomanager.v2.DomainArchivedSubmission
-	(*PRParticipant)(nil),                          // 36: octomanager.v2.PRParticipant
-	(*DomainPRReference)(nil),                      // 37: octomanager.v2.DomainPRReference
+	(*ReadNotificationMessageRequest)(nil),         // 22: octomanager.v2.ReadNotificationMessageRequest
+	(*NotificationReadInstructions)(nil),           // 23: octomanager.v2.NotificationReadInstructions
+	(*ReadNotificationMessageResponse)(nil),        // 24: octomanager.v2.ReadNotificationMessageResponse
+	(*DomainDigestInspection)(nil),                 // 25: octomanager.v2.DomainDigestInspection
+	(*DomainAgentDigest)(nil),                      // 26: octomanager.v2.DomainAgentDigest
+	(*AgentTarget)(nil),                            // 27: octomanager.v2.AgentTarget
+	(*DomainDigestReceipt)(nil),                    // 28: octomanager.v2.DomainDigestReceipt
+	(*DomainMergeReceiptResult)(nil),               // 29: octomanager.v2.DomainMergeReceiptResult
+	(*DomainReceiptTarget)(nil),                    // 30: octomanager.v2.DomainReceiptTarget
+	(*GetActionResponse)(nil),                      // 31: octomanager.v2.GetActionResponse
+	(DomainMergeEntryState)(0),                     // 32: octomanager.v2.DomainMergeEntryState
+	(*DomainMergeEntry)(nil),                       // 33: octomanager.v2.DomainMergeEntry
+	(IssueStage)(0),                                // 34: octomanager.v2.IssueStage
+	(IssueWaiting)(0),                              // 35: octomanager.v2.IssueWaiting
+	(*ManagedIssue)(nil),                           // 36: octomanager.v2.ManagedIssue
+	(DomainArchivedSubmissionState)(0),             // 37: octomanager.v2.DomainArchivedSubmissionState
+	(*DomainArchivedSubmission)(nil),               // 38: octomanager.v2.DomainArchivedSubmission
+	(*PRParticipant)(nil),                          // 39: octomanager.v2.PRParticipant
+	(*DomainPRReference)(nil),                      // 40: octomanager.v2.DomainPRReference
 }
 var file_octomanager_v2_notifications_proto_depIdxs = []int32{
-	22, // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
-	23, // 1: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
-	24, // 2: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	25, // 3: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
+	25, // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
+	26, // 1: octomanager.v2.ListAgentDigestsResponse.digests:type_name -> octomanager.v2.DomainAgentDigest
+	27, // 2: octomanager.v2.AcknowledgeAgentDigestRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	28, // 3: octomanager.v2.AcknowledgeAgentDigestResponse.receipt:type_name -> octomanager.v2.DomainDigestReceipt
 	6,  // 4: octomanager.v2.AcknowledgeAgentDigestResponse.messages:type_name -> octomanager.v2.AgentDigestMember
-	24, // 5: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	26, // 6: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
+	27, // 5: octomanager.v2.MergeAgentMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	29, // 6: octomanager.v2.MergeAgentMessageResponse.result:type_name -> octomanager.v2.DomainMergeReceiptResult
 	11, // 7: octomanager.v2.NotificationMessage.items:type_name -> octomanager.v2.NotificationItem
-	27, // 8: octomanager.v2.NotificationMessage.merge_target:type_name -> octomanager.v2.DomainReceiptTarget
-	28, // 9: octomanager.v2.NotificationItem.action:type_name -> octomanager.v2.GetActionResponse
+	30, // 8: octomanager.v2.NotificationMessage.merge_target:type_name -> octomanager.v2.DomainReceiptTarget
+	31, // 9: octomanager.v2.NotificationItem.action:type_name -> octomanager.v2.GetActionResponse
 	12, // 10: octomanager.v2.NotificationItem.merge:type_name -> octomanager.v2.NotificationMergeItem
 	13, // 11: octomanager.v2.NotificationItem.issue:type_name -> octomanager.v2.NotificationIssueItem
 	14, // 12: octomanager.v2.NotificationItem.submission:type_name -> octomanager.v2.NotificationSubmissionItem
 	15, // 13: octomanager.v2.NotificationItem.participants:type_name -> octomanager.v2.NotificationParticipantsItem
 	16, // 14: octomanager.v2.NotificationItem.reference:type_name -> octomanager.v2.NotificationReferenceItem
 	17, // 15: octomanager.v2.NotificationItem.unavailable:type_name -> octomanager.v2.NotificationUnavailableItem
-	29, // 16: octomanager.v2.NotificationMergeItem.state:type_name -> octomanager.v2.DomainMergeEntryState
-	30, // 17: octomanager.v2.NotificationMergeItem.detail:type_name -> octomanager.v2.DomainMergeEntry
-	31, // 18: octomanager.v2.NotificationIssueItem.stage:type_name -> octomanager.v2.IssueStage
-	32, // 19: octomanager.v2.NotificationIssueItem.waiting:type_name -> octomanager.v2.IssueWaiting
-	33, // 20: octomanager.v2.NotificationIssueItem.detail:type_name -> octomanager.v2.ManagedIssue
-	34, // 21: octomanager.v2.NotificationSubmissionItem.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
-	35, // 22: octomanager.v2.NotificationSubmissionItem.detail:type_name -> octomanager.v2.DomainArchivedSubmission
-	36, // 23: octomanager.v2.NotificationParticipantsItem.detail:type_name -> octomanager.v2.PRParticipant
-	37, // 24: octomanager.v2.NotificationReferenceItem.detail:type_name -> octomanager.v2.DomainPRReference
+	32, // 16: octomanager.v2.NotificationMergeItem.state:type_name -> octomanager.v2.DomainMergeEntryState
+	33, // 17: octomanager.v2.NotificationMergeItem.detail:type_name -> octomanager.v2.DomainMergeEntry
+	34, // 18: octomanager.v2.NotificationIssueItem.stage:type_name -> octomanager.v2.IssueStage
+	35, // 19: octomanager.v2.NotificationIssueItem.waiting:type_name -> octomanager.v2.IssueWaiting
+	36, // 20: octomanager.v2.NotificationIssueItem.detail:type_name -> octomanager.v2.ManagedIssue
+	37, // 21: octomanager.v2.NotificationSubmissionItem.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
+	38, // 22: octomanager.v2.NotificationSubmissionItem.detail:type_name -> octomanager.v2.DomainArchivedSubmission
+	39, // 23: octomanager.v2.NotificationParticipantsItem.detail:type_name -> octomanager.v2.PRParticipant
+	40, // 24: octomanager.v2.NotificationReferenceItem.detail:type_name -> octomanager.v2.DomainPRReference
 	0,  // 25: octomanager.v2.NotificationUnavailableItem.reason:type_name -> octomanager.v2.NotificationUnavailableReason
 	10, // 26: octomanager.v2.GetNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
-	24, // 27: octomanager.v2.AcknowledgeNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	27, // 27: octomanager.v2.AcknowledgeNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
 	10, // 28: octomanager.v2.AcknowledgeNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	27, // 29: octomanager.v2.ReadNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	10, // 30: octomanager.v2.ReadNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	23, // 31: octomanager.v2.ReadNotificationMessageResponse.instructions:type_name -> octomanager.v2.NotificationReadInstructions
+	32, // [32:32] is the sub-list for method output_type
+	32, // [32:32] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_notifications_proto_init() }
@@ -1744,7 +1936,7 @@ func file_octomanager_v2_notifications_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_notifications_proto_rawDesc), len(file_octomanager_v2_notifications_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   21,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

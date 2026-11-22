@@ -4,7 +4,7 @@ Queue reconciliation runs only when an agent has applicable unread messages, a l
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses without forwarding external prose or model analysis. Per-action and per-assessment identifiers remain available through explicit typed inspection. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Identical displayed entries within a PR share one line. Distinct action updates with the same title, pinned reference, assessment status, role and other non-identity fields share one heading and metadata line, using one public inspection/receipt ID. Per-action and assessment record IDs remain in the immutable source messages and explicit inspection; the compact digest retains every selected receipt member. Different revisions, statuses and roles remain separate. Grouping compares typed views rather than parsing stored prose. These are presentation groups: every selected original message remains an immutable receipt member, and distinct statuses and canonical PR/commit references remain visible.
+Queued bodies contain only linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; all original members remain independently tracked. Assessment, role, individual IDs and instructions are available through retrieval rather than repeated in the notification. Grouping uses typed views, not stored prose.
 
 ## Replacement and cancellation
 
@@ -44,12 +44,10 @@ The notification capability owns these records and transport reconciliation. Pro
 
 ## Inspection and receipt
 
-Agent-facing messages carry one opaque ID for their exact frozen content, without a digest marker, revision, update count or recipient ID. A PR with one update uses a single line; multiple updates for that PR use bullets. The footer is one bare, copyable command:
+Agent-facing messages carry one opaque ID for their exact frozen membership. Each distinct linked PR/commit and reason uses one line, optionally with an item count. The footer is one command:
 
 ```sh
-octo-manager merge RECEIPT_ID # One Ready notice, current owner only.
-octo-manager ack RECEIPT_ID   # Receipt without merging.
-octo-manager message RECEIPT_ID
+octo-manager read RECEIPT_ID
 ```
 
 `octo-manager message RECEIPT_ID` returns the generic message and every typed item as safe metadata. The same interface supports a one-item direct delivery. `--full` explicitly includes untrusted producer detail and original text; neither inspection mode acknowledges or resolves work. Individual tracking IDs stay out of the unsolicited digest. Receipt output confirms one ID and item count; full item inspection remains separate.
@@ -68,6 +66,8 @@ Use `--state DIRECTORY` for an alternate coordinator. Short unique digest and re
 
 The optional Codex hook acknowledges an exact incoming digest body before unread recovery. Automatic native history reconciliation also works without hooks. Neither path accepts or resolves the underlying actions. There is no model call, new agent session, setting change or mandatory PR submission in this path.
 
+
+`read ID` retrieves all evidence and current scoped operator instructions while recording receipt. It does not accept, resolve or merge work. The read result bypasses ordinary compact truncation and labels external content as untrusted. `message ID` remains read-only.
 
 `ack ID` uses the generic message interface and prints one receipt confirmation and item count. The administrative digest receipt RPC and compatibility commands retain their bounded member summaries, applicability, PR/owner/role metadata and revision information. Neither form echoes original bodies or the journal merely to acknowledge receipt. Use `message ID` for typed item inspection, `--full` deliberately for untrusted text, and administrative digest inspection for revision/journal history. See the [message content catalog](agent-messages.md).
 

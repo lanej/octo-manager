@@ -160,3 +160,21 @@ message AcknowledgeNotificationMessageRequest {
 message AcknowledgeNotificationMessageResponse {
   NotificationMessage message = 1;
 }
+
+// ReadNotificationMessageRequest retrieves evidence and records delivery for the original members.
+message ReadNotificationMessageRequest {
+  string id = 1;
+  string agent_id = 2;
+  AgentTarget agent_target = 3;
+}
+// NotificationReadInstructions supplies current operator policy scoped to an original item.
+message NotificationReadInstructions {
+  repeated string item_ids = 1;
+  string instructions = 2;
+}
+// ReadNotificationMessageResponse returns all evidence without accepting, resolving or merging work.
+message ReadNotificationMessageResponse {
+  NotificationMessage message = 1;
+  repeated NotificationReadInstructions instructions = 2;
+  string evidence_warning = 3;
+}

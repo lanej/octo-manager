@@ -50,12 +50,7 @@ export function digestGroups(
       group = { reference: entry.group, entries: [], instructions: [] };
       groups.set(key, group);
     }
-    if (
-      !group.entries.some(
-        (previous) => JSON.stringify(previous) === JSON.stringify(entry),
-      )
-    )
-      group.entries.push(entry);
+    group.entries.push(entry);
     for (const instruction of shown?.instructions?.split("\n") ?? [])
       if (instruction !== "" && !group.instructions.includes(instruction))
         group.instructions.push(instruction);
@@ -63,66 +58,16 @@ export function digestGroups(
   return [...groups.values()];
 }
 function renderGroup(group: DigestGroup): string {
-  const single = group.entries.length === 1 ? group.entries[0] : undefined;
-  const instructions = group.instructions.map(
-    (value) => `Instructions: ${value}`,
-  );
-  if (single !== undefined)
-    return [
-      `${renderReference(single.reference)} · ${single.title}`,
-      ...single.fields
-        .filter(
-          (field) =>
-            field.label !== "Action" && field.label !== "Assessment record",
-        )
-        .map((field) => `${field.label}: ${field.value}`),
-      ...instructions,
-    ].join("\n");
-  const first = group.entries[0];
-  const sharedFields = (entry: NoticeView) =>
-    entry.fields.filter(
-      (field) =>
-        field.label !== "Action" && field.label !== "Assessment record",
-    );
-  const actions = group.entries.map(
-    (entry) => entry.fields.find((field) => field.label === "Action")?.value,
-  );
-  if (
-    first !== undefined &&
-    actions.every(
-      (action) =>
-        action !== undefined && action !== "none" && action !== "unavailable",
-    ) &&
-    group.entries.every(
-      (entry) =>
-        entry.title === first.title &&
-        JSON.stringify(entry.reference) === JSON.stringify(first.reference) &&
-        JSON.stringify(sharedFields(entry)) ===
-          JSON.stringify(sharedFields(first)),
+  const lines = new Map<string, number>();
+  for (const entry of group.entries) {
+    const heading = `${renderReference(entry.reference)} · ${entry.title}`;
+    lines.set(heading, (lines.get(heading) ?? 0) + 1);
+  }
+  return [...lines]
+    .map(([heading, count]) =>
+      count === 1 ? heading : `${heading} (${String(count)})`,
     )
-  )
-    return [
-      `${renderReference(first.reference)} · ${first.title} · ${String(group.entries.length)} updates`,
-      sharedFields(first)
-        .map((field) => `${field.label}: ${field.value}`)
-        .join(" · "),
-      ...instructions,
-    ].join("\n");
-  return [
-    renderReference(group.reference),
-    ...group.entries.map((entry) =>
-      [
-        `- ${entry.title}${entry.reference.url === group.reference.url ? "" : ` · ${renderReference(entry.reference)}`}`,
-        ...entry.fields
-          .filter(
-            (field) =>
-              field.label !== "Action" && field.label !== "Assessment record",
-          )
-          .map((field) => `  ${field.label}: ${field.value}`),
-      ].join("\n"),
-    ),
-    ...instructions,
-  ].join("\n");
+    .join("\n");
 }
 
 export function renderDigest(
@@ -149,9 +94,9 @@ export function renderDigest(
     }
     return selected;
   }
-  function footer(rows: AgentMessage[]): string {
+  function footer(): string {
     const args = `${shortId(receiptId)}${resolve(directory) === join(homedir(), ".local/state/octo-manager") ? "" : ` --state ${quote(directory)}`}`;
-    const command = `octo-manager ${target(rows) === undefined ? "ack" : "merge"} ${args}`;
+    const command = `octo-manager read ${args}`;
     const fence = "`".repeat(
       1 +
         Math.max(
@@ -159,14 +104,14 @@ export function renderDigest(
           ...[...command.matchAll(/`+/gu)].map((match) => match[0].length),
         ),
     );
-    return `Inspect: ${fence}octo-manager message ${args}${fence}\n${fence}${command}${fence}`;
+    return `${fence}${command}${fence}`;
   }
   function body(rows: AgentMessage[]): string {
     const groups = digestGroups(
       rows,
       (message) => presentations.get(message.id) ?? {},
     );
-    return `${groups.map(renderGroup).join("\n\n")}\n\n${footer(rows)}`;
+    return `${groups.map(renderGroup).join("\n")}\n${footer()}`;
   }
   const selected: AgentMessage[] = [];
   for (const message of candidates) {
@@ -196,7 +141,7 @@ export function messageReceiptId(body: string): string | undefined {
   const parts = command.split(" ");
   const id = parts[2];
   return parts[0] === "octo-manager" &&
-    (parts[1] === "ack" || parts[1] === "merge") &&
+    (parts[1] === "ack" || parts[1] === "merge" || parts[1] === "read") &&
     id !== undefined &&
     /^[a-f0-9-]{8,36}$/u.test(id)
     ? id

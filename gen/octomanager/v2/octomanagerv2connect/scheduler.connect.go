@@ -93,6 +93,9 @@ const (
 	// SchedulerServiceMergeAgentMessageProcedure is the fully-qualified name of the SchedulerService's
 	// MergeAgentMessage RPC.
 	SchedulerServiceMergeAgentMessageProcedure = "/octomanager.v2.SchedulerService/MergeAgentMessage"
+	// SchedulerServiceReadNotificationMessageProcedure is the fully-qualified name of the
+	// SchedulerService's ReadNotificationMessage RPC.
+	SchedulerServiceReadNotificationMessageProcedure = "/octomanager.v2.SchedulerService/ReadNotificationMessage"
 	// SchedulerServiceGetNotificationMessageProcedure is the fully-qualified name of the
 	// SchedulerService's GetNotificationMessage RPC.
 	SchedulerServiceGetNotificationMessageProcedure = "/octomanager.v2.SchedulerService/GetNotificationMessage"
@@ -267,6 +270,8 @@ type SchedulerServiceClient interface {
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
 	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
+	// Retrieves untrusted evidence and records receipt without accepting work or merging.
+	ReadNotificationMessage(context.Context, *connect.Request[v2.ReadNotificationMessageRequest]) (*connect.Response[v2.ReadNotificationMessageResponse], error)
 	// Inspects one public message and every typed member without recording receipt.
 	GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error)
 	// Records receipt for one frozen message without resolving its items.
@@ -486,6 +491,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceMergeAgentMessageProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("MergeAgentMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		readNotificationMessage: connect.NewClient[v2.ReadNotificationMessageRequest, v2.ReadNotificationMessageResponse](
+			httpClient,
+			baseURL+SchedulerServiceReadNotificationMessageProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ReadNotificationMessage")),
 			connect.WithClientOptions(opts...),
 		),
 		getNotificationMessage: connect.NewClient[v2.GetNotificationMessageRequest, v2.GetNotificationMessageResponse](
@@ -777,6 +788,7 @@ type schedulerServiceClient struct {
 	cancelMergeChain               *connect.Client[v2.CancelMergeChainRequest, v2.CancelMergeChainResponse]
 	reconcileMergeOperation        *connect.Client[v2.ReconcileMergeOperationRequest, v2.ReconcileMergeOperationResponse]
 	mergeAgentMessage              *connect.Client[v2.MergeAgentMessageRequest, v2.MergeAgentMessageResponse]
+	readNotificationMessage        *connect.Client[v2.ReadNotificationMessageRequest, v2.ReadNotificationMessageResponse]
 	getNotificationMessage         *connect.Client[v2.GetNotificationMessageRequest, v2.GetNotificationMessageResponse]
 	acknowledgeNotificationMessage *connect.Client[v2.AcknowledgeNotificationMessageRequest, v2.AcknowledgeNotificationMessageResponse]
 	getAgentDigest                 *connect.Client[v2.GetAgentDigestRequest, v2.GetAgentDigestResponse]
@@ -921,6 +933,11 @@ func (c *schedulerServiceClient) ReconcileMergeOperation(ctx context.Context, re
 // MergeAgentMessage calls octomanager.v2.SchedulerService.MergeAgentMessage.
 func (c *schedulerServiceClient) MergeAgentMessage(ctx context.Context, req *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error) {
 	return c.mergeAgentMessage.CallUnary(ctx, req)
+}
+
+// ReadNotificationMessage calls octomanager.v2.SchedulerService.ReadNotificationMessage.
+func (c *schedulerServiceClient) ReadNotificationMessage(ctx context.Context, req *connect.Request[v2.ReadNotificationMessageRequest]) (*connect.Response[v2.ReadNotificationMessageResponse], error) {
+	return c.readNotificationMessage.CallUnary(ctx, req)
 }
 
 // GetNotificationMessage calls octomanager.v2.SchedulerService.GetNotificationMessage.
@@ -1186,6 +1203,8 @@ type SchedulerServiceHandler interface {
 	ReconcileMergeOperation(context.Context, *connect.Request[v2.ReconcileMergeOperationRequest]) (*connect.Response[v2.ReconcileMergeOperationResponse], error)
 	// Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 	MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error)
+	// Retrieves untrusted evidence and records receipt without accepting work or merging.
+	ReadNotificationMessage(context.Context, *connect.Request[v2.ReadNotificationMessageRequest]) (*connect.Response[v2.ReadNotificationMessageResponse], error)
 	// Inspects one public message and every typed member without recording receipt.
 	GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error)
 	// Records receipt for one frozen message without resolving its items.
@@ -1401,6 +1420,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceMergeAgentMessageProcedure,
 		svc.MergeAgentMessage,
 		connect.WithSchema(schedulerServiceMethods.ByName("MergeAgentMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceReadNotificationMessageHandler := connect.NewUnaryHandler(
+		SchedulerServiceReadNotificationMessageProcedure,
+		svc.ReadNotificationMessage,
+		connect.WithSchema(schedulerServiceMethods.ByName("ReadNotificationMessage")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceGetNotificationMessageHandler := connect.NewUnaryHandler(
@@ -1709,6 +1734,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceReconcileMergeOperationHandler.ServeHTTP(w, r)
 		case SchedulerServiceMergeAgentMessageProcedure:
 			schedulerServiceMergeAgentMessageHandler.ServeHTTP(w, r)
+		case SchedulerServiceReadNotificationMessageProcedure:
+			schedulerServiceReadNotificationMessageHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetNotificationMessageProcedure:
 			schedulerServiceGetNotificationMessageHandler.ServeHTTP(w, r)
 		case SchedulerServiceAcknowledgeNotificationMessageProcedure:
@@ -1884,6 +1911,10 @@ func (UnimplementedSchedulerServiceHandler) ReconcileMergeOperation(context.Cont
 
 func (UnimplementedSchedulerServiceHandler) MergeAgentMessage(context.Context, *connect.Request[v2.MergeAgentMessageRequest]) (*connect.Response[v2.MergeAgentMessageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.MergeAgentMessage is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ReadNotificationMessage(context.Context, *connect.Request[v2.ReadNotificationMessageRequest]) (*connect.Response[v2.ReadNotificationMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.ReadNotificationMessage is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetNotificationMessage(context.Context, *connect.Request[v2.GetNotificationMessageRequest]) (*connect.Response[v2.GetNotificationMessageResponse], error) {

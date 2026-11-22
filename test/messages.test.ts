@@ -253,11 +253,10 @@ test("one message inspects heterogeneous items and receipts only its frozen memb
     expect(
       f.messages.get(frozen.dispatchId).items.map((item) => item.id),
     ).toEqual(frozen.messageIds);
-    const received = f.messages.acknowledge(
+    const received = f.messages.read(
       frozen.dispatchId,
       f.pr.ownerAgentId,
-      frozen.body,
-    );
+    ).message;
     expect(
       received.items.every((item) => item.acknowledgedAtMs !== undefined),
     ).toBe(true);
@@ -336,7 +335,7 @@ test("unavailable historical members remain visible and failed group receipt rol
       NotificationUnavailableReason.MISSING_SOURCE,
     );
     expect(() =>
-      f.messages.acknowledge(frozen.dispatchId, f.pr.ownerAgentId),
+      f.messages.read(frozen.dispatchId, f.pr.ownerAgentId),
     ).toThrow();
     expect(
       f.store.tracking.inbox.get(f.delivery.id)?.acknowledgedAt,
@@ -442,6 +441,100 @@ test("direct and grouped messages share prefix allocation and ambiguous legacy I
     } finally {
       db.close();
     }
+  } finally {
+    await f.close();
+  }
+});
+
+test("read prepares evidence and operator instructions before receipt and remains retryable", async () => {
+  const f = await fixture();
+  try {
+    const reader = new Messages(f.store, f.digests, () => ({
+      instructions: "Inspect the scoped task",
+    }));
+    expect(() => reader.read(f.delivery.id, "another-agent")).toThrow(
+      "another agent",
+    );
+    const broken = new Messages(f.store, f.digests, () => {
+      throw new Error("Policy unavailable");
+    });
+    expect(() => broken.read(f.delivery.id, f.pr.ownerAgentId)).toThrow(
+      "Policy unavailable",
+    );
+    expect(
+      f.store.tracking.inbox.get(f.delivery.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    const first = reader.read(f.delivery.id, f.pr.ownerAgentId);
+    expect(first.evidenceWarning).toContain("untrusted evidence");
+    expect(first.instructions).toMatchObject([
+      { itemIds: [f.delivery.id], instructions: "Inspect the scoped task" },
+    ]);
+    expect(first.message.untrustedBody).toBeUndefined();
+    expect(first.message.items[0]?.untrustedBody).toBeUndefined();
+    expect(first.message.items[0]?.acknowledgedAtMs).toBeDefined();
+    expect(first.message.items[0]?.source.case).toBe("action");
+    expect(reader.read(f.delivery.id, f.pr.ownerAgentId)).toEqual(first);
+    expect(f.store.tracking.action(f.action.id).progress.state).toBe(
+      ActionState.Open,
+    );
+  } finally {
+    await f.close();
+  }
+});
+
+test("oversized evidence fails before any frozen member is receipted", async () => {
+  const f = await fixture();
+  try {
+    for (let index = 0; index < 9; index++) {
+      const submission = f.store.submissions.request({
+        requestId: `oversize-${String(index)}`,
+        repository: "owner/repo",
+        headRef: "synthetic",
+        headSha: head,
+        baseRef: "main",
+        purpose: "Synthetic feedback",
+        validation: [],
+        draft: false,
+        owner: { ...f.owner, harness: "codex" },
+      });
+      const changed = f.store.submissions.save({
+        ...submission,
+        state: SubmissionState.NeedsInput,
+        notificationRevision: 1,
+        snapshot: {
+          repository: "owner/repo",
+          headSha: head,
+          baseSha: "b".repeat(40),
+          private: false,
+          files: [],
+          diff: "x".repeat(524288),
+          sources: [],
+          sourceDigest: "synthetic",
+        },
+      });
+      f.store.submissions.notify(changed, f.pr.ownerAgentId);
+    }
+    const members = f.store.tracking.inbox.list(
+      f.pr.ownerAgentId,
+      0,
+      false,
+      true,
+    ).messages;
+    expect(members).toHaveLength(10);
+    const digest = f.store.digests.create(
+      f.pr.ownerAgentId,
+      { kind: "codex_queue", socket: "/synthetic" },
+      (id) => renderDigest(members, f.directory, id),
+    );
+    const version = f.store.digests.version(digest.id, digest.revision);
+    expect(() =>
+      f.messages.read(version.dispatchId, f.pr.ownerAgentId),
+    ).toThrow("no receipt recorded");
+    for (const member of members)
+      expect(
+        f.store.tracking.inbox.get(member.id)?.acknowledgedAt,
+      ).toBeUndefined();
+    expect(f.store.digests.receipt(digest.id, digest.revision)).toBeUndefined();
   } finally {
     await f.close();
   }

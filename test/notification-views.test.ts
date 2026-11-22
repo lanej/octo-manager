@@ -12,7 +12,11 @@ import {
   noticeView,
   type SafeNotice,
 } from "../src/security/notifications.js";
-import { digestGroups, renderDigest } from "../src/notifications/render.js";
+import {
+  digestGroups,
+  renderDigest,
+  messageReceiptId,
+} from "../src/notifications/render.js";
 import type { AgentMessage } from "../src/notifications/message.js";
 const pr = "https://github.com/owner/repo/pull/13";
 const actionId = "deadbeef-1234-4567-89ab-0123456789ab";
@@ -144,7 +148,7 @@ test("repository persistence preserves safe frozen bytes and independent receipt
   }
 });
 
-test("five matching review updates share one pinned heading and status without losing receipt members", () => {
+test("five matching review updates share one linked reason and read command without losing members", () => {
   const actions = ["25704da1", "e0ff583a", "56bddeec", "2351c492", "27f07523"];
   const assessments = [
     "b518824a",
@@ -184,12 +188,8 @@ test("five matching review updates share one pinned heading and status without l
   );
   expect(rendered.body).toBe(
     [
-      `[PR #213 @ f466172e](${url}/commits/${head}) · Review feedback · 5 updates`,
-      "Assessment: completed · Role: owner",
-      "Instructions: Inspect and address actionable review findings using the installed project guidance.",
-      "",
-      "Inspect: `octo-manager message 7f2d5103`",
-      "`octo-manager ack 7f2d5103`",
+      `[PR #213 @ f466172e](${url}/commits/${head}) · Review feedback (5)`,
+      "`octo-manager read 7f2d5103`",
     ].join("\n"),
   );
   expect(rendered.messageIds).toEqual(actions);
@@ -198,7 +198,7 @@ test("five matching review updates share one pinned heading and status without l
   expect(Buffer.byteLength(rendered.body)).toBeLessThan(500);
 });
 
-test("compact updates retain separate revisions, assessment statuses and recipient roles", () => {
+test("compact updates keep commits distinct while internal status and role remain outside the body", () => {
   const first = message("a".repeat(40), "11111111");
   const second = message("a".repeat(40), "22222222");
   const notice = second.notice;
@@ -304,4 +304,33 @@ test("legacy reference chatter stays inspectable without starving a concrete mer
     store.close();
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("three feedback findings require exactly one linked heading and one read command", () => {
+  const url = "https://github.com/lanej/dotfiles/pull/369";
+  const head = "82ccc9dd3568b4bb81cd41478a866662b6146e0d";
+  const rows = ["11111111", "22222222", "33333333"].map((id) => ({
+    ...message(head, id),
+    notice: {
+      version: 1 as const,
+      kind: "review_feedback" as const,
+      assessment: "completed" as const,
+      role: "owner" as const,
+      head,
+      prUrl: url,
+    },
+  }));
+  const result = renderDigest(
+    rows,
+    join(homedir(), ".local/state/octo-manager"),
+    "70aec191",
+  );
+  expect(result.body).toBe(
+    `[PR #369 @ 82ccc9dd](${url}/commits/${head}) · Review feedback (3)\n\`octo-manager read 70aec191\``,
+  );
+  expect(messageReceiptId(result.body)).toBe("70aec191");
+  for (const old of ["ack", "merge"])
+    expect(
+      messageReceiptId(`Historical body\n\`octo-manager ${old} 70aec191\``),
+    ).toBe("70aec191");
 });

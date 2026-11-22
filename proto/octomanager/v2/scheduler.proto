@@ -55,6 +55,8 @@ service SchedulerService {
 
   // Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
   rpc MergeAgentMessage(MergeAgentMessageRequest) returns (MergeAgentMessageResponse);
+  // Retrieves untrusted evidence and records receipt without accepting work or merging.
+  rpc ReadNotificationMessage(ReadNotificationMessageRequest) returns (ReadNotificationMessageResponse);
   // Inspects one public message and every typed member without recording receipt.
   rpc GetNotificationMessage(GetNotificationMessageRequest) returns (GetNotificationMessageResponse);
   // Records receipt for one frozen message without resolving its items.
