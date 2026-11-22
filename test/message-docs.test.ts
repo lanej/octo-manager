@@ -25,10 +25,9 @@ test("generated message catalog is current and includes clickable links and one-
       ") · Review feedback (3)",
   );
   expect(text).toContain("`octo-manager read 1234abcd`");
-  expect(text).toContain("### Confirmed merge");
   expect(text).toContain("GitHub confirmed merge");
-  expect(text).toContain("### Direct issue");
-  expect(text).toContain("### feedback_assessment");
+  expect(text).toContain("<summary>Show compatible direct notices</summary>");
+  expect(text).toContain("Review feedback requires owner assessment");
   expect(text).not.toContain("Inspect:");
 });
 
