@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/lanej/charmed/text"
@@ -8,21 +9,24 @@ import (
 )
 
 func (m *Model) checkWatchContent(pr *v1.TrackedPullRequest) string {
+	watches := append([]*v1.CheckWatch(nil), m.snapshot.GetTracking().GetCheckWatches()...)
+	sort.SliceStable(watches, func(i, j int) bool { return watches[i].GetCreatedAtMs() > watches[j].GetCreatedAtMs() })
+
 	var parts []string
 
-	for _, watch := range m.snapshot.GetTracking().GetCheckWatches() {
+	for _, watch := range watches {
 		if watch.GetPrId() != pr.GetId() {
 			continue
 		}
 
-		parts = append(parts, text.Pill(stateName(watch.GetState().String(), "CHECK_WATCH_STATE_"), text.Neutral, m.theme, text.Normal)+" "+m.commitLink(pr.GetUrl(), watch.GetHeadSha()), m.field("Check coverage", observationStatus(watch.GetEvidence())))
+		parts = append(parts, text.Pill(stateName(watch.GetState().String(), "CHECK_WATCH_STATE_"), text.Neutral, m.theme, text.Normal)+" "+m.commitLink(pr.GetUrl(), watch.GetHeadSha())+" · "+m.field("Check coverage", observationStatus(watch.GetEvidence())))
 	}
 
 	if len(parts) == 0 {
 		return ""
 	}
 
-	return text.Badge("Check watches", m.theme) + "\n" + strings.Join(parts, "\n")
+	return strings.Join(parts, "\n")
 }
 
 func (m *Model) checkResultsContent(result *v1.CheckResults, pr *v1.TrackedPullRequest) string {

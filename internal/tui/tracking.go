@@ -76,6 +76,8 @@ func (m *Model) trackingContent() string {
 		return "This PR is not enrolled. Use octo-manager track --url URL --thread-id ID from its owning agent session."
 	}
 
+	width := max(1, layout.PanelContentSize(layout.Size{Width: m.geometry().right}).Width-1)
+
 	parts := []string{text.Badge("PR tracking", m.theme), m.trackingLinks(pr), m.field("Owner", m.agentLabel(pr.GetOwnerAgentId())), m.trackingAutomation(pr)}
 	if status := m.selectedRefresh; status != nil {
 		parts = append(parts, m.field("Refresh", stateName(status.GetState().String(), "REFRESH_STATE_")), m.field("Next eligible", m.timestamp(status.GetDueAtMs(), fullTimestamp)))
@@ -122,7 +124,7 @@ func (m *Model) trackingContent() string {
 		parts = append(parts, text.PendingWithPresentation(text.GlyphAndLabel, m.theme)+" Waiting for the first GitHub observation.")
 	}
 
-	parts = append(parts, m.checkWatchContent(pr), m.repairContent(pr.GetId()))
+	parts = append(parts, m.repairContent(pr.GetId()))
 	for _, merge := range m.snapshot.GetMergeStatuses() {
 		if merge.GetPrId() != pr.GetId() {
 			continue
@@ -179,7 +181,7 @@ func (m *Model) trackingContent() string {
 					parts = append(parts, m.field("Location", location))
 				}
 
-				parts = append(parts, text.Label(safe(comment.GetBody()), m.theme))
+				parts = append(parts, m.trackingMarkdown(comment.GetBody(), width))
 			}
 
 			if profile := action.GetProfile(); profile != nil {
@@ -192,7 +194,7 @@ func (m *Model) trackingContent() string {
 					parts = append(parts, m.field("Model", profile.GetModel()))
 				}
 
-				parts = append(parts, text.Label(safe(profile.GetInstructions()), m.theme))
+				parts = append(parts, m.trackingMarkdown(profile.GetInstructions(), width))
 			}
 
 			for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
@@ -228,12 +230,36 @@ func (m *Model) trackingContent() string {
 
 	parts = append(parts, "", text.KeyHint("u", "refresh", m.theme), m.muted("Delivery, acknowledgment, and verified resolution are separate."))
 
-	width := max(1, layout.PanelContentSize(layout.Size{Width: m.geometry().right}).Width-1)
+	watches := m.checkWatchContent(pr)
 	if width < 32 {
+		if watches != "" {
+			overview += "\nCheck watches\n" + watches
+		}
+
 		return overview + "\n" + strings.Join(parts, "\n")
 	}
 
-	return m.sections("tracking-sections", width, dashboardSection{id: "ownership", title: "AUTOMATION & OWNERSHIP", content: func(int) string { return overview }}, dashboardSection{id: "blockers", title: "ACTIONS & DELIVERY", content: func(int) string { return strings.Join(parts, "\n") }})
+	content := m.sections("tracking-sections", width,
+		dashboardSection{id: "ownership", title: "AUTOMATION & OWNERSHIP", content: func(int) string { return overview }},
+		dashboardSection{id: "blockers", title: "ACTIONS & DELIVERY", content: func(int) string { return strings.Join(parts, "\n") }},
+	)
+
+	if watches != "" {
+		content += "\n" + m.sections("tracking-watches", width, dashboardSection{id: "check-watches", title: "CHECK WATCHES", content: func(int) string { return watches }})
+	}
+
+	return content
+}
+
+func (m *Model) trackingMarkdown(body string, width int) string {
+	source := safe(body)
+
+	rendered, err := text.Markdown(source, width, m.theme, text.MarkdownOptions{})
+	if err != nil {
+		return source
+	}
+
+	return rendered
 }
 
 func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
@@ -267,11 +293,23 @@ func (m *Model) trackingLinks(pr *v1.TrackedPullRequest) string {
 
 			add(strings.Split(repository, "/pull/")[0]+"/commit/"+sha, label+": "+sha[:8])
 		}
+		addRange := func(label, base string) {
+			head := o.GetHeadSha()
+			if repository != "" && validCommit(base) && validCommit(head) {
+				add(strings.Split(repository, "/pull/")[0]+"/compare/"+base+".."+head, label+": "+base[:8]+".."+head[:8])
+			}
+		}
+
 		revision("Head", o.GetHeadSha())
 		revision("PR-reported base", o.GetBaseSha())
+		addRange("PR range", o.GetBaseSha())
 
 		if target := o.GetTargetBase(); target != nil {
 			revision("Target "+target.GetRef(), target.GetSha())
+
+			if target.GetSha() != o.GetBaseSha() {
+				addRange("Target range", target.GetSha())
+			}
 		}
 	}
 
