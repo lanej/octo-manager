@@ -362,15 +362,26 @@ test("GitHub rejection and transport uncertainty differ, while tracking failure 
       ...h.input,
       track: { sessionId: "session", endpoint: "local" },
     });
-    await publishRequest(h.store, tracked.id, new GitHub(), () =>
+    expect(receipt(tracked)).toMatchObject({
+      state: "pending",
+      tracking: "pending",
+    });
+    const github = new GitHub();
+    await publishRequest(h.store, tracked.id, github, () =>
       Promise.reject(new Error("Daemon unavailable")),
     );
     expect(h.store.get(tracked.id).state).toBe("published");
     expect(h.store.get(tracked.id).tracking).toBe("unavailable");
-    await publishRequest(h.store, tracked.id, new GitHub(), () =>
-      Promise.resolve(),
-    );
+    await publishRequest(h.store, tracked.id, github, (publication) => {
+      expect(publication.input.track).toEqual({
+        sessionId: "session",
+        endpoint: "local",
+      });
+      expect(publication.url).toBe(h.store.get(tracked.id).url);
+      return Promise.resolve();
+    });
     expect(h.store.get(tracked.id).tracking).toBe("active");
+    expect(github.writes).toBe(1);
   } finally {
     await h.close();
   }
@@ -460,7 +471,10 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
       "#!/bin/sh\nprintf called > '" + called + "'\nexit 1\n",
     );
     await chmod(gh, 0o700);
-    const env = { PATH: bin + ":" + (process.env["PATH"] ?? "") };
+    const env = {
+      PATH: bin + ":" + (process.env["PATH"] ?? ""),
+      CODEX_THREAD_ID: "",
+    };
     const invalid = await run(
       [
         "submit-pr",
@@ -542,6 +556,57 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
       await Bun.sleep(20);
     expect(h.store.get(pending.id).state).toBe("failed");
     expect(existsSync(called)).toBe(true);
+    const publish = [
+      "pr",
+      "publish",
+      "--title",
+      "feat: explain",
+      "--body-file",
+      description,
+      "--base",
+      "main",
+    ];
+    const missing = await run(
+      [...publish, "--track"],
+      h.root,
+      h.directory,
+      env,
+    );
+    expect(missing.code).toBe(1);
+    expect(JSON.stringify(missing.value)).toContain("tracking_owner");
+    for (const [request, flags, thread, expected] of [
+      ["inferred", [], "current-session", "current-session"],
+      [
+        "explicit",
+        ["--thread-id", "selected-session"],
+        "current-session",
+        "selected-session",
+      ],
+      ["opt-out", ["--no-track"], "current-session", undefined],
+      ["other-harness", ["--harness", "claude"], "current-session", undefined],
+    ] as const) {
+      const response = await run(
+        [...publish, ...flags, "--request-id", request],
+        h.root,
+        h.directory,
+        { ...env, CODEX_THREAD_ID: thread },
+      );
+      expect(response.code).toBe(0);
+      const item = h.store.list(Number.MAX_SAFE_INTEGER).items[0];
+      if (item === undefined) throw new Error("Missing durable receipt");
+      expect(response.value).toMatchObject({ id: item.id, state: "pending" });
+      expect(item.input.track).toEqual(
+        expected === undefined
+          ? undefined
+          : { sessionId: expected, endpoint: "local" },
+      );
+      if (expected !== undefined)
+        expect(response.value).toMatchObject({ tracking: "pending" });
+      const until = Date.now() + 5000;
+      while (h.store.get(item.id).state === "pending" && Date.now() < until)
+        await Bun.sleep(20);
+      expect(h.store.get(item.id).state).toBe("failed");
+    }
     for (let i = 0; i < 12; i++)
       h.store.accept({
         ...h.input,

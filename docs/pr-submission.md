@@ -1,6 +1,6 @@
 # PR submission
 
-The calling agent writes the title and description. Octo installs local writing guidance, validates declared format rules, accepts a durable request, and publishes the submitted draft. It does not generate, rewrite, or semantically judge the description. Publication does not require the Octo daemon; tracking is separate and opt-in.
+The calling agent writes the title and description. Octo installs local writing guidance, validates declared format rules, accepts a durable request, and publishes the submitted draft. It does not generate, rewrite, or semantically judge the description. Publication runs without the Octo daemon. Octo enrolls the published PR by default when the caller has a supported Codex thread identity.
 
 ## Prepare and validate
 
@@ -31,13 +31,15 @@ Invalid drafts exit nonzero before acceptance. A valid request is saved before O
 
 Use `retry-submission REQUEST_ID` to retry pre-publication failures or reconcile an uncertain create. Reuse the existing receipt after a timeout rather than submitting another request. A hidden marker binds recovery to the frozen title, body, repository, head, and base; Octo refuses to overwrite an unrelated PR. Purpose-only requests and legacy intent files receive migration guidance instead of starting analysis/writer jobs. Historical records remain inspectable.
 
-Use `--track --thread-id SESSION` only when daemon-backed tracking is wanted. Use the actual calling session identity; do not invent an owner for an unsupported harness. A tracking failure is reported separately and does not undo publication. Existing PR title/body revisions use the same local drafting and validation guidance, followed by the review platform's update command and verification of the saved result.
+The publisher uses `--thread-id SESSION` when supplied and falls back to `CODEX_THREAD_ID`. Use `--no-track` to opt out. Use `--track` to require a supported identity before accepting the publication request. An unidentified or unsupported caller can still publish without tracking.
+
+For a tracked submission, the receipt reports `tracking` as `pending`, `active`, or `unavailable` separately from publication state. A published PR stays published if enrollment fails. Retry the same receipt with `octo-manager publication retry ID` to enroll the existing PR with its saved owner identity. A PR already assigned to another session keeps that owner. Existing PR title and body revisions follow the same drafting and validation guidance, then use the review platform's update command and verify the saved result.
 
 Inspect the published title, rendered body, head/base, links, and any included images before reporting publication as verified. Creating a PR does not authorize merging it.
 
 ## Hook integration
 
-The optional Codex submission hook translates supported standalone `gh pr create` commands to `octo-manager pr publish`, preserving the caller's completed title and body. It supplies actual session context for optional tracking and never treats the draft as input to a separate writer. Unsupported flags and retired `gh-pr-create-from` calls return concise migration instructions.
+The optional Codex submission hook translates supported standalone `gh pr create` commands to `octo-manager pr publish`, preserving the caller's completed title and body. It supplies actual session context for default tracking and never treats the draft as input to a separate writer. Unsupported flags and retired `gh-pr-create-from` calls return concise migration instructions.
 
 Enable the hook with `make codex-octo-hook`, then review/trust it through the host's native Hooks interface. Run publication separately from pipelines, redirections, variable expansion, or compound commands. Installation preserves other hooks and native trust; it does not grant publication authority or contain arbitrary shell execution. Remove only this adapter with `python3 bin/codex-octo-submit --uninstall`.
 

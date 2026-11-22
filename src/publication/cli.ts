@@ -201,14 +201,20 @@ async function input(
   root: string,
   value: Draft,
 ): Promise<PublicationInput> {
-  if (
-    parsed.values.track === true &&
-    parsed.values.harness !== undefined &&
-    parsed.values.harness !== "codex"
-  )
+  const track = parsed.values.track;
+  const supported = (parsed.values.harness ?? "codex") === "codex";
+  const sessionId =
+    parsed.values["thread-id"] ?? process.env["CODEX_THREAD_ID"];
+  const identified = sessionId !== undefined && sessionId.trim() !== "";
+  if (track === true && !supported)
     throw new PublicationError(
       "tracking_harness",
-      "--track supports only --harness codex; omit --track for publication from other harnesses.",
+      "--track supports only Codex sessions. Omit --track or use --no-track.",
+    );
+  if (track === true && !identified)
+    throw new PublicationError(
+      "tracking_owner",
+      "--track requires the actual --thread-id SESSION or CODEX_THREAD_ID.",
     );
   const headRef =
     parsed.values.head ?? (await git(root, "branch", "--show-current"));
@@ -275,16 +281,8 @@ async function input(
     contract: configured.contract,
     contractHash: configured.hash,
   };
-  if (parsed.values.track === true) {
-    const sessionId =
-      parsed.values["thread-id"] ?? process.env["CODEX_THREAD_ID"];
-    if (sessionId === undefined || sessionId === "")
-      throw new PublicationError(
-        "tracking_owner",
-        "--track requires the actual --thread-id SESSION.",
-      );
+  if (track !== false && supported && identified)
     result.track = { sessionId, endpoint: parsed.values.endpoint ?? "local" };
-  }
   return result;
 }
 export async function publicationCLI(parsed: Parsed): Promise<boolean> {

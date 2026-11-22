@@ -229,11 +229,17 @@ export class PublicationStore {
   }
 }
 export function receipt(value: Publication): Record<string, unknown> {
+  const tracking =
+    value.tracking ??
+    (value.input.track !== undefined &&
+    (value.state === "pending" || value.state === "published")
+      ? "pending"
+      : undefined);
   return {
     id: value.id,
     state: value.state,
     ...(value.url === undefined ? {} : { url: value.url }),
     ...(value.error === undefined ? {} : { error: value.error }),
-    ...(value.tracking === undefined ? {} : { tracking: value.tracking }),
+    ...(tracking === undefined ? {} : { tracking }),
   };
 }
