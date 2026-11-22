@@ -519,7 +519,38 @@ export class TrackingStore {
     status: SafeNotice["assessment"],
     assessment: { id: string; head: string },
   ): void {
-    for (const participant of this.subscriptions.list(this.pr(action.prId))) {
+    const deliveries = this.deliveries().filter(
+      (delivery) => delivery.actionId === action.id,
+    );
+    const pr = this.pr(action.prId);
+    for (const participant of this.subscriptions.list(pr)) {
+      const role =
+        participant.agentId === action.ownerAgentId ? "owner" : "observer";
+      const previous = deliveries.filter(
+        (delivery) => delivery.recipientAgentId === participant.agentId,
+      );
+      // A fresh head can invalidate the assessment while the comment revision stays the same.
+      if (
+        action.blocker.kind === "review_feedback" &&
+        status !== "pending" &&
+        previous.some((delivery) => {
+          const message = this.inbox.get(delivery.id);
+          const notice = message?.notice;
+          return (
+            message?.acknowledgedAt !== undefined &&
+            notice?.assessment === "completed" &&
+            notice.assessmentId !== undefined &&
+            notice.assessmentId !== assessment.id &&
+            notice.role === role
+          );
+        }) &&
+        !previous.some(
+          (delivery) =>
+            this.inbox.notice(delivery.id)?.assessmentId === assessment.id,
+        )
+      )
+        continue;
+
       const at = this.now(),
         id = this.inbox.newMessageId();
       this.saveDelivery(
@@ -533,27 +564,18 @@ export class TrackingStore {
         },
         "assessment_notification_pending",
       );
-      const notice = {
-        ...actionNotice(action, this.pr(action.prId).url, status),
+      const notice: SafeNotice = {
+        ...actionNotice(action, pr.url, status),
         assessmentId: assessment.id,
         ...(/^[a-f0-9]{40,64}$/u.test(assessment.head)
           ? { head: assessment.head }
           : {}),
-        role:
-          participant.agentId === action.ownerAgentId
-            ? ("owner" as const)
-            : ("observer" as const),
+        role,
       };
       this.inbox.freezeNotice(id, notice);
       this.inbox.record(id, this.inbox.render(id, notice));
-      for (const old of this.deliveries()) {
-        if (
-          old.id === id ||
-          old.actionId !== action.id ||
-          old.recipientAgentId !== participant.agentId ||
-          this.inbox.isReplaced(old.id)
-        )
-          continue;
+      for (const old of previous) {
+        if (this.inbox.isReplaced(old.id)) continue;
         this.inbox.supersede(old.id, id);
       }
     }
