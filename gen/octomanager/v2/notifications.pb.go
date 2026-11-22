@@ -516,10 +516,13 @@ func (x *AcknowledgeAgentDigestResponse) GetMessages() []*AgentDigestMember {
 
 // MergeAgentMessageRequest supplies arguments for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
 type MergeAgentMessageRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ReceiptId     string                 `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
-	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	AgentTarget   *AgentTarget           `protobuf:"bytes,3,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	ReceiptId   string                 `protobuf:"bytes,1,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	AgentId     string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentTarget *AgentTarget           `protobuf:"bytes,3,opt,name=agent_target,json=agentTarget,proto3" json:"agent_target,omitempty"`
+	// Required together for an explicit local Pi inbox merge. The receipt ID is the inbox message ID.
+	ExpectedPr    *string `protobuf:"bytes,4,opt,name=expected_pr,json=expectedPr,proto3,oneof" json:"expected_pr,omitempty"`
+	ExpectedHead  *string `protobuf:"bytes,5,opt,name=expected_head,json=expectedHead,proto3,oneof" json:"expected_head,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -573,6 +576,20 @@ func (x *MergeAgentMessageRequest) GetAgentTarget() *AgentTarget {
 		return x.AgentTarget
 	}
 	return nil
+}
+
+func (x *MergeAgentMessageRequest) GetExpectedPr() string {
+	if x != nil && x.ExpectedPr != nil {
+		return *x.ExpectedPr
+	}
+	return ""
+}
+
+func (x *MergeAgentMessageRequest) GetExpectedHead() string {
+	if x != nil && x.ExpectedHead != nil {
+		return *x.ExpectedHead
+	}
+	return ""
 }
 
 // MergeAgentMessageResponse returns the result for the following operation: Acknowledges a frozen receipt and requests its owner-authorized, head-pinned merge.
@@ -1719,12 +1736,17 @@ const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\x13_acknowledged_at_ms\"\x9e\x01\n" +
 	"\x1eAcknowledgeAgentDigestResponse\x12=\n" +
 	"\areceipt\x18\x01 \x01(\v2#.octomanager.v2.DomainDigestReceiptR\areceipt\x12=\n" +
-	"\bmessages\x18\x02 \x03(\v2!.octomanager.v2.AgentDigestMemberR\bmessages\"\x94\x01\n" +
+	"\bmessages\x18\x02 \x03(\v2!.octomanager.v2.AgentDigestMemberR\bmessages\"\x86\x02\n" +
 	"\x18MergeAgentMessageRequest\x12\x1d\n" +
 	"\n" +
 	"receipt_id\x18\x01 \x01(\tR\treceiptId\x12\x19\n" +
 	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12>\n" +
-	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v2.AgentTargetR\vagentTarget\"]\n" +
+	"\fagent_target\x18\x03 \x01(\v2\x1b.octomanager.v2.AgentTargetR\vagentTarget\x12$\n" +
+	"\vexpected_pr\x18\x04 \x01(\tH\x00R\n" +
+	"expectedPr\x88\x01\x01\x12(\n" +
+	"\rexpected_head\x18\x05 \x01(\tH\x01R\fexpectedHead\x88\x01\x01B\x0e\n" +
+	"\f_expected_prB\x10\n" +
+	"\x0e_expected_head\"]\n" +
 	"\x19MergeAgentMessageResponse\x12@\n" +
 	"\x06result\x18\x01 \x01(\v2(.octomanager.v2.DomainMergeReceiptResultR\x06result\"\xd0\x02\n" +
 	"\x13NotificationMessage\x12\x0e\n" +
@@ -1919,6 +1941,7 @@ func file_octomanager_v2_notifications_proto_init() {
 	file_octomanager_v2_notifications_proto_msgTypes[2].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[4].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[5].OneofWrappers = []any{}
+	file_octomanager_v2_notifications_proto_msgTypes[7].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[9].OneofWrappers = []any{}
 	file_octomanager_v2_notifications_proto_msgTypes[10].OneofWrappers = []any{
 		(*NotificationItem_Action)(nil),

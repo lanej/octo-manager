@@ -12,6 +12,8 @@ import { Handoffs } from "../integrations/handoffs.js";
 import { readFailureExcerpt } from "./messages.js";
 import {
   DeliveryState,
+  supportedTrackingTarget,
+  TrackingHarness,
   unfinished,
   type AgentRef,
   type AgentTarget,
@@ -102,7 +104,7 @@ export class TrackingService {
   }
   private validateTarget(target: AgentTarget): void {
     if (
-      target.harness !== "codex" ||
+      !supportedTrackingTarget(target) ||
       !Object.hasOwn(this.config.endpoints, target.endpoint)
     )
       throw new Error("Unsupported harness or endpoint");
@@ -347,13 +349,18 @@ export class TrackingService {
       this.options.interactive(run).catch(() => {});
     else run().catch(() => {});
   }
+  private usesPullInbox(agentId: string): boolean {
+    return (
+      Object.is(this.store.agent(agentId).harness, TrackingHarness.Pi) ||
+      this.options.managedQueue?.(agentId) === true
+    );
+  }
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveries().find((d) => {
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||
-        (message !== undefined &&
-          this.options.managedQueue?.(d.recipientAgentId) === true)
+        (message !== undefined && this.usesPullInbox(d.recipientAgentId))
       )
         return false;
       if (this.store.inbox.isReplaced(d.id))
@@ -419,7 +426,7 @@ export class TrackingService {
       });
       return;
     }
-    if (this.options.managedQueue?.(agent.id) === true) return;
+    if (this.usesPullInbox(agent.id)) return;
     const message = this.store.inbox.get(d.id);
     const endpoint = this.config.endpoints[agent.endpoint];
     if (endpoint === undefined) {
@@ -666,6 +673,7 @@ export class TrackingService {
   private async reconcileReplaced(delivery: Delivery): Promise<void> {
     const message = this.store.inbox.get(delivery.id);
     const agent = this.store.agent(delivery.recipientAgentId);
+    if (Object.is(agent.harness, TrackingHarness.Pi)) return;
     const endpoint = this.config.endpoints[agent.endpoint];
     if (message === undefined || endpoint === undefined) return;
     const connection =

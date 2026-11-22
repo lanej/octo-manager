@@ -82,6 +82,12 @@ export async function notificationsCLI(
       const response = await client.mergeAgentMessage({
         receiptId: id,
         ...request,
+        ...(typeof values["expected-pr"] === "string"
+          ? { expectedPr: values["expected-pr"] }
+          : {}),
+        ...(typeof values["expected-head"] === "string"
+          ? { expectedHead: values["expected-head"] }
+          : {}),
       });
       if (response.result === undefined)
         throw new Error("Missing merge result");

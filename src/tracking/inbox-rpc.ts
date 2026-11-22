@@ -10,6 +10,7 @@ import type { TrackingStore } from "./store.js";
 function wire(message: AgentMessage) {
   return {
     ...message,
+    workflowPrId: message.workflowPRId,
     sequence: BigInt(message.sequence),
     createdAtMs: BigInt(message.createdAt),
     ...(message.acknowledgedAt === undefined
@@ -17,7 +18,10 @@ function wire(message: AgentMessage) {
       : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
   };
 }
-export function inboxRoutes(store: TrackingStore) {
+export function inboxRoutes(
+  store: TrackingStore,
+  readyHead?: (message: AgentMessage) => string | undefined,
+) {
   return {
     listAgentMessages(request: ListAgentMessagesRequest) {
       if (!request.full) store.prepareSafeRecovery();
@@ -40,9 +44,10 @@ export function inboxRoutes(store: TrackingStore) {
         request.applicableOnly,
       );
       return {
-        messages: page.messages.map((message) =>
-          wire(request.full ? message : store.inbox.automatic(message)),
-        ),
+        messages: page.messages.map((message) => ({
+          ...wire(request.full ? message : store.inbox.automatic(message)),
+          readyHead: readyHead?.(message),
+        })),
         nextSequence: BigInt(page.nextSequence),
         hasMore: page.hasMore,
       };

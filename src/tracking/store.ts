@@ -24,6 +24,7 @@ import {
   type Action,
   type AgentRef,
   type AgentTarget,
+  supportedTrackingTarget,
   type Delivery,
   type DeliveryAttempt,
   type ObservationInput,
@@ -168,7 +169,7 @@ export class TrackingStore {
   }
   private register(t: AgentTarget): AgentRef {
     if (
-      t.harness !== "codex" ||
+      !supportedTrackingTarget(t) ||
       !t.endpoint ||
       !t.sessionId ||
       t.sessionId.length > 200 ||

@@ -322,6 +322,10 @@ message AgentMessage {
   optional string submission_id = 9;
   // Provider-neutral issue whose lifecycle prompted this notice.
   optional string issue_id = 10;
+  // Tracked pull request for a workflow notice that has no action ID.
+  optional string workflow_pr_id = 11;
+  // Currently eligible head for this recipient's explicit Pi inbox merge decision.
+  optional string ready_head = 12;
 }
 // ListAgentMessagesRequest supplies arguments for the following operation: Pages recipient-specific messages and independent receipt state.
 message ListAgentMessagesRequest {

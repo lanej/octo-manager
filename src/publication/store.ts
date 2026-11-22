@@ -19,7 +19,13 @@ const InputSchema = Type.Object({
   contract: ContractSchema,
   contractHash: Type.String(),
   track: Type.Optional(
-    Type.Object({ sessionId: Type.String(), endpoint: Type.String() }),
+    Type.Object({
+      sessionId: Type.String(),
+      endpoint: Type.String(),
+      harness: Type.Optional(
+        Type.Union([Type.Literal("codex"), Type.Literal("pi")]),
+      ),
+    }),
   ),
 });
 const PublicationSchema = Type.Object({

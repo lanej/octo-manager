@@ -33,6 +33,7 @@ const publication = [
   "--body-file <path>",
   "--repo <repository>",
   "--head <branch>",
+  "--expected-head <sha>",
   "--base <branch>",
   "--draft",
   "--track",

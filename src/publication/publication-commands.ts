@@ -57,6 +57,7 @@ export const commands: CommandSpec[] = [
     capability: "publication",
     description: "Publish a caller-written pull request",
     options: [
+      "--expected-head <sha>",
       "--title <title>",
       "--body <text>",
       "--body-file <path>",

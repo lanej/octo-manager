@@ -24,6 +24,8 @@ import {
   type PublicationInput,
 } from "./store.js";
 const exec = promisify(execFile);
+import { supportedTrackingTarget, TrackingHarness } from "../tracking/types.js";
+
 type Parsed = ReturnType<typeof parseCommand>;
 function clip(text: string, bytes: number): string {
   const chars = Array.from(text);
@@ -202,19 +204,23 @@ async function input(
   value: Draft,
 ): Promise<PublicationInput> {
   const track = parsed.values.track;
-  const supported = (parsed.values.harness ?? "codex") === "codex";
+  const harness = parsed.values.harness ?? TrackingHarness.Codex;
+  const codex = Object.is(harness, TrackingHarness.Codex);
+  const pi = Object.is(harness, TrackingHarness.Pi);
+  const endpoint = parsed.values.endpoint ?? "local";
   const sessionId =
-    parsed.values["thread-id"] ?? process.env["CODEX_THREAD_ID"];
+    parsed.values["thread-id"] ??
+    (codex ? process.env["CODEX_THREAD_ID"] : undefined);
   const identified = sessionId !== undefined && sessionId.trim() !== "";
-  if (track === true && !supported)
+  if (track === true && !codex && !(pi && endpoint === "local"))
     throw new PublicationError(
       "tracking_harness",
-      "--track supports only Codex sessions. Omit --track or use --no-track.",
+      "Track a Codex session or an explicit local Pi session UUID.",
     );
   if (track === true && !identified)
     throw new PublicationError(
       "tracking_owner",
-      "--track requires the actual --thread-id SESSION or CODEX_THREAD_ID.",
+      "Supply the actual --thread-id SESSION or, for Codex, CODEX_THREAD_ID.",
     );
   const headRef =
     parsed.values.head ?? (await git(root, "branch", "--show-current"));
@@ -230,6 +236,14 @@ async function input(
     "--verify",
     headRef + "^{commit}",
   );
+  if (
+    parsed.values["expected-head"] !== undefined &&
+    parsed.values["expected-head"] !== headSha
+  )
+    throw new PublicationError(
+      "head_changed",
+      "The publication branch moved. Verify the new commit before publishing.",
+    );
   const remote =
     parsed.values.repo === undefined
       ? await git(root, "remote", "get-url", "origin")
@@ -281,8 +295,18 @@ async function input(
     contract: configured.contract,
     contractHash: configured.hash,
   };
-  if (track !== false && supported && identified)
-    result.track = { sessionId, endpoint: parsed.values.endpoint ?? "local" };
+  if (identified && (track === true || (track !== false && codex))) {
+    if (!supportedTrackingTarget({ sessionId, endpoint, harness }))
+      throw new PublicationError(
+        "tracking_harness",
+        "Track a Codex session or an explicit local Pi session UUID.",
+      );
+    result.track = {
+      sessionId,
+      endpoint,
+      ...(pi ? { harness: TrackingHarness.Pi } : {}),
+    };
+  }
   return result;
 }
 export async function publicationCLI(parsed: Parsed): Promise<boolean> {

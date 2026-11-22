@@ -431,3 +431,45 @@ test("automatic notices do not request external log enrichment during cooldown",
     await rm(dir, { recursive: true, force: true });
   }
 }, 10000);
+
+test("local Pi tracking stores an inbox message without opening a Codex connection", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-pi-inbox-"));
+  const store = new Store(dir, () => 1000);
+  const config = defaultTrackingConfig();
+  let connections = 0;
+  const service = new TrackingService(store.tracking, config, () => 1000, {
+    read: () => Promise.resolve(input),
+    connect: () => {
+      connections++;
+      throw new Error("Pi messages must stay in the pull inbox");
+    },
+  });
+  try {
+    const pi = {
+      harness: "pi",
+      endpoint: "local",
+      sessionId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    };
+    assert.throws(
+      () => service.track(url, { ...pi, endpoint: "remote" }),
+      /Unsupported/u,
+    );
+    const tracked = service.track(url, pi);
+    assert.equal(store.tracking.agent(tracked.ownerAgentId).harness, "pi");
+    store.tracking.observe(tracked.id, input, config);
+    service.tick();
+    await until(
+      () => store.tracking.inbox.list(tracked.ownerAgentId).messages.length > 0,
+    );
+    const [notice] = store.tracking.inbox.list(tracked.ownerAgentId).messages;
+    assert(notice !== undefined);
+    assert.equal(connections, 0);
+    assert.equal(notice.acknowledgedAt, undefined);
+    store.tracking.acknowledgeMessage(notice.id, tracked.ownerAgentId);
+    assert.equal(store.tracking.inbox.get(notice.id)?.acknowledgedAt, 1000);
+  } finally {
+    await service.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

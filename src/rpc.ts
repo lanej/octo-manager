@@ -89,10 +89,19 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
     listPRParticipants(r){return trackingOperation(()=>{const participants=tracking.store.participants(r.id);return {participants:participants.slice(r.offset,r.offset+20),total:participants.length,hasMore:participants.length>r.offset+20};});},
     mergeAgentMessage(r) {return trackingOperation(()=>{
       if(r.agentId!=="" && r.agentTarget!==undefined)throw new Error("Invalid mixed recipient references");
-      const version=coordinator.store.digests.delivery(r.receiptId);
       const agentId=r.agentTarget===undefined?r.agentId:
         tracking.store.sessionAgent(r.agentTarget.harness,r.agentTarget.sessionId,r.agentTarget.endpoint===""?undefined:r.agentTarget.endpoint);
       const recipient=r.agentId===""?agentId:coordinator.store.merging.actor(r.agentId);
+      if (r.expectedPr !== undefined || r.expectedHead !== undefined) {
+        const expectedPr = r.expectedPr, expectedHead = r.expectedHead;
+        if (expectedPr === undefined || expectedHead === undefined)
+          throw new Error("Invalid Pi merge request: expected PR and head are required together");
+        const result = coordinator.store.merging.transaction(() =>
+          coordinator.merging.receipts.requestFromInbox(r.receiptId, recipient, expectedPr, expectedHead),
+        );
+        return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,...result})};
+      }
+      const version=coordinator.store.digests.delivery(r.receiptId);
       coordinator.digests.acknowledge(version.digestId,version.revision,recipient);
       const target=version.mergeTarget;
       if(target===undefined)return {result:wire(DomainMergeReceiptResultSchema,{receipt:r.receiptId,state:"blocked",reason:"This message has no merge target"})};
@@ -152,7 +161,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       });
     },
     registerAgent(r){return trackingOperation(()=>({agent:wireAgent(tracking.registerAgent(owner(r.target)))}));},
-    ...inboxRoutes(tracking.store),
+    ...inboxRoutes(tracking.store, (message) => coordinator.merging.receipts.inboxReadyHead(message)),
     ...repairRoutes(coordinator.repairs),
     ...activityRoutes(coordinator.store.activity, () => coordinator.store.sequence(), (after) => coordinator.store.eventsSince(after).map(wireEvent), (before) => coordinator.store.activityBefore(before).map(wireEvent)),
     async trackPullRequest(r){return trackingOperation(()=>({pr:wirePR(tracking.track(r.url,owner(r.owner),r.cwd))}));},

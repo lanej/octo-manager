@@ -46,6 +46,7 @@ export class DigestService {
   }
   managed = (agentId: string): boolean => {
     const agent = this.tracking.store.agent(agentId);
+    if (agent.harness === "pi") return false;
     return (
       this.tracking.config.endpoints[agent.endpoint]?.delivery === "queue" ||
       this.store

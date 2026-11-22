@@ -185,7 +185,7 @@ export async function publishRequest(
       {
         url: value.url,
         cwd: value.input.root,
-        harness: "codex",
+        harness: value.input.track.harness ?? "codex",
         endpoint: value.input.track.endpoint,
         sessionId: value.input.track.sessionId,
         label: "PR publication",
