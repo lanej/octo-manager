@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { startupRecord } from "./startup-context.js";
 import { issuesCLI } from "./issues/cli.js";
 import { commandTree, CommanderError } from "./command-tree.js";
 import { publicationCLI } from "./publication/cli.js";
@@ -58,7 +59,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     const model = values.model ?? trackingConfig.workerModel;
     const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
-    console.log(JSON.stringify({ ready: true, state: directory }));
+    console.log(JSON.stringify(startupRecord(directory)));
     await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
     return;
   }

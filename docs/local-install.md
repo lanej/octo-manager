@@ -13,6 +13,8 @@ bun scripts/install-local.ts --codex
 
 The installer builds a revision-specific release under `~/.local/share/octo-manager/releases/`, installs production dependencies with lifecycle scripts disabled, and points the stable launcher at `current`. The service uses absolute release paths and a private pinned Bun, so it does not depend on a source checkout, shell startup files, or the caller's working directory. Existing state stays in `~/.local/state/octo-manager` unless `OCTO_MANAGER_STATE` overrides it. Do not run a manual coordinator against the same state while starting the service. `--no-start` stages the release and configuration without starting it, for a controlled handover from an existing manual process.
 
+Each successful coordinator start emits a JSON readiness record retaining `ready` and `state`, with UTC `at`, process `pid`, actual `runtime` name/version and `release` identity. Installed release identity comes from metadata beside the running executable; missing, invalid or unreadable metadata produces an explicit unavailable status rather than using the caller's checkout revision.
+
 The user LaunchAgent `com.lanej.octo-manager` starts at login and restarts the coordinator if it exits. Its definition is `~/Library/LaunchAgents/com.lanej.octo-manager.plist`; logs are in the state directory's `coordinator.log`. The installer preserves prior launcher and changed configuration under `install-backups/<revision>/` in that state directory. Installation is not a transaction across all these files; inspect errors and backups before retrying a failed installation.
 
 ```sh
