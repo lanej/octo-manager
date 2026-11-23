@@ -1,6 +1,13 @@
 import type { CommandSpec } from "../cli/contracts.js";
 export const commands: CommandSpec[] = [
   {
+    path: "lifecycle <action>",
+    route: "lifecycle",
+    capability: "application",
+    description: "Inspect or perform a guarded native lifecycle step",
+    options: [],
+  },
+  {
     path: "serve",
     route: "serve",
     capability: "application",

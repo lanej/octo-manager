@@ -92,6 +92,19 @@ export class MergeService {
       });
     }, this.interval);
   }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      this.store.entries().every((entry) => terminal(entry.state)) &&
+      this.store
+        .operations()
+        .every(
+          (operation) =>
+            operation.state === OperationState.Succeeded ||
+            operation.state === OperationState.Failed,
+        )
+    );
+  }
   async close(): Promise<void> {
     if (this.timer !== undefined) clearInterval(this.timer);
     this.abort.abort();

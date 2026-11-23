@@ -26,6 +26,7 @@ const outputs: Record<Capability, Readonly<Record<string, Projection>>> = {
 
 export const agentOutputExceptions: Readonly<Record<string, string>> = {
   serve: "Long-running server readiness protocol",
+  lifecycle: "Version 1 native activation evidence protocol",
   dashboard: "Interactive terminal application",
   login: "Interactive authentication",
   "codex-hook": "Codex hook protocol",

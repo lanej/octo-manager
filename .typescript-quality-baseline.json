@@ -244,14 +244,6 @@
     {
       "file": "src/cli.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-floating-promises",
-      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once(\"SIGINT\", stop); process.once(\"SIGTERM\", stop); });",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, value is always truthy.",
       "source": "} while (true);",

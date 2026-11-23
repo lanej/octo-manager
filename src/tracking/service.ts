@@ -333,6 +333,7 @@ export class TrackingService {
         .catch(() => {})
         .finally(() => {
           this.deliveryBusy = false;
+          delete this.deliveryWork;
         });
     }
   }
@@ -742,6 +743,30 @@ export class TrackingService {
       this.store.subscriptions.includes(action.prId, d.recipientAgentId) &&
       (includeReceived ||
         this.store.inbox.get(d.id)?.acknowledgedAt === undefined)
+    );
+  }
+  checkpointable(): boolean {
+    return (
+      this.handoffWork === undefined &&
+      this.refreshes.size === 0 &&
+      !this.deliveryBusy &&
+      this.deliveryWork === undefined &&
+      this.connections.size === 0 &&
+      !this.store
+        .deliveries()
+        .some(
+          (delivery) =>
+            delivery.progress.state === DeliveryState.Pending ||
+            delivery.progress.state === DeliveryState.Sending ||
+            delivery.progress.state === DeliveryState.Uncertain,
+        ) &&
+      !this.store
+        .attempts()
+        .some(
+          (attempt) =>
+            attempt.outcome.state === "sending" ||
+            attempt.outcome.state === "uncertain",
+        )
     );
   }
   async close(): Promise<void> {
