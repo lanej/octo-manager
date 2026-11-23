@@ -220,6 +220,7 @@ export class NotificationRepository {
   private byPrefix: StatementSync | undefined;
   private page: StatementSync | undefined;
   private workflowRecovery: StatementSync | undefined;
+  private actionRecovery: StatementSync | undefined;
   private noticeById: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
@@ -279,6 +280,13 @@ export class NotificationRepository {
         );
       this.markReplacement(message.id, id);
     }
+  }
+  legacyActionMessages(): AgentMessage[] {
+    return (this.actionRecovery ??= this.db.prepare(
+      `SELECT m.* FROM (${query}) m WHERE applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=m.delivery_id)`,
+    ))
+      .all()
+      .map(decode);
   }
   isReplaced(id: string): boolean {
     return (

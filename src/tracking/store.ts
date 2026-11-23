@@ -455,15 +455,15 @@ export class TrackingStore {
   prepareSafeRecovery(): void {
     this.transaction(() => {
       this.inbox.recoverWorkflows();
+      const messages = new Map(
+        this.inbox
+          .legacyActionMessages()
+          .map((message) => [message.id, message]),
+      );
+      if (messages.size === 0) return;
       for (const delivery of this.deliveries()) {
-        const message = this.inbox.get(delivery.id);
-        if (
-          message === undefined ||
-          message.notice !== undefined ||
-          !message.applicable ||
-          message.acknowledgedAt !== undefined
-        )
-          continue;
+        const message = messages.get(delivery.id);
+        if (message === undefined) continue;
         const action = this.action(delivery.actionId),
           pr = this.pr(action.prId);
         const id = this.inbox.newMessageId(),
