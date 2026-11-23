@@ -47,6 +47,14 @@
     "event": {
       "number": 12,
       "type": "string"
+    },
+    "workflowRunId": {
+      "number": 13,
+      "type": "int64"
+    },
+    "workflowRunAttempt": {
+      "number": 14,
+      "type": "int64"
     }
   },
   "DomainCheckEvidence": {
@@ -127,6 +135,14 @@
     "event": {
       "number": 12,
       "type": "string"
+    },
+    "workflowRunId": {
+      "number": 13,
+      "type": "int64"
+    },
+    "workflowRunAttempt": {
+      "number": 14,
+      "type": "int64"
     }
   },
   "DomainCheckEvidenceVariant2State": {
@@ -197,6 +213,14 @@
     "event": {
       "number": 12,
       "type": "string"
+    },
+    "workflowRunId": {
+      "number": 13,
+      "type": "int64"
+    },
+    "workflowRunAttempt": {
+      "number": 14,
+      "type": "int64"
     }
   },
   "DomainCheckEvidenceVariant3State": {

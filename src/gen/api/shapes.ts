@@ -44,6 +44,16 @@ export const shapes: Record<string, Shape> = {
         "required": true
       },
       {
+        "key": "workflowRunId",
+        "type": "int64",
+        "required": false
+      },
+      {
+        "key": "workflowRunAttempt",
+        "type": "int64",
+        "required": false
+      },
+      {
         "key": "suiteId",
         "type": "int64",
         "required": false
@@ -119,6 +129,16 @@ export const shapes: Record<string, Shape> = {
         "key": "url",
         "type": "string",
         "required": true
+      },
+      {
+        "key": "workflowRunId",
+        "type": "int64",
+        "required": false
+      },
+      {
+        "key": "workflowRunAttempt",
+        "type": "int64",
+        "required": false
       },
       {
         "key": "suiteId",
@@ -215,6 +235,16 @@ export const shapes: Record<string, Shape> = {
         "key": "url",
         "type": "string",
         "required": true
+      },
+      {
+        "key": "workflowRunId",
+        "type": "int64",
+        "required": false
+      },
+      {
+        "key": "workflowRunAttempt",
+        "type": "int64",
+        "required": false
       },
       {
         "key": "suiteId",

@@ -50,8 +50,16 @@ export function currentChecks(o: PRObservation) {
   return o.checks.state === "unavailable"
     ? []
     : latest(
-        o.checks.value.filter((c) => c.headSha === o.headSha),
-        (c) => c.key,
+        o.checks.value.filter(
+          (c) =>
+            c.headSha === o.headSha &&
+            !(
+              o.workflows !== undefined &&
+              o.workflows.state !== "unavailable" &&
+              o.workflows.value.some((candidate) => checkReplaces(c, candidate))
+            ),
+        ),
+        (c) => (c.id.startsWith("status:") ? c.key : c.id),
         (c) => c.at,
       );
 }

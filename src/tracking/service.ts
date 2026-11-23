@@ -228,7 +228,14 @@ export class TrackingService {
       try {
         const input: ObservationInput = await (
           this.options.read ?? readObservation
-        )(p.url, controller.signal, undefined, this.now);
+        )(
+          p.url,
+          controller.signal,
+          undefined,
+          this.now,
+          undefined,
+          this.store.checks.reconciliationChecks(p.id),
+        );
         const current = this.store.pr(p.id);
         if (
           !this.stopped &&

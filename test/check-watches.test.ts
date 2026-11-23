@@ -484,25 +484,29 @@ test("disappearing failed executions stay in waiting and completed-generation re
       },
     });
     store.tracking.observe(pr.id, onlyGreen, config);
-    const results = store.tracking
-      .actions()
-      .filter((action) => action.blocker.kind === "check_results");
-    assert.equal(results.length, 1);
-    const action = results[0];
-    assert(action?.blocker.kind === "check_results");
+    const watches = store.tracking.checks.list();
+    assert.equal(watches.length, 1);
+    const watch = watches[0];
+    assert.equal(watch?.state, CheckWatchState.Completed);
+    assert(watch.evidence.state === "complete");
     assert(
-      action.blocker.checks.some(
+      watch.evidence.value.some(
         (check) => check.id === failure.id && check.conclusion === "failure",
       ),
     );
-    assert.equal(action.summary, "Failed check: check (linux)");
     store.tracking.observe(pr.id, onlyGreen, config);
     assert.equal(store.tracking.checks.list().length, 1);
     assert.equal(
       store.tracking
         .actions()
-        .filter((action) => action.blocker.kind === "check_results").length,
+        .filter((action) => action.blocker.kind === "check_failed").length,
       1,
+    );
+    assert.equal(
+      store.tracking
+        .actions()
+        .filter((action) => action.blocker.kind === "check_results").length,
+      0,
     );
   } finally {
     store.close();
