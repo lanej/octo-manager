@@ -66,6 +66,12 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 		row.title = "PR listener removed"
 	case "pr_refresh_failed":
 		row.title = "PR check failed"
+	case "pr_refresh_retry_scheduled":
+		row.title = "PR check retry scheduled"
+	case "pr_refresh_cancelled":
+		row.title = "PR check cancelled"
+	case "pr_refresh_recovered":
+		row.title = "PR monitoring restored"
 	case "action_opened":
 		row.title = "Needs attention"
 	case "action_progress":

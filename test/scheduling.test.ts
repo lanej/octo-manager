@@ -1,3 +1,4 @@
+import { GitHubRequestCancelledError } from "../src/github-errors.js";
 import { sdkTransport } from "../src/github-sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
@@ -89,7 +90,7 @@ test("one shared dispatch gate spaces all physical requests, honors cancellation
     assert.deepEqual(starts, [0, 2000, 100000]);
     const controller = new AbortController();
     const cancelled = reader.read("cancelled", controller.signal);
-    const rejected = assert.rejects(cancelled, /cancelled/);
+    const rejected = assert.rejects(cancelled, GitHubRequestCancelledError);
     controller.abort();
     await rejected;
     at = 200000;

@@ -4,7 +4,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubMetadata } from "../src/tracking/metadata.js";
-import { readObservation } from "../src/tracking/github.js";
+import {
+  GitHubObservationChangedError,
+  readObservation,
+} from "../src/tracking/github.js";
 import { GitHubRateLimitError } from "../src/github-api.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { Store } from "../src/store.js";
@@ -113,7 +116,7 @@ test("changed GraphQL head, target, lifecycle, base branch, and mergeability rej
         () => 1000,
         (url, signal) => metadata.read(url, signal),
       ),
-      /revisions changed/,
+      GitHubObservationChangedError,
     );
     assert.equal(calls, 2);
   }

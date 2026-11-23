@@ -1,3 +1,4 @@
+import { GitHubRequestCancelledError } from "../github-errors.js";
 import { githubReads, type GitHubQueryResult } from "../github-api.js";
 import { trackingPR } from "./evidence.js";
 import type { TargetBase } from "./types.js";
@@ -83,7 +84,7 @@ export class GitHubMetadata {
     for (let start = 0; start < pending.length; start += 10) {
       const batch = pending.slice(start, start + 10).filter((item) => {
         if (item.signal?.aborted !== true) return true;
-        item.reject(new Error("GitHub read cancelled"));
+        item.reject(new GitHubRequestCancelledError("GitHub read cancelled"));
         return false;
       });
       if (batch.length === 0) continue;
@@ -126,7 +127,8 @@ export class GitHubMetadata {
         });
         for (const [index, item] of batch.entries()) {
           try {
-            item.signal?.throwIfAborted();
+            if (item.signal?.aborted === true)
+              throw new GitHubRequestCancelledError("GitHub read cancelled");
             const alias = `pr${String(index)}`;
             if (failures.includes(undefined) || failures.includes(alias))
               throw new Error("GitHub PR metadata unavailable");

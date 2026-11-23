@@ -17,6 +17,22 @@ export const QueueTransportSchema = Type.Object(
   { additionalProperties: false },
 );
 export type QueueTransport = Static<typeof QueueTransportSchema>;
+export const ArchivedInspectionSchema = Type.Object(
+  {
+    version: Type.Literal(1),
+    signature: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    at: Type.Integer({ minimum: 0 }),
+    failures: Type.Integer({ minimum: 1 }),
+    error: Type.String({ minLength: 1, maxLength: 1000 }),
+  },
+  { additionalProperties: false },
+);
+export type ArchivedInspection = Static<typeof ArchivedInspectionSchema>;
+export function archivedInspection(value: unknown): ArchivedInspection {
+  if (!Check(ArchivedInspectionSchema, value))
+    throw new Error("Invalid archived queue inspection");
+  return value;
+}
 export const DigestSchema = Type.Object(
   {
     transport: QueueTransportSchema,

@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import { setImmediate } from "node:timers/promises";
 import type { MessagePresentation } from "../merging/receipt-types.js";
 import { resolveId } from "../tracking/identifiers.js";
 import {
   CodexConnection,
+  DeliveryError,
   codexSocketPath,
   type QueueConnection,
   type QueuedMessage,
@@ -21,6 +23,8 @@ import {
 } from "./types.js";
 import { renderDigest } from "./render.js";
 const recipientConcurrency = 4;
+// Archived sessions retain unknown queue/receipt state and are probed at least every fifteen minutes.
+const archivedInspectionDelay = 15 * 60 * 1000;
 
 interface ReconciliationInputs {
   pending: AgentMessage[];
@@ -163,22 +167,28 @@ export class DigestService {
     };
   }
   private signature(agent: AgentRef, inputs: ReconciliationInputs): string {
-    return JSON.stringify([
-      inputs.pending.map((value) => [
-        value.id,
-        inputs.presentations.get(value.id),
-      ]),
-      inputs.legacy.map((value) => [
-        value.id,
-        value.acknowledgedAt,
-        this.applicable(value),
-      ]),
-      inputs.active?.id,
-      inputs.active?.revision,
-      inputs.active?.state,
-      inputs.cleanup.map((value) => value.id),
-      this.tracking.config.endpoints[agent.endpoint],
-    ]);
+    return createHash("sha256")
+      .update(
+        JSON.stringify([
+          [agent.harness, agent.endpoint, agent.sessionId],
+          inputs.pending.map((value) => [
+            value.id,
+            inputs.presentations.get(value.id),
+          ]),
+          inputs.legacy.map((value) => [
+            value.id,
+            value.acknowledgedAt,
+            this.applicable(value),
+          ]),
+          inputs.active?.id,
+          inputs.active?.revision,
+          inputs.active?.state,
+          inputs.active?.transport,
+          inputs.cleanup.map((value) => [value.id, value.transport]),
+          this.tracking.config.endpoints[agent.endpoint],
+        ]),
+      )
+      .digest("hex");
   }
   private async discover(): Promise<void> {
     const recoveryRevision = this.options.inputRevision?.();
@@ -273,6 +283,7 @@ export class DigestService {
       inputs.cleanup.length === 0 &&
       inputs.legacy.length === 0
     ) {
+      this.store.clearArchivedInspection(agent.id);
       const revision = inputRevision;
       if (revision === undefined) this.checks.delete(agent.id);
       else
@@ -285,7 +296,8 @@ export class DigestService {
       return;
     }
     const signature = this.signature(agent, inputs),
-      previous = this.checks.get(agent.id);
+      previous =
+        this.checks.get(agent.id) ?? this.store.archivedInspection(agent.id);
     if (previous?.signature === signature && previous.at > this.now()) {
       if (inputRevision !== undefined)
         this.checks.set(agent.id, { ...previous, inputRevision });
@@ -294,6 +306,7 @@ export class DigestService {
     let failures = 0;
     let failure: string | undefined;
     let delay = 1000;
+    let archived = false;
     try {
       await this.sync(agent);
       if (
@@ -304,7 +317,10 @@ export class DigestService {
     } catch (error) {
       failures =
         (previous?.signature === signature ? previous.failures : 0) + 1;
-      delay = Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
+      archived = error instanceof DeliveryError && error.archived;
+      delay = archived
+        ? archivedInspectionDelay
+        : Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
       const current = this.store.active(agent.id),
         reason = (
           error instanceof Error ? error.message : "Queue reconciliation failed"
@@ -335,9 +351,9 @@ export class DigestService {
       latest.pending.length === 0 &&
       fresh === undefined &&
       latest.cleanup.length === 0;
-    this.checks.set(agent.id, {
+    const check = {
       signature:
-        this.generation !== generation && failure === undefined
+        archived || (this.generation !== generation && failure === undefined)
           ? signature
           : this.signature(agent, latest),
       at: Math.max(
@@ -350,7 +366,17 @@ export class DigestService {
       failures,
       ...(inputRevision === undefined ? {} : { inputRevision }),
       ...(failure === undefined ? {} : { error: failure }),
-    });
+    };
+    this.checks.set(agent.id, check);
+    if (archived && failure !== undefined) {
+      this.store.saveArchivedInspection(agent.id, {
+        version: 1,
+        signature: check.signature,
+        at: check.at,
+        failures,
+        error: failure,
+      });
+    } else this.store.clearArchivedInspection(agent.id);
   }
   private transport(agent: AgentRef): QueueTransport | undefined {
     const endpoint = this.tracking.config.endpoints[agent.endpoint];

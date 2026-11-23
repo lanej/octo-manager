@@ -1,3 +1,7 @@
+import {
+  GitHubRequestCancelledError,
+  throwIfGitHubCancelled,
+} from "./github-errors.js";
 import { Octokit } from "@octokit/core";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -101,7 +105,7 @@ export function sdkTransport(
 ): GitHubTransport {
   let client: Promise<Octokit> | undefined;
   return async (request, signal, beforeSend) => {
-    signal?.throwIfAborted();
+    throwIfGitHubCancelled(signal);
     if (/^\w+:|^\/\/|[\\\r\n#]/u.test(request.path))
       throw new Error("GitHub request must use an API-relative path");
     client ??= auth().then(
@@ -116,7 +120,7 @@ export function sdkTransport(
         }),
     );
     const octokit = await client;
-    signal?.throwIfAborted();
+    throwIfGitHubCancelled(signal);
     beforeSend?.();
     try {
       return response(
@@ -138,10 +142,9 @@ export function sdkTransport(
     } catch (error) {
       if (record(error) && record(error["response"]))
         return response(error["response"]);
+      if (signal?.aborted === true) throw new GitHubRequestCancelledError();
       throw new Error(
-        signal?.aborted === true
-          ? "GitHub request cancelled"
-          : "GitHub unavailable; check authentication, access and connectivity",
+        "GitHub unavailable; check authentication, access and connectivity",
       );
     }
   };

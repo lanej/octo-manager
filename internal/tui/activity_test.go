@@ -394,3 +394,25 @@ func TestActivityLogKeepsOneLinePerEntry(t *testing.T) {
 		t.Fatal("single-line formatting lost the outcome or normalized detail")
 	}
 }
+
+func TestActivityDistinguishesRefreshOutcomes(t *testing.T) {
+	t.Parallel()
+
+	for _, fixture := range []struct{ kind, title, reason string }{
+		{"pr_refresh_retry_scheduled", "PR check retry scheduled", "PR revisions changed during observation"},
+		{"pr_refresh_cancelled", "PR check cancelled", "GitHub request cancelled"},
+		{"pr_refresh_recovered", "PR monitoring restored", "Fresh observation accepted"},
+		{"pr_refresh_failed", "PR check failed", "Authentication required"},
+	} {
+		t.Run(fixture.kind, func(t *testing.T) {
+			t.Parallel()
+			m := model(t, theme.Dark)
+			m.agentActivity.events = []*v1.JobEvent{{Sequence: 1, AtMs: 1794690000000, Kind: fixture.kind, Detail: fixture.reason}}
+
+			rendered := ansi.Strip(m.activityContentAt(132))
+			if !strings.Contains(rendered, fixture.title) || !strings.Contains(rendered, fixture.reason) {
+				t.Fatalf("activity lost refresh outcome or evidence: %s", rendered)
+			}
+		})
+	}
+}

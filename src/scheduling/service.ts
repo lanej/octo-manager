@@ -1,3 +1,4 @@
+import { GitHubRequestCancelledError } from "../github-errors.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { EventEmitter } from "node:events";
 import type { GitHubResource } from "../github-usage.js";
@@ -81,13 +82,15 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     signal?: AbortSignal,
   ): Promise<T> {
     if (this.closed)
-      return Promise.reject(new Error("GitHub scheduler is stopping"));
+      return Promise.reject(
+        new GitHubRequestCancelledError("GitHub scheduler is stopping"),
+      );
     if (signal?.aborted === true)
-      return Promise.reject(new Error("GitHub request cancelled"));
+      return Promise.reject(new GitHubRequestCancelledError());
     return new Promise<T>((resolve, reject) => {
       const cancel = () => {
         this.queue = this.queue.filter((value) => value !== item);
-        reject(new Error("GitHub request cancelled"));
+        reject(new GitHubRequestCancelledError());
       };
       const item: Pending = {
         resource,
@@ -97,7 +100,8 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         run: async () => {
           signal?.removeEventListener("abort", cancel);
           try {
-            signal?.throwIfAborted();
+            if (signal?.aborted === true)
+              throw new GitHubRequestCancelledError();
             resolve(await work());
           } catch (error) {
             reject(
@@ -273,7 +277,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     if (this.timer !== undefined) clearInterval(this.timer);
     this.abort.abort();
     for (const item of this.queue.splice(0))
-      item.reject(new Error("GitHub scheduler stopped"));
+      item.reject(new GitHubRequestCancelledError("GitHub scheduler stopped"));
     await Promise.all([
       ...this.reviews.values(),
       ...(this.inFlight === undefined ? [] : [this.inFlight]),

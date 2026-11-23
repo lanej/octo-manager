@@ -11,7 +11,11 @@ import { SubmissionState } from "../src/submissions/contracts.js";
 import { DigestService } from "../src/notifications/service.js";
 import { DigestState } from "../src/notifications/types.js";
 import type { AgentRef } from "../src/tracking/types.js";
-import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
+import {
+  DeliveryError,
+  type QueueConnection,
+  type QueuedMessage,
+} from "../src/agents/codex.js";
 const target = {
   harness: "codex",
   endpoint: "local",
@@ -27,13 +31,25 @@ class Queue implements QueueConnection {
   cancelMode: "normal" | "consume" | "lose_before" | "lose_after" = "normal";
   coverage = true;
   inspectFailure = false;
+  archived = false;
   inspections = 0;
   onCancel: (() => void) | undefined;
+  onInspect: (() => void) | undefined;
   prepare(): Promise<{ busy: boolean }> {
     return Promise.resolve({ busy: false });
   }
   queued(): Promise<QueuedMessage[]> {
     this.inspections++;
+    this.onInspect?.();
+    if (this.archived)
+      return Promise.reject(
+        new DeliveryError(
+          "Codex thread/queue/list rejected (RPC -32600): session synthetic-agent is archived.",
+          false,
+          true,
+          true,
+        ),
+      );
     return this.inspectFailure
       ? Promise.reject(new Error("Queue coverage incomplete"))
       : Promise.resolve(structuredClone(this.slots));
@@ -479,6 +495,132 @@ test("unchanged inspection failures back off without repeating events, then reco
     expect(f.store.digests.get(active.id).state).toBe(DigestState.Queued);
     expect(f.store.digests.get(active.id).error).toBeUndefined();
   } finally {
+    await f.close();
+  }
+});
+test("archived legacy cleanup keeps its bounded retry and warning identity across restart", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("Legacy");
+    const message = f.store.tracking.inbox.get(notice.id);
+    if (message === undefined) throw new Error("Missing fixture message");
+    f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+    f.queue.slots.push({
+      queueId: "legacy",
+      clientId: notice.id,
+      body: message.body,
+    });
+    f.queue.archived = true;
+    await f.advance(0);
+    expect(f.queue.inspections).toBe(1);
+    expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+    const retry = f.store.digests.archivedInspection(f.actor.id);
+    expect(retry?.at).toBe(901000);
+    expect(retry?.signature).toMatch(/^[a-f0-9]{64}$/u);
+    expect(JSON.stringify(retry)).not.toContain("Legacy");
+    await f.reopen();
+    await f.advance(899999);
+    expect(f.queue.inspections).toBe(1);
+    expect(f.queue.slots).toHaveLength(1);
+    expect(
+      f.store
+        .eventsSince(0)
+        .filter((event) => event.kind === "queue_inspection_unavailable"),
+    ).toHaveLength(1);
+    f.queue.archived = false;
+    await f.advance(1);
+    expect(f.queue.inspections).toBe(2);
+    expect(f.queue.operations).toContain("cancel");
+    expect(f.queue.slots).toHaveLength(0);
+    expect(f.store.digests.archivedInspection(f.actor.id)).toBeUndefined();
+    expect(
+      f.store
+        .eventsSince(0)
+        .filter((event) => event.kind === "queue_inspection_recovered"),
+    ).toHaveLength(1);
+  } finally {
+    await f.close();
+  }
+});
+test("archived active digests retain unconfirmed members and changed routes bypass persisted retry", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("Unread");
+    f.queue.archived = true;
+    await f.advance(0);
+    await f.advance(1);
+    const active = f.store.digests.active(f.actor.id);
+    if (active === undefined) throw new Error("Missing active digest");
+    expect(active.state).toBe(DigestState.Unavailable);
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    const inspections = f.queue.inspections;
+    await f.reopen();
+    await f.advance(60000);
+    expect(f.queue.inspections).toBe(inspections);
+    expect(f.store.digests.get(active.id).state).toBe(DigestState.Unavailable);
+    f.config.endpoints["local"] = {
+      delivery: "queue",
+      socket: "/new/queue.sock",
+    };
+    await f.advance(0);
+    // The old route still owns unknown queue state and must be reconciled before another queue can be used.
+    expect(f.queue.inspections).toBe(inspections + 1);
+    expect(f.queues.get("/new/queue.sock")).toBeUndefined();
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    f.queue.archived = false;
+    await f.advance(900000);
+    expect(f.store.digests.archivedInspection(f.actor.id)).toBeUndefined();
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+test("an archived rejection cannot back off a route changed during inspection", async () => {
+  const f = await fixture();
+  try {
+    f.notice("Unread");
+    f.queue.archived = true;
+    await f.advance(0);
+    await f.advance(1);
+    const before = f.queue.inspections;
+    f.queue.onInspect = () => {
+      f.queue.onInspect = undefined;
+      f.config.endpoints["local"] = {
+        delivery: "queue",
+        socket: "/changed-during-inspection.sock",
+      };
+    };
+    await f.advance(900000);
+    expect(f.queue.inspections).toBe(before + 1);
+    await f.advance(0);
+    expect(f.queue.inspections).toBe(before + 2);
+    expect(f.queues.get("/changed-during-inspection.sock")).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+test("persisted archived inspection records reject unexpected fields", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const notice = f.notice("Legacy");
+    f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+    f.queue.archived = true;
+    await f.advance(0);
+    db.prepare(
+      "UPDATE settings SET value=json_set(value,'$.unknown',1) WHERE key=?",
+    ).run(`digest-archive-check:${f.actor.id}`);
+    expect(() => f.store.digests.archivedInspection(f.actor.id)).toThrow(
+      "Invalid archived queue inspection",
+    );
+  } finally {
+    db.close();
     await f.close();
   }
 });
