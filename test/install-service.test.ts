@@ -9,7 +9,6 @@ import {
 } from "../src/install/service.js";
 const input: ServiceInput = {
   home: "/fixture/home",
-  bun: "/fixture/bun",
   release: "/fixture/release",
   state: "/fixture/state",
   path: "/usr/bin",
@@ -25,7 +24,7 @@ test("Linux service activation is explicit, native and reports unavailable-manag
   };
   expect(definition.text).toContain("WorkingDirectory=/fixture/release\n");
   expect(definition.text).toContain(
-    'ExecStart="/fixture/bun" "/fixture/release/dist/cli.js" "serve"',
+    'ExecStart="/usr/bin/env" "bun" "/fixture/release/dist/cli.js" "serve"',
   );
   expect(definition.text).toContain('Environment="CODEX_HOME=/fixture/codex"');
   const manual = await startService(definition, input, false, run, false);
@@ -69,10 +68,14 @@ test("Linux service activation is explicit, native and reports unavailable-manag
 test("service escaping preserves literal environment values and quoted executable paths", () => {
   const definition = serviceDefinition(
     "linux",
-    { ...input, bun: '/fixture/space $HOME%"/bun', home: '/fixture/$HOME%"' },
+    {
+      ...input,
+      release: '/fixture/space $HOME%"/release',
+      home: '/fixture/$HOME%"',
+    },
     1000,
   );
-  expect(definition.text).toContain('space $$HOME%%\\"/bun');
+  expect(definition.text).toContain('space $$HOME%%\\"/release');
   expect(definition.text).toContain('Environment="HOME=/fixture/$HOME%%\\""');
   expect(() =>
     serviceDefinition("linux", { ...input, state: "bad\nvalue" }, 1000),
@@ -101,6 +104,9 @@ test("launchd keeps owned service replacement and confirms the running state", a
     "print",
   ]);
   expect(definition.text).toContain("/fixture/release/dist/cli.js");
+  expect(definition.text).toContain(
+    "<string>/usr/bin/env</string><string>bun</string>",
+  );
 });
 
 test("manual startup preserves the exact alternate installation environment", async () => {
@@ -114,11 +120,10 @@ test("manual startup preserves the exact alternate installation environment", as
     await chmod(executable, 0o755);
     const alternate = {
       ...input,
-      bun: executable,
       home: "/alternate/home with '$'",
       configHome: "/alternate/config $value",
       codexHome: "/alternate/codex'home",
-      path: "/alternate/bin",
+      path: directory,
     };
     const result = await startService(
       serviceDefinition("linux", alternate, 1000),

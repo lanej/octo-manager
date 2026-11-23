@@ -4,14 +4,14 @@ Octo takes over GitHub check and review monitoring after a PR is enrolled. Agent
 
 ## Install on macOS or Linux
 
-Use the pinned Bun 1.4.4, the repository dependencies, GitHub CLI with an existing login, and the Go toolchain from `go.mod`. Commit reviewed source changes before installing:
+Use an environment-provided Bun meeting `package.json` `engines.bun` (currently 1.4.4 or later), the repository dependencies, GitHub CLI with an existing login, and the Go toolchain from `go.mod`. Commit reviewed source changes before installing:
 
 ```sh
 bun scripts/install-local.ts --codex
 ~/.local/bin/octo-manager dashboard
 ```
 
-The installer builds a revision-specific release under `~/.local/share/octo-manager/releases/`, installs production dependencies with lifecycle scripts disabled, and points the stable launcher at `current`. The service uses absolute release paths and a private pinned Bun, so it does not depend on a source checkout, shell startup files, or the caller's working directory. Existing state stays in `~/.local/state/octo-manager` unless `OCTO_MANAGER_STATE` overrides it. Do not run a manual coordinator against the same state while starting the service. `--no-start` stages the release and configuration without starting it, for a controlled handover from an existing manual process.
+The installer builds a revision-specific release under `~/.local/share/octo-manager/releases/`, installs production dependencies with lifecycle scripts disabled, and points the stable launcher at `current`. The installer checks Bun on `PATH` before changing the installation, and the launcher and service use the environment's Bun. The service retains the installation-time `PATH`, including the shared Bun directory, and uses absolute release paths, so it does not depend on a source checkout, shell startup files, or the caller's working directory. Octo does not install or copy Bun. Newer qualifying runtime versions are accepted; startup checks the minimum again. If the runtime's directory changes, reinstall Octo to refresh the service environment. Existing state stays in `~/.local/state/octo-manager` unless `OCTO_MANAGER_STATE` overrides it. Do not run a manual coordinator against the same state while starting the service. `--no-start` stages the release and configuration without starting it, for a controlled handover from an existing manual process.
 
 The user LaunchAgent `com.lanej.octo-manager` starts at login and restarts the coordinator if it exits. Its definition is `~/Library/LaunchAgents/com.lanej.octo-manager.plist`; logs are in the state directory's `coordinator.log`. The installer preserves prior launcher and changed configuration under `install-backups/<revision>/` in that state directory. Installation is not a transaction across all these files; inspect errors and backups before retrying a failed installation.
 
@@ -60,6 +60,6 @@ Useful recovery commands are in the [tracking guide](tracking.md). Existing inbo
 
 Queue endpoints now use [agent digests](agent-digests.md): superseded pending revisions are withdrawn before replacement, with uncertain effects retained for reconciliation. The existing hook also recognizes exact digest bodies; installation does not enable hooks or require PR submissions.
 
-Native release/runtime paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. The explicit `--no-start` option stages configuration without activating a service and returns the equivalent foreground command. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
+Native release paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. The explicit `--no-start` option stages configuration without activating a service and returns the equivalent foreground command. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
 
 Startup upgrades cached retirement state before polling: settled merged PRs are archived with history and receipts retained, while incomplete checks keep draining. Explicitly disabled PRs stay disabled. See [polling and auto-merge](polling-and-auto-merge.md) for schema-14 upgrade behavior.
