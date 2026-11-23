@@ -22,6 +22,7 @@ import {
 import { renderDigest } from "./render.js";
 export interface DigestOptions {
   presentation?: (message: AgentMessage) => MessagePresentation;
+  ownerFeedbackCovered?: (message: AgentMessage) => boolean;
   connect?: (agent: AgentRef, socket: string) => QueueConnection;
   intervalMs?: number;
 }
@@ -29,6 +30,8 @@ export class DigestService {
   private timer: ReturnType<typeof setInterval> | undefined;
   private work: Promise<void> | undefined;
   private stopped = false;
+  private wakePending = false;
+  private wakeScheduled = false;
   private connections = new Set<QueueConnection>();
   private checks = new Map<
     string,
@@ -65,16 +68,47 @@ export class DigestService {
     if (this.stopped) return Promise.resolve();
     this.work = this.run().finally(() => {
       this.work = undefined;
+      if (this.wakePending) this.wake();
     });
     return this.work;
   }
+  wake(): void {
+    if (this.timer === undefined || this.stopped) return;
+    this.wakePending = true;
+    if (this.work !== undefined || this.wakeScheduled) return;
+    this.wakeScheduled = true;
+    setImmediate()
+      .then(() => {
+        this.wakeScheduled = false;
+        if (this.work !== undefined || this.stopped) return;
+        this.wakePending = false;
+        return this.flush();
+      })
+      .catch(() => {});
+  }
+  applicable(message: AgentMessage): boolean {
+    return (
+      message.applicable &&
+      this.options.ownerFeedbackCovered?.(message) !== true
+    );
+  }
   private pending(agentId: string): AgentMessage[] {
     this.tracking.store.prepareSafeRecovery();
-    return this.tracking.store.inbox
-      .list(agentId, 0, false, true)
-      .messages.filter(
-        (message) => this.options.presentation?.(message).defer !== true,
-      );
+    const pending: AgentMessage[] = [];
+    let after = 0;
+    for (;;) {
+      const page = this.tracking.store.inbox.list(agentId, after, false, true);
+      for (const message of page.messages) {
+        if (
+          this.applicable(message) &&
+          this.options.presentation?.(message).defer !== true
+        )
+          pending.push(message);
+        if (pending.length === 20) return pending;
+      }
+      if (!page.hasMore) return pending;
+      after = page.nextSequence;
+    }
   }
   private legacy(agentId: string): AgentMessage[] {
     const covered = new Set(
@@ -102,7 +136,7 @@ export class DigestService {
       this.legacy(agent.id).map((value) => [
         value.id,
         value.acknowledgedAt,
-        value.applicable,
+        this.applicable(value),
       ]),
       active?.id,
       active?.revision,
@@ -192,7 +226,10 @@ export class DigestService {
         fresh === undefined &&
         !this.store.list(agent.id).some((value) => value.cleanupPending);
       this.checks.set(agent.id, {
-        signature: this.signature(agent),
+        signature:
+          this.wakePending && failure === undefined
+            ? signature
+            : this.signature(agent),
         at: Math.max(
           this.now() + (failure === undefined && idle ? 60000 : delay),
           fresh !== undefined &&
@@ -305,7 +342,7 @@ export class DigestService {
           active?.id,
           message.acknowledgedAt !== undefined
             ? "receipt already recorded"
-            : !message.applicable
+            : !this.applicable(message)
               ? "notification superseded"
               : "collapse legacy notification",
         );

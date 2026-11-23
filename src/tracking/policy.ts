@@ -7,7 +7,12 @@ import {
   reviewState,
 } from "./states.js";
 import { actionableFeedback } from "./review-signals.js";
-import { checkEvidence, checksFinished, successfulCheck } from "./checks.js";
+import {
+  checkEvidence,
+  checkReplaces,
+  checksFinished,
+  successfulCheck,
+} from "./checks.js";
 import {
   ActionState,
   type Action,
@@ -169,6 +174,22 @@ export function closeProgress(
         )
       )
         return supersede("New check evidence changed completion state");
+    } else {
+      const evidence = checkEvidence(o);
+      if (
+        evidence.state === "complete" &&
+        a.blocker.checks
+          .filter((check) => !successfulCheck(check))
+          .every((previous) =>
+            evidence.value.some(
+              (current) =>
+                successfulCheck(current) &&
+                (current.id === previous.id ||
+                  checkReplaces(previous, current)),
+            ),
+          )
+      )
+        return resolve("GitHub confirms the failed executions now pass");
     }
     return undefined;
   }

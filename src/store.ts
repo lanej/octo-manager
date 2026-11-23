@@ -52,7 +52,7 @@ export class Store {
   readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
-  constructor(readonly directory: string, private now: () => number = Date.now) {
+  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: () => void) {
     privateDirectory(directory);
     this.ownership = new DatabaseSync(join(directory, "coordinator-lock.sqlite"));
     try {
@@ -73,6 +73,11 @@ export class Store {
       this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
+        if (kind === "pr_observed" || kind === "pr_assigned" ||
+          kind === "pr_untracked" || kind === "pr_subscribed" ||
+          kind === "pr_unsubscribed" || kind === "delivery_cancelled" ||
+          kind === "message_acknowledged" || kind.startsWith("assessment_notification_"))
+          this.wakeDigests?.();
       }, this.notificationRepository, this.assessments);
       this.activity = new ActivityStore(this.db, this.now);
       migrateEvidence(this.db);
@@ -91,11 +96,17 @@ export class Store {
       this.issues=new IssueStore(this.db,this.now,this.notificationRepository);
       this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
-      this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);});
+      this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{
+        this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
+        if (kind === "merge_entry_updated") this.wakeDigests?.();
+      });
       this.repositories=new RepositoryPolicies(this.db,this.tracking,this.merging,(kind,detail,prId)=>this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null));
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
-      this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => { this.event("", kind, detail); }, this.notificationRepository);
+      this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => {
+        this.event("", kind, detail);
+        if (kind === "submission_notification") this.wakeDigests?.();
+      }, this.notificationRepository);
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);

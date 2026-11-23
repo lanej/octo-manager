@@ -13,6 +13,8 @@ import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "../tracking/messages.js";
 import { shortId, resolveId } from "../tracking/identifiers.js";
 import type { TrackingStore } from "../tracking/store.js";
+import type { AgentMessage } from "../notifications/message.js";
+import { actionableFeedback } from "../tracking/review-signals.js";
 import type { TrackedPR } from "../tracking/types.js";
 import {
   acyclic,
@@ -747,6 +749,31 @@ export class MergeStore {
       readyFor(entry, pr, this.dependencies())
       ? entry.ready
       : undefined;
+  }
+  ownerFeedbackCovered(message: AgentMessage): boolean {
+    if (
+      message.actionId === "" ||
+      (message.notice !== undefined &&
+        message.notice.kind !== "review_feedback")
+    )
+      return false;
+    const action = this.tracking.action(message.actionId);
+    if (action.blocker.kind !== "review_feedback") return false;
+    const finding = action.blocker.feedback;
+    const pr = this.tracking.pr(action.prId);
+    const feedback = pr.observation?.feedback;
+    return (
+      message.recipientAgentId === pr.ownerAgentId &&
+      feedback?.state === "complete" &&
+      this.ownerAssessment(pr) !== undefined &&
+      feedback.value.some(
+        (item) =>
+          item.source === finding.source &&
+          item.id === finding.id &&
+          item.revision === finding.revision &&
+          actionableFeedback(item),
+      )
+    );
   }
   ready(
     prValue: string,

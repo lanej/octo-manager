@@ -13,6 +13,8 @@ The frozen membership and original rendered text do not change. New membership o
 
 `octo-manager message ID` remains read-only and inspects the entire message as safe metadata. `--full` deliberately exposes untrusted producer details and original text. `octo-manager ack ID` records delivery for the original members only; it does not accept or resolve their work. Owner-authorized merging remains a separate operation. The [typed API](../proto/octomanager/v2/notifications.proto) defines `NotificationMessage`, `NotificationItem` and their variants; [API guidance](api.md) describes compatibility.
 
+When Octo observes that a queued item no longer needs attention, it withdraws the digest or replaces it with the remaining items. An accepted owner assessment removes covered review feedback from that owner's queue. If the old message reaches the agent, `octo-manager read ID` labels stale items and omits their instructions while recording receipt.
+
 ## What merits delivery
 
 - Deliver failed checks, conflicts, change-requesting reviews, and new or edited review feedback that needs assessment.

@@ -13,6 +13,211 @@ import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { SubmissionState } from "../src/submissions/contracts.js";
 import type { QueuedMessage, QueueConnection } from "../src/agents/codex.js";
 import { ActionState, type ObservationInput } from "../src/tracking/types.js";
+import { feedbackRevision } from "../src/tracking/feedback.js";
+import { Messages } from "../src/notifications/messages.js";
+
+async function waitForQueue(predicate: () => boolean) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (predicate()) return;
+    await Bun.sleep(10);
+  }
+  throw new Error("Queue did not reconcile after the state change");
+}
+
+test("owner readiness wakes queue cleanup and old receipts flag stale items", async () => {
+  const directory = await mkdtemp("/tmp/oc-stale-"),
+    config = defaultTrackingConfig();
+  config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
+  const slots = new Map<string, QueuedMessage>();
+  let serial = 0;
+  const queue: QueueConnection = {
+    prepare: () => Promise.resolve({ busy: true }),
+    queued: (agent) =>
+      Promise.resolve(
+        [...slots].flatMap(([id, item]) => (id === agent.id ? [item] : [])),
+      ),
+    enqueueQueued: (agent, clientId, body) => {
+      const item = { queueId: `q-${String(++serial)}`, clientId, body };
+      slots.set(agent.id, item);
+      return Promise.resolve(item);
+    },
+    cancelQueued: (agent, id) =>
+      Promise.resolve(
+        slots.get(agent.id)?.queueId === id && slots.delete(agent.id),
+      ),
+    received: () => Promise.resolve({ bodies: [], complete: true }),
+    close: () => {},
+  };
+  const coordinator = new Coordinator(directory, {
+    trackingConfig: config,
+    digestOptions: {
+      connect: () => queue,
+      intervalMs: 60_000,
+      presentation: () => ({ instructions: "Inspect the current finding." }),
+    },
+  });
+  const { store, digests } = coordinator;
+  const url = "https://github.com/owner/repo/pull/1";
+  const head = "a".repeat(40);
+  const check = {
+    id: "check-1",
+    key: "test",
+    name: "Tests",
+    headSha: head,
+    status: "completed",
+    conclusion: "failure",
+    at: 1,
+    url,
+  };
+  const feedback = feedbackRevision({
+    source: "inline",
+    id: "review-comment",
+    author: "reviewer",
+    body: "Please handle the missing input case.",
+    url: `${url}#discussion_r1`,
+    headSha: head,
+    reviewId: "review",
+  });
+  const input: ObservationInput = {
+    observedAt: 1,
+    headSha: head,
+    baseSha: "b".repeat(40),
+    targetBase: { ref: "main", sha: "b".repeat(40) },
+    lifecycle: "open",
+    mergeability: "mergeable",
+    checks: { state: "complete", value: [check] },
+    reviews: { state: "complete", value: [] },
+    feedback: { state: "complete", value: [feedback] },
+  };
+  const owner = { harness: "codex", endpoint: "local", sessionId: "owner" };
+  const observer = { ...owner, sessionId: "observer" };
+  function freezePendingNotices() {
+    const tracking = store.tracking;
+    for (const delivery of tracking.deliveries()) {
+      if (tracking.inbox.get(delivery.id) !== undefined) continue;
+      const action = tracking.action(delivery.actionId);
+      if (
+        action.blocker.kind !== "check_failed" &&
+        action.blocker.kind !== "review_feedback"
+      )
+        continue;
+      const notice = tracking.noticeForAction(
+        action,
+        delivery.recipientAgentId,
+      );
+      tracking.inbox.freezeNotice(delivery.id, notice);
+      tracking.inbox.record(
+        delivery.id,
+        tracking.inbox.render(delivery.id, notice),
+      );
+    }
+  }
+  try {
+    const pr = store.tracking.track(url, owner);
+    const watcher = coordinator.tracking.registerAgent(observer);
+    store.tracking.subscribe(pr.id, observer);
+    for (const agentId of [pr.ownerAgentId, watcher.id])
+      for (const message of store.tracking.inbox.list(agentId).messages)
+        store.tracking.acknowledgeMessage(message.id, agentId);
+    store.tracking.observe(pr.id, input, config);
+    freezePendingNotices();
+    digests.start();
+    await digests.flush();
+    const original = slots.get(pr.ownerAgentId);
+    if (original === undefined) throw new Error("Missing initial owner digest");
+    expect(original.body).toContain("Checks failed");
+    expect(original.body).toContain("Review feedback");
+    const watcherDigest = slots.get(watcher.id);
+    expect(watcherDigest?.body).toContain("Review feedback");
+
+    store.merging.ready(pr.id, pr.ownerAgentId, head);
+    await waitForQueue(() => {
+      const item = slots.get(pr.ownerAgentId);
+      return item !== undefined && item.clientId !== original.clientId;
+    });
+    expect(slots.get(pr.ownerAgentId)?.body).toContain("Checks failed");
+    expect(slots.get(pr.ownerAgentId)?.body).not.toContain("Review feedback");
+    expect(slots.get(watcher.id)).toEqual(watcherDigest);
+    const messages = new Messages(store, digests, () => ({
+      instructions: "Inspect the current finding.",
+    }));
+    const read = messages.get(original.clientId);
+    expect(read.items).toHaveLength(2);
+    const current = read.items.find((item) => item.applicable);
+    expect(current?.summary).toBe("Checks failed");
+    expect(read.items.find((item) => !item.applicable)?.summary).toBe(
+      "Stale · Review feedback",
+    );
+    expect(
+      store.tracking
+        .actions()
+        .find((action) => action.blocker.kind === "review_feedback")?.progress
+        .state,
+    ).toBe(ActionState.Open);
+
+    store.tracking.observe(
+      pr.id,
+      {
+        ...input,
+        observedAt: 2,
+        checks: {
+          state: "complete",
+          value: [{ ...check, id: "check-2", at: 2, conclusion: "success" }],
+        },
+      },
+      config,
+    );
+    await waitForQueue(() => !slots.has(pr.ownerAgentId));
+    const historical = messages.read(original.clientId, pr.ownerAgentId);
+    expect(historical.message.items.every((item) => !item.applicable)).toBe(
+      true,
+    );
+    expect(
+      historical.message.items.every(
+        (item) => item.acknowledgedAtMs !== undefined,
+      ),
+    ).toBe(true);
+    expect(historical.instructions).toEqual([]);
+
+    store.tracking.observe(
+      pr.id,
+      {
+        ...input,
+        observedAt: 3,
+        feedback: {
+          state: "complete",
+          value: [
+            feedbackRevision({
+              ...feedback,
+              body: "Please handle empty and missing inputs.",
+            }),
+          ],
+        },
+      },
+      config,
+    );
+    const edited = store.tracking
+      .actions()
+      .find(
+        (action) =>
+          action.blocker.kind === "review_feedback" &&
+          action.progress.state === ActionState.Open,
+      );
+    if (edited === undefined) throw new Error("Missing edited action");
+    freezePendingNotices();
+    await waitForQueue(
+      () =>
+        slots.get(pr.ownerAgentId)?.body?.includes("Review feedback") === true,
+    );
+    store.tracking.untrack(pr.id);
+    await waitForQueue(
+      () => !slots.has(pr.ownerAgentId) && !slots.has(watcher.id),
+    );
+  } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test("coordinator combines both producers and atomically receipts exact members through RPC", async () => {
   const directory = await mkdtemp("/tmp/oc-dig-"),
     config = defaultTrackingConfig();

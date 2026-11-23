@@ -2,6 +2,7 @@ import { toJson } from "@bufbuild/protobuf";
 import {
   ReadNotificationMessageResponseSchema,
   NotificationMessageSchema,
+  NotificationItemSchema,
 } from "../gen/octomanager/v2/notifications_pb.js";
 import { checked } from "../merging/contracts.js";
 import { ReceiptTargetSchema } from "../merging/receipt-types.js";
@@ -74,7 +75,16 @@ export async function notificationsCLI(
         throw new Error("Missing message read result");
       printResult(
         { ...parsed, output: { ...parsed.output, full: true } },
-        record(toJson(ReadNotificationMessageResponseSchema, response)),
+        {
+          ...record(toJson(ReadNotificationMessageResponseSchema, response)),
+          message: {
+            ...record(toJson(NotificationMessageSchema, response.message)),
+            items: response.message.items.map((item) => ({
+              ...record(toJson(NotificationItemSchema, item)),
+              applicable: item.applicable,
+            })),
+          },
+        },
       );
       return true;
     }

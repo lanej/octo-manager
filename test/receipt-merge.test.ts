@@ -1370,6 +1370,12 @@ test("edited feedback invalidates owner assessment and its previous Ready receip
       value: [reviewFeedback("Also validate the persisted review states")],
     };
     f.observe();
+    const read = await schedulerClient(f.directory).readNotificationMessage({
+      id: ready.id,
+      agentTarget: owner,
+    });
+    expect(read.message?.summary).toContain("Stale merge offer");
+    expect(read.message?.mergeTarget).toBeUndefined();
     const response = await schedulerClient(f.directory).mergeAgentMessage({
       receiptId: ready.id,
       agentTarget: owner,
