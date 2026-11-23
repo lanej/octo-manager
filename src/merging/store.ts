@@ -282,7 +282,7 @@ export class MergeStore {
     checked(EntrySchema, value);
     this.db
       .prepare(
-        "INSERT INTO merge_entries VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,data=excluded.data",
+        "INSERT INTO merge_entries VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,data=excluded.data WHERE merge_entries.state IS NOT excluded.state OR merge_entries.data IS NOT excluded.data",
       )
       .run(
         value.id,
@@ -505,15 +505,13 @@ export class MergeStore {
         );
       this.db
         .prepare(
-          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value IS NOT excluded.value",
         )
         .run(
           `merge-setting:${pr.id}`,
           JSON.stringify({ source, epoch: pr.trackingEpoch }),
         );
-      let entry = this.entries().find(
-        (value) => value.prId === pr.id && !terminal(value.state),
-      );
+      let entry = this.entries(pr.id).find((value) => !terminal(value.state));
       if (entry === undefined && !enabled)
         return { prId: pr.id, enabled: false };
       if (entry === undefined) {
@@ -539,7 +537,7 @@ export class MergeStore {
       }
       this.db
         .prepare(
-          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value IS NOT excluded.value",
         )
         .run(
           `merge-setting:${pr.id}`,
