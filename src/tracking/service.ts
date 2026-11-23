@@ -35,6 +35,7 @@ export interface TrackingOptions {
   schedules?: ScheduleStore;
   interactive?: <T>(work: () => T) => T;
   managedQueue?: (agentId: string) => boolean;
+  notificationRecorded?: () => void;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
   connect?: (agent: AgentRef) => AgentConnection;
@@ -406,6 +407,7 @@ export class TrackingService {
           this.store.inbox.freezeNotice(d.id, notice);
           this.store.inbox.record(d.id, this.store.inbox.render(d.id, notice));
         });
+        this.options.notificationRecorded?.();
       }
     } catch (error) {
       const reason =

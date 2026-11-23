@@ -37,7 +37,7 @@ export function digestReceipt(
         messageId: message.id,
         actionId: message.actionId,
         submissionId: message.submissionId,
-        applicable: message.applicable,
+        applicable: service.applicable(message),
         acknowledgedAtMs:
           message.acknowledgedAt === undefined
             ? undefined

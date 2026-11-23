@@ -76,7 +76,8 @@ export class Coordinator extends EventEmitter {
   constructor(readonly directory: string, private options: CoordinatorOptions = {}) {
     super(); this.now = options.now ?? Date.now;
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
-    this.store = new Store(directory, this.now);
+    let digests: DigestService | undefined;
+    this.store = new Store(directory, this.now, () => { digests?.wake(); });
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
       this.store.repositories.tick();
       this.tracking.tick();
@@ -85,13 +86,13 @@ export class Coordinator extends EventEmitter {
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId) });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), notificationRecorded:()=>{this.digests.wake();} });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
     this.issues=new IssueService(this.store.issues,options.issueOptions ?? {trackers:[new GitHubIssueTracker()],dispatchers:[new CodexDispatcher()],workspace:new ManagedIssueWorkspace(),codeHost:trackedCodeHost(this.tracking,directory),policy:loadIssuePolicy},this.now);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,...options.digestOptions});
+    this.digests = digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
     this.socketPath = join(directory, "run.sock");

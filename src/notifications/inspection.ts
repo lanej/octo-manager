@@ -24,7 +24,7 @@ import { wireIssue } from "../issues/rpc.js";
 import { noticeLabel } from "../security/notifications.js";
 import type { Store } from "../store.js";
 import type { DigestRevision } from "./types.js";
-import type { NotificationSource } from "./message.js";
+import type { AgentMessage, NotificationSource } from "./message.js";
 
 const mergeStates: Record<EntryState, DomainMergeEntryState> = {
   waiting: DomainMergeEntryState.WAITING,
@@ -72,6 +72,7 @@ export function inspectMessage(
   snapshot: MessageSnapshot,
   recipient: string,
   full: boolean,
+  applicable: (message: AgentMessage) => boolean,
 ) {
   const action = lookup(() => store.tracking.actions());
   const entry = lookup(() => store.merging.entries());
@@ -80,16 +81,18 @@ export function inspectMessage(
   const reference = lookup(() => store.merging.refs());
   const items = snapshot.messageIds.map((id) => {
     const message = store.tracking.inbox.get(id);
+    const current = message !== undefined && applicable(message);
+    const summary =
+      message?.notice === undefined
+        ? "Historical notification"
+        : noticeLabel(message.notice);
     const item = create(NotificationItemSchema, {
       id,
-      applicable: message?.applicable ?? false,
+      applicable: current,
       ...(message?.acknowledgedAt === undefined
         ? {}
         : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
-      summary:
-        message?.notice === undefined
-          ? "Historical notification"
-          : noticeLabel(message.notice),
+      summary: current ? summary : `Stale · ${summary}`,
       ...(full && message !== undefined ? { untrustedBody: message.body } : {}),
     });
     if (message !== undefined && message.recipientAgentId !== recipient)
