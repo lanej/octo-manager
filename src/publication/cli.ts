@@ -1,3 +1,4 @@
+import { printAgentError, printResult } from "../cli-output.js";
 import { parse, SubmissionSchema } from "../submissions/contracts.js";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
@@ -32,7 +33,7 @@ function clip(text: string, bytes: number): string {
   while (Buffer.byteLength(JSON.stringify(chars.join(""))) > bytes) chars.pop();
   return chars.join("");
 }
-function emit(value: unknown, budget = 1024): void {
+function emitOrdinary(value: unknown, budget = 1024): void {
   const output = JSON.stringify(value);
   if (Buffer.byteLength(output) > budget)
     throw new PublicationError(
@@ -43,7 +44,7 @@ function emit(value: unknown, budget = 1024): void {
 }
 function error(code: string, fix: string): void {
   process.exitCode = 1;
-  emit({ error: { code: clip(code, 50), fix: clip(fix, 500) } });
+  emitOrdinary({ error: { code: clip(code, 50), fix: clip(fix, 500) } });
 }
 async function git(cwd: string, ...args: string[]): Promise<string> {
   return (
@@ -71,14 +72,26 @@ function draft(parsed: Parsed): Draft {
         );
   return { title, body };
 }
-function check(root: string, value: Draft, contract?: Contract): boolean {
+function check(
+  root: string,
+  value: Draft,
+  contract?: Contract,
+  agent = false,
+): boolean {
   const findings = validateDraft(
     value,
     contract ?? readContract(root).contract,
   );
   if (findings.length === 0) return true;
   process.exitCode = 1;
-  emit({
+  if (agent) {
+    printAgentError(
+      findings.map((finding) => `${finding.code}: ${finding.fix}`).join("\n"),
+      "validation_failed",
+    );
+    return false;
+  }
+  emitOrdinary({
     valid: false,
     errors: findings
       .slice(0, 3)
@@ -311,6 +324,27 @@ async function input(
 }
 export async function publicationCLI(parsed: Parsed): Promise<boolean> {
   const [command, argument] = parsed.positionals;
+  const emit = (value: unknown, budget?: number): void => {
+    if (!parsed.output.agent) emitOrdinary(value, budget);
+    else if (command === "pr") console.log(JSON.stringify(value));
+    else printResult(parsed, value);
+  };
+  const emitLaunchResult = (value: Publication): void => {
+    if (value.state === "failed" || value.state === "uncertain") {
+      process.exitCode = 1;
+      if (parsed.output.agent) {
+        printAgentError(
+          typeof value.error === "string"
+            ? value.error
+            : (value.error?.fix ?? `Publisher launch ${value.state}`),
+          `publication_${value.state}`,
+          `Receipt ${value.id} is ${value.state}; inspect with octo-manager publication show ${value.id}`,
+        );
+        return;
+      }
+    }
+    emit(receipt(value));
+  };
   if (
     command === "pr" &&
     !["init", "refresh", "instructions", "validate"].includes(argument ?? "")
@@ -354,7 +388,8 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
       } else if (argument === "instructions") {
         console.log(readFileSync(join(root, skillPath), "utf8"));
       } else if (argument === "validate") {
-        if (check(root, draft(parsed))) emit({ valid: true });
+        if (check(root, draft(parsed), undefined, parsed.output.agent))
+          emit({ valid: true });
       } else
         throw new PublicationError(
           "usage",
@@ -373,9 +408,10 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
         );
       const root = await rootPath(parsed),
         value = draft(parsed);
-      if (!check(root, value)) return true;
+      if (!check(root, value, undefined, parsed.output.agent)) return true;
       const selected = await input(parsed, root, value);
-      if (!check(root, value, selected.contract)) return true;
+      if (!check(root, value, selected.contract, parsed.output.agent))
+        return true;
       const store = new PublicationStore(state);
       try {
         const accepted = store.accept(selected, parsed.values["request-id"]);
@@ -383,9 +419,7 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
           if (accepted.state === "pending") await launch(state, accepted);
         } catch {
           const current = store.launchFailure(accepted.id);
-          if (current.state === "failed" || current.state === "uncertain")
-            process.exitCode = 1;
-          emit(receipt(current));
+          emitLaunchResult(current);
           return true;
         }
         emit(receipt(accepted));
@@ -455,8 +489,8 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
           await launch(state, value);
         } catch {
           value = store.launchFailure(argument);
-          if (value.state === "failed" || value.state === "uncertain")
-            process.exitCode = 1;
+          emitLaunchResult(value);
+          return true;
         }
       }
       emit(receipt(value));
@@ -464,12 +498,16 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
       store.close();
     }
   } catch (failure) {
-    error(
-      failure instanceof PublicationError ? failure.code : "publication_input",
+    const code =
+      failure instanceof PublicationError ? failure.code : "publication_input";
+    const message =
       failure instanceof PublicationError
         ? failure.message
-        : "Could not read the draft or repository. Check file paths, Git configuration, and the installed format contract.",
-    );
+        : "Could not read the draft or repository. Check file paths, Git configuration, and the installed format contract.";
+    if (parsed.output.agent) {
+      process.exitCode = 1;
+      printAgentError(message, code);
+    } else error(code, message);
   }
   return true;
 }

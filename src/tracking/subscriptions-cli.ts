@@ -50,7 +50,7 @@ export async function subscriptionsCLI(
     ...result,
     participants: result.participants.map((item) => ({
       ...item,
-      agentId: shortId(item.agentId, ids),
+      agentId: parsed.output.agent ? item.agentId : shortId(item.agentId, ids),
     })),
   });
   return true;

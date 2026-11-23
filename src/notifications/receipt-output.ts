@@ -15,6 +15,33 @@ const ReceiptSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
+  if (response.receipt === undefined) throw new Error("Missing digest receipt");
+  const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);
+  if (!Check(ReceiptSchema, receipt))
+    throw new Error("Invalid digest receipt response");
+  return {
+    receipt: {
+      digest: receipt.id,
+      revision: receipt.revision,
+      currentRevision: receipt.currentRevision,
+      agent: receipt.agentId,
+      receivedAtMs: receipt.receivedAtMs,
+    },
+    items: response.messages.map((item) => ({
+      message: item.messageId,
+      ...(item.actionId === "" ? {} : { action: item.actionId }),
+      ...(item.submissionId === undefined
+        ? {}
+        : { submission: item.submissionId }),
+      applicable: item.applicable,
+      summary: item.summary,
+      ...(item.prUrl === "" ? {} : { pr: item.prUrl }),
+      ...(item.recipientRole === "" ? {} : { role: item.recipientRole }),
+      ...(item.ownerAgentId === "" ? {} : { owner: item.ownerAgentId }),
+    })),
+  };
+}
 export function receiptOutput(
   response: AcknowledgeAgentDigestResponse,
   state?: string,

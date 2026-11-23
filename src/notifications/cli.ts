@@ -1,9 +1,5 @@
 import { toJson } from "@bufbuild/protobuf";
-import {
-  ReadNotificationMessageResponseSchema,
-  NotificationMessageSchema,
-  NotificationItemSchema,
-} from "../gen/octomanager/v2/notifications_pb.js";
+import { NotificationMessageSchema } from "../gen/octomanager/v2/notifications_pb.js";
 import { checked } from "../merging/contracts.js";
 import { ReceiptTargetSchema } from "../merging/receipt-types.js";
 import { unwire, record } from "../api/codec.js";
@@ -15,7 +11,8 @@ import {
 } from "../gen/octomanager/v2/domain_pb.js";
 import { printResult } from "../cli-output.js";
 import { shortId } from "../tracking/identifiers.js";
-import { receiptOutput } from "./receipt-output.js";
+import { receiptOutput, agentReceiptOutput } from "./receipt-output.js";
+import { readOutput } from "./read-output.js";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import type { parseCommand } from "../arguments.js";
@@ -75,16 +72,7 @@ export async function notificationsCLI(
         throw new Error("Missing message read result");
       printResult(
         { ...parsed, output: { ...parsed.output, full: true } },
-        {
-          ...record(toJson(ReadNotificationMessageResponseSchema, response)),
-          message: {
-            ...record(toJson(NotificationMessageSchema, response.message)),
-            items: response.message.items.map((item) => ({
-              ...record(toJson(NotificationItemSchema, item)),
-              applicable: item.applicable,
-            })),
-          },
-        },
+        readOutput(response, parsed.output.agent),
       );
       return true;
     }
@@ -112,7 +100,7 @@ export async function notificationsCLI(
     if (response.message === undefined)
       throw new Error("Missing message receipt");
     printResult(parsed, {
-      receipt: { id },
+      receipt: { id: parsed.output.agent ? response.message.id : id },
       itemCount: response.message.items.length,
     });
     return true;
@@ -150,7 +138,7 @@ export async function notificationsCLI(
     const message = response.message;
     if (message === undefined) throw new Error("Missing message receipt");
     printResult(parsed, {
-      message: shortId(message.id),
+      message: parsed.output.agent ? message.id : shortId(message.id),
       applicable: message.applicable,
       receivedAtMs:
         message.acknowledgedAtMs === undefined
@@ -184,7 +172,12 @@ export async function notificationsCLI(
       revision,
       agentId: values["agent-id"] ?? "",
     });
-    printResult(parsed, receiptOutput(response, directory));
+    printResult(
+      parsed,
+      parsed.output.agent
+        ? agentReceiptOutput(response)
+        : receiptOutput(response, directory),
+    );
     return true;
   }
   printResult(parsed, result);
