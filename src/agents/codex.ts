@@ -86,6 +86,7 @@ export class DeliveryError extends Error {
     message: string,
     readonly uncertain = false,
     readonly permanent = false,
+    readonly archived = false,
   ) {
     super(message);
   }
@@ -119,6 +120,7 @@ export class CodexConnection implements AgentConnection {
     number,
     {
       method: string;
+      threadId: string | undefined;
       resolve: (value: any) => void;
       reject: (error: Error) => void;
       timer: ReturnType<typeof setTimeout>;
@@ -160,6 +162,14 @@ export class CodexConnection implements AgentConnection {
               rpcRejection(p.method, m.error, this.runtimeVersion),
               false,
               true,
+              p.threadId !== undefined &&
+                object(m.error) &&
+                m.error["code"] === -32600 &&
+                typeof m.error["message"] === "string" &&
+                (m.error["message"] === `session ${p.threadId} is archived` ||
+                  m.error["message"].startsWith(
+                    `session ${p.threadId} is archived.`,
+                  )),
             ),
           );
         else p.resolve("result" in m ? m.result : undefined);
@@ -212,7 +222,11 @@ export class CodexConnection implements AgentConnection {
         this.pending.delete(id);
         reject(new DeliveryError("Codex request timed out"));
       }, 10000);
-      this.pending.set(id, { method, resolve, reject, timer });
+      const threadId =
+        object(params) && typeof params["threadId"] === "string"
+          ? params["threadId"]
+          : undefined;
+      this.pending.set(id, { method, threadId, resolve, reject, timer });
       this.socket.send(JSON.stringify({ id, method, params }), (error) => {
         if (error) {
           clearTimeout(timer);

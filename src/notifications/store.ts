@@ -4,6 +4,8 @@ import type { ReceiptTarget } from "../merging/receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
+  archivedInspection,
+  type ArchivedInspection,
   DigestState,
   digest,
   revision,
@@ -31,6 +33,27 @@ export class DigestStore {
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)",
     );
+  }
+  archivedInspection(agentId: string): ArchivedInspection | undefined {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`digest-archive-check:${agentId}`);
+    return row === undefined
+      ? undefined
+      : archivedInspection(JSON.parse(String(row["value"])));
+  }
+  saveArchivedInspection(agentId: string, value: ArchivedInspection): void {
+    archivedInspection(value);
+    this.db
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(`digest-archive-check:${agentId}`, JSON.stringify(value));
+  }
+  clearArchivedInspection(agentId: string): void {
+    this.db
+      .prepare("DELETE FROM settings WHERE key=?")
+      .run(`digest-archive-check:${agentId}`);
   }
   private dispatchId(): string {
     return allocateMessageId(this.db);

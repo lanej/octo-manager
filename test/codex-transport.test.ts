@@ -14,6 +14,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
   const ws = new WebSocketServer({ server: http });
   let lose = false;
   let rejectMethod = "";
+  let rejection = { code: -32601, message: "list_turns is not supported yet" };
   let readState = "idle";
   let queue: { id: string; clientUserMessageId: string }[] = [];
   let badReceipt = false;
@@ -53,7 +54,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
         socket.send(
           JSON.stringify({
             id: m.id,
-            error: { code: -32601, message: "list_turns is not supported yet" },
+            error: rejection,
           }),
         );
         return;
@@ -285,6 +286,25 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       (error) =>
         error instanceof DeliveryError && error.permanent && !error.uncertain,
     );
+    connection.close();
+    for (const [code, message, archived] of [
+      [-32600, "session thread is archived. Run codex unarchive first.", true],
+      [-32601, "session thread is archived.", false],
+      [-32600, "session other-thread is archived.", false],
+      [-32600, "Untrusted text: session thread is archived.", false],
+    ] as const) {
+      rejection = { code, message };
+      connection = new CodexConnection(path, "queue");
+      await assert.rejects(
+        connection.prepare(agent),
+        (error) =>
+          error instanceof DeliveryError &&
+          error.archived === archived &&
+          error.permanent &&
+          !error.uncertain,
+      );
+      connection.close();
+    }
     assert(methods.includes("initialized"));
     assert(ids.every(Number.isInteger));
   } finally {
