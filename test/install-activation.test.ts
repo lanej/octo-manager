@@ -11,6 +11,7 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { SchedulerService } from "../src/gen/octomanager/v2/scheduler_pb.js";
 import {
   guardServiceReplacement,
+  guardClientPromotion,
   readCheckpointBinding,
   IncompleteActivation,
   verifyStartedService,
@@ -127,6 +128,17 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
         binding,
       ),
     ).toBe("checkpointed");
+    await assert.rejects(
+      guardClientPromotion(definition, selectedInput, manager, true),
+      IncompleteActivation,
+    );
+    await guardClientPromotion(
+      definition,
+      selectedInput,
+      manager,
+      true,
+      binding,
+    );
     target = {
       ...target,
       process: { ...binding.process, native_id: "different-owner" },
@@ -142,6 +154,10 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
     };
     await assert.rejects(
       guardServiceReplacement(definition, selectedInput, manager, binding),
+      /native-service-checkpoint-or-process-incarnation-differs/u,
+    );
+    await assert.rejects(
+      guardClientPromotion(definition, selectedInput, manager, true, binding),
       /native-service-checkpoint-or-process-incarnation-differs/u,
     );
     target = {
@@ -169,7 +185,7 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
       ),
       /native-service-checkpoint-or-process-incarnation-differs/u,
     );
-    expect(inspections).toBe(5);
+    expect(inspections).toBe(7);
     expect(() =>
       selectedServiceIdentity(selectedInput, () =>
         JSON.stringify({ expected_identity: null }),

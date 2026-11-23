@@ -3,6 +3,7 @@ import { lstat, open } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { runtimeLifecycle } from "../lifecycle-rpc.js";
+import { schedulerClient } from "../client.js";
 import type { ActivationProcess } from "../lifecycle.js";
 import type {
   ServiceDefinition,
@@ -283,6 +284,36 @@ export async function guardServiceReplacement(
       "native-successful-exit-retirement-policy-unavailable",
     );
   return "checkpointed";
+}
+
+/** Global clients remain unchanged until their native owner can be replaced safely. */
+export async function guardClientPromotion(
+  definition: ServiceDefinition,
+  input: ServiceInput,
+  run: ServiceRunner,
+  available: boolean,
+  binding?: CheckpointBinding,
+): Promise<void> {
+  const socket = await ownedSocket(input.state);
+  if (socket) {
+    try {
+      const server = await schedulerClient(input.state).getServerInfo(
+        {},
+        { timeoutMs: 1000 },
+      );
+      if (server.apiVersion !== 2) throw new Error("Incompatible native API");
+    } catch {
+      throw new IncompleteActivation(
+        "native-client-promotion-api-incompatible-or-unavailable",
+      );
+    }
+    if (!available)
+      throw new IncompleteActivation(
+        "native-client-promotion-manager-binding-unavailable",
+      );
+  }
+  if (available) await guardServiceReplacement(definition, input, run, binding);
+  else await coldOwnerAbsent(input.state);
 }
 
 // Kernel process absence and a stopped manager job must both precede any OS

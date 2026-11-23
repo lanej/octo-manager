@@ -7,7 +7,8 @@ import { execFileSync } from "node:child_process";
 import {
   IncompleteActivation,
   readCheckpointBinding,
-  guardServiceReplacement,
+  guardClientPromotion,
+  selectedServiceIdentity,
 } from "../src/install/activation.js";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -32,6 +33,19 @@ import {
 } from "../src/install/config.js";
 import { bunRequirement, requireBun } from "../src/runtime.js";
 
+interface StagedRelease {
+  schema_version: 1;
+  staged: true;
+  promoted: boolean | null;
+  promotion_state: "not-attempted" | "attempted" | "partial" | "confirmed";
+  release_path: string;
+  revision: string;
+  expected_identity: string;
+  bun_requirement: string;
+  platform: string;
+  architecture: string;
+}
+let stagedRelease: StagedRelease | undefined;
 const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -105,6 +119,7 @@ async function main(): Promise<void> {
       home: { type: "string" },
       codex: { type: "boolean" },
       "no-start": { type: "boolean" },
+      "stage-only": { type: "boolean" },
     },
   });
   if (process.platform !== "darwin" && process.platform !== "linux")
@@ -140,18 +155,22 @@ async function main(): Promise<void> {
     codexHome = process.env["CODEX_HOME"] ?? join(home, ".codex"),
     hooksPath = join(codexHome, "hooks.json"),
     configPath = join(configHome, "octo-manager", "config.json");
+  const stageOnly = values["stage-only"] === true;
   const hooks =
-    values.codex === true
+    values.codex === true && !stageOnly
       ? codexHooks(await json(hooksPath), launcher, state)
       : undefined;
   const config =
-    values.codex === true ? desktopConfig(await json(configPath)) : undefined;
+    values.codex === true && !stageOnly
+      ? desktopConfig(await json(configPath))
+      : undefined;
   const gh = Bun.which("gh");
-  if (gh === null) throw new Error("Install gh before configuring Octo");
+  if (gh === null && !stageOnly)
+    throw new Error("Install gh before configuring Octo");
   const path = [
     ...new Set([
       dirname(bun),
-      dirname(gh),
+      ...(gh === null ? [] : [dirname(gh)]),
       join(home, ".local/bin"),
       ...(process.env["PATH"] ?? "").split(":").filter((value) => value !== ""),
     ]),
@@ -161,11 +180,11 @@ async function main(): Promise<void> {
   const input = { home, release, state, path, configHome, codexHome };
   const definition = serviceDefinition(process.platform, input, uid),
     plist = definition.file;
-  const available =
-    values["no-start"] === true
-      ? false
-      : managerAvailable(definition, (command, args) => run(command, args));
+  const available = stageOnly
+    ? false
+    : managerAvailable(definition, (command, args) => run(command, args));
   if (
+    !stageOnly &&
     (await exists(plist)) &&
     !(await readFile(plist, "utf8")).includes(join(base, "releases"))
   )
@@ -173,6 +192,7 @@ async function main(): Promise<void> {
       "An unrecognized service definition exists; preserve it before installing",
     );
   if (
+    !stageOnly &&
     (await exists(launcher)) &&
     ((await lstat(launcher)).isSymbolicLink() ||
       !(await readFile(launcher, "utf8")).includes("octo-manager"))
@@ -181,11 +201,9 @@ async function main(): Promise<void> {
       "An unrecognized launcher exists; preserve it before installing",
     );
   await privateDirectory(base);
-  await privateDirectory(state);
-  const binding =
-    values["no-start"] === true
-      ? undefined
-      : await readCheckpointBinding(process.env);
+  const binding = stageOnly
+    ? undefined
+    : await readCheckpointBinding(process.env);
   const lock = join(base, ".install-lock");
   await mkdir(lock, { mode: 0o700 });
   const stage = join(
@@ -195,13 +213,6 @@ async function main(): Promise<void> {
     `.install-${randomUUID()}`,
   );
   try {
-    if (values["no-start"] !== true && available)
-      await guardServiceReplacement(
-        definition,
-        input,
-        (command, args) => run(command, args),
-        binding,
-      );
     await privateDirectory(dirname(release));
     if (!(await exists(release))) {
       run(bun, ["run", "build"]);
@@ -248,12 +259,42 @@ async function main(): Promise<void> {
       )
         throw new Error("Existing release metadata does not match");
     }
+    stagedRelease = {
+      schema_version: 1,
+      staged: true,
+      promoted: false,
+      promotion_state: "not-attempted",
+      release_path: release,
+      revision,
+      expected_identity: selectedServiceIdentity(input, (command, args) =>
+        run(command, args),
+      ),
+      bun_requirement: bunRequirement,
+      platform: process.platform,
+      architecture: process.arch,
+    };
+    if (stageOnly) {
+      console.log(JSON.stringify(stagedRelease));
+      return;
+    }
+    await guardClientPromotion(
+      definition,
+      input,
+      (command, args) => run(command, args),
+      available,
+      binding,
+    );
+    stagedRelease.promotion_state = "attempted";
+    stagedRelease.promoted = null;
+    await privateDirectory(state);
     const current = join(base, "current");
     if ((await exists(current)) && !(await lstat(current)).isSymbolicLink())
       throw new Error("Preserve the non-symlink current installation");
     const temporary = join(base, `.current-${randomUUID()}`);
     await symlink(release, temporary);
     await rename(temporary, current);
+    stagedRelease.promotion_state = "partial";
+    stagedRelease.promoted = true;
     const backups = join(state, "install-backups", revision);
     await privateDirectory(backups);
     if (await exists(launcher))
@@ -274,6 +315,7 @@ async function main(): Promise<void> {
     await atomic(definition.file, definition.text, 0o600);
     if (definition.kind === "launchd")
       run("/usr/bin/plutil", ["-lint", definition.file]);
+    stagedRelease.promotion_state = "confirmed";
     const service = await startService(
       definition,
       input,
@@ -284,6 +326,7 @@ async function main(): Promise<void> {
     );
     console.log(
       JSON.stringify({
+        ...stagedRelease,
         installed: true,
         revision,
         release,
@@ -305,6 +348,7 @@ main().catch((error: unknown) => {
   if (error instanceof IncompleteActivation) {
     console.log(
       JSON.stringify({
+        ...stagedRelease,
         started: false,
         incomplete_activation: true,
         reason: error.message,
@@ -313,6 +357,16 @@ main().catch((error: unknown) => {
     process.exitCode = 3;
     return;
   }
+  if (stagedRelease !== undefined)
+    console.log(
+      JSON.stringify({
+        ...stagedRelease,
+        installed: false,
+        started: false,
+        reason:
+          error instanceof Error ? error.message : "Local installation failed",
+      }),
+    );
   console.error(
     error instanceof Error ? error.message : "Local installation failed",
   );
