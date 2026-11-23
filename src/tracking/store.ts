@@ -970,7 +970,19 @@ export class TrackingStore {
     const openedOnTerminalPR =
       action.blocker.kind === "review_feedback" &&
       terminalPR(this.observations.lifecycle(action.openedObservationId));
-    return closeProgress(action, observation, this.now(), openedOnTerminalPR);
+    return closeProgress(
+      action,
+      observation,
+      this.now(),
+      openedOnTerminalPR,
+      () =>
+        action.blocker.kind === "check_failed"
+          ? this.observations.check(
+              action.openedObservationId,
+              action.blocker.sourceId,
+            )
+          : undefined,
+    );
   }
 
   refreshOutcome(

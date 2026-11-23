@@ -22,6 +22,7 @@ import { currentMergeChecks } from "../src/merging/checks.js";
 import { wire, unwire } from "../src/api/codec.js";
 import { GitHubRateLimitError } from "../src/github-api.js";
 import { DomainCheckEvidenceSchema } from "../src/gen/octomanager/v2/domain_pb.js";
+import { ActionState } from "../src/tracking/types.js";
 import type {
   CheckObservation,
   ObservationInput,
@@ -548,5 +549,125 @@ test("verified old jobs do not complete a pending or partially observed later at
         : evidence.value.map((check) => check.id),
     ).toEqual([workflow.id]);
     expect(checksFinished(evidence)).toBe(false);
+  }
+});
+
+test("unchanged same-key failed jobs preserve action and delivery identities across refreshes", async () => {
+  const directory = await mkdtemp(
+    join(tmpdir(), "octo-check-failure-actions-"),
+  );
+  const store = new Store(directory);
+  const config = defaultTrackingConfig();
+  const tracked = store.tracking.track(url, target);
+  const read = source(job);
+  const checks = [1, 2].map((id) => ({
+    id,
+    name: "shared job",
+    head_sha: "head",
+    app: { id: 1 },
+    status: "completed",
+    conclusion: "failure",
+    html_url: `${url}#${String(id)}`,
+  }));
+  const service = new TrackingService(store.tracking, config, Date.now, {
+    read: (address, signal, _read, now, _metadata, retained) =>
+      readObservation(
+        address,
+        signal,
+        async (path) => {
+          if (path.includes("/check-runs")) return { check_runs: checks };
+          return read(path);
+        },
+        now,
+        undefined,
+        retained,
+      ),
+  });
+  try {
+    await service.refresh(tracked.id);
+    const actions = store.tracking.actions();
+    const deliveries = store.tracking.deliveries();
+    expect(
+      actions.filter((action) => action.blocker.kind === "check_failed"),
+    ).toHaveLength(2);
+    for (let refresh = 0; refresh < 3; refresh++) {
+      await service.refresh(tracked.id);
+      expect(store.tracking.actions()).toEqual(actions);
+      expect(store.tracking.deliveries()).toEqual(deliveries);
+    }
+  } finally {
+    await service.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("failure actions require exact success or verified replacement using opening evidence", async () => {
+  for (const kind of [
+    "status",
+    "workflow",
+    "unrelated",
+    "exact",
+    "partial",
+  ] as const) {
+    const directory = await mkdtemp(
+      join(tmpdir(), "octo-check-action-replacement-"),
+    );
+    const store = new Store(directory);
+    const config = defaultTrackingConfig();
+    const tracked = store.tracking.track(url, target);
+    const failed =
+      kind === "status"
+        ? {
+            ...old(1, "failure"),
+            id: "status:1",
+            key: "status:ci",
+            status: "failure",
+          }
+        : { ...old(1, "failure"), workflowRunId: 9, workflowRunAttempt: 1 };
+    try {
+      store.tracking.observe(tracked.id, observation([failed]), config);
+      const action = store.tracking
+        .actions()
+        .find((value) => value.blocker.kind === "check_failed");
+      if (action === undefined) throw new Error("Missing failure action");
+      const replacement =
+        kind === "status"
+          ? {
+              ...failed,
+              id: "status:2",
+              status: "success",
+              conclusion: "success",
+            }
+          : kind === "exact" || kind === "partial"
+            ? { ...failed, conclusion: "success" }
+            : { ...old(2, "success"), key: failed.key };
+      store.tracking.observe(
+        tracked.id,
+        kind === "workflow"
+          ? observation([], [workflow])
+          : kind === "partial"
+            ? {
+                ...observation([replacement]),
+                checks: {
+                  state: "partial",
+                  value: [replacement],
+                  reason: "Incomplete coverage",
+                },
+              }
+            : observation([replacement]),
+        config,
+      );
+      expect(store.tracking.action(action.id).progress.state).toBe(
+        kind === "unrelated" || kind === "partial"
+          ? ActionState.Open
+          : kind === "exact"
+            ? ActionState.Resolved
+            : ActionState.Superseded,
+      );
+    } finally {
+      store.close();
+      await rm(directory, { recursive: true, force: true });
+    }
   }
 });

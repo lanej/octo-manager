@@ -19,6 +19,7 @@ import {
   type ActionProgress,
   type Blocker,
   type PRObservation,
+  type CheckObservation,
 } from "./types.js";
 export interface Finding {
   sourceKey: string;
@@ -137,6 +138,7 @@ export function closeProgress(
   o: PRObservation,
   now: number,
   openedOnTerminalPR = false,
+  openingCheck?: () => CheckObservation | undefined,
 ): ActionProgress | undefined {
   const supersede = (reason: string): ActionProgress => ({
     state: ActionState.Superseded,
@@ -213,11 +215,27 @@ export function closeProgress(
       return resolve("GitHub confirms no merge conflict");
   }
   if (b.kind === "check_failed" && o.checks.state === "complete") {
-    const c = currentChecks(o).find((c) => c.key === b.checkKey);
-    if (c && c.id !== b.sourceId)
+    const current = currentChecks(o);
+    const exact = current.find((check) => check.id === b.sourceId);
+    if (exact !== undefined) {
+      if (successfulCheck(exact))
+        return resolve("GitHub confirms check succeeded");
+      return undefined;
+    }
+    const previous =
+      o.checks.value.find((check) => check.id === b.sourceId) ??
+      openingCheck?.();
+    const workflows =
+      o.workflows === undefined || o.workflows.state === "unavailable"
+        ? []
+        : o.workflows.value;
+    if (
+      previous !== undefined &&
+      [...current, ...workflows].some((candidate) =>
+        checkReplaces(previous, candidate),
+      )
+    )
       return supersede("A newer check execution replaced this failure");
-    if (c && ["success", "neutral", "skipped"].includes(c.conclusion))
-      return resolve("GitHub confirms check succeeded");
   }
   if (b.kind === "changes_requested" && o.reviews.state === "complete") {
     const r = currentReviews(o).find((r) => r.author === b.reviewer);
