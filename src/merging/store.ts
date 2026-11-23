@@ -105,14 +105,12 @@ export class MergeStore {
   agentInstructions(prId: string, agentId: string): string | undefined {
     const pr = this.tracking.pr(prId);
     if (pr.ownerAgentId !== agentId) return undefined;
-    const entry = this.entries()
-      .filter((value) => value.prId === pr.id)
-      .sort((a, b) => {
-        const priority = Number(terminal(a.state)) - Number(terminal(b.state));
-        return priority !== 0
-          ? priority
-          : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
-      })[0];
+    const entry = this.entries(pr.id).sort((a, b) => {
+      const priority = Number(terminal(a.state)) - Number(terminal(b.state));
+      return priority !== 0
+        ? priority
+        : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
+    })[0];
     const instructions = entry?.agentInstructions;
     return instructions?.agentId === agentId &&
       instructions.epoch === pr.trackingEpoch
@@ -157,20 +155,59 @@ export class MergeStore {
       checked(ChainSchema, value),
     );
   }
-  entries(): MergeEntry[] {
-    return this.values("merge_entries").map((value) =>
-      checked(EntrySchema, value),
-    );
+  entries(prId?: string): MergeEntry[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM merge_entries ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM merge_entries WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => {
+      const value = checked(EntrySchema, JSON.parse(String(row["data"])));
+      if (value.prId !== row["pr_id"])
+        throw new Error("Merge record PR identity mismatch");
+      return value;
+    });
   }
-  operations(): MergeOperation[] {
-    return this.values("merge_operations").map((value) =>
-      checked(OperationSchema, value),
-    );
+  operations(prId?: string): MergeOperation[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM merge_operations ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM merge_operations WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => {
+      const value = checked(OperationSchema, JSON.parse(String(row["data"])));
+      if (value.prId !== row["pr_id"])
+        throw new Error("Merge record PR identity mismatch");
+      return value;
+    });
   }
-  refs(): PRReference[] {
-    return this.values("pr_references").map((value) =>
-      checked(ReferenceSchema, value),
-    );
+  refs(prId?: string): PRReference[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM pr_references ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM pr_references WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => {
+      const value = checked(ReferenceSchema, JSON.parse(String(row["data"])));
+      if (value.prId !== row["pr_id"])
+        throw new Error("Merge record PR identity mismatch");
+      return value;
+    });
   }
   dependencies(includeInactive = false): Dependency[] {
     return this.values("pr_dependencies")
@@ -178,20 +215,29 @@ export class MergeStore {
       .filter((edge) => includeInactive || edge.active);
   }
   chain(id: string): MergeChain {
-    const values = this.chains(),
-      key = resolveId(
+    const query = this.db.prepare(
+      "SELECT data,id FROM merge_chains WHERE id=?",
+    );
+    let row = query.get(id);
+    if (row === undefined) {
+      const key = resolveId(
         id,
-        values.map((item) => item.id),
+        this.db
+          .prepare("SELECT id FROM merge_chains")
+          .all()
+          .map((value) => String(value["id"])),
       );
-    const value = values.find((item) => item.id === key);
-    if (value === undefined) throw new Error("Merge chain not found");
+      if (key !== undefined) row = query.get(key);
+    }
+    if (row === undefined) throw new Error("Merge chain not found");
+    const value = checked(ChainSchema, JSON.parse(String(row["data"])));
+    if (value.id !== row["id"])
+      throw new Error("Merge chain identity mismatch");
     return value;
   }
   entry(pr: string): MergeEntry {
     const p = this.tracking.pr(pr),
-      value = this.entries().find(
-        (item) => item.prId === p.id && !terminal(item.state),
-      );
+      value = this.entries(p.id).find((item) => !terminal(item.state));
     if (value === undefined) throw new Error("Active merge entry not found");
     return value;
   }
@@ -210,14 +256,12 @@ export class MergeStore {
     return actor;
   }
   busy(prId: string): boolean {
-    return this.operations().some(
-      (op) =>
-        op.prId === prId &&
-        [
-          OperationState.Planned,
-          OperationState.Running,
-          OperationState.Uncertain,
-        ].includes(op.state),
+    return this.operations(prId).some((op) =>
+      [
+        OperationState.Planned,
+        OperationState.Running,
+        OperationState.Uncertain,
+      ].includes(op.state),
     );
   }
   private editable(prId: string): void {
@@ -255,7 +299,9 @@ export class MergeStore {
     detail: string,
     patch: Partial<MergeEntry> = {},
   ): MergeEntry {
-    const current = this.entries().find((value) => value.id === entry.id);
+    const current = this.entries(entry.prId).find(
+      (value) => value.id === entry.id,
+    );
     const next = {
       ...entry,
       ...patch,
@@ -393,11 +439,9 @@ export class MergeStore {
         return "explicit";
       return "inherited";
     }
-    return this.entries().some(
+    return this.entries(pr.id).some(
       (entry) =>
-        entry.prId === pr.id &&
-        !terminal(entry.state) &&
-        entry.autoMergeSource !== "inherited",
+        !terminal(entry.state) && entry.autoMergeSource !== "inherited",
     )
       ? "explicit"
       : "inherited";
@@ -433,9 +477,7 @@ export class MergeStore {
     );
   }
   policyStage(prId: string, stage?: string): void {
-    const entry = this.entries().find(
-      (value) => value.prId === prId && !terminal(value.state),
-    );
+    const entry = this.entries(prId).find((value) => !terminal(value.state));
     if (entry === undefined || entry.autoMergeSource !== "inherited") return;
     const next = { ...entry };
     if (stage === undefined) delete next.autoMergeStage;
@@ -708,8 +750,8 @@ export class MergeStore {
     });
   }
   private invalidate(prId: string): void {
-    for (const entry of this.entries().filter(
-      (item) => item.prId === prId && !terminal(item.state),
+    for (const entry of this.entries(prId).filter(
+      (item) => !terminal(item.state),
     )) {
       delete entry.ready;
       this.state(
@@ -742,9 +784,7 @@ export class MergeStore {
     });
   }
   ownerAssessment(pr: TrackedPR): MergeEntry["ready"] {
-    const entry = this.entries().find(
-      (item) => item.prId === pr.id && !terminal(item.state),
-    );
+    const entry = this.entries(pr.id).find((item) => !terminal(item.state));
     return entry?.ready?.source === ReviewAssessmentSource.Owner &&
       readyFor(entry, pr, this.dependencies())
       ? entry.ready
@@ -1012,9 +1052,7 @@ export class MergeStore {
     const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
-      for (const prior of this.refs().filter(
-        (ref) => ref.prId === pr.id && ref.active,
-      )) {
+      for (const prior of this.refs(pr.id).filter((ref) => ref.active)) {
         const complete =
           prior.sourceKey === "description"
             ? observation.description !== undefined
@@ -1029,7 +1067,7 @@ export class MergeStore {
         }
       }
       for (const ref of found) {
-        const prior = this.refs().find((item) => item.id === ref.id);
+        const prior = this.refs(pr.id).find((item) => item.id === ref.id);
         if (prior === undefined)
           this.saveReference({
             ...ref,
@@ -1090,7 +1128,7 @@ export class MergeStore {
         };
         const entry =
           kind === "entry"
-            ? this.entries().find((value) => value.id === subjectId)
+            ? this.entries(pr.id).find((value) => value.id === subjectId)
             : undefined;
         if (entry !== undefined) notice.mergeState = entry.state;
         this.tracking.inbox.freezeNotice(id, notice);

@@ -226,9 +226,7 @@ export class RepositoryPolicies {
           pr.id,
         );
       }
-      const entries = this.merging
-        .entries()
-        .filter((entry) => entry.prId === pr.id);
+      const entries = this.merging.entries(pr.id);
       if (
         entries.some(
           (entry) =>
