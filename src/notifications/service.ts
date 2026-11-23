@@ -103,13 +103,14 @@ export class DigestService {
     );
   }
   private pending(agentId: string): AgentMessage[] {
-    this.tracking.store.prepareSafeRecovery();
     const pending: AgentMessage[] = [];
     let after = 0;
     for (;;) {
       const page = this.tracking.store.inbox.list(agentId, after, false, true);
       for (const message of page.messages) {
+        // Legacy arrivals after discovery must receive independent recovery IDs before a digest can receipt them.
         if (
+          message.notice !== undefined &&
           this.applicable(message) &&
           this.options.presentation?.(message).defer !== true
         )
@@ -121,12 +122,7 @@ export class DigestService {
     }
   }
   private legacy(agentId: string): AgentMessage[] {
-    const covered = new Set(
-      this.store
-        .list(agentId)
-        .flatMap((value) => this.store.revisions(value.id))
-        .flatMap((value) => value.messageIds),
-    );
+    const covered = this.store.coveredMessageIds(agentId);
     const messages: AgentMessage[] = [];
     let after = 0;
     for (;;) {
@@ -159,6 +155,7 @@ export class DigestService {
     ]);
   }
   private async discover(): Promise<void> {
+    this.tracking.store.prepareSafeRecovery();
     for (const agent of this.tracking.store.agents()) {
       await setImmediate();
       if (this.stopped) break;

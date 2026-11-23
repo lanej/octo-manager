@@ -223,6 +223,53 @@ test("recipient concurrency stays bounded and shutdown drains active work withou
   }
 });
 
+test("legacy messages arriving during queue I/O wait for an independent recovery receipt", async () => {
+  const f = await fixture(1);
+  const queue = f.queues[0];
+  if (queue === undefined) throw new Error("Missing queue");
+  const db = new DatabaseSync(`${f.store.directory}/jobs.sqlite`);
+  try {
+    const first = f.notice(0);
+    queue.blocked = true;
+    const flush = f.service.flush();
+    await within(queue.started.promise);
+    const late = f.notice(0);
+    db.prepare("DELETE FROM safe_agent_notices WHERE message_id=?").run(
+      late.id,
+    );
+    queue.unblock.release();
+    await within(flush);
+    const active = f.store.digests.active(first.agentId);
+    if (active === undefined) throw new Error("Missing first digest");
+    expect(
+      f.store.digests.revisions(active.id).flatMap((value) => value.messageIds),
+    ).not.toContain(late.id);
+    f.service.acknowledge(active.id, active.revision, first.agentId);
+    expect(f.store.tracking.inbox.get(late.id)?.acknowledgedAt).toBeUndefined();
+    await within(f.service.flush());
+    const replacement = f.store.tracking.inbox
+      .list(first.agentId, 0, false, true)
+      .messages.find((value) => value.id !== late.id);
+    if (replacement === undefined)
+      throw new Error("Missing independent recovery message");
+    expect(replacement.notice).toBeDefined();
+    const next = f.store.digests.active(first.agentId);
+    if (next === undefined) throw new Error("Missing recovery digest");
+    const members = f.store.digests
+      .revisions(next.id)
+      .flatMap((value) => value.messageIds);
+    expect(members).toContain(replacement.id);
+    expect(members).not.toContain(late.id);
+    f.service.acknowledge(next.id, next.revision, first.agentId);
+    expect(f.store.tracking.inbox.get(replacement.id)?.acknowledgedAt).toBe(
+      1000,
+    );
+    expect(f.store.tracking.inbox.get(late.id)?.acknowledgedAt).toBeUndefined();
+  } finally {
+    db.close();
+    await f.close();
+  }
+});
 test("prepared inbox lookups avoid recompilation while observing fresh receipts", async () => {
   const f = await fixture(1);
   const prepare = spyOn(DatabaseSync.prototype, "prepare");

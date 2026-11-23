@@ -278,30 +278,39 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM actions ORDER BY rowid")
       .all()
-      .map((r: Row) => ({
-        id: r.id,
-        prId: r.pr_id,
-        openedObservationId: r.opened_observation_id,
-        ownerAgentId: r.owner_agent_id,
-        sourceKey: r.source_key,
-        blocker: parse(r.blocker_json),
-        summary: r.summary,
-        evidenceUrl: r.evidence_url,
-        profile: parse(r.profile_json),
-        progress: parse(r.progress_json),
-        createdAt: r.created_at_ms,
-        updatedAt: r.updated_at_ms,
-      }));
+      .map((row) => this.trackedAction(row));
+  }
+  private trackedAction(r: Row): Action {
+    return {
+      id: r.id,
+      prId: r.pr_id,
+      openedObservationId: r.opened_observation_id,
+      ownerAgentId: r.owner_agent_id,
+      sourceKey: r.source_key,
+      blocker: parse(r.blocker_json),
+      summary: r.summary,
+      evidenceUrl: r.evidence_url,
+      profile: parse(r.profile_json),
+      progress: parse(r.progress_json),
+      createdAt: r.created_at_ms,
+      updatedAt: r.updated_at_ms,
+    };
   }
   action(id: string): Action {
-    const actions = this.actions();
-    const resolved = resolveId(
-      id,
-      actions.map((action) => action.id),
-    );
-    const a = actions.find((action) => action.id === resolved);
-    if (!a) throw new Error("Action not found");
-    return a;
+    const query = this.db.prepare("SELECT * FROM actions WHERE id=?");
+    let row = query.get(id);
+    if (row === undefined) {
+      const resolved = resolveId(
+        id,
+        this.db
+          .prepare("SELECT id FROM actions")
+          .all()
+          .map((value) => String(value["id"])),
+      );
+      if (resolved !== undefined) row = query.get(resolved);
+    }
+    if (row === undefined) throw new Error("Action not found");
+    return this.trackedAction(row);
   }
   private saveAction(a: Action, kind: string): void {
     this.db

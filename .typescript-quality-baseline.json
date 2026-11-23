@@ -2990,14 +2990,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!a) throw new Error(\"Action not found\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!a) throw new Error(\"Agent not found\");",
       "count": 1
     },
