@@ -217,6 +217,9 @@ export class TrackingStore {
       .all()
       .map((r: Row) => this.trackedPR(r));
   }
+  observationHead(prId: string): string | undefined {
+    return this.observations.head(prId);
+  }
   referenceObservation(prId: string) {
     return this.observations.reference(prId);
   }

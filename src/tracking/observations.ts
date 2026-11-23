@@ -12,6 +12,7 @@ export type ReferenceObservation = Pick<
 
 export interface ObservationRepository {
   reference(prId: string): ReferenceObservation | undefined;
+  head(prId: string): string | undefined;
   append(prId: string, input: ObservationInput): PRObservation;
   latest(prId: string): PRObservation | undefined;
   lifecycle(id: number): PRLifecycle;
@@ -60,6 +61,14 @@ export class SQLiteObservationRepository implements ObservationRepository {
       )
       .get(prId);
     return row === undefined ? undefined : this.decode(row);
+  }
+  head(prId: string): string | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT head_sha FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
+      )
+      .get(prId);
+    return row === undefined ? undefined : text(row["head_sha"]);
   }
   reference(prId: string): ReferenceObservation | undefined {
     const row = this.db

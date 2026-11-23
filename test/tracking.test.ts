@@ -40,6 +40,7 @@ test("PR point reads retain fresh observations without decoding unrelated histor
     assert.equal(store.tracking.pr(selected.id).observation, undefined);
     store.tracking.observe(selected.id, observation(), config);
     assert.equal(store.tracking.pr(url).observation?.headSha, "head1");
+    assert.equal(store.tracking.observationHead(selected.id), "head1");
     store.tracking.observe(
       selected.id,
       observation({ headSha: "head2" }),
@@ -77,6 +78,7 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       other.id,
     );
     assert.equal(store.tracking.pr(selected.id).observation?.headSha, "head2");
+    assert.equal(store.tracking.observationHead(selected.id), "head2");
     assert.deepEqual(store.tracking.pr(url), store.tracking.pr(selected.id));
     assert.throws(() => store.tracking.pr("missing"), /Tracked PR not found/);
     assert.throws(() => store.tracking.pr(other.id));

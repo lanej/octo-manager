@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { messageReceiptId } from "../src/notifications/render.js";
 import { shortId } from "../src/tracking/identifiers.js";
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Coordinator } from "../src/coordinator.js";
 import { codexHook } from "../src/integrations/codex.js";
@@ -620,6 +620,72 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
       coordinator.store.tracking.inbox.get(added)?.acknowledgedAt,
     ).toBeUndefined();
   } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("default discovery skips scheduler bookkeeping but still queues a fresh notification", async () => {
+  const directory = await mkdtemp("/tmp/octo-default-revision-");
+  const config = defaultTrackingConfig();
+  config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
+  const slots: QueuedMessage[] = [];
+  const queue: QueueConnection = {
+    prepare: () => Promise.resolve({ busy: false }),
+    queued: () => Promise.resolve(slots),
+    enqueueQueued: (_agent, clientId, body) => {
+      const item = { queueId: clientId, clientId, body };
+      slots.push(item);
+      return Promise.resolve(item);
+    },
+    cancelQueued: () => Promise.resolve(true),
+    received: () => Promise.resolve({ bodies: [], complete: true }),
+    close() {},
+  };
+  const coordinator = new Coordinator(directory, {
+    now: () => 1000,
+    trackingConfig: config,
+    digestOptions: { connect: () => queue },
+  });
+  const reads = spyOn(coordinator.store.tracking.inbox, "list");
+  try {
+    const owner = {
+      harness: "codex" as const,
+      endpoint: "local",
+      sessionId: "default-revision",
+    };
+    const agent = coordinator.tracking.registerAgent(owner);
+    await coordinator.digests.flush();
+    reads.mockClear();
+    coordinator.store.schedules.saveDispatch({
+      ...coordinator.store.schedules.dispatch(),
+      nextAtMs: 2000,
+    });
+    await coordinator.digests.flush();
+    expect(reads).not.toHaveBeenCalled();
+    const request = coordinator.store.submissions.request({
+      requestId: "new-notification",
+      repository: "owner/repo",
+      headRef: "feature",
+      headSha: "a".repeat(40),
+      baseRef: "main",
+      purpose: "Fixture",
+      validation: [],
+      draft: false,
+      owner,
+    });
+    coordinator.store.submissions.save({
+      ...request,
+      state: SubmissionState.NeedsInput,
+      detail: "Owner input required",
+      notificationRevision: 1,
+    });
+    coordinator.store.submissions.notify(request, agent.id);
+    await coordinator.digests.flush();
+    expect(reads).toHaveBeenCalled();
+    expect(slots).toHaveLength(1);
+  } finally {
+    reads.mockRestore();
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
