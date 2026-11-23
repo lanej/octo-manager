@@ -232,7 +232,7 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
         observedAt: 2,
         checks: {
           state: "complete",
-          value: [{ ...check, id: "check-2", at: 2, conclusion: "success" }],
+          value: [{ ...check, at: 2, conclusion: "success" }],
         },
       },
       config,
