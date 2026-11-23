@@ -155,6 +155,9 @@ export class SubmissionNotifications {
       this.connection = undefined;
     }
   }
+  checkpointable(): boolean {
+    return this.work === undefined;
+  }
   async close(): Promise<void> {
     this.stopped = true;
     if (this.timer !== undefined) clearInterval(this.timer);

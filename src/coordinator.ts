@@ -8,6 +8,7 @@ import { CodexDispatcher } from "./dispatch/codex.js";
 import { ManagedIssueWorkspace } from "./dispatch/workspace.js";
 import { loadIssuePolicy } from "./issues/config.js";
 import { trackedCodeHost } from "./issues/composition.js";
+import { Activation, type ActivationReport } from "./lifecycle.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
 import {githubReads} from "./github-api.js";
@@ -50,6 +51,9 @@ export function transient(error: string): boolean {
   return /\b(429|500|502|503|504)\b|ECONNRESET|ETIMEDOUT|EAI_AGAIN|temporarily unavailable|rate limit/i.test(error) && !/auth|credential|login|401|403/i.test(error);
 }
 export class Coordinator extends EventEmitter {
+  private readonly activation = new Activation();
+  private nativeCalls = 0;
+  private checkpointWork: Promise<ActivationReport> | undefined;
   readonly store: Store;
   readonly tracking: TrackingService;
   readonly assessments: AssessmentService;
@@ -287,6 +291,128 @@ export class Coordinator extends EventEmitter {
       } else this.change(job.id, "succeeded", "Job completed", { attempts, ...(result === undefined ? {} : { result }) });
       if (fixture) await removeFixture(this.directory, fixture).catch(() => {});
     }
+  }
+  nativeAdmission(method: string): () => void {
+    if (method === "RuntimeLifecycle" || method === "GetServerInfo") return () => {};
+    if (this.stopping) throw new Error("Coordinator is stopping");
+    this.nativeCalls++;
+    return () => { this.nativeCalls--; };
+  }
+  async lifecycle(
+    action: string,
+    incarnation: string,
+    operation: string,
+    expected: string,
+    restorePaused?: boolean,
+  ): Promise<ActivationReport> {
+    const report = () =>
+      this.activation.report(
+        this.server?.listening === true && !this.stopping,
+        this.store.paused(),
+      );
+    if (action === "inventory") return report();
+    if (action === "verify") {
+      const value = report();
+      if (this.activation.identity === null || expected !== this.activation.identity) {
+        value.targets[0].ready = false;
+        value.targets[0].reason = "native-loaded-image-unavailable-or-selection-differs";
+      }
+      return value;
+    }
+    if (action === "stop") {
+      try {
+        const submitted = this.activation.stop(incarnation, operation);
+        const value = report();
+        if (submitted) setTimeout(() => {
+          void this.close().then(() => { this.emit("retired"); }).catch(() => {
+            // Keep the fenced owner alive if graceful retirement cannot be established.
+            setInterval(() => {}, 1000);
+          });
+        }, 100).unref();
+        return value;
+      } catch (error) {
+        const value = report();
+        value.targets[0].reason = error instanceof Error ? error.message : "Native retirement refused";
+        value.targets[0].stop_accepted = false;
+        return value;
+      }
+    }
+
+    if (action === "restore") {
+      if (
+        this.stopping ||
+        this.activation.identity === null ||
+        expected !== this.activation.identity
+      ) {
+        const value = report();
+        value.targets[0].reason =
+          "original-octo-drain-cannot-be-reversed-or-image-differs";
+        return value;
+      }
+      if (this.activation.restore(incarnation, operation) && restorePaused !== undefined)
+        this.store.setPaused(restorePaused);
+      return report();
+    }
+    if (action !== "checkpoint")
+      throw new Error("Unsupported lifecycle action");
+    if (this.checkpointWork !== undefined) {
+      const current = report().targets[0];
+      if (current.process.native_id === incarnation && current.checkpoint?.run_id === operation) {
+        await this.checkpointWork;
+        return report();
+      }
+    }
+    if (
+      this.activation.identity === null ||
+      report().targets[0].retirement_policy !== "successful-exit" ||
+      this.nativeCalls !== 0 ||
+      this.store.jobs().some(job => job.status === "queued" || job.status === "retry_wait" || activeStates.includes(job.status) || job.attempts.some(attempt => attempt.pid !== undefined && attempt.exitObservedAt === undefined)) ||
+      !this.tracking.checkpointable() ||
+      !this.assessments.checkpointable() ||
+      !this.issues.checkpointable() ||
+      this.active !== undefined ||
+      this.recoveryPids.size !== 0 ||
+      !this.merging.checkpointable() ||
+      !this.repairs.checkpointable() ||
+      !this.submissions.checkpointable() ||
+      !this.digests.checkpointable() ||
+      !this.notifications.checkpointable() ||
+      !this.submissionNotifications.checkpointable()
+    ) {
+      const value = report();
+      value.targets[0].checkpoint = { state: "refused", run_id: operation };
+      value.targets[0].reason =
+        "active-octo-work-has-no-confirmed-native-checkpoint-or-image-is-unmanaged";
+      return value;
+    }
+    try { this.activation.claim(incarnation, operation); }
+    catch (error) {
+      const value = report();
+      value.targets[0].checkpoint = { state: "refused", run_id: operation };
+      value.targets[0].reason = error instanceof Error ? error.message : "Native checkpoint refused";
+      return value;
+    }
+    this.stopping = true;
+    this.store.setPaused(true);
+    if (this.timer !== undefined) clearInterval(this.timer);
+    this.notifications.stop();
+    this.checkpointWork = (async () => {
+    await Promise.all([
+      this.assessments.close(),
+      this.issues.close(),
+      this.githubScheduler.close(),
+      this.merging.close(),
+      this.repairs.close(),
+      this.submissions.close(),
+      this.digests.close(),
+      this.submissionNotifications.close(),
+      this.notifications.close(),
+      this.tracking.close(),
+    ]);
+    this.activation.confirm();
+    return report();
+    })();
+    return this.checkpointWork;
   }
   close(): Promise<void> {
     if (this.closePromise) return this.closePromise;

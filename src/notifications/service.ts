@@ -956,6 +956,18 @@ export class DigestService {
       events: this.store.events(value.id, undefined, 100),
     };
   }
+  checkpointable(): boolean {
+    return (
+      this.discovery === undefined &&
+      this.running.size === 0 &&
+      this.queued.size === 0 &&
+      !this.wakePending &&
+      !this.wakeScheduled &&
+      this.store
+        .list()
+        .every((value) => terminal(value) && !value.cleanupPending)
+    );
+  }
   async close(): Promise<void> {
     this.stopped = true;
     this.queued.clear();

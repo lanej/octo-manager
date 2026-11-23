@@ -375,6 +375,18 @@ export class RepairService {
       "Rebased branch verified on GitHub; configured local checks passed",
     );
   }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      !this.store
+        .list()
+        .some(
+          (attempt) =>
+            activeRepair(attempt.state) ||
+            attempt.state === RepairState.Uncertain,
+        )
+    );
+  }
   async close(): Promise<void> {
     this.stopped = true;
     if (this.timer !== undefined) clearInterval(this.timer);

@@ -1,5 +1,14 @@
 import { join } from "node:path";
 import { launchAgent, serviceLabel, shellQuote } from "./config.js";
+import {
+  guardServiceReplacement,
+  retireService,
+  confirmRetiredService,
+  selectedServiceIdentity,
+  verifyStartedService,
+  IncompleteActivation,
+  type CheckpointBinding,
+} from "./activation.js";
 export interface ServiceInput {
   home: string;
   release: string;
@@ -52,11 +61,20 @@ export function serviceDefinition(
         input.path,
         input.configHome,
         input.codexHome,
-      ),
+      )
+        .replace(
+          "<key>KeepAlive</key><true/>",
+          "<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>",
+        )
+        .replace(
+          "<key>EnvironmentVariables</key><dict>",
+          "<key>EnvironmentVariables</key><dict><key>PROJECT_UPDATE_RETIREMENT_POLICY</key><string>successful-exit</string>",
+        ),
     };
   if (platform !== "linux")
     throw new Error("Local installation supports macOS and Linux");
   const environment = {
+    PROJECT_UPDATE_RETIREMENT_POLICY: "successful-exit",
     HOME: input.home,
     PATH: input.path,
     OCTO_MANAGER_STATE: input.state,
@@ -82,6 +100,7 @@ export async function startService(
   noStart: boolean,
   run: ServiceRunner,
   managerAvailable: boolean,
+  binding?: CheckpointBinding,
 ): Promise<ServiceResult> {
   const result: ServiceResult = {
     serviceManager: definition.kind,
@@ -116,61 +135,76 @@ export async function startService(
       reason:
         "No user service manager is available; launcher and hooks are installed",
     };
-  if (definition.kind === "systemd") {
-    run("systemctl", ["--user", "daemon-reload"]);
-    run("systemctl", ["--user", "enable", definition.file]);
-    run("systemctl", ["--user", "restart", definition.target]);
-    run("systemctl", ["--user", "is-active", "--quiet", definition.target]);
-  } else {
-    try {
-      run("/bin/launchctl", ["print", definition.target]);
-      run("/bin/launchctl", ["bootout", definition.target]);
-    } catch (error) {
-      if (
-        typeof error !== "object" ||
-        error === null ||
-        !("status" in error) ||
-        (error.status !== 3 && error.status !== 113)
-      )
-        throw error;
-    }
-    for (let attempt = 0; ; attempt++) {
-      try {
-        run("/bin/launchctl", [
-          "bootstrap",
-          definition.target.slice(0, definition.target.lastIndexOf("/")),
-          definition.file,
-        ]);
-        break;
-      } catch (error) {
+  const expectedIdentity = selectedServiceIdentity(input, run);
+  const activation = await guardServiceReplacement(
+    definition,
+    input,
+    run,
+    binding,
+  );
+  if (activation === "checkpointed") {
+    if (binding === undefined)
+      throw new Error("Checkpoint binding missing after owner guard");
+    await retireService(definition, input, run, binding);
+  }
+  try {
+    if (definition.kind === "systemd") {
+      run("systemctl", ["--user", "daemon-reload"]);
+      run("systemctl", ["--user", "enable", definition.file]);
+      run("systemctl", ["--user", "start", definition.target]);
+      run("systemctl", ["--user", "is-active", "--quiet", definition.target]);
+    } else {
+      if (activation === "checkpointed") {
+        if (binding === undefined)
+          throw new Error("Missing retired owner binding");
+        confirmRetiredService(definition, run, binding);
+        run("/bin/launchctl", ["bootout", definition.target]);
+      }
+      for (let attempt = 0; ; attempt++) {
+        try {
+          run("/bin/launchctl", [
+            "bootstrap",
+            definition.target.slice(0, definition.target.lastIndexOf("/")),
+            definition.file,
+          ]);
+          break;
+        } catch (error) {
+          if (
+            typeof error !== "object" ||
+            error === null ||
+            !("status" in error) ||
+            error.status !== 5 ||
+            attempt >= 5
+          )
+            throw error;
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, Math.min(200 * 2 ** attempt, 1000));
+          });
+        }
+      }
+      run("/bin/launchctl", ["enable", definition.target]);
+      run("/bin/launchctl", ["kickstart", definition.target]);
+      for (let attempt = 0; ; attempt++) {
         if (
-          typeof error !== "object" ||
-          error === null ||
-          !("status" in error) ||
-          error.status !== 5 ||
-          attempt >= 5
+          /state = running/u.test(
+            run("/bin/launchctl", ["print", definition.target]),
+          )
         )
-          throw error;
+          break;
+        if (attempt >= 49)
+          throw new Error("Octo service did not report running");
         await new Promise<void>((resolve) => {
-          setTimeout(resolve, Math.min(200 * 2 ** attempt, 1000));
+          setTimeout(resolve, 100);
         });
       }
     }
-    run("/bin/launchctl", ["enable", definition.target]);
-    run("/bin/launchctl", ["kickstart", definition.target]);
-    for (let attempt = 0; ; attempt++) {
-      if (
-        /state = running/u.test(
-          run("/bin/launchctl", ["print", definition.target]),
-        )
-      )
-        break;
-      if (attempt >= 49) throw new Error("Octo service did not report running");
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 100);
-      });
-    }
+  } catch (error) {
+    if (error instanceof IncompleteActivation) throw error;
+    throw new IncompleteActivation(
+      "native-service-manager-start-outcome-unconfirmed",
+    );
   }
+  await verifyStartedService(definition, input, run, expectedIdentity, binding);
   return { ...result, started: true };
 }
 export function managerAvailable(

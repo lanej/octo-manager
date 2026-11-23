@@ -4,6 +4,11 @@ import {
   managerAvailable,
 } from "../src/install/service.js";
 import { execFileSync } from "node:child_process";
+import {
+  IncompleteActivation,
+  readCheckpointBinding,
+  guardServiceReplacement,
+} from "../src/install/activation.js";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -177,6 +182,10 @@ async function main(): Promise<void> {
     );
   await privateDirectory(base);
   await privateDirectory(state);
+  const binding =
+    values["no-start"] === true
+      ? undefined
+      : await readCheckpointBinding(process.env);
   const lock = join(base, ".install-lock");
   await mkdir(lock, { mode: 0o700 });
   const stage = join(
@@ -186,6 +195,13 @@ async function main(): Promise<void> {
     `.install-${randomUUID()}`,
   );
   try {
+    if (values["no-start"] !== true && available)
+      await guardServiceReplacement(
+        definition,
+        input,
+        (command, args) => run(command, args),
+        binding,
+      );
     await privateDirectory(dirname(release));
     if (!(await exists(release))) {
       run(bun, ["run", "build"]);
@@ -264,6 +280,7 @@ async function main(): Promise<void> {
       values["no-start"] === true,
       (command, args) => run(command, args),
       available,
+      binding,
     );
     console.log(
       JSON.stringify({
@@ -285,6 +302,17 @@ async function main(): Promise<void> {
   }
 }
 main().catch((error: unknown) => {
+  if (error instanceof IncompleteActivation) {
+    console.log(
+      JSON.stringify({
+        started: false,
+        incomplete_activation: true,
+        reason: error.message,
+      }),
+    );
+    process.exitCode = 3;
+    return;
+  }
   console.error(
     error instanceof Error ? error.message : "Local installation failed",
   );

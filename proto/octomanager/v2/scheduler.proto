@@ -5,6 +5,7 @@ import "octomanager/v2/activity.proto";
 import "octomanager/v2/domain.proto";
 import "octomanager/v2/github.proto";
 import "octomanager/v2/issues.proto";
+import "octomanager/v2/lifecycle.proto";
 import "octomanager/v2/notifications.proto";
 import "octomanager/v2/repairs.proto";
 import "octomanager/v2/submissions.proto";
@@ -14,6 +15,8 @@ option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanage
 
 // SchedulerService exposes the versioned coordinator API over local Connect RPC.
 service SchedulerService {
+  // Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
+  rpc RuntimeLifecycle(RuntimeLifecycleRequest) returns (RuntimeLifecycleResponse);
   // Enrolls an issue for investigation through its configured tracker.
   rpc EnrollIssue(EnrollIssueRequest) returns (EnrollIssueResponse);
   // Lists a bounded page of managed issues.
