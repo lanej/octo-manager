@@ -37,6 +37,8 @@ export interface MergeOptions {
   provider?: MergeProvider;
   prepare?: Preparer;
   intervalMs?: number;
+  // Changes with every persisted reference-discovery input; omission retains full scans.
+  referenceInputRevision?: () => string;
 }
 export class MergeService {
   private timer?: ReturnType<typeof setInterval>;
@@ -44,6 +46,8 @@ export class MergeService {
   private abort = new AbortController();
   private provider: MergeProvider;
   private prepare: Preparer;
+  private referenceInputRevision: (() => string) | undefined;
+  private scannedRevision: string | undefined;
   constructor(
     readonly store: MergeStore,
     private tracking: TrackingService,
@@ -54,6 +58,7 @@ export class MergeService {
     options: MergeOptions = {},
   ) {
     this.profiles = profiles;
+    this.referenceInputRevision = options.referenceInputRevision;
     this.provider = options.provider ?? mergeProvider;
     const root = join(directory, "merge-workspaces");
     mkdirSync(root, { recursive: true, mode: 0o700 });
@@ -239,15 +244,19 @@ export class MergeService {
     );
   }
   private async run(): Promise<void> {
-    const prs = this.store.tracking.prContexts();
-    for (const pr of prs.filter((pr) => pr.enabled)) {
-      await setImmediate();
-      if (this.abort.signal.aborted) return;
-      const observation = this.store.tracking.referenceObservation(pr.id);
-      this.store.scan(
-        { ...pr, ...(observation === undefined ? {} : { observation }) },
-        prs,
-      );
+    const revision = this.referenceInputRevision?.();
+    if (revision === undefined || revision !== this.scannedRevision) {
+      const prs = this.store.tracking.prContexts();
+      for (const pr of prs.filter((pr) => pr.enabled)) {
+        await setImmediate();
+        if (this.abort.signal.aborted) return;
+        const observation = this.store.tracking.referenceObservation(pr.id);
+        this.store.scan(
+          { ...pr, ...(observation === undefined ? {} : { observation }) },
+          prs,
+        );
+      }
+      this.scannedRevision = revision;
     }
     for (const operation of this.store
       .unfinishedOperations()
