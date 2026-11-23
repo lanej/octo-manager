@@ -53,6 +53,76 @@ test("notification revisions isolate bookkeeping and follow all other local muta
   }
 });
 
+test("runtime observation timestamps stay fresh without invalidating unchanged notification facts", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-runtime-revision-"));
+  let now = 1000;
+  const store = new Store(directory, () => now);
+  try {
+    const target = {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "runtime",
+    };
+    const agent = store.tracking.registerAgent(target);
+    const initial = store.notificationInputRevision();
+    store.tracking.runtime(agent.id, "1.0.0");
+    const version = store.notificationInputRevision();
+    expect(version).not.toBe(initial);
+    const all = store.inputRevision();
+    now = 2000;
+    store.tracking.runtime(agent.id, "1.0.0");
+    expect(store.notificationInputRevision()).toBe(version);
+    expect(store.inputRevision()).not.toBe(all);
+    expect(store.tracking.agent(agent.id).lastObservedRuntime).toEqual({
+      version: "1.0.0",
+      observedAt: 2000,
+    });
+    store.tracking.runtime(agent.id, "2.0.0");
+    const upgraded = store.notificationInputRevision();
+    expect(upgraded).not.toBe(version);
+    store.tracking.registerAgent({ ...target, sessionId: "new-recipient" });
+    expect(store.notificationInputRevision()).not.toBe(upgraded);
+  } finally {
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("agent identity and every other column still invalidate local notification decisions", () => {
+  const db = new DatabaseSync(":memory:");
+  try {
+    db.exec(
+      "CREATE TABLE agent_refs(id TEXT PRIMARY KEY,harness TEXT,endpoint TEXT,session_id TEXT,label TEXT,harness_version TEXT,version_observed_at_ms INTEGER,future_fact TEXT)",
+    );
+    const revision = new NotificationInputRevision(db);
+    let previous = revision.current();
+    db.prepare(
+      "INSERT INTO agent_refs VALUES('id','codex','local','session',NULL,'1',1000,NULL)",
+    ).run();
+    expect(revision.current()).not.toBe(previous);
+    previous = revision.current();
+    db.prepare("UPDATE agent_refs SET version_observed_at_ms=2000").run();
+    expect(revision.current()).toBe(previous);
+    for (const column of [
+      "id",
+      "harness",
+      "endpoint",
+      "session_id",
+      "label",
+      "harness_version",
+      "future_fact",
+    ]) {
+      db.prepare(`UPDATE agent_refs SET ${column}='changed'`).run();
+      expect(revision.current()).not.toBe(previous);
+      previous = revision.current();
+    }
+    db.prepare("DELETE FROM agent_refs").run();
+    expect(revision.current()).not.toBe(previous);
+  } finally {
+    db.close();
+  }
+});
+
 test("notification revisions observe external bookkeeping writes and fall back after unknown schema changes", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-revision-"));
   const db = new DatabaseSync(join(directory, "fixture.sqlite"));

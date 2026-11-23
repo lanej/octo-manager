@@ -657,9 +657,12 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
       sessionId: "default-revision",
     };
     const agent = coordinator.tracking.registerAgent(owner);
+    coordinator.store.tracking.runtime(agent.id, "1.0.0");
     await coordinator.digests.flush();
     reads.mockClear();
     recovery.mockClear();
+    now += 1;
+    coordinator.store.tracking.runtime(agent.id, "1.0.0");
     coordinator.store.schedules.saveDispatch({
       ...coordinator.store.schedules.dispatch(),
       nextAtMs: 2000,

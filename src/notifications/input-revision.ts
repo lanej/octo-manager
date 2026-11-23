@@ -22,13 +22,29 @@ export class NotificationInputRevision {
       // Default notification decisions read observed PR facts, not scheduler dispatch state or cached review views.
       if (table === "github_schedules" || table === "github_views") continue;
       const quoted = `"${table.replaceAll('"', '""')}"`;
+      // Successful queue probes refresh timestamps without changing recipient identity or runtime version.
+      const agentChanges =
+        table === "agent_refs"
+          ? db
+              .prepare(`PRAGMA main.table_info(${quoted})`)
+              .all()
+              .map((column) => String(column["name"]))
+              .filter((column) => column !== "version_observed_at_ms")
+              .map((column) => {
+                const name = `"${column.replaceAll('"', '""')}"`;
+                return `OLD.${name} IS NOT NEW.${name}`;
+              })
+              .join(" OR ")
+          : undefined;
       for (const operation of ["INSERT", "UPDATE", "DELETE"] as const) {
         const condition =
-          table !== "settings"
-            ? ""
-            : operation === "UPDATE"
-              ? "WHEN OLD.key IS NOT 'github_dispatch' OR NEW.key IS NOT 'github_dispatch'"
-              : `WHEN ${operation === "DELETE" ? "OLD" : "NEW"}.key IS NOT 'github_dispatch'`;
+          operation === "UPDATE" && agentChanges !== undefined
+            ? `WHEN ${agentChanges.length === 0 ? "0" : agentChanges}`
+            : table !== "settings"
+              ? ""
+              : operation === "UPDATE"
+                ? "WHEN OLD.key IS NOT 'github_dispatch' OR NEW.key IS NOT 'github_dispatch'"
+                : `WHEN ${operation === "DELETE" ? "OLD" : "NEW"}.key IS NOT 'github_dispatch'`;
         db.exec(
           `CREATE TEMP TRIGGER notification_input_${String(index)}_${operation} AFTER ${operation} ON main.${quoted} ${condition} BEGIN UPDATE notification_input_revision SET value=value+1; END`,
         );
