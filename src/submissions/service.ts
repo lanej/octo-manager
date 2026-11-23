@@ -117,7 +117,7 @@ export class SubmissionService {
     )
       return;
     const value = this.store
-      .list()
+      .recoveryCandidates()
       .find(
         (item) =>
           item.brief !== undefined &&

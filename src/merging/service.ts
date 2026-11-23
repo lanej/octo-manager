@@ -246,7 +246,7 @@ export class MergeService {
       this.store.scan(pr, prs);
     }
     for (const operation of this.store
-      .operations()
+      .unfinishedOperations()
       .filter(
         (op) =>
           op.state === OperationState.Uncertain &&
@@ -256,7 +256,7 @@ export class MergeService {
       await this.reconcile(operation);
     }
     for (const operation of this.store
-      .operations()
+      .unfinishedOperations()
       .filter(
         (op) =>
           op.state === OperationState.Running &&
@@ -265,7 +265,7 @@ export class MergeService {
       ))
       await this.pollMerge(operation);
     for (const entry of this.store
-      .entries()
+      .unfinishedEntries()
       .filter(
         (entry) =>
           !terminal(entry.state) &&
