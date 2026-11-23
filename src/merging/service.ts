@@ -206,7 +206,7 @@ export class MergeService {
     return this.work;
   }
   private active(entry: MergeEntry, op?: MergeOperation): boolean {
-    const current = this.store.entries().find((item) => item.id === entry.id);
+    const current = this.store.entryById(entry.id);
     const authority = (value: MergeEntry) =>
       fingerprint([
         value.autoMerge,
@@ -280,9 +280,7 @@ export class MergeService {
       try {
         await this.advance(entry);
       } catch (error) {
-        const fresh = this.store
-          .entries()
-          .find((value) => value.id === entry.id);
+        const fresh = this.store.entryById(entry.id);
         if (fresh === undefined || this.store.busy(entry.prId)) continue;
         const delay =
           error instanceof GitHubRateLimitError

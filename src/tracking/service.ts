@@ -358,6 +358,10 @@ export class TrackingService {
   }
   private async deliverNext(): Promise<void> {
     const d = this.store.deliveryCandidates().find((d) => {
+      // Recorded pull-inbox work belongs to digest reconciliation; direct selection does not need its body.
+      if (d.messageRecorded && this.usesPullInbox(d.recipientAgentId))
+        return false;
+
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||

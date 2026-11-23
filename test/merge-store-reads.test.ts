@@ -86,6 +86,21 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
     expect(store.merging.operations(selected.id)).toHaveLength(1);
     expect(store.merging.refs(selected.id)).toHaveLength(1);
     expect(store.merging.operations()).toHaveLength(2);
+    const selectedEntry = store.merging.entries(selected.id)[0];
+    if (selectedEntry === undefined) throw new Error("Missing selected entry");
+    expect(store.merging.entryById(selectedEntry.id)).toEqual(selectedEntry);
+    expect(store.merging.entryById("missing")).toBeUndefined();
+    db.prepare(
+      "UPDATE merge_entries SET data=json_set(data,'$.id','mismatched') WHERE id=?",
+    ).run(selectedEntry.id);
+    expect(() => store.merging.entryById(selectedEntry.id)).toThrow(
+      "entry identity mismatch",
+    );
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
+      JSON.stringify(selectedEntry),
+      selectedEntry.id,
+    );
+
     expect(store.merging.refs()).toHaveLength(2);
     const readers = [
       {
@@ -120,6 +135,7 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
       unrelated.id,
     );
     expect(store.merging.entries(selected.id)[0]?.prId).toBe(selected.id);
+    expect(store.merging.entryById(selectedEntry.id)).toEqual(selectedEntry);
     expect(store.merging.chain(chain.id)).toEqual(fresh);
     expect(() => store.merging.entries(other.id)).toThrow(
       "Invalid merge-chain data",

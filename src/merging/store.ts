@@ -126,10 +126,7 @@ export class MergeStore {
       .get(messageId);
     const id = row?.["subject_id"];
     if (typeof id !== "string") return undefined;
-    const entry = this.db
-      .prepare("SELECT data,pr_id FROM merge_entries WHERE id=?")
-      .get(id);
-    return entry === undefined ? undefined : this.entryRow(entry);
+    return this.entryById(id);
   }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
@@ -175,6 +172,16 @@ export class MergeStore {
     return rows.map((row) => this.entryRow(row));
   }
 
+  entryById(id: string): MergeEntry | undefined {
+    const row = this.db
+      .prepare("SELECT data,pr_id FROM merge_entries WHERE id=?")
+      .get(id);
+    if (row === undefined) return undefined;
+    const entry = this.entryRow(row);
+    if (entry.id !== id)
+      throw new Error("Merge record entry identity mismatch");
+    return entry;
+  }
   unfinishedEntries(): MergeEntry[] {
     return this.db
       .prepare(
@@ -666,9 +673,12 @@ export class MergeStore {
     });
   }
   completeChains(): void {
-    for (const chain of this.chains().filter(
-      (item) => item.state === ChainState.Active,
-    )) {
+    for (const chain of this.db
+      .prepare(
+        "SELECT data FROM merge_chains WHERE json_extract(data,'$.state')='active' ORDER BY rowid",
+      )
+      .all()
+      .map((row) => checked(ChainSchema, JSON.parse(String(row["data"]))))) {
       const entries = this.entriesForChain(chain.id);
       if (
         entries.length > 0 &&

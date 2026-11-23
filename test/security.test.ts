@@ -1159,11 +1159,19 @@ test("delivery candidates retain message-less and historical unread work, while 
     const d = f.store.tracking.deliveries()[0];
     if (d === undefined) throw new Error("Missing delivery");
     expect(
+      f.store.tracking.deliveryCandidates().find((value) => value.id === d.id)
+        ?.messageRecorded,
+    ).toBe(false);
+    expect(
       f.store.tracking.deliveryCandidates().some((x) => x.id === d.id),
     ).toBe(true);
     db.prepare(
       "INSERT INTO delivery_messages(delivery_id,body,created_at_ms,next_check_at_ms) VALUES(?,?,1,1)",
     ).run(d.id, "Historical immutable notice");
+    expect(
+      f.store.tracking.deliveryCandidates().find((value) => value.id === d.id)
+        ?.messageRecorded,
+    ).toBe(true);
     for (const state of [
       DeliveryState.Uncertain,
       DeliveryState.Delivered,
