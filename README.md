@@ -8,7 +8,7 @@ Start with [issue setup](docs/issues.md) and the [state-machine and flow guide](
 
 ## Run
 
-Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.11). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
+Requires Node 22+ for quality tools, Bun meeting the minimum in `package.json` `engines.bun` (currently 1.4.4 or later), Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.11). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts

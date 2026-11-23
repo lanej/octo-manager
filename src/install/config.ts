@@ -68,7 +68,6 @@ function xml(value: string): string {
 export const serviceLabel = "com.lanej.octo-manager";
 export function launchAgent(
   home: string,
-  bun: string,
   release: string,
   state: string,
   path: string,
@@ -84,7 +83,7 @@ export function launchAgent(
   };
   return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>
 <key>Label</key><string>${serviceLabel}</string>
-<key>ProgramArguments</key><array><string>${xml(bun)}</string><string>${xml(join(release, "dist", "cli.js"))}</string><string>serve</string></array>
+<key>ProgramArguments</key><array><string>/usr/bin/env</string><string>bun</string><string>${xml(join(release, "dist", "cli.js"))}</string><string>serve</string></array>
 <key>WorkingDirectory</key><string>${xml(release)}</string>
 <key>EnvironmentVariables</key><dict>${Object.entries(environment)
     .map(
