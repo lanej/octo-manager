@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { startupRecord } from "./startup-context.js";
+import { requireBun } from "./runtime.js";
 import { issuesCLI } from "./issues/cli.js";
 import { commandTree, CommanderError } from "./command-tree.js";
 import { publicationCLI } from "./publication/cli.js";
@@ -22,6 +23,7 @@ import { request, trackingRequest } from "./client.js";
 import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
+requireBun(process.versions["bun"]);
 process.umask(0o077);
 async function execute(parsed: ParsedCommand): Promise<void> {
   switch(parsed.capability){

@@ -25,6 +25,7 @@ import {
   desktopConfig,
   shellQuote,
 } from "../src/install/config.js";
+import { bunRequirement, requireBun } from "../src/runtime.js";
 
 const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function object(value: unknown): value is Record<string, unknown> {
@@ -103,8 +104,13 @@ async function main(): Promise<void> {
   });
   if (process.platform !== "darwin" && process.platform !== "linux")
     throw new Error("Local installation supports macOS and Linux");
-  if (Bun.version !== "1.4.4")
-    throw new Error("Install with the repository's pinned Bun 1.4.4");
+  requireBun(process.versions["bun"]);
+  const bun = Bun.which("bun");
+  if (bun === null)
+    throw new Error(
+      `Octo Manager requires Bun ${bunRequirement} on PATH. Install Bun in the environment.`,
+    );
+  requireBun(run(bun, ["--version"]).trim());
   if (run("git", ["status", "--porcelain"]).trim() !== "")
     throw new Error(
       "Commit reviewed source changes before installing a versioned release",
@@ -124,13 +130,6 @@ async function main(): Promise<void> {
       "releases",
       process.platform + "-" + process.arch,
       revision,
-    ),
-    bun = join(
-      base,
-      "runtime",
-      process.platform + "-" + process.arch,
-      "bun-1.4.4",
-      "bun",
     );
   const configHome = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config"),
     codexHome = process.env["CODEX_HOME"] ?? join(home, ".codex"),
@@ -146,6 +145,7 @@ async function main(): Promise<void> {
   if (gh === null) throw new Error("Install gh before configuring Octo");
   const path = [
     ...new Set([
+      dirname(bun),
       dirname(gh),
       join(home, ".local/bin"),
       ...(process.env["PATH"] ?? "").split(":").filter((value) => value !== ""),
@@ -153,7 +153,7 @@ async function main(): Promise<void> {
   ].join(":");
   const uid = process.getuid?.();
   if (uid === undefined) throw new Error("A Unix user identity is required");
-  const input = { home, bun, release, state, path, configHome, codexHome };
+  const input = { home, release, state, path, configHome, codexHome };
   const definition = serviceDefinition(process.platform, input, uid),
     plist = definition.file;
   const available =
@@ -187,18 +187,11 @@ async function main(): Promise<void> {
   );
   try {
     await privateDirectory(dirname(release));
-    await privateDirectory(dirname(bun));
-    if (!(await exists(bun))) {
-      await copyFile(process.execPath, bun);
-      await chmod(bun, 0o755);
-    }
-    if (run(bun, ["--version"]).trim() !== "1.4.4")
-      throw new Error("Installed private Bun version does not match");
     if (!(await exists(release))) {
-      run(process.execPath, ["run", "build"]);
+      run(bun, ["run", "build"]);
       await privateDirectory(stage);
       await privateDirectory(join(stage, "build"));
-      run(process.execPath, [
+      run(bun, [
         "node_modules/typescript/bin/tsc",
         "--outDir",
         join(stage, "dist"),
@@ -219,7 +212,7 @@ async function main(): Promise<void> {
         join(stage, "release.json"),
         JSON.stringify({
           revision,
-          bun: "1.4.4",
+          bunRequirement,
           platform: process.platform,
           architecture: process.arch,
         }) + "\n",
@@ -233,7 +226,7 @@ async function main(): Promise<void> {
       if (
         !object(installed) ||
         installed["revision"] !== revision ||
-        installed["bun"] !== "1.4.4" ||
+        installed["bunRequirement"] !== bunRequirement ||
         installed["platform"] !== process.platform ||
         installed["architecture"] !== process.arch
       )
@@ -255,7 +248,7 @@ async function main(): Promise<void> {
       );
     await atomic(
       launcher,
-      `#!/bin/sh\nexec ${shellQuote(bun)} ${shellQuote(join(current, "dist", "cli.js"))} "$@"\n`,
+      `#!/bin/sh\nif ! command -v bun >/dev/null 2>&1; then\n  printf '%s\\n' ${shellQuote(`Octo Manager requires Bun ${bunRequirement} on PATH. Install or upgrade Bun in the environment.`)} >&2\n  exit 1\nfi\nexec bun ${shellQuote(join(current, "dist", "cli.js"))} "$@"\n`,
       0o755,
     );
     if (hooks !== undefined)

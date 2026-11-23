@@ -2,7 +2,6 @@ import { join } from "node:path";
 import { launchAgent, serviceLabel, shellQuote } from "./config.js";
 export interface ServiceInput {
   home: string;
-  bun: string;
   release: string;
   state: string;
   path: string;
@@ -48,7 +47,6 @@ export function serviceDefinition(
       target: `gui/${String(uid)}/${serviceLabel}`,
       text: launchAgent(
         input.home,
-        input.bun,
         input.release,
         input.state,
         input.path,
@@ -69,7 +67,7 @@ export function serviceDefinition(
     kind: "systemd",
     file: join(input.configHome, "systemd/user/octo-manager.service"),
     target: "octo-manager.service",
-    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${input.release.replaceAll("%", "%%")}\nExecStart=${[input.bun, join(input.release, "dist/cli.js"), "serve"].map(execQuote).join(" ")}\n${Object.entries(
+    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${input.release.replaceAll("%", "%%")}\nExecStart=${["/usr/bin/env", "bun", join(input.release, "dist/cli.js"), "serve"].map(execQuote).join(" ")}\n${Object.entries(
       environment,
     )
       .map(([key, value]) => `Environment=${quote(key + "=" + value)}`)
@@ -101,7 +99,7 @@ export async function startService(
   const manualCommand = [
     "/usr/bin/env",
     ...Object.entries(environment).map(([key, value]) => key + "=" + value),
-    input.bun,
+    "bun",
     join(input.release, "dist/cli.js"),
     "serve",
     "--state",

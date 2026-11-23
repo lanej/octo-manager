@@ -1,4 +1,11 @@
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  readFile,
+  lstat,
+  rm,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { Type, type Static } from "typebox";
@@ -134,6 +141,30 @@ try {
   );
   startupAttempted = start;
   installed = await install();
+  let privateRuntime = false;
+  try {
+    await lstat(join(home, ".local/share/octo-manager/runtime"));
+    privateRuntime = true;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "ENOENT"
+    )
+      throw error;
+  }
+  assert(!privateRuntime, "Installer copied a private Bun runtime");
+  const launcher = join(home, ".local/bin/octo-manager");
+  const help = await command([launcher, "--help"], env);
+  assert(help.code === 0, `Shared-runtime launcher failed: ${help.stderr}`);
+  const missing = await command([launcher, "--help"], {
+    ...env,
+    PATH: join(home, "absent-bin"),
+  });
+  assert(
+    missing.code !== 0 && missing.stderr.includes("requires Bun"),
+    "Launcher did not require environment Bun",
+  );
   if (start && process.platform === "linux")
     assert(
       installed.started,

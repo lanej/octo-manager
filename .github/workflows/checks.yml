@@ -17,10 +17,12 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check:
+    name: ${{ matrix.bun == 'latest' && format('check ({0})', matrix.os) || format('check ({0}, minimum Bun)', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        bun: [minimum, latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     env:
@@ -32,9 +34,18 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+      - name: Read the Bun minimum
+        id: runtime
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          minimum = json.load(open("package.json"))["engines"]["bun"].removeprefix(">=")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"bun={minimum}", file=output)
+          PYTHON
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: .bun-version
+          bun-version: ${{ matrix.bun == 'minimum' && steps.runtime.outputs.bun || 'latest' }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
