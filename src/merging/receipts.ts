@@ -184,7 +184,9 @@ export class ReceiptMerges {
         };
   }
   async refresh(): Promise<void> {
+    const candidates = this.store.readinessCandidates();
     for (const metadata of this.tracking.store.prContexts()) {
+      if (!candidates.has(metadata.id)) continue;
       let pr: TrackedPR = metadata;
       if (!pr.enabled) continue;
       const prior = this.store.noticeReadiness(pr.id);

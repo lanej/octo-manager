@@ -56,6 +56,19 @@ export class MergeStore {
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
+  readinessCandidates(): Set<string> {
+    return new Set(
+      this.db
+        .prepare(
+          `SELECT p.id FROM tracked_prs p WHERE p.enabled=1 AND (
+      EXISTS(SELECT 1 FROM actions a WHERE a.pr_id=p.id AND a.kind='check_results' AND a.state IN ('open','acknowledged','working'))
+      OR EXISTS(SELECT 1 FROM merge_notices n WHERE n.pr_id=p.id AND n.subject_kind='entry' AND substr(n.subject_id,1,6)='ready:' AND n.applicable=1)
+    ) ORDER BY p.rowid`,
+        )
+        .all()
+        .map((row) => String(row["id"])),
+    );
+  }
   noticeReadiness(prId: string): NoticeReadiness | undefined {
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
