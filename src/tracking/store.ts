@@ -59,6 +59,9 @@ export class TrackingStore {
     notificationRepository: NotificationRepository,
     private assessments: AssessmentStore,
   ) {
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS deliveries_by_recipient ON deliveries(recipient_agent_id,id,action_id,state)",
+    );
     this.observations = new SQLiteObservationRepository(db);
     this.subscriptions = new Subscriptions(
       db,

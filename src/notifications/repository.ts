@@ -219,6 +219,7 @@ export class NotificationRepository {
   private byId: StatementSync | undefined;
   private byPrefix: StatementSync | undefined;
   private page: StatementSync | undefined;
+  private pendingPage: StatementSync | undefined;
   private uncoveredPage: StatementSync | undefined;
   private workflowRecovery: StatementSync | undefined;
   private actionRecovery: StatementSync | undefined;
@@ -480,9 +481,19 @@ export class NotificationRepository {
     applicableOnly = false,
   ): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
     integer(after);
-    const rows = (this.page ??= this.db.prepare(
-      `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
-    )).all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
+    const rows =
+      !includeAcknowledged && applicableOnly
+        ? (this.pendingPage ??= this.db.prepare(
+            `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND acknowledged_at_ms IS NULL AND applicable=1 ORDER BY sequence LIMIT 201`,
+          )).all(agentId, after)
+        : (this.page ??= this.db.prepare(
+            `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
+          )).all(
+            agentId,
+            after,
+            includeAcknowledged ? 1 : 0,
+            applicableOnly ? 1 : 0,
+          );
     const messages = rows
       .slice(0, 200)
       .map((row) => this.withNotice(decode(row)));

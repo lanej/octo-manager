@@ -268,27 +268,24 @@ export class RepositoryPolicies {
       actionId === undefined ? undefined : this.tracking.action(actionId);
     const prId = action?.prId ?? message.workflowPRId;
     if (prId === undefined) return undefined;
+    const noticeEntry = this.merging.noticeEntry(message.id);
     const entry =
-      this.merging.noticeEntry(message.id) ??
-      this.merging
-        .entries()
-        .find((value) => value.prId === prId && !terminal(value.state));
+      noticeEntry ??
+      this.merging.entries(prId).find((value) => !terminal(value.state));
     let state: NotificationState | undefined;
-    if (
-      entry !== undefined &&
-      this.merging.noticeEntry(message.id) !== undefined
-    ) {
+    if (entry !== undefined && noticeEntry !== undefined) {
       if (entry.state === EntryState.Merged) state = NotificationState.Merged;
       else if (entry.state === EntryState.Uncertain)
         state = NotificationState.MergeUncertain;
       else if (entry.state === EntryState.WaitingOwner) {
+        const pr = this.tracking.pr(prId);
         const failed = this.merging
-          .operations()
+          .operations(prId)
           .some(
             (operation) =>
               operation.entryId === entry.id &&
-              operation.epoch === this.tracking.pr(prId).trackingEpoch &&
-              operation.head === this.tracking.pr(prId).observation?.headSha &&
+              operation.epoch === pr.trackingEpoch &&
+              operation.head === pr.observation?.headSha &&
               operation.state === OperationState.Failed,
           );
         state =
