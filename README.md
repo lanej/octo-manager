@@ -2,7 +2,7 @@
 
 Octo Manager coordinates issue remediation and GitHub PR delivery through a local CLI and Charmed dashboard. Versioned issue briefs guide investigation, implementation and testing, followed by separate acceptance verification. The coordinator owns durable decisions and authorized tracker/Git/GitHub effects; scoped agents perform the work. Existing PR tracking, review delivery, repairs, dependencies and guarded auto-merge remain independently usable.
 
-![Tracking dashboard with explicit auto-merge status and grouped ownership and actions](docs/images/dashboard-tracking.png)
+![Attention workspace with ranked deliveries and selected evidence](docs/images/operator-attention.png)
 
 Start with [issue setup](docs/issues.md) and the [state-machine and flow guide](docs/issue-flows.md). The [live acceptance record](docs/live-acceptance.md) distinguishes provider trials from controlled tests and representative renderings.
 
@@ -72,29 +72,26 @@ The environment file remains your credential source; keep it private. Reload the
 
 ## PR tracking
 
-Enroll public or private PRs with `bin/octo-manager pr track --url URL --thread-id CODEX_THREAD_ID`. The **4 Tracking** view shows durable ownership, GitHub blockers, and Codex triage delivery independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
+Enroll public or private PRs with `bin/octo-manager pr track --url URL --thread-id CODEX_THREAD_ID`. Attention and delivery detail show durable ownership, GitHub blockers, and delivery to the responsible session independently of worker runs. Octo watches checks in the background and returns check completion and actionable failures through the owning agent's durable inbox; callers can continue working after enrollment. See the [tracking guide](docs/tracking.md) for profiles, message receipts, recovery, and private-data boundaries.
 
 ## Dashboard and commands
 
-The dashboard opens on Tracking and gives each tab a dedicated workspace:
+The dashboard opens on Attention. Its primary views organize work by the next decision and the evidence needed to make it:
 
 | Tab | Purpose | Layout |
 | --- | --- | --- |
-| **1 Reviews** | Review decisions, inline feedback and discussion | PR navigation and review feed |
-| **2 Output** | Selected worker response and recent tools | PR navigation, output and worker pane |
-| **3 Runtime** | Dispatch health and persisted run transitions | PR navigation, state history and worker pane |
-| **4 Tracking** | Ownership, automation, blockers and delivery | PR navigation; nested automation/ownership and actions/delivery sections |
-| **5 Activity** | Reported agent operations across sessions | Global timeline without PR or worker panes |
-| **6 GitHub** | API budgets, forecasts and traffic | Global view; nested REST and GraphQL quota sections |
-| **7 Issues** | Issue stages, agent assignments and briefs | Global view; selected issue criteria and clarification |
+| **1 Attention** | Exceptions and decisions before routine progress | Ranked delivery list with selected preview on wide terminals |
+| **2 Deliveries** | Every PR's current condition, next step and observation time | Full-width inventory; Enter opens delivery detail |
+| **3 Activity** | Saved effects, coordinator events and caller reports | Selected operation inspection; Enter opens full evidence |
+| **d Diagnostics** | Reviews, worker output, runtime, tracking, API budgets and issues | Six dedicated diagnostic views; Esc returns to the originating view |
 
-Auto-merge status stays visible in the PR list and Tracking/Reviews context, including paused chains and cancelled chains with in-flight operations. Tracking retains the opt-in `a` switch and shows the next merge step; an enabled switch does not imply checks or owner assessment have passed. Confirmed merged/closed PRs show their outcome. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
+Delivery detail separates configured auto-merge, current eligibility and the observed outcome. It preserves incomplete or old-head evidence and shows feedback transport, recipient receipt and owner disposition separately. The opt-in `a` switch is available in delivery detail and diagnostic Tracking; an enabled switch does not imply checks or owner assessment have passed. Confirmed merging remains separate from task acceptance. See the [dashboard layout guide](docs/dashboard.md) for responsive behavior and representative renderings.
 
 Reviews load through the shared scheduler on first selection; press `u` to queue a refresh. The dashboard receives cached state on each coordinator tick, retaining content while requests wait or fail. Review observations retain explicit partial-history and truncated-body markers; accessible public and private PRs are supported. GitHub observations and worker completion remain distinct. The [API guide](docs/api.md) describes freshness and limits.
 
-Press `o` to open the PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. The local conflict demo has no GitHub review feed or browser target and opens on its State tab.
+Press `g` or `o` to open the selected PR with the system browser (`open` on macOS, `xdg-open` on Linux), or use its visible URL directly. Local conflict demos have no GitHub delivery; inspect them under Diagnostics → Runtime.
 
-The dashboard pins Charmed’s [`c2cec551`](https://github.com/lanej/charmed/commit/c2cec551b6d1) revision and uses its `tui.Screen` contract to arrange and validate every tab region, including explicit omissions on smaller terminals. Native Charmed components provide tabs, panels, nested layouts, header/footer, focus, viewports, scrollbar, structured logs, Markdown and state diagrams. Use `1`–`7` to switch tabs, `j/k` or up/down to select a PR (scroll on global tabs), Enter to expand, `[`/`]` to scroll, and `q` to detach. Output and Runtime additionally provide `h/l` run selection and `p/c/r` worker controls; Tab switches their scroll pane. Retry cycles retain chronological transition traces. Small terminals reserve space for primary content; very small terminals retain a quit hint.
+Charmed's `pattern.ListInspector` owns multiline row geometry, stable selection, scrolling and responsive inspection. Octo supplies ordered records, evidence and actions; `tui.Screen` arranges the application chrome and diagnostics. Use `1`–`3` for primary views, `j/k` or up/down to select, Enter to inspect, Esc to return, `[`/`]` to scroll, and `q` to detach. Narrow lists retain every record; inspection uses the full width. Within Diagnostics, `1`–`6` select Reviews, Output, Runtime, Tracking, GitHub and Issues. Output and Runtime retain `h/l` run selection, `p/c/r` worker controls and Tab pane focus. Very small terminals retain a quit hint.
 
 ```text
 octo-manager job submit summarize-pr --url https://github.com/OWNER/REPO/pull/NUMBER --request-id ID
@@ -126,9 +123,9 @@ Jobs have a three-minute attempt deadline, twelve model turns, forty tool calls,
 
 ## Agent activity
 
-Press **5 Activity** for named operations across all sessions. Existing coordinator events appear automatically; calling agents report external work with `record-activity`, including outcome, session, optional harness version/model, PR link, and evidence. Reports are durable and safe to retry; reported success remains distinct from independent verification. See the [activity guide](docs/activity.md) for the CLI, typed API, and SQL schema.
+Press **3 Activity** for saved operations and named activity across sessions. Existing coordinator events appear automatically; calling agents report external work with `record-activity`, including outcome, session, optional harness version/model, PR link, and evidence. Reported success remains distinct from confirmed operation outcomes. Use `r` to reconcile a selected eligible uncertain operation by its saved ID; request acceptance does not confirm its outcome. See the [activity guide](docs/activity.md) for the CLI, typed API, and SQL schema.
 
-Press **6 GitHub** for REST and GraphQL quota bars and a Charmed chart of read attempts per minute. Quota values come from the latest GitHub response headers and include other tools sharing the same authentication; GraphQL remaining values are points. Missing quota evidence and observations past their reset time remain explicit. The chart shows up to 60 minutes of this coordinator's REST attempts, GraphQL attempts, and confirmed cache reuses, with a partial current minute. Counts include transport failures and exclude Git pushes and GitHub writes. History and totals reset when the coordinator restarts. Dashboard refreshes read these metrics locally and make no additional GitHub requests.
+Press **d**, then **5 GitHub**, for REST and GraphQL quota bars and a Charmed chart of read attempts per minute. Quota values come from the latest GitHub response headers and include other tools sharing the same authentication; GraphQL remaining values are points. Missing quota evidence and observations past their reset time remain explicit. The chart shows up to 60 minutes of this coordinator's REST attempts, GraphQL attempts, and confirmed cache reuses, with a partial current minute. Counts include transport failures and exclude Git pushes and GitHub writes. History and totals reset when the coordinator restarts. Dashboard refreshes read these metrics locally and make no additional GitHub requests.
 
 ![Native Charmed quota gauges and traffic chart on Kitty's Nord background, using controlled visual fixture data](docs/images/github-usage.png)
 
@@ -164,4 +161,4 @@ Run `PROTOBUF_AGAINST='.git#ref=origin/main' bun run check` for full verificatio
 
 ## Issue lifecycle
 
-Explicitly enroll issues for investigation, versioned briefs, clarification, implementation, testing, review, and post-merge acceptance verification. Repository policy controls each authority gate; tracker and dispatcher ports keep GitHub and Codex replaceable. See the [issue lifecycle guide](docs/issues.md) for configuration, commands, evidence, and recovery. The **7 Issues** dashboard tab shows current issue work.
+Explicitly enroll issues for investigation, versioned briefs, clarification, implementation, testing, review, and post-merge acceptance verification. Repository policy controls each authority gate; tracker and dispatcher ports keep GitHub and Codex replaceable. See the [issue lifecycle guide](docs/issues.md) for configuration, commands, evidence, and recovery. **d**, then **6 Issues**, shows current issue work.

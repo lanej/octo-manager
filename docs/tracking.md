@@ -14,7 +14,7 @@ bin/octo-manager pr refresh PR_ID
 bin/octo-manager action list PR_ID
 ```
 
-Use the same `--state DIR` on every command when selecting a nondefault state directory. The tracking dashboard is **4 Tracking**; it shows ownership, observation freshness, pending actions, profile, and delivery state even when the PR has no worker runs. Press `u` to refresh. Existing Reviews/Output/State views remain available. The Reviews message feed retains its existing public-only restriction; private tracking shows check and effective-review metadata in Tracking.
+Use the same `--state DIR` on every command when selecting a nondefault state directory. Open Diagnostics with **d**, then **4 Tracking**, to see ownership, observation freshness, pending actions, profile, and delivery state even when the PR has no worker runs. Press `u` to refresh. Reviews, Output and Runtime are available in the same diagnostic navigation. Private tracking shows check and effective-review metadata in Tracking; accessible public and private review messages appear in Reviews.
 
 The dashboard reloads local coordinator state every second and follows its event stream. Local snapshot reads and event-stream updates do not themselves fetch GitHub data; the Reviews view loads its selected PR separately. Unchanged Markdown and wrapped content reuse a single cached rendering, bounded to 256 KiB of source and 1 MiB of output. Content, width, and theme changes invalidate that rendering. Once GitHub observes a PR as merged or closed, its action records appear under **Action history** and do not count as current outstanding actions. Their recorded states, failed-check evidence, and delivery receipts remain intact.
 

@@ -27,7 +27,7 @@ func (m *Model) syncDashboard() tea.Cmd {
 	}
 
 	address := m.currentSubject().url
-	reviews := m.panel == reviewsPanel
+	reviews := m.wantsReviews()
 
 	key := address + ":" + strconv.FormatBool(reviews)
 	if m.watching && m.dashboardKey == key {
@@ -93,7 +93,7 @@ func (m *Model) applyDashboard(msg dashboardFrame) tea.Cmd {
 	m.selectedRefresh = msg.frame.GetRefresh()
 
 	address := m.currentSubject().url
-	if m.panel == reviewsPanel && address != "" {
+	if m.wantsReviews() && address != "" {
 		if details := msg.frame.GetPullRequest(); details != nil && details.GetUrl() == address {
 			m.reviews[address] = details
 		}

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -28,11 +29,17 @@ func tabDefinition(panel panelView) dashboardTab {
 	case trackingPanel:
 		return dashboardTab{id: "tracking", label: "4 Tracking", title: "PR TRACKING", purpose: "See ownership, blockers and the next merge step", region: "pr-tracking"}
 	case activityPanel:
-		return dashboardTab{id: "agent-activity", label: "5 Activity", title: "AGENT ACTIVITY", purpose: "Follow reported agent operations across sessions", region: "agent-activity", global: true}
+		return dashboardTab{id: "agent-activity", label: "3 Activity", title: "OPERATION", purpose: "Inspect requested effects, confirmed results and recovery", region: "agent-activity", global: true}
 	case issuesPanel:
-		return dashboardTab{id: "issues", label: "7 Issues", title: "ISSUE LIFECYCLE", purpose: "Coordinate investigation, implementation and acceptance", region: "issue-lifecycle", global: true}
+		return dashboardTab{id: "issues", label: "6 Issues", title: "ISSUE LIFECYCLE", purpose: "Coordinate investigation, implementation and acceptance", region: "issue-lifecycle", global: true}
 	case githubPanel:
-		return dashboardTab{id: "github", label: "6 GitHub", title: "GITHUB BUDGET", purpose: "Check API consumption, cooldowns and quota forecasts", region: "github-budget", global: true}
+		return dashboardTab{id: "github", label: "5 GitHub", title: "GITHUB BUDGET", purpose: "Check API consumption, cooldowns and quota forecasts", region: "github-budget", global: true}
+	case attentionPanel:
+		return dashboardTab{id: "attention", label: "1 Attention", title: "NEXT STEP", purpose: "Decisions and exceptions across your repositories", region: "attention", global: true}
+	case deliveriesPanel:
+		return dashboardTab{id: "deliveries", label: "2 Deliveries", title: "DELIVERIES", purpose: "Current condition and next step for every GitHub delivery", region: "deliveries", global: true}
+	case deliveryPanel:
+		return dashboardTab{id: "delivery", label: "Delivery", title: "DELIVERY DETAIL", purpose: "One change, its evidence and the next required step", region: "delivery-detail", global: true}
 	default:
 		return dashboardTab{id: "unknown", label: "Unknown", title: "UNKNOWN VIEW", purpose: "Choose a dashboard tab", region: "unknown-view", global: true}
 	}
@@ -64,9 +71,14 @@ func (m *Model) dashboardRecipe() layout.Node {
 		}
 
 		if wide && !tab.global && !m.expanded {
-			workspace = &layout.Flex{Name: "pr-workspace", Axis: layout.Horizontal, Gap: 2, Children: []layout.Slot{{Node: region("pull-requests", layout.ContentRegion), Track: layout.Fixed(36)}, {Node: workspace, Track: layout.Grow(28)}}}
+			railWidth := 36
+			if m.operatorView() {
+				railWidth = 42
+			}
+
+			workspace = &layout.Flex{Name: "pr-workspace", Axis: layout.Horizontal, Gap: 2, Children: []layout.Slot{{Node: region("pull-requests", layout.ContentRegion), Track: layout.Fixed(railWidth)}, {Node: workspace, Track: layout.Grow(28)}}}
 		} else {
-			omitted = append(omitted, layout.Omission{ID: "pull-requests", Reason: "Global or focused view; PR navigation remains available with j/k on PR tabs."})
+			omitted = append(omitted, layout.Omission{ID: "pull-requests", Reason: "Full-width or focused view; selected-item context and keyboard navigation remain available."})
 		}
 
 		body := &layout.Flex{Name: "tab-content", Axis: layout.Vertical, Children: []layout.Slot{{Node: region("navigation", layout.ChromeRegion), Track: layout.Fixed(1)}, {Node: region("context", layout.SupportingRegion), Track: layout.Fixed(2)}, {Node: workspace, Track: layout.Grow(3)}}}
@@ -136,13 +148,33 @@ func (m *Model) dashboardContext(width int) string {
 	case outputPanel, statePanel:
 		detail = "Dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_") + " · worker " + stateName(m.snapshot.GetWorker().String(), "WORKER_STATE_")
 	case activityPanel:
-		detail = "All sessions · named operations, outcomes and related PRs"
+		detail = "j/k select · h/l history pages · r reconcile a saved uncertain operation"
+		if m.inspectingOperation() {
+			detail = "j/k scroll · esc returns to activity · r reconciles the saved uncertain operation"
+		}
+
+		if m.operations.loading {
+			detail = "Loading saved operations · previous evidence retained"
+		}
+
+		if m.operations.err != nil {
+			detail = "Inspection unavailable · previous evidence retained · u retry"
+		} else if m.agentActivity.err != nil {
+			detail = "History incomplete · previous page retained · u retry"
+		}
+	case attentionPanel:
+		detail = fmt.Sprintf("%d need intervention · %d GitHub deliveries · enter inspects the selected PR", m.attentionCount(), len(m.deliverySummaries()))
+	case deliveriesPanel:
+		detail = "j/k select · enter inspect · confirmed merge and task acceptance remain separate"
+	case deliveryPanel:
+		summary := m.summarizeDelivery(m.currentSubject())
+		detail = summary.condition + " · " + summary.next
 	case issuesPanel:
 		detail = "h/l select issue · j/k scroll · CLI records approvals and answers"
 	case githubPanel:
 		detail = m.githubSummary()
 	default:
-		detail = "Choose a tab using 1–7"
+		detail = "Choose a view using 1–3 · d diagnostics"
 	}
 
 	return layout.Fit(ansi.Truncate(m.theme.Subtle().Render(tab.purpose), width, "…")+"\n"+ansi.Truncate(text.Label(detail, m.theme), width, "…"), layout.Size{Width: width, Height: 2})
@@ -168,13 +200,19 @@ func (m *Model) dashboardView() string {
 			case "navigation":
 				items := []navigation.Tab{}
 
-				for _, panel := range []panelView{reviewsPanel, outputPanel, statePanel, trackingPanel, activityPanel, githubPanel, issuesPanel} {
+				for _, panel := range m.navigationPanels() {
 					definition := tabDefinition(panel)
 					items = append(items, navigation.Tab{ID: definition.id, Label: definition.label})
 				}
 
 				tabs := navigation.NewTabs(items, m.theme)
-				tabs.Select(tab.id)
+
+				selected := tab.id
+				if m.panel == deliveryPanel {
+					selected = tabDefinition(deliveriesPanel).id
+				}
+
+				tabs.Select(selected)
 				tabs.SetWidth(size.Width)
 
 				return tabs.View()
@@ -195,23 +233,7 @@ func (m *Model) dashboardView() string {
 			case "footer":
 				return (layout.Footer{Help: m.dashboardHelp(), Status: "dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_")}).View(size.Width, m.theme)
 			case "notice":
-				notice := "j/k PRs · u refresh · 1–7 tabs · q quit"
-				if m.panel == trackingPanel {
-					notice = "j/k PRs · a auto-merge · 1–7 tabs · q quit"
-				} else if tab.global {
-					notice = "j/k scroll · u refresh · 1–7 tabs · q quit"
-				}
-
-				if size.Width < 80 {
-					notice = "1–7 tabs · q quit · j/k PRs"
-					if m.panel == trackingPanel {
-						notice = "a auto-merge · 1–7 tabs · q quit"
-					} else if tab.global {
-						notice = "j/k scroll · 1–7 tabs · q quit"
-					}
-				} else if tab.worker {
-					notice = "j/k PRs · h/l runs · p pause · c cancel · r retry · 1–7 tabs · q quit"
-				}
+				notice := m.dashboardNotice(size.Width)
 
 				if m.connectionError != "" {
 					notice = m.connectionError
@@ -227,6 +249,10 @@ func (m *Model) dashboardView() string {
 
 				return layout.Fit(m.theme.Subtle().Render(notice), size)
 			default:
+				if m.workspacePanel() {
+					return layout.Fit(m.resultContent, size)
+				}
+
 				bar := feedback.Scrollbar{Total: m.result.TotalLineCount(), Visible: m.result.Height(), Offset: m.result.YOffset(), Height: m.result.Height()}
 				content := layout.Row(m.result.View(), bar.View(m.theme))
 
@@ -244,11 +270,47 @@ func (m *Model) dashboardView() string {
 }
 
 func (m *Model) dashboardHelp() string {
+	switch m.panel {
+	case attentionPanel, deliveriesPanel:
+		return "j/k select · enter inspect · g GitHub · [/] scroll"
+	case deliveryPanel:
+		return "esc back · g GitHub · a auto-merge · [/] scroll"
+	case activityPanel:
+		if inspector := m.currentWorkspace(); inspector != nil && inspector.Inspecting() {
+			return "esc list · j/k scroll · g GitHub · r reconcile · [/] scroll"
+		}
+
+		return "j/k select · enter inspect · esc list · g GitHub · r reconcile · [/] scroll"
+	case reviewsPanel, outputPanel, statePanel, trackingPanel, githubPanel, issuesPanel:
+	default:
+		return "d diagnostics · q quit"
+	}
+
 	if m.globalPanel() {
 		return "[/] scroll · u refresh local data"
 	}
 
 	return "o browser · [/] scroll · tab pane · enter expand"
+}
+
+func (m *Model) dashboardNotice(width int) string {
+	if m.operatorView() {
+		if width < 80 {
+			return "1–3 views · d diagnostics · q quit"
+		}
+
+		return "1 Attention · 2 Deliveries · 3 Activity · d diagnostics · u refresh · q detach"
+	}
+
+	if width < 80 {
+		return "1–6 diagnostics · esc back · q quit"
+	}
+
+	if m.tab().worker {
+		return "h/l runs · p pause · c cancel · r retry · 1–6 diagnostics · esc back · q detach"
+	}
+
+	return "1–6 diagnostics · esc back · u refresh · q detach"
 }
 
 func (m *Model) mergeStatus(id string) *v1.MergeStatus {

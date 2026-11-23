@@ -4,7 +4,7 @@ The dashboard uses Charmed’s retained runtime and keeps one compiled responsiv
 
 Pane sources are retained by value. Protobuf inputs are copied when they change, so mutating a snapshot in place without advancing its sequence still updates the display. Coordinator sequence and pointer identity are not visual cache keys. Output and review Markdown retain a prepared document across width changes; changed source or palette prepares a replacement. The existing 256 KiB source and 1 MiB rendered Markdown cache limits remain. Worker logs retain their native viewport, prepare only on worker tabs, and keep the latest 500 tool entries. GitHub traffic charts use `ApplyData` for equal observations and rebuild when their axis ranges or palette change.
 
-The coordinator’s dashboard stream remains the only source of observations. Presentation revisions do not change GitHub polling, scheduler cadence, cancellation, or reconnect behavior. `runtime.Root` remains the Bubble Tea model; callers making synchronous snapshots after updates must use `PresentNow()` before reading its retained view.
+The coordinator’s dashboard stream supplies PR observations; Activity also inspects the local saved-operation journal when the coordinator sequence changes. Presentation revisions do not change GitHub polling, scheduler cadence, cancellation, or reconnect behavior. `runtime.Root` remains the Bubble Tea model; callers making synchronous snapshots after updates must use `PresentNow()` before reading its retained view.
 
 ## Matching microbenchmarks
 

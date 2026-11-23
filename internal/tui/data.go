@@ -21,6 +21,9 @@ const (
 	activityPanel
 	githubPanel
 	issuesPanel
+	attentionPanel
+	deliveriesPanel
+	deliveryPanel
 )
 
 type (
@@ -47,7 +50,7 @@ type (
 
 func (m *Model) loadReviews(force bool) tea.Cmd {
 	address := m.currentSubject().url
-	if m.panel != reviewsPanel || address == "" || m.reviewLoading[address] || (!force && (m.reviews[address] != nil || m.reviewErrors[address] != "")) {
+	if !m.wantsReviews() || address == "" || m.reviewLoading[address] || (!force && (m.reviews[address] != nil || m.reviewErrors[address] != "")) {
 		return nil
 	}
 

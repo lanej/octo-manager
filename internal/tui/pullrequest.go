@@ -171,6 +171,10 @@ func (m *Model) openPullRequest() tea.Cmd {
 		return nil
 	}
 
+	return m.openBrowser(address)
+}
+
+func (m *Model) openBrowser(address string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(m.ctx, 10*time.Second)
 		defer cancel()

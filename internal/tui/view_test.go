@@ -30,6 +30,7 @@ func model(t *testing.T, mode theme.Mode) *Model {
 
 	m := New(context.Background(), client.New("/nonexistent/octo-manager.sock"), theme.New(mode), time.Local)
 	m.snapshot = example()
+	m.panel = outputPanel
 	m.ensureSelection()
 	m.panel = outputPanel
 

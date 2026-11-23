@@ -105,18 +105,23 @@ func TestLinksSanitizeDecodedLabelsAndUnchangedSnapshotsKeepCachedActivity(t *te
 	m.instance = "fixture"
 	m.snapshot.InstanceId = "fixture"
 	m.snapshot.Sequence = 1
-	m.agentActivity = activityHistory{instance: "fixture", seenThrough: 1}
-	m.activityRender = activityRenderCache{valid: true, source: "cached activity marker", width: -1}
+	pr := &v1.TrackedPullRequest{Id: "observed", Url: "https://github.com/owner/repo/pull/1"}
+	m.snapshot.Tracking = &v1.TrackingSnapshot{Prs: []*v1.TrackedPullRequest{pr}}
+	m.agentActivity = activityHistory{instance: "fixture", seenThrough: 1, events: []*v1.JobEvent{{Sequence: 1, Kind: "pr_observed", PrId: new(pr.GetId()), Detail: "Observed head " + strings.Repeat("a", 40)}}}
+	m.operations = operationHistory{instance: "fixture", sequence: 1, loaded: true}
+	m.Resize(layout.Size{Width: 132, Height: 40})
+	revision := m.memo("pane-source").revision
 	m.Update(snapshotMsg{snapshot: m.snapshot})
 
-	if m.activityRender.source != "cached activity marker" {
+	if m.memo("pane-source").revision != revision {
 		t.Fatal("unchanged periodic snapshot rebuilt cached history")
 	}
 
-	changed := &v1.Snapshot{InstanceId: "fixture", Sequence: 2}
-	m.Update(snapshotMsg{snapshot: changed})
+	pr.Url = "https://github.com/owner/repo/pull/2"
 
-	if m.activityRender.source == "cached activity marker" {
+	m.Update(snapshotMsg{snapshot: m.snapshot})
+
+	if m.memo("pane-source").revision == revision || !strings.Contains(ansi.Strip(m.resultContent), "owner/repo#2") {
 		t.Fatal("new reference context did not invalidate cached presentation")
 	}
 }

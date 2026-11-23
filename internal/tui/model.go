@@ -67,7 +67,6 @@ type Model struct {
 	reviewLoading        map[string]bool
 	history              historyState
 	agentActivity        activityHistory
-	activityRender       activityRenderCache
 	contentRender        contentRenderCache
 	screen               *charmedui.Screen
 	compiled             *layout.Compiled
@@ -76,6 +75,10 @@ type Model struct {
 	resultContent        string
 	usageChart           usageChart
 	githubHours          int
+	detailOrigin         panelView
+	diagnosticsOrigin    panelView
+	operations           operationHistory
+	operatorWorkspaces   map[panelView]*operatorWorkspace
 }
 
 func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.Location) *Model {
@@ -85,7 +88,7 @@ func New(ctx context.Context, api *client.Client, t theme.Theme, location *time.
 
 	session, cancel := context.WithCancel(ctx)
 
-	return &Model{githubHours: DefaultGitHubHours, panel: trackingPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviewStatuses: map[string]*v1.RefreshStatus{}, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
+	return &Model{githubHours: DefaultGitHubHours, panel: attentionPanel, detailOrigin: attentionPanel, diagnosticsOrigin: attentionPanel, ctx: session, cancel: cancel, api: api, theme: t, location: location, reviewStatuses: map[string]*v1.RefreshStatus{}, reviews: map[string]*v1.PullRequestDetails{}, reviewErrors: map[string]string{}, reviewLoading: map[string]bool{}, focus: interaction.NewFocus("result", "activity"), result: collection.NewViewport("", 1, 1), activity: collection.NewLogViewer(1, 1, t)}
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -111,7 +114,6 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 			m.terminalForeground = msg.Color
 			m.theme.Foreground = msg.Color
 			m.theme.SelectionForeground = msg.Color
-			m.activityRender.valid = false
 			m.contentRender.valid = false
 			m.resizeContent()
 		}
@@ -119,6 +121,10 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 		return nil
 	case activityMsg:
 		return m.applyActivity(msg)
+	case operationsMsg:
+		return m.applyOperations(msg)
+	case operationsReconciled:
+		return m.applyOperationReconciled(msg)
 	case reviewMsg:
 		return m.applyReview(msg)
 	case historyMsg:
@@ -135,19 +141,14 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 			return nil
 		}
 
-		contextChanged := m.instance != msg.snapshot.GetInstanceId() || m.snapshot.GetSequence() != msg.snapshot.GetSequence()
-
 		m.instance, m.cursor = msg.snapshot.GetInstanceId(), msg.snapshot.GetSequence()
 
 		m.snapshot, m.connectionError = msg.snapshot, ""
-		if contextChanged {
-			m.activityRender.valid = false
-		}
 
 		m.ensureSelection()
 		m.resizeContent()
 
-		return tea.Batch(m.syncDashboard(), m.loadHistory(), m.loadActivity())
+		return tea.Batch(m.syncDashboard(), m.loadHistory(), m.loadActivity(), m.loadOperations(false))
 	case dashboardOpened:
 		if msg.version != m.dashboardVersion {
 			if msg.stream != nil {
@@ -202,18 +203,26 @@ func (m *Model) Update(message tea.Msg) tea.Cmd {
 }
 
 func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
+	if command, handled := m.navigate(key.String()); handled {
+		return command
+	}
+
 	switch key.String() {
 	case "q", "ctrl+c":
 		m.cancel()
 		return tea.Quit
 	case "j", "down":
-		if m.globalPanel() {
+		if m.workspacePanel() {
+			return m.updateOperatorWorkspace(key)
+		} else if m.panel == deliveryPanel || m.globalPanel() {
 			m.result.ScrollDown(3)
 		} else {
 			m.move(1)
 		}
 	case "k", "up":
-		if m.globalPanel() {
+		if m.workspacePanel() {
+			return m.updateOperatorWorkspace(key)
+		} else if m.panel == deliveryPanel || m.globalPanel() {
 			m.result.ScrollUp(3)
 		} else {
 			m.move(-1)
@@ -245,61 +254,27 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.moveRun(1)
 		}
 	case "a":
-		if m.panel == trackingPanel {
+		if m.panel == trackingPanel || m.panel == deliveryPanel {
 			return m.toggleAutoMerge()
 		}
-	case "o":
-		if !m.globalPanel() {
+	case "o", "g":
+		if m.panel == activityPanel {
+			return m.openOperationPR()
+		}
+
+		if m.operatorList() || m.panel == deliveryPanel || !m.globalPanel() {
 			return m.openPullRequest()
 		}
-	case "1":
-		m.panel = reviewsPanel
-		m.result.GotoTop()
-		m.resizeContent()
-
-		return nil
-	case "2":
-		m.panel = outputPanel
-		m.result.GotoTop()
-		m.resizeContent()
-	case "5":
-		m.panel = activityPanel
-		m.result.GotoTop()
-		m.resizeContent()
-
-		return m.loadActivity()
-	case "7":
-		m.panel = issuesPanel
-		m.result.GotoTop()
-		m.resizeContent()
-
-		return nil
-	case "6":
-		m.panel = githubPanel
-		m.result.GotoTop()
-		m.resizeContent()
-
-		return m.refresh()
-	case "4":
-		m.panel = trackingPanel
-		m.result.GotoTop()
-		m.resizeContent()
-	case "3":
-		m.panel = statePanel
-		m.result.GotoTop()
-		m.resizeContent()
-
-		return m.loadHistory()
 	case "u":
 		if m.panel == githubPanel {
 			return m.refresh()
 		}
 
 		if m.panel == activityPanel {
-			return m.refreshActivity()
+			return tea.Batch(m.refreshActivity(), m.loadOperations(true))
 		}
 
-		if m.panel == trackingPanel {
+		if m.panel == trackingPanel || m.operatorList() || m.panel == deliveryPanel {
 			return m.refreshTracked()
 		}
 
@@ -311,6 +286,14 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 
 		return m.loadHistory()
 	case "enter":
+		if m.operatorList() {
+			return m.inspectDelivery()
+		}
+
+		if m.panel == activityPanel {
+			return m.updateOperatorWorkspace(key)
+		}
+
 		m.expanded = !m.expanded
 		m.resizeContent()
 	case "tab", "shift+tab":
@@ -318,18 +301,30 @@ func (m *Model) key(key tea.KeyPressMsg) tea.Cmd {
 			m.focus.Handle(key)
 		}
 	case "[", "pgup":
+		if m.workspacePanel() {
+			return m.updateOperatorWorkspace(tea.KeyPressMsg{Code: tea.KeyPgUp})
+		}
+
 		if m.focus.Current() == "activity" {
 			m.activity.ScrollUp(3)
 		} else {
 			m.result.ScrollUp(3)
 		}
 	case "]", "pgdown":
+		if m.workspacePanel() {
+			return m.updateOperatorWorkspace(tea.KeyPressMsg{Code: tea.KeyPgDown})
+		}
+
 		if m.focus.Current() == "activity" {
 			m.activity.ScrollDown(3)
 		} else {
 			m.result.ScrollDown(3)
 		}
 	case "p", "c", "r":
+		if key.String() == "r" && m.panel == activityPanel {
+			return m.reconcileOperation()
+		}
+
 		if m.panel != outputPanel && m.panel != statePanel {
 			return nil
 		}
@@ -374,7 +369,28 @@ func (m *Model) control(key string) tea.Cmd {
 }
 func (m *Model) Resize(size layout.Size) { m.size = size; m.resizeContent() }
 func (m *Model) ensureSelection() {
-	if m.currentSubject().key != "" {
+	current := m.currentSubject()
+
+	if m.operatorList() || m.panel == deliveryPanel {
+		if current.url != "" {
+			m.selected = current.key
+			return
+		}
+
+		m.selected = ""
+		if items := m.deliverySummaries(); len(items) > 0 {
+			m.selectSubject(items[0].item)
+		}
+
+		return
+	}
+
+	if current.key != "" {
+		if m.tab().worker && m.job() == nil && len(current.jobs) > 0 {
+			m.selected = current.jobs[len(current.jobs)-1].GetId()
+			m.history = historyState{version: m.history.version + 1}
+		}
+
 		return
 	}
 
@@ -385,6 +401,19 @@ func (m *Model) ensureSelection() {
 }
 
 func (m *Model) selectSubject(item subject) {
+	if m.operatorView() {
+		m.selected = item.key
+
+		m.history = historyState{version: m.history.version + 1}
+		if m.panel != deliveriesPanel {
+			m.result.GotoTop()
+		}
+
+		m.resizeContent()
+
+		return
+	}
+
 	if m.globalPanel() {
 		m.selected = item.key
 		if len(item.jobs) > 0 {
