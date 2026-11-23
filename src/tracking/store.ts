@@ -973,6 +973,17 @@ export class TrackingStore {
     return closeProgress(action, observation, this.now(), openedOnTerminalPR);
   }
 
+  refreshOutcome(
+    id: string,
+    outcome: "cancelled" | "retry_scheduled" | "recovered",
+    message: string,
+  ): void {
+    this.event(
+      `pr_refresh_${outcome}`,
+      message.slice(0, 1000),
+      this.prContext(id).id,
+    );
+  }
   refreshError(id: string, message: string): void {
     this.transaction(() => {
       const p = this.pr(id);

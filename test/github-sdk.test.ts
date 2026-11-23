@@ -1,3 +1,4 @@
+import { GitHubRequestCancelledError } from "../src/github-errors.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { sdkTransport } from "../src/github-sdk.js";
@@ -135,4 +136,29 @@ test("SDK responses stop at the streaming size limit", async () => {
   await assert.rejects(transport({ method: "GET", path: "large" }));
   assert.equal(cancelled, true);
   assert(chunks <= 4);
+});
+
+test("SDK cancellations are typed without exposing the failed request or credentials", async () => {
+  const controller = new AbortController();
+  const transport = sdkTransport(
+    () => Promise.resolve("fixture-secret"),
+    () => {
+      controller.abort();
+      return Promise.reject(new Error("fixture-secret"));
+    },
+  );
+  await assert.rejects(
+    transport({ method: "GET", path: "user" }, controller.signal),
+    (error) => {
+      assert(error instanceof GitHubRequestCancelledError);
+      assert.equal(error.message, "GitHub request cancelled");
+      assert.equal(error.cause, undefined);
+      assert(!JSON.stringify(error).includes("fixture-secret"));
+      return true;
+    },
+  );
+  await assert.rejects(
+    transport({ method: "GET", path: "user" }, controller.signal),
+    GitHubRequestCancelledError,
+  );
 });

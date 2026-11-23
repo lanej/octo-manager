@@ -1,3 +1,4 @@
+import { GitHubRequestCancelledError } from "./github-errors.js";
 import type { RequestDispatch } from "./scheduling/service.js";
 import {
   sdkTransport,
@@ -257,7 +258,7 @@ export class GitHubReads {
     signal?: AbortSignal,
     beforeSend?: () => void,
   ): Promise<GitHubResponse> {
-    signal?.throwIfAborted();
+    if (signal?.aborted === true) throw new GitHubRequestCancelledError();
     if (this.now() < this.retryAtMs[resource])
       throw new GitHubRateLimitError(this.retryAtMs[resource]);
     this.metrics.attempt(resource);

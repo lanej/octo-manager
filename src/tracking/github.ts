@@ -9,6 +9,13 @@ import { trackingPR } from "./evidence.js";
 import { githubReads, GitHubRateLimitError } from "../github-api.js";
 import { githubMetadata } from "./metadata.js";
 import type { ObservationInput, ObservationPart } from "./types.js";
+export class GitHubObservationChangedError extends Error {
+  constructor() {
+    super("GitHub PR revisions changed during observation; refresh again");
+    this.name = "GitHubObservationChangedError";
+  }
+}
+
 export type ReadGitHub = (path: string, signal?: AbortSignal) => Promise<any>;
 export async function ghRead(path: string, signal?: AbortSignal): Promise<any> {
   return githubReads.read(path, signal);
@@ -232,9 +239,7 @@ export async function readObservation(
     latestPR.merged !== pr.merged ||
     latestPR.mergeable !== pr.mergeable
   )
-    throw new Error(
-      "GitHub PR revisions changed during observation; refresh again",
-    );
+    throw new GitHubObservationChangedError();
   return {
     observedAt,
     headSha: pr.head.sha,
