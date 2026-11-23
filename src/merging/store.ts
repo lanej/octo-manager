@@ -1097,7 +1097,7 @@ export class MergeStore {
           continue;
         this.db
           .prepare(
-            "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=?",
+            "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=? AND applicable=1",
           )
           .run(kind, subjectId, participant.agentId, revision);
         if (!applicable) continue;

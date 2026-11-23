@@ -115,6 +115,8 @@ async function fixture(count: number) {
     () => 1000,
     {
       intervalMs: 60000,
+      inputRevision: () =>
+        JSON.stringify([store.inputRevision(), config.endpoints]),
       connect: (agent) => {
         const queue =
           queues[agents.findIndex((value) => value.id === agent.id)];
@@ -223,6 +225,22 @@ test("recipient concurrency stays bounded and shutdown drains active work withou
   }
 });
 
+test("unchanged recipients skip history reads until inputs change", async () => {
+  const f = await fixture(1);
+  await f.service.flush();
+  const reads = spyOn(f.store.tracking.inbox, "list");
+  try {
+    for (let i = 0; i < 20; i++) await f.service.flush();
+    expect(reads).not.toHaveBeenCalled();
+    f.notice(0);
+    await f.service.flush();
+    expect(reads).toHaveBeenCalled();
+    expect(f.queues[0]?.slots).toHaveLength(1);
+  } finally {
+    reads.mockRestore();
+    await f.close();
+  }
+});
 test("legacy messages arriving during queue I/O wait for an independent recovery receipt", async () => {
   const f = await fixture(1);
   const queue = f.queues[0];

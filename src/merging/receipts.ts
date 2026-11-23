@@ -72,7 +72,6 @@ export class ReceiptMerges {
     return this.candidate(this.tracking.store.action(actionId));
   }
   private candidate(action: Action) {
-    const pr = this.tracking.store.pr(action.prId);
     const blocker = action.blocker;
     if (
       ![
@@ -80,7 +79,11 @@ export class ReceiptMerges {
         ActionState.Acknowledged,
         ActionState.Working,
       ].includes(action.progress.state) ||
-      blocker.kind !== "check_results" ||
+      blocker.kind !== "check_results"
+    )
+      return undefined;
+    const pr = this.tracking.store.pr(action.prId);
+    if (
       blocker.state !== CheckWatchState.Completed ||
       !/^[a-f0-9]{40}([a-f0-9]{24})?$/u.test(blocker.headSha) ||
       blocker.headSha !== pr.observation?.headSha ||
@@ -227,8 +230,7 @@ export class ReceiptMerges {
         .sort();
       if (readinessRecipients.length === 0) continue;
       const selected = this.tracking.store
-        .actions()
-        .filter((action) => action.prId === pr.id)
+        .actions(pr.id)
         .toReversed()
         .map((action) => this.candidate(action))
         .find((candidate) => candidate !== undefined);

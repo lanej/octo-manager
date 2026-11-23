@@ -46,8 +46,10 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       config,
     );
     store.tracking.observe(other.id, observation(), config);
+    assert.equal(store.tracking.actions(selected.id).length, 2);
+    assert.equal(store.tracking.actions(other.id).length, 1);
     const action = store.tracking
-      .actions()
+      .actions(selected.id)
       .find(
         (value) =>
           value.prId === selected.id &&

@@ -274,11 +274,14 @@ export class TrackingStore {
       return this.pr(id);
     });
   }
-  actions(): Action[] {
-    return this.db
-      .prepare("SELECT * FROM actions ORDER BY rowid")
-      .all()
-      .map((row) => this.trackedAction(row));
+  actions(prId?: string): Action[] {
+    const rows =
+      prId === undefined
+        ? this.db.prepare("SELECT * FROM actions ORDER BY rowid").all()
+        : this.db
+            .prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid")
+            .all(prId);
+    return rows.map((row) => this.trackedAction(row));
   }
   private trackedAction(r: Row): Action {
     return {

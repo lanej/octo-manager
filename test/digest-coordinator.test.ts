@@ -24,6 +24,76 @@ async function waitForQueue(predicate: () => boolean) {
   throw new Error("Queue did not reconcile after the state change");
 }
 
+for (const callback of ["presentation", "ownerFeedbackCovered"] as const) {
+  test(`custom ${callback} state changes are observed without a database write`, async () => {
+    const directory = await mkdtemp("/tmp/octo-custom-digest-input-");
+    const config = defaultTrackingConfig();
+    config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
+    let blocked = true;
+    const slots: QueuedMessage[] = [];
+    const queue: QueueConnection = {
+      prepare: () => Promise.resolve({ busy: false }),
+      queued: () => Promise.resolve(slots),
+      enqueueQueued: (_agent, clientId, body) => {
+        const item = { queueId: clientId, clientId, body };
+        slots.push(item);
+        return Promise.resolve(item);
+      },
+      cancelQueued: () => Promise.resolve(true),
+      received: () => Promise.resolve({ bodies: [], complete: true }),
+      close() {},
+    };
+    const callbacks =
+      callback === "presentation"
+        ? { presentation: () => ({ defer: blocked }) }
+        : { ownerFeedbackCovered: () => blocked };
+    const coordinator = new Coordinator(directory, {
+      trackingConfig: config,
+      now: () => 1000,
+      digestOptions: { connect: () => queue, ...callbacks },
+    });
+    try {
+      const pr = coordinator.tracking.track(
+        "https://github.com/owner/repo/pull/1",
+        { harness: "codex", endpoint: "local", sessionId: "custom-input" },
+      );
+      coordinator.store.tracking.observe(
+        pr.id,
+        {
+          observedAt: 1000,
+          headSha: "a".repeat(40),
+          baseSha: "b".repeat(40),
+          lifecycle: "open",
+          mergeability: "conflicting",
+          checks: { state: "complete", value: [] },
+          reviews: { state: "complete", value: [] },
+        },
+        config,
+      );
+      const delivery = coordinator.store.tracking.deliveries()[0];
+      if (delivery === undefined) throw new Error("Missing delivery");
+      const action = coordinator.store.tracking.action(delivery.actionId);
+      const notice = coordinator.store.tracking.noticeForAction(
+        action,
+        pr.ownerAgentId,
+      );
+      const inbox = coordinator.store.tracking.inbox;
+      inbox.freezeNotice(delivery.id, notice);
+      inbox.record(delivery.id, inbox.render(delivery.id, notice));
+      await coordinator.digests.flush();
+      expect(slots).toHaveLength(0);
+      const revision = coordinator.store.inputRevision();
+      blocked = false;
+      expect(coordinator.store.inputRevision()).toBe(revision);
+      await coordinator.digests.flush();
+      expect(slots).toHaveLength(1);
+    } finally {
+      await coordinator.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+}
+
 test("owner readiness wakes queue cleanup and old receipts flag stale items", async () => {
   const directory = await mkdtemp("/tmp/oc-stale-"),
     config = defaultTrackingConfig();
