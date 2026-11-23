@@ -1,4 +1,5 @@
 import { create, toBinary, toJsonString } from "@bufbuild/protobuf";
+import { isDeepStrictEqual } from "node:util";
 import { ReadNotificationMessageResponseSchema } from "../gen/octomanager/v2/notifications_pb.js";
 import { responseMaxBytes } from "../api/limits.js";
 import type { AgentMessage } from "../tracking/inbox.js";
@@ -39,7 +40,13 @@ export class Messages {
   }
   get(id: string, full = false) {
     const value = this.resolve(id);
-    return inspectMessage(this.store, value.revision, value.recipient, full);
+    return inspectMessage(
+      this.store,
+      value.revision,
+      value.recipient,
+      full,
+      (message) => this.digests.applicable(message),
+    );
   }
   read(id: string, agentId: string) {
     const value = this.resolve(id);
@@ -48,13 +55,26 @@ export class Messages {
     const message = this.get(id, true);
     delete message.untrustedBody;
     const instructions = new Map<string, string[]>();
+    const frozenTarget =
+      "mergeTarget" in value.revision ? value.revision.mergeTarget : undefined;
+    let currentOffer = false;
     for (const item of message.items) {
       delete item.untrustedBody;
+      if (!item.applicable) continue;
       const row = this.store.tracking.inbox.get(item.id);
-      const text =
-        row === undefined ? undefined : this.presentation?.(row).instructions;
+      const current = row === undefined ? undefined : this.presentation?.(row);
+      if (
+        frozenTarget !== undefined &&
+        isDeepStrictEqual(frozenTarget, current?.mergeTarget)
+      )
+        currentOffer = true;
+      const text = current?.instructions;
       if (text !== undefined && text !== "")
         instructions.set(text, [...(instructions.get(text) ?? []), item.id]);
+    }
+    if (frozenTarget !== undefined && !currentOffer) {
+      delete message.mergeTarget;
+      message.summary = `Stale merge offer · ${message.summary}`;
     }
     const response = create(ReadNotificationMessageResponseSchema, {
       message,

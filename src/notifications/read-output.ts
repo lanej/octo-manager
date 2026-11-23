@@ -36,7 +36,6 @@ export function readOutput(
   agent: boolean,
 ): unknown {
   const json = record(toJson(ReadNotificationMessageResponseSchema, response));
-  if (!agent) return json;
   if (json["message"] !== undefined) {
     const message = record(json["message"]);
     if (Array.isArray(message["items"])) {
@@ -48,5 +47,5 @@ export function readOutput(
     }
     json["message"] = message;
   }
-  return strip(json);
+  return agent ? strip(json) : json;
 }

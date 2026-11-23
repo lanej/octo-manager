@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { create, toJson } from "@bufbuild/protobuf";
+import { record } from "../src/api/codec.js";
 import { readOutput } from "../src/notifications/read-output.js";
 import { ReadNotificationMessageResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
 
@@ -44,7 +45,14 @@ test("agent reads preserve every finding and instruction while dropping duplicat
     },
   });
   const full = readOutput(response, false);
-  expect(full).toEqual(toJson(ReadNotificationMessageResponseSchema, response));
+  const ordinary = record(
+    toJson(ReadNotificationMessageResponseSchema, response),
+  );
+  const items: unknown = record(ordinary["message"])["items"];
+  if (!Array.isArray(items)) throw new Error("Missing ordinary message items");
+  const first: unknown = items[0];
+  items[0] = { ...record(first), applicable: false };
+  expect(full).toEqual(ordinary);
   const agent = readOutput(response, true);
   expect(agent).toMatchObject({
     evidenceWarning: response.evidenceWarning,

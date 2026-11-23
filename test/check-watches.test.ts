@@ -563,6 +563,45 @@ test("completion identifies an uncovered workflow instead of repeating a covered
     const history = store.tracking.checks.list().at(-1)?.evidence;
     assert(history !== undefined && history.state !== "unavailable");
     assert.equal(history.value.length, 3);
+    const retry = {
+      ...check("workflow:4:2"),
+      at: 1200,
+    };
+    store.tracking.observe(
+      pr.id,
+      observation({
+        checks: { state: "complete", value: [failure] },
+        workflows: {
+          state: "partial",
+          value: [retry],
+          reason: "Incomplete inventory",
+        },
+      }),
+      config,
+    );
+    assert.equal(
+      store.tracking.action(result.id).progress.state,
+      ActionState.Open,
+    );
+    store.tracking.observe(
+      pr.id,
+      observation({
+        checks: { state: "complete", value: [failure] },
+        workflows: { state: "complete", value: [retry] },
+      }),
+      config,
+    );
+    assert.equal(
+      store.tracking.action(result.id).progress.state,
+      ActionState.Resolved,
+    );
+    assert.equal(
+      store.tracking
+        .actions()
+        .find((action) => action.blocker.kind === "check_failed")?.progress
+        .state,
+      ActionState.Open,
+    );
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
