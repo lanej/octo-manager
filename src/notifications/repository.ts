@@ -491,6 +491,25 @@ export class NotificationRepository {
       hasMore: rows.length > 200,
     };
   }
+  uncovered(
+    agentId: string,
+    after = 0,
+  ): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
+    integer(after);
+    const rows = this.db
+      .prepare(
+        `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND NOT EXISTS(SELECT 1 FROM agent_digest_members c JOIN agent_digests d ON d.id=c.digest_id WHERE c.message_id=delivery_id AND d.agent_id=recipient_agent_id) ORDER BY sequence LIMIT 201`,
+      )
+      .all(agentId, after);
+    const messages = rows
+      .slice(0, 200)
+      .map((row) => this.withNotice(decode(row)));
+    return {
+      messages,
+      nextSequence: messages.at(-1)?.sequence ?? after,
+      hasMore: rows.length > 200,
+    };
+  }
   acknowledge(id: string, agentId: string): AgentMessage {
     const message = this.get(id);
     if (message === undefined) throw new Error("Message not found");

@@ -123,7 +123,12 @@ export class MergeStore {
         "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
       )
       .get(messageId);
-    return this.entries().find((entry) => entry.id === row?.["subject_id"]);
+    const id = row?.["subject_id"];
+    if (typeof id !== "string") return undefined;
+    const entry = this.db
+      .prepare("SELECT data,pr_id FROM merge_entries WHERE id=?")
+      .get(id);
+    return entry === undefined ? undefined : this.entryRow(entry);
   }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();

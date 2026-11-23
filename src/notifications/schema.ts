@@ -1,3 +1,4 @@
+import { revision } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
 export function migrateDigests(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
@@ -88,4 +89,49 @@ export function migrateNotificationEvidence(db: DatabaseSync): void {
     CREATE TABLE IF NOT EXISTS safe_agent_notices (message_id TEXT PRIMARY KEY, notice_json TEXT NOT NULL CHECK(json_valid(notice_json))) STRICT;
     CREATE TRIGGER IF NOT EXISTS immutable_safe_notice BEFORE UPDATE ON safe_agent_notices BEGIN SELECT RAISE(ABORT,'Safe notification is immutable'); END;
     COMMIT;`);
+}
+
+// rationale: Membership is a derived index; immutable revisions retain the audit authority and ordering.
+export function migrateDigestMembership(db: DatabaseSync): void {
+  if (
+    db
+      .prepare(
+        "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='agent_digest_members'",
+      )
+      .get() !== undefined
+  )
+    return;
+  try {
+    db.exec(`BEGIN IMMEDIATE;
+      CREATE TABLE agent_digest_members (
+        digest_id TEXT NOT NULL, revision INTEGER NOT NULL, message_id TEXT NOT NULL CHECK(length(message_id)>0),
+        PRIMARY KEY(digest_id,revision,message_id),
+        FOREIGN KEY(digest_id,revision) REFERENCES agent_digest_revisions(digest_id,revision) ON DELETE CASCADE
+      ) STRICT;
+      CREATE INDEX digest_members_by_message ON agent_digest_members(message_id,digest_id);
+      CREATE INDEX IF NOT EXISTS digests_by_agent ON agent_digests(agent_id);
+    `);
+    const insert = db.prepare("INSERT INTO agent_digest_members VALUES(?,?,?)");
+    for (const row of db
+      .prepare("SELECT digest_id,revision,data FROM agent_digest_revisions")
+      .all()) {
+      const value = revision(JSON.parse(String(row["data"])));
+      if (
+        value.digestId !== row["digest_id"] ||
+        value.revision !== row["revision"]
+      )
+        throw new Error("Digest revision identity mismatch");
+      for (const id of value.messageIds)
+        insert.run(value.digestId, value.revision, id);
+    }
+    db.exec(`CREATE TRIGGER index_digest_members AFTER INSERT ON agent_digest_revisions BEGIN
+      SELECT CASE WHEN json_type(NEW.data,'$.messageIds') IS NOT 'array' OR json_array_length(NEW.data,'$.messageIds') NOT BETWEEN 1 AND 20 OR EXISTS(SELECT 1 FROM json_each(NEW.data,'$.messageIds') WHERE type!='text' OR length(value)=0) THEN RAISE(ABORT,'Invalid digest membership') END;
+      INSERT INTO agent_digest_members(digest_id,revision,message_id) SELECT NEW.digest_id,NEW.revision,value FROM json_each(NEW.data,'$.messageIds');
+      END;
+      CREATE TRIGGER immutable_digest_member BEFORE UPDATE ON agent_digest_members BEGIN SELECT RAISE(ABORT,'Digest membership is immutable'); END;
+      COMMIT;`);
+  } catch (error) {
+    if (db.isTransaction) db.exec("ROLLBACK");
+    throw error;
+  }
 }

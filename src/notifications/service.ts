@@ -22,6 +22,14 @@ import {
 import { renderDigest } from "./render.js";
 const recipientConcurrency = 4;
 
+interface ReconciliationInputs {
+  pending: AgentMessage[];
+  presentations: Map<string, MessagePresentation | undefined>;
+  legacy: AgentMessage[];
+  active: Digest | undefined;
+  cleanup: Digest[];
+}
+
 export interface DigestOptions {
   // Changes with every non-clock reconciliation input; omission retains full discovery on each pass.
   inputRevision?: () => string;
@@ -110,19 +118,23 @@ export class DigestService {
       this.options.ownerFeedbackCovered?.(message) !== true
     );
   }
-  private pending(agentId: string): AgentMessage[] {
+  private pending(
+    agentId: string,
+    presentations?: Map<string, MessagePresentation | undefined>,
+  ): AgentMessage[] {
     const pending: AgentMessage[] = [];
     let after = 0;
     for (;;) {
       const page = this.tracking.store.inbox.list(agentId, after, false, true);
       for (const message of page.messages) {
         // Legacy arrivals after discovery must receive independent recovery IDs before a digest can receipt them.
-        if (
-          message.notice !== undefined &&
-          this.applicable(message) &&
-          this.options.presentation?.(message).defer !== true
-        )
-          pending.push(message);
+        if (message.notice !== undefined && this.applicable(message)) {
+          const presentation = this.options.presentation?.(message);
+          if (presentation?.defer !== true) {
+            presentations?.set(message.id, presentation);
+            pending.push(message);
+          }
+        }
         if (pending.length === 20) return pending;
       }
       if (!page.hasMore) return pending;
@@ -130,35 +142,42 @@ export class DigestService {
     }
   }
   private legacy(agentId: string): AgentMessage[] {
-    const covered = this.store.coveredMessageIds(agentId);
     const messages: AgentMessage[] = [];
     let after = 0;
     for (;;) {
-      const page = this.tracking.store.inbox.list(agentId, after, true);
-      messages.push(...page.messages.filter((value) => !covered.has(value.id)));
+      const page = this.tracking.store.inbox.uncovered(agentId, after);
+      messages.push(...page.messages);
       if (!page.hasMore) return messages;
       after = page.nextSequence;
     }
   }
-  private signature(agent: AgentRef): string {
-    const active = this.store.active(agent.id);
+  private inputs(agentId: string): ReconciliationInputs {
+    const presentations = new Map<string, MessagePresentation | undefined>();
+    return {
+      pending: this.pending(agentId, presentations),
+      presentations,
+      legacy: this.legacy(agentId),
+      active: this.store.active(agentId),
+      cleanup: this.store
+        .list(agentId)
+        .filter((value) => terminal(value) && value.cleanupPending),
+    };
+  }
+  private signature(agent: AgentRef, inputs: ReconciliationInputs): string {
     return JSON.stringify([
-      this.pending(agent.id).map((value) => [
+      inputs.pending.map((value) => [
         value.id,
-        this.options.presentation?.(value),
+        inputs.presentations.get(value.id),
       ]),
-      this.legacy(agent.id).map((value) => [
+      inputs.legacy.map((value) => [
         value.id,
         value.acknowledgedAt,
         this.applicable(value),
       ]),
-      active?.id,
-      active?.revision,
-      active?.state,
-      this.store
-        .list(agent.id)
-        .filter((value) => terminal(value) && value.cleanupPending)
-        .map((value) => value.id),
+      inputs.active?.id,
+      inputs.active?.revision,
+      inputs.active?.state,
+      inputs.cleanup.map((value) => value.id),
       this.tracking.config.endpoints[agent.endpoint],
     ]);
   }
@@ -241,17 +260,12 @@ export class DigestService {
     const inputRevision = this.options.inputRevision?.();
     if (!this.managed(agent.id)) return;
     const generation = this.generation;
-    const pending = this.pending(agent.id),
-      active = this.store.active(agent.id),
-      legacy = this.legacy(agent.id),
-      cleanup = this.store
-        .list(agent.id)
-        .some((value) => terminal(value) && value.cleanupPending);
+    const inputs = this.inputs(agent.id);
     if (
-      pending.length === 0 &&
-      active === undefined &&
-      !cleanup &&
-      legacy.length === 0
+      inputs.pending.length === 0 &&
+      inputs.active === undefined &&
+      inputs.cleanup.length === 0 &&
+      inputs.legacy.length === 0
     ) {
       const revision = inputRevision;
       if (revision === undefined) this.checks.delete(agent.id);
@@ -264,7 +278,7 @@ export class DigestService {
         });
       return;
     }
-    const signature = this.signature(agent),
+    const signature = this.signature(agent, inputs),
       previous = this.checks.get(agent.id);
     if (previous?.signature === signature && previous.at > this.now()) {
       if (inputRevision !== undefined)
@@ -309,16 +323,17 @@ export class DigestService {
           reason,
         });
     }
-    const fresh = this.store.active(agent.id);
+    const latest = this.inputs(agent.id),
+      fresh = latest.active;
     const idle =
-      this.pending(agent.id).length === 0 &&
+      latest.pending.length === 0 &&
       fresh === undefined &&
-      !this.store.list(agent.id).some((value) => value.cleanupPending);
+      latest.cleanup.length === 0;
     this.checks.set(agent.id, {
       signature:
         this.generation !== generation && failure === undefined
           ? signature
-          : this.signature(agent),
+          : this.signature(agent, latest),
       at: Math.max(
         this.now() + (failure === undefined && idle ? 60000 : delay),
         fresh !== undefined &&
