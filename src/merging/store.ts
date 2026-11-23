@@ -55,7 +55,12 @@ export class MergeStore {
     readonly tracking: TrackingStore,
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
-  ) {}
+  ) {
+    db.exec(`CREATE INDEX IF NOT EXISTS merge_entries_by_pr ON merge_entries(pr_id);
+      CREATE INDEX IF NOT EXISTS merge_operations_by_pr ON merge_operations(pr_id);
+      CREATE INDEX IF NOT EXISTS references_by_pr ON pr_references(pr_id);
+      CREATE INDEX IF NOT EXISTS readiness_notices_by_pr ON merge_notices(pr_id,subject_kind,applicable,subject_id);`);
+  }
   readinessCandidates(): Set<string> {
     return new Set(
       this.db
@@ -117,7 +122,7 @@ export class MergeStore {
       : undefined;
   }
   agentInstructions(prId: string, agentId: string): string | undefined {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     if (pr.ownerAgentId !== agentId) return undefined;
     const entry = this.entries(pr.id).sort((a, b) => {
       const priority = Number(terminal(a.state)) - Number(terminal(b.state));
@@ -1140,7 +1145,8 @@ export class MergeStore {
     const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
-      for (const prior of this.refs(pr.id).filter((ref) => ref.active)) {
+      const existing = new Map(this.refs(pr.id).map((ref) => [ref.id, ref]));
+      for (const prior of [...existing.values()].filter((ref) => ref.active)) {
         const complete =
           prior.sourceKey === "description"
             ? observation.description !== undefined
@@ -1155,7 +1161,7 @@ export class MergeStore {
         }
       }
       for (const ref of found) {
-        const prior = this.refs(pr.id).find((item) => item.id === ref.id);
+        const prior = existing.get(ref.id);
         if (prior === undefined)
           this.saveReference({
             ...ref,

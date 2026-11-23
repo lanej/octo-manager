@@ -41,6 +41,7 @@ export interface DigestOptions {
 export class DigestService {
   private timer: ReturnType<typeof setInterval> | undefined;
   private discovery: Promise<void> | undefined;
+  private recoveryRevision: string | undefined;
   private queued = new Map<string, { agent: AgentRef; urgent: boolean }>();
   private running = new Map<string, Promise<void>>();
   private idleWaiters = new Set<() => void>();
@@ -180,7 +181,14 @@ export class DigestService {
     ]);
   }
   private async discover(): Promise<void> {
-    this.tracking.store.prepareSafeRecovery();
+    const recoveryRevision = this.options.inputRevision?.();
+    if (
+      recoveryRevision === undefined ||
+      recoveryRevision !== this.recoveryRevision
+    ) {
+      this.tracking.store.prepareSafeRecovery();
+      this.recoveryRevision = recoveryRevision;
+    }
     for (const agent of this.tracking.store.agents()) {
       await setImmediate();
       if (this.stopped) break;

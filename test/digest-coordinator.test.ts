@@ -642,12 +642,14 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
     received: () => Promise.resolve({ bodies: [], complete: true }),
     close() {},
   };
+  let now = 1000;
   const coordinator = new Coordinator(directory, {
-    now: () => 1000,
+    now: () => now,
     trackingConfig: config,
     digestOptions: { connect: () => queue },
   });
   const reads = spyOn(coordinator.store.tracking.inbox, "list");
+  const recovery = spyOn(coordinator.store.tracking, "prepareSafeRecovery");
   try {
     const owner = {
       harness: "codex" as const,
@@ -657,12 +659,19 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
     const agent = coordinator.tracking.registerAgent(owner);
     await coordinator.digests.flush();
     reads.mockClear();
+    recovery.mockClear();
     coordinator.store.schedules.saveDispatch({
       ...coordinator.store.schedules.dispatch(),
       nextAtMs: 2000,
     });
     await coordinator.digests.flush();
     expect(reads).not.toHaveBeenCalled();
+    expect(recovery).not.toHaveBeenCalled();
+    now += 60001;
+    await coordinator.digests.flush();
+    expect(reads).toHaveBeenCalled();
+    expect(recovery).not.toHaveBeenCalled();
+    reads.mockClear();
     const request = coordinator.store.submissions.request({
       requestId: "new-notification",
       repository: "owner/repo",
@@ -684,8 +693,10 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
     await coordinator.digests.flush();
     expect(reads).toHaveBeenCalled();
     expect(slots).toHaveLength(1);
+    expect(recovery).toHaveBeenCalled();
   } finally {
     reads.mockRestore();
+    recovery.mockRestore();
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
