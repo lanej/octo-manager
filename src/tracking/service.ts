@@ -357,7 +357,7 @@ export class TrackingService {
     );
   }
   private async deliverNext(): Promise<void> {
-    const d = this.store.deliveries().find((d) => {
+    const d = this.store.deliveryCandidates().find((d) => {
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||

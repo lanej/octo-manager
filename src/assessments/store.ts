@@ -23,6 +23,14 @@ export class AssessmentStore {
       .all()
       .map((row) => assessment(JSON.parse(String(row["data"]))));
   }
+  reconciliationCandidates(): Assessment[] {
+    return this.db
+      .prepare(
+        "SELECT data FROM evidence_assessments WHERE json_extract(data,'$.state') IS NOT 'superseded' ORDER BY rowid",
+      )
+      .all()
+      .map((row) => assessment(JSON.parse(String(row["data"]))));
+  }
   get(id: string): Assessment {
     const items = this.list(),
       full = resolveId(

@@ -59,6 +59,14 @@ export class SubmissionStore {
       .all()
       .map((row) => parse(SubmissionSchema, JSON.parse(String(row["data"]))));
   }
+  recoveryCandidates(): Submission[] {
+    return this.db
+      .prepare(
+        "SELECT data FROM pr_submissions WHERE state IN ('uncertain','publishing','enrolling') AND json_type(data,'$.brief') IS NOT NULL ORDER BY rowid",
+      )
+      .all()
+      .map((row) => parse(SubmissionSchema, JSON.parse(String(row["data"]))));
+  }
   summaryPage(
     before = Number.MAX_SAFE_INTEGER,
     limit = 20,

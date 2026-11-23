@@ -127,27 +127,31 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM agent_refs ORDER BY rowid")
       .all()
-      .map((r: Row) => ({
-        id: r.id,
-        harness: r.harness,
-        endpoint: r.endpoint,
-        sessionId: r.session_id,
-        ...(r.label === null ? {} : { label: r.label }),
-        ...(r.harness_version === null
-          ? {}
-          : {
-              lastObservedRuntime: {
-                version: r.harness_version,
-                observedAt: r.version_observed_at_ms,
-              },
-            }),
-      }));
+      .map((r: Row) => this.agentRow(r));
+  }
+  private agentRow(r: Row): AgentRef {
+    return {
+      id: r.id,
+      harness: r.harness,
+      endpoint: r.endpoint,
+      sessionId: r.session_id,
+      ...(r.label === null ? {} : { label: r.label }),
+      ...(r.harness_version === null
+        ? {}
+        : {
+            lastObservedRuntime: {
+              version: r.harness_version,
+              observedAt: r.version_observed_at_ms,
+            },
+          }),
+    };
   }
   agent(id: string): AgentRef {
-    const a = this.agents().find((a) => a.id === id);
-    if (!a) throw new Error("Agent not found");
-    return a;
+    const row = this.db.prepare("SELECT * FROM agent_refs WHERE id=?").get(id);
+    if (row === undefined) throw new Error("Agent not found");
+    return this.agentRow(row);
   }
+
   sessionAgent(harness: string, sessionId: string, endpoint?: string): string {
     if (harness === "" || sessionId === "")
       throw new Error("Invalid agent session context");
@@ -361,16 +365,28 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM deliveries ORDER BY rowid")
       .all()
-      .map((r: Row) => ({
-        id: r.id,
-        actionId: r.action_id,
-        recipientAgentId: r.recipient_agent_id,
-        retryCount: r.retry_count,
-        progress: parse(r.progress_json),
-        createdAt: r.created_at_ms,
-        updatedAt: r.updated_at_ms,
-      }));
+      .map((r: Row) => this.deliveryRow(r));
   }
+  deliveryCandidates(): Delivery[] {
+    return this.db
+      .prepare(
+        "SELECT d.* FROM deliveries d LEFT JOIN delivery_messages m ON m.delivery_id=d.id WHERE d.state IN ('pending','uncertain','delivered') AND m.acknowledged_at_ms IS NULL ORDER BY d.rowid",
+      )
+      .all()
+      .map((r: Row) => this.deliveryRow(r));
+  }
+  private deliveryRow(r: Row): Delivery {
+    return {
+      id: r.id,
+      actionId: r.action_id,
+      recipientAgentId: r.recipient_agent_id,
+      retryCount: r.retry_count,
+      progress: parse(r.progress_json),
+      createdAt: r.created_at_ms,
+      updatedAt: r.updated_at_ms,
+    };
+  }
+
   attempts(): DeliveryAttempt[] {
     return this.db
       .prepare("SELECT * FROM delivery_attempts ORDER BY rowid")

@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/store.js";
 import {
   ChainState,
+  EntryState,
   OperationState,
   ReferenceDecision,
   type PRReference,
@@ -51,7 +52,7 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
         epoch: 0,
         kind: "merge",
         state: OperationState.Succeeded,
-        phase: "merging",
+        phase: "merging" as const,
         head: "a".repeat(40),
         baseRef: "main",
         baseSha: "b".repeat(40),
@@ -146,6 +147,68 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
     );
   } finally {
     db.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("background merge candidates preserve chain reassignment and operation transitions", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-merge-candidates-"));
+  const store = new Store(directory);
+  try {
+    const pr = store.tracking.track("https://github.com/owner/repo/pull/1", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "candidates",
+    });
+    const first = store.merging.queue({
+      requestId: "first",
+      actorId: pr.ownerAgentId,
+      entries: [{ prUrl: pr.url, checks: ["CI"] }],
+    });
+    const entry = store.merging.entriesForChain(first.id)[0];
+    if (entry === undefined) throw new Error("Missing entry");
+    store.merging.saveEntry({ ...entry, state: EntryState.Merged });
+    expect(store.merging.unfinishedEntries()).toHaveLength(0);
+    store.merging.completeChains();
+    expect(store.merging.chain(first.id).state).toBe(ChainState.Completed);
+    const second = store.merging.queue({
+      requestId: "second",
+      actorId: pr.ownerAgentId,
+      entries: [{ prUrl: pr.url, checks: ["CI"] }],
+    });
+    store.merging.saveEntry({
+      ...entry,
+      chainId: second.id,
+      state: EntryState.Merged,
+    });
+    expect(
+      store.merging.entriesForChain(second.id).some((x) => x.id === entry.id),
+    ).toBe(true);
+    expect(store.merging.entriesForChain(first.id)).toHaveLength(0);
+    const op = {
+      id: "op",
+      entryId: entry.id,
+      prId: pr.id,
+      epoch: 0,
+      kind: "merge" as const,
+      state: OperationState.Uncertain,
+      phase: "merging" as const,
+      head: "a".repeat(40),
+      baseRef: "main",
+      baseSha: "b".repeat(40),
+      graph: "fixture",
+      ownerId: pr.ownerAgentId,
+      createdAt: 1,
+      updatedAt: 1,
+      detail: "Unknown outcome",
+    };
+    store.merging.saveOperation(op);
+    expect(store.merging.unfinishedOperations()).toHaveLength(1);
+    store.merging.saveOperation({ ...op, state: OperationState.Succeeded });
+    expect(store.merging.unfinishedOperations()).toHaveLength(0);
+    expect(store.merging.operations()).toHaveLength(1);
+  } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
   }

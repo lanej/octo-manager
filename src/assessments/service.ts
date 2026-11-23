@@ -71,7 +71,9 @@ export class AssessmentService {
     if (this.stopped) return Promise.resolve();
     this.synchronize();
     if (this.work !== undefined) return this.work;
-    const item = this.store.list().find((item) => item.state === "pending");
+    const item = this.store
+      .reconciliationCandidates()
+      .find((item) => item.state === "pending");
     if (item === undefined) return Promise.resolve();
     this.work = this.run(item).finally(() => {
       this.work = undefined;
@@ -91,7 +93,7 @@ export class AssessmentService {
     );
   }
   private synchronize(): void {
-    for (const item of this.store.list())
+    for (const item of this.store.reconciliationCandidates())
       if (item.state !== "superseded" && !this.current(item)) {
         this.tracking.store.transaction(() => {
           this.store.save({
@@ -117,7 +119,7 @@ export class AssessmentService {
           this.model,
         );
     }
-    for (const item of this.store.list()) {
+    for (const item of this.store.reconciliationCandidates()) {
       if (
         item.completionNotified ||
         !this.current(item) ||

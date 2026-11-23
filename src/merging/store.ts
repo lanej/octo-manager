@@ -166,12 +166,35 @@ export class MergeStore {
               "SELECT data,pr_id FROM merge_entries WHERE pr_id=? ORDER BY rowid",
             )
             .all(prId);
-    return rows.map((row) => {
-      const value = checked(EntrySchema, JSON.parse(String(row["data"])));
-      if (value.prId !== row["pr_id"])
-        throw new Error("Merge record PR identity mismatch");
-      return value;
-    });
+    return rows.map((row) => this.entryRow(row));
+  }
+
+  unfinishedEntries(): MergeEntry[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_entries WHERE state NOT IN ('merged','cancelled') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.entryRow(row));
+  }
+  entriesForChain(chainId: string): MergeEntry[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_entries WHERE json_extract(data,'$.chainId')=? ORDER BY rowid",
+      )
+      .all(chainId)
+      .map((row) => {
+        const value = this.entryRow(row);
+        if (value.chainId !== chainId)
+          throw new Error("Merge record chain identity mismatch");
+        return value;
+      });
+  }
+  private entryRow(row: Record<string, unknown>): MergeEntry {
+    const value = checked(EntrySchema, JSON.parse(String(row["data"])));
+    if (value.prId !== row["pr_id"])
+      throw new Error("Merge record PR identity mismatch");
+    return value;
   }
   operations(prId?: string): MergeOperation[] {
     const rows =
@@ -184,12 +207,22 @@ export class MergeStore {
               "SELECT data,pr_id FROM merge_operations WHERE pr_id=? ORDER BY rowid",
             )
             .all(prId);
-    return rows.map((row) => {
-      const value = checked(OperationSchema, JSON.parse(String(row["data"])));
-      if (value.prId !== row["pr_id"])
-        throw new Error("Merge record PR identity mismatch");
-      return value;
-    });
+    return rows.map((row) => this.operationRow(row));
+  }
+
+  unfinishedOperations(): MergeOperation[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_operations WHERE state IN ('planned','running','uncertain') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.operationRow(row));
+  }
+  private operationRow(row: Record<string, unknown>): MergeOperation {
+    const value = checked(OperationSchema, JSON.parse(String(row["data"])));
+    if (value.prId !== row["pr_id"])
+      throw new Error("Merge record PR identity mismatch");
+    return value;
   }
   refs(prId?: string): PRReference[] {
     const rows =
@@ -630,9 +663,7 @@ export class MergeStore {
     for (const chain of this.chains().filter(
       (item) => item.state === ChainState.Active,
     )) {
-      const entries = this.entries().filter(
-        (item) => item.chainId === chain.id,
-      );
+      const entries = this.entriesForChain(chain.id);
       if (
         entries.length > 0 &&
         entries.every((item) => item.state === EntryState.Merged)

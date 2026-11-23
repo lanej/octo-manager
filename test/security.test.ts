@@ -1105,3 +1105,105 @@ test("new head reassesses unchanged feedback without notifying its receipted rec
     await f.close();
   }
 });
+
+test("background assessment reads retain unfinished outcomes and audit superseded history", async () => {
+  const f = await fixture();
+  try {
+    const item = f.store.assessments.ensure(
+      {
+        actionId: f.action.id,
+        prUrl: f.pr.url,
+        headSha: head,
+        sourceKey: f.action.sourceKey,
+        policyVersion: 1,
+        evidence: "fixture",
+        truncated: false,
+      },
+      "synthetic",
+    );
+    for (const state of [
+      "pending",
+      "running",
+      "completed",
+      "failed",
+      "interrupted",
+    ] as const) {
+      f.store.assessments.save({ ...item, state });
+      expect(f.store.assessments.reconciliationCandidates()[0]?.state).toBe(
+        state,
+      );
+    }
+    f.store.assessments.save({ ...item, state: "superseded" });
+    expect(f.store.assessments.reconciliationCandidates()).toHaveLength(0);
+    expect(f.store.assessments.list()).toHaveLength(1);
+    const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+    try {
+      db.prepare("UPDATE evidence_assessments SET data='{}' WHERE id=?").run(
+        item.id,
+      );
+      expect(() => f.store.assessments.reconciliationCandidates()).toThrow(
+        "Invalid stored assessment",
+      );
+    } finally {
+      db.close();
+    }
+  } finally {
+    await f.close();
+  }
+});
+
+test("delivery candidates retain message-less and historical unread work, while receipts remove it", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const d = f.store.tracking.deliveries()[0];
+    if (d === undefined) throw new Error("Missing delivery");
+    expect(
+      f.store.tracking.deliveryCandidates().some((x) => x.id === d.id),
+    ).toBe(true);
+    db.prepare(
+      "INSERT INTO delivery_messages(delivery_id,body,created_at_ms,next_check_at_ms) VALUES(?,?,1,1)",
+    ).run(d.id, "Historical immutable notice");
+    for (const state of [
+      DeliveryState.Uncertain,
+      DeliveryState.Delivered,
+      DeliveryState.Cancelled,
+    ] as const) {
+      f.store.tracking.saveDelivery(
+        {
+          ...d,
+          progress:
+            state === DeliveryState.Delivered
+              ? { state, at: 1 }
+              : { state, at: 1, reason: "fixture" },
+        },
+        "fixture_transition",
+      );
+      expect(
+        f.store.tracking.deliveryCandidates().some((x) => x.id === d.id),
+      ).toBe(state !== DeliveryState.Cancelled);
+    }
+    f.store.tracking.saveDelivery(
+      { ...d, progress: { state: DeliveryState.Delivered, at: 1 } },
+      "fixture_transition",
+    );
+    db.prepare(
+      "UPDATE delivery_messages SET acknowledged_at_ms=2 WHERE delivery_id=?",
+    ).run(d.id);
+    expect(
+      f.store.tracking.deliveryCandidates().some((x) => x.id === d.id),
+    ).toBe(false);
+    expect(f.store.tracking.deliveries().some((x) => x.id === d.id)).toBe(true);
+    const agent = f.store.tracking.agent(d.recipientAgentId);
+    expect(() => f.store.tracking.agent(agent.id.slice(0, 8))).toThrow(
+      "Agent not found",
+    );
+    db.prepare("UPDATE agent_refs SET label='Updated' WHERE id=?").run(
+      agent.id,
+    );
+    expect(f.store.tracking.agent(agent.id).label).toBe("Updated");
+  } finally {
+    db.close();
+    await f.close();
+  }
+});
