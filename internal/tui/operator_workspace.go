@@ -2,12 +2,10 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/pattern"
-	"github.com/lanej/charmed/text"
 )
 
 type operatorWorkspace struct {
@@ -136,14 +134,9 @@ func (m *Model) operatorRecords() []pattern.InspectorRecord {
 
 		records := make([]pattern.InspectorRecord, 0, len(items))
 		for _, item := range items {
-			records = append(records, pattern.InspectorRecord{
-				ID: item.id,
-				Row: func(width int, _ bool) string {
-					title, detail := m.operationRow(item)
-					return wrapDeliveryContent(title+"\n"+detail+"\n"+m.muted(m.activityTime(item.at)), width)
-				},
-				Detail: func(width int) string { return m.operationItemContent(item, width) },
-			})
+			summary := m.operationRecordSummary(item)
+			document := m.operationDocument(item)
+			records = append(records, pattern.InspectorRecord{ID: item.id, Summary: &summary, Document: &document})
 		}
 
 		return records
@@ -158,29 +151,10 @@ func (m *Model) operatorRecords() []pattern.InspectorRecord {
 			heading = deliveryGroupTitle(summary.group)
 		}
 
-		inventory := m.panel == deliveriesPanel
-
+		recordSummary := m.deliveryRecordSummary(summary, m.panel == deliveriesPanel)
+		document := m.deliveryPreviewDocument(summary.item)
 		records = append(records, pattern.InspectorRecord{
-			ID: summary.item.key, Heading: heading,
-			Row: func(width int, selected bool) string {
-				identity := m.link(summary.item.url)
-				if selected {
-					identity = m.theme.Heading().Render(identity)
-				}
-
-				lines := []string{identity}
-				if summary.title != summary.item.label {
-					lines = append(lines, text.Label(summary.title, m.theme))
-				}
-
-				lines = append(lines, text.Pill(summary.condition, summary.tone, m.theme, text.Normal), m.field("Next", summary.next))
-				if inventory {
-					lines = append(lines, m.muted("Observed "+m.deliveryObservedAt(summary.observedAt)))
-				}
-
-				return wrapDeliveryContent(strings.Join(lines, "\n"), width)
-			},
-			Detail: func(width int) string { return m.deliveryPreview(summary.item, width) },
+			ID: summary.item.key, Heading: heading, Summary: &recordSummary, Document: &document,
 		})
 	}
 

@@ -10,7 +10,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"connectrpc.com/connect"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
@@ -249,35 +249,42 @@ func (m *Model) currentOperationURL() string {
 	return address
 }
 
-func (m *Model) operationRow(item operatorActivityItem) (string, string) {
+func (m *Model) operationRecordSummary(item operatorActivityItem) layout.RecordSummary {
+	record := layout.RecordSummary{Fields: []layout.Pair{{Label: "Recorded", Value: m.timestamp(item.at, briefTimestamp)}}}
 	if operation := item.operation; operation != nil {
 		status, tone := operationOutcome(operation.GetState())
-		subject := m.operationPRURL(operation)
 
-		title := operationTitle(operation)
-		if subject != "" {
-			title = m.link(subject)
+		record.Title = text.Log(operationTitle(operation), m.theme)
+		if subject := m.operationPRURL(operation); subject != "" {
+			record.Title = m.link(subject)
+			record.Subtitle = text.Label(operationTitle(operation), m.theme)
 		}
 
-		return title, operationTitle(operation) + " · " + text.Pill(status, tone, m.theme, text.Normal)
+		record.Status = text.Pill(status, tone, m.theme, text.Normal)
+
+		return record
 	}
 
 	if item.event != nil {
 		presentation := m.presentEvent(item.event)
-		detail := presentation.detail
+		record.Title = text.Log(presentation.title, m.theme)
 
+		record.Subtitle = oneLine(presentation.detail)
 		if context := item.event.GetActionContext(); context != nil {
-			detail = text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal) + " · " + historicalActionActor(context) + " · " + detail
+			record.Status = text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
+			record.Fields = append(record.Fields, layout.Pair{Label: "Recorded actor", Value: historicalActionActor(context)})
 		} else if item.event.GetKind() == "action_progress" {
-			detail = "Transition unknown · " + detail
+			record.Status = text.Pill("Transition unknown", text.Warning, m.theme, text.Normal)
 		}
 
-		return presentation.title, oneLine(detail)
+		return record
 	}
 
 	report := item.report.GetReport()
+	record.Title = text.Log(activityTitle(report.GetName()), m.theme)
+	record.Status = text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal)
 
-	return activityTitle(report.GetName()), text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal)
+	return record
 }
 
 func (m *Model) operationContent(width int) string {
@@ -285,7 +292,33 @@ func (m *Model) operationContent(width int) string {
 }
 
 func (m *Model) operationItemContent(item operatorActivityItem, width int) string {
-	parts := []string{text.Badge("Operation inspection", m.theme), fmt.Sprintf("History page %d · h older · l newer · u refresh", m.agentActivity.shownPage+1)}
+	return m.operationDocument(item).View(width, m.theme)
+}
+
+func (m *Model) operationDocument(item operatorActivityItem) layout.DetailDocument {
+	document := layout.DetailDocument{
+		Header:  layout.IdentityHeader{ID: "Operation inspection", Context: fmt.Sprintf("History page %d · h older · l newer · u refresh", m.agentActivity.shownPage+1)},
+		Summary: m.operationRecordSummary(item),
+	}
+
+	document.Summary.Fields = nil
+	if item.operation != nil {
+		document.Summary.Next = m.operationNext(item.operation)
+		document.Sections = m.savedOperationSections(item.operation)
+	} else if item.event != nil {
+		document.Summary.Subtitle = ""
+		document.Sections = []layout.DetailSection{m.eventOperationSection(item.event)}
+	} else if item.report != nil {
+		document.Sections = []layout.DetailSection{m.reportOperationSection(item.report)}
+	} else {
+		document.Summary = layout.RecordSummary{}
+		document.Sections = []layout.DetailSection{{
+			ID: "selection", FullWidth: true,
+			Paragraphs: []string{"No operation selected. Saved GitHub effects and the current activity page appear here."},
+		}}
+	}
+
+	inspection := layout.DetailSection{ID: "inspection", Title: "Inspection status", FullWidth: true}
 
 	if m.operations.loading {
 		message := "Loading saved operations."
@@ -293,47 +326,63 @@ func (m *Model) operationItemContent(item operatorActivityItem, width int) strin
 			message = "Refreshing saved operations; previous evidence retained."
 		}
 
-		parts = append(parts, m.muted(message))
+		inspection.Paragraphs = append(inspection.Paragraphs, message)
 	}
 
 	if m.operations.err != nil {
-		parts = append(parts, text.Pill("Inspection unavailable", text.Warning, m.theme, text.Normal)+" "+safe(m.operations.err.Error())+" · u retry")
+		inspection.Statuses = append(inspection.Statuses, layout.StatusItem{
+			Label: "Inspection unavailable", Value: text.Pill("u retry", text.Warning, m.theme, text.Normal), Detail: m.operations.err.Error(),
+		})
 	}
 
 	if m.agentActivity.err != nil {
-		parts = append(parts, text.Pill("History incomplete", text.Warning, m.theme, text.Normal)+" "+safe(m.agentActivity.err.Error()))
+		inspection.Statuses = append(inspection.Statuses, layout.StatusItem{
+			Label: "History incomplete", Value: text.Pill("u retry", text.Warning, m.theme, text.Normal), Detail: m.agentActivity.err.Error(),
+		})
 	}
 
 	if m.operations.total > savedOperationLimit {
-		parts = append(parts, m.muted(fmt.Sprintf("Showing %d of %d saved operations; selected and uncertain outcomes retained first.", savedOperationLimit, m.operations.total)))
-	}
-
-	if item.operation != nil {
-		parts = append(parts, m.savedOperationContent(item.operation)...)
-	} else if item.event != nil {
-		presentation := m.presentEvent(item.event)
-
-		parts = append(parts, "", text.Log(presentation.title, m.theme), m.field("Source", "Coordinator event"), m.field("Recorded", m.timestamp(item.at, fullTimestamp)), safe(presentation.detail))
-		if context := item.event.GetActionContext(); context != nil {
-			parts = append(parts, m.field("Recorded transition", stateName(context.GetState().String(), "ACTION_STATE_")), m.field("Recorded actor", historicalActionActor(context)))
-		} else if item.event.GetKind() == "action_progress" {
-			parts = append(parts, m.muted("Legacy event: transition state and actor were not recorded."))
-		}
-
-		if presentation.prURL != "" {
-			parts = append(parts, "PR: "+m.link(presentation.prURL))
-		}
-	} else if item.report != nil {
-		parts = append(parts, m.reportOperationContent(item.report)...)
-	} else {
-		parts = append(parts, "", "No operation selected. Saved GitHub effects and the current activity page appear here.")
+		inspection.Paragraphs = append(inspection.Paragraphs, fmt.Sprintf("Showing %d of %d saved operations; selected and uncertain outcomes retained first.", savedOperationLimit, m.operations.total))
 	}
 
 	if m.operations.reconciliation != "" && m.operations.noticeID == item.operation.GetId() {
-		parts = append(parts, "", text.Pill("Reconciliation", text.Info, m.theme, text.Normal)+" "+safe(m.operations.reconciliation))
+		inspection.Statuses = append(inspection.Statuses, layout.StatusItem{
+			Label: "Reconciliation", Value: text.Pill("Request accepted", text.Info, m.theme, text.Normal), Detail: m.operations.reconciliation,
+		})
 	}
 
-	return ansi.Wrap(strings.Join(parts, "\n"), max(1, width), " ")
+	if len(inspection.Statuses) > 0 || len(inspection.Paragraphs) > 0 {
+		document.Sections = append([]layout.DetailSection{inspection}, document.Sections...)
+	}
+
+	return document
+}
+
+func (m *Model) eventOperationSection(event *v1.JobEvent) layout.DetailSection {
+	presentation := m.presentEvent(event)
+
+	section := layout.DetailSection{
+		ID: "event", Title: "Recorded event", FullWidth: true,
+		Fields: []layout.Pair{
+			{Label: "Source", Value: "Coordinator event"},
+			{Label: "Recorded", Value: m.timestamp(event.GetAtMs(), fullTimestamp)},
+		},
+		Paragraphs: []string{safe(presentation.detail)},
+	}
+	if context := event.GetActionContext(); context != nil {
+		section.Fields = append(section.Fields,
+			layout.Pair{Label: "Recorded transition", Value: stateName(context.GetState().String(), "ACTION_STATE_")},
+			layout.Pair{Label: "Recorded actor", Value: historicalActionActor(context)},
+		)
+	} else if event.GetKind() == "action_progress" {
+		section.Paragraphs = append(section.Paragraphs, "Legacy event: transition state and actor were not recorded.")
+	}
+
+	if presentation.prURL != "" {
+		section.Body = m.detailLinks("PR", presentation.prURL)
+	}
+
+	return section
 }
 
 // Actor identity comes from the historical event; current ownership can change.
@@ -356,61 +405,101 @@ func historicalActionActor(context *v1.ActionEventContext) string {
 	return strings.Join(parts, " · ")
 }
 
-func (m *Model) savedOperationContent(operation *v1.DomainMergeOverviewOperationsItem) []string {
-	status, tone := operationOutcome(operation.GetState())
-
-	parts := []string{"", text.Log(operationTitle(operation), m.theme), text.Pill(status, tone, m.theme, text.Normal), m.field("Operation", operation.GetId()), m.field("Source", "Coordinator operation journal")}
+func (m *Model) savedOperationSections(operation *v1.DomainMergeOverviewOperationsItem) []layout.DetailSection {
+	identity := layout.DetailSection{
+		ID: "operation", Title: "Operation identity",
+		Fields: []layout.Pair{
+			{Label: "Operation", Value: operation.GetId()},
+			{Label: "Source", Value: "Coordinator operation journal"},
+		},
+	}
 	if address := m.operationPRURL(operation); address != "" {
-		parts = append(parts, "PR: "+m.link(address))
+		identity.Body = m.detailLinks("PR", address)
 	} else {
-		parts = append(parts, m.field("PR identity", operation.GetPrId()))
+		identity.Fields = append(identity.Fields, layout.Pair{Label: "PR identity", Value: operation.GetPrId()})
 	}
 
-	parts = append(parts, m.field("Requested head", operation.GetHead()), m.field("Target branch", operation.GetBaseRef()), m.field("Requested", m.timestamp(operation.GetCreatedAt(), fullTimestamp)), m.field("Last evidence", m.timestamp(operation.GetUpdatedAt(), fullTimestamp)), m.field("Phase", stateName(operation.GetPhase().String(), "DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_PHASE_")), "", safe(operation.GetDetail()))
+	request := layout.DetailSection{
+		ID: "request", Title: "Saved request",
+		Fields: []layout.Pair{
+			{Label: "Requested head", Value: operation.GetHead()},
+			{Label: "Target branch", Value: operation.GetBaseRef()},
+			{Label: "Phase", Value: stateName(operation.GetPhase().String(), "DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_PHASE_")},
+		},
+	}
+	if operation.GetRequestId() != "" {
+		request.Fields = append(request.Fields, layout.Pair{Label: "Saved request", Value: operation.GetRequestId()})
+	}
+
+	result := layout.DetailSection{
+		ID: "result", Title: "Recorded result", FullWidth: true,
+		Paragraphs: []string{operation.GetDetail()},
+	}
 	if operation.GetResultHead() != "" {
-		parts = append(parts, m.field("Result head", operation.GetResultHead()))
+		result.Fields = append(result.Fields, layout.Pair{Label: "Result head", Value: operation.GetResultHead()})
 	}
 
 	if operation.GetMergeCommit() != "" {
-		parts = append(parts, m.field("Merge commit", operation.GetMergeCommit()))
+		result.Fields = append(result.Fields, layout.Pair{Label: "Merge commit", Value: operation.GetMergeCommit()})
 	}
 
-	if operation.GetRequestId() != "" {
-		parts = append(parts, m.field("Saved request", operation.GetRequestId()))
+	if operation.GetState() == v1.DomainMergeOverviewOperationsItemState_DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_STATE_SUCCEEDED {
+		result.Paragraphs = append(result.Paragraphs, "The recorded operation outcome does not establish task acceptance.")
 	}
 
-	if canReconcileOperation(operation) {
-		next := "r Reconcile with GitHub · inspect the saved operation without another write."
-		if m.operations.pendingID == operation.GetId() {
-			next = "Requesting reconciliation; the outcome remains unconfirmed."
-		} else if m.operations.err != nil {
-			next = "u refresh · inspect saved operations before requesting reconciliation."
-		} else if m.commandPending {
-			next = "Another command is pending; wait before requesting reconciliation."
-		}
-
-		parts = append(parts, "", text.Pill("Next", text.Info, m.theme, text.Normal)+" "+next)
-	} else if operation.GetState() == v1.DomainMergeOverviewOperationsItemState_DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_STATE_SUCCEEDED {
-		parts = append(parts, "", m.muted("The recorded operation outcome does not establish task acceptance."))
+	timing := layout.DetailSection{
+		ID: "timeline", Title: "Evidence timeline", FullWidth: true,
+		Timeline: []layout.TimelineEvent{
+			{When: m.timestamp(operation.GetCreatedAt(), fullTimestamp), Title: "Request recorded", Actor: "Coordinator operation journal"},
+			{When: m.timestamp(operation.GetUpdatedAt(), fullTimestamp), Title: "Last evidence"},
+		},
 	}
 
-	return parts
+	return []layout.DetailSection{identity, request, result, timing}
 }
 
-func (m *Model) reportOperationContent(entry *v1.ActivityReport) []string {
+func (m *Model) operationNext(operation *v1.DomainMergeOverviewOperationsItem) *layout.Pair {
+	if !canReconcileOperation(operation) {
+		return nil
+	}
+
+	next := "r Reconcile with GitHub · inspect the saved operation without another write."
+	if m.operations.pendingID == operation.GetId() {
+		next = "Requesting reconciliation; the outcome remains unconfirmed."
+	} else if m.operations.err != nil {
+		next = "u refresh · inspect saved operations before requesting reconciliation."
+	} else if m.commandPending {
+		next = "Another command is pending; wait before requesting reconciliation."
+	}
+
+	return &layout.Pair{Label: "Next", Value: next}
+}
+
+func (m *Model) reportOperationSection(entry *v1.ActivityReport) layout.DetailSection {
 	report := entry.GetReport()
 	actor := report.GetActor()
-
-	parts := []string{"", text.Log(activityTitle(report.GetName()), m.theme), text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal), m.field("Source", "Caller report · not independent confirmation"), m.field("Actor", actor.GetHarness()+" · "+sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId())), m.field("Recorded", m.timestamp(entry.GetRecordedAtMs(), fullTimestamp)), safe(report.GetDetail())}
-	if report.GetPrUrl() != "" {
-		parts = append(parts, "PR: "+m.link(report.GetPrUrl()))
+	section := layout.DetailSection{
+		ID: "report", Title: "Caller report", FullWidth: true,
+		Fields: []layout.Pair{
+			{Label: "Source", Value: "Caller report · not independent confirmation"},
+			{Label: "Actor", Value: actor.GetHarness() + " · " + sessionContext(actor.GetLabel(), actor.GetCwd(), actor.GetSessionId())},
+			{Label: "Recorded", Value: m.timestamp(entry.GetRecordedAtMs(), fullTimestamp)},
+		},
+		Paragraphs: []string{report.GetDetail()},
 	}
 
-	if report.GetEvidenceUrl() != "" {
-		parts = append(parts, "Evidence: "+m.link(report.GetEvidenceUrl()))
+	switch {
+	case report.GetPrUrl() != "" && report.GetEvidenceUrl() != "":
+		pr := m.detailLinks("PR", report.GetPrUrl())
+		evidence := m.detailLinks("Evidence", report.GetEvidenceUrl())
+		section.Body = func(width int) string { return layout.Column(pr(width), evidence(width)) }
+	case report.GetPrUrl() != "":
+		section.Body = m.detailLinks("PR", report.GetPrUrl())
+	case report.GetEvidenceUrl() != "":
+		section.Body = m.detailLinks("Evidence", report.GetEvidenceUrl())
 	}
 
-	return parts
+	return section
 }
 
 func canReconcileOperation(operation *v1.DomainMergeOverviewOperationsItem) bool {

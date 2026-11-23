@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/charmbracelet/x/ansi"
@@ -484,31 +485,78 @@ func TestOperatorActivityPreservesHistoricalActionContextAndLegacyGaps(t *testin
 	m.agentActivity.events = []*v1.JobEvent{legacy, recorded}
 	m.operations.selected = "event:2"
 
-	content := ansi.Strip(m.operationContent(132))
-	for _, want := range []string{"Recorded transition: acknowledged", "Recorded actor: codex · Original owner", "owner/repo#1"} {
+	content := inspectionText(m.operationContent(132))
+	for _, want := range []string{"Recorded transition acknowledged", "Recorded actor codex · Original owner", "owner/repo#1"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("historical action omitted %q in:\n%s", want, content)
 		}
 	}
 
-	if strings.Contains(content, "Current owner") || strings.Contains(content, "Recorded transition: resolved") {
+	if strings.Contains(content, "Current owner") || strings.Contains(content, "Recorded transition resolved") {
 		t.Fatal("current action ownership or disposition replaced historical evidence")
 	}
 
-	_, detail := m.operationRow(operatorActivityItem{event: recorded})
+	detail := m.operationRecordSummary(operatorActivityItem{event: recorded}).View(132, m.theme, false)
 	if !strings.Contains(ansi.Strip(detail), "acknowledged") || !strings.Contains(ansi.Strip(detail), "Original owner") {
 		t.Fatal("activity row omitted the recorded transition and actor")
 	}
 
 	m.operations.selected = "event:1"
-	content = ansi.Strip(m.operationContent(132))
+	content = inspectionText(m.operationContent(132))
 
-	if !strings.Contains(content, "Legacy event: transition state and actor were not recorded") || strings.Contains(content, "Original owner") || strings.Contains(content, "Recorded transition: resolved") {
+	if !strings.Contains(content, "Legacy event transition state and actor were not recorded") || strings.Contains(content, "Original owner") || strings.Contains(content, "Recorded transition resolved") {
 		t.Fatal("legacy event gaps were hidden or filled using current action state")
 	}
 
-	_, detail = m.operationRow(operatorActivityItem{event: legacy})
+	detail = m.operationRecordSummary(operatorActivityItem{event: legacy}).View(132, m.theme, false)
 	if !strings.Contains(detail, "Transition unknown") {
 		t.Fatal("legacy activity row implied a known transition")
+	}
+}
+
+func TestOperatorStructuredActivitySeparatesDataFromTerminalStyle(t *testing.T) {
+	t.Parallel()
+
+	m := model(t, theme.Dark)
+	m.location = time.UTC
+	operation := operatorTestOperation("merge", v1.DomainMergeOverviewOperationsItemState_DOMAIN_MERGE_OVERVIEW_OPERATIONS_ITEM_STATE_UNCERTAIN)
+	report := &v1.ActivityReport{Report: &v1.ActivityInput{
+		Name:    v1.ActivityName_ACTIVITY_NAME_RUN_CHECKS,
+		Outcome: v1.ActivityOutcome_ACTIVITY_OUTCOME_SUCCEEDED,
+		Actor:   &v1.ActivityActor{Harness: "codex", SessionId: "worker"},
+		Detail:  "Checks completed",
+	}}
+
+	items := []operatorActivityItem{
+		{at: 0, operation: operation},
+		{at: 1_000, event: &v1.JobEvent{Kind: "action_progress", Detail: "Recorded event"}},
+		{at: 2_000, report: report},
+	}
+	for _, item := range items {
+		row := m.operationRecordSummary(item).View(132, m.theme, false)
+
+		content := ansi.Strip(row)
+		if !strings.Contains(content, "Jan 1, 1970 · 00:00 UTC +0000") {
+			t.Fatalf("recorded time lost its plain display-zone value: %q", content)
+		}
+
+		if strings.Contains(content, `\u001b`) || strings.Contains(content, `\x1b`) {
+			t.Fatalf("terminal style was escaped as record data: %q", content)
+		}
+	}
+
+	operation.Head = new("head\x1b[31mprovided")
+	operation.Detail = new("source\x1b[2Jevidence")
+	document := m.operationDocument(operatorActivityItem{operation: operation}).View(132, m.theme)
+
+	content := ansi.Strip(document)
+	for _, want := range []string{`head\u001b[31mprovided`, `source\u001b[2Jevidence`} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("untrusted source control was not preserved as escaped data: missing %q in %q", want, content)
+		}
+	}
+
+	if strings.Contains(document, "\x1b[2J") {
+		t.Fatal("untrusted source control reached the terminal")
 	}
 }

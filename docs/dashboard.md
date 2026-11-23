@@ -1,6 +1,6 @@
 # Dashboard
 
-Attention is the starting view. It puts uncertain outcomes and decisions ahead of ordinary progress, while Deliveries shows the full inventory and Activity explains what happened. The Bun coordinator owns durable state and effects. Octo projects that evidence into records; Charmed's `pattern.ListInspector` owns selection, row geometry, scrolling and responsive inspection.
+Attention is the starting view. It puts uncertain outcomes and decisions ahead of ordinary progress, while Deliveries shows the full inventory and Activity explains what happened. The Bun coordinator owns durable state and effects. Octo projects that evidence into typed record summaries and detail documents. Charmed's `pattern.ListInspector` owns selection, row geometry, scrolling and responsive inspection; `layout.RecordSummary` and `layout.DetailDocument` own the hierarchy of titles, conditions, next steps, field groups, status lists and event timelines.
 
 | View | Read it for | Controls |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Wide Attention and Activity views show the selected record beside the list. Narr
 
 ## Delivery evidence
 
-Delivery detail keeps the current condition and next step above ownership, observation freshness, readiness evidence and feedback routing. Checks and workflow evidence identify different-head and unpinned results. Review-cache observations state when they differ from the tracked revision or contain partial history. A failed refresh retains its last observation and the error.
+Delivery detail keeps the current condition and next step above separate identity, readiness, merge and feedback sections. Related facts align within each section; adjacent sections share a row when they fit and stack at narrower widths. Identity and observation remain separate from readiness assessments, and each feedback recipient has its own delivery section. Checks and workflow evidence identify different-head and unpinned results. Review-cache observations state when they differ from the tracked revision or contain partial history. A failed refresh retains its last observation and the error.
 
 Configured auto-merge, coordinator progress and confirmed outcomes are separate. `a` toggles the existing setting in detail or diagnostic Tracking; it does not assert readiness. An automatic-merge setting of off does not establish whether a separate one-shot authorization exists. Confirmed merging does not establish task acceptance.
 
@@ -21,7 +21,7 @@ Feedback identifies its source and reviewed revision, transport state, recipient
 
 ## Operation inspection
 
-Activity combines up to 50 saved operations with one bounded page of historical events and caller reports. Saved-operation detail identifies the requested head, target, phase, saved request, timestamps and observed result. Caller reports retain labels such as “success reported”; historical events retain their recorded actor and transition rather than borrowing current ownership.
+Activity combines up to 50 saved operations with one bounded page of historical events and caller reports. Saved-operation detail separates operation identity, the saved request, recorded result and evidence timeline. It identifies the requested head, target, phase and request ID, while the timeline retains the supplied request and last-evidence timestamps. Caller reports retain labels such as “success reported”; historical events retain their recorded actor and transition rather than borrowing current ownership.
 
 `r` reconciles a selected eligible uncertain operation using its exact saved ID. Request acceptance is not a confirmed outcome. Failed reads retain earlier evidence and require explicit refresh before reconciliation. Coordinator replacement clears old evidence and pending request state, including when another view is active. Use `h/l` for older/newer historical pages; see the [activity guide](activity.md) for paging and reporting semantics.
 

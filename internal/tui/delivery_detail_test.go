@@ -39,8 +39,8 @@ func TestDeliveryDetailKeepsDifferentRevisionAndPartialEvidenceVisible(t *testin
 	}}}
 	m.reviews[pr.GetUrl()] = &v1.PullRequestDetails{Title: "Change description", HeadSha: strings.Repeat("b", 40), ObservedAtMs: 500, MayHaveMoreMessages: true}
 
-	content := ansi.Strip(m.deliveryDetailContent(100))
-	for _, want := range []string{"Tracked head: aaaaaaaa", "partial (pagination incomplete)", "1 passed", "1 different head", "1 unpinned", "Different review-cache head: bbbbbbbb", "Partial review history", "Previous observation retained", "GitHub read timed out"} {
+	content := inspectionText(m.deliveryDetailContent(80))
+	for _, want := range []string{"Tracked head aaaaaaaa", "partial (pagination incomplete)", "1 passed", "1 different head", "1 unpinned", "Review-cache head bbbbbbbb", "Different revision", "Partial review history", "Previous observation retained", "GitHub read timed out"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("missing consequential evidence %q in:\n%s", want, content)
 		}
@@ -64,24 +64,24 @@ func TestDeliveryDetailSeparatesReceiptFromActionDisposition(t *testing.T) {
 	m.snapshot.Tracking.Actions = []*v1.PendingAction{action}
 	m.snapshot.Tracking.Deliveries = []*v1.ActionDelivery{delivery}
 
-	content := ansi.Strip(m.deliveryDetailContent(90))
-	for _, want := range []string{"Transport: delivered", "Recipient receipt: Not confirmed", "Owner disposition: open", "Reviewed head: bbbbbbbb", "josh · inline"} {
+	content := inspectionText(m.deliveryDetailContent(80))
+	for _, want := range []string{"Transport delivered", "Recipient receipt Not confirmed", "Owner disposition open", "Reviewed head bbbbbbbb", "josh · inline"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("missing separate feedback state %q", want)
 		}
 	}
 
 	delivery.AcknowledgedAtMs = new(int64(3_000))
-	content = ansi.Strip(m.deliveryDetailContent(90))
+	content = inspectionText(m.deliveryDetailContent(80))
 
-	if !strings.Contains(content, "Recipient receipt: Received") || !strings.Contains(content, "Owner disposition: open") || action.GetState() != v1.ActionState_ACTION_STATE_OPEN {
+	if !strings.Contains(content, "Recipient receipt Received") || !strings.Contains(content, "Owner disposition open") || action.GetState() != v1.ActionState_ACTION_STATE_OPEN {
 		t.Fatal("recording a transport receipt implicitly resolved the owner's action")
 	}
 
 	pr.Observation.Lifecycle = "merged"
-	content = ansi.Strip(m.deliveryDetailContent(90))
+	content = inspectionText(m.deliveryDetailContent(80))
 
-	if !strings.Contains(content, "Retained as history") || !strings.Contains(content, "Owner disposition: open") {
+	if !strings.Contains(content, "Retained as history") || !strings.Contains(content, "Owner disposition open") {
 		t.Fatal("merge changed retained action evidence instead of rendering it as history")
 	}
 }
@@ -93,29 +93,29 @@ func TestDeliveryDetailDoesNotTreatAutomaticMergeAsConfirmation(t *testing.T) {
 	merge := &v1.MergeStatus{PrId: pr.GetId(), AutoMerge: true, AutoMergeSource: "inherited", State: "waiting_checks", ChainState: "paused", Detail: "A required check is still running"}
 	m.snapshot.MergeStatuses = []*v1.MergeStatus{merge}
 
-	content := ansi.Strip(m.deliveryMergeEvidence(pr))
-	for _, want := range []string{"Automatic merging ON", "inherited", "Chain: paused", "waiting checks", "No merge confirmation"} {
+	content := inspectionText(m.deliveryDetailContent(80))
+	for _, want := range []string{"Automatic merging ON", "inherited", "Chain paused", "waiting checks", "No merge confirmation"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("merge setting hid %q", want)
 		}
 	}
 
 	merge.State = "ready"
-	content = ansi.Strip(m.deliveryMergeEvidence(pr))
+	content = inspectionText(m.deliveryDetailContent(80))
 
-	if !strings.Contains(content, "Coordinator progress: ready") || !strings.Contains(content, "No merge confirmation") {
+	if !strings.Contains(content, "Coordinator progress ready") || !strings.Contains(content, "No merge confirmation") {
 		t.Fatal("coordinator readiness was promoted into a merge result")
 	}
 
 	merge.State = "uncertain"
-	content = ansi.Strip(m.deliveryMergeEvidence(pr))
+	content = inspectionText(m.deliveryDetailContent(80))
 
 	if !strings.Contains(content, "reconcile the existing operation before another attempt") || strings.Contains(content, "confirmed merge") {
 		t.Fatal("uncertain merge was presented as settled or safe to retry")
 	}
 
 	merge.State = "merged"
-	content = ansi.Strip(m.deliveryMergeEvidence(pr))
+	content = inspectionText(m.deliveryDetailContent(80))
 
 	if !strings.Contains(content, "Coordinator confirmed merge") {
 		t.Fatal("confirmed merge result is unavailable")
@@ -143,12 +143,16 @@ func TestDeliveryDetailMissingEvidenceAndNarrowWidths(t *testing.T) {
 		}
 	}
 
-	content := ansi.Strip(m.deliveryDetailContent(80))
-	if !strings.Contains(content, "Readiness is unknown") || !strings.Contains(content, "GitHub observed: unavailable") || strings.Contains(content, "1970") {
+	content := inspectionText(m.deliveryDetailContent(80))
+	if !strings.Contains(content, "Readiness is unknown") || !strings.Contains(content, "GitHub observed unavailable") || strings.Contains(content, "1970") {
 		t.Fatal("missing observation was turned into a readiness result or epoch timestamp")
 	}
 
-	if !strings.Contains(content, "Review-cache head: bbbbbbbb") || strings.Contains(content, "Different review-cache head") {
+	if !strings.Contains(content, "Review-cache head bbbbbbbb") || strings.Contains(content, "Different revision") {
 		t.Fatal("unknown tracking head was treated as a known revision difference")
 	}
+}
+
+func inspectionText(content string) string {
+	return strings.Join(strings.Fields(strings.ReplaceAll(ansi.Strip(content), ": ", " ")), " ")
 }
