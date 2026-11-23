@@ -15,7 +15,7 @@ import { CheckWatches, CheckWatchState, successfulCheck } from "./checks.js";
 import { AgentInbox } from "./inbox.js";
 import { actionContext } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
   ActionState,
@@ -40,6 +40,8 @@ type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
   private readonly observations: ObservationRepository;
+  private agentById: StatementSync | undefined;
+  private prByIdentity: StatementSync | undefined;
   readonly subscriptions: Subscriptions;
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
@@ -57,6 +59,9 @@ export class TrackingStore {
     notificationRepository: NotificationRepository,
     private assessments: AssessmentStore,
   ) {
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS deliveries_by_recipient ON deliveries(recipient_agent_id,id,action_id,state)",
+    );
     this.observations = new SQLiteObservationRepository(db);
     this.subscriptions = new Subscriptions(
       db,
@@ -147,7 +152,9 @@ export class TrackingStore {
     };
   }
   agent(id: string): AgentRef {
-    const row = this.db.prepare("SELECT * FROM agent_refs WHERE id=?").get(id);
+    const row = (this.agentById ??= this.db.prepare(
+      "SELECT * FROM agent_refs WHERE id=?",
+    )).get(id);
     if (row === undefined) throw new Error("Agent not found");
     return this.agentRow(row);
   }
@@ -217,8 +224,26 @@ export class TrackingStore {
       .all()
       .map((r: Row) => this.trackedPR(r));
   }
+  observationHead(prId: string): string | undefined {
+    return this.observations.head(prId);
+  }
+  referenceObservation(prId: string) {
+    return this.observations.reference(prId);
+  }
+  prContexts(): Omit<TrackedPR, "observation">[] {
+    return this.db
+      .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
+      .all()
+      .map((row) => this.decodePRContext(row));
+  }
   private trackedPR(r: Row): TrackedPR {
     const observation = this.observations.latest(String(r["id"]));
+    return {
+      ...this.decodePRContext(r),
+      ...(observation === undefined ? {} : { observation }),
+    };
+  }
+  private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
       id: r.id,
       url: r.url,
@@ -236,17 +261,20 @@ export class TrackingStore {
               message: r.last_refresh_error,
             },
           }),
-      ...(observation === undefined ? {} : { observation }),
     };
   }
-  pr(id: string): TrackedPR {
-    const row = this.db
-      .prepare(
-        "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
-      )
-      .get(id, id);
+  private prRow(id: string) {
+    const row = (this.prByIdentity ??= this.db.prepare(
+      "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
+    )).get(id, id);
     if (row === undefined) throw new Error("Tracked PR not found");
-    return this.trackedPR(row);
+    return row;
+  }
+  prContext(id: string): Omit<TrackedPR, "observation"> {
+    return this.decodePRContext(this.prRow(id));
+  }
+  pr(id: string): TrackedPR {
+    return this.trackedPR(this.prRow(id));
   }
   track(url: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {
@@ -286,6 +314,14 @@ export class TrackingStore {
             .prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid")
             .all(prId);
     return rows.map((row) => this.trackedAction(row));
+  }
+  unfinishedActions(): Action[] {
+    return this.db
+      .prepare(
+        "SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.trackedAction(row));
   }
   private trackedAction(r: Row): Action {
     return {
@@ -367,13 +403,16 @@ export class TrackingStore {
       .all()
       .map((r: Row) => this.deliveryRow(r));
   }
-  deliveryCandidates(): Delivery[] {
+  deliveryCandidates(): (Delivery & { messageRecorded: boolean })[] {
     return this.db
       .prepare(
-        "SELECT d.* FROM deliveries d LEFT JOIN delivery_messages m ON m.delivery_id=d.id WHERE d.state IN ('pending','uncertain','delivered') AND m.acknowledged_at_ms IS NULL ORDER BY d.rowid",
+        "SELECT d.*,m.delivery_id IS NOT NULL AS message_recorded FROM deliveries d LEFT JOIN delivery_messages m ON m.delivery_id=d.id WHERE d.state IN ('pending','uncertain','delivered') AND m.acknowledged_at_ms IS NULL ORDER BY d.rowid",
       )
       .all()
-      .map((r: Row) => this.deliveryRow(r));
+      .map((r: Row) => ({
+        ...this.deliveryRow(r),
+        messageRecorded: r["message_recorded"] === 1,
+      }));
   }
   private deliveryRow(r: Row): Delivery {
     return {

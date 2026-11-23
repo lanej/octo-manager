@@ -1,3 +1,5 @@
+import { DatabaseSync } from "node:sqlite";
+import { migrateDigestMembership } from "../src/notifications/schema.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -829,6 +831,174 @@ test("digest recovery selects event kinds without losing chronology or full hist
     );
     expect(f.store.digests.events(value.id, undefined, 0)).toEqual([]);
     expect(f.store.digests.events(value.id)).toEqual(all);
+  } finally {
+    await f.close();
+  }
+});
+
+test("membership projection preserves every revision and filters before inbox pagination without hiding other recipients", async () => {
+  const f = await fixture();
+  try {
+    const ids = Array.from(
+      { length: 205 },
+      (_, index) => f.notice(`Notice ${String(index)}`).id,
+    );
+    let current = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "First revision", messageIds: ids.slice(0, 20) }),
+    );
+    for (let index = 20; index < 201; index += 20)
+      current = f.store.digests.revise(current, () => ({
+        body: `Revision ${String(index)}`,
+        messageIds: ids.slice(index, Math.min(index + 20, 201)),
+      }));
+    const last = ids.at(-1);
+    if (last === undefined) throw new Error("Missing message");
+    f.store.tracking.acknowledgeMessage(last, f.actor.id);
+    const other = f.store.tracking.registerAgent({
+      ...target,
+      sessionId: "other-recipient",
+    });
+    f.store.digests.create(
+      other.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Other recipient", messageIds: [last] }),
+    );
+    const page = f.store.tracking.inbox.uncovered(f.actor.id);
+    expect(page.messages.map((value) => value.id)).toEqual(ids.slice(201));
+    expect(page.messages.at(-1)?.acknowledgedAt).toBeDefined();
+    expect(page.hasMore).toBe(false);
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toEqual(
+      new Set(ids.slice(0, 201)),
+    );
+    expect(
+      f.store.tracking.inbox.list(f.actor.id, 0, true).messages,
+    ).toHaveLength(200);
+    const versions = f.store.digests.revisions(current.id);
+    const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+    try {
+      db.exec(
+        "DROP TRIGGER index_digest_members; DROP TABLE agent_digest_members",
+      );
+      migrateDigestMembership(db);
+      expect(db.prepare("PRAGMA foreign_key_check").all()).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+    expect(f.store.digests.revisions(current.id)).toEqual(versions);
+    expect(
+      f.store.tracking.inbox
+        .uncovered(f.actor.id)
+        .messages.map((value) => value.id),
+    ).toEqual(ids.slice(201));
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toHaveProperty(
+      "size",
+      201,
+    );
+  } finally {
+    await f.close();
+  }
+});
+
+test("membership migration rolls back invalid history and rejects malformed or duplicate new memberships", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const message = f.notice("Membership fixture");
+    const value = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Immutable fixture", messageIds: [message.id] }),
+    );
+    const version = f.store.digests.version(value.id, 1);
+    expect(
+      f.store.digests.get(value.id.replaceAll("-", "").slice(0, 8)),
+    ).toEqual(value);
+    expect(() => f.store.digests.get("00000000")).toThrow("Digest not found");
+    expect(() => f.store.digests.version(value.id, 99)).toThrow(
+      "Digest revision not found",
+    );
+
+    db.exec(
+      "DROP TRIGGER index_digest_members; DROP TABLE agent_digest_members",
+    );
+    db.prepare("INSERT INTO agent_digest_revisions VALUES(?,?,?)").run(
+      value.id,
+      2,
+      JSON.stringify({ ...version, revision: 2, body: 0 }),
+    );
+    expect(() => {
+      migrateDigestMembership(db);
+    }).toThrow("Invalid digest revision");
+    expect(
+      db
+        .prepare(
+          "SELECT 1 FROM sqlite_schema WHERE name='agent_digest_members'",
+        )
+        .get(),
+    ).toBeUndefined();
+    db.prepare(
+      "DELETE FROM agent_digest_revisions WHERE digest_id=? AND revision=2",
+    ).run(value.id);
+    migrateDigestMembership(db);
+    for (const messageIds of [
+      null,
+      {},
+      [],
+      [1],
+      [""],
+      [message.id, message.id],
+      Array.from({ length: 21 }, (_, index) => String(index)),
+    ]) {
+      expect(() =>
+        db
+          .prepare("INSERT INTO agent_digest_revisions VALUES(?,?,?)")
+          .run(
+            value.id,
+            2,
+            JSON.stringify({ ...version, revision: 2, messageIds }),
+          ),
+      ).toThrow();
+    }
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toEqual(
+      new Set([message.id]),
+    );
+    expect(f.store.digests.revisions(value.id)).toHaveLength(1);
+  } finally {
+    db.close();
+    await f.close();
+  }
+});
+
+test("cleanup candidate reads follow persisted terminal cleanup state without removing audit history", async () => {
+  const f = await fixture();
+  try {
+    const message = f.notice("Cleanup fixture");
+    const value = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Fixture", messageIds: [message.id] }),
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    const received = f.store.digests.save(
+      { ...value, state: DigestState.Received },
+      "fixture_received",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toEqual([received]);
+    expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+    f.store.digests.save(
+      { ...received, cleanupPending: false },
+      "fixture_cleaned",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.list(f.actor.id)).toHaveLength(1);
+    const unavailable = f.store.digests.save(
+      { ...received, state: DigestState.Unavailable },
+      "fixture_unavailable",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.active(f.actor.id)).toEqual(unavailable);
   } finally {
     await f.close();
   }

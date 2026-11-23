@@ -1,3 +1,4 @@
+import type { ReferenceObservation } from "../tracking/observations.js";
 import {
   NoticeSubjectKind,
   type SafeNotice,
@@ -54,7 +55,25 @@ export class MergeStore {
     readonly tracking: TrackingStore,
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
-  ) {}
+  ) {
+    db.exec(`CREATE INDEX IF NOT EXISTS merge_entries_by_pr ON merge_entries(pr_id);
+      CREATE INDEX IF NOT EXISTS merge_operations_by_pr ON merge_operations(pr_id);
+      CREATE INDEX IF NOT EXISTS references_by_pr ON pr_references(pr_id);
+      CREATE INDEX IF NOT EXISTS readiness_notices_by_pr ON merge_notices(pr_id,subject_kind,applicable,subject_id);`);
+  }
+  readinessCandidates(): Set<string> {
+    return new Set(
+      this.db
+        .prepare(
+          `SELECT p.id FROM tracked_prs p WHERE p.enabled=1 AND (
+      EXISTS(SELECT 1 FROM actions a WHERE a.pr_id=p.id AND a.kind='check_results' AND a.state IN ('open','acknowledged','working'))
+      OR EXISTS(SELECT 1 FROM merge_notices n WHERE n.pr_id=p.id AND n.subject_kind='entry' AND substr(n.subject_id,1,6)='ready:' AND n.applicable=1)
+    ) ORDER BY p.rowid`,
+        )
+        .all()
+        .map((row) => String(row["id"])),
+    );
+  }
   noticeReadiness(prId: string): NoticeReadiness | undefined {
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
@@ -103,7 +122,7 @@ export class MergeStore {
       : undefined;
   }
   agentInstructions(prId: string, agentId: string): string | undefined {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     if (pr.ownerAgentId !== agentId) return undefined;
     const entry = this.entries(pr.id).sort((a, b) => {
       const priority = Number(terminal(a.state)) - Number(terminal(b.state));
@@ -123,7 +142,9 @@ export class MergeStore {
         "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
       )
       .get(messageId);
-    return this.entries().find((entry) => entry.id === row?.["subject_id"]);
+    const id = row?.["subject_id"];
+    if (typeof id !== "string") return undefined;
+    return this.entryById(id);
   }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
@@ -169,6 +190,16 @@ export class MergeStore {
     return rows.map((row) => this.entryRow(row));
   }
 
+  entryById(id: string): MergeEntry | undefined {
+    const row = this.db
+      .prepare("SELECT data,pr_id FROM merge_entries WHERE id=?")
+      .get(id);
+    if (row === undefined) return undefined;
+    const entry = this.entryRow(row);
+    if (entry.id !== id)
+      throw new Error("Merge record entry identity mismatch");
+    return entry;
+  }
   unfinishedEntries(): MergeEntry[] {
     return this.db
       .prepare(
@@ -457,7 +488,7 @@ export class MergeStore {
     });
   }
   settingSource(prId: string): "explicit" | "inherited" {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
       .get(`merge-setting:${pr.id}`);
@@ -478,6 +509,33 @@ export class MergeStore {
     )
       ? "explicit"
       : "inherited";
+  }
+  disableInherited(prId: string): void {
+    const pr = this.tracking.prContext(prId);
+    if (this.settingSource(pr.id) === "explicit") return;
+    const setting = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-setting:${pr.id}`);
+    const entry = this.entries(pr.id).find((value) => !terminal(value.state));
+    if (
+      setting?.["value"] ===
+        JSON.stringify({ source: "inherited", epoch: pr.trackingEpoch }) &&
+      (entry === undefined ||
+        (!entry.autoMerge &&
+          entry.autoMergeSource === "inherited" &&
+          entry.trackingEpoch === pr.trackingEpoch &&
+          entry.autoMergeStage === undefined))
+    )
+      return;
+    this.autoMerge(
+      pr.id,
+      pr.ownerAgentId,
+      false,
+      `repository-context:${pr.id}:${String(pr.trackingEpoch)}`,
+      undefined,
+      "inherited",
+    );
+    this.policyStage(pr.id);
   }
   useDefault(
     prValue: string,
@@ -660,9 +718,12 @@ export class MergeStore {
     });
   }
   completeChains(): void {
-    for (const chain of this.chains().filter(
-      (item) => item.state === ChainState.Active,
-    )) {
+    for (const chain of this.db
+      .prepare(
+        "SELECT data FROM merge_chains WHERE json_extract(data,'$.state')='active' ORDER BY rowid",
+      )
+      .all()
+      .map((row) => checked(ChainSchema, JSON.parse(String(row["data"]))))) {
       const entries = this.entriesForChain(chain.id);
       if (
         entries.length > 0 &&
@@ -1061,7 +1122,10 @@ export class MergeStore {
       return next;
     });
   }
-  scan(pr: TrackedPR, tracked = this.tracking.prs()): void {
+  scan(
+    pr: Pick<TrackedPR, "id" | "url"> & { observation?: ReferenceObservation },
+    tracked: readonly Pick<TrackedPR, "url">[] = this.tracking.prContexts(),
+  ): void {
     const observation = pr.observation;
     if (observation === undefined) return;
     const sources: ReferenceSource[] = [];
@@ -1081,7 +1145,8 @@ export class MergeStore {
     const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
-      for (const prior of this.refs(pr.id).filter((ref) => ref.active)) {
+      const existing = new Map(this.refs(pr.id).map((ref) => [ref.id, ref]));
+      for (const prior of [...existing.values()].filter((ref) => ref.active)) {
         const complete =
           prior.sourceKey === "description"
             ? observation.description !== undefined
@@ -1096,7 +1161,7 @@ export class MergeStore {
         }
       }
       for (const ref of found) {
-        const prior = this.refs(pr.id).find((item) => item.id === ref.id);
+        const prior = existing.get(ref.id);
         if (prior === undefined)
           this.saveReference({
             ...ref,

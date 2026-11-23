@@ -1,3 +1,4 @@
+import { migrateDigestMembership } from "./schema.js";
 import { allocateMessageId } from "./identifiers.js";
 import type { ReceiptTarget } from "../merging/receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
@@ -7,7 +8,6 @@ import {
   digest,
   revision,
   digestEvent,
-  terminal,
   type Digest,
   type DigestRevision,
   type DigestEvent,
@@ -20,6 +20,7 @@ export class DigestStore {
     private now: () => number,
     private eventSink: (kind: string, detail: string) => void,
   ) {
+    migrateDigestMembership(db);
     // Index immutable delivery identities without rewriting historical records.
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
@@ -54,36 +55,60 @@ export class DigestStore {
     return found;
   }
   list(agentId?: string): Digest[] {
+    const rows =
+      agentId === undefined
+        ? this.db.prepare("SELECT data FROM agent_digests ORDER BY rowid").all()
+        : this.db
+            .prepare(
+              "SELECT data FROM agent_digests WHERE agent_id=? ORDER BY rowid",
+            )
+            .all(agentId);
+    return rows.map((row) => digest(JSON.parse(String(row["data"]))));
+  }
+  cleanup(agentId: string): Digest[] {
     return this.db
       .prepare(
-        "SELECT data FROM agent_digests WHERE (? IS NULL OR agent_id=?) ORDER BY rowid",
+        "SELECT data FROM agent_digests WHERE agent_id=? AND state IN ('received','cancelled') AND json_extract(data,'$.cleanupPending') IS NOT 0 ORDER BY rowid",
       )
-      .all(agentId ?? null, agentId ?? null)
+      .all(agentId)
       .map((row) => digest(JSON.parse(String(row["data"]))));
   }
   get(id: string): Digest {
-    const rows = this.list(),
-      full = resolveId(
-        id,
-        rows.map((row) => row.id),
-      ),
-      value = rows.find((row) => row.id === full);
-    if (value === undefined) throw new Error("Digest not found");
-    return value;
+    let row = this.db
+      .prepare("SELECT data FROM agent_digests WHERE id=?")
+      .get(id);
+    if (row === undefined) {
+      const ids = this.db
+        .prepare("SELECT id FROM agent_digests ORDER BY rowid")
+        .all()
+        .map((value) => String(value["id"]));
+      const full = resolveId(id, ids);
+      if (full === undefined) throw new Error("Digest not found");
+      row = this.db
+        .prepare("SELECT data FROM agent_digests WHERE id=?")
+        .get(full);
+    }
+    if (row === undefined) throw new Error("Digest not found");
+    return digest(JSON.parse(String(row["data"])));
   }
   active(agentId: string): Digest | undefined {
-    return this.list(agentId).find((value) => !terminal(value));
+    const row = this.db
+      .prepare(
+        "SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN ('received','cancelled') ORDER BY rowid LIMIT 1",
+      )
+      .get(agentId);
+    return row === undefined
+      ? undefined
+      : digest(JSON.parse(String(row["data"])));
   }
   coveredMessageIds(agentId: string): Set<string> {
-    const rows = this.db
-      .prepare(
-        "SELECT r.data FROM agent_digest_revisions r JOIN agent_digests d ON d.id=r.digest_id WHERE d.agent_id=? ORDER BY r.rowid",
-      )
-      .all(agentId);
     return new Set(
-      rows.flatMap(
-        (row) => revision(JSON.parse(String(row["data"]))).messageIds,
-      ),
+      this.db
+        .prepare(
+          "SELECT DISTINCT m.message_id FROM agent_digest_members m JOIN agent_digests d ON d.id=m.digest_id WHERE d.agent_id=?",
+        )
+        .all(agentId)
+        .map((row) => String(row["message_id"])),
     );
   }
   revisions(id: string): DigestRevision[] {
@@ -95,10 +120,15 @@ export class DigestStore {
       .map((row) => revision(JSON.parse(String(row["data"]))));
   }
   version(id: string, number: number): DigestRevision {
-    const value = this.revisions(id).find((value) => value.revision === number);
-    if (value === undefined) throw new Error("Digest revision not found");
-    return value;
+    const row = this.db
+      .prepare(
+        "SELECT data FROM agent_digest_revisions WHERE digest_id=? AND revision=?",
+      )
+      .get(id, number);
+    if (row === undefined) throw new Error("Digest revision not found");
+    return revision(JSON.parse(String(row["data"])));
   }
+
   hasEvent(id: string, kind: string): boolean {
     return (
       this.db

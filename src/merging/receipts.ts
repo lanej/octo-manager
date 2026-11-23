@@ -184,16 +184,20 @@ export class ReceiptMerges {
         };
   }
   async refresh(): Promise<void> {
-    for (const pr of this.tracking.store.prs()) {
+    const candidates = this.store.readinessCandidates();
+    for (const metadata of this.tracking.store.prContexts()) {
+      if (!candidates.has(metadata.id)) continue;
+      let pr: TrackedPR = metadata;
       if (!pr.enabled) continue;
       const prior = this.store.noticeReadiness(pr.id);
-      const merged = this.store
-        .entries(pr.id)
-        .some(
-          (entry) =>
-            entry.state === EntryState.Merged &&
-            entry.ready?.head === pr.observation?.headSha,
-        );
+      const entries = this.store.entries(pr.id);
+      const head = entries.some((entry) => entry.state === EntryState.Merged)
+        ? this.tracking.store.observationHead(pr.id)
+        : undefined;
+      const merged = entries.some(
+        (entry) =>
+          entry.state === EntryState.Merged && entry.ready?.head === head,
+      );
       if (merged) {
         if (prior !== undefined)
           this.store.notice(
@@ -206,9 +210,7 @@ export class ReceiptMerges {
           );
         continue;
       }
-      const authorized = this.store
-        .entries(pr.id)
-        .find((entry) => !terminal(entry.state));
+      const authorized = entries.find((entry) => !terminal(entry.state));
       if (
         this.store.busy(pr.id) ||
         (authorized?.ready !== undefined &&
@@ -251,6 +253,13 @@ export class ReceiptMerges {
           );
         continue;
       }
+      if (
+        !selected.pr.enabled ||
+        selected.pr.ownerAgentId !== pr.ownerAgentId ||
+        selected.pr.trackingEpoch !== pr.trackingEpoch
+      )
+        continue;
+      pr = selected.pr;
       const old = this.store.noticeReadiness(pr.id);
       const context = receiptContext(this.store, pr);
       const policyKey = this.policyKey(pr);

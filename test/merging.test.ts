@@ -10,7 +10,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { RebaseWorkspace } from "../src/repairs/git.js";
 import { preparer } from "../src/merging/preparation.js";
-import { test } from "bun:test";
+import { test, spyOn } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -348,6 +348,77 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
     assert.equal(store.refs().filter((ref) => ref.active).length, 0);
     assert.deepEqual(writes, []);
     return Promise.resolve();
+  }));
+test("reference discovery skips unchanged facts but observes enrollment, changed prose and writes during a scan", () =>
+  fixture(async (coordinator, _advance, _snapshots, writes) => {
+    const pr = enroll(coordinator, first);
+    const store = coordinator.store;
+    const scan = spyOn(store.merging, "scan");
+    try {
+      await coordinator.merging.tick();
+      await coordinator.merging.tick();
+      scan.mockClear();
+      store.schedules.saveDispatch({
+        ...store.schedules.dispatch(),
+        nextAtMs: 2000,
+      });
+      await coordinator.merging.tick();
+      assert.equal(scan.mock.calls.length, 0);
+      store.tracking.observe(
+        pr.id,
+        { ...observation(a), description: "Depends on #44" },
+        coordinator.tracking.config,
+      );
+      await coordinator.merging.tick();
+      assert(
+        store.merging
+          .refs(pr.id)
+          .some((ref) => ref.active && ref.targetKind === "issue_or_pr"),
+      );
+      enroll(coordinator, "https://github.com/owner/library/pull/44");
+      await coordinator.merging.tick();
+      const refs = store.merging.refs(pr.id);
+      assert(refs.some((ref) => ref.active && ref.targetKind === "pr"));
+      assert(
+        refs.some((ref) => !ref.active && ref.targetKind === "issue_or_pr"),
+      );
+      const read = store.tracking.referenceObservation.bind(store.tracking);
+      let injected = false;
+      const during = spyOn(
+        store.tracking,
+        "referenceObservation",
+      ).mockImplementation((id) => {
+        const result = read(id);
+        if (id === pr.id && !injected) {
+          injected = true;
+          store.tracking.observe(
+            pr.id,
+            { ...observation(a), description: "No references remain" },
+            coordinator.tracking.config,
+          );
+        }
+        return result;
+      });
+      try {
+        store.tracking.observe(
+          pr.id,
+          { ...observation(a), description: "Depends on #44" },
+          coordinator.tracking.config,
+        );
+        await coordinator.merging.tick();
+        assert(injected);
+        await coordinator.merging.tick();
+        assert.equal(
+          store.merging.refs(pr.id).filter((ref) => ref.active).length,
+          0,
+        );
+      } finally {
+        during.mockRestore();
+      }
+      assert.deepEqual(writes, []);
+    } finally {
+      scan.mockRestore();
+    }
   }));
 test("uncertain merge survives restart and only reconciles, never repeats the effect", () =>
   fixture(

@@ -11,7 +11,11 @@ export class AssessmentStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
-  ) {}
+  ) {
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS assessments_to_reconcile ON evidence_assessments(id) WHERE json_extract(data,'$.state') IS NOT 'superseded'",
+    );
+  }
   recoverInterrupted(): void {
     for (const item of this.list())
       if (item.state === "running")

@@ -1,10 +1,15 @@
+import { DatabaseSync } from "node:sqlite";
 import { MergeDeclined } from "../src/merging/async-merge.js";
 import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, writeFile, rm, symlink, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Coordinator } from "../src/coordinator.js";
-import { EntryState, ChainState } from "../src/merging/contracts.js";
+import {
+  EntryState,
+  ChainState,
+  OperationState,
+} from "../src/merging/contracts.js";
 import { load } from "../src/repository/policy.js";
 import { NotificationState } from "../src/repository/contracts.js";
 import { schedulerClient } from "../src/client.js";
@@ -429,6 +434,130 @@ test("a resumed tracking epoch suspends inherited authority until it is rebound"
     f.c.store.repositories.tick();
     expect(f.c.store.merging.entries()).toHaveLength(1);
   } finally {
+    await f.close();
+  }
+});
+
+test("invalid inherited contexts stay disabled without replaying revocation, and re-arming is revoked again", async () => {
+  const f = await fixture();
+  const revoke = spyOn(f.c.store.merging, "autoMerge"),
+    full = spyOn(f.c.store.tracking, "pr");
+  try {
+    f.c.store.tracking.untrack(f.pr.id);
+    const current = f.c.store.tracking.track(url, owner);
+    f.c.store.repositories.tick();
+    revoke.mockClear();
+    full.mockClear();
+    const revision = f.c.store.inputRevision();
+    f.c.store.repositories.tick();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(full).not.toHaveBeenCalled();
+    expect(f.c.store.inputRevision()).toBe(revision);
+    f.c.store.merging.autoMerge(
+      f.pr.id,
+      current.ownerAgentId,
+      true,
+      "re-arm-inherited",
+      undefined,
+      "inherited",
+    );
+    f.c.store.merging.policyStage(f.pr.id, "alpha");
+    revoke.mockClear();
+    f.c.store.repositories.tick();
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(f.c.store.merging.entry(url).autoMerge).toBe(false);
+    expect(f.c.store.merging.entry(url).autoMergeStage).toBeUndefined();
+    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(
+      current.trackingEpoch,
+    );
+    f.c.store.merging.autoMerge(
+      f.pr.id,
+      current.ownerAgentId,
+      true,
+      "explicit-override",
+    );
+    revoke.mockClear();
+    f.c.store.repositories.tick();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(f.c.store.merging.entry(url).autoMerge).toBe(true);
+  } finally {
+    revoke.mockRestore();
+    full.mockRestore();
+    await f.close();
+  }
+});
+
+test("current notification instructions isolate unrelated entry and operation history", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "state", "jobs.sqlite"));
+  try {
+    f.decline();
+    f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+    await f.c.merging.tick();
+    const selected = f.c.store.merging.entry(url);
+    const failed = f.c.store.merging
+      .operations(f.pr.id)
+      .find((operation) => operation.state === OperationState.Failed);
+    const action = f.c.store.tracking
+      .actions(f.pr.id)
+      .find((value) => value.blocker.kind === "check_results");
+    const notice = f.c.store.tracking.inbox
+      .list(f.pr.ownerAgentId, 0, false, true)
+      .messages.find(
+        (message) =>
+          f.c.store.merging.noticeEntry(message.id)?.id === selected.id,
+      );
+    if (failed === undefined || action === undefined || notice === undefined)
+      throw new Error("Missing failed merge fixture");
+    const other = f.c.tracking.track(
+      "https://github.com/owner/repo/pull/99",
+      owner,
+    );
+    f.c.store.merging.queue({
+      requestId: "other-history",
+      actorId: other.ownerAgentId,
+      entries: [{ prUrl: other.url, checks: ["CI"] }],
+    });
+    const otherEntry = f.c.store.merging.entry(other.id);
+    f.c.store.merging.saveOperation({
+      ...failed,
+      id: `operation-${other.id}`,
+      entryId: otherEntry.id,
+      prId: other.id,
+    });
+    db.prepare("UPDATE merge_entries SET data='{}' WHERE pr_id=?").run(
+      other.id,
+    );
+    db.prepare("UPDATE merge_operations SET data='{}' WHERE pr_id=?").run(
+      other.id,
+    );
+    expect(
+      f.c.store.repositories.forMessage({
+        sequence: 1,
+        id: "current-check-message",
+        actionId: action.id,
+        recipientAgentId: f.pr.ownerAgentId,
+        body: "Fixture",
+        createdAt: 1000,
+        nextCheckAt: 1000,
+        applicable: true,
+      }),
+    ).toBe(
+      f.c.store.repositories.instructions(f.pr.id, f.pr.ownerAgentId, [
+        NotificationState.OwnerReviewRequired,
+      ]),
+    );
+    expect(f.c.store.repositories.forMessage(notice)).toContain(
+      "merge blocker",
+    );
+    expect(() => f.c.store.merging.entries()).toThrow(
+      "Invalid merge-chain data",
+    );
+    expect(() => f.c.store.merging.operations()).toThrow(
+      "Invalid merge-chain data",
+    );
+  } finally {
+    db.close();
     await f.close();
   }
 });

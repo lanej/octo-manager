@@ -153,24 +153,14 @@ export class RepositoryPolicies {
   }
   tick(): void {
     const roots = new Map<string, ReturnType<typeof load> | Error>();
-    for (const pr of this.tracking.prs()) {
+    for (const pr of this.tracking.prContexts()) {
       const prior = this.get(pr.id);
       if (prior === undefined || !pr.enabled) continue;
       if (
         prior.ownerId !== pr.ownerAgentId ||
         prior.epoch !== pr.trackingEpoch
       ) {
-        if (this.merging.settingSource(pr.id) !== "explicit") {
-          this.merging.autoMerge(
-            pr.id,
-            pr.ownerAgentId,
-            false,
-            `repository-context:${pr.id}:${String(pr.trackingEpoch)}`,
-            undefined,
-            "inherited",
-          );
-          this.merging.policyStage(pr.id);
-        }
+        this.merging.disableInherited(pr.id);
         const error =
           "Repository policy requires enrollment by the current owner and tracking epoch";
         if (prior.error !== error) {
@@ -237,15 +227,16 @@ export class RepositoryPolicies {
         !entries.some((entry) => !terminal(entry.state))
       )
         continue;
-      if (
-        next.autoMerge &&
-        !entries.some((entry) => !terminal(entry.state)) &&
-        (pr.observation === undefined ||
-          pr.observation.checks.state !== "complete" ||
-          (pr.observation.workflows !== undefined &&
-            pr.observation.workflows.state !== "complete"))
-      )
-        continue;
+      if (next.autoMerge && !entries.some((entry) => !terminal(entry.state))) {
+        const observation = this.tracking.pr(pr.id).observation;
+        if (
+          observation === undefined ||
+          observation.checks.state !== "complete" ||
+          (observation.workflows !== undefined &&
+            observation.workflows.state !== "complete")
+        )
+          continue;
+      }
       const current = entries.find((entry) => !terminal(entry.state));
       if (
         this.merging.settingSource(pr.id) !== "explicit" &&
@@ -277,27 +268,24 @@ export class RepositoryPolicies {
       actionId === undefined ? undefined : this.tracking.action(actionId);
     const prId = action?.prId ?? message.workflowPRId;
     if (prId === undefined) return undefined;
+    const noticeEntry = this.merging.noticeEntry(message.id);
     const entry =
-      this.merging.noticeEntry(message.id) ??
-      this.merging
-        .entries()
-        .find((value) => value.prId === prId && !terminal(value.state));
+      noticeEntry ??
+      this.merging.entries(prId).find((value) => !terminal(value.state));
     let state: NotificationState | undefined;
-    if (
-      entry !== undefined &&
-      this.merging.noticeEntry(message.id) !== undefined
-    ) {
+    if (entry !== undefined && noticeEntry !== undefined) {
       if (entry.state === EntryState.Merged) state = NotificationState.Merged;
       else if (entry.state === EntryState.Uncertain)
         state = NotificationState.MergeUncertain;
       else if (entry.state === EntryState.WaitingOwner) {
+        const pr = this.tracking.pr(prId);
         const failed = this.merging
-          .operations()
+          .operations(prId)
           .some(
             (operation) =>
               operation.entryId === entry.id &&
-              operation.epoch === this.tracking.pr(prId).trackingEpoch &&
-              operation.head === this.tracking.pr(prId).observation?.headSha &&
+              operation.epoch === pr.trackingEpoch &&
+              operation.head === pr.observation?.headSha &&
               operation.state === OperationState.Failed,
           );
         state =

@@ -1,3 +1,4 @@
+import { DatabaseSync } from "node:sqlite";
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ReviewState } from "../src/tracking/states.js";
 import { unwire } from "../src/api/codec.js";
@@ -1630,5 +1631,55 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("readiness candidates retain an offer until retirement even after its last check action finishes", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const other = f.coordinator.tracking.track(
+      "https://github.com/owner/repo/pull/99",
+      owner,
+    );
+    expect(
+      f.coordinator.store.merging.readinessCandidates().has(other.id),
+    ).toBe(false);
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
+      true,
+    );
+    db.prepare(
+      "UPDATE actions SET state='superseded',progress_json=?,resolved_observation_id=NULL WHERE pr_id=?",
+    ).run(
+      JSON.stringify({
+        state: "superseded",
+        at: 1000,
+        reason: "Fixture finished",
+      }),
+      f.pr.id,
+    );
+    expect(
+      f.coordinator.store.tracking
+        .unfinishedActions()
+        .filter((action) => action.prId === f.pr.id),
+    ).toHaveLength(0);
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
+      true,
+    );
+    await f.coordinator.merging.receipts.refresh();
+    expect(
+      db
+        .prepare(
+          "SELECT count(*) AS n FROM merge_notices WHERE pr_id=? AND subject_kind='entry' AND substr(subject_id,1,6)='ready:' AND applicable=1",
+        )
+        .get(f.pr.id)?.["n"],
+    ).toBe(0);
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
+      false,
+    );
+    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)).toBeDefined();
+  } finally {
+    db.close();
+    await f.close();
   }
 });

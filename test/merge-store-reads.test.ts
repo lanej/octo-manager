@@ -3,8 +3,15 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { Check } from "typebox/value";
 import { Store } from "../src/store.js";
 import {
+  checked,
+  EntrySchema,
+  ChainSchema,
+  OperationSchema,
+  ReferenceSchema,
+  DependencySchema,
   ChainState,
   EntryState,
   OperationState,
@@ -86,6 +93,64 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
     expect(store.merging.operations(selected.id)).toHaveLength(1);
     expect(store.merging.refs(selected.id)).toHaveLength(1);
     expect(store.merging.operations()).toHaveLength(2);
+    for (const [schema, records] of [
+      [EntrySchema, store.merging.entries()],
+      [ChainSchema, store.merging.chains()],
+      [OperationSchema, store.merging.operations()],
+      [ReferenceSchema, store.merging.refs()],
+      [
+        DependencySchema,
+        [
+          {
+            id: "dependency",
+            dependentId: selected.id,
+            prerequisiteId: other.id,
+            reason: "Fixture",
+            active: true,
+            confirmedBy: selected.ownerAgentId,
+          },
+        ],
+      ],
+    ] as const) {
+      for (const value of records) {
+        expect(checked(schema, value)).toBe(value);
+        for (const key of [...Object.keys(value), "unexpected"]) {
+          for (const replacement of [
+            undefined,
+            null,
+            true,
+            0,
+            Number.NaN,
+            "",
+            [],
+            {},
+          ]) {
+            const candidate = { ...value, [key]: replacement };
+            if (Check(schema, candidate))
+              expect(checked(schema, candidate)).toBe(candidate);
+            else
+              expect(() => checked(schema, candidate)).toThrow(
+                "Invalid merge-chain data",
+              );
+          }
+        }
+      }
+    }
+    const selectedEntry = store.merging.entries(selected.id)[0];
+    if (selectedEntry === undefined) throw new Error("Missing selected entry");
+    expect(store.merging.entryById(selectedEntry.id)).toEqual(selectedEntry);
+    expect(store.merging.entryById("missing")).toBeUndefined();
+    db.prepare(
+      "UPDATE merge_entries SET data=json_set(data,'$.id','mismatched') WHERE id=?",
+    ).run(selectedEntry.id);
+    expect(() => store.merging.entryById(selectedEntry.id)).toThrow(
+      "entry identity mismatch",
+    );
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
+      JSON.stringify(selectedEntry),
+      selectedEntry.id,
+    );
+
     expect(store.merging.refs()).toHaveLength(2);
     const readers = [
       {
@@ -120,6 +185,7 @@ test("scoped merge reads isolate unrelated history while preserving fresh valida
       unrelated.id,
     );
     expect(store.merging.entries(selected.id)[0]?.prId).toBe(selected.id);
+    expect(store.merging.entryById(selectedEntry.id)).toEqual(selectedEntry);
     expect(store.merging.chain(chain.id)).toEqual(fresh);
     expect(() => store.merging.entries(other.id)).toThrow(
       "Invalid merge-chain data",
