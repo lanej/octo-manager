@@ -1,21 +1,15 @@
-import { join, resolve } from "node:path";
 import { test, expect } from "bun:test";
-import { mkdtemp, rm, mkdir, writeFile, chmod } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { Type } from "typebox";
 import { Check } from "typebox/value";
 const Result = Type.Object(
   {
-    ok: Type.Literal(true),
-    data: Type.Object(
-      {
-        pr: Type.Object(
-          { id: Type.String(), url: Type.String() },
-          { additionalProperties: true },
-        ),
-      },
+    pr: Type.Object(
+      { id: Type.String(), url: Type.String() },
       { additionalProperties: true },
     ),
   },
@@ -79,33 +73,33 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     expect(tracked.code).toBe(0);
     expect(tracked.error).toBe("");
     expect(tracked.output.trim().split("\n")).toHaveLength(1);
-    expect(Buffer.byteLength(tracked.output)).toBeLessThanOrEqual(3001);
     const value: unknown = JSON.parse(tracked.output);
     if (!Check(Result, value)) throw new Error("Missing agent response");
-    expect(value.data.pr.url).toBe("https://github.com/o/r/pull/1");
+    expect(value.pr.url).toBe("https://github.com/o/r/pull/1");
     const client = schedulerClient(directory);
-    await client.refreshTrackedPullRequest({ id: value.data.pr.id });
-    const compact = await run(["pr", "show", value.data.pr.id], true);
+    await client.refreshTrackedPullRequest({ id: value.pr.id });
+    const compact = await run(["pr", "show", value.pr.id], true);
     expect(compact.code).toBe(0);
-    expect(compact.output).not.toContain("checks");
-    expect(compact.output).toContain('"detailsOmitted":true');
+    const compactResult: unknown = JSON.parse(compact.output);
+    expect(compactResult).not.toHaveProperty("pr.observation.checks");
+    expect(compactResult).not.toHaveProperty("data");
     coordinator.githubScheduler.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    const full = await run(["pr", "show", value.data.pr.id, "--full"], true);
+    const full = await run(["pr", "show", value.pr.id, "--full"], true);
     expect(full.code).toBe(0);
-    expect(full.output).toContain("checks");
-    expect(full.output).not.toContain('"ok":true');
-    const explicit = await run(
-      ["pr", "show", value.data.pr.id, "--json"],
-      false,
-    );
+    const fullResult: unknown = JSON.parse(full.output);
+    expect(fullResult).toHaveProperty("pr.observation.checks");
+    expect(fullResult).not.toHaveProperty("ok");
+    const explicit = await run(["pr", "show", value.pr.id, "--json"], false);
     expect(explicit.code).toBe(0);
-    expect(explicit.output).toContain("checks");
+    const explicitResult: unknown = JSON.parse(explicit.output);
+    expect(explicitResult).toHaveProperty("pr.observation.checks");
     expect(explicit.output.trim().split("\n")).toHaveLength(1);
-    const human = await run(["pr", "show", value.data.pr.id], false);
+    const human = await run(["pr", "show", value.pr.id], false);
     expect(human.code).toBe(0);
     expect(human.output.trim().split("\n").length).toBeGreaterThan(1);
-    expect(human.output).not.toContain('"ok"');
+    const humanResult: unknown = JSON.parse(human.output);
+    expect(humanResult).not.toHaveProperty("ok");
     const rejected = await run(
       [
         "track",
@@ -119,23 +113,32 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     );
     expect(rejected.code).toBe(1);
     expect(rejected.output).toBe("");
-    expect(rejected.error).toContain('"ok":false');
+    const rejectedResult: unknown = JSON.parse(rejected.error);
+    expect(rejectedResult).toHaveProperty("error.message");
+    expect(rejectedResult).not.toHaveProperty("ok");
     expect(Buffer.byteLength(rejected.error)).toBeLessThan(500);
     expect((await client.listTrackedPullRequests({})).prs).toHaveLength(1);
     const failed = await run(["pr", "show", "missing", "--json"], false);
     expect(failed.code).toBe(1);
     expect(failed.output).toBe("");
-    expect(failed.error).toContain('"ok":false');
+    const failedResult: unknown = JSON.parse(failed.error);
+    expect(failedResult).toHaveProperty("ok", false);
     offline = true;
-    const stale = await run(["pr", "refresh", value.data.pr.id], true);
+    const stale = await run(["pr", "refresh", value.pr.id], true);
     expect(stale.code).toBe(0);
-    expect(stale.output).toContain("refresh");
+    const staleResult: unknown = JSON.parse(stale.output);
+    expect(staleResult).toHaveProperty("refresh");
     coordinator.githubScheduler.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    const errored = await run(["pr", "show", value.data.pr.id], true);
-    expect(errored.output).toContain("GitHub temporarily unavailable");
-    expect(errored.output).toContain("refreshErrorAtMs");
-    expect(errored.output).toContain('"observedAtMs":1000');
+    const errored = await run(["pr", "show", value.pr.id], true);
+    const erroredResult: unknown = JSON.parse(errored.output);
+    expect(erroredResult).toMatchObject({
+      pr: {
+        refreshError: "GitHub temporarily unavailable",
+        observation: { observedAtMs: 1000 },
+      },
+    });
+    expect(erroredResult).toHaveProperty("pr.refreshErrorAtMs");
     await client.setPaused({ paused: true });
     const job = coordinator.store.submit(
       { kind: "resolve_conflict" },
@@ -150,15 +153,12 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     const events = await run(["job", "events", job.id, "--after", "0"], true);
     expect(events.code).toBe(0);
     expect(events.output.trim().split("\n")).toHaveLength(1);
-    expect(Buffer.byteLength(events.output)).toBeLessThanOrEqual(3001);
-    const Page = Type.Object(
-      { data: Type.Array(Type.Unknown()), omittedItems: Type.Integer() },
-      { additionalProperties: true },
-    );
     const page: unknown = JSON.parse(events.output);
-    if (!Check(Page, page)) throw new Error("Invalid event page");
-    expect(page.data.length).toBeLessThanOrEqual(8);
-    expect(page.omittedItems).toBeGreaterThan(20);
+    if (!Array.isArray(page)) throw new Error("Invalid event page");
+    expect(page.length).toBeGreaterThanOrEqual(30);
+    expect(Buffer.byteLength(events.output)).toBeGreaterThan(3000);
+    const paused = await run(["pause"], true);
+    expect(JSON.parse(paused.output)).toEqual({ scheduler: "paused" });
     const snapshot = {
       repository: "o/r",
       headSha: "a".repeat(40),
@@ -196,47 +196,75 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     );
     expect(template.code).toBe(0);
     expect(template.output.trim().split("\n")).toHaveLength(1);
-    expect(Buffer.byteLength(template.output)).toBeLessThanOrEqual(3001);
-    const Hint = Type.Object(
-      { next: Type.String() },
-      { additionalProperties: true },
+    const policy: unknown = JSON.parse(template.output);
+    expect(policy).toHaveProperty("policy.version", 1);
+    expect(policy).not.toHaveProperty("template");
+    const recovery = await run(
+      [
+        "history",
+        "policy",
+        "o/r",
+        "--policy-version",
+        "1",
+        "--tier",
+        "routine",
+        "--full",
+      ],
+      true,
     );
-    const hint: unknown = JSON.parse(template.output);
-    if (!Check(Hint, hint)) throw new Error("Missing policy recovery");
-    expect(hint.next).toContain("'--policy-version' '1'");
-    expect(hint.next).toContain("'--tier' 'routine'");
-    const bin = join(directory, "bin");
-    await mkdir(bin);
-    const shim = join(bin, "octo-manager");
-    const quote = (text: string) => "'" + text.replaceAll("'", "'\"'\"'") + "'";
-    await writeFile(
-      shim,
-      `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(resolve("src/cli.ts"))} "$@"\n`,
+    expect(recovery.code).toBe(0);
+    const recovered: unknown = JSON.parse(recovery.output);
+    expect(recovered).toHaveProperty(
+      "template",
+      expect.stringContaining("Advisory"),
     );
-    await chmod(shim, 0o700);
-    const recovery = Bun.spawn(["/bin/sh", "-c", hint.next], {
-      env: {
-        ...process.env,
-        PATH: bin + ":" + (process.env["PATH"] ?? ""),
-        OCTO_MANAGER_AGENT: "1",
-      },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const [recovered, exit] = await Promise.all([
-      new Response(recovery.stdout).text(),
-      recovery.exited,
-    ]);
-    expect(exit).toBe(0);
-    expect(recovered).toContain("Advisory");
-    expect(recovered).not.toContain("LATEST POLICY");
     const huge = await run(
       ["history", "policy", "o/r", "--policy-version", "2"],
       true,
     );
     expect(huge.code).toBe(0);
-    expect(Buffer.byteLength(huge.output)).toBeLessThanOrEqual(3001);
-    expect(huge.output).not.toContain("LATEST POLICY");
+    const hugeResult: unknown = JSON.parse(huge.output);
+    expect(hugeResult).not.toHaveProperty("template");
+    coordinator.store.tracking.observe(
+      value.pr.id,
+      { ...observation, mergeability: "conflicting", observedAt: 1001 },
+      defaultTrackingConfig(),
+    );
+    const delivery = coordinator.store.tracking.deliveries()[0];
+    if (delivery === undefined) throw new Error("Missing read fixture");
+    coordinator.store.tracking.inbox.record(delivery.id, "Conflict notice");
+    const read = await run(
+      ["read", delivery.id, "--agent-id", delivery.recipientAgentId],
+      true,
+    );
+    expect(read.code, read.error).toBe(0);
+    expect(read.output.trim().split("\n")).toHaveLength(1);
+    const readResult: unknown = JSON.parse(read.output);
+    expect(readResult).toHaveProperty("evidenceWarning");
+    expect(readResult).toHaveProperty("message.items.0.acknowledgedAtMs");
+    expect(readResult).toHaveProperty(
+      "message.items.0.action.action.conflict.headSha",
+      observation.headSha,
+    );
+    expect(readResult).not.toHaveProperty("message.recipientAgentId");
+    expect(readResult).not.toHaveProperty(
+      "message.items.0.action.action.profile",
+    );
+    expect(readResult).not.toHaveProperty("message.createdAtMs");
+    expect(readResult).not.toHaveProperty("data");
+    const fullRead = await run(
+      ["read", delivery.id, "--agent-id", delivery.recipientAgentId, "--json"],
+      false,
+    );
+    expect(fullRead.code, fullRead.error).toBe(0);
+    const fullReadResult: unknown = JSON.parse(fullRead.output);
+    expect(fullReadResult).toHaveProperty(
+      "message.recipientAgentId",
+      delivery.recipientAgentId,
+    );
+    expect(fullReadResult).toHaveProperty(
+      "message.items.0.action.action.profile",
+    );
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });

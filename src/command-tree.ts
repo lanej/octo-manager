@@ -113,8 +113,11 @@ export function commandTree(
     .option("--state <directory>", "Coordinator state directory")
     .option("--cwd <directory>", "Caller working directory")
     .option("--json", "Structured output")
-    .option("--agent", "Bounded agent output")
-    .option("--full", "Full read-only inspection");
+    .option("--agent", "Concise JSON with complete result pages")
+    .option(
+      "--full",
+      "Full read-only inspection; retain all page/filter arguments",
+    );
   const groups = new Map<string, Command>();
   for (const spec of [
     ...commandSpecs,
@@ -248,19 +251,3 @@ export function commandTree(
   return root;
 }
 export { CommanderError };
-
-export function displayArguments(args: string[]): string[] {
-  const candidates = commandSpecs
-    .filter((spec) =>
-      spec.route.split(" ").every((word, index) => args[index] === word),
-    )
-    .sort((a, b) => b.route.length - a.route.length);
-  const spec = candidates[0];
-  if (spec === undefined) return args;
-  return [
-    ...spec.path
-      .split(" ")
-      .filter((word) => !word.startsWith("<") && !word.startsWith("[")),
-    ...args.slice(spec.route.split(" ").length),
-  ];
-}

@@ -18,7 +18,7 @@
 
 `ack ID`, `merge ID`, and `message ID` remain short commands for agent notifications. Receipt and merge authority remain separate: receiving a command never executes it. Stored digest receipt commands and installed hook entrypoints have narrow compatibility forms; new commands and documentation use capability groups.
 
-Use `--state DIRECTORY` for another coordinator and `--cwd DIRECTORY` for caller context. Identity comes from explicit options or the existing Octo/Codex environment. Receipt identity must identify a registered session; receipt does not register one. `--json` requests structured output. Agent detection selects bounded JSON automatically, and `--full` is reserved for read-only inspection. Agent event streaming requires explicit full inspection. Output recovery commands use the same grouped CLI.
+Use `--state DIRECTORY` for another coordinator and `--cwd DIRECTORY` for caller context. Identity comes from explicit options or the existing Octo/Codex environment. Receipt identity must identify a registered session; receipt does not register one. `--json` requests structured output. Agent detection selects concise JSON with complete result pages automatically, and `--full` is reserved for read-only inspection. Agent event streaming requires explicit full inspection. Use the same read-only command with `--full` and the original page/filter arguments to inspect omitted detail. See [agent output](cli-output.md).
 
 ```sh
 octo-manager pr track --url https://github.com/owner/repo/pull/42 --thread-id SESSION

@@ -73,7 +73,7 @@ Provider requests share tracking's serialized GitHub budgets, rate-limit headers
 
 ## Presentation and verification
 
-Tracking shows the merge state, next step, and prerequisite PR links. Workflow notices reuse canonical inbox/digest receipts and withdrawal. Agent CLI responses use the shared eight-row/3000-byte budget; `--full` is available only on explicit inspection commands. Mutation recovery commands inspect state instead of repeating effects.
+Tracking shows the merge state, next step, and prerequisite PR links. Workflow notices reuse canonical inbox/digest receipts and withdrawal. Agent CLI responses preserve complete result pages while omitting bookkeeping and historical payloads. Use an explicit read-only command with `--full` and the original page/filter arguments to inspect omitted detail; do not repeat a mutation to retrieve it. See [agent CLI output](cli-output.md).
 
 Controlled acceptance exercises the real Unix-socket API through an upstream merge, downstream preparation, renewed owner assessment, and dependent merge. A disposable local bare Git remote verifies actual rebase, TOML repin, clean validation, and leased push. Provider fixtures test policy revocation, dispatch cancellation, definite/unknown failures, restart leases, and notice withdrawal/resume. These checks do not establish live GitHub merge compatibility; run a separate opt-in disposable two-repository provider trial before enabling unattended production chains. This change does not arm existing tracked PRs.
 

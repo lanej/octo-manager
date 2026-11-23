@@ -433,7 +433,7 @@ async function run(
     child.exited,
   ]);
   const value: unknown = JSON.parse(stdout === "" ? stderr : stdout);
-  return { code, stdout, value };
+  return { code, stdout, stderr, value };
 }
 test("real CLI validates offline and rejects invalid drafts before storing a receipt; valid input returns pending without a daemon", async () => {
   const h = await fixture();
@@ -493,6 +493,32 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     expect(JSON.stringify(invalid.value)).toContain("title_empty");
     expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
     expect(existsSync(called)).toBe(false);
+    const agentInvalid = await run(
+      ["pr", "validate", "--title", "", "--body", ""],
+      h.root,
+      h.directory,
+      { ...env, OCTO_MANAGER_AGENT: "1" },
+    );
+    expect(agentInvalid.code).toBe(1);
+    expect(agentInvalid.stdout).toBe("");
+    expect(agentInvalid.stderr.trim().split("\n")).toHaveLength(1);
+    expect(agentInvalid.value).toMatchObject({
+      error: { code: "validation_failed" },
+    });
+    expect(agentInvalid.value).toHaveProperty(
+      "error.message",
+      expect.stringContaining("title_empty"),
+    );
+    const agentFailure = await run(
+      ["publication", "show", "missing"],
+      h.root,
+      h.directory,
+      { ...env, OCTO_MANAGER_AGENT: "1" },
+    );
+    expect(agentFailure.code).toBe(1);
+    expect(agentFailure.stdout).toBe("");
+    expect(agentFailure.value).toMatchObject({ error: { code: "not_found" } });
+    expect(agentFailure.value).toHaveProperty("error.message");
     const valid = await run(
       [
         "pr",

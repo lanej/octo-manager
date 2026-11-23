@@ -1,27 +1,27 @@
 # CLI output for agents
 
-Output format and audience are separate. `--json` explicitly requests the existing JSON result for scripts. An agent session automatically selects JSON and a tighter presentation contract, even without `--json`. Human formatting remains unchanged outside agent mode; piping stdout alone does not identify an agent.
+Agent mode returns a command-specific subset of ordinary JSON, retaining its object or array shape. It removes bookkeeping and historical payloads while preserving actionable fields and complete result pages. It adds no success envelope, recovery command, or omission counters.
 
 | Selection | Behavior |
 | --- | --- |
-| `--json` | Compact JSON serialization of the command's ordinary result. It does not disable a detected agent's output limits. |
-| `CODEX_THREAD_ID` is nonempty | Automatically use agent output. |
-| `--agent` or `OCTO_MANAGER_AGENT=1` | Explicit agent output for another harness or a controlled invocation. |
-| `OCTO_MANAGER_AGENT=0` | Disable automatic detection; an explicit `--agent` still wins. Combine with `--json` when a script needs ordinary JSON inside an agent shell. |
-| `--full` | Explicit complete JSON inspection for a read-only command. It bypasses the agent projection; it is rejected for mutations before contacting the coordinator. |
+| `--json` | Compact serialization of the ordinary result outside agent mode; retains the agent projection inside agent mode. |
+| Nonempty `CODEX_THREAD_ID` | Automatically selects agent JSON. |
+| `--agent` or `OCTO_MANAGER_AGENT=1` | Explicitly selects agent JSON. |
+| `OCTO_MANAGER_AGENT=0` | Disables automatic detection; explicit `--agent` still wins. Combine with `--json` for ordinary JSON in an agent shell. |
+| `--full` | Complete JSON inspection for a read-only command. Rejected for mutations before contacting the coordinator. |
 
-Agent responses use the same small envelope across tracking, subscriptions, notifications, activity, submissions and repairs:
+For example, `pause` returns `{"scheduler":"paused"}`. `pr show ID` retains its `pr` object, ownership, lifecycle, head/base revisions, observation time and refresh diagnostics. `message ID` retains all member identities, applicability and receipts, plus the PR URL, exact head and method of a merge offer. Completed job inspection retains its task and result. An underlying failed refresh remains a diagnostic in a successfully retrieved result; command completion does not establish refresh success or action resolution.
 
-```json
-{"ok":true,"command":"pr","data":{"pr":{"id":"…","url":"https://github.com/owner/repo/pull/17","enabled":true}},"omittedItems":0,"detailsOmitted":true,"next":"octo-manager 'pr' '…' '--full'"}
-```
+There is no local row allowance or byte budget in agent mode. Every collection retains its complete server-selected page, order, cursor, total and continuation flags. Independent collections cannot consume each other's allowance. Summaries, findings, identifiers and evidence links are not shortened. Integer fields beyond JavaScript’s safe numeric range use decimal strings so cursors remain exact. Existing server response limits and pagination still apply; callers continue using each command's original cursor semantics.
 
-The presentation includes state, identifiers, short summaries, participant roles and evidence links. Failed refreshes retain their diagnostic, error timestamp and last observation time so stale evidence remains distinguishable; `ok` describes completion of the CLI request, not success of every underlying check or refresh. It excludes stored message bodies, serialized check/review evidence, transport details, execution history and journals. It includes at most eight collection entries across a response, prioritizing action and message collections, and at most 3,000 UTF-8 bytes before the final newline. Larger summaries are shortened; row and detail omissions are explicit. Cursor fields are not copied into the compact projection: callers must not advance a server cursor past locally omitted rows. `next` provides read-only inspection of the same result/page, preserving arguments such as recipient, revision, original cursor, policy version/tier and state. If quoting an unusually long argument would exhaust the budget, the hint instructs the caller to reuse its arguments instead of echoing them. It never asks the caller to repeat a mutation.
+Routine agent output omits transport internals, historical transitions, old assignments/briefs, retained conflict inputs, duplicate serialized evidence and original notification bodies. Current issue briefs retain every criterion and question. Activity and explicitly paged event queries retain the complete selected page. Safe inspection continues to exclude untrusted producer prose where the API requires explicit evidence retrieval; projection does not grant additional access.
 
-Full observations remain in the coordinator. Use an explicit read command with `--full` when the omitted evidence is needed, then use its original pagination contract. A receipt remains a receipt; projection does not accept, reconcile or resolve an action. Byte limits apply after JSON escaping. If a complex record cannot fit, the envelope retains only identifying/status fields or omits the data with `detailsOmitted: true` and a recovery hint. It never silently presents an abbreviated audit history as complete.
+Use the same read-only command with `--full` when omitted evidence is needed, preserving the original page and filter arguments. Examples include `issue list --offset 20 --full`, `issue show ID --before 100 --full`, `chain show ID --full`, `dependency list PR --full`, `reference list PR --full`, `conflict show ID --full` and `history policy OWNER/REPO --policy-version 1 --tier routine --full`. Do not repeat a mutation to inspect its result. Inspect a mutation through its corresponding PR, action, chain, receipt or activity read command.
 
-Errors in agent mode and explicit JSON invocations are one JSON object on stderr with `ok: false`, the command and a short error message; the exit status remains nonzero. Interactive programs, help text, the long-running server readiness protocol and Codex hook protocol retain their existing interfaces. Agent event queries are bounded; continuous `--watch` requires explicit full inspection.
+Agent failures write one JSON object to stderr and exit nonzero, leaving stdout empty: `{"error":{"message":"…","code":"…","fix":"…"}}`. Codes and fixes appear only when available. Diagnostics are not shortened. Publication validation includes every finding in the error message. Non-agent output and diagnostics retain their ordinary contracts.
 
-Receipt commands retain their smaller ordinary contract too: `acknowledge-digest` returns at most 20 current member summaries and 6,000 bytes outside agent mode, while `acknowledge-message` returns only receipt metadata. Agent mode applies the tighter shared budget on top. Detailed inspection and receipt documentation live in [agent digests](agent-digests.md) and [agent messages](agent-messages.md).
+`read ID` retrieves evidence and records delivery for every frozen member. Its agent response strips bookkeeping, profiles, assessment history and duplicated serialized evidence while preserving complete findings, conclusions, applicability, receipts, evidence warnings and separately scoped operator instructions. Use `message ID --full` for complete read-only inspection. Receipt does not accept work, resolve findings or authorize merging.
 
-`read ID` is an explicit evidence retrieval and receipt operation. Its response bypasses the ordinary compact projection, including the eight-entry and byte limits, so every frozen item is returned in one invocation. Producer details are labelled untrusted; current operator instructions are separate. It omits redundant historical message bodies. `message ID` remains read-only and safe by default.
+Compatibility digest receipts retain every returned member with complete identifiers in agent mode. Their non-agent presentation retains its existing bounded contract. Detailed receipt behavior is documented in [agent messages](agent-messages.md) and [agent digests](agent-digests.md).
+
+Help, interactive programs, the server readiness protocol, repository-authored publication instructions and Codex hook output retain their intentional interfaces. Agent event queries are finite; continuous `--watch` requires explicit `--full`. Full event inspection retains its existing newline-delimited event stream.

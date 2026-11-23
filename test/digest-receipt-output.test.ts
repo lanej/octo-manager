@@ -3,7 +3,10 @@ import { DomainDigestReceiptSchema } from "../src/gen/octomanager/v2/domain_pb.j
 import { test, expect } from "bun:test";
 import { create } from "@bufbuild/protobuf";
 import { AcknowledgeAgentDigestResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
-import { receiptOutput } from "../src/notifications/receipt-output.js";
+import {
+  receiptOutput,
+  agentReceiptOutput,
+} from "../src/notifications/receipt-output.js";
 test("receipt output bounds dense revision metadata and exposes omitted item retrieval without history", () => {
   const response = create(AcknowledgeAgentDigestResponseSchema, {
     receipt: wire(DomainDigestReceiptSchema, {
@@ -24,6 +27,13 @@ test("receipt output bounds dense revision metadata and exposes omitted item ret
     })),
   });
   const result = receiptOutput(response, "/tmp/state with 'quotes'");
+  const agent = agentReceiptOutput(response);
+  expect(agent.items).toHaveLength(20);
+  expect(agent.items[0]?.message).toBe(response.messages[0]?.messageId);
+  expect(agent.items[0]?.summary).toBe(response.messages[0]?.summary);
+  expect(Buffer.byteLength(JSON.stringify(agent))).toBeGreaterThan(6000);
+  expect(agent).not.toHaveProperty("omittedItems");
+  expect(agent).not.toHaveProperty("inspect");
   expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThanOrEqual(6000);
   const quoted = receiptOutput(response, "/" + "a'".repeat(1000));
   expect(Buffer.byteLength(JSON.stringify(quoted))).toBeLessThanOrEqual(6000);
