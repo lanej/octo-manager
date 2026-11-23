@@ -401,7 +401,7 @@ func TestActivityDistinguishesRefreshOutcomes(t *testing.T) {
 	for _, fixture := range []struct{ kind, title, reason string }{
 		{"pr_refresh_retry_scheduled", "PR check retry scheduled", "PR revisions changed during observation"},
 		{"pr_refresh_cancelled", "PR check cancelled", "GitHub request cancelled"},
-		{"pr_refresh_recovered", "PR checks restored", "Fresh observation accepted"},
+		{"pr_refresh_recovered", "PR monitoring restored", "Fresh observation accepted"},
 		{"pr_refresh_failed", "PR check failed", "Authentication required"},
 	} {
 		t.Run(fixture.kind, func(t *testing.T) {

@@ -71,7 +71,7 @@ func (m *Model) presentEvent(event *v1.JobEvent) activityPresentation {
 	case "pr_refresh_cancelled":
 		row.title = "PR check cancelled"
 	case "pr_refresh_recovered":
-		row.title = "PR checks restored"
+		row.title = "PR monitoring restored"
 	case "action_opened":
 		row.title = "Needs attention"
 	case "action_progress":
