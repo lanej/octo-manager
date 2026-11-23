@@ -211,33 +211,38 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
       .all()
-      .map((r: Row) => {
-        const observation = this.observations.latest(String(r["id"]));
-        return {
-          id: r.id,
-          url: r.url,
-          originAgentId: r.origin_agent_id,
-          ownerAgentId: r.owner_agent_id,
-          enabled: !!r.enabled,
-          ...lifecycle(r),
-          createdAt: r.created_at_ms,
-          updatedAt: r.updated_at_ms,
-          ...(r.last_refresh_error === null
-            ? {}
-            : {
-                lastRefreshError: {
-                  at: r.last_refresh_error_at_ms,
-                  message: r.last_refresh_error,
-                },
-              }),
-          ...(observation === undefined ? {} : { observation }),
-        };
-      });
+      .map((r: Row) => this.trackedPR(r));
+  }
+  private trackedPR(r: Row): TrackedPR {
+    const observation = this.observations.latest(String(r["id"]));
+    return {
+      id: r.id,
+      url: r.url,
+      originAgentId: r.origin_agent_id,
+      ownerAgentId: r.owner_agent_id,
+      enabled: !!r.enabled,
+      ...lifecycle(r),
+      createdAt: r.created_at_ms,
+      updatedAt: r.updated_at_ms,
+      ...(r.last_refresh_error === null
+        ? {}
+        : {
+            lastRefreshError: {
+              at: r.last_refresh_error_at_ms,
+              message: r.last_refresh_error,
+            },
+          }),
+      ...(observation === undefined ? {} : { observation }),
+    };
   }
   pr(id: string): TrackedPR {
-    const p = this.prs().find((p) => p.id === id || p.url === id);
-    if (!p) throw new Error("Tracked PR not found");
-    return p;
+    const row = this.db
+      .prepare(
+        "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
+      )
+      .get(id, id);
+    if (row === undefined) throw new Error("Tracked PR not found");
+    return this.trackedPR(row);
   }
   track(url: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {
@@ -455,15 +460,15 @@ export class TrackingStore {
   prepareSafeRecovery(): void {
     this.transaction(() => {
       this.inbox.recoverWorkflows();
+      const messages = new Map(
+        this.inbox
+          .legacyActionMessages()
+          .map((message) => [message.id, message]),
+      );
+      if (messages.size === 0) return;
       for (const delivery of this.deliveries()) {
-        const message = this.inbox.get(delivery.id);
-        if (
-          message === undefined ||
-          message.notice !== undefined ||
-          !message.applicable ||
-          message.acknowledgedAt !== undefined
-        )
-          continue;
+        const message = messages.get(delivery.id);
+        if (message === undefined) continue;
         const action = this.action(delivery.actionId),
           pr = this.pr(action.prId);
         const id = this.inbox.newMessageId(),

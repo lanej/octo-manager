@@ -11,6 +11,9 @@ export class AgentInbox {
   recoverWorkflows(): void {
     this.repository.recoverWorkflows();
   }
+  legacyActionMessages(): AgentMessage[] {
+    return this.repository.legacyActionMessages();
+  }
   isReplaced(id: string): boolean {
     return this.repository.isReplaced(id);
   }

@@ -5,6 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/store.js";
+import { DatabaseSync } from "node:sqlite";
 import {
   ActionState,
   DeliveryState,
@@ -24,6 +25,40 @@ const observation = (
   checks: { state: "complete", value: [] },
   reviews: { state: "complete", value: [] },
   ...patch,
+});
+test("PR point reads retain fresh observations without decoding unrelated history", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-pr-read-"));
+  const store = new Store(dir),
+    config = defaultTrackingConfig();
+  const db = new DatabaseSync(join(dir, "jobs.sqlite"));
+  try {
+    const selected = store.tracking.track(url, target);
+    const other = store.tracking.track(
+      "https://github.com/owner/repo/pull/2",
+      target,
+    );
+    assert.equal(store.tracking.pr(selected.id).observation, undefined);
+    store.tracking.observe(selected.id, observation(), config);
+    assert.equal(store.tracking.pr(url).observation?.headSha, "head1");
+    store.tracking.observe(
+      selected.id,
+      observation({ headSha: "head2" }),
+      config,
+    );
+    store.tracking.observe(other.id, observation(), config);
+    db.prepare("UPDATE pr_observations SET checks_json=? WHERE pr_id=?").run(
+      JSON.stringify({ state: "complete", value: false }),
+      other.id,
+    );
+    assert.equal(store.tracking.pr(selected.id).observation?.headSha, "head2");
+    assert.deepEqual(store.tracking.pr(url), store.tracking.pr(selected.id));
+    assert.throws(() => store.tracking.pr("missing"), /Tracked PR not found/);
+    assert.throws(() => store.tracking.pr(other.id));
+  } finally {
+    db.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 test("tracking preserves jobs across migration and restart, blocker episodes and ownership", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-tracking-"));

@@ -220,6 +220,57 @@ test("bounded snapshots mark truncation and a moved head supersedes assessment w
     await f.close();
   }
 });
+test("recovery selects only unread applicable legacy action messages and discovers late arrivals", async () => {
+  const f = await fixture();
+  await f.tracking.close();
+  try {
+    const original = f.store.tracking.deliveries()[0];
+    if (original === undefined) throw new Error("Missing delivery");
+    const add = () => {
+      const delivery = { ...original, id: crypto.randomUUID() };
+      f.store.tracking.saveDelivery(delivery, "synthetic_legacy");
+      f.store.tracking.inbox.record(delivery.id, attack);
+      return delivery;
+    };
+    const unread = add(),
+      read = add(),
+      cancelled = add(),
+      safe = add();
+    f.store.tracking.inbox.acknowledge(read.id, f.pr.ownerAgentId);
+    f.store.tracking.saveDelivery(
+      {
+        ...cancelled,
+        progress: {
+          state: DeliveryState.Cancelled,
+          at: Date.now(),
+          reason: "Retired",
+        },
+      },
+      "synthetic_cancelled",
+    );
+    f.store.tracking.inbox.freezeNotice(safe.id, actionNotice(f.action, url));
+    f.store.tracking.prepareSafeRecovery();
+    const recovered = () =>
+      f.store.tracking.inbox
+        .list(f.pr.ownerAgentId, 0, true)
+        .messages.filter(
+          (message) => message.id !== safe.id && message.notice !== undefined,
+        );
+    expect(recovered()).toHaveLength(1);
+    expect(f.store.tracking.inbox.isReplaced(unread.id)).toBe(true);
+    for (const delivery of [read, cancelled, safe])
+      expect(f.store.tracking.inbox.isReplaced(delivery.id)).toBe(false);
+    f.store.tracking.prepareSafeRecovery();
+    expect(recovered()).toHaveLength(1);
+    const late = add();
+    f.store.tracking.prepareSafeRecovery();
+    expect(f.store.tracking.inbox.isReplaced(late.id)).toBe(true);
+    expect(recovered()).toHaveLength(2);
+    expect(f.store.tracking.inbox.get(unread.id)?.body).toBe(attack);
+  } finally {
+    await f.close();
+  }
+});
 test("legacy uncertain bodies remain immutable and reconcilable but are never replayed", async () => {
   const f = await fixture();
   await f.tracking.close();
