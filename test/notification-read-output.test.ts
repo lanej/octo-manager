@@ -4,6 +4,18 @@ import { record } from "../src/api/codec.js";
 import { readOutput } from "../src/notifications/read-output.js";
 import { ReadNotificationMessageResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
 
+test("read preserves the ordinary empty member collection", () => {
+  const response = create(ReadNotificationMessageResponseSchema, {
+    message: { id: "message" },
+  });
+  expect(readOutput(response, false)).toEqual({
+    message: { id: "message", items: [] },
+  });
+  expect(readOutput(response, true)).toEqual({
+    message: { id: "message", items: [] },
+  });
+});
+
 test("agent reads preserve every finding and instruction while dropping duplicate evidence and bookkeeping", () => {
   const body = "A complete finding with reproduction details. ".repeat(100);
   const response = create(ReadNotificationMessageResponseSchema, {

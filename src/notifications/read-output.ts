@@ -2,6 +2,8 @@ import { toJson } from "@bufbuild/protobuf";
 import { record } from "../api/codec.js";
 import {
   ReadNotificationMessageResponseSchema,
+  NotificationMessageSchema,
+  NotificationItemSchema,
   type ReadNotificationMessageResponse,
 } from "../gen/octomanager/v2/notifications_pb.js";
 
@@ -36,16 +38,13 @@ export function readOutput(
   agent: boolean,
 ): unknown {
   const json = record(toJson(ReadNotificationMessageResponseSchema, response));
-  if (json["message"] !== undefined) {
-    const message = record(json["message"]);
-    if (Array.isArray(message["items"])) {
-      const items: unknown[] = message["items"];
-      message["items"] = items.map((value) => ({
-        applicable: false,
-        ...record(value),
-      }));
-    }
-    json["message"] = message;
-  }
+  if (response.message !== undefined)
+    json["message"] = {
+      ...record(toJson(NotificationMessageSchema, response.message)),
+      items: response.message.items.map((item) => ({
+        ...record(toJson(NotificationItemSchema, item)),
+        applicable: item.applicable,
+      })),
+    };
   return agent ? strip(json) : json;
 }
