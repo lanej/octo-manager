@@ -9,6 +9,7 @@ import { GitHubScheduler } from "../src/scheduling/service.js";
 import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readMergeReadiness } from "../src/merging/github.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+import type { GitHubGate } from "../src/merging/github.js";
 test("readiness reuses tracking evidence and fits default request spacing with only eligibility reads", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-readiness-dispatch-"));
   let now = 0;
@@ -172,4 +173,139 @@ test("fresh GitHub closure or mergeability changes cannot reuse cached Ready fac
     );
     expect(requests).toBe(1);
   }
+});
+
+test("closed readiness confirms facts without open mergeability or native-stack prerequisites", async () => {
+  const head = "a".repeat(40),
+    base = "b".repeat(40),
+    commit = "c".repeat(40);
+  const observation: ObservationInput = {
+    observedAt: 0,
+    headSha: head,
+    baseSha: base,
+    lifecycle: "merged",
+    mergeability: "unknown",
+    checks: { state: "complete", value: [] },
+    reviews: { state: "complete", value: [] },
+  };
+  const gate: GitHubGate = {
+    headRefOid: head,
+    baseRefOid: base,
+    baseRefName: "old-stack-branch",
+    merged: true,
+    state: "MERGED",
+    isDraft: false,
+    mergeable: "MERGEABLE",
+    mergeStateStatus: "CLEAN",
+    reviewDecision: null,
+    mergeCommit: { oid: commit },
+    baseRef: null,
+    stack: {
+      baseRefName: "main",
+      entries: { nodes: [], pageInfo: { hasNextPage: true } },
+    },
+  };
+  const inspect = async (fresh: GitHubGate, cached = observation) => {
+    const paths: string[] = [];
+    const reader = new GitHubReads((request) => {
+      paths.push(request.path);
+      return Promise.resolve({
+        status: 200,
+        headers: new Map<string, string>(),
+        body: JSON.stringify(
+          request.path === "graphql"
+            ? {
+                data: {
+                  repository: {
+                    squashMergeAllowed: true,
+                    mergeCommitAllowed: false,
+                    rebaseMergeAllowed: false,
+                    pullRequest: fresh,
+                  },
+                },
+                errors: [],
+              }
+            : [],
+        ),
+      });
+    });
+    const result = await readMergeReadiness(
+      "https://github.com/owner/repo/pull/38",
+      cached,
+      new AbortController().signal,
+      reader,
+    );
+    assert.deepEqual(paths, ["graphql"]);
+    return result;
+  };
+  const merged = await inspect(gate);
+  assert.equal(merged.mergeCommit, commit);
+  assert.deepEqual(merged.nativePrerequisites, []);
+  const closed = await inspect(
+    { ...gate, state: "CLOSED", merged: false, mergeCommit: null },
+    { ...observation, lifecycle: "closed" },
+  );
+  assert.equal(closed.mergeCommit, undefined);
+  await assert.rejects(
+    inspect({ ...gate, headRefOid: "d".repeat(40) }),
+    /changed/u,
+  );
+  await assert.rejects(
+    inspect({ ...gate, state: "CLOSED", merged: false, mergeCommit: null }),
+    /changed/u,
+  );
+  await assert.rejects(inspect({ ...gate, mergeCommit: { oid: "invalid" } }));
+  const openObservation: ObservationInput = {
+    ...observation,
+    lifecycle: "open",
+    mergeability: "mergeable",
+    targetBase: { ref: "old-stack-branch", sha: base },
+  };
+  const openGate: GitHubGate = {
+    ...gate,
+    merged: false,
+    state: "OPEN",
+    mergeCommit: null,
+    baseRef: { target: { oid: base }, branchProtectionRule: null },
+  };
+  await assert.rejects(
+    inspect(openGate, openObservation),
+    /Native stack exceeds/u,
+  );
+  await assert.rejects(
+    inspect(
+      {
+        ...openGate,
+        stack: {
+          baseRefName: "main",
+          entries: { nodes: [], pageInfo: { hasNextPage: false } },
+        },
+      },
+      openObservation,
+    ),
+    /missing from native stack/u,
+  );
+  await assert.rejects(
+    inspect(
+      {
+        ...openGate,
+        stack: {
+          baseRefName: "main",
+          entries: {
+            nodes: [
+              {
+                pullRequest: {
+                  url: "https://github.com/owner/repo/pull/38",
+                  state: "OPEN",
+                },
+              },
+            ],
+            pageInfo: { hasNextPage: false },
+          },
+        },
+      },
+      openObservation,
+    ),
+    /target branch has not settled/u,
+  );
 });

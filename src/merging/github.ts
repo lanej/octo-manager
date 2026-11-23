@@ -133,7 +133,7 @@ export async function readMergeReadiness(
     throw new Error("Merge eligibility unavailable");
   if (
     lifecycle !== observation.lifecycle ||
-    mergeability !== observation.mergeability ||
+    (lifecycle === "open" && mergeability !== observation.mergeability) ||
     pr.headRefOid !== observation.headSha ||
     (pr.baseRefName !== observation.targetBase?.ref &&
       observation.lifecycle === "open") ||
@@ -142,7 +142,7 @@ export async function readMergeReadiness(
   )
     throw new Error("PR changed during eligibility inspection");
   const rules =
-    pr.state === "OPEN"
+    lifecycle === "open"
       ? checked(
           RulesSchema,
           await reads.read(
@@ -152,7 +152,7 @@ export async function readMergeReadiness(
         )
       : [];
   const nativePrerequisites: string[] = [];
-  if (pr.stack !== undefined && pr.stack !== null) {
+  if (lifecycle === "open" && pr.stack !== undefined && pr.stack !== null) {
     if (pr.stack.entries.pageInfo.hasNextPage)
       throw new Error(
         "Native stack exceeds bounded inspection; owner intervention required",
