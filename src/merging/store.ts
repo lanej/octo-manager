@@ -483,7 +483,7 @@ export class MergeStore {
     });
   }
   settingSource(prId: string): "explicit" | "inherited" {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
       .get(`merge-setting:${pr.id}`);
@@ -504,6 +504,33 @@ export class MergeStore {
     )
       ? "explicit"
       : "inherited";
+  }
+  disableInherited(prId: string): void {
+    const pr = this.tracking.prContext(prId);
+    if (this.settingSource(pr.id) === "explicit") return;
+    const setting = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-setting:${pr.id}`);
+    const entry = this.entries(pr.id).find((value) => !terminal(value.state));
+    if (
+      setting?.["value"] ===
+        JSON.stringify({ source: "inherited", epoch: pr.trackingEpoch }) &&
+      (entry === undefined ||
+        (!entry.autoMerge &&
+          entry.autoMergeSource === "inherited" &&
+          entry.trackingEpoch === pr.trackingEpoch &&
+          entry.autoMergeStage === undefined))
+    )
+      return;
+    this.autoMerge(
+      pr.id,
+      pr.ownerAgentId,
+      false,
+      `repository-context:${pr.id}:${String(pr.trackingEpoch)}`,
+      undefined,
+      "inherited",
+    );
+    this.policyStage(pr.id);
   }
   useDefault(
     prValue: string,

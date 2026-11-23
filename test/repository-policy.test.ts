@@ -432,3 +432,52 @@ test("a resumed tracking epoch suspends inherited authority until it is rebound"
     await f.close();
   }
 });
+
+test("invalid inherited contexts stay disabled without replaying revocation, and re-arming is revoked again", async () => {
+  const f = await fixture();
+  const revoke = spyOn(f.c.store.merging, "autoMerge"),
+    full = spyOn(f.c.store.tracking, "pr");
+  try {
+    f.c.store.tracking.untrack(f.pr.id);
+    const current = f.c.store.tracking.track(url, owner);
+    f.c.store.repositories.tick();
+    revoke.mockClear();
+    full.mockClear();
+    const revision = f.c.store.inputRevision();
+    f.c.store.repositories.tick();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(full).not.toHaveBeenCalled();
+    expect(f.c.store.inputRevision()).toBe(revision);
+    f.c.store.merging.autoMerge(
+      f.pr.id,
+      current.ownerAgentId,
+      true,
+      "re-arm-inherited",
+      undefined,
+      "inherited",
+    );
+    f.c.store.merging.policyStage(f.pr.id, "alpha");
+    revoke.mockClear();
+    f.c.store.repositories.tick();
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(f.c.store.merging.entry(url).autoMerge).toBe(false);
+    expect(f.c.store.merging.entry(url).autoMergeStage).toBeUndefined();
+    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(
+      current.trackingEpoch,
+    );
+    f.c.store.merging.autoMerge(
+      f.pr.id,
+      current.ownerAgentId,
+      true,
+      "explicit-override",
+    );
+    revoke.mockClear();
+    f.c.store.repositories.tick();
+    expect(revoke).not.toHaveBeenCalled();
+    expect(f.c.store.merging.entry(url).autoMerge).toBe(true);
+  } finally {
+    revoke.mockRestore();
+    full.mockRestore();
+    await f.close();
+  }
+});

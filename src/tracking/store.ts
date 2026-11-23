@@ -41,6 +41,7 @@ const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
   private readonly observations: ObservationRepository;
   private agentById: StatementSync | undefined;
+  private prByIdentity: StatementSync | undefined;
   readonly subscriptions: Subscriptions;
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
@@ -230,16 +231,16 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
       .all()
-      .map((row) => this.prContext(row));
+      .map((row) => this.decodePRContext(row));
   }
   private trackedPR(r: Row): TrackedPR {
     const observation = this.observations.latest(String(r["id"]));
     return {
-      ...this.prContext(r),
+      ...this.decodePRContext(r),
       ...(observation === undefined ? {} : { observation }),
     };
   }
-  private prContext(r: Row): Omit<TrackedPR, "observation"> {
+  private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
       id: r.id,
       url: r.url,
@@ -259,14 +260,18 @@ export class TrackingStore {
           }),
     };
   }
-  pr(id: string): TrackedPR {
-    const row = this.db
-      .prepare(
-        "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
-      )
-      .get(id, id);
+  private prRow(id: string) {
+    const row = (this.prByIdentity ??= this.db.prepare(
+      "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
+    )).get(id, id);
     if (row === undefined) throw new Error("Tracked PR not found");
-    return this.trackedPR(row);
+    return row;
+  }
+  prContext(id: string): Omit<TrackedPR, "observation"> {
+    return this.decodePRContext(this.prRow(id));
+  }
+  pr(id: string): TrackedPR {
+    return this.trackedPR(this.prRow(id));
   }
   track(url: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {

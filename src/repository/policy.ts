@@ -160,17 +160,7 @@ export class RepositoryPolicies {
         prior.ownerId !== pr.ownerAgentId ||
         prior.epoch !== pr.trackingEpoch
       ) {
-        if (this.merging.settingSource(pr.id) !== "explicit") {
-          this.merging.autoMerge(
-            pr.id,
-            pr.ownerAgentId,
-            false,
-            `repository-context:${pr.id}:${String(pr.trackingEpoch)}`,
-            undefined,
-            "inherited",
-          );
-          this.merging.policyStage(pr.id);
-        }
+        this.merging.disableInherited(pr.id);
         const error =
           "Repository policy requires enrollment by the current owner and tracking epoch";
         if (prior.error !== error) {

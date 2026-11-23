@@ -110,6 +110,15 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       contexts.some((value) => value.id === selected.id),
       true,
     );
+    assert.deepEqual(store.tracking.prContext(other.id), context);
+    assert.deepEqual(
+      store.tracking.prContext(url),
+      contexts.find((value) => value.id === selected.id),
+    );
+    assert.throws(
+      () => store.tracking.prContext("missing"),
+      /Tracked PR not found/,
+    );
     assert.throws(() => store.tracking.prs());
   } finally {
     db.close();
