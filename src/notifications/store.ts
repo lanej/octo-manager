@@ -74,6 +74,18 @@ export class DigestStore {
   active(agentId: string): Digest | undefined {
     return this.list(agentId).find((value) => !terminal(value));
   }
+  coveredMessageIds(agentId: string): Set<string> {
+    const rows = this.db
+      .prepare(
+        "SELECT r.data FROM agent_digest_revisions r JOIN agent_digests d ON d.id=r.digest_id WHERE d.agent_id=? ORDER BY r.rowid",
+      )
+      .all(agentId);
+    return new Set(
+      rows.flatMap(
+        (row) => revision(JSON.parse(String(row["data"]))).messageIds,
+      ),
+    );
+  }
   revisions(id: string): DigestRevision[] {
     return this.db
       .prepare(

@@ -215,8 +215,10 @@ test("invalid or removed policy suspends inheritance, retains last valid instruc
     expect(f.c.store.merging.entry(url).autoMerge).toBe(false);
     expect(instructions()).toBe("Repair the review findings.");
     const sequence = f.c.store.sequence();
+    const inputRevision = f.c.store.inputRevision();
     f.c.store.repositories.tick();
     expect(f.c.store.sequence()).toBe(sequence);
+    expect(f.c.store.inputRevision()).toBe(inputRevision);
     await writeFile(join(f.root, "octo-manager.toml"), config);
     f.c.store.repositories.tick();
     expect(f.c.store.merging.entry(url).autoMerge).toBe(true);

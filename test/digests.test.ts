@@ -107,7 +107,11 @@ async function fixture() {
       store.submissions,
       directory,
       () => now,
-      { connect },
+      {
+        connect,
+        inputRevision: () =>
+          JSON.stringify([store.inputRevision(), config.endpoints]),
+      },
     );
   const actor = tracking.registerAgent(target),
     queue = connect(actor, "/fixture/queue.sock");
@@ -169,7 +173,11 @@ async function fixture() {
         store.submissions,
         directory,
         () => now,
-        { connect },
+        {
+          connect,
+          inputRevision: () =>
+            JSON.stringify([store.inputRevision(), config.endpoints]),
+        },
       );
     },
     async close() {

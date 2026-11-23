@@ -23,6 +23,8 @@ import { renderDigest } from "./render.js";
 const recipientConcurrency = 4;
 
 export interface DigestOptions {
+  // Changes with every non-clock reconciliation input; omission retains full discovery on each pass.
+  inputRevision?: () => string;
   presentation?: (message: AgentMessage) => MessagePresentation;
   ownerFeedbackCovered?: (message: AgentMessage) => boolean;
   connect?: (agent: AgentRef, socket: string) => QueueConnection;
@@ -41,7 +43,13 @@ export class DigestService {
   private connections = new Set<QueueConnection>();
   private checks = new Map<
     string,
-    { signature: string; at: number; failures: number; error?: string }
+    {
+      signature: string;
+      at: number;
+      failures: number;
+      error?: string;
+      inputRevision?: string;
+    }
   >();
   constructor(
     readonly store: DigestStore,
@@ -103,13 +111,14 @@ export class DigestService {
     );
   }
   private pending(agentId: string): AgentMessage[] {
-    this.tracking.store.prepareSafeRecovery();
     const pending: AgentMessage[] = [];
     let after = 0;
     for (;;) {
       const page = this.tracking.store.inbox.list(agentId, after, false, true);
       for (const message of page.messages) {
+        // Legacy arrivals after discovery must receive independent recovery IDs before a digest can receipt them.
         if (
+          message.notice !== undefined &&
           this.applicable(message) &&
           this.options.presentation?.(message).defer !== true
         )
@@ -121,12 +130,7 @@ export class DigestService {
     }
   }
   private legacy(agentId: string): AgentMessage[] {
-    const covered = new Set(
-      this.store
-        .list(agentId)
-        .flatMap((value) => this.store.revisions(value.id))
-        .flatMap((value) => value.messageIds),
-    );
+    const covered = this.store.coveredMessageIds(agentId);
     const messages: AgentMessage[] = [];
     let after = 0;
     for (;;) {
@@ -159,9 +163,18 @@ export class DigestService {
     ]);
   }
   private async discover(): Promise<void> {
+    this.tracking.store.prepareSafeRecovery();
     for (const agent of this.tracking.store.agents()) {
       await setImmediate();
       if (this.stopped) break;
+      const previous = this.checks.get(agent.id);
+      const revision = this.options.inputRevision?.();
+      if (
+        revision !== undefined &&
+        previous?.inputRevision === revision &&
+        previous.at > this.now()
+      )
+        continue;
       if (!this.managed(agent.id) || this.running.has(agent.id)) continue;
       this.queued.set(agent.id, {
         agent,
@@ -225,6 +238,7 @@ export class DigestService {
     this.idleWaiters.clear();
   }
   private async reconcileAgent(agent: AgentRef): Promise<void> {
+    const inputRevision = this.options.inputRevision?.();
     if (!this.managed(agent.id)) return;
     const generation = this.generation;
     const pending = this.pending(agent.id),
@@ -239,12 +253,24 @@ export class DigestService {
       !cleanup &&
       legacy.length === 0
     ) {
-      this.checks.delete(agent.id);
+      const revision = inputRevision;
+      if (revision === undefined) this.checks.delete(agent.id);
+      else
+        this.checks.set(agent.id, {
+          signature: "",
+          at: this.now() + 60000,
+          failures: 0,
+          inputRevision: revision,
+        });
       return;
     }
     const signature = this.signature(agent),
       previous = this.checks.get(agent.id);
-    if (previous?.signature === signature && previous.at > this.now()) return;
+    if (previous?.signature === signature && previous.at > this.now()) {
+      if (inputRevision !== undefined)
+        this.checks.set(agent.id, { ...previous, inputRevision });
+      return;
+    }
     let failures = 0;
     let failure: string | undefined;
     let delay = 1000;
@@ -301,6 +327,7 @@ export class DigestService {
           : 0,
       ),
       failures,
+      ...(inputRevision === undefined ? {} : { inputRevision }),
       ...(failure === undefined ? {} : { error: failure }),
     });
   }

@@ -103,13 +103,9 @@ export class AssessmentService {
         });
       }
     for (const action of this.tracking.store.actions()) {
+      if (!eligible(action) || !unfinished(action)) continue;
       const pr = this.tracking.store.pr(action.prId);
-      if (
-        eligible(action) &&
-        unfinished(action) &&
-        pr.enabled &&
-        pr.observation !== undefined
-      )
+      if (pr.enabled && pr.observation !== undefined)
         this.store.ensure(
           boundedInput(
             action,

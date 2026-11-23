@@ -72,7 +72,6 @@ export class ReceiptMerges {
     return this.candidate(this.tracking.store.action(actionId));
   }
   private candidate(action: Action) {
-    const pr = this.tracking.store.pr(action.prId);
     const blocker = action.blocker;
     if (
       ![
@@ -80,7 +79,11 @@ export class ReceiptMerges {
         ActionState.Acknowledged,
         ActionState.Working,
       ].includes(action.progress.state) ||
-      blocker.kind !== "check_results" ||
+      blocker.kind !== "check_results"
+    )
+      return undefined;
+    const pr = this.tracking.store.pr(action.prId);
+    if (
       blocker.state !== CheckWatchState.Completed ||
       !/^[a-f0-9]{40}([a-f0-9]{24})?$/u.test(blocker.headSha) ||
       blocker.headSha !== pr.observation?.headSha ||
@@ -94,9 +97,7 @@ export class ReceiptMerges {
     return { action, pr };
   }
   private policyKey(pr: TrackedPR): string {
-    const entry = this.store
-      .entries()
-      .find((e) => e.prId === pr.id && !terminal(e.state));
+    const entry = this.store.entries(pr.id).find((e) => !terminal(e.state));
     return fingerprint(
       entry === undefined
         ? null
@@ -187,10 +188,9 @@ export class ReceiptMerges {
       if (!pr.enabled) continue;
       const prior = this.store.noticeReadiness(pr.id);
       const merged = this.store
-        .entries()
+        .entries(pr.id)
         .some(
           (entry) =>
-            entry.prId === pr.id &&
             entry.state === EntryState.Merged &&
             entry.ready?.head === pr.observation?.headSha,
         );
@@ -207,8 +207,8 @@ export class ReceiptMerges {
         continue;
       }
       const authorized = this.store
-        .entries()
-        .find((entry) => entry.prId === pr.id && !terminal(entry.state));
+        .entries(pr.id)
+        .find((entry) => !terminal(entry.state));
       if (
         this.store.busy(pr.id) ||
         (authorized?.ready !== undefined &&
@@ -230,8 +230,7 @@ export class ReceiptMerges {
         .sort();
       if (readinessRecipients.length === 0) continue;
       const selected = this.tracking.store
-        .actions()
-        .filter((action) => action.prId === pr.id)
+        .actions(pr.id)
         .toReversed()
         .map((action) => this.candidate(action))
         .find((candidate) => candidate !== undefined);
@@ -292,8 +291,8 @@ export class ReceiptMerges {
           const snapshot = await this.inspect(pr.id, selected.pr.observation);
           const fresh = this.tracking.store.pr(pr.id);
           const existing = this.store
-            .entries()
-            .find((e) => e.prId === pr.id && !terminal(e.state));
+            .entries(pr.id)
+            .find((e) => !terminal(e.state));
           target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
           const assessment = this.store.ownerAssessment(fresh);
           const policy = {
@@ -499,9 +498,7 @@ export class ReceiptMerges {
         pr: pr.url,
         reason: "Readiness unavailable; waiting for a successful inspection",
       };
-    let entry = this.store
-      .entries()
-      .find((e) => e.prId === pr.id && !terminal(e.state));
+    let entry = this.store.entries(pr.id).find((e) => !terminal(e.state));
     if (
       entry !== undefined &&
       (this.store.busy(pr.id) ||

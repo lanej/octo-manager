@@ -112,6 +112,9 @@ export class Store {
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }
   }
+  inputRevision(): string {
+    return JSON.stringify(this.db.prepare("SELECT total_changes() AS local_changes, (SELECT data_version FROM pragma_data_version) AS external_changes").get());
+  }
   jobs(): Job[] { return this.db.prepare("SELECT data FROM jobs ORDER BY rowid").all().map(r => JSON.parse(r.data as string) as Job); }
   get(id: string): Job {
     const row = this.db.prepare("SELECT data FROM jobs WHERE id=?").get(id);

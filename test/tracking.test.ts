@@ -46,6 +46,28 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       config,
     );
     store.tracking.observe(other.id, observation(), config);
+    assert.equal(store.tracking.actions(selected.id).length, 2);
+    assert.equal(store.tracking.actions(other.id).length, 1);
+    const action = store.tracking
+      .actions(selected.id)
+      .find(
+        (value) =>
+          value.prId === selected.id &&
+          value.progress.state === ActionState.Open,
+      );
+    assert(action !== undefined);
+    const prefix = action.id.replaceAll("-", "").slice(0, 8).toUpperCase();
+    assert.deepEqual(store.tracking.action(prefix), action);
+    store.tracking.progress(action.id, selected.ownerAgentId, false);
+    assert.equal(
+      store.tracking.action(action.id).progress.state,
+      ActionState.Acknowledged,
+    );
+    assert.equal(
+      store.tracking.action(prefix).progress.state,
+      ActionState.Acknowledged,
+    );
+    assert.throws(() => store.tracking.action("missing"), /Action not found/);
     db.prepare("UPDATE pr_observations SET checks_json=? WHERE pr_id=?").run(
       JSON.stringify({ state: "complete", value: false }),
       other.id,
