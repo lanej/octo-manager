@@ -5,7 +5,7 @@ import { parseNotice, type SafeNotice } from "../security/notifications.js";
 import type { AgentMessage, NotificationSource } from "./message.js";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compactId } from "../tracking/identifiers.js";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 
 function integer(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
@@ -215,6 +215,12 @@ function decode(row: Record<string, unknown>): AgentMessage {
   };
 }
 export class NotificationRepository {
+  // rationale: Store constructs this repository before completing notification migrations.
+  private byId: StatementSync | undefined;
+  private byPrefix: StatementSync | undefined;
+  private page: StatementSync | undefined;
+  private workflowRecovery: StatementSync | undefined;
+  private noticeById: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
     private now: () => number,
@@ -227,11 +233,9 @@ export class NotificationRepository {
     return renderDirectNotice(this.notice(id) ?? notice, id, this.directory);
   }
   recoverWorkflows(): void {
-    const rows = this.db
-      .prepare(
-        `${messagesQuery} WHERE action_id='' AND applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=delivery_id)`,
-      )
-      .all();
+    const rows = (this.workflowRecovery ??= this.db.prepare(
+      `${messagesQuery} WHERE action_id='' AND applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=delivery_id)`,
+    )).all();
     for (const row of rows) {
       const message = decode(row),
         id = this.newMessageId();
@@ -366,9 +370,9 @@ export class NotificationRepository {
       .run(id, JSON.stringify(notice));
   }
   notice(id: string): SafeNotice | undefined {
-    const row = this.db
-      .prepare("SELECT notice_json FROM safe_agent_notices WHERE message_id=?")
-      .get(id);
+    const row = (this.noticeById ??= this.db.prepare(
+      "SELECT notice_json FROM safe_agent_notices WHERE message_id=?",
+    )).get(id);
     return row === undefined
       ? undefined
       : parseNotice(JSON.parse(String(row["notice_json"])));
@@ -431,15 +435,15 @@ export class NotificationRepository {
   }
 
   get(id: string): AgentMessage | undefined {
-    const row = this.db.prepare(`${messagesQuery} WHERE delivery_id=?`).get(id);
+    const row = (this.byId ??= this.db.prepare(
+      `${messagesQuery} WHERE delivery_id=?`,
+    )).get(id);
     if (row !== undefined) return this.withNotice(decode(row));
     const prefix = compactId(id);
     if (!/^[a-f0-9]{8,32}$/.test(prefix)) return undefined;
-    const matches = this.db
-      .prepare(
-        `${messagesQuery} WHERE replace(delivery_id,'-','') LIKE ? LIMIT 2`,
-      )
-      .all(prefix + "%");
+    const matches = (this.byPrefix ??= this.db.prepare(
+      `${messagesQuery} WHERE replace(delivery_id,'-','') LIKE ? LIMIT 2`,
+    )).all(prefix + "%");
     if (matches.length > 1)
       throw new Error("Invalid ambiguous ID prefix; use a longer ID");
     return matches[0] === undefined
@@ -467,11 +471,9 @@ export class NotificationRepository {
     applicableOnly = false,
   ): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
     integer(after);
-    const rows = this.db
-      .prepare(
-        `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
-      )
-      .all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
+    const rows = (this.page ??= this.db.prepare(
+      `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
+    )).all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
     const messages = rows
       .slice(0, 200)
       .map((row) => this.withNotice(decode(row)));

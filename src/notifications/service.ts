@@ -20,6 +20,8 @@ import {
   type QueueTransport,
 } from "./types.js";
 import { renderDigest } from "./render.js";
+const recipientConcurrency = 4;
+
 export interface DigestOptions {
   presentation?: (message: AgentMessage) => MessagePresentation;
   ownerFeedbackCovered?: (message: AgentMessage) => boolean;
@@ -28,7 +30,11 @@ export interface DigestOptions {
 }
 export class DigestService {
   private timer: ReturnType<typeof setInterval> | undefined;
-  private work: Promise<void> | undefined;
+  private discovery: Promise<void> | undefined;
+  private queued = new Map<string, { agent: AgentRef; urgent: boolean }>();
+  private running = new Map<string, Promise<void>>();
+  private idleWaiters = new Set<() => void>();
+  private generation = 0;
   private stopped = false;
   private wakePending = false;
   private wakeScheduled = false;
@@ -59,30 +65,34 @@ export class DigestService {
   };
   start(): void {
     this.timer = setInterval(() => {
-      this.flush().catch(() => {});
+      this.requestDiscovery().catch(() => {});
     }, this.options.intervalMs ?? 1000);
-    this.flush().catch(() => {});
+    this.requestDiscovery().catch(() => {});
   }
   flush(): Promise<void> {
-    if (this.work !== undefined) return this.work;
+    return this.requestDiscovery().then(() => this.waitIdle());
+  }
+  private requestDiscovery(): Promise<void> {
     if (this.stopped) return Promise.resolve();
-    this.work = this.run().finally(() => {
-      this.work = undefined;
+    this.discovery ??= this.discover().finally(() => {
+      this.discovery = undefined;
       if (this.wakePending) this.wake();
+      this.settleIdle();
     });
-    return this.work;
+    return this.discovery;
   }
   wake(): void {
     if (this.timer === undefined || this.stopped) return;
+    this.generation++;
     this.wakePending = true;
-    if (this.work !== undefined || this.wakeScheduled) return;
+    if (this.discovery !== undefined || this.wakeScheduled) return;
     this.wakeScheduled = true;
     setImmediate()
       .then(() => {
         this.wakeScheduled = false;
-        if (this.work !== undefined || this.stopped) return;
+        if (this.discovery !== undefined || this.stopped) return;
         this.wakePending = false;
-        return this.flush();
+        return this.requestDiscovery();
       })
       .catch(() => {});
   }
@@ -148,100 +158,151 @@ export class DigestService {
       this.tracking.config.endpoints[agent.endpoint],
     ]);
   }
-  private async run(): Promise<void> {
+  private async discover(): Promise<void> {
     for (const agent of this.tracking.store.agents()) {
       await setImmediate();
       if (this.stopped) break;
-      if (!this.managed(agent.id)) continue;
-      const pending = this.pending(agent.id),
-        active = this.store.active(agent.id),
-        legacy = this.legacy(agent.id),
-        cleanup = this.store
-          .list(agent.id)
-          .some((value) => terminal(value) && value.cleanupPending);
-      if (
-        pending.length === 0 &&
-        active === undefined &&
-        !cleanup &&
-        legacy.length === 0
-      ) {
-        this.checks.delete(agent.id);
-        continue;
-      }
-      const signature = this.signature(agent),
-        previous = this.checks.get(agent.id);
-      if (previous?.signature === signature && previous.at > this.now())
-        continue;
-      let failures = 0;
-      let failure: string | undefined;
-      let delay = 1000;
-      try {
-        await this.sync(agent);
-        if (
-          previous?.error !== undefined &&
-          this.store.active(agent.id) === undefined
-        )
-          this.store.event(
-            agent.id,
-            undefined,
-            "queue_inspection_recovered",
-            {},
-          );
-      } catch (error) {
-        failures =
-          (previous?.signature === signature ? previous.failures : 0) + 1;
-        delay = Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
-        const current = this.store.active(agent.id),
-          reason = (
-            error instanceof Error
-              ? error.message
-              : "Queue reconciliation failed"
-          ).slice(0, 1000),
-          nextCheckAt = this.now() + delay;
-        failure = reason;
-        if (current !== undefined) {
-          const state =
-            current.state === State.Ready || current.state === State.Unavailable
-              ? State.Unavailable
-              : State.Uncertain;
-          if (current.state === state && current.error === reason)
-            this.store.defer(current, nextCheckAt);
-          else
-            this.store.save(
-              { ...current, state, error: reason, nextCheckAt },
-              "digest_uncertain",
-              { reason },
-            );
-        } else if (previous?.error !== reason)
-          this.store.event(
-            agent.id,
-            undefined,
-            "queue_inspection_unavailable",
-            { reason },
-          );
-      }
-      const fresh = this.store.active(agent.id);
-      const idle =
-        this.pending(agent.id).length === 0 &&
-        fresh === undefined &&
-        !this.store.list(agent.id).some((value) => value.cleanupPending);
-      this.checks.set(agent.id, {
-        signature:
-          this.wakePending && failure === undefined
-            ? signature
-            : this.signature(agent),
-        at: Math.max(
-          this.now() + (failure === undefined && idle ? 60000 : delay),
-          fresh !== undefined &&
-            (fresh.state === State.Uncertain ||
-              fresh.state === State.Unavailable)
-            ? fresh.nextCheckAt
-            : 0,
-        ),
-        failures,
-        ...(failure === undefined ? {} : { error: failure }),
+      if (!this.managed(agent.id) || this.running.has(agent.id)) continue;
+      this.queued.set(agent.id, {
+        agent,
+        urgent: this.pending(agent.id).length > 0,
       });
     }
+    this.pump();
+  }
+  private pump(): void {
+    if (this.stopped) {
+      this.queued.clear();
+      return;
+    }
+    while (this.running.size < recipientConcurrency && this.queued.size > 0) {
+      const next =
+        [...this.queued.values()].find((value) => value.urgent) ??
+        this.queued.values().next().value;
+      if (next === undefined) break;
+      this.queued.delete(next.agent.id);
+      const work = this.reconcileAgent(next.agent)
+        .catch((error: unknown) => {
+          this.store.event(
+            next.agent.id,
+            undefined,
+            "queue_inspection_unavailable",
+            {
+              reason:
+                error instanceof Error
+                  ? error.message.slice(0, 1000)
+                  : "Queue reconciliation failed",
+            },
+          );
+        })
+        .finally(() => {
+          this.running.delete(next.agent.id);
+          this.pump();
+          this.settleIdle();
+        });
+      this.running.set(next.agent.id, work);
+    }
+  }
+  private waitIdle(): Promise<void> {
+    if (
+      this.discovery === undefined &&
+      this.running.size === 0 &&
+      this.queued.size === 0
+    )
+      return Promise.resolve();
+    return new Promise((resolve) => {
+      this.idleWaiters.add(resolve);
+    });
+  }
+  private settleIdle(): void {
+    if (
+      this.discovery !== undefined ||
+      this.running.size > 0 ||
+      this.queued.size > 0
+    )
+      return;
+    for (const resolve of this.idleWaiters) resolve();
+    this.idleWaiters.clear();
+  }
+  private async reconcileAgent(agent: AgentRef): Promise<void> {
+    if (!this.managed(agent.id)) return;
+    const generation = this.generation;
+    const pending = this.pending(agent.id),
+      active = this.store.active(agent.id),
+      legacy = this.legacy(agent.id),
+      cleanup = this.store
+        .list(agent.id)
+        .some((value) => terminal(value) && value.cleanupPending);
+    if (
+      pending.length === 0 &&
+      active === undefined &&
+      !cleanup &&
+      legacy.length === 0
+    ) {
+      this.checks.delete(agent.id);
+      return;
+    }
+    const signature = this.signature(agent),
+      previous = this.checks.get(agent.id);
+    if (previous?.signature === signature && previous.at > this.now()) return;
+    let failures = 0;
+    let failure: string | undefined;
+    let delay = 1000;
+    try {
+      await this.sync(agent);
+      if (
+        previous?.error !== undefined &&
+        this.store.active(agent.id) === undefined
+      )
+        this.store.event(agent.id, undefined, "queue_inspection_recovered", {});
+    } catch (error) {
+      failures =
+        (previous?.signature === signature ? previous.failures : 0) + 1;
+      delay = Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
+      const current = this.store.active(agent.id),
+        reason = (
+          error instanceof Error ? error.message : "Queue reconciliation failed"
+        ).slice(0, 1000),
+        nextCheckAt = this.now() + delay;
+      failure = reason;
+      if (current !== undefined) {
+        const state =
+          current.state === State.Ready || current.state === State.Unavailable
+            ? State.Unavailable
+            : State.Uncertain;
+        if (current.state === state && current.error === reason)
+          this.store.defer(current, nextCheckAt);
+        else
+          this.store.save(
+            { ...current, state, error: reason, nextCheckAt },
+            "digest_uncertain",
+            { reason },
+          );
+      } else if (previous?.error !== reason)
+        this.store.event(agent.id, undefined, "queue_inspection_unavailable", {
+          reason,
+        });
+    }
+    const fresh = this.store.active(agent.id);
+    const idle =
+      this.pending(agent.id).length === 0 &&
+      fresh === undefined &&
+      !this.store.list(agent.id).some((value) => value.cleanupPending);
+    this.checks.set(agent.id, {
+      signature:
+        this.generation !== generation && failure === undefined
+          ? signature
+          : this.signature(agent),
+      at: Math.max(
+        this.now() + (failure === undefined && idle ? 60000 : delay),
+        fresh !== undefined &&
+          (fresh.state === State.Uncertain || fresh.state === State.Unavailable)
+          ? fresh.nextCheckAt
+          : 0,
+      ),
+      failures,
+      ...(failure === undefined ? {} : { error: failure }),
+    });
   }
   private transport(agent: AgentRef): QueueTransport | undefined {
     const endpoint = this.tracking.config.endpoints[agent.endpoint];
@@ -830,8 +891,11 @@ export class DigestService {
   }
   async close(): Promise<void> {
     this.stopped = true;
+    this.queued.clear();
     if (this.timer !== undefined) clearInterval(this.timer);
     for (const connection of this.connections) connection.close();
-    await this.work;
+    await this.discovery;
+    await Promise.all(this.running.values());
+    this.settleIdle();
   }
 }
