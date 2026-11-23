@@ -45,7 +45,11 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       observation({ headSha: "head2" }),
       config,
     );
-    store.tracking.observe(other.id, observation(), config);
+    store.tracking.observe(
+      other.id,
+      observation({ description: "Related to #1" }),
+      config,
+    );
     assert.equal(store.tracking.actions(selected.id).length, 2);
     assert.equal(store.tracking.actions(other.id).length, 1);
     const action = store.tracking
@@ -76,6 +80,35 @@ test("PR point reads retain fresh observations without decoding unrelated histor
     assert.deepEqual(store.tracking.pr(url), store.tracking.pr(selected.id));
     assert.throws(() => store.tracking.pr("missing"), /Tracked PR not found/);
     assert.throws(() => store.tracking.pr(other.id));
+    assert.equal(
+      store.tracking.referenceObservation(other.id)?.description,
+      "Related to #1",
+    );
+    assert.deepEqual(
+      store.tracking.unfinishedActions().map((value) => value.progress.state),
+      [ActionState.Acknowledged, ActionState.Open],
+    );
+    db.prepare("UPDATE pr_observations SET feedback_json=? WHERE pr_id=?").run(
+      JSON.stringify({ state: "complete", value: false }),
+      other.id,
+    );
+    assert.throws(() => store.tracking.referenceObservation(other.id));
+
+    db.prepare(
+      "UPDATE tracked_prs SET tracking_state='archived',tracking_epoch=tracking_epoch+1 WHERE id=?",
+    ).run(other.id);
+    const contexts = store.tracking.prContexts();
+    const context = contexts.find((value) => value.id === other.id);
+    assert(context !== undefined);
+    assert.equal(context.state, "archived");
+    assert.equal(context.enabled, true);
+    assert.equal(context.trackingEpoch, 1);
+    assert.equal("observation" in context, false);
+    assert.equal(
+      contexts.some((value) => value.id === selected.id),
+      true,
+    );
+    assert.throws(() => store.tracking.prs());
   } finally {
     db.close();
     store.close();

@@ -104,7 +104,7 @@ export class AssessmentService {
           this.tracking.store.cancelAssessmentNotices(item.id);
         });
       }
-    for (const action of this.tracking.store.actions()) {
+    for (const action of this.tracking.store.unfinishedActions()) {
       if (!eligible(action) || !unfinished(action)) continue;
       const pr = this.tracking.store.pr(action.prId);
       if (pr.enabled && pr.observation !== undefined)

@@ -153,7 +153,7 @@ export class RepositoryPolicies {
   }
   tick(): void {
     const roots = new Map<string, ReturnType<typeof load> | Error>();
-    for (const pr of this.tracking.prs()) {
+    for (const pr of this.tracking.prContexts()) {
       const prior = this.get(pr.id);
       if (prior === undefined || !pr.enabled) continue;
       if (
@@ -237,15 +237,16 @@ export class RepositoryPolicies {
         !entries.some((entry) => !terminal(entry.state))
       )
         continue;
-      if (
-        next.autoMerge &&
-        !entries.some((entry) => !terminal(entry.state)) &&
-        (pr.observation === undefined ||
-          pr.observation.checks.state !== "complete" ||
-          (pr.observation.workflows !== undefined &&
-            pr.observation.workflows.state !== "complete"))
-      )
-        continue;
+      if (next.autoMerge && !entries.some((entry) => !terminal(entry.state))) {
+        const observation = this.tracking.pr(pr.id).observation;
+        if (
+          observation === undefined ||
+          observation.checks.state !== "complete" ||
+          (observation.workflows !== undefined &&
+            observation.workflows.state !== "complete")
+        )
+          continue;
+      }
       const current = entries.find((entry) => !terminal(entry.state));
       if (
         this.merging.settingSource(pr.id) !== "explicit" &&

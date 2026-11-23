@@ -117,9 +117,9 @@ function referenceProse(text: string): string {
     .join("\n");
 }
 export function references(
-  pr: TrackedPR,
+  pr: Pick<TrackedPR, "id" | "url">,
   sources: ReferenceSource[],
-  known: TrackedPR[],
+  known: readonly Pick<TrackedPR, "url">[],
 ): Omit<PRReference, "decision" | "createdAt" | "active">[] {
   const result = new Map<
     string,

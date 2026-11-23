@@ -1,3 +1,4 @@
+import type { ReferenceObservation } from "../tracking/observations.js";
 import {
   NoticeSubjectKind,
   type SafeNotice,
@@ -1066,7 +1067,10 @@ export class MergeStore {
       return next;
     });
   }
-  scan(pr: TrackedPR, tracked = this.tracking.prs()): void {
+  scan(
+    pr: Pick<TrackedPR, "id" | "url"> & { observation?: ReferenceObservation },
+    tracked: readonly Pick<TrackedPR, "url">[] = this.tracking.prContexts(),
+  ): void {
     const observation = pr.observation;
     if (observation === undefined) return;
     const sources: ReferenceSource[] = [];

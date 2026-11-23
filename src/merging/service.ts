@@ -239,11 +239,15 @@ export class MergeService {
     );
   }
   private async run(): Promise<void> {
-    const prs = this.store.tracking.prs();
+    const prs = this.store.tracking.prContexts();
     for (const pr of prs.filter((pr) => pr.enabled)) {
       await setImmediate();
       if (this.abort.signal.aborted) return;
-      this.store.scan(pr, prs);
+      const observation = this.store.tracking.referenceObservation(pr.id);
+      this.store.scan(
+        { ...pr, ...(observation === undefined ? {} : { observation }) },
+        prs,
+      );
     }
     for (const operation of this.store
       .unfinishedOperations()

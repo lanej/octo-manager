@@ -217,8 +217,23 @@ export class TrackingStore {
       .all()
       .map((r: Row) => this.trackedPR(r));
   }
+  referenceObservation(prId: string) {
+    return this.observations.reference(prId);
+  }
+  prContexts(): Omit<TrackedPR, "observation">[] {
+    return this.db
+      .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
+      .all()
+      .map((row) => this.prContext(row));
+  }
   private trackedPR(r: Row): TrackedPR {
     const observation = this.observations.latest(String(r["id"]));
+    return {
+      ...this.prContext(r),
+      ...(observation === undefined ? {} : { observation }),
+    };
+  }
+  private prContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
       id: r.id,
       url: r.url,
@@ -236,7 +251,6 @@ export class TrackingStore {
               message: r.last_refresh_error,
             },
           }),
-      ...(observation === undefined ? {} : { observation }),
     };
   }
   pr(id: string): TrackedPR {
@@ -286,6 +300,14 @@ export class TrackingStore {
             .prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid")
             .all(prId);
     return rows.map((row) => this.trackedAction(row));
+  }
+  unfinishedActions(): Action[] {
+    return this.db
+      .prepare(
+        "SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.trackedAction(row));
   }
   private trackedAction(r: Row): Action {
     return {

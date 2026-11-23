@@ -289,7 +289,7 @@ export class TrackingService {
       this.handoffWork = this.handoffs
         .drain((request) => {
           const existing = this.store
-            .prs()
+            .prContexts()
             .find((pr) => pr.url === request.url);
           if (existing !== undefined) {
             const owner = this.store.agent(existing.ownerAgentId);
@@ -314,7 +314,7 @@ export class TrackingService {
     }
     for (const id of this.store.retirement.expire())
       this.refreshControllers.get(id)?.abort();
-    for (const p of this.store.prs())
+    for (const p of this.store.prContexts())
       if (
         p.enabled &&
         this.now() >= this.githubRetryAt &&

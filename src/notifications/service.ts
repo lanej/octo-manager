@@ -158,9 +158,7 @@ export class DigestService {
       presentations,
       legacy: this.legacy(agentId),
       active: this.store.active(agentId),
-      cleanup: this.store
-        .list(agentId)
-        .filter((value) => terminal(value) && value.cleanupPending),
+      cleanup: this.store.cleanup(agentId),
     };
   }
   private signature(agent: AgentRef, inputs: ReconciliationInputs): string {
@@ -373,9 +371,7 @@ export class DigestService {
   private async sync(agent: AgentRef): Promise<void> {
     const desired = this.transport(agent);
     let active = this.store.active(agent.id);
-    const cleanup = this.store
-      .list(agent.id)
-      .find((value) => terminal(value) && value.cleanupPending);
+    const cleanup = this.store.cleanup(agent.id)[0];
     const route = cleanup?.transport ?? active?.transport ?? desired;
     if (route === undefined) return;
     if (active === undefined && desired?.socket === route.socket)
@@ -460,13 +456,8 @@ export class DigestService {
           queued,
         );
       for (const previous of this.store
-        .list(agent.id)
-        .filter(
-          (value) =>
-            terminal(value) &&
-            value.cleanupPending &&
-            value.transport.socket === route.socket,
-        )) {
+        .cleanup(agent.id)
+        .filter((value) => value.transport.socket === route.socket)) {
         for (const observed of owned.filter(
           (value) => value.digest.id === previous.id,
         ))

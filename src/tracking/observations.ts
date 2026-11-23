@@ -5,7 +5,13 @@ import { targetBase } from "./evidence.js";
 import { prLifecycle, type PRLifecycle } from "./states.js";
 import type { ObservationInput, PRObservation } from "./types.js";
 
+export type ReferenceObservation = Pick<
+  PRObservation,
+  "description" | "feedback"
+>;
+
 export interface ObservationRepository {
+  reference(prId: string): ReferenceObservation | undefined;
   append(prId: string, input: ObservationInput): PRObservation;
   latest(prId: string): PRObservation | undefined;
   lifecycle(id: number): PRLifecycle;
@@ -54,6 +60,21 @@ export class SQLiteObservationRepository implements ObservationRepository {
       )
       .get(prId);
     return row === undefined ? undefined : this.decode(row);
+  }
+  reference(prId: string): ReferenceObservation | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT description,feedback_json FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
+      )
+      .get(prId);
+    if (row === undefined) return undefined;
+    const feedback = storedFeedback(row["feedback_json"]);
+    return {
+      ...(typeof row["description"] === "string"
+        ? { description: row["description"] }
+        : {}),
+      ...(feedback === undefined ? {} : { feedback }),
+    };
   }
   lifecycle(id: number): PRLifecycle {
     const row = this.db

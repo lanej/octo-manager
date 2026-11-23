@@ -970,3 +970,36 @@ test("membership migration rolls back invalid history and rejects malformed or d
     await f.close();
   }
 });
+
+test("cleanup candidate reads follow persisted terminal cleanup state without removing audit history", async () => {
+  const f = await fixture();
+  try {
+    const message = f.notice("Cleanup fixture");
+    const value = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Fixture", messageIds: [message.id] }),
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    const received = f.store.digests.save(
+      { ...value, state: DigestState.Received },
+      "fixture_received",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toEqual([received]);
+    expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+    f.store.digests.save(
+      { ...received, cleanupPending: false },
+      "fixture_cleaned",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.list(f.actor.id)).toHaveLength(1);
+    const unavailable = f.store.digests.save(
+      { ...received, state: DigestState.Unavailable },
+      "fixture_unavailable",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.active(f.actor.id)).toEqual(unavailable);
+  } finally {
+    await f.close();
+  }
+});

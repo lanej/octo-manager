@@ -55,11 +55,22 @@ export class DigestStore {
     return found;
   }
   list(agentId?: string): Digest[] {
+    const rows =
+      agentId === undefined
+        ? this.db.prepare("SELECT data FROM agent_digests ORDER BY rowid").all()
+        : this.db
+            .prepare(
+              "SELECT data FROM agent_digests WHERE agent_id=? ORDER BY rowid",
+            )
+            .all(agentId);
+    return rows.map((row) => digest(JSON.parse(String(row["data"]))));
+  }
+  cleanup(agentId: string): Digest[] {
     return this.db
       .prepare(
-        "SELECT data FROM agent_digests WHERE (? IS NULL OR agent_id=?) ORDER BY rowid",
+        "SELECT data FROM agent_digests WHERE agent_id=? AND state IN ('received','cancelled') AND json_extract(data,'$.cleanupPending') IS NOT 0 ORDER BY rowid",
       )
-      .all(agentId ?? null, agentId ?? null)
+      .all(agentId)
       .map((row) => digest(JSON.parse(String(row["data"]))));
   }
   get(id: string): Digest {
