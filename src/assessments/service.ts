@@ -71,7 +71,9 @@ export class AssessmentService {
     if (this.stopped) return Promise.resolve();
     this.synchronize();
     if (this.work !== undefined) return this.work;
-    const item = this.store.list().find((item) => item.state === "pending");
+    const item = this.store
+      .reconciliationCandidates()
+      .find((item) => item.state === "pending");
     if (item === undefined) return Promise.resolve();
     this.work = this.run(item).finally(() => {
       this.work = undefined;
@@ -91,7 +93,7 @@ export class AssessmentService {
     );
   }
   private synchronize(): void {
-    for (const item of this.store.list())
+    for (const item of this.store.reconciliationCandidates())
       if (item.state !== "superseded" && !this.current(item)) {
         this.tracking.store.transaction(() => {
           this.store.save({
@@ -102,14 +104,10 @@ export class AssessmentService {
           this.tracking.store.cancelAssessmentNotices(item.id);
         });
       }
-    for (const action of this.tracking.store.actions()) {
+    for (const action of this.tracking.store.unfinishedActions()) {
+      if (!eligible(action) || !unfinished(action)) continue;
       const pr = this.tracking.store.pr(action.prId);
-      if (
-        eligible(action) &&
-        unfinished(action) &&
-        pr.enabled &&
-        pr.observation !== undefined
-      )
+      if (pr.enabled && pr.observation !== undefined)
         this.store.ensure(
           boundedInput(
             action,
@@ -121,7 +119,7 @@ export class AssessmentService {
           this.model,
         );
     }
-    for (const item of this.store.list()) {
+    for (const item of this.store.reconciliationCandidates()) {
       if (
         item.completionNotified ||
         !this.current(item) ||
@@ -199,6 +197,14 @@ export class AssessmentService {
       );
       return next;
     });
+  }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      !this.store
+        .reconciliationCandidates()
+        .some((item) => item.state === "pending" || item.state === "running")
+    );
   }
   async close(): Promise<void> {
     this.stopped = true;

@@ -4,11 +4,29 @@ import {
   feedbackRevision,
   reviewObservation,
 } from "./feedback.js";
-import { checkRunObservation, workflowObservation } from "./checks.js";
+import {
+  checkRunObservation,
+  workflowObservation,
+  checkReplaces,
+  checksFinished,
+  type CheckReconciliationContext,
+} from "./checks.js";
 import { trackingPR } from "./evidence.js";
 import { githubReads, GitHubRateLimitError } from "../github-api.js";
 import { githubMetadata } from "./metadata.js";
-import type { ObservationInput, ObservationPart } from "./types.js";
+import type {
+  ObservationInput,
+  ObservationPart,
+  CheckObservation,
+} from "./types.js";
+import { GitHubRequestCancelledError } from "../github-errors.js";
+export class GitHubObservationChangedError extends Error {
+  constructor() {
+    super("GitHub PR revisions changed during observation; refresh again");
+    this.name = "GitHubObservationChangedError";
+  }
+}
+
 export type ReadGitHub = (path: string, signal?: AbortSignal) => Promise<any>;
 export async function ghRead(path: string, signal?: AbortSignal): Promise<any> {
   return githubReads.read(path, signal);
@@ -58,6 +76,88 @@ async function collection<T>(
       : { state: "unavailable", reason: "GitHub collection unavailable" };
   }
 }
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function positive(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+function checkReference(value: unknown, root: string, id: string): boolean {
+  if (typeof value !== "string") return false;
+  try {
+    const address = new URL(value);
+    return (
+      address.protocol === "https:" &&
+      address.hostname === "api.github.com" &&
+      address.pathname.toLowerCase() === `/${root}/check-runs/${id}`
+    );
+  } catch {
+    return false;
+  }
+}
+async function reconcileCheck(
+  check: CheckObservation,
+  root: string,
+  read: ReadGitHub,
+  signal?: AbortSignal,
+): Promise<CheckObservation | undefined> {
+  const checkId = /^run:([1-9][0-9]*)$/.exec(check.id)?.[1];
+  if (checkId === undefined) return undefined;
+  let address: URL;
+  try {
+    address = new URL(check.url);
+  } catch {
+    return undefined;
+  }
+  const job =
+    /^\/([^/]+)\/([^/]+)\/actions\/runs\/([1-9][0-9]*)\/job\/([1-9][0-9]*)$/.exec(
+      address.pathname,
+    );
+  if (
+    address.protocol !== "https:" ||
+    address.hostname !== "github.com" ||
+    job === null ||
+    `repos/${job[1]?.toLowerCase() ?? ""}/${job[2]?.toLowerCase() ?? ""}` !==
+      root
+  )
+    return undefined;
+  const runId = Number(job[3]),
+    jobId = Number(job[4]);
+  if (!positive(runId) || !positive(jobId)) return undefined;
+  try {
+    const raw: unknown = await read(
+      `${root}/actions/jobs/${String(jobId)}`,
+      signal,
+    );
+    if (
+      !record(raw) ||
+      raw["id"] !== jobId ||
+      raw["run_id"] !== runId ||
+      raw["head_sha"] !== check.headSha ||
+      raw["name"] !== check.name ||
+      !positive(raw["run_attempt"]) ||
+      !checkReference(raw["check_run_url"], root, checkId) ||
+      typeof raw["status"] !== "string" ||
+      (raw["conclusion"] !== null && typeof raw["conclusion"] !== "string")
+    )
+      return undefined;
+    return {
+      ...check,
+      workflowRunId: runId,
+      workflowRunAttempt: raw["run_attempt"],
+      status: raw["status"],
+      conclusion: raw["conclusion"] ?? "",
+    };
+  } catch (error) {
+    if (
+      error instanceof GitHubRateLimitError ||
+      error instanceof GitHubRequestCancelledError
+    )
+      throw error;
+    if (signal?.aborted === true) throw error;
+    return undefined;
+  }
+}
 export async function readObservation(
   url: string,
   signal?: AbortSignal,
@@ -66,6 +166,7 @@ export async function readObservation(
   readMetadata: typeof githubMetadata.read | undefined = read === ghRead
     ? (url, signal) => githubMetadata.read(url, signal)
     : undefined,
+  reconciliation: CheckReconciliationContext = { checks: [] },
 ): Promise<ObservationInput> {
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
     "/",
@@ -157,6 +258,45 @@ export async function readObservation(
         signal,
       ),
     ]);
+  const retainedContext =
+    reconciliation.forHead?.(pr.head.sha) ?? reconciliation;
+  const observedIds = new Set(
+    runs.state === "unavailable" ? [] : runs.value.map((check) => check.id),
+  );
+  const missing = [
+    ...new Map(
+      retainedContext.checks
+        .filter(
+          (check) =>
+            check.headSha === pr.head.sha && !observedIds.has(check.id),
+        )
+        .map((check) => [check.id, check]),
+    ).values(),
+  ];
+  missing.sort((a, b) => a.id.localeCompare(b.id));
+  const next = missing.findIndex(
+    (check) => check.id.localeCompare(retainedContext.after ?? "") > 0,
+  );
+  const offset = next < 0 ? 0 : next;
+  const selected = [
+    ...missing.slice(offset),
+    ...missing.slice(0, offset),
+  ].slice(0, 10);
+  const last = selected.at(-1);
+  if (last !== undefined) retainedContext.selected?.(last.id);
+  const reconciled = new Map<string, CheckObservation>();
+  for (const check of selected) {
+    const result = await reconcileCheck(check, root, read, signal);
+    if (result !== undefined) reconciled.set(check.id, result);
+  }
+  const retained = missing.map((check) => reconciled.get(check.id) ?? check);
+  const workflowEvidence =
+    workflows.state === "unavailable" ? [] : workflows.value;
+  const unconfirmed = retained.some(
+    (check) =>
+      !checksFinished({ state: "complete", value: [check] }) &&
+      !workflowEvidence.some((candidate) => checkReplaces(check, candidate)),
+  );
   const feedbackItems = [
     ...(reviews.state === "unavailable"
       ? []
@@ -201,8 +341,11 @@ export async function readObservation(
         reason: "Some review or comment sources are incomplete",
       };
   const checks: ObservationInput["checks"] =
-    runs.state === "complete" && statuses.state === "complete"
-      ? { state: "complete", value: [...runs.value, ...statuses.value] }
+    runs.state === "complete" && statuses.state === "complete" && !unconfirmed
+      ? {
+          state: "complete",
+          value: [...runs.value, ...statuses.value, ...retained],
+        }
       : runs.state === "unavailable" && statuses.state === "unavailable"
         ? { state: "unavailable", reason: "Checks unavailable" }
         : {
@@ -210,8 +353,11 @@ export async function readObservation(
             value: [
               ...(runs.state === "unavailable" ? [] : runs.value),
               ...(statuses.state === "unavailable" ? [] : statuses.value),
+              ...retained,
             ],
-            reason: "Some check sources are incomplete",
+            reason: unconfirmed
+              ? "Waiting for terminal evidence for retained executions"
+              : "Some check sources are incomplete",
           };
   const latest =
     readMetadata === undefined
@@ -232,9 +378,7 @@ export async function readObservation(
     latestPR.merged !== pr.merged ||
     latestPR.mergeable !== pr.mergeable
   )
-    throw new Error(
-      "GitHub PR revisions changed during observation; refresh again",
-    );
+    throw new GitHubObservationChangedError();
   return {
     observedAt,
     headSha: pr.head.sha,

@@ -1,18 +1,33 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { storedCheckEvidence } from "./checks.js";
 import { storedFeedback, storedReviews } from "./feedback.js";
 import { targetBase } from "./evidence.js";
 import { prLifecycle, type PRLifecycle } from "./states.js";
-import type { ObservationInput, PRObservation } from "./types.js";
+import type {
+  CheckObservation,
+  ObservationInput,
+  PRObservation,
+} from "./types.js";
+
+export type ReferenceObservation = Pick<
+  PRObservation,
+  "description" | "feedback"
+>;
 
 export interface ObservationRepository {
+  reference(prId: string): ReferenceObservation | undefined;
+  head(prId: string): string | undefined;
   append(prId: string, input: ObservationInput): PRObservation;
   latest(prId: string): PRObservation | undefined;
   lifecycle(id: number): PRLifecycle;
+  check(id: number, sourceId: string): CheckObservation | undefined;
 }
 
 // Uses the caller's transaction so observation, actions and deliveries commit together.
 export class SQLiteObservationRepository implements ObservationRepository {
+  private latestStatement: StatementSync | undefined;
+  private headStatement: StatementSync | undefined;
+  private referenceStatement: StatementSync | undefined;
   constructor(private readonly db: DatabaseSync) {}
   append(prId: string, input: ObservationInput): PRObservation {
     const lifecycle = prLifecycle(input.lifecycle);
@@ -48,12 +63,39 @@ export class SQLiteObservationRepository implements ObservationRepository {
     };
   }
   latest(prId: string): PRObservation | undefined {
-    const row = this.db
-      .prepare(
-        "SELECT * FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
-      )
-      .get(prId);
+    const row = (this.latestStatement ??= this.db.prepare(
+      "SELECT * FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
+    )).get(prId);
     return row === undefined ? undefined : this.decode(row);
+  }
+  head(prId: string): string | undefined {
+    const row = (this.headStatement ??= this.db.prepare(
+      "SELECT head_sha FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
+    )).get(prId);
+    return row === undefined ? undefined : text(row["head_sha"]);
+  }
+  reference(prId: string): ReferenceObservation | undefined {
+    const row = (this.referenceStatement ??= this.db.prepare(
+      "SELECT description,feedback_json FROM pr_observations WHERE pr_id=? ORDER BY id DESC LIMIT 1",
+    )).get(prId);
+    if (row === undefined) return undefined;
+    const feedback = storedFeedback(row["feedback_json"]);
+    return {
+      ...(typeof row["description"] === "string"
+        ? { description: row["description"] }
+        : {}),
+      ...(feedback === undefined ? {} : { feedback }),
+    };
+  }
+  check(id: number, sourceId: string): CheckObservation | undefined {
+    const row = this.db
+      .prepare("SELECT checks_json FROM pr_observations WHERE id=?")
+      .get(id);
+    if (row === undefined) return undefined;
+    const checks = storedCheckEvidence(row["checks_json"]);
+    return checks === undefined || checks.state === "unavailable"
+      ? undefined
+      : checks.value.find((check) => check.id === sourceId);
   }
   lifecycle(id: number): PRLifecycle {
     const row = this.db

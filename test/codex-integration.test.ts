@@ -485,7 +485,6 @@ test("hook installation appends idempotently without rewriting custom hooks and 
       file,
       launchAgent(
         "/Users/person",
-        "/private/bun",
         "/private/release",
         "/private/state",
         "/usr/bin:/bin",
@@ -499,7 +498,7 @@ test("hook installation appends idempotently without rewriting custom hooks and 
       [
         "python3",
         "-c",
-        "import plistlib,sys; d=plistlib.load(open(sys.argv[1],'rb')); assert d['RunAtLoad'] and d['KeepAlive']; assert d['ProgramArguments']==['/private/bun','/private/release/dist/cli.js','serve']; assert d['EnvironmentVariables']['PATH']=='/usr/bin:/bin'",
+        "import plistlib,sys; d=plistlib.load(open(sys.argv[1],'rb')); assert d['RunAtLoad'] and d['KeepAlive']; assert d['ProgramArguments']==['/usr/bin/env','bun','/private/release/dist/cli.js','serve']; assert d['EnvironmentVariables']['PATH']=='/usr/bin:/bin'",
         file,
       ],
       { stdout: "pipe", stderr: "pipe" },

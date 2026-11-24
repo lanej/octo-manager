@@ -1,5 +1,5 @@
+import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import {
   hash,
   type Role,
@@ -123,5 +123,5 @@ export const createStageRunner =
   };
 
 export const runStage = createStageRunner(
-  fileURLToPath(new URL("../worker.js", import.meta.url)),
+  workerModule("job", new URL("../worker.js", import.meta.url).href),
 );

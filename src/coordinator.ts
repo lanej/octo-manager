@@ -1,3 +1,4 @@
+import { workerModule } from "./package-root.js";
 import { responseMaxBytes } from "./api/limits.js";
 import { AssessmentService } from "./assessments/service.js";
 import type { Assess } from "./assessments/runner.js";
@@ -8,6 +9,7 @@ import { CodexDispatcher } from "./dispatch/codex.js";
 import { ManagedIssueWorkspace } from "./dispatch/workspace.js";
 import { loadIssuePolicy } from "./issues/config.js";
 import { trackedCodeHost } from "./issues/composition.js";
+import { Activation, type ActivationReport } from "./lifecycle.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
 import {githubReads} from "./github-api.js";
@@ -28,7 +30,6 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { schedulerRoutes } from "./rpc.js";
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Store } from "./store.js";
 import { activeStates, cleanText, nextReady, parseTask, retryDelay, transition, type Job, type Snapshot, type Status } from "./domain.js";
 import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./fixture.js";
@@ -50,6 +51,9 @@ export function transient(error: string): boolean {
   return /\b(429|500|502|503|504)\b|ECONNRESET|ETIMEDOUT|EAI_AGAIN|temporarily unavailable|rate limit/i.test(error) && !/auth|credential|login|401|403/i.test(error);
 }
 export class Coordinator extends EventEmitter {
+  private readonly activation = new Activation();
+  private nativeCalls = 0;
+  private checkpointWork: Promise<ActivationReport> | undefined;
   readonly store: Store;
   readonly tracking: TrackingService;
   readonly assessments: AssessmentService;
@@ -86,13 +90,13 @@ export class Coordinator extends EventEmitter {
       this.notifications.flush().catch(()=>{});
       this.merging.tick().catch(()=>{});
     });
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), notificationRecorded:()=>{this.digests.wake();} });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), managedQueueBatch:(agentIds)=>this.digests.managedBatch(agentIds), notificationRecorded:()=>{this.digests.wake();} });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
-    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{referenceInputRevision:()=>this.store.notificationInputRevision(),...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
     this.issues=new IssueService(this.store.issues,options.issueOptions ?? {trackers:[new GitHubIssueTracker()],dispatchers:[new CodexDispatcher()],workspace:new ManagedIssueWorkspace(),codeHost:trackedCodeHost(this.tracking,directory),policy:loadIssuePolicy},this.now);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.digests = digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
+    this.digests = digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{...(options.digestOptions?.presentation === undefined && options.digestOptions?.ownerFeedbackCovered === undefined ? {inputRevision:()=>JSON.stringify([this.store.notificationInputRevision(),trackingConfig.endpoints])} : {}),presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
     this.socketPath = join(directory, "run.sock");
@@ -225,7 +229,7 @@ export class Coordinator extends EventEmitter {
         job = this.change(job.id, "conflicted", created.conflict, { fixture });
       }
       active.abort.signal.throwIfAborted();
-      const child = fork(this.options.workerPath ?? fileURLToPath(new URL("./worker.js", import.meta.url)), [], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, ...this.options.workerEnv }, execArgv: [] });
+      const child = fork(this.options.workerPath ?? workerModule("job", new URL("./worker.js", import.meta.url).href), [], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, ...this.options.workerEnv }, execArgv: [] });
       active.child = child;
       let done = false;
       const pendingTools = new Set<Promise<void>>();
@@ -287,6 +291,128 @@ export class Coordinator extends EventEmitter {
       } else this.change(job.id, "succeeded", "Job completed", { attempts, ...(result === undefined ? {} : { result }) });
       if (fixture) await removeFixture(this.directory, fixture).catch(() => {});
     }
+  }
+  nativeAdmission(method: string): () => void {
+    if (method === "RuntimeLifecycle" || method === "GetServerInfo") return () => {};
+    if (this.stopping) throw new Error("Coordinator is stopping");
+    this.nativeCalls++;
+    return () => { this.nativeCalls--; };
+  }
+  async lifecycle(
+    action: string,
+    incarnation: string,
+    operation: string,
+    expected: string,
+    restorePaused?: boolean,
+  ): Promise<ActivationReport> {
+    const report = () =>
+      this.activation.report(
+        this.server?.listening === true && !this.stopping,
+        this.store.paused(),
+      );
+    if (action === "inventory") return report();
+    if (action === "verify") {
+      const value = report();
+      if (this.activation.identity === null || expected !== this.activation.identity) {
+        value.targets[0].ready = false;
+        value.targets[0].reason = "native-loaded-image-unavailable-or-selection-differs";
+      }
+      return value;
+    }
+    if (action === "stop") {
+      try {
+        const submitted = this.activation.stop(incarnation, operation);
+        const value = report();
+        if (submitted) setTimeout(() => {
+          void this.close().then(() => { this.emit("retired"); }).catch(() => {
+            // Keep the fenced owner alive if graceful retirement cannot be established.
+            setInterval(() => {}, 1000);
+          });
+        }, 100).unref();
+        return value;
+      } catch (error) {
+        const value = report();
+        value.targets[0].reason = error instanceof Error ? error.message : "Native retirement refused";
+        value.targets[0].stop_accepted = false;
+        return value;
+      }
+    }
+
+    if (action === "restore") {
+      if (
+        this.stopping ||
+        this.activation.identity === null ||
+        expected !== this.activation.identity
+      ) {
+        const value = report();
+        value.targets[0].reason =
+          "original-octo-drain-cannot-be-reversed-or-image-differs";
+        return value;
+      }
+      if (this.activation.restore(incarnation, operation) && restorePaused !== undefined)
+        this.store.setPaused(restorePaused);
+      return report();
+    }
+    if (action !== "checkpoint")
+      throw new Error("Unsupported lifecycle action");
+    if (this.checkpointWork !== undefined) {
+      const current = report().targets[0];
+      if (current.process.native_id === incarnation && current.checkpoint?.run_id === operation) {
+        await this.checkpointWork;
+        return report();
+      }
+    }
+    if (
+      this.activation.identity === null ||
+      report().targets[0].retirement_policy !== "successful-exit" ||
+      this.nativeCalls !== 0 ||
+      this.store.jobs().some(job => job.status === "queued" || job.status === "retry_wait" || activeStates.includes(job.status) || job.attempts.some(attempt => attempt.pid !== undefined && attempt.exitObservedAt === undefined)) ||
+      !this.tracking.checkpointable() ||
+      !this.assessments.checkpointable() ||
+      !this.issues.checkpointable() ||
+      this.active !== undefined ||
+      this.recoveryPids.size !== 0 ||
+      !this.merging.checkpointable() ||
+      !this.repairs.checkpointable() ||
+      !this.submissions.checkpointable() ||
+      !this.digests.checkpointable() ||
+      !this.notifications.checkpointable() ||
+      !this.submissionNotifications.checkpointable()
+    ) {
+      const value = report();
+      value.targets[0].checkpoint = { state: "refused", run_id: operation };
+      value.targets[0].reason =
+        "active-octo-work-has-no-confirmed-native-checkpoint-or-image-is-unmanaged";
+      return value;
+    }
+    try { this.activation.claim(incarnation, operation); }
+    catch (error) {
+      const value = report();
+      value.targets[0].checkpoint = { state: "refused", run_id: operation };
+      value.targets[0].reason = error instanceof Error ? error.message : "Native checkpoint refused";
+      return value;
+    }
+    this.stopping = true;
+    this.store.setPaused(true);
+    if (this.timer !== undefined) clearInterval(this.timer);
+    this.notifications.stop();
+    this.checkpointWork = (async () => {
+    await Promise.all([
+      this.assessments.close(),
+      this.issues.close(),
+      this.githubScheduler.close(),
+      this.merging.close(),
+      this.repairs.close(),
+      this.submissions.close(),
+      this.digests.close(),
+      this.submissionNotifications.close(),
+      this.notifications.close(),
+      this.tracking.close(),
+    ]);
+    this.activation.confirm();
+    return report();
+    })();
+    return this.checkpointWork;
   }
   close(): Promise<void> {
     if (this.closePromise) return this.closePromise;

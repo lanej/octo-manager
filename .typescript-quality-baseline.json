@@ -244,14 +244,6 @@
     {
       "file": "src/cli.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-floating-promises",
-      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once(\"SIGINT\", stop); process.once(\"SIGTERM\", stop); });",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, value is always truthy.",
       "source": "} while (true);",
@@ -2533,22 +2525,6 @@
       "file": "src/tracking/policy.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (c && [\"success\", \"neutral\", \"skipped\"].includes(c.conclusion))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (c && c.id !== b.sourceId)",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "evidenceUrl: c.url || url,",
       "count": 1
@@ -2983,22 +2959,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
       "source": "enabled: !!r.enabled,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!a) throw new Error(\"Action not found\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!a) throw new Error(\"Agent not found\");",
       "count": 1
     },
     {

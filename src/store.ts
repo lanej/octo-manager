@@ -1,3 +1,4 @@
+import { NotificationInputRevision } from "./notifications/input-revision.js";
 import { migrateTracking } from "./tracking/schema.js";
 import { NotificationRepository } from "./notifications/repository.js";
 import { migrateAssessments } from "./assessments/schema.js";
@@ -109,8 +110,14 @@ export class Store {
       }, this.notificationRepository);
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
+      this.notificationRevision = new NotificationInputRevision(this.db);
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }
+  }
+  private readonly notificationRevision: NotificationInputRevision;
+  notificationInputRevision(): string { return this.notificationRevision.current(); }
+  inputRevision(): string {
+    return JSON.stringify(this.db.prepare("SELECT total_changes() AS local_changes, (SELECT data_version FROM pragma_data_version) AS external_changes").get());
   }
   jobs(): Job[] { return this.db.prepare("SELECT data FROM jobs ORDER BY rowid").all().map(r => JSON.parse(r.data as string) as Job); }
   get(id: string): Job {

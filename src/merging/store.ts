@@ -1,3 +1,4 @@
+import type { ReferenceObservation } from "../tracking/observations.js";
 import {
   NoticeSubjectKind,
   type SafeNotice,
@@ -9,6 +10,7 @@ import {
 } from "./receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
+import { ReadinessPreconditionError } from "./errors.js";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "../tracking/messages.js";
 import { shortId, resolveId } from "../tracking/identifiers.js";
@@ -54,7 +56,25 @@ export class MergeStore {
     readonly tracking: TrackingStore,
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
-  ) {}
+  ) {
+    db.exec(`CREATE INDEX IF NOT EXISTS merge_entries_by_pr ON merge_entries(pr_id);
+      CREATE INDEX IF NOT EXISTS merge_operations_by_pr ON merge_operations(pr_id);
+      CREATE INDEX IF NOT EXISTS references_by_pr ON pr_references(pr_id);
+      CREATE INDEX IF NOT EXISTS readiness_notices_by_pr ON merge_notices(pr_id,subject_kind,applicable,subject_id);`);
+  }
+  readinessCandidates(): Set<string> {
+    return new Set(
+      this.db
+        .prepare(
+          `SELECT p.id FROM tracked_prs p WHERE p.enabled=1 AND (
+      EXISTS(SELECT 1 FROM actions a WHERE a.pr_id=p.id AND a.kind='check_results' AND a.state IN ('open','acknowledged','working'))
+      OR EXISTS(SELECT 1 FROM merge_notices n WHERE n.pr_id=p.id AND n.subject_kind='entry' AND substr(n.subject_id,1,6)='ready:' AND n.applicable=1)
+    ) ORDER BY p.rowid`,
+        )
+        .all()
+        .map((row) => String(row["id"])),
+    );
+  }
   noticeReadiness(prId: string): NoticeReadiness | undefined {
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
@@ -103,16 +123,14 @@ export class MergeStore {
       : undefined;
   }
   agentInstructions(prId: string, agentId: string): string | undefined {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     if (pr.ownerAgentId !== agentId) return undefined;
-    const entry = this.entries()
-      .filter((value) => value.prId === pr.id)
-      .sort((a, b) => {
-        const priority = Number(terminal(a.state)) - Number(terminal(b.state));
-        return priority !== 0
-          ? priority
-          : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
-      })[0];
+    const entry = this.entries(pr.id).sort((a, b) => {
+      const priority = Number(terminal(a.state)) - Number(terminal(b.state));
+      return priority !== 0
+        ? priority
+        : this.chain(b.chainId).createdAt - this.chain(a.chainId).createdAt;
+    })[0];
     const instructions = entry?.agentInstructions;
     return instructions?.agentId === agentId &&
       instructions.epoch === pr.trackingEpoch
@@ -125,7 +143,9 @@ export class MergeStore {
         "SELECT subject_id FROM merge_notices WHERE id=? AND subject_kind='entry'",
       )
       .get(messageId);
-    return this.entries().find((entry) => entry.id === row?.["subject_id"]);
+    const id = row?.["subject_id"];
+    if (typeof id !== "string") return undefined;
+    return this.entryById(id);
   }
   transaction<T>(work: () => T): T {
     if (this.db.isTransaction) return work();
@@ -157,20 +177,102 @@ export class MergeStore {
       checked(ChainSchema, value),
     );
   }
-  entries(): MergeEntry[] {
-    return this.values("merge_entries").map((value) =>
-      checked(EntrySchema, value),
-    );
+  entries(prId?: string): MergeEntry[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM merge_entries ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM merge_entries WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => this.entryRow(row));
   }
-  operations(): MergeOperation[] {
-    return this.values("merge_operations").map((value) =>
-      checked(OperationSchema, value),
-    );
+
+  entryById(id: string): MergeEntry | undefined {
+    const row = this.db
+      .prepare("SELECT data,pr_id FROM merge_entries WHERE id=?")
+      .get(id);
+    if (row === undefined) return undefined;
+    const entry = this.entryRow(row);
+    if (entry.id !== id)
+      throw new Error("Merge record entry identity mismatch");
+    return entry;
   }
-  refs(): PRReference[] {
-    return this.values("pr_references").map((value) =>
-      checked(ReferenceSchema, value),
-    );
+  unfinishedEntries(): MergeEntry[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_entries WHERE state NOT IN ('merged','cancelled') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.entryRow(row));
+  }
+  entriesForChain(chainId: string): MergeEntry[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_entries WHERE json_extract(data,'$.chainId')=? ORDER BY rowid",
+      )
+      .all(chainId)
+      .map((row) => {
+        const value = this.entryRow(row);
+        if (value.chainId !== chainId)
+          throw new Error("Merge record chain identity mismatch");
+        return value;
+      });
+  }
+  private entryRow(row: Record<string, unknown>): MergeEntry {
+    const value = checked(EntrySchema, JSON.parse(String(row["data"])));
+    if (value.prId !== row["pr_id"])
+      throw new Error("Merge record PR identity mismatch");
+    return value;
+  }
+  operations(prId?: string): MergeOperation[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM merge_operations ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM merge_operations WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => this.operationRow(row));
+  }
+
+  unfinishedOperations(): MergeOperation[] {
+    return this.db
+      .prepare(
+        "SELECT data,pr_id FROM merge_operations WHERE state IN ('planned','running','uncertain') ORDER BY rowid",
+      )
+      .all()
+      .map((row) => this.operationRow(row));
+  }
+  private operationRow(row: Record<string, unknown>): MergeOperation {
+    const value = checked(OperationSchema, JSON.parse(String(row["data"])));
+    if (value.prId !== row["pr_id"])
+      throw new Error("Merge record PR identity mismatch");
+    return value;
+  }
+  refs(prId?: string): PRReference[] {
+    const rows =
+      prId === undefined
+        ? this.db
+            .prepare("SELECT data,pr_id FROM pr_references ORDER BY rowid")
+            .all()
+        : this.db
+            .prepare(
+              "SELECT data,pr_id FROM pr_references WHERE pr_id=? ORDER BY rowid",
+            )
+            .all(prId);
+    return rows.map((row) => {
+      const value = checked(ReferenceSchema, JSON.parse(String(row["data"])));
+      if (value.prId !== row["pr_id"])
+        throw new Error("Merge record PR identity mismatch");
+      return value;
+    });
   }
   dependencies(includeInactive = false): Dependency[] {
     return this.values("pr_dependencies")
@@ -178,20 +280,29 @@ export class MergeStore {
       .filter((edge) => includeInactive || edge.active);
   }
   chain(id: string): MergeChain {
-    const values = this.chains(),
-      key = resolveId(
+    const query = this.db.prepare(
+      "SELECT data,id FROM merge_chains WHERE id=?",
+    );
+    let row = query.get(id);
+    if (row === undefined) {
+      const key = resolveId(
         id,
-        values.map((item) => item.id),
+        this.db
+          .prepare("SELECT id FROM merge_chains")
+          .all()
+          .map((value) => String(value["id"])),
       );
-    const value = values.find((item) => item.id === key);
-    if (value === undefined) throw new Error("Merge chain not found");
+      if (key !== undefined) row = query.get(key);
+    }
+    if (row === undefined) throw new Error("Merge chain not found");
+    const value = checked(ChainSchema, JSON.parse(String(row["data"])));
+    if (value.id !== row["id"])
+      throw new Error("Merge chain identity mismatch");
     return value;
   }
   entry(pr: string): MergeEntry {
     const p = this.tracking.pr(pr),
-      value = this.entries().find(
-        (item) => item.prId === p.id && !terminal(item.state),
-      );
+      value = this.entries(p.id).find((item) => !terminal(item.state));
     if (value === undefined) throw new Error("Active merge entry not found");
     return value;
   }
@@ -210,14 +321,12 @@ export class MergeStore {
     return actor;
   }
   busy(prId: string): boolean {
-    return this.operations().some(
-      (op) =>
-        op.prId === prId &&
-        [
-          OperationState.Planned,
-          OperationState.Running,
-          OperationState.Uncertain,
-        ].includes(op.state),
+    return this.operations(prId).some((op) =>
+      [
+        OperationState.Planned,
+        OperationState.Running,
+        OperationState.Uncertain,
+      ].includes(op.state),
     );
   }
   private editable(prId: string): void {
@@ -238,7 +347,7 @@ export class MergeStore {
     checked(EntrySchema, value);
     this.db
       .prepare(
-        "INSERT INTO merge_entries VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,data=excluded.data",
+        "INSERT INTO merge_entries VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,data=excluded.data WHERE merge_entries.state IS NOT excluded.state OR merge_entries.data IS NOT excluded.data",
       )
       .run(
         value.id,
@@ -255,7 +364,9 @@ export class MergeStore {
     detail: string,
     patch: Partial<MergeEntry> = {},
   ): MergeEntry {
-    const current = this.entries().find((value) => value.id === entry.id);
+    const current = this.entries(entry.prId).find(
+      (value) => value.id === entry.id,
+    );
     const next = {
       ...entry,
       ...patch,
@@ -378,7 +489,7 @@ export class MergeStore {
     });
   }
   settingSource(prId: string): "explicit" | "inherited" {
-    const pr = this.tracking.pr(prId);
+    const pr = this.tracking.prContext(prId);
     const row = this.db
       .prepare("SELECT value FROM settings WHERE key=?")
       .get(`merge-setting:${pr.id}`);
@@ -393,14 +504,39 @@ export class MergeStore {
         return "explicit";
       return "inherited";
     }
-    return this.entries().some(
+    return this.entries(pr.id).some(
       (entry) =>
-        entry.prId === pr.id &&
-        !terminal(entry.state) &&
-        entry.autoMergeSource !== "inherited",
+        !terminal(entry.state) && entry.autoMergeSource !== "inherited",
     )
       ? "explicit"
       : "inherited";
+  }
+  disableInherited(prId: string): void {
+    const pr = this.tracking.prContext(prId);
+    if (this.settingSource(pr.id) === "explicit") return;
+    const setting = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(`merge-setting:${pr.id}`);
+    const entry = this.entries(pr.id).find((value) => !terminal(value.state));
+    if (
+      setting?.["value"] ===
+        JSON.stringify({ source: "inherited", epoch: pr.trackingEpoch }) &&
+      (entry === undefined ||
+        (!entry.autoMerge &&
+          entry.autoMergeSource === "inherited" &&
+          entry.trackingEpoch === pr.trackingEpoch &&
+          entry.autoMergeStage === undefined))
+    )
+      return;
+    this.autoMerge(
+      pr.id,
+      pr.ownerAgentId,
+      false,
+      `repository-context:${pr.id}:${String(pr.trackingEpoch)}`,
+      undefined,
+      "inherited",
+    );
+    this.policyStage(pr.id);
   }
   useDefault(
     prValue: string,
@@ -433,9 +569,7 @@ export class MergeStore {
     );
   }
   policyStage(prId: string, stage?: string): void {
-    const entry = this.entries().find(
-      (value) => value.prId === prId && !terminal(value.state),
-    );
+    const entry = this.entries(prId).find((value) => !terminal(value.state));
     if (entry === undefined || entry.autoMergeSource !== "inherited") return;
     const next = { ...entry };
     if (stage === undefined) delete next.autoMergeStage;
@@ -463,15 +597,13 @@ export class MergeStore {
         );
       this.db
         .prepare(
-          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value IS NOT excluded.value",
         )
         .run(
           `merge-setting:${pr.id}`,
           JSON.stringify({ source, epoch: pr.trackingEpoch }),
         );
-      let entry = this.entries().find(
-        (value) => value.prId === pr.id && !terminal(value.state),
-      );
+      let entry = this.entries(pr.id).find((value) => !terminal(value.state));
       if (entry === undefined && !enabled)
         return { prId: pr.id, enabled: false };
       if (entry === undefined) {
@@ -497,7 +629,7 @@ export class MergeStore {
       }
       this.db
         .prepare(
-          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value IS NOT excluded.value",
         )
         .run(
           `merge-setting:${pr.id}`,
@@ -587,22 +719,28 @@ export class MergeStore {
     });
   }
   completeChains(): void {
-    for (const chain of this.chains().filter(
-      (item) => item.state === ChainState.Active,
-    )) {
-      const entries = this.entries().filter(
-        (item) => item.chainId === chain.id,
-      );
-      if (
-        entries.length > 0 &&
-        entries.every((item) => item.state === EntryState.Merged)
-      ) {
+    for (const chain of this.db
+      .prepare(
+        "SELECT data FROM merge_chains WHERE json_extract(data,'$.state')='active' ORDER BY rowid",
+      )
+      .all()
+      .map((row) => checked(ChainSchema, JSON.parse(String(row["data"]))))) {
+      const entries = this.entriesForChain(chain.id);
+      if (entries.length > 0 && entries.every((item) => terminal(item.state))) {
+        const merged = entries.every(
+          (item) => item.state === EntryState.Merged,
+        );
         this.writeChain({
           ...chain,
-          state: ChainState.Completed,
+          state: merged ? ChainState.Completed : ChainState.Cancelled,
           updatedAt: this.now(),
         });
-        this.event("merge_chain_completed", "All selected PRs merged");
+        this.event(
+          merged ? "merge_chain_completed" : "merge_chain_cancelled",
+          merged
+            ? "All selected PRs merged"
+            : "All selected entries settled; at least one entry cancelled",
+        );
       }
     }
   }
@@ -708,8 +846,8 @@ export class MergeStore {
     });
   }
   private invalidate(prId: string): void {
-    for (const entry of this.entries().filter(
-      (item) => item.prId === prId && !terminal(item.state),
+    for (const entry of this.entries(prId).filter(
+      (item) => !terminal(item.state),
     )) {
       delete entry.ready;
       this.state(
@@ -742,9 +880,7 @@ export class MergeStore {
     });
   }
   ownerAssessment(pr: TrackedPR): MergeEntry["ready"] {
-    const entry = this.entries().find(
-      (item) => item.prId === pr.id && !terminal(item.state),
-    );
+    const entry = this.entries(pr.id).find((item) => !terminal(item.state));
     return entry?.ready?.source === ReviewAssessmentSource.Owner &&
       readyFor(entry, pr, this.dependencies())
       ? entry.ready
@@ -786,17 +922,19 @@ export class MergeStore {
         owner = this.owner(pr, actorId);
       this.editable(pr.id);
       const observation = pr.observation;
-      if (
-        !pr.enabled ||
-        observation === undefined ||
-        observation.headSha !== head
-      )
-        throw new Error("Readiness head does not match current enrolled PR");
+      if (!pr.enabled)
+        throw new ReadinessPreconditionError(
+          "PR tracking is disabled; enroll this PR before marking ready",
+        );
+      if (observation === undefined || observation.headSha !== head)
+        throw new ReadinessPreconditionError(
+          `Readiness head ${head} does not match observed head ${observation?.headSha ?? "unavailable"}; run \`octo-manager pr refresh ${pr.url}\` and wait until the observed head matches before marking ready`,
+        );
       const pending = pendingReviewReason(observation);
-      if (pending !== undefined) throw new Error(pending);
+      if (pending !== undefined) throw new ReadinessPreconditionError(pending);
       const feedback = feedbackKey(observation);
       if (feedback === undefined)
-        throw new Error(
+        throw new ReadinessPreconditionError(
           "Complete review evidence is required before marking ready",
         );
       let previous = this.entries().find(
@@ -846,7 +984,7 @@ export class MergeStore {
         EntryState.WaitingChecks,
         receipt === undefined && !entry.autoMerge
           ? "Owner assessed this head; automatic merging is off; use the Ready merge command when available"
-          : "Owner assessed this head; waiting for GitHub checks",
+          : "Owner assessed this head; queued for fresh GitHub merge eligibility inspection",
         {
           ready: {
             source:
@@ -992,7 +1130,10 @@ export class MergeStore {
       return next;
     });
   }
-  scan(pr: TrackedPR, tracked = this.tracking.prs()): void {
+  scan(
+    pr: Pick<TrackedPR, "id" | "url"> & { observation?: ReferenceObservation },
+    tracked: readonly Pick<TrackedPR, "url">[] = this.tracking.prContexts(),
+  ): void {
     const observation = pr.observation;
     if (observation === undefined) return;
     const sources: ReferenceSource[] = [];
@@ -1012,9 +1153,8 @@ export class MergeStore {
     const found = references(pr, sources, tracked),
       seen = new Set(found.map((ref) => ref.id));
     this.transaction(() => {
-      for (const prior of this.refs().filter(
-        (ref) => ref.prId === pr.id && ref.active,
-      )) {
+      const existing = new Map(this.refs(pr.id).map((ref) => [ref.id, ref]));
+      for (const prior of [...existing.values()].filter((ref) => ref.active)) {
         const complete =
           prior.sourceKey === "description"
             ? observation.description !== undefined
@@ -1029,7 +1169,7 @@ export class MergeStore {
         }
       }
       for (const ref of found) {
-        const prior = this.refs().find((item) => item.id === ref.id);
+        const prior = existing.get(ref.id);
         if (prior === undefined)
           this.saveReference({
             ...ref,
@@ -1059,7 +1199,7 @@ export class MergeStore {
           continue;
         this.db
           .prepare(
-            "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=?",
+            "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=? AND applicable=1",
           )
           .run(kind, subjectId, participant.agentId, revision);
         if (!applicable) continue;
@@ -1090,9 +1230,31 @@ export class MergeStore {
         };
         const entry =
           kind === "entry"
-            ? this.entries().find((value) => value.id === subjectId)
+            ? this.entries(pr.id).find((value) => value.id === subjectId)
             : undefined;
-        if (entry !== undefined) notice.mergeState = entry.state;
+        if (entry !== undefined) {
+          notice.mergeState = entry.state;
+          if (entry.state === EntryState.Merged) {
+            if (entry.detail === "PR merged externally")
+              notice.mergeOrigin = "external";
+            else if (
+              entry.detail === "GitHub confirmed merge" &&
+              entry.mergeCommit !== undefined &&
+              this.operations(pr.id).some(
+                (operation) =>
+                  operation.entryId === entry.id &&
+                  operation.kind === "merge" &&
+                  operation.state === OperationState.Succeeded &&
+                  operation.mergeCommit === entry.mergeCommit &&
+                  [
+                    "GitHub confirmed merge",
+                    "GitHub confirmed asynchronous merge",
+                  ].includes(operation.detail),
+              )
+            )
+              notice.mergeOrigin = "octo";
+          }
+        }
         this.tracking.inbox.freezeNotice(id, notice);
         this.db
           .prepare(

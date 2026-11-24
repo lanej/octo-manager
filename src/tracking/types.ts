@@ -45,6 +45,8 @@ export type ObservationPart<T> =
   | { state: "partial"; value: T; reason: string }
   | { state: "unavailable"; reason: string };
 export interface CheckObservation {
+  workflowRunId?: number;
+  workflowRunAttempt?: number;
   suiteId?: number;
   workflowId?: number;
   runNumber?: number;

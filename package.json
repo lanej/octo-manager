@@ -17,7 +17,9 @@
     "test": "bun test --timeout 30000 test",
     "check": "bash scripts/check.sh",
     "generate:codex": "bun scripts/generate-codex-types.ts",
-    "lint:biome": ".typescript-quality/node_modules/.bin/biome lint src test scripts --error-on-warnings"
+    "lint:biome": ".typescript-quality/node_modules/.bin/biome lint src test scripts --error-on-warnings",
+    "build:native": "bun scripts/build-native.ts",
+    "test:native": "bun scripts/test-native-acceptance.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.17.0",
@@ -39,6 +41,5 @@
     "@types/node": "24.19.2",
     "@types/ws": "8.18.1",
     "typescript": "5.9.3"
-  },
-  "packageManager": "bun@1.4.4"
+  }
 }

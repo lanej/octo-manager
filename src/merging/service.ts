@@ -21,6 +21,7 @@ import {
   EntryState,
   OperationState,
   CommandSchema,
+  Sha,
   checked,
   terminal,
   type MergeCommand,
@@ -37,6 +38,8 @@ export interface MergeOptions {
   provider?: MergeProvider;
   prepare?: Preparer;
   intervalMs?: number;
+  // Changes with every persisted reference-discovery input; omission retains full scans.
+  referenceInputRevision?: () => string;
 }
 export class MergeService {
   private timer?: ReturnType<typeof setInterval>;
@@ -44,6 +47,8 @@ export class MergeService {
   private abort = new AbortController();
   private provider: MergeProvider;
   private prepare: Preparer;
+  private referenceInputRevision: (() => string) | undefined;
+  private scannedRevision: string | undefined;
   constructor(
     readonly store: MergeStore,
     private tracking: TrackingService,
@@ -54,6 +59,7 @@ export class MergeService {
     options: MergeOptions = {},
   ) {
     this.profiles = profiles;
+    this.referenceInputRevision = options.referenceInputRevision;
     this.provider = options.provider ?? mergeProvider;
     const root = join(directory, "merge-workspaces");
     mkdirSync(root, { recursive: true, mode: 0o700 });
@@ -86,6 +92,19 @@ export class MergeService {
         );
       });
     }, this.interval);
+  }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      this.store.entries().every((entry) => terminal(entry.state)) &&
+      this.store
+        .operations()
+        .every(
+          (operation) =>
+            operation.state === OperationState.Succeeded ||
+            operation.state === OperationState.Failed,
+        )
+    );
   }
   async close(): Promise<void> {
     if (this.timer !== undefined) clearInterval(this.timer);
@@ -206,7 +225,7 @@ export class MergeService {
     return this.work;
   }
   private active(entry: MergeEntry, op?: MergeOperation): boolean {
-    const current = this.store.entries().find((item) => item.id === entry.id);
+    const current = this.store.entryById(entry.id);
     const authority = (value: MergeEntry) =>
       fingerprint([
         value.autoMerge,
@@ -239,14 +258,22 @@ export class MergeService {
     );
   }
   private async run(): Promise<void> {
-    const prs = this.store.tracking.prs();
-    for (const pr of prs.filter((pr) => pr.enabled)) {
-      await setImmediate();
-      if (this.abort.signal.aborted) return;
-      this.store.scan(pr, prs);
+    const revision = this.referenceInputRevision?.();
+    if (revision === undefined || revision !== this.scannedRevision) {
+      const prs = this.store.tracking.prContexts();
+      for (const pr of prs.filter((pr) => pr.enabled)) {
+        await setImmediate();
+        if (this.abort.signal.aborted) return;
+        const observation = this.store.tracking.referenceObservation(pr.id);
+        this.store.scan(
+          { ...pr, ...(observation === undefined ? {} : { observation }) },
+          prs,
+        );
+      }
+      this.scannedRevision = revision;
     }
     for (const operation of this.store
-      .operations()
+      .unfinishedOperations()
       .filter(
         (op) =>
           op.state === OperationState.Uncertain &&
@@ -256,7 +283,7 @@ export class MergeService {
       await this.reconcile(operation);
     }
     for (const operation of this.store
-      .operations()
+      .unfinishedOperations()
       .filter(
         (op) =>
           op.state === OperationState.Running &&
@@ -265,20 +292,19 @@ export class MergeService {
       ))
       await this.pollMerge(operation);
     for (const entry of this.store
-      .entries()
+      .unfinishedEntries()
       .filter(
         (entry) =>
           !terminal(entry.state) &&
           entry.nextAt <= this.now() &&
           !this.store.busy(entry.prId),
       )) {
+      if (await this.reconcileManualClosure(entry)) continue;
       if (!this.active(entry)) continue;
       try {
         await this.advance(entry);
       } catch (error) {
-        const fresh = this.store
-          .entries()
-          .find((value) => value.id === entry.id);
+        const fresh = this.store.entryById(entry.id);
         if (fresh === undefined || this.store.busy(entry.prId)) continue;
         const delay =
           error instanceof GitHubRateLimitError
@@ -299,6 +325,99 @@ export class MergeService {
     }
     this.store.completeChains();
     await this.receipts.refresh();
+  }
+  private async reconcileManualClosure(entry: MergeEntry): Promise<boolean> {
+    if (
+      entry.autoMerge ||
+      entry.receiptId !== undefined ||
+      entry.state === EntryState.Uncertain ||
+      entry.ready === undefined
+    )
+      return false;
+    const pr = this.store.tracking.pr(entry.prId);
+    if (pr.observation === undefined || pr.observation.lifecycle === "open")
+      return false;
+    const unchanged = () => {
+      const current = this.store.entryById(entry.id);
+      const tracked = this.store.tracking.pr(entry.prId);
+      return (
+        !this.abort.signal.aborted &&
+        current !== undefined &&
+        fingerprint(current) === fingerprint(entry) &&
+        tracked.enabled &&
+        tracked.url === pr.url &&
+        tracked.ownerAgentId === pr.ownerAgentId &&
+        tracked.trackingEpoch === pr.trackingEpoch &&
+        tracked.observation?.id === pr.observation?.id &&
+        tracked.observation?.headSha === pr.observation?.headSha &&
+        tracked.observation?.lifecycle === pr.observation?.lifecycle &&
+        this.store.chain(entry.chainId).state === ChainState.Active &&
+        !this.store.busy(entry.prId)
+      );
+    };
+    if (!unchanged()) return true;
+    const signal = AbortSignal.any([
+      this.abort.signal,
+      AbortSignal.timeout(15000),
+    ]);
+    try {
+      // Observing an external outcome does not grant authority to prepare, push or merge.
+      const snapshot =
+        this.provider.readiness === undefined
+          ? await this.provider.inspect(pr.url, signal)
+          : await this.provider.readiness(pr.url, pr.observation, signal);
+      if (signal.aborted)
+        throw new Error("External merge inspection cancelled");
+      if (!unchanged()) return true;
+      const observed = snapshot.observation;
+      if (
+        observed.headSha !== pr.observation.headSha ||
+        observed.lifecycle === "open"
+      )
+        throw new Error("PR changed during external merge inspection");
+      checked(Sha, observed.headSha);
+      if (observed.lifecycle === "merged") {
+        if (snapshot.mergeCommit === undefined)
+          throw new Error("External merge commit is unconfirmed");
+        checked(Sha, snapshot.mergeCommit);
+        if (
+          observed.headSha === entry.ready.head &&
+          pr.ownerAgentId === entry.ready.ownerId
+        )
+          this.store.state(entry, EntryState.Merged, "PR merged externally", {
+            mergeCommit: snapshot.mergeCommit,
+            nextAt: 0,
+          });
+        else
+          this.store.state(
+            entry,
+            EntryState.Cancelled,
+            "PR merged externally outside this assessment; entry cancelled",
+            { nextAt: 0 },
+          );
+      } else if (snapshot.mergeCommit === undefined)
+        this.store.state(
+          entry,
+          EntryState.Cancelled,
+          "PR closed without merging; entry cancelled",
+          { nextAt: 0 },
+        );
+      else throw new Error("External closure evidence is inconsistent");
+    } catch (error) {
+      if (unchanged())
+        this.store.state(
+          entry,
+          EntryState.Blocked,
+          `External merge confirmation unavailable: ${error instanceof Error ? error.message : "Inspection failed"}`,
+          {
+            nextAt:
+              error instanceof GitHubRateLimitError
+                ? Math.max(this.now() + 60000, error.retryAtMs)
+                : this.now() + 60000,
+          },
+        );
+    }
+    return true;
   }
   private async snapshot(
     prId: string,
@@ -465,6 +584,12 @@ export class MergeService {
       );
       return;
     }
+    if (entry.state === EntryState.WaitingChecks && entry.nextAt === 0)
+      entry = this.store.state(
+        entry,
+        EntryState.WaitingChecks,
+        "Inspecting current GitHub merge eligibility",
+      );
     const snapshot = await this.snapshot(pr.id);
     pr = this.store.tracking.pr(pr.id);
     if (!this.active(entry)) return;

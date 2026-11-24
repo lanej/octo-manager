@@ -68,12 +68,12 @@ function xml(value: string): string {
 export const serviceLabel = "com.lanej.octo-manager";
 export function launchAgent(
   home: string,
-  bun: string,
   release: string,
   state: string,
   path: string,
   configHome?: string,
   codexHome?: string,
+  executable?: string,
 ): string {
   const environment: Record<string, string> = {
     HOME: home,
@@ -84,7 +84,7 @@ export function launchAgent(
   };
   return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>
 <key>Label</key><string>${serviceLabel}</string>
-<key>ProgramArguments</key><array><string>${xml(bun)}</string><string>${xml(join(release, "dist", "cli.js"))}</string><string>serve</string></array>
+<key>ProgramArguments</key><array>${(executable === undefined ? ["/usr/bin/env", "bun", join(release, "dist", "cli.js")] : [executable]).map((value) => `<string>${xml(value)}</string>`).join("")}<string>serve</string></array>
 <key>WorkingDirectory</key><string>${xml(release)}</string>
 <key>EnvironmentVariables</key><dict>${Object.entries(environment)
     .map(
@@ -95,4 +95,13 @@ export function launchAgent(
 <key>StandardOutPath</key><string>${xml(join(state, "coordinator.log"))}</string>
 <key>StandardErrorPath</key><string>${xml(join(state, "coordinator.log"))}</string>
 </dict></plist>\n`;
+}
+
+export function serviceCommand(input: {
+  release: string;
+  executable?: string;
+}): string[] {
+  return input.executable === undefined
+    ? ["/usr/bin/env", "bun", join(input.release, "dist/cli.js")]
+    : [input.executable];
 }

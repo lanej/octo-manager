@@ -51,6 +51,9 @@ export class AgentInbox {
       applicableOnly,
     );
   }
+  uncovered(agentId: string, after = 0) {
+    return this.repository.uncovered(agentId, after);
+  }
   acknowledge(id: string, agentId: string): AgentMessage {
     return this.repository.acknowledge(id, agentId);
   }

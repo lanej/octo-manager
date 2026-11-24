@@ -14,6 +14,7 @@ export interface PollState {
   epoch: number;
   active: boolean;
   signature?: string;
+  deferredReason?: string;
   intervalMs: number;
   nextAt: number;
 }

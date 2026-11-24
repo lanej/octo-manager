@@ -6,6 +6,7 @@ import {
   type PollState,
   type PollPolicy,
 } from "./polling.js";
+import { GitHubRequestCancelledError } from "../github-errors.js";
 import { GitHubRateLimitError } from "../github-api.js";
 import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
@@ -23,7 +24,7 @@ import {
 } from "./types.js";
 import { TrackingStore } from "./store.js";
 import type { TrackingConfig } from "./config.js";
-import { readObservation } from "./github.js";
+import { GitHubObservationChangedError, readObservation } from "./github.js";
 import {
   CodexConnection,
   DeliveryError,
@@ -35,6 +36,8 @@ export interface TrackingOptions {
   schedules?: ScheduleStore;
   interactive?: <T>(work: () => T) => T;
   managedQueue?: (agentId: string) => boolean;
+  // Positive ownership facts apply only to recorded rows in this synchronous selection pass.
+  managedQueueBatch?: (agentIds: readonly string[]) => ReadonlySet<string>;
   notificationRecorded?: () => void;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
@@ -159,6 +162,9 @@ export class TrackingService {
         active: saved.active === true,
         intervalMs: saved.intervalMs,
         nextAt: saved.dueAtMs,
+        ...(saved.deferredReason === undefined
+          ? {}
+          : { deferredReason: saved.deferredReason }),
         ...(saved.signature === undefined
           ? {}
           : { signature: saved.signature }),
@@ -182,6 +188,9 @@ export class TrackingService {
       epoch: state.epoch,
       active: state.active,
       ...(state.signature === undefined ? {} : { signature: state.signature }),
+      ...(state.deferredReason === undefined
+        ? {}
+        : { deferredReason: state.deferredReason }),
       state: interactive ? ScheduleState.Queued : ScheduleState.Deferred,
     });
   }
@@ -214,25 +223,61 @@ export class TrackingService {
     this.refreshControllers.set(p.id, controller);
     this.refreshTriggers.set(p.id, trigger);
     let observed: ObservationInput | undefined;
+    let deferredReason: string | undefined;
+    const priorReason =
+      this.pollState(p.id)?.deferredReason ?? p.lastRefreshError?.message;
     const work = (async () => {
       try {
         const input: ObservationInput = await (
           this.options.read ?? readObservation
-        )(p.url, controller.signal, undefined, this.now);
-        observed = input;
-        if (!this.stopped)
-          this.store.observe(p.id, input, this.config, p.trackingEpoch);
+        )(
+          p.url,
+          controller.signal,
+          undefined,
+          this.now,
+          undefined,
+          this.store.checks.reconciliationChecks(p.id),
+        );
+        const current = this.store.pr(p.id);
+        if (
+          !this.stopped &&
+          current.enabled &&
+          current.trackingEpoch === p.trackingEpoch
+        ) {
+          const accepted = this.store.observe(
+            p.id,
+            input,
+            this.config,
+            p.trackingEpoch,
+          );
+          if (accepted.observation?.id !== current.observation?.id) {
+            observed = input;
+            if (priorReason !== undefined)
+              this.store.refreshOutcome(p.id, "recovered", priorReason);
+          }
+        }
       } catch (error) {
         if (error instanceof GitHubRateLimitError)
           this.githubRetryAt = Math.max(this.githubRetryAt, error.retryAtMs);
-        if (
-          !this.stopped &&
-          this.store.pr(p.id).trackingEpoch === p.trackingEpoch
-        )
-          this.store.refreshError(
-            p.id,
-            error instanceof Error ? error.message : "GitHub refresh failed",
-          );
+        const cancelled =
+          controller.signal.aborted ||
+          error instanceof GitHubRequestCancelledError;
+        if (this.store.prContext(p.id).trackingEpoch === p.trackingEpoch) {
+          const reason = (
+            error instanceof Error ? error.message : "GitHub refresh failed"
+          ).slice(0, 1000);
+          if (
+            cancelled ||
+            (!this.stopped && error instanceof GitHubObservationChangedError)
+          ) {
+            deferredReason = reason;
+            this.store.refreshOutcome(
+              p.id,
+              cancelled ? "cancelled" : "retry_scheduled",
+              reason,
+            );
+          } else if (!this.stopped) this.store.refreshError(p.id, reason);
+        }
       } finally {
         const minimumMs =
           this.options.intervalMs ??
@@ -250,9 +295,8 @@ export class TrackingService {
               defaultPollPolicy.activeMaximumMs,
           ),
         };
-        this.savePoll(
-          p.id,
-          schedulePoll(
+        this.savePoll(p.id, {
+          ...schedulePoll(
             this.pollState(p.id),
             p.trackingEpoch,
             observed,
@@ -261,7 +305,8 @@ export class TrackingService {
             this.refreshTriggers.get(p.id) ?? trigger,
             this.githubRetryAt,
           ),
-        );
+          ...(deferredReason === undefined ? {} : { deferredReason }),
+        });
         if (this.stopped) {
           const interrupted = this.options.schedules?.get(`tracking:${p.id}`);
           if (interrupted !== undefined)
@@ -289,7 +334,7 @@ export class TrackingService {
       this.handoffWork = this.handoffs
         .drain((request) => {
           const existing = this.store
-            .prs()
+            .prContexts()
             .find((pr) => pr.url === request.url);
           if (existing !== undefined) {
             const owner = this.store.agent(existing.ownerAgentId);
@@ -314,25 +359,30 @@ export class TrackingService {
     }
     for (const id of this.store.retirement.expire())
       this.refreshControllers.get(id)?.abort();
-    for (const p of this.store.prs())
+    const queued = this.options.schedules?.queuedKeys();
+    for (const p of this.store.prContexts()) {
       if (
-        p.enabled &&
-        this.now() >= this.githubRetryAt &&
-        (p.state === TrackingState.Watching ||
-          p.state === TrackingState.Draining ||
-          this.options.schedules?.get(`tracking:${p.id}`)?.state ===
-            ScheduleState.Queued) &&
-        ((this.pollState(p.id)?.epoch === p.trackingEpoch
-          ? this.pollState(p.id)?.nextAt
-          : undefined) ?? 0) <= this.now()
+        !p.enabled ||
+        this.now() < this.githubRetryAt ||
+        (p.state !== TrackingState.Watching &&
+          p.state !== TrackingState.Draining &&
+          queued?.has(`tracking:${p.id}`) !== true)
+      )
+        continue;
+      const state = this.pollState(p.id);
+      if (
+        ((state?.epoch === p.trackingEpoch ? state.nextAt : undefined) ?? 0) <=
+        this.now()
       )
         this.runPoll(p.id);
+    }
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
       this.deliveryWork = this.deliverNext()
         .catch(() => {})
         .finally(() => {
           this.deliveryBusy = false;
+          delete this.deliveryWork;
         });
     }
   }
@@ -357,7 +407,21 @@ export class TrackingService {
     );
   }
   private async deliverNext(): Promise<void> {
-    const d = this.store.deliveries().find((d) => {
+    const candidates = this.store.deliveryCandidates();
+    const managed = this.options.managedQueueBatch?.([
+      ...new Set(
+        candidates
+          .filter((candidate) => candidate.messageRecorded)
+          .map((candidate) => candidate.recipientAgentId),
+      ),
+    ]);
+    const d = candidates.find((d) => {
+      // Recorded pull-inbox work belongs to digest reconciliation; direct selection does not need its body.
+      if (d.messageRecorded && managed?.has(d.recipientAgentId) === true)
+        return false;
+      if (d.messageRecorded && this.usesPullInbox(d.recipientAgentId))
+        return false;
+
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||
@@ -738,6 +802,30 @@ export class TrackingService {
       this.store.subscriptions.includes(action.prId, d.recipientAgentId) &&
       (includeReceived ||
         this.store.inbox.get(d.id)?.acknowledgedAt === undefined)
+    );
+  }
+  checkpointable(): boolean {
+    return (
+      this.handoffWork === undefined &&
+      this.refreshes.size === 0 &&
+      !this.deliveryBusy &&
+      this.deliveryWork === undefined &&
+      this.connections.size === 0 &&
+      !this.store
+        .deliveries()
+        .some(
+          (delivery) =>
+            delivery.progress.state === DeliveryState.Pending ||
+            delivery.progress.state === DeliveryState.Sending ||
+            delivery.progress.state === DeliveryState.Uncertain,
+        ) &&
+      !this.store
+        .attempts()
+        .some(
+          (attempt) =>
+            attempt.outcome.state === "sending" ||
+            attempt.outcome.state === "uncertain",
+        )
     );
   }
   async close(): Promise<void> {

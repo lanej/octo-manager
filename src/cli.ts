@@ -1,7 +1,13 @@
 #!/usr/bin/env bun
+import { nativeAot, packageRoot } from "./package-root.js";
+import { startupRecord } from "./startup-context.js";
+import { requireBun } from "./runtime.js";
 import { issuesCLI } from "./issues/cli.js";
 import { commandTree, CommanderError } from "./command-tree.js";
 import { publicationCLI } from "./publication/cli.js";
+import { runtimeLifecycle } from "./lifecycle-rpc.js";
+import { artifactIdentity, type ActivationReport } from "./lifecycle.js";
+import { readFileSync } from "node:fs";
 import {mergingCLI} from "./merging/cli.js";
 import {printResult,printFailure} from "./cli-output.js";
 import {subscriptionsCLI} from "./tracking/subscriptions-cli.js";
@@ -13,7 +19,6 @@ import { activityCLI } from "./activity/cli.js";
 import { directoryLabel, type ParsedCommand } from "./arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { loadTrackingConfig } from "./tracking/config.js";
@@ -21,6 +26,7 @@ import { request, trackingRequest } from "./client.js";
 import { existsSync } from "node:fs";
 import { terminalStates, type JobEvent } from "./domain.js";
 
+requireBun(process.versions["bun"]);
 process.umask(0o077);
 async function execute(parsed: ParsedCommand): Promise<void> {
   switch(parsed.capability){
@@ -38,15 +44,63 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const command = positionals[0]??"", argument=positionals[1];
+  if (command === "lifecycle") {
+    if (argument === "artifact") {
+      console.log(JSON.stringify({ expected_identity: artifactIdentity() }));
+      return;
+    }
+    let restorePaused: boolean | undefined;
+    const operation = process.env["PROJECT_UPDATE_OPERATION_DIR"];
+    if (argument === "restore" && operation !== undefined) {
+      const record: unknown = JSON.parse(
+        readFileSync(join(operation, "octo-manager-inventory.json"), "utf8"),
+      );
+      if (
+        typeof record === "object" &&
+        record !== null &&
+        "targets" in record &&
+        Array.isArray(record.targets)
+      ) {
+        const target: unknown = record.targets[0];
+        if (
+          typeof target === "object" &&
+          target !== null &&
+          "scheduler_paused" in target &&
+          typeof target.scheduler_paused === "boolean"
+        )
+          restorePaused = target.scheduler_paused;
+      }
+    }
+    let value: ActivationReport;
+    try {
+      value = await runtimeLifecycle(directory, {
+        action: argument ?? "",
+        expectedNativeId: process.env["PROJECT_UPDATE_INSTANCE_ID"] ?? "",
+        runId: process.env["PROJECT_UPDATE_RUN_ID"] ?? "",
+        expectedIdentity: artifactIdentity() ?? "",
+        ...(restorePaused === undefined ? {} : { restorePaused }),
+      });
+    } catch {
+      console.log(JSON.stringify({ schema_version: 1, targets: [{ target: "local", expected_identity: artifactIdentity(), running_identity: null, ready: false, process: null, sessions: [], reason: "native-lifecycle-control-unavailable" }] }));
+      process.exitCode = 3;
+      return;
+    }
+    console.log(JSON.stringify(value));
+    if (argument === "restore" && value.targets[0].reason !== undefined) process.exitCode = 3;
+    if (argument === "verify" && !value.targets[0].ready) process.exitCode = 3;
+    if (argument === "checkpoint" && value.targets[0].checkpoint?.state !== "confirmed") process.exitCode = 3;
+    if (argument === "stop" && !value.targets[0].stop_accepted) process.exitCode = 3;
+    return;
+  }
   if (command === "codex-hook") { await codexHookCLI(directory); return; }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
-    const child = spawn(process.execPath, [fileURLToPath(new URL("../node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js", import.meta.url)), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
+    const child = spawn(nativeAot ? (Bun.which("bun") ?? "bun") : process.execPath, [join(packageRoot(), "node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); }); return;
   }
   if (command === "dashboard") {
     if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
-    const binary = fileURLToPath(new URL("../build/octo-manager-tui", import.meta.url));
+    const binary = join(packageRoot(), "build/octo-manager-tui");
     if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
     const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone]), ...(values["github-hours"] === undefined ? [] : ["--github-hours", values["github-hours"]])], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });
@@ -58,8 +112,8 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     const model = values.model ?? trackingConfig.workerModel;
     const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
-    console.log(JSON.stringify({ ready: true, state: directory }));
-    await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
+    console.log(JSON.stringify(startupRecord(directory)));
+    await new Promise<void>((resolve, reject) => { const stop = () => { void coordinator.close().then(resolve, reject); }; coordinator.once("retired", resolve); process.once("SIGINT", stop); process.once("SIGTERM", stop); });
     return;
   }
   const id = argument;

@@ -4,14 +4,16 @@ Octo takes over GitHub check and review monitoring after a PR is enrolled. Agent
 
 ## Install on macOS or Linux
 
-Use the pinned Bun 1.4.4, the repository dependencies, GitHub CLI with an existing login, and the Go toolchain from `go.mod`. Commit reviewed source changes before installing:
+Use an environment-provided Bun meeting `package.json` `engines.bun` (currently 1.4.4 or later), the repository dependencies, GitHub CLI with an existing login, and the Go toolchain from `go.mod`. Commit reviewed source changes before installing:
 
 ```sh
 bun scripts/install-local.ts --codex
 ~/.local/bin/octo-manager dashboard
 ```
 
-The installer builds a revision-specific release under `~/.local/share/octo-manager/releases/`, installs production dependencies with lifecycle scripts disabled, and points the stable launcher at `current`. The service uses absolute release paths and a private pinned Bun, so it does not depend on a source checkout, shell startup files, or the caller's working directory. Existing state stays in `~/.local/state/octo-manager` unless `OCTO_MANAGER_STATE` overrides it. Do not run a manual coordinator against the same state while starting the service. `--no-start` stages the release and configuration without starting it, for a controlled handover from an existing manual process.
+The installer builds a revision-specific release under `~/.local/share/octo-manager/releases/`, installs production dependencies with lifecycle scripts disabled, and points the stable launcher at `current`. The installer checks Bun on `PATH` before changing the installation, and the launcher and service use the environment's Bun. The service retains the installation-time `PATH`, including the shared Bun directory, and uses absolute release paths, so it does not depend on a source checkout, shell startup files, or the caller's working directory. Octo does not install or copy Bun. Newer qualifying runtime versions are accepted; startup checks the minimum again. If the runtime's directory changes, reinstall Octo to refresh the service environment. Existing state stays in `~/.local/state/octo-manager` unless `OCTO_MANAGER_STATE` overrides it. Do not run a manual coordinator against the same state while starting the service. `--stage-only` publishes the immutable release and its version 1 artifact receipt while preserving the selected launcher, configuration, service definition, and existing owner. `--no-start` promotes consumers only after a compatible native checkpoint or authoritative owner absence, then leaves service activation to the controlled handover.
+
+Each successful coordinator start emits a JSON readiness record retaining `ready` and `state`, with UTC `at`, process `pid`, actual `runtime` name/version and `release` identity. Installed release identity comes from metadata beside the running executable; missing, invalid or unreadable metadata produces an explicit unavailable status rather than using the caller's checkout revision.
 
 The user LaunchAgent `com.lanej.octo-manager` starts at login and restarts the coordinator if it exits. Its definition is `~/Library/LaunchAgents/com.lanej.octo-manager.plist`; logs are in the state directory's `coordinator.log`. The installer preserves prior launcher and changed configuration under `install-backups/<revision>/` in that state directory. Installation is not a transaction across all these files; inspect errors and backups before retrying a failed installation.
 
@@ -21,6 +23,12 @@ launchctl kickstart -k gui/$(id -u)/com.lanej.octo-manager
 ```
 
 Linux uses a systemd user unit at the selected configuration home’s `systemd/user/octo-manager.service`. If no user manager is available, installation completes with `started: false` and a safely quoted foreground command that preserves HOME, PATH, state, configuration and Codex home. An available manager’s configuration or startup failure remains an error. Linux service logs are available through `journalctl --user -u octo-manager.service`. `--home DIR` supports a separate installation root; normal configuration overrides `XDG_CONFIG_HOME` and `CODEX_HOME` remain supported.
+
+## Native AOT installation
+
+Pass `--native --aot-bun /absolute/path/to/verified/bun` to build and install the coordinator and its workers as a native executable. Native compilation uses the explicitly selected experimental compiler; ordinary installation continues to use the stable environment Bun. A native request fails if that compiler is missing or incompatible and never falls back to interpreted JavaScript. See the [native build guide](native-build.md) for the compiler pin, verification, runtime requirements, and private acceptance command.
+
+Native releases use `<revision>-native-aot` directories, separate from interpreted releases of the same revision. Their launcher and service execute `build/octo-manager` directly; `release.json` records the format and compiler source revision, reported version, and executable SHA-256. The artifact identity binds the kernel-mapped executable, metadata and shipped resources. Existing activation checkpoints, owner verification and graceful retirement apply to both formats.
 
 ## GitHub traffic history
 
@@ -60,6 +68,6 @@ Useful recovery commands are in the [tracking guide](tracking.md). Existing inbo
 
 Queue endpoints now use [agent digests](agent-digests.md): superseded pending revisions are withdrawn before replacement, with uncertain effects retained for reconciliation. The existing hook also recognizes exact digest bodies; installation does not enable hooks or require PR submissions.
 
-Native release/runtime paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. The explicit `--no-start` option stages configuration without activating a service and returns the equivalent foreground command. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
+Native release paths are scoped by platform and architecture. Existing releases remain untouched; metadata prevents incompatible reuse. Use `--stage-only` to prepare a release without changing global consumers. The explicit `--no-start` option promotes the CLI, configuration, and service definition after the native compatibility and checkpoint guard, leaves activation pending, and returns the equivalent foreground command. Incompatible or unknown active owners return incomplete activation with exit code 3 before consumer promotion. Hooks are shared across platforms, and their native trust/host-execution step remains separate from JSON installation.
 
 Startup upgrades cached retirement state before polling: settled merged PRs are archived with history and receipts retained, while incomplete checks keep draining. Explicitly disabled PRs stay disabled. See [polling and auto-merge](polling-and-auto-merge.md) for schema-14 upgrade behavior.

@@ -14,6 +14,12 @@ export enum CheckWatchState {
   Cancelled = "cancelled",
   Expired = "expired",
 }
+export interface CheckReconciliationContext {
+  forHead?: (headSha: string) => CheckReconciliationContext;
+  checks: readonly CheckObservation[];
+  after?: string;
+  selected?: (id: string) => void;
+}
 export interface CheckWatch {
   id: string;
   prId: string;
@@ -55,9 +61,11 @@ export function checkEvidence(
     if (previous === undefined || check.at > previous.at)
       current.set(key, check);
   }
-  const value = [...current.values()].sort((left, right) =>
-    left.id.localeCompare(right.id),
-  );
+  const value = [...current.values()]
+    .filter(
+      (check) => !entries.some((candidate) => checkReplaces(check, candidate)),
+    )
+    .sort((left, right) => left.id.localeCompare(right.id));
   return parts.every((part) => part?.state === "complete")
     ? { state: "complete", value }
     : {
@@ -87,6 +95,23 @@ export function checkReplaces(
   previous: CheckObservation,
   candidate: CheckObservation,
 ): boolean {
+  if (candidate.headSha !== previous.headSha) return false;
+  const workflow = /^workflow:([1-9][0-9]*):([1-9][0-9]*)$/.exec(candidate.id);
+  if (
+    previous.id.startsWith("run:") &&
+    previous.workflowRunId !== undefined &&
+    previous.workflowRunAttempt !== undefined &&
+    Number.isSafeInteger(previous.workflowRunId) &&
+    previous.workflowRunId > 0 &&
+    Number.isSafeInteger(previous.workflowRunAttempt) &&
+    previous.workflowRunAttempt > 0 &&
+    workflow !== null
+  ) {
+    return (
+      BigInt(workflow[1] ?? "0") === BigInt(previous.workflowRunId) &&
+      BigInt(workflow[2] ?? "0") > BigInt(previous.workflowRunAttempt)
+    );
+  }
   if (candidate.key !== previous.key) return false;
   if (previous.id.startsWith("status:") && candidate.id.startsWith("status:")) {
     if (candidate.at > previous.at) return true;
@@ -212,7 +237,20 @@ export function storedCheckEvidence(
   const entries: unknown[] = raw["value"];
   const checks = entries.map((entry): CheckObservation => {
     if (!object(entry)) throw new Error("Invalid stored check");
+    const run = entry["workflowRunId"],
+      attempt = entry["workflowRunAttempt"];
+    if (
+      (run === undefined) !== (attempt === undefined) ||
+      (run !== undefined && (integer(run) < 1 || integer(attempt) < 1))
+    )
+      throw new Error("Invalid check execution lineage");
     return {
+      ...(run === undefined
+        ? {}
+        : {
+            workflowRunId: integer(run),
+            workflowRunAttempt: integer(attempt),
+          }),
       id: string(entry["id"]),
       key: string(entry["key"]),
       ...(entry["suiteId"] === undefined
@@ -281,6 +319,63 @@ export class CheckWatches {
         };
       });
   }
+  reconciliationChecks(
+    prId: string,
+    observation?: PRObservation | string,
+  ): CheckReconciliationContext {
+    if (observation === undefined)
+      return {
+        checks: [],
+        forHead: (headSha) => this.reconciliationChecks(prId, headSha),
+      };
+    const headSha =
+      typeof observation === "string" ? observation : observation.headSha;
+    const watch = this.list(prId)
+      .filter(
+        (value) =>
+          [
+            CheckWatchState.Waiting,
+            CheckWatchState.Completed,
+            CheckWatchState.Superseded,
+          ].includes(value.state) && value.headSha === headSha,
+      )
+      .at(-1);
+    if (watch === undefined || watch.evidence.state === "unavailable")
+      return { checks: [] };
+    const candidates = watch.evidence.value
+      .filter((check) => check.id.startsWith("run:"))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    if (candidates.length === 0) return { checks: [] };
+    const key = `check-reconciliation:${prId}`;
+    const saved = this.db
+      .prepare("SELECT value FROM settings WHERE key=?")
+      .get(key);
+    let after = "";
+    if (saved !== undefined) {
+      const cursor: unknown = JSON.parse(String(saved["value"]));
+      if (
+        !object(cursor) ||
+        typeof cursor["headSha"] !== "string" ||
+        typeof cursor["after"] !== "string"
+      )
+        throw new Error("Invalid check reconciliation cursor");
+      if (cursor["headSha"] === headSha) after = cursor["after"];
+    }
+    return {
+      checks: candidates,
+      after,
+      selected: (id) => {
+        if (!candidates.some((check) => check.id === id))
+          throw new Error("Invalid check reconciliation selection");
+        // The cursor records attempted coverage, never an execution outcome.
+        this.db
+          .prepare(
+            "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          )
+          .run(key, JSON.stringify({ headSha, after: id }));
+      },
+    };
+  }
   private save(watch: CheckWatch): void {
     this.db
       .prepare(
@@ -322,6 +417,25 @@ export class CheckWatches {
     const previous = sameHead.at(-1);
     let watch =
       previous?.state === CheckWatchState.Waiting ? previous : undefined;
+    const rawUpdates =
+      observation.checks.state === "unavailable"
+        ? []
+        : observation.checks.value;
+    const enrich = (
+      value: ObservationPart<CheckObservation[]>,
+    ): ObservationPart<CheckObservation[]> =>
+      value.state === "unavailable"
+        ? value
+        : {
+            ...value,
+            value: value.value.map(
+              (old) =>
+                rawUpdates.find(
+                  (fresh) =>
+                    fresh.id === old.id && fresh.headSha === old.headSha,
+                ) ?? old,
+            ),
+          };
     const previousChecks =
       previous?.evidence.state === "complete" ||
       previous?.evidence.state === "partial"
@@ -330,7 +444,7 @@ export class CheckWatches {
     const changed =
       previous?.state === CheckWatchState.Completed &&
       evidence.state !== "unavailable" &&
-      evidence.value.some((check) => {
+      (evidence.value.some((check) => {
         const before = previousChecks.find(
           (candidate) => candidate.id === check.id,
         );
@@ -339,7 +453,14 @@ export class CheckWatches {
           before.status !== check.status ||
           before.conclusion !== check.conclusion
         );
-      });
+      }) ||
+        previousChecks.some((old) => {
+          const refreshed =
+            rawUpdates.find((fresh) => fresh.id === old.id) ?? old;
+          return evidence.value.some((candidate) =>
+            checkReplaces(refreshed, candidate),
+          );
+        }));
     if (
       watch === undefined &&
       observation.lifecycle === "open" &&
@@ -359,13 +480,13 @@ export class CheckWatches {
         evidence:
           previous === undefined
             ? evidence
-            : retainEvidence(previous.evidence, evidence),
+            : retainEvidence(enrich(previous.evidence), evidence),
         createdAt: this.now(),
         updatedAt: this.now(),
       };
     }
     if (watch !== undefined) {
-      const retained = retainEvidence(watch.evidence, evidence);
+      const retained = retainEvidence(enrich(watch.evidence), evidence);
       const next = {
         ...watch,
         evidence: retained,

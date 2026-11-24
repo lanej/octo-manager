@@ -36,6 +36,8 @@ const check = object({
   conclusion: text,
   at: integer,
   url: text,
+  workflowRunId: Type.Optional(integer),
+  workflowRunAttempt: Type.Optional(integer),
   suiteId: Type.Optional(integer),
   workflowId: Type.Optional(integer),
   runNumber: Type.Optional(integer),

@@ -8,7 +8,7 @@ Start with [issue setup](docs/issues.md) and the [state-machine and flow guide](
 
 ## Run
 
-Requires Node 22+ for quality tools, Bun 1.4.4, Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.11). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
+Requires Node 22+ for quality tools, Bun meeting the minimum in `package.json` `engines.bun` (currently 1.4.4 or later), Git, GitHub CLI, and the Go toolchain declared by `go.mod` (currently Go 1.26.11). Builds and checks select that Go toolchain automatically. Linux and macOS are supported.
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts
@@ -30,7 +30,7 @@ bin/octo-manager job show JOB_ID --json
 bin/octo-manager job events JOB_ID --watch
 ```
 
-All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. For a persistent macOS service and automatic Codex enrollment, use the [local installation guide](docs/local-install.md). Manual runs remain available on both platforms. Codex notifications attach to an already running local Codex app-server; installation does not change MCP configuration.
+All processes use the same state directory. The default is `~/.local/state/octo-manager`; select another with `--state DIR` or `OCTO_MANAGER_STATE`. Existing prototype databases can be selected explicitly with `--state`; API clients must use the new Connect protocol. For a persistent macOS service and automatic Codex enrollment, use the [local installation guide](docs/local-install.md). The [native AOT build guide](docs/native-build.md) describes the explicit experimental compiler option. Manual runs remain available on both platforms. Codex notifications attach to an already running local Codex app-server; installation does not change MCP configuration.
 
 Quitting the dashboard detaches it and leaves jobs running. Stop `serve` explicitly with Ctrl-C for graceful coordinator shutdown. The dashboard reconnects when the service returns. The default `--theme terminal` inherits the terminal's reported background and foreground while keeping Charmed's semantic colors. It does not replace Kitty's background. Use `--theme dark`, `light`, `contrast`, or `mono` for an explicit palette.
 

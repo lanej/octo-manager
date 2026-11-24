@@ -34,6 +34,6 @@ jobs:
           key: go-quality-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check-go.sh', 'go.mod') }}
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.4'
+          bun-version: latest
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: python3 scripts/check-source-code.py go

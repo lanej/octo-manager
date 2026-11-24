@@ -11,7 +11,11 @@ export class AssessmentStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
-  ) {}
+  ) {
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS assessments_to_reconcile ON evidence_assessments(id) WHERE json_extract(data,'$.state') IS NOT 'superseded'",
+    );
+  }
   recoverInterrupted(): void {
     for (const item of this.list())
       if (item.state === "running")
@@ -20,6 +24,15 @@ export class AssessmentStore {
   list(): Assessment[] {
     return this.db
       .prepare("SELECT data FROM evidence_assessments ORDER BY rowid")
+      .all()
+      .map((row) => assessment(JSON.parse(String(row["data"]))));
+  }
+  reconciliationCandidates(): Assessment[] {
+    // rationale: Rowid ordering otherwise favors scanning superseded payloads over the partial index.
+    return this.db
+      .prepare(
+        "SELECT data FROM evidence_assessments INDEXED BY assessments_to_reconcile WHERE json_extract(data,'$.state') IS NOT 'superseded' ORDER BY rowid",
+      )
       .all()
       .map((row) => assessment(JSON.parse(String(row["data"]))));
   }

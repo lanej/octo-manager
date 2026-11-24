@@ -313,6 +313,27 @@ export class IssueService {
     });
     return this.work;
   }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      this.store.effects().length === 0 &&
+      !this.store
+        .assignments()
+        .some(
+          (item) =>
+            item.state === AttemptState.Intended ||
+            item.state === AttemptState.Running ||
+            item.state === AttemptState.Uncertain,
+        ) &&
+      this.store
+        .list()
+        .every(
+          (issue) =>
+            terminal(issue.stage) ||
+            (issue.waiting === Waiting.Paused && issue.assignmentId === ""),
+        )
+    );
+  }
   async close(): Promise<void> {
     this.abort.abort();
     await this.work;

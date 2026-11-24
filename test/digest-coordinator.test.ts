@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { messageReceiptId } from "../src/notifications/render.js";
 import { shortId } from "../src/tracking/identifiers.js";
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Coordinator } from "../src/coordinator.js";
 import { codexHook } from "../src/integrations/codex.js";
@@ -22,6 +22,76 @@ async function waitForQueue(predicate: () => boolean) {
     await Bun.sleep(10);
   }
   throw new Error("Queue did not reconcile after the state change");
+}
+
+for (const callback of ["presentation", "ownerFeedbackCovered"] as const) {
+  test(`custom ${callback} state changes are observed without a database write`, async () => {
+    const directory = await mkdtemp("/tmp/octo-custom-digest-input-");
+    const config = defaultTrackingConfig();
+    config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
+    let blocked = true;
+    const slots: QueuedMessage[] = [];
+    const queue: QueueConnection = {
+      prepare: () => Promise.resolve({ busy: false }),
+      queued: () => Promise.resolve(slots),
+      enqueueQueued: (_agent, clientId, body) => {
+        const item = { queueId: clientId, clientId, body };
+        slots.push(item);
+        return Promise.resolve(item);
+      },
+      cancelQueued: () => Promise.resolve(true),
+      received: () => Promise.resolve({ bodies: [], complete: true }),
+      close() {},
+    };
+    const callbacks =
+      callback === "presentation"
+        ? { presentation: () => ({ defer: blocked }) }
+        : { ownerFeedbackCovered: () => blocked };
+    const coordinator = new Coordinator(directory, {
+      trackingConfig: config,
+      now: () => 1000,
+      digestOptions: { connect: () => queue, ...callbacks },
+    });
+    try {
+      const pr = coordinator.tracking.track(
+        "https://github.com/owner/repo/pull/1",
+        { harness: "codex", endpoint: "local", sessionId: "custom-input" },
+      );
+      coordinator.store.tracking.observe(
+        pr.id,
+        {
+          observedAt: 1000,
+          headSha: "a".repeat(40),
+          baseSha: "b".repeat(40),
+          lifecycle: "open",
+          mergeability: "conflicting",
+          checks: { state: "complete", value: [] },
+          reviews: { state: "complete", value: [] },
+        },
+        config,
+      );
+      const delivery = coordinator.store.tracking.deliveries()[0];
+      if (delivery === undefined) throw new Error("Missing delivery");
+      const action = coordinator.store.tracking.action(delivery.actionId);
+      const notice = coordinator.store.tracking.noticeForAction(
+        action,
+        pr.ownerAgentId,
+      );
+      const inbox = coordinator.store.tracking.inbox;
+      inbox.freezeNotice(delivery.id, notice);
+      inbox.record(delivery.id, inbox.render(delivery.id, notice));
+      await coordinator.digests.flush();
+      expect(slots).toHaveLength(0);
+      const revision = coordinator.store.inputRevision();
+      blocked = false;
+      expect(coordinator.store.inputRevision()).toBe(revision);
+      await coordinator.digests.flush();
+      expect(slots).toHaveLength(1);
+    } finally {
+      await coordinator.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 }
 
 test("owner readiness wakes queue cleanup and old receipts flag stale items", async () => {
@@ -162,7 +232,7 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
         observedAt: 2,
         checks: {
           state: "complete",
-          value: [{ ...check, id: "check-2", at: 2, conclusion: "success" }],
+          value: [{ ...check, at: 2, conclusion: "success" }],
         },
       },
       config,
@@ -550,6 +620,86 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
       coordinator.store.tracking.inbox.get(added)?.acknowledgedAt,
     ).toBeUndefined();
   } finally {
+    await coordinator.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("default discovery skips scheduler bookkeeping but still queues a fresh notification", async () => {
+  const directory = await mkdtemp("/tmp/octo-default-revision-");
+  const config = defaultTrackingConfig();
+  config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
+  const slots: QueuedMessage[] = [];
+  const queue: QueueConnection = {
+    prepare: () => Promise.resolve({ busy: false }),
+    queued: () => Promise.resolve(slots),
+    enqueueQueued: (_agent, clientId, body) => {
+      const item = { queueId: clientId, clientId, body };
+      slots.push(item);
+      return Promise.resolve(item);
+    },
+    cancelQueued: () => Promise.resolve(true),
+    received: () => Promise.resolve({ bodies: [], complete: true }),
+    close() {},
+  };
+  let now = 1000;
+  const coordinator = new Coordinator(directory, {
+    now: () => now,
+    trackingConfig: config,
+    digestOptions: { connect: () => queue },
+  });
+  const reads = spyOn(coordinator.store.tracking.inbox, "list");
+  const recovery = spyOn(coordinator.store.tracking, "prepareSafeRecovery");
+  try {
+    const owner = {
+      harness: "codex" as const,
+      endpoint: "local",
+      sessionId: "default-revision",
+    };
+    const agent = coordinator.tracking.registerAgent(owner);
+    coordinator.store.tracking.runtime(agent.id, "1.0.0");
+    await coordinator.digests.flush();
+    reads.mockClear();
+    recovery.mockClear();
+    now += 1;
+    coordinator.store.tracking.runtime(agent.id, "1.0.0");
+    coordinator.store.schedules.saveDispatch({
+      ...coordinator.store.schedules.dispatch(),
+      nextAtMs: 2000,
+    });
+    await coordinator.digests.flush();
+    expect(reads).not.toHaveBeenCalled();
+    expect(recovery).not.toHaveBeenCalled();
+    now += 60001;
+    await coordinator.digests.flush();
+    expect(reads).toHaveBeenCalled();
+    expect(recovery).not.toHaveBeenCalled();
+    reads.mockClear();
+    const request = coordinator.store.submissions.request({
+      requestId: "new-notification",
+      repository: "owner/repo",
+      headRef: "feature",
+      headSha: "a".repeat(40),
+      baseRef: "main",
+      purpose: "Fixture",
+      validation: [],
+      draft: false,
+      owner,
+    });
+    coordinator.store.submissions.save({
+      ...request,
+      state: SubmissionState.NeedsInput,
+      detail: "Owner input required",
+      notificationRevision: 1,
+    });
+    coordinator.store.submissions.notify(request, agent.id);
+    await coordinator.digests.flush();
+    expect(reads).toHaveBeenCalled();
+    expect(slots).toHaveLength(1);
+    expect(recovery).toHaveBeenCalled();
+  } finally {
+    reads.mockRestore();
+    recovery.mockRestore();
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }

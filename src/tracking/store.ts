@@ -15,7 +15,7 @@ import { CheckWatches, CheckWatchState, successfulCheck } from "./checks.js";
 import { AgentInbox } from "./inbox.js";
 import { actionContext } from "./evidence.js";
 import type { ActionEventContext } from "./types.js";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
   ActionState,
@@ -40,6 +40,8 @@ type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
   private readonly observations: ObservationRepository;
+  private agentById: StatementSync | undefined;
+  private prByIdentity: StatementSync | undefined;
   readonly subscriptions: Subscriptions;
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
@@ -57,6 +59,9 @@ export class TrackingStore {
     notificationRepository: NotificationRepository,
     private assessments: AssessmentStore,
   ) {
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS deliveries_by_recipient ON deliveries(recipient_agent_id,id,action_id,state)",
+    );
     this.observations = new SQLiteObservationRepository(db);
     this.subscriptions = new Subscriptions(
       db,
@@ -127,27 +132,33 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM agent_refs ORDER BY rowid")
       .all()
-      .map((r: Row) => ({
-        id: r.id,
-        harness: r.harness,
-        endpoint: r.endpoint,
-        sessionId: r.session_id,
-        ...(r.label === null ? {} : { label: r.label }),
-        ...(r.harness_version === null
-          ? {}
-          : {
-              lastObservedRuntime: {
-                version: r.harness_version,
-                observedAt: r.version_observed_at_ms,
-              },
-            }),
-      }));
+      .map((r: Row) => this.agentRow(r));
+  }
+  private agentRow(r: Row): AgentRef {
+    return {
+      id: r.id,
+      harness: r.harness,
+      endpoint: r.endpoint,
+      sessionId: r.session_id,
+      ...(r.label === null ? {} : { label: r.label }),
+      ...(r.harness_version === null
+        ? {}
+        : {
+            lastObservedRuntime: {
+              version: r.harness_version,
+              observedAt: r.version_observed_at_ms,
+            },
+          }),
+    };
   }
   agent(id: string): AgentRef {
-    const a = this.agents().find((a) => a.id === id);
-    if (!a) throw new Error("Agent not found");
-    return a;
+    const row = (this.agentById ??= this.db.prepare(
+      "SELECT * FROM agent_refs WHERE id=?",
+    )).get(id);
+    if (row === undefined) throw new Error("Agent not found");
+    return this.agentRow(row);
   }
+
   sessionAgent(harness: string, sessionId: string, endpoint?: string): string {
     if (harness === "" || sessionId === "")
       throw new Error("Invalid agent session context");
@@ -213,8 +224,26 @@ export class TrackingStore {
       .all()
       .map((r: Row) => this.trackedPR(r));
   }
+  observationHead(prId: string): string | undefined {
+    return this.observations.head(prId);
+  }
+  referenceObservation(prId: string) {
+    return this.observations.reference(prId);
+  }
+  prContexts(): Omit<TrackedPR, "observation">[] {
+    return this.db
+      .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
+      .all()
+      .map((row) => this.decodePRContext(row));
+  }
   private trackedPR(r: Row): TrackedPR {
     const observation = this.observations.latest(String(r["id"]));
+    return {
+      ...this.decodePRContext(r),
+      ...(observation === undefined ? {} : { observation }),
+    };
+  }
+  private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
       id: r.id,
       url: r.url,
@@ -232,17 +261,20 @@ export class TrackingStore {
               message: r.last_refresh_error,
             },
           }),
-      ...(observation === undefined ? {} : { observation }),
     };
   }
-  pr(id: string): TrackedPR {
-    const row = this.db
-      .prepare(
-        "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
-      )
-      .get(id, id);
+  private prRow(id: string) {
+    const row = (this.prByIdentity ??= this.db.prepare(
+      "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
+    )).get(id, id);
     if (row === undefined) throw new Error("Tracked PR not found");
-    return this.trackedPR(row);
+    return row;
+  }
+  prContext(id: string): Omit<TrackedPR, "observation"> {
+    return this.decodePRContext(this.prRow(id));
+  }
+  pr(id: string): TrackedPR {
+    return this.trackedPR(this.prRow(id));
   }
   track(url: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {
@@ -274,34 +306,54 @@ export class TrackingStore {
       return this.pr(id);
     });
   }
-  actions(): Action[] {
+  actions(prId?: string): Action[] {
+    const rows =
+      prId === undefined
+        ? this.db.prepare("SELECT * FROM actions ORDER BY rowid").all()
+        : this.db
+            .prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid")
+            .all(prId);
+    return rows.map((row) => this.trackedAction(row));
+  }
+  unfinishedActions(): Action[] {
     return this.db
-      .prepare("SELECT * FROM actions ORDER BY rowid")
+      .prepare(
+        "SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid",
+      )
       .all()
-      .map((r: Row) => ({
-        id: r.id,
-        prId: r.pr_id,
-        openedObservationId: r.opened_observation_id,
-        ownerAgentId: r.owner_agent_id,
-        sourceKey: r.source_key,
-        blocker: parse(r.blocker_json),
-        summary: r.summary,
-        evidenceUrl: r.evidence_url,
-        profile: parse(r.profile_json),
-        progress: parse(r.progress_json),
-        createdAt: r.created_at_ms,
-        updatedAt: r.updated_at_ms,
-      }));
+      .map((row) => this.trackedAction(row));
+  }
+  private trackedAction(r: Row): Action {
+    return {
+      id: r.id,
+      prId: r.pr_id,
+      openedObservationId: r.opened_observation_id,
+      ownerAgentId: r.owner_agent_id,
+      sourceKey: r.source_key,
+      blocker: parse(r.blocker_json),
+      summary: r.summary,
+      evidenceUrl: r.evidence_url,
+      profile: parse(r.profile_json),
+      progress: parse(r.progress_json),
+      createdAt: r.created_at_ms,
+      updatedAt: r.updated_at_ms,
+    };
   }
   action(id: string): Action {
-    const actions = this.actions();
-    const resolved = resolveId(
-      id,
-      actions.map((action) => action.id),
-    );
-    const a = actions.find((action) => action.id === resolved);
-    if (!a) throw new Error("Action not found");
-    return a;
+    const query = this.db.prepare("SELECT * FROM actions WHERE id=?");
+    let row = query.get(id);
+    if (row === undefined) {
+      const resolved = resolveId(
+        id,
+        this.db
+          .prepare("SELECT id FROM actions")
+          .all()
+          .map((value) => String(value["id"])),
+      );
+      if (resolved !== undefined) row = query.get(resolved);
+    }
+    if (row === undefined) throw new Error("Action not found");
+    return this.trackedAction(row);
   }
   private saveAction(a: Action, kind: string): void {
     this.db
@@ -349,16 +401,31 @@ export class TrackingStore {
     return this.db
       .prepare("SELECT * FROM deliveries ORDER BY rowid")
       .all()
+      .map((r: Row) => this.deliveryRow(r));
+  }
+  deliveryCandidates(): (Delivery & { messageRecorded: boolean })[] {
+    return this.db
+      .prepare(
+        "SELECT d.*,m.delivery_id IS NOT NULL AS message_recorded FROM deliveries d LEFT JOIN delivery_messages m ON m.delivery_id=d.id WHERE d.state IN ('pending','uncertain','delivered') AND m.acknowledged_at_ms IS NULL ORDER BY d.rowid",
+      )
+      .all()
       .map((r: Row) => ({
-        id: r.id,
-        actionId: r.action_id,
-        recipientAgentId: r.recipient_agent_id,
-        retryCount: r.retry_count,
-        progress: parse(r.progress_json),
-        createdAt: r.created_at_ms,
-        updatedAt: r.updated_at_ms,
+        ...this.deliveryRow(r),
+        messageRecorded: r["message_recorded"] === 1,
       }));
   }
+  private deliveryRow(r: Row): Delivery {
+    return {
+      id: r.id,
+      actionId: r.action_id,
+      recipientAgentId: r.recipient_agent_id,
+      retryCount: r.retry_count,
+      progress: parse(r.progress_json),
+      createdAt: r.created_at_ms,
+      updatedAt: r.updated_at_ms,
+    };
+  }
+
   attempts(): DeliveryAttempt[] {
     return this.db
       .prepare("SELECT * FROM delivery_attempts ORDER BY rowid")
@@ -903,9 +970,32 @@ export class TrackingStore {
     const openedOnTerminalPR =
       action.blocker.kind === "review_feedback" &&
       terminalPR(this.observations.lifecycle(action.openedObservationId));
-    return closeProgress(action, observation, this.now(), openedOnTerminalPR);
+    return closeProgress(
+      action,
+      observation,
+      this.now(),
+      openedOnTerminalPR,
+      () =>
+        action.blocker.kind === "check_failed"
+          ? this.observations.check(
+              action.openedObservationId,
+              action.blocker.sourceId,
+            )
+          : undefined,
+    );
   }
 
+  refreshOutcome(
+    id: string,
+    outcome: "cancelled" | "retry_scheduled" | "recovered",
+    message: string,
+  ): void {
+    this.event(
+      `pr_refresh_${outcome}`,
+      message.slice(0, 1000),
+      this.prContext(id).id,
+    );
+  }
   refreshError(id: string, message: string): void {
     this.transaction(() => {
       const p = this.pr(id);

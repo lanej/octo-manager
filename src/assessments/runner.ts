@@ -1,5 +1,5 @@
+import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import {
   inputLimit,
@@ -15,7 +15,10 @@ export type Assess = (
   signal: AbortSignal,
 ) => Promise<AssessmentResult>;
 export function assessmentRunner(
-  workerPath = fileURLToPath(new URL("./worker.js", import.meta.url)),
+  workerPath = workerModule(
+    "assessment",
+    new URL("./worker.js", import.meta.url).href,
+  ),
   timeout = timeoutMs,
 ): Assess {
   return async (input, model, signal) => {

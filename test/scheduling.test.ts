@@ -1,9 +1,11 @@
+import { GitHubRequestCancelledError } from "../src/github-errors.js";
 import { sdkTransport } from "../src/github-sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/store.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import {
@@ -89,7 +91,7 @@ test("one shared dispatch gate spaces all physical requests, honors cancellation
     assert.deepEqual(starts, [0, 2000, 100000]);
     const controller = new AbortController();
     const cancelled = reader.read("cancelled", controller.signal);
-    const rejected = assert.rejects(cancelled, /cancelled/);
+    const rejected = assert.rejects(cancelled, GitHubRequestCancelledError);
     controller.abort();
     await rejected;
     at = 200000;
@@ -432,4 +434,69 @@ test("cold authentication cannot compress physical HTTP sends below the configur
     scheduler.tick();
     await second;
     assert.deepEqual(sent, [3000, 5000]);
+  }));
+
+test("review ticks isolate tracking history and run newly queued work without dashboard interest", () =>
+  fixture(async (store, scheduler) => {
+    const db = new DatabaseSync(join(store.directory, "jobs.sqlite"));
+    try {
+      for (let index = 0; index < 96; index++)
+        store.schedules.save({
+          key: `tracking:archived-${String(index)}`,
+          kind: RefreshKind.Tracking,
+          subject: `archived-${String(index)}`,
+          dueAtMs: 0,
+          intervalMs: 60000,
+          state: ScheduleState.Deferred,
+        });
+      db.prepare(
+        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE kind='tracking'",
+      ).run();
+      assert.throws(
+        () => store.schedules.list(),
+        /Invalid stored GitHub schedule data/,
+      );
+      assert.deepEqual(store.schedules.reviews(), []);
+      scheduler.tick();
+      await settle();
+      scheduler.ensureReviews(url);
+      scheduler.tick();
+      await settle();
+      assert.equal(store.schedules.view(url)?.title, "Stored review");
+      assert.equal(store.schedules.reviews().length, 1);
+      const key = `reviews:${url}`;
+      db.prepare(
+        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?",
+      ).run(key);
+      assert.throws(() => {
+        scheduler.tick();
+      }, /Invalid stored GitHub schedule data/);
+    } finally {
+      db.close();
+    }
+  }));
+
+test("review selection preserves payload kind authority across mismatched normalized kinds", () =>
+  fixture(async (store, scheduler) => {
+    const db = new DatabaseSync(join(store.directory, "jobs.sqlite"));
+    const key = `reviews:${url}`;
+    try {
+      scheduler.ensureReviews(url);
+      db.prepare("UPDATE github_schedules SET kind='tracking' WHERE key=?").run(
+        key,
+      );
+      assert.equal(store.schedules.reviews()[0]?.kind, RefreshKind.Reviews);
+      scheduler.tick();
+      await settle();
+      assert.equal(store.schedules.view(url)?.title, "Stored review");
+      assert.equal(store.schedules.get(key)?.state, ScheduleState.Deferred);
+      db.prepare(
+        "UPDATE github_schedules SET kind='reviews',data=json_remove(data,'$.kind') WHERE key=?",
+      ).run(key);
+      assert.throws(() => {
+        scheduler.tick();
+      }, /Invalid stored GitHub schedule data/);
+    } finally {
+      db.close();
+    }
   }));

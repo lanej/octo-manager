@@ -1,3 +1,5 @@
+import { DatabaseSync } from "node:sqlite";
+import { migrateDigestMembership } from "../src/notifications/schema.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -9,7 +11,11 @@ import { SubmissionState } from "../src/submissions/contracts.js";
 import { DigestService } from "../src/notifications/service.js";
 import { DigestState } from "../src/notifications/types.js";
 import type { AgentRef } from "../src/tracking/types.js";
-import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
+import {
+  DeliveryError,
+  type QueueConnection,
+  type QueuedMessage,
+} from "../src/agents/codex.js";
 const target = {
   harness: "codex",
   endpoint: "local",
@@ -25,13 +31,25 @@ class Queue implements QueueConnection {
   cancelMode: "normal" | "consume" | "lose_before" | "lose_after" = "normal";
   coverage = true;
   inspectFailure = false;
+  archived = false;
   inspections = 0;
   onCancel: (() => void) | undefined;
+  onInspect: (() => void) | undefined;
   prepare(): Promise<{ busy: boolean }> {
     return Promise.resolve({ busy: false });
   }
   queued(): Promise<QueuedMessage[]> {
     this.inspections++;
+    this.onInspect?.();
+    if (this.archived)
+      return Promise.reject(
+        new DeliveryError(
+          "Codex thread/queue/list rejected (RPC -32600): session synthetic-agent is archived.",
+          false,
+          true,
+          true,
+        ),
+      );
     return this.inspectFailure
       ? Promise.reject(new Error("Queue coverage incomplete"))
       : Promise.resolve(structuredClone(this.slots));
@@ -107,7 +125,11 @@ async function fixture() {
       store.submissions,
       directory,
       () => now,
-      { connect },
+      {
+        connect,
+        inputRevision: () =>
+          JSON.stringify([store.inputRevision(), config.endpoints]),
+      },
     );
   const actor = tracking.registerAgent(target),
     queue = connect(actor, "/fixture/queue.sock");
@@ -169,7 +191,11 @@ async function fixture() {
         store.submissions,
         directory,
         () => now,
-        { connect },
+        {
+          connect,
+          inputRevision: () =>
+            JSON.stringify([store.inputRevision(), config.endpoints]),
+        },
       );
     },
     async close() {
@@ -469,6 +495,132 @@ test("unchanged inspection failures back off without repeating events, then reco
     expect(f.store.digests.get(active.id).state).toBe(DigestState.Queued);
     expect(f.store.digests.get(active.id).error).toBeUndefined();
   } finally {
+    await f.close();
+  }
+});
+test("archived legacy cleanup keeps its bounded retry and warning identity across restart", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("Legacy");
+    const message = f.store.tracking.inbox.get(notice.id);
+    if (message === undefined) throw new Error("Missing fixture message");
+    f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+    f.queue.slots.push({
+      queueId: "legacy",
+      clientId: notice.id,
+      body: message.body,
+    });
+    f.queue.archived = true;
+    await f.advance(0);
+    expect(f.queue.inspections).toBe(1);
+    expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+    const retry = f.store.digests.archivedInspection(f.actor.id);
+    expect(retry?.at).toBe(901000);
+    expect(retry?.signature).toMatch(/^[a-f0-9]{64}$/u);
+    expect(JSON.stringify(retry)).not.toContain("Legacy");
+    await f.reopen();
+    await f.advance(899999);
+    expect(f.queue.inspections).toBe(1);
+    expect(f.queue.slots).toHaveLength(1);
+    expect(
+      f.store
+        .eventsSince(0)
+        .filter((event) => event.kind === "queue_inspection_unavailable"),
+    ).toHaveLength(1);
+    f.queue.archived = false;
+    await f.advance(1);
+    expect(f.queue.inspections).toBe(2);
+    expect(f.queue.operations).toContain("cancel");
+    expect(f.queue.slots).toHaveLength(0);
+    expect(f.store.digests.archivedInspection(f.actor.id)).toBeUndefined();
+    expect(
+      f.store
+        .eventsSince(0)
+        .filter((event) => event.kind === "queue_inspection_recovered"),
+    ).toHaveLength(1);
+  } finally {
+    await f.close();
+  }
+});
+test("archived active digests retain unconfirmed members and changed routes bypass persisted retry", async () => {
+  const f = await fixture();
+  try {
+    const notice = f.notice("Unread");
+    f.queue.archived = true;
+    await f.advance(0);
+    await f.advance(1);
+    const active = f.store.digests.active(f.actor.id);
+    if (active === undefined) throw new Error("Missing active digest");
+    expect(active.state).toBe(DigestState.Unavailable);
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    const inspections = f.queue.inspections;
+    await f.reopen();
+    await f.advance(60000);
+    expect(f.queue.inspections).toBe(inspections);
+    expect(f.store.digests.get(active.id).state).toBe(DigestState.Unavailable);
+    f.config.endpoints["local"] = {
+      delivery: "queue",
+      socket: "/new/queue.sock",
+    };
+    await f.advance(0);
+    // The old route still owns unknown queue state and must be reconciled before another queue can be used.
+    expect(f.queue.inspections).toBe(inspections + 1);
+    expect(f.queues.get("/new/queue.sock")).toBeUndefined();
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+    f.queue.archived = false;
+    await f.advance(900000);
+    expect(f.store.digests.archivedInspection(f.actor.id)).toBeUndefined();
+    expect(
+      f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
+    ).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+test("an archived rejection cannot back off a route changed during inspection", async () => {
+  const f = await fixture();
+  try {
+    f.notice("Unread");
+    f.queue.archived = true;
+    await f.advance(0);
+    await f.advance(1);
+    const before = f.queue.inspections;
+    f.queue.onInspect = () => {
+      f.queue.onInspect = undefined;
+      f.config.endpoints["local"] = {
+        delivery: "queue",
+        socket: "/changed-during-inspection.sock",
+      };
+    };
+    await f.advance(900000);
+    expect(f.queue.inspections).toBe(before + 1);
+    await f.advance(0);
+    expect(f.queue.inspections).toBe(before + 2);
+    expect(f.queues.get("/changed-during-inspection.sock")).toBeUndefined();
+  } finally {
+    await f.close();
+  }
+});
+test("persisted archived inspection records reject unexpected fields", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const notice = f.notice("Legacy");
+    f.store.tracking.acknowledgeMessage(notice.id, f.actor.id);
+    f.queue.archived = true;
+    await f.advance(0);
+    db.prepare(
+      "UPDATE settings SET value=json_set(value,'$.unknown',1) WHERE key=?",
+    ).run(`digest-archive-check:${f.actor.id}`);
+    expect(() => f.store.digests.archivedInspection(f.actor.id)).toThrow(
+      "Invalid archived queue inspection",
+    );
+  } finally {
+    db.close();
     await f.close();
   }
 });
@@ -821,6 +973,174 @@ test("digest recovery selects event kinds without losing chronology or full hist
     );
     expect(f.store.digests.events(value.id, undefined, 0)).toEqual([]);
     expect(f.store.digests.events(value.id)).toEqual(all);
+  } finally {
+    await f.close();
+  }
+});
+
+test("membership projection preserves every revision and filters before inbox pagination without hiding other recipients", async () => {
+  const f = await fixture();
+  try {
+    const ids = Array.from(
+      { length: 205 },
+      (_, index) => f.notice(`Notice ${String(index)}`).id,
+    );
+    let current = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "First revision", messageIds: ids.slice(0, 20) }),
+    );
+    for (let index = 20; index < 201; index += 20)
+      current = f.store.digests.revise(current, () => ({
+        body: `Revision ${String(index)}`,
+        messageIds: ids.slice(index, Math.min(index + 20, 201)),
+      }));
+    const last = ids.at(-1);
+    if (last === undefined) throw new Error("Missing message");
+    f.store.tracking.acknowledgeMessage(last, f.actor.id);
+    const other = f.store.tracking.registerAgent({
+      ...target,
+      sessionId: "other-recipient",
+    });
+    f.store.digests.create(
+      other.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Other recipient", messageIds: [last] }),
+    );
+    const page = f.store.tracking.inbox.uncovered(f.actor.id);
+    expect(page.messages.map((value) => value.id)).toEqual(ids.slice(201));
+    expect(page.messages.at(-1)?.acknowledgedAt).toBeDefined();
+    expect(page.hasMore).toBe(false);
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toEqual(
+      new Set(ids.slice(0, 201)),
+    );
+    expect(
+      f.store.tracking.inbox.list(f.actor.id, 0, true).messages,
+    ).toHaveLength(200);
+    const versions = f.store.digests.revisions(current.id);
+    const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+    try {
+      db.exec(
+        "DROP TRIGGER index_digest_members; DROP TABLE agent_digest_members",
+      );
+      migrateDigestMembership(db);
+      expect(db.prepare("PRAGMA foreign_key_check").all()).toHaveLength(0);
+    } finally {
+      db.close();
+    }
+    expect(f.store.digests.revisions(current.id)).toEqual(versions);
+    expect(
+      f.store.tracking.inbox
+        .uncovered(f.actor.id)
+        .messages.map((value) => value.id),
+    ).toEqual(ids.slice(201));
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toHaveProperty(
+      "size",
+      201,
+    );
+  } finally {
+    await f.close();
+  }
+});
+
+test("membership migration rolls back invalid history and rejects malformed or duplicate new memberships", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
+  try {
+    const message = f.notice("Membership fixture");
+    const value = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Immutable fixture", messageIds: [message.id] }),
+    );
+    const version = f.store.digests.version(value.id, 1);
+    expect(
+      f.store.digests.get(value.id.replaceAll("-", "").slice(0, 8)),
+    ).toEqual(value);
+    expect(() => f.store.digests.get("00000000")).toThrow("Digest not found");
+    expect(() => f.store.digests.version(value.id, 99)).toThrow(
+      "Digest revision not found",
+    );
+
+    db.exec(
+      "DROP TRIGGER index_digest_members; DROP TABLE agent_digest_members",
+    );
+    db.prepare("INSERT INTO agent_digest_revisions VALUES(?,?,?)").run(
+      value.id,
+      2,
+      JSON.stringify({ ...version, revision: 2, body: 0 }),
+    );
+    expect(() => {
+      migrateDigestMembership(db);
+    }).toThrow("Invalid digest revision");
+    expect(
+      db
+        .prepare(
+          "SELECT 1 FROM sqlite_schema WHERE name='agent_digest_members'",
+        )
+        .get(),
+    ).toBeUndefined();
+    db.prepare(
+      "DELETE FROM agent_digest_revisions WHERE digest_id=? AND revision=2",
+    ).run(value.id);
+    migrateDigestMembership(db);
+    for (const messageIds of [
+      null,
+      {},
+      [],
+      [1],
+      [""],
+      [message.id, message.id],
+      Array.from({ length: 21 }, (_, index) => String(index)),
+    ]) {
+      expect(() =>
+        db
+          .prepare("INSERT INTO agent_digest_revisions VALUES(?,?,?)")
+          .run(
+            value.id,
+            2,
+            JSON.stringify({ ...version, revision: 2, messageIds }),
+          ),
+      ).toThrow();
+    }
+    expect(f.store.digests.coveredMessageIds(f.actor.id)).toEqual(
+      new Set([message.id]),
+    );
+    expect(f.store.digests.revisions(value.id)).toHaveLength(1);
+  } finally {
+    db.close();
+    await f.close();
+  }
+});
+
+test("cleanup candidate reads follow persisted terminal cleanup state without removing audit history", async () => {
+  const f = await fixture();
+  try {
+    const message = f.notice("Cleanup fixture");
+    const value = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Fixture", messageIds: [message.id] }),
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    const received = f.store.digests.save(
+      { ...value, state: DigestState.Received },
+      "fixture_received",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toEqual([received]);
+    expect(f.store.digests.active(f.actor.id)).toBeUndefined();
+    f.store.digests.save(
+      { ...received, cleanupPending: false },
+      "fixture_cleaned",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.list(f.actor.id)).toHaveLength(1);
+    const unavailable = f.store.digests.save(
+      { ...received, state: DigestState.Unavailable },
+      "fixture_unavailable",
+    );
+    expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
+    expect(f.store.digests.active(f.actor.id)).toEqual(unavailable);
   } finally {
     await f.close();
   }

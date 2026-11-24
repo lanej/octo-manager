@@ -14,6 +14,7 @@ import { CheckWatchState, type CheckWatch } from "./checks.js";
 import type { AgentMessage } from "./inbox.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { ReadinessPreconditionError } from "../merging/errors.js";
 import {
   AgentReferenceSchema,
   CheckWatchState as WireCheckWatchState,
@@ -259,6 +260,8 @@ export async function trackingOperation<T>(
     return await work();
   } catch (error) {
     if (error instanceof ConnectError) throw error;
+    if (error instanceof ReadinessPreconditionError)
+      throw new ConnectError(error.message, Code.FailedPrecondition);
     const message =
       error instanceof Error ? error.message : "Tracking operation failed";
     if (message.includes("not found"))
