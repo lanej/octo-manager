@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
+import { packageRoot } from "./package-root.js";
+import { join } from "node:path";
 
 const manifest: unknown = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  readFileSync(join(packageRoot(), "package.json"), "utf8"),
 );
 if (
   typeof manifest !== "object" ||

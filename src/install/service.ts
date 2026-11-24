@@ -1,5 +1,10 @@
 import { join } from "node:path";
-import { launchAgent, serviceLabel, shellQuote } from "./config.js";
+import {
+  launchAgent,
+  serviceLabel,
+  shellQuote,
+  serviceCommand,
+} from "./config.js";
 import {
   guardServiceReplacement,
   retireService,
@@ -16,6 +21,7 @@ export interface ServiceInput {
   path: string;
   configHome: string;
   codexHome: string;
+  executable?: string;
 }
 export type ServiceDefinition =
   | { kind: "launchd"; file: string; target: string; text: string }
@@ -61,6 +67,7 @@ export function serviceDefinition(
         input.path,
         input.configHome,
         input.codexHome,
+        input.executable,
       )
         .replace(
           "<key>KeepAlive</key><true/>",
@@ -85,7 +92,7 @@ export function serviceDefinition(
     kind: "systemd",
     file: join(input.configHome, "systemd/user/octo-manager.service"),
     target: "octo-manager.service",
-    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${input.release.replaceAll("%", "%%")}\nExecStart=${["/usr/bin/env", "bun", join(input.release, "dist/cli.js"), "serve"].map(execQuote).join(" ")}\n${Object.entries(
+    text: `[Unit]\nDescription=Octo Manager\n\n[Service]\nType=simple\nWorkingDirectory=${input.release.replaceAll("%", "%%")}\nExecStart=${[...serviceCommand(input), "serve"].map(execQuote).join(" ")}\n${Object.entries(
       environment,
     )
       .map(([key, value]) => `Environment=${quote(key + "=" + value)}`)
@@ -119,8 +126,7 @@ export async function startService(
   const manualCommand = [
     "/usr/bin/env",
     ...Object.entries(environment).map(([key, value]) => key + "=" + value),
-    "bun",
-    join(input.release, "dist/cli.js"),
+    ...serviceCommand(input),
     "serve",
     "--state",
     input.state,

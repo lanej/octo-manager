@@ -1,3 +1,4 @@
+import { buildNative, validNativeCompiler } from "./build-native.js";
 import {
   serviceDefinition,
   startService,
@@ -117,6 +118,8 @@ async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       home: { type: "string" },
+      "aot-bun": { type: "string" },
+      native: { type: "boolean" },
       codex: { type: "boolean" },
       "no-start": { type: "boolean" },
       "stage-only": { type: "boolean" },
@@ -135,6 +138,8 @@ async function main(): Promise<void> {
     throw new Error(
       "Commit reviewed source changes before installing a versioned release",
     );
+  const compiler = values["aot-bun"] ?? process.env["OCTO_AOT_BUN"];
+  const native = values.native === true || compiler !== undefined;
   const revision = run("git", ["rev-parse", "HEAD"]).trim();
   if (!/^[a-f0-9]{40}$/.test(revision))
     throw new Error("Invalid source revision");
@@ -149,7 +154,7 @@ async function main(): Promise<void> {
       base,
       "releases",
       process.platform + "-" + process.arch,
-      revision,
+      native ? `${revision}-native-aot` : revision,
     );
   const configHome = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config"),
     codexHome = process.env["CODEX_HOME"] ?? join(home, ".codex"),
@@ -177,7 +182,15 @@ async function main(): Promise<void> {
   ].join(":");
   const uid = process.getuid?.();
   if (uid === undefined) throw new Error("A Unix user identity is required");
-  const input = { home, release, state, path, configHome, codexHome };
+  const input = {
+    home,
+    release,
+    state,
+    path,
+    configHome,
+    codexHome,
+    ...(native ? { executable: join(release, "build/octo-manager") } : {}),
+  };
   const definition = serviceDefinition(process.platform, input, uid),
     plist = definition.file;
   const available = stageOnly
@@ -215,7 +228,15 @@ async function main(): Promise<void> {
   try {
     await privateDirectory(dirname(release));
     if (!(await exists(release))) {
+      if (native && (compiler === undefined || compiler === ""))
+        throw new Error(
+          "Select the native AOT compiler with --aot-bun PATH or OCTO_AOT_BUN; no interpreted fallback is installed.",
+        );
       run(bun, ["run", "build"]);
+      const nativeCompiler =
+        native && compiler !== undefined
+          ? buildNative(compiler, join(source, "build/octo-manager"))
+          : undefined;
       await privateDirectory(stage);
       await privateDirectory(join(stage, "build"));
       run(bun, [
@@ -228,6 +249,13 @@ async function main(): Promise<void> {
         join(stage, "build", "octo-manager-tui"),
       );
       await chmod(join(stage, "build", "octo-manager-tui"), 0o755);
+      if (native) {
+        await copyFile(
+          join(source, "build/octo-manager"),
+          join(stage, "build/octo-manager"),
+        );
+        await chmod(join(stage, "build/octo-manager"), 0o755);
+      }
       for (const file of ["package.json", "bun.lock"])
         await copyFile(join(source, file), join(stage, file));
       run(
@@ -239,6 +267,8 @@ async function main(): Promise<void> {
         join(stage, "release.json"),
         JSON.stringify({
           revision,
+          format: native ? "native-aot" : "interpreted",
+          ...(nativeCompiler === undefined ? {} : { nativeCompiler }),
           bunRequirement,
           platform: process.platform,
           architecture: process.arch,
@@ -252,6 +282,10 @@ async function main(): Promise<void> {
       );
       if (
         !object(installed) ||
+        (native
+          ? installed["format"] !== "native-aot" ||
+            !validNativeCompiler(installed["nativeCompiler"])
+          : installed["format"] === "native-aot") ||
         installed["revision"] !== revision ||
         installed["bunRequirement"] !== bunRequirement ||
         installed["platform"] !== process.platform ||
@@ -305,7 +339,9 @@ async function main(): Promise<void> {
       );
     await atomic(
       launcher,
-      `#!/bin/sh\nif ! command -v bun >/dev/null 2>&1; then\n  printf '%s\\n' ${shellQuote(`Octo Manager requires Bun ${bunRequirement} on PATH. Install or upgrade Bun in the environment.`)} >&2\n  exit 1\nfi\nexec bun ${shellQuote(join(current, "dist", "cli.js"))} "$@"\n`,
+      native
+        ? `#!/bin/sh\nexec ${shellQuote(join(current, "build", "octo-manager"))} "$@"\n`
+        : `#!/bin/sh\nif ! command -v bun >/dev/null 2>&1; then\n  printf '%s\\n' ${shellQuote(`Octo Manager requires Bun ${bunRequirement} on PATH. Install or upgrade Bun in the environment.`)} >&2\n  exit 1\nfi\nexec bun ${shellQuote(join(current, "dist", "cli.js"))} "$@"\n`,
       0o755,
     );
     if (hooks !== undefined)

@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { nativeAot, packageRoot } from "./package-root.js";
 import { startupRecord } from "./startup-context.js";
 import { requireBun } from "./runtime.js";
 import { issuesCLI } from "./issues/cli.js";
@@ -18,7 +19,6 @@ import { activityCLI } from "./activity/cli.js";
 import { directoryLabel, type ParsedCommand } from "./arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { loadTrackingConfig } from "./tracking/config.js";
@@ -95,12 +95,12 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   if (command === "codex-hook") { await codexHookCLI(directory); return; }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
-    const child = spawn(process.execPath, [fileURLToPath(new URL("../node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js", import.meta.url)), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
+    const child = spawn(nativeAot ? (Bun.which("bun") ?? "bun") : process.execPath, [join(packageRoot(), "node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"), "--no-tools", "--no-extensions", "--no-skills", "--no-context-files", "--no-session"], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); }); return;
   }
   if (command === "dashboard") {
     if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
-    const binary = fileURLToPath(new URL("../build/octo-manager-tui", import.meta.url));
+    const binary = join(packageRoot(), "build/octo-manager-tui");
     if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
     const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone]), ...(values["github-hours"] === undefined ? [] : ["--github-hours", values["github-hours"]])], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });

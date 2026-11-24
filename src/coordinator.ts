@@ -1,3 +1,4 @@
+import { workerModule } from "./package-root.js";
 import { responseMaxBytes } from "./api/limits.js";
 import { AssessmentService } from "./assessments/service.js";
 import type { Assess } from "./assessments/runner.js";
@@ -29,7 +30,6 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { schedulerRoutes } from "./rpc.js";
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Store } from "./store.js";
 import { activeStates, cleanText, nextReady, parseTask, retryDelay, transition, type Job, type Snapshot, type Status } from "./domain.js";
 import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./fixture.js";
@@ -229,7 +229,7 @@ export class Coordinator extends EventEmitter {
         job = this.change(job.id, "conflicted", created.conflict, { fixture });
       }
       active.abort.signal.throwIfAborted();
-      const child = fork(this.options.workerPath ?? fileURLToPath(new URL("./worker.js", import.meta.url)), [], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, ...this.options.workerEnv }, execArgv: [] });
+      const child = fork(this.options.workerPath ?? workerModule("job", new URL("./worker.js", import.meta.url).href), [], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, ...this.options.workerEnv }, execArgv: [] });
       active.child = child;
       let done = false;
       const pendingTools = new Set<Promise<void>>();

@@ -1,3 +1,4 @@
+import { packageRoot, nativeAot } from "./package-root.js";
 import { requireBun } from "./runtime.js";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -12,11 +13,10 @@ import {
   readlinkSync,
   realpathSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const root = realpathSync(dirname(dirname(fileURLToPath(import.meta.url))));
-const program = import.meta.url.endsWith(".ts") ? "src" : "dist";
+const root = realpathSync(packageRoot());
+const program = nativeAot || !import.meta.url.endsWith(".ts") ? "dist" : "src";
 
 function files(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
@@ -78,16 +78,34 @@ export function artifactIdentity(): string | null {
   if (program !== "dist" || !root.includes("/releases/")) return null;
   let host: string | null;
   try {
+    if (nativeAot) {
+      const metadata: unknown = JSON.parse(
+        readFileSync(join(root, "release.json"), "utf8"),
+      );
+      if (
+        typeof metadata !== "object" ||
+        metadata === null ||
+        !("format" in metadata) ||
+        metadata.format !== "native-aot"
+      )
+        return null;
+    }
     host = loadedHost();
   } catch {
     return null;
   }
   if (host === null) return null;
   const hash = createHash("sha256").update("host\0").update(host).update("\0");
+  if (nativeAot) hash.update("native-aot\0");
   const names = [
     ...files(join(root, program)),
     ...files(join(root, "node_modules")),
-    ...["package.json", "bun.lock", "build/octo-manager-tui"]
+    ...[
+      "package.json",
+      "bun.lock",
+      "build/octo-manager-tui",
+      ...(nativeAot ? ["release.json"] : []),
+    ]
       .map((name) => join(root, name))
       .filter(existsSync),
   ];

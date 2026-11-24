@@ -1,5 +1,5 @@
+import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import {
   record,
   single,
@@ -131,5 +131,5 @@ export const createConflictResolver =
   };
 
 export const resolveWithWorker = createConflictResolver(
-  fileURLToPath(new URL("../worker.js", import.meta.url)),
+  workerModule("job", new URL("../worker.js", import.meta.url).href),
 );

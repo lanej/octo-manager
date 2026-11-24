@@ -1,3 +1,4 @@
+import { releaseModule } from "./package-root.js";
 import { closeSync, openSync, readSync } from "node:fs";
 
 export type ReleaseIdentity =
@@ -8,7 +9,7 @@ export type ReleaseIdentity =
     };
 
 export function releaseIdentity(
-  moduleUrl: string = import.meta.url,
+  moduleUrl: string = releaseModule(import.meta.url),
 ): ReleaseIdentity {
   let descriptor: number | undefined;
   try {
