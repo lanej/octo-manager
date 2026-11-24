@@ -11,6 +11,8 @@ import { parseArgs } from "node:util";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 import { schedulerClient } from "../src/client.js";
+import { runtimeLifecycle } from "../src/lifecycle-rpc.js";
+import { randomUUID } from "node:crypto";
 const { values } = parseArgs({
   options: { start: { type: "boolean" } },
   args: process.argv.slice(2),
@@ -57,6 +59,8 @@ const env: NodeJS.ProcessEnv = {
   CODEX_HOME: codex,
   XDG_CONFIG_HOME: config,
 };
+delete env["PROJECT_UPDATE_OPERATION_DIR"];
+delete env["PROJECT_UPDATE_RUN_ID"];
 const start = values.start === true;
 if (!start && process.platform === "linux") {
   env["XDG_RUNTIME_DIR"] = join(home, "absent-runtime");
@@ -66,8 +70,13 @@ if (!start && process.platform === "linux") {
 let foreground: ReturnType<typeof Bun.spawn> | undefined,
   installed: Result | undefined,
   stopped = false,
-  startupAttempted = false;
-async function install(): Promise<Result> {
+  startupAttempted = false,
+  restorePaused: boolean | undefined;
+async function invokeInstaller(): Promise<{
+  code: number;
+  stdout: string;
+  stderr: string;
+}> {
   const args = [
     process.execPath,
     "scripts/install-local.ts",
@@ -76,7 +85,10 @@ async function install(): Promise<Result> {
     "--codex",
     ...(!start && process.platform !== "linux" ? ["--no-start"] : []),
   ];
-  const result = await command(args, env);
+  return command(args, env);
+}
+async function install(): Promise<Result> {
+  const result = await invokeInstaller();
   assert(result.code === 0, `Installer failed: ${result.stderr}`);
   const value: unknown = JSON.parse(result.stdout.trim());
   assert(Check(ResultSchema, value), "Invalid installer result");
@@ -183,8 +195,77 @@ try {
   await ready();
   const first = await readFile(hooks, "utf8");
   assert(first.includes("echo unrelated-fixture"), "Unrelated hook lost");
-  installed = await install();
+  const refused = await invokeInstaller();
+  assert(
+    refused.code === 3,
+    `Unbound live-owner install was not refused: ${refused.stderr}`,
+  );
   await ready();
+  assert(
+    (await readFile(hooks, "utf8")) === first,
+    "Refused install changed hook definitions",
+  );
+  if (foreground !== undefined) {
+    foreground.kill("SIGTERM");
+    const code = await foreground.exited;
+    assert(
+      code === 0 || code === 143,
+      "Owned foreground coordinator did not retire",
+    );
+    foreground = undefined;
+  } else {
+    const original = await runtimeLifecycle(state, { action: "inventory" });
+    const target = original.targets[0],
+      operation = randomUUID();
+    restorePaused = target.scheduler_paused;
+    const checkpoint = await runtimeLifecycle(state, {
+      action: "checkpoint",
+      expectedNativeId: target.process.native_id,
+      runId: operation,
+    });
+    assert(
+      checkpoint.targets[0].checkpoint?.state === "confirmed",
+      "Owned managed coordinator refused checkpoint",
+    );
+    const directory = join(home, "operation");
+    await mkdir(directory, { mode: 0o700 });
+    await writeFile(
+      join(directory, "octo-manager-inventory.json"),
+      JSON.stringify(original),
+      { mode: 0o600 },
+    );
+    env["PROJECT_UPDATE_OPERATION_DIR"] = directory;
+    env["PROJECT_UPDATE_RUN_ID"] = operation;
+  }
+  installed = await install();
+  if (!installed.started) {
+    assert(
+      installed.manualCommand !== undefined,
+      "Rerun has no manual startup command",
+    );
+    foreground = Bun.spawn(
+      ["/bin/sh", "-c", "exec " + installed.manualCommand],
+      { env, stdout: "pipe", stderr: "pipe" },
+    );
+  }
+  await ready();
+  if (env["PROJECT_UPDATE_RUN_ID"] !== undefined) {
+    assert(restorePaused !== undefined, "Original scheduler state unavailable");
+    const restored = await runtimeLifecycle(state, { action: "inventory" });
+    const target = restored.targets[0];
+    const result = await runtimeLifecycle(state, {
+      action: "restore",
+      expectedNativeId: target.process.native_id,
+      runId: env["PROJECT_UPDATE_RUN_ID"],
+      expectedIdentity: target.running_identity ?? "",
+      restorePaused,
+    });
+    assert(
+      result.targets[0].ready &&
+        result.targets[0].scheduler_paused === restorePaused,
+      "Owned managed coordinator did not restore scheduler state",
+    );
+  }
   assert(
     (await readFile(hooks, "utf8")) === first,
     "Rerun duplicated or changed hook definitions",
