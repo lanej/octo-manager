@@ -1232,7 +1232,29 @@ export class MergeStore {
           kind === "entry"
             ? this.entries(pr.id).find((value) => value.id === subjectId)
             : undefined;
-        if (entry !== undefined) notice.mergeState = entry.state;
+        if (entry !== undefined) {
+          notice.mergeState = entry.state;
+          if (entry.state === EntryState.Merged) {
+            if (entry.detail === "PR merged externally")
+              notice.mergeOrigin = "external";
+            else if (
+              entry.detail === "GitHub confirmed merge" &&
+              entry.mergeCommit !== undefined &&
+              this.operations(pr.id).some(
+                (operation) =>
+                  operation.entryId === entry.id &&
+                  operation.kind === "merge" &&
+                  operation.state === OperationState.Succeeded &&
+                  operation.mergeCommit === entry.mergeCommit &&
+                  [
+                    "GitHub confirmed merge",
+                    "GitHub confirmed asynchronous merge",
+                  ].includes(operation.detail),
+              )
+            )
+              notice.mergeOrigin = "octo";
+          }
+        }
         this.tracking.inbox.freezeNotice(id, notice);
         this.db
           .prepare(
