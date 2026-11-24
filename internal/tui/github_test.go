@@ -41,7 +41,7 @@ func TestGitHubViewKeepsQuotaTrafficAndUncertaintyDistinct(t *testing.T) {
 	t.Parallel()
 	m := model(t, theme.Dark)
 	m.snapshot.GithubUsage = usageExample()
-	m.Update(tea.KeyPressMsg{Code: '6', Text: "6"})
+	m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	m.Resize(layout.Size{Width: 132, Height: 42})
 
 	content := ansi.Strip(m.githubContent(124))

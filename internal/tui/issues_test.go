@@ -15,7 +15,7 @@ func TestIssuesDashboardShowsLifecycleAndBrief(t *testing.T) {
 	t.Parallel()
 	m := model(t, theme.Dark)
 	m.snapshot.Issues = []*v1.ManagedIssue{{Id: "first", Reference: &v1.IssueReference{Provider: "github", Project: "owner/repo", ExternalId: "12", Url: "https://github.com/owner/repo/issues/12"}, Title: "Correct answer", Stage: v1.IssueStage_ISSUE_STAGE_INVESTIGATION, Waiting: v1.IssueWaiting_ISSUE_WAITING_NEEDS_CLARIFICATION, Detail: "Confirm compatibility", Brief: &v1.IssueBrief{Version: 2, Outcome: "Return 42", Scope: "One function", Criteria: []string{"answer() returns 42"}, Questions: []string{"Keep compatibility?"}}}, {Id: "second", Reference: &v1.IssueReference{Url: "https://github.com/owner/repo/issues/13"}, Title: "Second issue", Stage: v1.IssueStage_ISSUE_STAGE_TESTING}}
-	m.key(tea.KeyPressMsg{Code: '7'})
+	m.key(tea.KeyPressMsg{Code: '6'})
 	m.Resize(layout.Size{Width: 120, Height: 36})
 
 	rendered := ansi.Strip(m.View())

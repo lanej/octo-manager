@@ -1,33 +1,48 @@
-# Dashboard layout
+# Dashboard
 
-The dashboard receives stored frames on the coordinator’s shared scheduling tick. View changes register interest; `u` queues a refresh while keeping cached content visible. The GitHub tab includes cadence, queued requests, next dispatch and cooldowns. See the [scheduler guide](polling-and-auto-merge.md).
+Attention is the starting view. It puts uncertain outcomes and decisions ahead of ordinary progress, while Deliveries shows the full inventory and Activity explains what happened. The Bun coordinator owns durable state and effects. Octo projects that evidence into typed record summaries and detail documents. Charmed's `pattern.ListInspector` owns selection, row geometry, scrolling and responsive inspection; `layout.RecordSummary` and `layout.DetailDocument` own the hierarchy of titles, conditions, next steps, field groups, status lists and event timelines.
 
-Each tab declares its purpose, main content and supporting regions through Charmed’s `tui.Screen`. The Bun coordinator owns durable data and automation; the Go TUI presents its snapshot and issues explicit commands. Detaching the dashboard leaves the coordinator running.
+| View | Read it for | Controls |
+| --- | --- | --- |
+| **1 Attention** | Ranked exceptions, current condition and next step | j/k select; Enter delivery detail |
+| **2 Deliveries** | All PRs, including progress and confirmed closed/merged outcomes | j/k select; Enter delivery detail |
+| **3 Activity** | Saved operations, coordinator events and caller reports | j/k select; Enter operation inspection; Esc list |
+| **d Diagnostics** | Reviews, Output, Runtime, Tracking, GitHub and Issues | 1–6 select; Esc returns to the originating view |
 
-Reviews and Tracking share PR navigation and pinned merge context. Output and Runtime share PR navigation and a worker pane. Activity, GitHub, and Issues are global workspaces. Tracking starts by default; the local conflict demo uses Runtime. Worker-run controls are available only on Output and Runtime.
+Wide Attention and Activity views show the selected record beside the list. Narrow views retain the list and open inspection at full width. Selection follows stable PR or saved-operation identity through reorder and refresh; removing a record leaves its inspection instead of silently relabeling another record. `[` and `]` scroll the active list or inspected evidence. Short workspaces omit secondary panes explicitly; below the minimum allocation, `q quit` remains visible.
 
-Wide terminals show a PR rail beside the current workspace. Focused or expanded views give the main content the full width while retaining keyboard PR navigation. Short terminals omit the supporting worker pane explicitly. Below the minimum workspace size, the recovery view preserves `q quit`. Main content remains scrollable; it is not discarded to fit the viewport.
+## Delivery evidence
 
-Tracking groups automation, ownership and observed state separately from blockers, agent actions and delivery history. These nested sections form columns only when both have enough readable width, otherwise they stack. Check watches have a separate log in Tracking, ordered newest first. The PR rail and pinned context show auto-merge configuration independently of readiness: enabled, paused, stopped with reconciliation still pending, or manual. Confirmed closed or merged PRs show that outcome. An enabled switch on a merged entry records its configuration; it does not establish who performed the merge.
+Delivery detail places the condition beside the PR title, the observation time beneath it, and the next action above its evidence. When there is retained review feedback, the first route appears directly below the action. Each route groups its source, transport, recipient receipt and owner disposition. Identity and verification share a row on wide terminals and stack at narrower widths. Additional routes, merge authority and recent PR events remain available by scrolling. Checks and workflow evidence identify different-head and unpinned results. Review-cache observations state when they differ from the tracked revision or contain partial history. A failed refresh retains its last observation and the error.
 
-GitHub groups REST and GraphQL budgets separately, with forecast uncertainty and observation times preserved. Traffic and cache reuse follow the budget sections. The budgets form columns on wide workspaces and stack on narrower ones.
+Configured auto-merge, coordinator progress and confirmed outcomes are separate. `a` toggles the existing setting in detail or diagnostic Tracking; it does not assert readiness. An automatic-merge setting of off does not establish whether a separate one-shot authorization exists. Confirmed merging does not establish task acceptance.
 
-`MergeStatus.chain_state` is an additive snapshot field, separate from entry progress in `state`. A paused chain can still contain an entry waiting for checks. No stored-state migration is needed. Coordinators that omit the field still supply configuration and entry progress; the UI cannot infer chain pause from those values.
+Feedback identifies its source and reviewed revision, transport state, recipient receipt and owner disposition. A delivered notification does not imply receipt or resolution. Missing receipt identifiers remain unavailable. Closed and merged PRs retain historical action evidence without promoting old actions into new interventions.
 
-## Issues workspace
+## Operation inspection
 
-**7 Issues** shows up to fifty stored issue summaries. Each row identifies the tracker issue, stage, and waiting condition. The selected detail shows the next action, workspace, latest agent role/state/model, PR link, and brief with acceptance criteria, assumptions and questions. `h/l` selects an issue; `j/k` scrolls. Approvals and clarification answers use the [issue CLI](issues.md#commands). A Done row reports accepted verification; inspect closure evidence before assuming the tracker is closed.
+Activity combines up to 50 saved operations with one bounded page of historical events and caller reports. Saved-operation detail separates operation identity, the saved request, recorded result and evidence timeline. It identifies the requested head, target, phase and request ID, while the timeline retains the supplied request and last-evidence timestamps. Caller reports retain labels such as “success reported”; historical events retain their recorded actor and transition rather than borrowing current ownership.
+
+`r` reconciles a selected eligible uncertain operation using its exact saved ID. Request acceptance is not a confirmed outcome. Failed reads retain earlier evidence and require explicit refresh before reconciliation. Coordinator replacement clears old evidence and pending request state, including when another view is active. Use `h/l` for older/newer historical pages; see the [activity guide](activity.md) for paging and reporting semantics.
+
+## Diagnostics
+
+Diagnostics keeps the detailed existing workspaces: **1 Reviews**, **2 Output**, **3 Runtime**, **4 Tracking**, **5 GitHub**, and **6 Issues**. Worker controls remain limited to Output and Runtime. Tracking retains ownership, blockers, delivery history and check watches. GitHub retains API budgets, forecast uncertainty, traffic and scheduler cadence. Issues retains lifecycle summaries, selected briefs and acceptance criteria; approvals and clarification answers use the [issue CLI](issues.md#commands).
+
+View changes register interest with the shared coordinator scheduler. `u` requests a refresh while retaining cached content. Detaching the dashboard leaves jobs and the coordinator running. See the [scheduler guide](polling-and-auto-merge.md) and [rendering contract](dashboard-performance.md).
 
 ## Representative renderings
 
-These images use the actual dashboard renderer with synthetic repository and agent data. They demonstrate layout and labeling, not a live GitHub observation. Live acceptance also exercised tab navigation, scrolling, resizing from 132 to 80 columns and clean detachment against the local coordinator. Native window capture was unavailable because the Mac was locked.
+These frames come from the actual Go dashboard renderer with synthetic repository and operation data. They demonstrate presentation and interaction states, not live GitHub activity.
 
-![Tracking at 160 columns with explicit auto-merge status, ownership and actions](images/dashboard-tracking.png)
+![Attention with ranked exceptions and a selected delivery preview](images/operator-attention.png)
 
-![Scheduler cadence, GitHub budgets and traffic at 160 columns](images/dashboard-github.png)
+![Delivery inventory with condition, next step and observation time](images/operator-deliveries.png)
 
-![Cached review feedback remains visible while a scheduler refresh is queued](images/dashboard-cached-reviews.png)
+![Delivery detail with separate evidence and feedback states](images/operator-detail.png)
 
-![Issues workspace at 132 columns with a versioned brief and clarification question](images/dashboard-issues.png)
+[Delivery detail at 80×24](images/operator-detail-compact.png)
 
-![Issues workspace at 80 columns with wrapped summary and retained brief](images/dashboard-issues-narrow.png)
+![Activity with an uncertain saved operation selected](images/operator-activity.png)
+
+![Full operation inspection on a narrow terminal](images/operator-activity-narrow.png)

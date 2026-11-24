@@ -167,6 +167,11 @@ func (m *Model) resizeContent() {
 		m.focus.Set("result")
 	}
 
+	if m.workspacePanel() {
+		m.resizeOperatorWorkspace(layout.Size{Width: g.right, Height: g.result})
+		return
+	}
+
 	inner := layout.PanelContentSize(layout.Size{Width: g.right, Height: g.result})
 	inner.Width = max(1, inner.Width-1)
 
@@ -184,8 +189,10 @@ func (m *Model) resizeContent() {
 			return m.stateView(inner.Width)
 		case trackingPanel:
 			return m.trackingContent()
-		case activityPanel:
-			return ""
+		case activityPanel, attentionPanel, deliveriesPanel:
+			return "Workspace unavailable"
+		case deliveryPanel:
+			return m.deliveryDetailContent(inner.Width)
 		case issuesPanel:
 			return m.issuesContent()
 		case githubPanel:
@@ -196,9 +203,7 @@ func (m *Model) resizeContent() {
 	})
 
 	rendered := content
-	if m.panel == activityPanel {
-		rendered = m.renderedActivity(max(1, inner.Width))
-	} else if m.panel == trackingPanel || m.panel == githubPanel || m.panel == issuesPanel {
+	if m.operatorView() || m.panel == trackingPanel || m.panel == githubPanel || m.panel == issuesPanel {
 		rendered = m.renderedContent(content, inner.Width, false)
 	} else if m.panel != statePanel {
 		rendered = m.renderedContent(content, inner.Width, true)
@@ -326,6 +331,11 @@ func (m *Model) header() []string {
 		connection = feedback.Disconnected
 	}
 
+	if m.operatorView() {
+		header := layout.Header{Title: "OCTO MANAGER", Actions: connection.View(text.Normal, m.theme)}
+		return []string{header.View(m.size.Width, m.theme)}
+	}
+
 	identity := m.currentSubject().label
 	if m.currentSubject().url != "" {
 		identity = m.link(m.currentSubject().url)
@@ -336,8 +346,7 @@ func (m *Model) header() []string {
 	}
 
 	switch m.panel {
-	case activityPanel:
-		identity = "All agent sessions"
+	case activityPanel, attentionPanel, deliveriesPanel, deliveryPanel:
 	case issuesPanel:
 		identity = "Issue investigation and remediation"
 	case githubPanel:
@@ -348,7 +357,8 @@ func (m *Model) header() []string {
 	}
 
 	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
-	chrome := layout.Header{Title: "OCTO MANAGER", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
+
+	chrome := layout.Header{Title: "OCTO MANAGER · DIAGNOSTICS", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
 	lines := strings.Split(chrome.View(m.size.Width, m.theme), "\n")
 	lines = append(lines, context[1:]...)
 

@@ -25,19 +25,19 @@ type usageChart struct {
 }
 
 func (m *Model) globalPanel() bool {
-	return m.panel == activityPanel || m.panel == githubPanel || m.panel == issuesPanel
+	return m.tab().global
 }
 
 func (m *Model) githubSummary() string {
 	for _, budget := range []*v1.GitHubRateBudget{m.snapshot.GetGithubUsage().GetRest(), m.snapshot.GetGithubUsage().GetGraphql()} {
 		if budget.GetForecast().GetState() == v1.GitHubForecastState_GIT_HUB_FORECAST_STATE_AT_RISK {
-			return "GitHub forecast: limit before reset · 6 usage"
+			return "GitHub forecast: limit before reset · d diagnostics"
 		}
 	}
 
 	budget := m.snapshot.GetGithubUsage().GetRest()
 	if budget == nil || budget.GetLimit() == 0 {
-		return "6 GitHub usage"
+		return "GitHub usage"
 	}
 
 	if budget.GetResetAtMs() <= m.snapshot.GetGithubUsage().GetSampledAtMs() {

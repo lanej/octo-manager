@@ -18,12 +18,6 @@ import (
 
 const activityPageSize = 50
 
-type activityRenderCache struct {
-	source, rendered string
-	width            int
-	valid            bool
-}
-
 type activityMsg struct {
 	instance        string
 	version, target uint64
@@ -58,7 +52,6 @@ func (m *Model) loadActivity() tea.Cmd {
 
 	if m.agentActivity.instance != m.instance {
 		m.agentActivity = activityHistory{instance: m.instance, version: m.agentActivity.version + 1}
-		m.activityRender.valid = false
 		m.resizeContent()
 	}
 
@@ -85,7 +78,7 @@ func (m *Model) requestActivity(before uint64) tea.Cmd {
 		m.agentActivity.cursors = []uint64{before}
 	}
 
-	m.activityRender.valid = false
+	m.ensureOperationSelection()
 	m.resizeContent()
 	instance, version, target := m.instance, m.agentActivity.version, m.snapshot.GetSequence()
 
@@ -111,7 +104,6 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 	m.agentActivity.err = msg.err
 	m.agentActivity.retryBefore = msg.before
 
-	m.activityRender.valid = false
 	if msg.err != nil {
 		m.resizeContent()
 		return nil
@@ -136,6 +128,7 @@ func (m *Model) applyActivity(msg activityMsg) tea.Cmd {
 		m.agentActivity.seenThrough = msg.target
 	}
 
+	m.ensureOperationSelection()
 	m.resizeContent()
 
 	return nil
@@ -380,27 +373,6 @@ func activityItems(history activityHistory) []activityItem {
 	}
 
 	return visible
-}
-
-func (m *Model) activitySource() string {
-	if !m.activityRender.valid {
-		m.activityRender.source = m.activityContent()
-		m.activityRender.width = -1
-		m.activityRender.valid = true
-	}
-
-	return m.activityRender.source
-}
-
-func (m *Model) renderedActivity(width int) string {
-	m.activitySource()
-
-	if m.activityRender.width != width {
-		m.activityRender.rendered = m.activityContentAt(max(1, width))
-		m.activityRender.width = width
-	}
-
-	return m.activityRender.rendered
 }
 
 func (m *Model) moveActivityPage(delta int) tea.Cmd {

@@ -95,23 +95,43 @@ func (m *Model) regionInput(id string) renderInput {
 		case reviewsPanel, trackingPanel:
 			pr := m.currentSubject().tracked
 			return m.input(key, pr, m.mergeStatus(pr.GetId()))
+		case attentionPanel, deliveriesPanel, deliveryPanel:
+			return m.input(key, m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()})
 		case outputPanel, statePanel:
 			return m.input(key, &v1.Snapshot{Scheduler: m.snapshot.GetScheduler(), Worker: m.snapshot.GetWorker()})
 		case githubPanel:
 			return m.input(key, m.snapshot.GetGithubUsage())
-		case activityPanel, issuesPanel:
+		case activityPanel:
+			input := m.operationInput()
+			input.key += fmt.Sprintf("/%t", m.inspectingOperation())
+
+			return input
+		case issuesPanel:
 			return m.input(key)
 		default:
 			return m.input(key)
 		}
 	case "pull-requests":
+		if m.panel == activityPanel {
+			return m.operationInput()
+		}
+
+		if m.panel == attentionPanel {
+			input := m.input(m.selected, m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()})
+			for _, item := range m.subjects() {
+				input.messages = append(input.messages, m.reviews[item.url])
+			}
+
+			return input
+		}
+
 		return m.input(m.selected, m.subjectSnapshot())
 	case "worker":
 		return m.input(fmt.Sprintf("%s/%d/%d", key, m.activity.YOffset(), m.memo("worker-content").revision), m.job(), &v1.Snapshot{Worker: m.snapshot.GetWorker(), RecoveryPid: new(m.snapshot.GetRecoveryPid()), Jobs: m.subjectSnapshot().GetJobs()})
 	case "footer":
-		return m.input(fmt.Sprintf("%s/%d", key, m.snapshot.GetScheduler()))
+		return m.input(fmt.Sprintf("%s/%d/%t", key, m.snapshot.GetScheduler(), m.inspectingOperation()))
 	case "notice":
-		return m.input(fmt.Sprintf("%s/%q/%q/%s", key, m.connectionError, m.commandError, m.screen.Plan().Variant()))
+		return m.input(fmt.Sprintf("%s/%q/%q/%s/%s", key, m.connectionError, m.commandError, m.screen.Plan().Variant(), m.dashboardNotice(m.size.Width)))
 	default:
 		input := m.input(fmt.Sprintf("%s/%d/%d/%d", key, m.result.YOffset(), m.result.Height(), m.result.TotalLineCount()))
 		input.text = m.resultContent
@@ -132,13 +152,33 @@ func (m *Model) contentInput(width int) renderInput {
 		return m.input(fmt.Sprintf("%s/%d/%q/%q/%t/%v", key, width, m.history.job, m.history.instance, m.history.loading, m.history.err), m.job(), &v1.Snapshot{RecentEvents: m.history.events, AllowedTransitions: m.snapshot.GetAllowedTransitions(), Scheduler: m.snapshot.GetScheduler(), Worker: m.snapshot.GetWorker(), Jobs: m.subjectSnapshot().GetJobs()})
 	case trackingPanel:
 		return m.input(fmt.Sprintf("%s/%d", key, width), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh)
+	case attentionPanel, deliveryPanel:
+		address := m.currentSubject().url
+
+		input := m.input(fmt.Sprintf("%s/%d/%q/%t/%q", key, width, address, m.reviewLoading[address], m.reviewErrors[address]), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh, m.reviews[address], m.reviewStatuses[address], &v1.Snapshot{RecentEvents: m.snapshot.GetRecentEvents()})
+		if m.panel == attentionPanel {
+			for _, item := range m.subjects() {
+				input.messages = append(input.messages, m.reviews[item.url])
+			}
+		}
+
+		return input
+	case deliveriesPanel:
+		input := m.input(fmt.Sprintf("%s/%d", key, width), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()})
+		for _, item := range m.subjects() {
+			input.messages = append(input.messages, m.reviews[item.url])
+		}
+
+		return input
 	case githubPanel:
 		return m.input(fmt.Sprintf("%s/%d/%d", key, width, m.githubHours), m.snapshot.GetGithubUsage(), m.schedulerViewStatus())
 	case issuesPanel:
 		return m.input(fmt.Sprintf("%s/%d", key, m.issueIndex), &v1.Snapshot{Issues: m.snapshot.GetIssues()})
 	case activityPanel:
-		// Activity owns its bounded-page cache; do not clone its loaded history here.
-		return m.input(key)
+		input := m.operationInput()
+		input.key += fmt.Sprintf("/%d", width)
+
+		return input
 	default:
 		return m.input(key)
 	}

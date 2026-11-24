@@ -25,6 +25,35 @@ type activityService struct {
 	total   uint64
 }
 
+func (s activityService) InspectMergeChains(context.Context, *connect.Request[v1.InspectMergeChainsRequest]) (*connect.Response[v1.InspectMergeChainsResponse], error) {
+	return connect.NewResponse(&v1.InspectMergeChainsResponse{Overview: &v1.DomainMergeOverview{}}), nil
+}
+
+func applyActivityCommands(t *testing.T, m *Model, command tea.Cmd) {
+	t.Helper()
+
+	commands := []tea.Cmd{command}
+	for count := 0; len(commands) > 0; count++ {
+		if count > 20 {
+			t.Fatal("activity commands did not settle after one bounded page")
+		}
+
+		current := commands[0]
+		commands = commands[1:]
+
+		if current == nil {
+			continue
+		}
+
+		message := current()
+		if batch, ok := message.(tea.BatchMsg); ok {
+			commands = append(commands, batch...)
+		} else {
+			commands = append(commands, m.Update(message))
+		}
+	}
+}
+
 func (s activityService) ListActivity(_ context.Context, request *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
 	cursor := request.Msg.GetAfterSequence()
 
@@ -88,13 +117,16 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	t.Cleanup(server.Close)
 	m.api.RPC = octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
-	command := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
+	m.panel = attentionPanel
+
+	command := m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
 	if command == nil {
 		t.Fatal("activity tab did not load without a job")
 	}
 
-	command = m.Update(command())
-	if command != nil || len(m.agentActivity.entries) != 50 || <-service.cursors != 202 {
+	applyActivityCommands(t, m, command)
+
+	if len(m.agentActivity.entries) != 50 || <-service.cursors != 202 {
 		t.Fatal("opening activity replayed history instead of loading a bounded recent page")
 	}
 
@@ -113,6 +145,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 	command = m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 	m.Update(command())
 	<-service.cursors
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	for _, size := range []layout.Size{{Width: 132, Height: 40}, {Width: 80, Height: 32}, {Width: 40, Height: 16}} {
 		m.Resize(size)
@@ -124,7 +157,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 			}
 		}
 
-		if size.Width >= 80 && (!strings.Contains(view, "Agent activity") || !strings.Contains(view, "success reported")) {
+		if size.Width >= 80 && (!strings.Contains(view, "OPERATION") || !strings.Contains(view, "success reported")) {
 			t.Fatal("activity view omits the named outcome or actor")
 		}
 	}
@@ -139,11 +172,13 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 		t.Fatal("a newly arrived PR switched away from global activity")
 	}
 
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m.result.GotoTop()
+	selected := m.operations.selected
 	m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 
-	if m.panel != activityPanel || m.result.YOffset() == 0 {
-		t.Fatal("global activity navigation switched to PRs instead of scrolling")
+	if m.panel != activityPanel || m.operations.selected == selected {
+		t.Fatal("activity navigation did not select the next retained report")
 	}
 
 	if m.Update(tea.KeyPressMsg{Code: 'c', Text: "c"}) != nil && m.commandPending {
@@ -180,14 +215,14 @@ func TestActivityOpensLatestLargeHistoryWithoutAutomaticReplay(t *testing.T) {
 	t.Cleanup(server.Close)
 	m.api.RPC = octomanagerv2connect.NewSchedulerServiceClient(server.Client(), server.URL)
 
-	command := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
+	m.panel = attentionPanel
+
+	command := m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
 	if command == nil {
 		t.Fatal("activity did not open")
 	}
 
-	if followup := m.Update(command()); followup != nil {
-		t.Fatal("opening activity automatically requested the older backlog")
-	}
+	applyActivityCommands(t, m, command)
 
 	if len(m.agentActivity.entries) != 50 || m.agentActivity.cursor != 120000 || m.agentActivity.oldest != 119951 || !m.agentActivity.hasOlder || <-service.cursors != 120001 {
 		t.Fatal("activity did not load only the most recent 50 records")
@@ -249,7 +284,7 @@ func TestActivityOpensLatestLargeHistoryWithoutAutomaticReplay(t *testing.T) {
 		t.Fatal("explicit retry unavailable")
 	}
 
-	m.Update(command())
+	applyActivityCommands(t, m, command)
 
 	if <-service.cursors != failedBefore || m.agentActivity.err != nil {
 		t.Fatal("explicit retry changed the failed page cursor")
@@ -279,7 +314,7 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 
 	m.Resize(layout.Size{Width: 132, Height: 40})
 
-	latest := ansi.Strip(m.activitySource())
+	latest := ansi.Strip(m.activityContent())
 	if strings.Count(latest, "Run checks") != 50 || !strings.Contains(latest, "record-3000-end") || !strings.Contains(latest, "record-2951-end") || strings.Contains(latest, "record-2950-end") {
 		t.Fatal("latest activity window omitted records or rendered outside its bound")
 	}
@@ -289,6 +324,9 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 		t.Fatalf("unchanged activity refresh rebuilt content: %.0f allocations", allocations)
 	}
 
+	m.agentActivity.entries[0].Report.Detail = strings.Repeat("Inspect this recorded operation and its evidence. ", 100)
+	m.operations.selected = "report:2951"
+	m.resizeContent()
 	m.result.GotoTop()
 	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m.Update(tea.KeyPressMsg{Code: ']', Text: "]"})
@@ -305,7 +343,7 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 
 	m.applyActivity(activityMsg{instance: m.instance, version: m.agentActivity.version, target: 3000, next: 3000, err: errors.New("offline")})
 
-	if !strings.Contains(m.activitySource(), "History incomplete") {
+	if !strings.Contains(m.operationContent(120), "History incomplete") {
 		t.Fatal("render cache hid an activity read error")
 	}
 
@@ -313,7 +351,7 @@ func TestActivityWindowRefreshAndVisibleFocus(t *testing.T) {
 	m.snapshot.Sequence = 0
 	m.loadActivity()
 
-	if strings.Contains(m.activitySource(), "record-3000-end") || !strings.Contains(m.activitySource(), "Loading activity") {
+	if strings.Contains(m.operationContent(120), "record-3000-end") || !m.agentActivity.loading {
 		t.Fatal("cached activity survived a database instance replacement")
 	}
 }
