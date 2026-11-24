@@ -223,7 +223,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
       if (request.afterSequence < 0n || request.afterSequence > BigInt(coordinator.store.sequence())) throw new ConnectError("Cursor is ahead of retained history; obtain a fresh snapshot", Code.OutOfRange);
       let cursor = Number(request.afterSequence);
       while (!context.signal.aborted) {
-        if (coordinator.snapshot().scheduler === "stopping" || coordinator.snapshot().scheduler === "stopped") throw new ConnectError("Coordinator is stopping", Code.Unavailable);
+        if (coordinator.isStopping()) throw new ConnectError("Coordinator is stopping", Code.Unavailable);
         const events = coordinator.store.eventsSince(cursor, request.jobId, request.prId);
         for (const event of events) { cursor = event.seq; yield { event: wireEvent(event) }; }
         await delay(50, undefined, { signal: context.signal }).catch(() => {});
