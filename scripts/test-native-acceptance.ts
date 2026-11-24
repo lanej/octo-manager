@@ -1,3 +1,4 @@
+import { buildNative } from "./build-native.js";
 import {
   mkdtemp,
   mkdir,
@@ -28,8 +29,68 @@ const env = {
 };
 let daemon: ReturnType<typeof Bun.spawn> | undefined;
 try {
+  const compiler = process.env["OCTO_AOT_BUN"];
+  if (compiler === undefined || compiler === "")
+    throw new Error(
+      "Set OCTO_AOT_BUN to verify native supported-provider initialization",
+    );
+  const providerProbe = join(temporary, "provider-probe");
+  buildNative(compiler, providerProbe, "scripts/native-provider-probe.ts");
+  const syntheticCodex = join(home, "codex");
+  await mkdir(syntheticCodex, { recursive: true });
+  const claims = Buffer.from(
+    JSON.stringify({
+      exp: 4102444800,
+      "https://api.openai.com/auth": {
+        chatgpt_account_id: "synthetic-account",
+      },
+    }),
+  ).toString("base64url");
+  await writeFile(
+    join(syntheticCodex, "auth.json"),
+    JSON.stringify({
+      auth_mode: "chatgpt",
+      tokens: { access_token: `synthetic.${claims}.synthetic` },
+    }),
+    { mode: 0o600 },
+  );
+  const supportedProviders = [];
+  for (const providerId of ["openai-codex", "amazon-bedrock"]) {
+    const provider = Bun.spawnSync([providerProbe, home, providerId], {
+      cwd: temporary,
+      env:
+        providerId === "amazon-bedrock"
+          ? {
+              ...env,
+              AWS_REGION: "us-east-1",
+              AWS_ACCESS_KEY_ID: "synthetic",
+              AWS_SECRET_ACCESS_KEY: "synthetic",
+              AWS_EC2_METADATA_DISABLED: "true",
+            }
+          : env,
+    });
+    assert(provider.exitCode === 0, provider.stderr.toString());
+    const providerResult: unknown = JSON.parse(provider.stdout.toString());
+    assert(
+      typeof providerResult === "object" &&
+        providerResult !== null &&
+        "provider" in providerResult &&
+        providerResult.provider === providerId &&
+        "authResolved" in providerResult &&
+        providerResult.authResolved === true &&
+        "providerInitialized" in providerResult &&
+        providerResult.providerInitialized === true &&
+        "networkAttempts" in providerResult &&
+        providerResult.networkAttempts === 0 &&
+        "sdkSendAttempts" in providerResult &&
+        providerResult.sdkSendAttempts === 0,
+      "Native provider initialization evidence missing",
+    );
+    supportedProviders.push(providerResult);
+  }
+  await rm(syntheticCodex, { recursive: true });
   await mkdir(join(release, "build"), { recursive: true });
-  await mkdir(home);
+  await mkdir(home, { recursive: true });
   for (const name of ["dist", "node_modules"])
     await cp(resolve(name), join(release, name), {
       recursive: true,
@@ -185,6 +246,7 @@ try {
       physicalIdentity: identity.expected_identity,
       workerIPC: ["job", "assessment"],
       publicationWorker: "missing-receipt-rejected",
+      supportedProviders,
       externalEffects: false,
     }),
   );

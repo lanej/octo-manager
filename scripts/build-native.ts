@@ -25,6 +25,7 @@ export function validNativeCompiler(value: unknown): boolean {
 export function buildNative(
   compiler: string,
   outfile: string,
+  entrypoint = "src/executable.ts",
 ): {
   revision: string;
   source: string;
@@ -57,7 +58,7 @@ export function buildNative(
   }
   run([
     "compile",
-    "src/executable.ts",
+    entrypoint,
     "--define=OCTO_NATIVE_AOT=true",
     "--sourcemap=external",
     "--outfile",
