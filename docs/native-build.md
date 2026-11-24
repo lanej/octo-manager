@@ -15,7 +15,7 @@ bun run build:native
 bun run test:native
 ```
 
-The standalone build writes `build/octo-manager` and `build/native-compiler.json`. Compilation runs from the source checkout regardless of the caller's working directory. `test:native` relocates the executable and shipped resources into a private release, starts a coordinator with fresh state and an empty credential home, verifies its socket API and physical artifact identity, and exercises bounded IPC rejection in the native workers. It closes owned processes and removes its private fixture. This check does not establish provider availability or a performance improvement.
+The standalone build writes `build/octo-manager` and `build/native-compiler.json`. Compilation runs from the source checkout regardless of the caller's working directory. `test:native` relocates the executable and shipped resources into a private release, starts a coordinator with fresh state and an empty credential home, verifies its socket API and physical artifact identity, and exercises bounded IPC rejection in the native workers. A separately compiled probe imports the actual native entrypoint, derives authentication from generated synthetic Codex and AWS credentials, and loads both supported worker providers through their payload-construction boundaries; a sentinel stops execution before transport and failing fetch and AWS SDK `send` guards require zero transport attempts, and AWS instance-metadata discovery is disabled. The probe uses no real credentials, model prompt, or external API call. It closes owned processes and removes its private fixture. This check does not establish provider availability or a performance improvement.
 
 ## Install and operate
 
