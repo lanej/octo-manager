@@ -36,6 +36,8 @@ export interface TrackingOptions {
   schedules?: ScheduleStore;
   interactive?: <T>(work: () => T) => T;
   managedQueue?: (agentId: string) => boolean;
+  // Positive ownership facts apply only to recorded rows in this synchronous selection pass.
+  managedQueueBatch?: (agentIds: readonly string[]) => ReadonlySet<string>;
   notificationRecorded?: () => void;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
@@ -405,8 +407,18 @@ export class TrackingService {
     );
   }
   private async deliverNext(): Promise<void> {
-    const d = this.store.deliveryCandidates().find((d) => {
+    const candidates = this.store.deliveryCandidates();
+    const managed = this.options.managedQueueBatch?.([
+      ...new Set(
+        candidates
+          .filter((candidate) => candidate.messageRecorded)
+          .map((candidate) => candidate.recipientAgentId),
+      ),
+    ]);
+    const d = candidates.find((d) => {
       // Recorded pull-inbox work belongs to digest reconciliation; direct selection does not need its body.
+      if (d.messageRecorded && managed?.has(d.recipientAgentId) === true)
+        return false;
       if (d.messageRecorded && this.usesPullInbox(d.recipientAgentId))
         return false;
 

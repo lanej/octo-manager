@@ -84,6 +84,17 @@ export class DigestService {
         .some((value) => !terminal(value) || value.cleanupPending)
     );
   };
+  managedBatch = (agentIds: readonly string[]): ReadonlySet<string> => {
+    const managed = new Set<string>();
+    for (const agentId of new Set(agentIds)) {
+      try {
+        if (this.managed(agentId)) managed.add(agentId);
+      } catch {
+        // Omission retains the original per-row check if selection reaches this recipient.
+      }
+    }
+    return managed;
+  };
   start(): void {
     this.timer = setInterval(() => {
       this.requestDiscovery().catch(() => {});
