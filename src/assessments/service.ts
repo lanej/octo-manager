@@ -198,6 +198,14 @@ export class AssessmentService {
       return next;
     });
   }
+  checkpointable(): boolean {
+    return (
+      this.work === undefined &&
+      !this.store
+        .reconciliationCandidates()
+        .some((item) => item.state === "pending" || item.state === "running")
+    );
+  }
   async close(): Promise<void> {
     this.stopped = true;
     if (this.timer !== undefined) clearInterval(this.timer);

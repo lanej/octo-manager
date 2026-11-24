@@ -4,6 +4,9 @@ import { requireBun } from "./runtime.js";
 import { issuesCLI } from "./issues/cli.js";
 import { commandTree, CommanderError } from "./command-tree.js";
 import { publicationCLI } from "./publication/cli.js";
+import { runtimeLifecycle } from "./lifecycle-rpc.js";
+import { artifactIdentity, type ActivationReport } from "./lifecycle.js";
+import { readFileSync } from "node:fs";
 import {mergingCLI} from "./merging/cli.js";
 import {printResult,printFailure} from "./cli-output.js";
 import {subscriptionsCLI} from "./tracking/subscriptions-cli.js";
@@ -41,6 +44,54 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   const { values, positionals } = parsed;
   const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), ".local", "state", "octo-manager"));
   const command = positionals[0]??"", argument=positionals[1];
+  if (command === "lifecycle") {
+    if (argument === "artifact") {
+      console.log(JSON.stringify({ expected_identity: artifactIdentity() }));
+      return;
+    }
+    let restorePaused: boolean | undefined;
+    const operation = process.env["PROJECT_UPDATE_OPERATION_DIR"];
+    if (argument === "restore" && operation !== undefined) {
+      const record: unknown = JSON.parse(
+        readFileSync(join(operation, "octo-manager-inventory.json"), "utf8"),
+      );
+      if (
+        typeof record === "object" &&
+        record !== null &&
+        "targets" in record &&
+        Array.isArray(record.targets)
+      ) {
+        const target: unknown = record.targets[0];
+        if (
+          typeof target === "object" &&
+          target !== null &&
+          "scheduler_paused" in target &&
+          typeof target.scheduler_paused === "boolean"
+        )
+          restorePaused = target.scheduler_paused;
+      }
+    }
+    let value: ActivationReport;
+    try {
+      value = await runtimeLifecycle(directory, {
+        action: argument ?? "",
+        expectedNativeId: process.env["PROJECT_UPDATE_INSTANCE_ID"] ?? "",
+        runId: process.env["PROJECT_UPDATE_RUN_ID"] ?? "",
+        expectedIdentity: artifactIdentity() ?? "",
+        ...(restorePaused === undefined ? {} : { restorePaused }),
+      });
+    } catch {
+      console.log(JSON.stringify({ schema_version: 1, targets: [{ target: "local", expected_identity: artifactIdentity(), running_identity: null, ready: false, process: null, sessions: [], reason: "native-lifecycle-control-unavailable" }] }));
+      process.exitCode = 3;
+      return;
+    }
+    console.log(JSON.stringify(value));
+    if (argument === "restore" && value.targets[0].reason !== undefined) process.exitCode = 3;
+    if (argument === "verify" && !value.targets[0].ready) process.exitCode = 3;
+    if (argument === "checkpoint" && value.targets[0].checkpoint?.state !== "confirmed") process.exitCode = 3;
+    if (argument === "stop" && !value.targets[0].stop_accepted) process.exitCode = 3;
+    return;
+  }
   if (command === "codex-hook") { await codexHookCLI(directory); return; }
   if (command === "login") {
     console.log("Pi uses a separate ChatGPT login. In Pi, run /login openai-codex, complete the browser flow, then /quit. Credentials are managed by Pi and are never copied from Codex.");
@@ -62,7 +113,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
     console.log(JSON.stringify(startupRecord(directory)));
-    await new Promise<void>(resolve => { const stop = () => { void coordinator.close().then(resolve); }; process.once("SIGINT", stop); process.once("SIGTERM", stop); });
+    await new Promise<void>((resolve, reject) => { const stop = () => { void coordinator.close().then(resolve, reject); }; coordinator.once("retired", resolve); process.once("SIGINT", stop); process.once("SIGTERM", stop); });
     return;
   }
   const id = argument;

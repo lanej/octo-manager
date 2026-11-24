@@ -276,6 +276,9 @@ export class NotificationService {
     if (this.timer !== undefined) clearInterval(this.timer);
     this.controller?.abort();
   }
+  checkpointable(): boolean {
+    return this.work === undefined;
+  }
   async close(): Promise<void> {
     this.stop();
     await this.work;

@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceRuntimeLifecycleProcedure is the fully-qualified name of the SchedulerService's
+	// RuntimeLifecycle RPC.
+	SchedulerServiceRuntimeLifecycleProcedure = "/octomanager.v2.SchedulerService/RuntimeLifecycle"
 	// SchedulerServiceEnrollIssueProcedure is the fully-qualified name of the SchedulerService's
 	// EnrollIssue RPC.
 	SchedulerServiceEnrollIssueProcedure = "/octomanager.v2.SchedulerService/EnrollIssue"
@@ -230,6 +233,8 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v2.SchedulerService service.
 type SchedulerServiceClient interface {
+	// Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
+	RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error)
 	// Enrolls an issue for investigation through its configured tracker.
 	EnrollIssue(context.Context, *connect.Request[v2.EnrollIssueRequest]) (*connect.Response[v2.EnrollIssueResponse], error)
 	// Lists a bounded page of managed issues.
@@ -373,6 +378,12 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v2.File_octomanager_v2_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		runtimeLifecycle: connect.NewClient[v2.RuntimeLifecycleRequest, v2.RuntimeLifecycleResponse](
+			httpClient,
+			baseURL+SchedulerServiceRuntimeLifecycleProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("RuntimeLifecycle")),
+			connect.WithClientOptions(opts...),
+		),
 		enrollIssue: connect.NewClient[v2.EnrollIssueRequest, v2.EnrollIssueResponse](
 			httpClient,
 			baseURL+SchedulerServiceEnrollIssueProcedure,
@@ -768,6 +779,7 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	runtimeLifecycle               *connect.Client[v2.RuntimeLifecycleRequest, v2.RuntimeLifecycleResponse]
 	enrollIssue                    *connect.Client[v2.EnrollIssueRequest, v2.EnrollIssueResponse]
 	listIssues                     *connect.Client[v2.ListIssuesRequest, v2.ListIssuesResponse]
 	getIssue                       *connect.Client[v2.GetIssueRequest, v2.GetIssueResponse]
@@ -833,6 +845,11 @@ type schedulerServiceClient struct {
 	cancelJob                      *connect.Client[v2.CancelJobRequest, v2.CancelJobResponse]
 	retryJob                       *connect.Client[v2.RetryJobRequest, v2.RetryJobResponse]
 	setPaused                      *connect.Client[v2.SetPausedRequest, v2.SetPausedResponse]
+}
+
+// RuntimeLifecycle calls octomanager.v2.SchedulerService.RuntimeLifecycle.
+func (c *schedulerServiceClient) RuntimeLifecycle(ctx context.Context, req *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error) {
+	return c.runtimeLifecycle.CallUnary(ctx, req)
 }
 
 // EnrollIssue calls octomanager.v2.SchedulerService.EnrollIssue.
@@ -1163,6 +1180,8 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v2.SchedulerService service.
 type SchedulerServiceHandler interface {
+	// Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
+	RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error)
 	// Enrolls an issue for investigation through its configured tracker.
 	EnrollIssue(context.Context, *connect.Request[v2.EnrollIssueRequest]) (*connect.Response[v2.EnrollIssueResponse], error)
 	// Lists a bounded page of managed issues.
@@ -1302,6 +1321,12 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v2.File_octomanager_v2_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceRuntimeLifecycleHandler := connect.NewUnaryHandler(
+		SchedulerServiceRuntimeLifecycleProcedure,
+		svc.RuntimeLifecycle,
+		connect.WithSchema(schedulerServiceMethods.ByName("RuntimeLifecycle")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceEnrollIssueHandler := connect.NewUnaryHandler(
 		SchedulerServiceEnrollIssueProcedure,
 		svc.EnrollIssue,
@@ -1694,6 +1719,8 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v2.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceRuntimeLifecycleProcedure:
+			schedulerServiceRuntimeLifecycleHandler.ServeHTTP(w, r)
 		case SchedulerServiceEnrollIssueProcedure:
 			schedulerServiceEnrollIssueHandler.ServeHTTP(w, r)
 		case SchedulerServiceListIssuesProcedure:
@@ -1832,6 +1859,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.RuntimeLifecycle is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) EnrollIssue(context.Context, *connect.Request[v2.EnrollIssueRequest]) (*connect.Response[v2.EnrollIssueResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.EnrollIssue is not implemented"))

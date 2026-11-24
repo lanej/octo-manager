@@ -1,0 +1,86 @@
+syntax = "proto3";
+package octomanager.v2;
+
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
+
+// LifecycleAction selects a native owner inspection or guarded activation step.
+enum LifecycleAction {
+  LIFECYCLE_ACTION_UNSPECIFIED = 0;
+  LIFECYCLE_ACTION_INVENTORY = 1;
+  LIFECYCLE_ACTION_CHECKPOINT = 2;
+  LIFECYCLE_ACTION_STOP = 3;
+  LIFECYCLE_ACTION_RESTORE = 4;
+  LIFECYCLE_ACTION_VERIFY = 5;
+}
+// LifecycleCheckpointState distinguishes a confirmed fence from refusal or pending drain.
+enum LifecycleCheckpointState {
+  LIFECYCLE_CHECKPOINT_STATE_UNSPECIFIED = 0;
+  LIFECYCLE_CHECKPOINT_STATE_CONFIRMED = 1;
+  LIFECYCLE_CHECKPOINT_STATE_REFUSED = 2;
+  LIFECYCLE_CHECKPOINT_STATE_PENDING = 3;
+}
+// LifecycleRetirementPolicy identifies the running owner's proven supervisor disposition.
+enum LifecycleRetirementPolicy {
+  LIFECYCLE_RETIREMENT_POLICY_UNSPECIFIED = 0;
+  LIFECYCLE_RETIREMENT_POLICY_UNKNOWN = 1;
+  LIFECYCLE_RETIREMENT_POLICY_SUCCESSFUL_EXIT = 2;
+}
+// LifecycleRestoration records native session continuity without claiming replay.
+enum LifecycleRestoration {
+  LIFECYCLE_RESTORATION_UNSPECIFIED = 0;
+  LIFECYCLE_RESTORATION_RESTORED = 1;
+  LIFECYCLE_RESTORATION_UNCHANGED = 2;
+  LIFECYCLE_RESTORATION_BLOCKED = 3;
+  LIFECYCLE_RESTORATION_UNKNOWN = 4;
+}
+// LifecycleProcess binds a PID to its startup and native owner incarnation.
+message LifecycleProcess {
+  uint64 pid = 1;
+  string start_identity = 2;
+  string native_id = 3;
+  bool owner_verified = 4;
+}
+// LifecycleCheckpoint binds a native fence to one retained update UUID.
+message LifecycleCheckpoint {
+  LifecycleCheckpointState state = 1;
+  string run_id = 2;
+}
+// LifecycleSession records an exact owner-native conversation when that capability exists.
+message LifecycleSession {
+  string session_id = 1;
+  LifecycleRestoration restoration = 2;
+  optional string transcript_path = 3;
+  optional string branch_id = 4;
+  optional string cwd = 5;
+}
+// LifecycleTarget reports running image, owner process, readiness and checkpoint evidence.
+message LifecycleTarget {
+  string target = 1;
+  optional string expected_identity = 2;
+  optional string running_identity = 3;
+  bool ready = 4;
+  LifecycleProcess process = 5;
+  repeated LifecycleSession sessions = 6;
+  bool scheduler_paused = 7;
+  LifecycleRetirementPolicy retirement_policy = 8;
+  bool stop_accepted = 9;
+  LifecycleCheckpoint checkpoint = 10;
+  optional string reason = 11;
+}
+// LifecycleReport is the typed native counterpart of the external activation JSON contract.
+message LifecycleReport {
+  uint32 schema_version = 1;
+  repeated LifecycleTarget targets = 2;
+}
+// RuntimeLifecycleRequest selects one guarded owner operation and its retained authority.
+message RuntimeLifecycleRequest {
+  LifecycleAction action = 1;
+  string expected_native_id = 2;
+  string run_id = 3;
+  string expected_identity = 4;
+  optional bool restore_paused = 5;
+}
+// RuntimeLifecycleResponse returns native evidence, including explicit incomplete outcomes.
+message RuntimeLifecycleResponse {
+  LifecycleReport report = 1;
+}

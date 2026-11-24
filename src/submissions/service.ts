@@ -535,6 +535,22 @@ export class SubmissionService {
     this.store.notify(value, owner.id);
     this.update(id, { notificationRevision: 1 });
   }
+  checkpointable(): boolean {
+    return (
+      this.active === undefined &&
+      !this.store
+        .list()
+        .some(
+          (value) =>
+            value.workerPids.some(alive) ||
+            (!terminal.has(value.state) &&
+              this.options.allowLegacyExecution === true) ||
+            value.state === State.Publishing ||
+            value.state === State.Enrolling ||
+            value.state === State.Uncertain,
+        )
+    );
+  }
   async close(): Promise<void> {
     this.stopped = true;
     if (this.timer !== undefined) clearInterval(this.timer);

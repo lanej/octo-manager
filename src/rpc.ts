@@ -1,3 +1,4 @@
+import { actionName, wireLifecycle } from "./lifecycle-rpc.js";
 import { Messages } from "./notifications/messages.js";
 import { wireAssessment } from "./assessments/rpc.js";
 import { issueRoutes, wireIssue } from "./issues/rpc.js";
@@ -81,6 +82,19 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
   };
   router.service(SchedulerService, {
     ...issueRoutes(coordinator.issues),
+    async runtimeLifecycle(r) {
+      return {
+        report: wireLifecycle(
+          await coordinator.lifecycle(
+            actionName(r.action),
+            r.expectedNativeId,
+            r.runId,
+            r.expectedIdentity,
+            r.restorePaused,
+          ),
+        ),
+      };
+    },
     ...dashboardRoutes(coordinator),
     getServerInfo(){return {apiVersion:2};},
     ...mergeRoutes(coordinator),
@@ -215,5 +229,11 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
         await delay(50, undefined, { signal: context.signal }).catch(() => {});
       }
     },
-  });
+  }, { interceptors: [next => async request => {
+    let release: () => void;
+    try { release = coordinator.nativeAdmission(request.method.name); }
+    catch { throw new ConnectError("Coordinator is stopping", Code.Unavailable); }
+    try { return await next(request); }
+    finally { release(); }
+  }] });
 }
