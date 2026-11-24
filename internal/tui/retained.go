@@ -131,7 +131,7 @@ func (m *Model) regionInput(id string) renderInput {
 	case "footer":
 		return m.input(fmt.Sprintf("%s/%d/%t", key, m.snapshot.GetScheduler(), m.inspectingOperation()))
 	case "notice":
-		return m.input(fmt.Sprintf("%s/%q/%q/%s", key, m.connectionError, m.commandError, m.screen.Plan().Variant()))
+		return m.input(fmt.Sprintf("%s/%q/%q/%s/%s", key, m.connectionError, m.commandError, m.screen.Plan().Variant(), m.dashboardNotice(m.size.Width)))
 	default:
 		input := m.input(fmt.Sprintf("%s/%d/%d/%d", key, m.result.YOffset(), m.result.Height(), m.result.TotalLineCount()))
 		input.text = m.resultContent
@@ -155,7 +155,7 @@ func (m *Model) contentInput(width int) renderInput {
 	case attentionPanel, deliveryPanel:
 		address := m.currentSubject().url
 
-		input := m.input(fmt.Sprintf("%s/%d/%q/%t/%q", key, width, address, m.reviewLoading[address], m.reviewErrors[address]), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh, m.reviews[address], m.reviewStatuses[address])
+		input := m.input(fmt.Sprintf("%s/%d/%q/%t/%q", key, width, address, m.reviewLoading[address], m.reviewErrors[address]), m.subjectSnapshot(), &v1.Snapshot{Repairs: m.snapshot.GetRepairs()}, m.selectedRefresh, m.reviews[address], m.reviewStatuses[address], &v1.Snapshot{RecentEvents: m.snapshot.GetRecentEvents()})
 		if m.panel == attentionPanel {
 			for _, item := range m.subjects() {
 				input.messages = append(input.messages, m.reviews[item.url])

@@ -250,7 +250,7 @@ func (m *Model) currentOperationURL() string {
 }
 
 func (m *Model) operationRecordSummary(item operatorActivityItem) layout.RecordSummary {
-	record := layout.RecordSummary{Fields: []layout.Pair{{Label: "Recorded", Value: m.timestamp(item.at, briefTimestamp)}}}
+	record := layout.RecordSummary{Fields: []layout.Pair{{Label: "Recorded", Value: m.timestamp(item.at, "2006-01-02 15:04 MST")}}}
 	if operation := item.operation; operation != nil {
 		status, tone := operationOutcome(operation.GetState())
 
@@ -272,7 +272,7 @@ func (m *Model) operationRecordSummary(item operatorActivityItem) layout.RecordS
 		record.Subtitle = oneLine(presentation.detail)
 		if context := item.event.GetActionContext(); context != nil {
 			record.Status = text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
-			record.Fields = append(record.Fields, layout.Pair{Label: "Recorded actor", Value: historicalActionActor(context)})
+			record.Fields = append(record.Fields, layout.Pair{Label: "Actor", Value: historicalActionActor(context)})
 		} else if item.event.GetKind() == "action_progress" {
 			record.Status = text.Pill("Transition unknown", text.Warning, m.theme, text.Normal)
 		}
@@ -296,10 +296,7 @@ func (m *Model) operationItemContent(item operatorActivityItem, width int) strin
 }
 
 func (m *Model) operationDocument(item operatorActivityItem) layout.DetailDocument {
-	document := layout.DetailDocument{
-		Header:  layout.IdentityHeader{ID: "Operation inspection", Context: fmt.Sprintf("History page %d · h older · l newer · u refresh", m.agentActivity.shownPage+1)},
-		Summary: m.operationRecordSummary(item),
-	}
+	document := layout.DetailDocument{Summary: m.operationRecordSummary(item)}
 
 	document.Summary.Fields = nil
 	if item.operation != nil {
@@ -463,16 +460,16 @@ func (m *Model) operationNext(operation *v1.DomainMergeOverviewOperationsItem) *
 		return nil
 	}
 
-	next := "r Reconcile with GitHub · inspect the saved operation without another write."
+	next := "Reconcile the saved operation with GitHub"
 	if m.operations.pendingID == operation.GetId() {
 		next = "Requesting reconciliation; the outcome remains unconfirmed."
 	} else if m.operations.err != nil {
-		next = "u refresh · inspect saved operations before requesting reconciliation."
+		next = "Refresh saved operations before requesting reconciliation."
 	} else if m.commandPending {
 		next = "Another command is pending; wait before requesting reconciliation."
 	}
 
-	return &layout.Pair{Label: "Next", Value: next}
+	return &layout.Pair{Label: "Next action", Value: next}
 }
 
 func (m *Model) reportOperationSection(entry *v1.ActivityReport) layout.DetailSection {

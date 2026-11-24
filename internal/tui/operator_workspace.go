@@ -56,7 +56,7 @@ func (m *Model) resizeOperatorWorkspace(size layout.Size) {
 		inspector.Theme = m.theme
 		inspector.ListWidth, inspector.MinDetailWidth = 42, 48
 		inspector.Preview = m.panel != deliveriesPanel
-		inspector.ListTitle, inspector.DetailTitle = "DELIVERIES", "NEXT STEP"
+		inspector.ListTitle, inspector.DetailTitle = "DELIVERIES", "DELIVERY DETAIL"
 		inspector.Empty = "No GitHub deliveries yet.\n\nTrack or submit a PR from its owning session.\n\nPress d for runtime and issue diagnostics."
 
 		switch m.panel {
@@ -152,10 +152,14 @@ func (m *Model) operatorRecords() []pattern.InspectorRecord {
 		}
 
 		recordSummary := m.deliveryRecordSummary(summary, m.panel == deliveriesPanel)
-		document := m.deliveryPreviewDocument(summary.item)
-		records = append(records, pattern.InspectorRecord{
-			ID: summary.item.key, Heading: heading, Summary: &recordSummary, Document: &document,
-		})
+
+		record := pattern.InspectorRecord{ID: summary.item.key, Heading: heading, Summary: &recordSummary}
+		if m.panel == attentionPanel {
+			document := m.deliveryDocument(summary.item)
+			record.Document = &document
+		}
+
+		records = append(records, record)
 	}
 
 	return records

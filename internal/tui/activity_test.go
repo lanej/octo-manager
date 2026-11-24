@@ -157,7 +157,7 @@ func TestAgentActivityPagesWithoutJobsAndFencesReconnect(t *testing.T) {
 			}
 		}
 
-		if size.Width >= 80 && (!strings.Contains(view, "Operation inspection") || !strings.Contains(view, "success reported")) {
+		if size.Width >= 80 && (!strings.Contains(view, "OPERATION") || !strings.Contains(view, "success reported")) {
 			t.Fatal("activity view omits the named outcome or actor")
 		}
 	}

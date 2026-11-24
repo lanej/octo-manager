@@ -81,7 +81,15 @@ func (m *Model) dashboardRecipe() layout.Node {
 			omitted = append(omitted, layout.Omission{ID: "pull-requests", Reason: "Full-width or focused view; selected-item context and keyboard navigation remain available."})
 		}
 
-		body := &layout.Flex{Name: "tab-content", Axis: layout.Vertical, Children: []layout.Slot{{Node: region("navigation", layout.ChromeRegion), Track: layout.Fixed(1)}, {Node: region("context", layout.SupportingRegion), Track: layout.Fixed(2)}, {Node: workspace, Track: layout.Grow(3)}}}
+		body := &layout.Flex{Name: "tab-content", Axis: layout.Vertical, Children: []layout.Slot{{Node: region("navigation", layout.ChromeRegion), Track: layout.Fixed(1)}}}
+
+		if m.operatorView() {
+			omitted = append(omitted, layout.Omission{ID: "context", Reason: "The record carries its own title, condition and next action."})
+		} else {
+			body.Children = append(body.Children, layout.Slot{Node: region("context", layout.SupportingRegion), Track: layout.Fixed(2)})
+		}
+
+		body.Children = append(body.Children, layout.Slot{Node: workspace, Track: layout.Grow(3)})
 		footer := &layout.Flex{Axis: layout.Vertical, Children: []layout.Slot{{Node: region("footer", layout.ChromeRegion), Track: layout.Fixed(1)}, {Node: region("notice", layout.ChromeRegion), Track: layout.Fixed(1)}}}
 
 		return layout.Variant{Name: map[bool]string{true: "wide", false: "focused"}[wide], Root: &layout.Dock{Top: region("header", layout.ChromeRegion), TopHeight: len(m.header()), Bottom: footer, BottomHeight: 2, Body: body}, Hidden: omitted}
@@ -147,28 +155,8 @@ func (m *Model) dashboardContext(width int) string {
 		}
 	case outputPanel, statePanel:
 		detail = "Dispatch " + stateName(m.snapshot.GetScheduler().String(), "SCHEDULER_STATE_") + " · worker " + stateName(m.snapshot.GetWorker().String(), "WORKER_STATE_")
-	case activityPanel:
-		detail = "j/k select · h/l history pages · r reconcile a saved uncertain operation"
-		if m.inspectingOperation() {
-			detail = "j/k scroll · esc returns to activity · r reconciles the saved uncertain operation"
-		}
-
-		if m.operations.loading {
-			detail = "Loading saved operations · previous evidence retained"
-		}
-
-		if m.operations.err != nil {
-			detail = "Inspection unavailable · previous evidence retained · u retry"
-		} else if m.agentActivity.err != nil {
-			detail = "History incomplete · previous page retained · u retry"
-		}
-	case attentionPanel:
-		detail = fmt.Sprintf("%d need intervention · %d GitHub deliveries · enter inspects the selected PR", m.attentionCount(), len(m.deliverySummaries()))
-	case deliveriesPanel:
-		detail = "j/k select · enter inspect · confirmed merge and task acceptance remain separate"
-	case deliveryPanel:
-		summary := m.summarizeDelivery(m.currentSubject())
-		detail = summary.condition + " · " + summary.next
+	case activityPanel, attentionPanel, deliveriesPanel, deliveryPanel:
+		return ""
 	case issuesPanel:
 		detail = "h/l select issue · j/k scroll · CLI records approvals and answers"
 	case githubPanel:
@@ -277,10 +265,10 @@ func (m *Model) dashboardHelp() string {
 		return "esc back · g GitHub · a auto-merge · [/] scroll"
 	case activityPanel:
 		if inspector := m.currentWorkspace(); inspector != nil && inspector.Inspecting() {
-			return "esc list · j/k scroll · g GitHub · r reconcile · [/] scroll"
+			return "esc list · j/k scroll · g GitHub · r reconcile"
 		}
 
-		return "j/k select · enter inspect · esc list · g GitHub · r reconcile · [/] scroll"
+		return "j/k select · enter inspect · g GitHub · r reconcile · [/] scroll"
 	case reviewsPanel, outputPanel, statePanel, trackingPanel, githubPanel, issuesPanel:
 	default:
 		return "d diagnostics · q quit"
@@ -294,12 +282,25 @@ func (m *Model) dashboardHelp() string {
 }
 
 func (m *Model) dashboardNotice(width int) string {
+	if m.panel == activityPanel {
+		switch {
+		case m.operations.err != nil:
+			return "Inspection unavailable · previous evidence retained · u retry"
+		case m.agentActivity.err != nil:
+			return "History incomplete · previous page retained · u retry"
+		case m.operations.loading:
+			return "Loading saved operations · previous evidence retained"
+		default:
+			return fmt.Sprintf("History page %d · h older · l newer · u refresh · d diagnostics · q detach", m.agentActivity.shownPage+1)
+		}
+	}
+
 	if m.operatorView() {
 		if width < 80 {
 			return "1–3 views · d diagnostics · q quit"
 		}
 
-		return "1 Attention · 2 Deliveries · 3 Activity · d diagnostics · u refresh · q detach"
+		return "d diagnostics · u refresh · q detach"
 	}
 
 	if width < 80 {

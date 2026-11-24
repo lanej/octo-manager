@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -11,67 +10,25 @@ import (
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
 
-func (m *Model) attentionPreview(width int) string {
-	return m.deliveryPreview(m.currentSubject(), width)
-}
-
 func (m *Model) deliveryRecordSummary(summary deliverySummary, inventory bool) layout.RecordSummary {
 	record := layout.RecordSummary{
 		Title:  m.link(summary.item.url),
 		Status: text.Pill(summary.condition, summary.tone, m.theme, text.Normal),
-		Next:   &layout.Pair{Label: "Next", Value: summary.next},
 	}
 	if summary.title != summary.item.label {
 		record.Subtitle = text.Label(safe(summary.title), m.theme)
 	}
 
 	if inventory {
+		record.Next = &layout.Pair{Label: "Next", Value: summary.next}
 		record.Fields = []layout.Pair{{Label: "Observed", Value: m.deliveryObservedAt(summary.observedAt)}}
 	}
 
 	return record
 }
 
-func (m *Model) deliveryPreview(item subject, width int) string {
-	return m.deliveryPreviewDocument(item).View(width, m.theme)
-}
-
-func (m *Model) deliveryPreviewDocument(item subject) layout.DetailDocument {
-	if item.url == "" {
-		return layout.DetailDocument{Sections: []layout.DetailSection{{ID: "empty", Paragraphs: []string{"Select a delivery to inspect its next step."}}}}
-	}
-
-	document := layout.DetailDocument{Summary: m.deliveryRecordSummary(m.summarizeDelivery(item), false)}
-	if pr := item.tracked; pr != nil {
-		document.Sections = append(document.Sections, layout.DetailSection{
-			ID: "observation", Title: "Observation", FullWidth: true,
-			Fields: []layout.Pair{
-				{Label: "Owner", Value: m.agentLabel(pr.GetOwnerAgentId())},
-				{Label: "Observed", Value: m.deliveryObservedAt(pr.GetObservation().GetObservedAtMs())},
-			},
-		})
-		if pr.GetRefreshError() != "" {
-			document.Sections = append(document.Sections, layout.DetailSection{
-				ID: "refresh", Title: "Refresh failed", FullWidth: true,
-				Paragraphs: []string{pr.GetRefreshError(), "Previous observation retained."},
-			})
-		}
-	}
-
-	document.Sections = append(document.Sections, layout.DetailSection{
-		ID: "navigation", FullWidth: true,
-		Paragraphs: []string{"Enter delivery details · o GitHub review"},
-	})
-
-	return document
-}
-
 func (m *Model) deliveryDetailContent(width int) string {
-	return m.deliveryDetail(m.currentSubject(), width)
-}
-
-func (m *Model) deliveryDetail(item subject, width int) string {
-	return m.deliveryDocument(item).View(width, m.theme)
+	return m.deliveryDocument(m.currentSubject()).View(width, m.theme)
 }
 
 func (m *Model) deliveryDocument(item subject) layout.DetailDocument {
@@ -81,7 +38,18 @@ func (m *Model) deliveryDocument(item subject) layout.DetailDocument {
 		}}}
 	}
 
-	document := layout.DetailDocument{Summary: m.deliveryRecordSummary(m.summarizeDelivery(item), false)}
+	summary := m.summarizeDelivery(item)
+
+	record := layout.RecordSummary{
+		Title:  m.link(item.url),
+		Status: text.Pill(summary.condition, summary.tone, m.theme, text.Normal),
+		Next:   &layout.Pair{Label: "Next action", Value: summary.next},
+	}
+	if summary.title != item.label {
+		record.Title += " · " + summary.title
+	}
+
+	document := layout.DetailDocument{Summary: record, ActionDetail: summary.explanation}
 
 	pr := item.tracked
 	if pr == nil {
@@ -93,8 +61,32 @@ func (m *Model) deliveryDocument(item subject) layout.DetailDocument {
 		return document
 	}
 
-	document.Sections = []layout.DetailSection{m.deliveryIdentitySection(pr), m.deliveryEvidenceSection(pr), m.deliveryMergeSection(pr)}
-	document.Sections = append(document.Sections, m.deliveryFeedbackSections(pr)...)
+	document.Summary.Subtitle = "Observed " + m.deliveryObservedAt(summary.observedAt)
+	feedback := m.deliveryFeedbackSections(pr)
+	hasFeedback := len(feedback) > 0
+	identity, verification := m.deliveryIdentitySection(pr), m.deliveryEvidenceSection(pr)
+
+	document.Sections = []layout.DetailSection{identity, verification}
+	if hasFeedback {
+		// Lead with the active route so a delivery failure and its receipt can
+		// be inspected together at narrow as well as wide terminal widths.
+		document.Sections = append([]layout.DetailSection{feedback[0]}, document.Sections...)
+		feedback = feedback[1:]
+	}
+
+	document.Sections = append(document.Sections, feedback...)
+
+	document.Sections = append(document.Sections, m.deliveryMergeSection(pr))
+	if !hasFeedback {
+		document.Sections = append(document.Sections, layout.DetailSection{
+			ID: "feedback", Title: "Feedback delivery", FullWidth: true,
+			Paragraphs: []string{"No retained review actions for this PR."},
+		})
+	}
+
+	if activity := m.deliveryActivitySection(item); len(activity.Timeline) != 0 {
+		document.Sections = append(document.Sections, activity)
+	}
 
 	return document
 }
@@ -107,11 +99,10 @@ func (m *Model) deliveryIdentitySection(pr *v1.TrackedPullRequest) layout.Detail
 	o := pr.GetObservation()
 
 	section := layout.DetailSection{
-		ID: "identity", Title: "Identity & observation",
+		ID: "identity", Title: "Identity",
 		Fields: []layout.Pair{
 			{Label: "Owner", Value: m.agentLabel(pr.GetOwnerAgentId())},
 			{Label: "Tracked head", Value: deliveryRevision(o.GetHeadSha())},
-			{Label: "GitHub observed", Value: m.deliveryObservedAt(o.GetObservedAtMs())},
 		},
 	}
 	if target := o.GetTargetBase(); target != nil {
@@ -125,11 +116,12 @@ func (m *Model) deliveryIdentitySection(pr *v1.TrackedPullRequest) layout.Detail
 
 	if details := m.reviews[pr.GetUrl()]; details != nil {
 		section.Fields = append(section.Fields, layout.Pair{Label: "Review cache", Value: m.deliveryObservedAt(details.GetObservedAtMs())})
+		if details.GetHeadSha() != o.GetHeadSha() || o.GetHeadSha() == "" {
+			section.Fields = append(section.Fields, layout.Pair{Label: "Review-cache head", Value: deliveryRevision(details.GetHeadSha())})
+		}
+
 		if details.GetHeadSha() != "" && o.GetHeadSha() != "" && details.GetHeadSha() != o.GetHeadSha() {
-			section.Fields = append(section.Fields, layout.Pair{Label: "Review-cache head", Value: deliveryRevision(details.GetHeadSha())})
 			section.Statuses = append(section.Statuses, layout.StatusItem{Label: "Review evidence", Value: text.Pill("Different revision", text.Warning, m.theme, text.Normal), Detail: "These sources cover different revisions; refresh before assessing readiness."})
-		} else {
-			section.Fields = append(section.Fields, layout.Pair{Label: "Review-cache head", Value: deliveryRevision(details.GetHeadSha())})
 		}
 
 		if details.GetMayHaveMoreMessages() {
@@ -157,7 +149,7 @@ func (m *Model) deliveryObservedAt(at int64) string {
 }
 
 func (m *Model) deliveryEvidenceSection(pr *v1.TrackedPullRequest) layout.DetailSection {
-	section := layout.DetailSection{ID: "readiness", Title: "Readiness evidence"}
+	section := layout.DetailSection{ID: "readiness", Title: "Verification"}
 
 	o := pr.GetObservation()
 	if o == nil {
@@ -165,18 +157,27 @@ func (m *Model) deliveryEvidenceSection(pr *v1.TrackedPullRequest) layout.Detail
 		return section
 	}
 
+	checks, checkTone := deliveryCheckEvidence(o.GetChecks(), o.GetHeadSha())
+	workflows, workflowTone := deliveryCheckEvidence(o.GetWorkflows(), o.GetHeadSha())
+	review, reviewTone := deliveryReviewEvidence(o.GetReviews(), o.GetHeadSha())
+	feedback := observationStatus(o.GetFeedback())
 	section.Statuses = []layout.StatusItem{
-		{Label: "Checks", Value: text.Label(safe(deliveryCheckEvidence(o.GetChecks(), o.GetHeadSha())), m.theme)},
-		{Label: "Workflows", Value: text.Label(safe(deliveryCheckEvidence(o.GetWorkflows(), o.GetHeadSha())), m.theme)},
-		{Label: "GitHub reviews", Value: text.Label(safe(deliveryReviewEvidence(o.GetReviews(), o.GetHeadSha())), m.theme)},
-		{Label: "Feedback coverage", Value: text.Label(safe(observationStatus(o.GetFeedback())), m.theme)},
-		{Label: "Owner actions", Value: text.Label(counted(m.openActions(pr.GetId()), "outstanding action"), m.theme)},
+		m.deliveryState("Checks", checks, checkTone),
+		m.deliveryState("Workflows", workflows, workflowTone),
+		m.deliveryState("Review coverage", review, reviewTone),
+		m.deliveryState("Feedback coverage", feedback, coverageTone(feedback)),
 	}
-	if o.GetMergeability() != "" {
-		section.Statuses = append(section.Statuses, layout.StatusItem{Label: "Mergeability", Value: text.Label(safe(o.GetMergeability()), m.theme)})
+	open := m.openActions(pr.GetId())
+
+	tone := text.Neutral
+	if open > 0 {
+		tone = text.Warning
 	}
 
-	section.Paragraphs = []string{"Evidence coverage is separate from passing required merge gates."}
+	section.Statuses = append(section.Statuses, m.deliveryState("Owner actions", counted(open, "outstanding action"), tone))
+	if o.GetMergeability() != "" {
+		section.Statuses = append(section.Statuses, m.deliveryState("Mergeability", o.GetMergeability(), text.Neutral))
+	}
 
 	return section
 }
@@ -215,7 +216,7 @@ func (c *deliveryCheckEvidenceCounts) add(head, status, conclusion, trackedHead 
 	}
 }
 
-func deliveryCheckEvidence(evidence *v1.DomainCheckEvidence, head string) string {
+func deliveryCheckEvidence(evidence *v1.DomainCheckEvidence, head string) (string, text.Tone) {
 	counts := deliveryCheckEvidenceCounts{}
 	for _, check := range evidence.GetVariant_1().GetValue().GetItems() {
 		counts.add(check.GetHeadSha(), check.GetStatus(), check.GetConclusion(), head)
@@ -236,10 +237,34 @@ func deliveryCheckEvidence(evidence *v1.DomainCheckEvidence, head string) string
 		}
 	}
 
-	return strings.Join(parts, " · ")
+	tone := coverageTone(parts[0])
+	switch {
+	case counts.failed > 0:
+		tone = text.Danger
+	case counts.unknown+counts.otherHead+counts.unpinned > 0 || parts[0] != "complete":
+		tone = text.Warning
+	case counts.pending > 0:
+		tone = text.Info
+	case counts.passed > 0:
+		tone = text.Success
+	}
+
+	return strings.Join(parts, " · "), tone
 }
 
-func deliveryReviewEvidence(evidence *v1.DomainReviewEvidence, head string) string {
+func coverageTone(coverage string) text.Tone {
+	if coverage == "complete" {
+		return text.Neutral
+	}
+
+	return text.Warning
+}
+
+func (m *Model) deliveryState(label, value string, tone text.Tone) layout.StatusItem {
+	return layout.StatusItem{Label: label, Value: text.ToneStyle(tone, text.Normal, m.theme).Render(safe(value))}
+}
+
+func deliveryReviewEvidence(evidence *v1.DomainReviewEvidence, head string) (string, text.Tone) {
 	current, different, unpinned := 0, 0, 0
 	add := func(reviewedHead string) {
 		switch {
@@ -273,7 +298,12 @@ func deliveryReviewEvidence(evidence *v1.DomainReviewEvidence, head string) stri
 		parts = append(parts, fmt.Sprintf("%d unpinned", unpinned))
 	}
 
-	return strings.Join(parts, " · ")
+	tone := coverageTone(parts[0])
+	if different+unpinned > 0 {
+		tone = text.Warning
+	}
+
+	return strings.Join(parts, " · "), tone
 }
 
 func (m *Model) deliveryMergeSection(pr *v1.TrackedPullRequest) layout.DetailSection {
@@ -328,126 +358,6 @@ func (m *Model) deliveryMergeSection(pr *v1.TrackedPullRequest) layout.DetailSec
 	}
 
 	section.Statuses = append(section.Statuses, layout.StatusItem{Label: "Merge result", Value: text.Label(result, m.theme)})
-	section.Paragraphs = []string{"An enabled switch does not establish readiness or confirm a merge."}
-
-	return section
-}
-
-func (m *Model) deliveryFeedbackSections(pr *v1.TrackedPullRequest) []layout.DetailSection {
-	actions := []*v1.PendingAction{}
-
-	for _, action := range m.snapshot.GetTracking().GetActions() {
-		if action.GetPrId() == pr.GetId() && (action.GetReviewFeedback() != nil || action.GetChangesRequested() != nil) {
-			actions = append(actions, action)
-		}
-	}
-
-	sort.SliceStable(actions, func(i, j int) bool {
-		left, right := actionHistorical(actions[i], pr), actionHistorical(actions[j], pr)
-		if left != right {
-			return !left
-		}
-
-		return actions[i].GetUpdatedAtMs() > actions[j].GetUpdatedAtMs()
-	})
-
-	if len(actions) == 0 {
-		return []layout.DetailSection{{
-			ID: "feedback", Title: "Feedback route", FullWidth: true,
-			Paragraphs: []string{"No retained review actions for this PR.", "Open GitHub for its original review conversation."},
-		}}
-	}
-
-	sections := []layout.DetailSection{}
-	for _, action := range actions[:min(4, len(actions))] {
-		sections = append(sections, m.deliveryFeedbackSection(pr, action))
-		for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
-			if delivery.GetActionId() == action.GetId() {
-				sections = append(sections, m.deliveryRecipientSection(action.GetId(), delivery))
-			}
-		}
-	}
-
-	limit := layout.DetailSection{
-		ID: "feedback-limits", Title: "Feedback interpretation", FullWidth: true,
-		Paragraphs: []string{"Transport delivery, recipient receipt, and owner disposition are separate."},
-	}
-	if len(actions) > 4 {
-		limit.Paragraphs = append(limit.Paragraphs, fmt.Sprintf("%d additional review actions are available in Tracking diagnostics.", len(actions)-4))
-	}
-
-	return append(sections, limit)
-}
-
-func (m *Model) deliveryFeedbackSection(pr *v1.TrackedPullRequest, action *v1.PendingAction) layout.DetailSection {
-	section := layout.DetailSection{ID: "feedback:" + action.GetId(), Title: "Feedback · " + action.GetSummary(), FullWidth: true}
-	if feedback := action.GetReviewFeedback(); feedback != nil {
-		section.Fields = append(section.Fields, layout.Pair{Label: "Source", Value: feedback.GetAuthor() + " · " + feedback.GetSource()}, layout.Pair{Label: "Reviewed head", Value: deliveryRevision(feedback.GetHeadSha())})
-		if feedback.GetHeadSha() != "" && pr.GetObservation().GetHeadSha() != "" && feedback.GetHeadSha() != pr.GetObservation().GetHeadSha() {
-			section.Paragraphs = append(section.Paragraphs, "Feedback references a different revision.")
-		}
-	} else if review := action.GetChangesRequested(); review != nil {
-		section.Fields = append(section.Fields, layout.Pair{Label: "Source", Value: review.GetReviewer() + " · changes requested"}, layout.Pair{Label: "Reviewed head", Value: deliveryRevision(review.GetReviewedHeadSha())})
-		if review.GetReviewedHeadSha() != "" && pr.GetObservation().GetHeadSha() != "" && review.GetReviewedHeadSha() != pr.GetObservation().GetHeadSha() {
-			section.Paragraphs = append(section.Paragraphs, "Review references a different revision.")
-		}
-	}
-
-	section.Fields = append(section.Fields, layout.Pair{Label: "Observed", Value: m.deliveryObservedAt(action.GetCreatedAtMs())}, layout.Pair{Label: "Owner", Value: m.agentLabel(action.GetOwnerAgentId())})
-	delivered := false
-
-	for _, delivery := range m.snapshot.GetTracking().GetDeliveries() {
-		if delivery.GetActionId() == action.GetId() {
-			delivered = true
-			break
-		}
-	}
-
-	if !delivered {
-		section.Paragraphs = append(section.Paragraphs, "No transport delivery recorded.")
-	}
-
-	section.Statuses = []layout.StatusItem{{Label: "Owner disposition", Value: text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)}}
-	if actionHistorical(action, pr) {
-		section.Paragraphs = append(section.Paragraphs, "Retained as history; the recorded disposition is unchanged.")
-	}
-
-	if action.GetCloseReason() != "" {
-		section.Fields = append(section.Fields, layout.Pair{Label: "Disposition reason", Value: action.GetCloseReason()})
-	}
-
-	if action.GetEvidenceUrl() != "" {
-		section.Body = m.detailLinks("Original", action.GetEvidenceUrl())
-	}
-
-	return section
-}
-
-func (m *Model) deliveryRecipientSection(actionID string, delivery *v1.ActionDelivery) layout.DetailSection {
-	id := delivery.GetId()
-	if id == "" {
-		id = delivery.GetRecipientAgentId()
-	}
-
-	section := layout.DetailSection{
-		ID: "feedback:" + actionID + ":recipient:" + id, Title: "Delivery to " + m.agentLabel(delivery.GetRecipientAgentId()),
-		Fields:   []layout.Pair{{Label: "Recipient", Value: m.agentLabel(delivery.GetRecipientAgentId())}},
-		Statuses: []layout.StatusItem{{Label: "Transport", Value: text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)}},
-	}
-
-	receipt := "Not confirmed"
-	if delivery.AcknowledgedAtMs != nil {
-		receipt = "Received " + m.deliveryObservedAt(delivery.GetAcknowledgedAtMs())
-	} else if delivery.MessageSequence == nil {
-		receipt = "Unavailable; no receipt identifier recorded"
-	}
-
-	section.Statuses = append(section.Statuses, layout.StatusItem{Label: "Recipient receipt", Value: text.Label(receipt, m.theme)})
-	if delivery.GetState() == v1.DeliveryState_DELIVERY_STATE_UNCERTAIN || delivery.GetState() == v1.DeliveryState_DELIVERY_STATE_UNAVAILABLE {
-		if reason := strings.TrimSpace(m.deliveryDetails(delivery.GetProgress())); reason != "" {
-			section.Fields = append(section.Fields, layout.Pair{Label: "Transport detail", Value: reason})
-		}
-	}
 
 	return section
 }

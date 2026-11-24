@@ -101,7 +101,7 @@ func TestOperatorActivityRefreshPreservesEvidenceAndFencesLateResults(t *testing
 		t.Fatal("retained evidence hid its failed refresh or uncertain outcome")
 	}
 
-	if !strings.Contains(content, "u refresh · inspect saved operations before requesting reconciliation.") || strings.Contains(content, "r Reconcile") {
+	if !strings.Contains(content, "Refresh saved operations before requesting reconciliation.") || strings.Contains(content, "Reconcile the saved operation") {
 		t.Fatal("failed inspection offered reconciliation before refreshing its evidence")
 	}
 
@@ -154,7 +154,7 @@ func TestOperatorActivityReconcilesOnlyTheSelectedSavedRequest(t *testing.T) {
 	m.operations.selected = "operation:merge-other"
 
 	content := ansi.Strip(m.operationContent(80))
-	if !strings.Contains(content, "Another command is pending") || strings.Contains(content, "r Reconcile") || m.reconcileOperation() != nil {
+	if !strings.Contains(content, "Another command is pending") || strings.Contains(content, "Reconcile the saved operation") || m.reconcileOperation() != nil {
 		t.Fatal("another operation offered reconciliation while the original request remained pending")
 	}
 
@@ -198,7 +198,7 @@ func TestOperatorActivityPendingCommandRefreshesReconciliationHelp(t *testing.T)
 	m.operations = operationHistory{instance: m.instance, loaded: true, overview: operatorTestOverview(op), selected: "operation:merge-original"}
 	m.Resize(layout.Size{Width: 160, Height: 50})
 
-	if !strings.Contains(ansi.Strip(m.resultContent), "r Reconcile with GitHub") {
+	if !strings.Contains(ansi.Strip(m.resultContent), "Reconcile the saved operation with GitHub") {
 		t.Fatal("eligible saved operation lost its reconciliation guidance")
 	}
 
@@ -206,7 +206,7 @@ func TestOperatorActivityPendingCommandRefreshesReconciliationHelp(t *testing.T)
 	m.resizeContent()
 
 	content := ansi.Strip(m.resultContent)
-	if !strings.Contains(content, "Another command is pending") || strings.Contains(content, "r Reconcile") || m.reconcileOperation() != nil {
+	if !strings.Contains(content, "Another command is pending") || strings.Contains(content, "Reconcile the saved operation") || m.reconcileOperation() != nil {
 		t.Fatal("retained operation help ignored a different pending command")
 	}
 
@@ -214,7 +214,7 @@ func TestOperatorActivityPendingCommandRefreshesReconciliationHelp(t *testing.T)
 	m.resizeContent()
 
 	content = ansi.Strip(m.resultContent)
-	if !strings.Contains(content, "r Reconcile with GitHub") || strings.Contains(content, "Another command is pending") {
+	if !strings.Contains(content, "Reconcile the saved operation with GitHub") || strings.Contains(content, "Another command is pending") {
 		t.Fatal("retained operation help did not recover when the command completed")
 	}
 }
@@ -320,10 +320,14 @@ func TestOperatorActivityKeepsReportsSeparateFromConfirmedOperations(t *testing.
 	}
 
 	content := ansi.Strip(m.operationContent(80))
-	for _, want := range []string{"Outcome confirmed", "attribution remains uncertain", "Requested head", "History page 3"} {
+	for _, want := range []string{"Outcome confirmed", "attribution remains uncertain", "Requested head"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("saved operation omitted %q", want)
 		}
+	}
+
+	if !strings.Contains(m.dashboardNotice(80), "History page 3") {
+		t.Fatal("history navigation lost its page reference")
 	}
 
 	m.operations.selected = "report:100"
@@ -536,7 +540,7 @@ func TestOperatorStructuredActivitySeparatesDataFromTerminalStyle(t *testing.T) 
 		row := m.operationRecordSummary(item).View(132, m.theme, false)
 
 		content := ansi.Strip(row)
-		if !strings.Contains(content, "Jan 1, 1970 · 00:00 UTC +0000") {
+		if !strings.Contains(content, "1970-01-01 00:00 UTC") {
 			t.Fatalf("recorded time lost its plain display-zone value: %q", content)
 		}
 

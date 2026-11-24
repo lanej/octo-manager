@@ -18,19 +18,19 @@ const (
 )
 
 type deliverySummary struct {
-	item                   subject
-	title, condition, next string
-	group                  deliveryGroup
-	tone                   text.Tone
-	observedAt             int64
-	priority               int
+	item                                subject
+	title, condition, next, explanation string
+	group                               deliveryGroup
+	tone                                text.Tone
+	observedAt                          int64
+	priority                            int
 }
 
 type deliveryCondition struct {
-	condition, next string
-	group           deliveryGroup
-	tone            text.Tone
-	priority        int
+	condition, next, explanation string
+	group                        deliveryGroup
+	tone                         text.Tone
+	priority                     int
 }
 
 func (m *Model) deliverySummaries() []deliverySummary {
@@ -68,7 +68,7 @@ func (m *Model) summarizeDelivery(item subject) deliverySummary {
 
 	return deliverySummary{
 		item: item, title: title,
-		condition: condition.condition, next: condition.next,
+		condition: condition.condition, next: condition.next, explanation: condition.explanation,
 		group: condition.group, tone: condition.tone, priority: condition.priority,
 		observedAt: item.tracked.GetObservation().GetObservedAtMs(),
 	}
@@ -104,7 +104,10 @@ func (m *Model) deliveryCondition(pr *v1.TrackedPullRequest) deliveryCondition {
 	}
 
 	if merge.GetState() == "uncertain" {
-		return intervention("Merge outcome unknown", "Inspect and reconcile the saved operation before another attempt", 0)
+		result := intervention("Merge outcome unknown", "Reconcile the saved merge operation", 0)
+		result.explanation = "The coordinator recorded the request. Its outcome is still unconfirmed."
+
+		return result
 	}
 
 	if merge.GetChainState() == "cancelled" && merge.GetState() != "cancelled" {
@@ -346,7 +349,10 @@ func ownerDeliveryCondition(delivery *v1.ActionDelivery) deliveryCondition {
 	case v1.DeliveryState_DELIVERY_STATE_UNCERTAIN:
 		return intervention("Feedback delivery uncertain", "Reconcile delivery before sending the feedback again", 10)
 	case v1.DeliveryState_DELIVERY_STATE_UNAVAILABLE:
-		return intervention("Owner delivery unavailable", "Inspect the owning session and delivery failure", 20)
+		result := intervention("Owner delivery unavailable", "Inspect the owning session and delivery failure", 20)
+		result.explanation = "The recorded transport could not deliver this feedback to the responsible owner."
+
+		return result
 	case v1.DeliveryState_DELIVERY_STATE_CANCELLED:
 		return intervention("Owner delivery cancelled", "Inspect responsibility before routing the feedback again", 20)
 	case v1.DeliveryState_DELIVERY_STATE_DELIVERED:

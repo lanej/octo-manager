@@ -13,7 +13,7 @@ Wide Attention and Activity views show the selected record beside the list. Narr
 
 ## Delivery evidence
 
-Delivery detail keeps the current condition and next step above separate identity, readiness, merge and feedback sections. Related facts align within each section; adjacent sections share a row when they fit and stack at narrower widths. Identity and observation remain separate from readiness assessments, and each feedback recipient has its own delivery section. Checks and workflow evidence identify different-head and unpinned results. Review-cache observations state when they differ from the tracked revision or contain partial history. A failed refresh retains its last observation and the error.
+Delivery detail places the condition beside the PR title, the observation time beneath it, and the next action above its evidence. When there is retained review feedback, the first route appears directly below the action. Each route groups its source, transport, recipient receipt and owner disposition. Identity and verification share a row on wide terminals and stack at narrower widths. Additional routes, merge authority and recent PR events remain available by scrolling. Checks and workflow evidence identify different-head and unpinned results. Review-cache observations state when they differ from the tracked revision or contain partial history. A failed refresh retains its last observation and the error.
 
 Configured auto-merge, coordinator progress and confirmed outcomes are separate. `a` toggles the existing setting in detail or diagnostic Tracking; it does not assert readiness. An automatic-merge setting of off does not establish whether a separate one-shot authorization exists. Confirmed merging does not establish task acceptance.
 
@@ -40,6 +40,8 @@ These frames come from the actual Go dashboard renderer with synthetic repositor
 ![Delivery inventory with condition, next step and observation time](images/operator-deliveries.png)
 
 ![Delivery detail with separate evidence and feedback states](images/operator-detail.png)
+
+[Delivery detail at 80×24](images/operator-detail-compact.png)
 
 ![Activity with an uncertain saved operation selected](images/operator-activity.png)
 

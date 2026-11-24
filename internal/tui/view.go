@@ -331,6 +331,11 @@ func (m *Model) header() []string {
 		connection = feedback.Disconnected
 	}
 
+	if m.operatorView() {
+		header := layout.Header{Title: "OCTO MANAGER", Actions: connection.View(text.Normal, m.theme)}
+		return []string{header.View(m.size.Width, m.theme)}
+	}
+
 	identity := m.currentSubject().label
 	if m.currentSubject().url != "" {
 		identity = m.link(m.currentSubject().url)
@@ -341,13 +346,7 @@ func (m *Model) header() []string {
 	}
 
 	switch m.panel {
-	case activityPanel:
-		identity = "Operations and recovery"
-	case attentionPanel:
-		identity = "What needs your attention"
-	case deliveriesPanel:
-		identity = "Work moving through GitHub"
-	case deliveryPanel:
+	case activityPanel, attentionPanel, deliveriesPanel, deliveryPanel:
 	case issuesPanel:
 		identity = "Issue investigation and remediation"
 	case githubPanel:
@@ -359,12 +358,7 @@ func (m *Model) header() []string {
 
 	context := strings.Split(ansi.Hardwrap(identity, max(1, m.size.Width), false), "\n")
 
-	title := "OCTO MANAGER"
-	if !m.operatorView() {
-		title += " · DIAGNOSTICS"
-	}
-
-	chrome := layout.Header{Title: title, Context: context[0], Actions: connection.View(text.Normal, m.theme)}
+	chrome := layout.Header{Title: "OCTO MANAGER · DIAGNOSTICS", Context: context[0], Actions: connection.View(text.Normal, m.theme)}
 	lines := strings.Split(chrome.View(m.size.Width, m.theme), "\n")
 	lines = append(lines, context[1:]...)
 

@@ -74,8 +74,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
-github.com/lanej/charmed v0.0.0-20261123164300-49f755da5bd2 h1:tkB8yl5GcwzvgpJIABGRqbU7vxHJ+CFh4GwqCXHaXbs=
-github.com/lanej/charmed v0.0.0-20261123164300-49f755da5bd2/go.mod h1:XZWkopZpE5xOHRaIX8XS3d9ppVXrX7mp+P4mafOVsvU=
+github.com/lanej/charmed v0.0.0-20261124172704-27e05a199764 h1:uZnrSM4Ri7ya1bVUgCttN2Bn/UbdK3pLfpkRH7vOzoM=
+github.com/lanej/charmed v0.0.0-20261124172704-27e05a199764/go.mod h1:XZWkopZpE5xOHRaIX8XS3d9ppVXrX7mp+P4mafOVsvU=
 github.com/lrstanley/bubblezone/v2 v2.0.0 h1:pMb9fHKs0slJF6OrzQ2hEgWusqyl9VU/S0UZ5hyh7ZA=
 github.com/lrstanley/bubblezone/v2 v2.0.0/go.mod h1:yV/QTjcm4Zu5cqvGvdHi7xVUfnB36w/SafOuDp57dgY=
 github.com/lucasb-eyer/go-colorful v1.4.1 h1:1EO+WB73+EH8EVbzlrG3KLAfEypQWVHIBqlTf+2hNss=

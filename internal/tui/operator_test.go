@@ -216,7 +216,7 @@ func TestOperatorWorkspaceReflowsBetweenListAndPreview(t *testing.T) {
 		m.Resize(layout.Size{Width: width, Height: 32})
 
 		split := width > 100
-		if m.currentWorkspace().Split() != split || strings.Contains(ansi.Strip(m.resultContent), "NEXT STEP") != split {
+		if m.currentWorkspace().Split() != split || strings.Contains(ansi.Strip(m.resultContent), "DELIVERY DETAIL") != split {
 			t.Fatal("resizing retained the other layout's inspector allocation")
 		}
 	}

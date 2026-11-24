@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
 )
@@ -64,25 +65,66 @@ func TestDeliveryDetailSeparatesReceiptFromActionDisposition(t *testing.T) {
 	m.snapshot.Tracking.Actions = []*v1.PendingAction{action}
 	m.snapshot.Tracking.Deliveries = []*v1.ActionDelivery{delivery}
 
-	content := inspectionText(m.deliveryDetailContent(80))
-	for _, want := range []string{"Transport delivered", "Recipient receipt Not confirmed", "Owner disposition open", "Reviewed head bbbbbbbb", "josh · inline"} {
+	content := inspectionText(m.deliveryDetailContent(64))
+	for _, want := range []string{"Transport delivered", "Receipt Not confirmed", "Disposition open", "Reviewed head bbbbbbbb", "josh · inline"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("missing separate feedback state %q", want)
 		}
 	}
 
 	delivery.AcknowledgedAtMs = new(int64(3_000))
-	content = inspectionText(m.deliveryDetailContent(80))
+	content = inspectionText(m.deliveryDetailContent(64))
 
-	if !strings.Contains(content, "Recipient receipt Received") || !strings.Contains(content, "Owner disposition open") || action.GetState() != v1.ActionState_ACTION_STATE_OPEN {
+	if !strings.Contains(content, "Receipt Received") || !strings.Contains(content, "Disposition open") || action.GetState() != v1.ActionState_ACTION_STATE_OPEN {
 		t.Fatal("recording a transport receipt implicitly resolved the owner's action")
 	}
 
 	pr.Observation.Lifecycle = "merged"
-	content = inspectionText(m.deliveryDetailContent(80))
+	content = inspectionText(m.deliveryDetailContent(64))
 
-	if !strings.Contains(content, "Retained as history") || !strings.Contains(content, "Owner disposition open") {
+	if !strings.Contains(content, "Retained as history") || !strings.Contains(content, "Disposition open") {
 		t.Fatal("merge changed retained action evidence instead of rendering it as history")
+	}
+}
+
+func TestDeliveryFirstViewportShowsOwnerRouteBeforeObserverReceipt(t *testing.T) {
+	t.Parallel()
+
+	m, pr := deliveryDetailModel(t)
+	m.panel = deliveryPanel
+
+	action := &v1.PendingAction{
+		Id: "feedback", PrId: pr.GetId(), OwnerAgentId: "owner",
+		Summary: "Clarify the handoff", State: v1.ActionState_ACTION_STATE_OPEN,
+		Blocker: &v1.PendingAction_ReviewFeedback{ReviewFeedback: &v1.ReviewFeedback{Author: "reviewer", Source: "comment"}},
+	}
+	observer := &v1.ActionDelivery{
+		Id: "observer-receipt", ActionId: action.GetId(), RecipientAgentId: "watcher",
+		State: v1.DeliveryState_DELIVERY_STATE_DELIVERED, AcknowledgedAtMs: new(int64(3000)),
+	}
+	owner := &v1.ActionDelivery{
+		Id: "owner-attempt", ActionId: action.GetId(), RecipientAgentId: pr.GetOwnerAgentId(),
+		State: v1.DeliveryState_DELIVERY_STATE_UNAVAILABLE,
+	}
+	m.snapshot.Tracking.Actions = []*v1.PendingAction{action}
+	m.snapshot.Tracking.Deliveries = []*v1.ActionDelivery{observer, owner}
+
+	for _, size := range []layout.Size{{Width: 80, Height: 24}, {Width: 132, Height: 40}} {
+		m.Resize(size)
+
+		view := ansi.Strip(m.View())
+		for _, want := range []string{"NEXT ACTION", "Receipt", "identifier", "Disposition", "open"} {
+			if !strings.Contains(view, want) {
+				t.Fatalf("owner route is missing %q from initial %v viewport:\n%s", want, size, view)
+			}
+		}
+	}
+
+	m.snapshot.Tracking.Deliveries = []*v1.ActionDelivery{observer}
+
+	routes := m.deliveryFeedbackSections(pr)
+	if len(routes) != 2 || !strings.Contains(ansi.Strip(routes[0].Stages[1].Value), "No delivery recorded") || !strings.Contains(ansi.Strip(routes[1].Stages[2].Value), "Received") {
+		t.Fatal("an observer's receipt was used to fill the absent owner's route")
 	}
 }
 
@@ -130,21 +172,21 @@ func TestDeliveryDetailMissingEvidenceAndNarrowWidths(t *testing.T) {
 	m.reviews[pr.GetUrl()] = &v1.PullRequestDetails{Title: "Description\x1b[2J" + strings.Repeat("long-title-", 30), HeadSha: strings.Repeat("b", 40)}
 
 	for _, width := range []int{132, 80, 40, 24, 12, 1} {
-		for _, content := range []string{m.deliveryDetailContent(width), m.attentionPreview(width)} {
-			for _, line := range strings.Split(content, "\n") {
-				if ansi.StringWidth(line) > width {
-					t.Fatalf("detail exceeds %d columns: %q", width, line)
-				}
-			}
+		content := m.deliveryDetailContent(width)
 
-			if strings.Contains(content, "\x1b[2J") {
-				t.Fatal("untrusted terminal control reached the detail renderer")
+		for _, line := range strings.Split(content, "\n") {
+			if ansi.StringWidth(line) > width {
+				t.Fatalf("detail exceeds %d columns: %q", width, line)
 			}
+		}
+
+		if strings.Contains(content, "\x1b[2J") {
+			t.Fatal("untrusted terminal control reached the detail renderer")
 		}
 	}
 
 	content := inspectionText(m.deliveryDetailContent(80))
-	if !strings.Contains(content, "Readiness is unknown") || !strings.Contains(content, "GitHub observed unavailable") || strings.Contains(content, "1970") {
+	if !strings.Contains(content, "Readiness is unknown") || !strings.Contains(content, "Observed unavailable") || strings.Contains(content, "1970") {
 		t.Fatal("missing observation was turned into a readiness result or epoch timestamp")
 	}
 
