@@ -57,9 +57,9 @@ export class ScheduleStore {
   reviews(): ScheduledRefresh[] {
     return this.db
       .prepare(
-        "SELECT data FROM github_schedules WHERE kind=? ORDER BY due_at_ms,key",
+        "SELECT data FROM github_schedules WHERE kind=? OR json_extract(data,'$.kind')=? ORDER BY due_at_ms,key",
       )
-      .all(RefreshKind.Reviews)
+      .all(RefreshKind.Reviews, RefreshKind.Reviews)
       .map((row) => decode(ScheduleSchema, String(row["data"])));
   }
   get(key: string): ScheduledRefresh | undefined {

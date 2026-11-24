@@ -475,3 +475,28 @@ test("review ticks isolate tracking history and run newly queued work without da
       db.close();
     }
   }));
+
+test("review selection preserves payload kind authority across mismatched normalized kinds", () =>
+  fixture(async (store, scheduler) => {
+    const db = new DatabaseSync(join(store.directory, "jobs.sqlite"));
+    const key = `reviews:${url}`;
+    try {
+      scheduler.ensureReviews(url);
+      db.prepare("UPDATE github_schedules SET kind='tracking' WHERE key=?").run(
+        key,
+      );
+      assert.equal(store.schedules.reviews()[0]?.kind, RefreshKind.Reviews);
+      scheduler.tick();
+      await settle();
+      assert.equal(store.schedules.view(url)?.title, "Stored review");
+      assert.equal(store.schedules.get(key)?.state, ScheduleState.Deferred);
+      db.prepare(
+        "UPDATE github_schedules SET kind='reviews',data=json_remove(data,'$.kind') WHERE key=?",
+      ).run(key);
+      assert.throws(() => {
+        scheduler.tick();
+      }, /Invalid stored GitHub schedule data/);
+    } finally {
+      db.close();
+    }
+  }));
