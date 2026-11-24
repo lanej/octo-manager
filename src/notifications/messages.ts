@@ -1,7 +1,7 @@
 import { create, toBinary, toJsonString } from "@bufbuild/protobuf";
 import { isDeepStrictEqual } from "node:util";
 import { ReadNotificationMessageResponseSchema } from "../gen/octomanager/v2/notifications_pb.js";
-import { responseMaxBytes } from "../api/limits.js";
+import { evidenceResponseMaxBytes } from "../api/limits.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 import type { MessagePresentation } from "../merging/receipt-types.js";
 import { inspectMessage } from "./inspection.js";
@@ -94,7 +94,7 @@ export class Messages {
         toBinary(ReadNotificationMessageResponseSchema, response).byteLength,
       ) +
         4096 >
-      responseMaxBytes
+      evidenceResponseMaxBytes
     )
       throw new Error(
         "Message evidence exceeds the response limit; no receipt recorded",
