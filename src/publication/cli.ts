@@ -1,3 +1,4 @@
+import { workerModule } from "../package-root.js";
 import { printAgentError, printResult } from "../cli-output.js";
 import { parse, SubmissionSchema } from "../submissions/contracts.js";
 import { execFile, spawn } from "node:child_process";
@@ -193,13 +194,14 @@ async function launch(state: string, value: Publication): Promise<void> {
     (value.input.track === undefined || value.tracking === "active")
   )
     return;
-  const worker = fileURLToPath(
+  const worker = workerModule(
+    "publication",
     new URL(
       existsSync(fileURLToPath(new URL("./worker.js", import.meta.url)))
         ? "./worker.js"
         : "./worker.ts",
       import.meta.url,
-    ),
+    ).href,
   );
   const child = spawn(process.execPath, [worker, state, value.id], {
     detached: true,

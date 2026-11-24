@@ -24,6 +24,12 @@ launchctl kickstart -k gui/$(id -u)/com.lanej.octo-manager
 
 Linux uses a systemd user unit at the selected configuration home’s `systemd/user/octo-manager.service`. If no user manager is available, installation completes with `started: false` and a safely quoted foreground command that preserves HOME, PATH, state, configuration and Codex home. An available manager’s configuration or startup failure remains an error. Linux service logs are available through `journalctl --user -u octo-manager.service`. `--home DIR` supports a separate installation root; normal configuration overrides `XDG_CONFIG_HOME` and `CODEX_HOME` remain supported.
 
+## Native AOT installation
+
+Pass `--native --aot-bun /absolute/path/to/verified/bun` to build and install the coordinator and its workers as a native executable. Native compilation uses the explicitly selected experimental compiler; ordinary installation continues to use the stable environment Bun. A native request fails if that compiler is missing or incompatible and never falls back to interpreted JavaScript. See the [native build guide](native-build.md) for the compiler pin, verification, runtime requirements, and private acceptance command.
+
+Native releases use `<revision>-native-aot` directories, separate from interpreted releases of the same revision. Their launcher and service execute `build/octo-manager` directly; `release.json` records the format and compiler source revision, reported version, and executable SHA-256. The artifact identity binds the kernel-mapped executable, metadata and shipped resources. Existing activation checkpoints, owner verification and graceful retirement apply to both formats.
+
 ## GitHub traffic history
 
 The GitHub tab groups Octo’s REST attempts, GraphQL attempts, and cache reuses into hourly buckets. It shows the latest 24 buckets by default, including the current partial hour. Use `octo-manager dashboard --github-hours 6` to select 1–168 buckets. Changing the display window does not change GitHub polling or quota forecasts.

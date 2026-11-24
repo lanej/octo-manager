@@ -1,3 +1,4 @@
+import { serviceCommand } from "./config.js";
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 import { join } from "node:path";
@@ -470,8 +471,7 @@ export function selectedServiceIdentity(
     value = JSON.parse(
       run("/usr/bin/env", [
         "PATH=" + input.path,
-        "bun",
-        join(input.release, "dist/cli.js"),
+        ...serviceCommand(input),
         "lifecycle",
         "artifact",
       ]),
