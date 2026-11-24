@@ -10,6 +10,7 @@ import {
 } from "./receipt-types.js";
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
+import { ReadinessPreconditionError } from "./errors.js";
 import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "../tracking/messages.js";
 import { shortId, resolveId } from "../tracking/identifiers.js";
@@ -921,17 +922,19 @@ export class MergeStore {
         owner = this.owner(pr, actorId);
       this.editable(pr.id);
       const observation = pr.observation;
-      if (
-        !pr.enabled ||
-        observation === undefined ||
-        observation.headSha !== head
-      )
-        throw new Error("Readiness head does not match current enrolled PR");
+      if (!pr.enabled)
+        throw new ReadinessPreconditionError(
+          "PR tracking is disabled; enroll this PR before marking ready",
+        );
+      if (observation === undefined || observation.headSha !== head)
+        throw new ReadinessPreconditionError(
+          `Readiness head ${head} does not match observed head ${observation?.headSha ?? "unavailable"}; run \`octo-manager pr refresh ${pr.url}\` and wait until the observed head matches before marking ready`,
+        );
       const pending = pendingReviewReason(observation);
-      if (pending !== undefined) throw new Error(pending);
+      if (pending !== undefined) throw new ReadinessPreconditionError(pending);
       const feedback = feedbackKey(observation);
       if (feedback === undefined)
-        throw new Error(
+        throw new ReadinessPreconditionError(
           "Complete review evidence is required before marking ready",
         );
       let previous = this.entries().find(
@@ -981,7 +984,7 @@ export class MergeStore {
         EntryState.WaitingChecks,
         receipt === undefined && !entry.autoMerge
           ? "Owner assessed this head; automatic merging is off; use the Ready merge command when available"
-          : "Owner assessed this head; waiting for GitHub checks",
+          : "Owner assessed this head; queued for fresh GitHub merge eligibility inspection",
         {
           ready: {
             source:
