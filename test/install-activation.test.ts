@@ -33,25 +33,108 @@ function input(state: string): ServiceInput {
     codexHome: state,
   };
 }
-const absent = () => "LoadState=not-found\nActiveState=inactive\nMainPID=0\n";
+test.each(["not-found", "loaded"])(
+  "installer refuses an owner lock with %s inactive zero-PID unit",
+  async (loadState) => {
+    const directory = await mkdtemp("/tmp/octo-install-lock-");
+    const lockPath = join(directory, "coordinator-lock.sqlite"),
+      lock = new DatabaseSync(lockPath);
+    await chmod(lockPath, 0o600);
+    lock.exec("BEGIN EXCLUSIVE");
+    try {
+      await assert.rejects(
+        guardServiceReplacement(
+          serviceDefinition("linux", input(directory), 1000),
+          input(directory),
+          () => `LoadState=${loadState}\nActiveState=inactive\nMainPID=0\n`,
+        ),
+        /native-owner-remains-present-without-checkpoint-control/u,
+      );
+    } finally {
+      lock.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
 
-test("installer refuses unknown owner presence even when a manager reports absence", async () => {
-  const directory = await mkdtemp("/tmp/octo-install-lock-");
-  const lockPath = join(directory, "coordinator-lock.sqlite"),
-    lock = new DatabaseSync(lockPath);
+test("stopped installed unit requires a private available owner lock", async () => {
+  const directory = await mkdtemp("/tmp/octo-install-cold-lock-"),
+    selected = input(directory),
+    definition = serviceDefinition("linux", selected, 1000),
+    lockPath = join(directory, "coordinator-lock.sqlite"),
+    lock = new DatabaseSync(lockPath),
+    manager = () => "LoadState=loaded\nActiveState=inactive\nMainPID=0\n";
+  lock.close();
   await chmod(lockPath, 0o600);
-  lock.exec("BEGIN EXCLUSIVE");
+  try {
+    expect(await guardServiceReplacement(definition, selected, manager)).toBe(
+      "cold",
+    );
+    await guardClientPromotion(definition, selected, manager, true);
+    await chmod(lockPath, 0o644);
+    await assert.rejects(
+      guardServiceReplacement(definition, selected, manager),
+      /native-owner-lock-is-not-private-and-owned/u,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("stopped installed unit preserves native socket ownership checks", async () => {
+  const directory = await mkdtemp("/tmp/octo-install-cold-socket-"),
+    selected = input(directory),
+    definition = serviceDefinition("linux", selected, 1000),
+    socket = join(directory, "run.sock"),
+    server = createServer(),
+    manager = () => "LoadState=loaded\nActiveState=inactive\nMainPID=0\n";
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(socket, () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+  await chmod(socket, 0o600);
+  try {
+    await assert.rejects(
+      guardServiceReplacement(definition, selected, manager),
+      /native-service-checkpoint-binding-required/u,
+    );
+    await chmod(socket, 0o644);
+    await assert.rejects(
+      guardServiceReplacement(definition, selected, manager),
+      /native-owner-socket-is-not-private-and-owned/u,
+    );
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error !== undefined) reject(error);
+        else resolve();
+      });
+    });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test.each([
+  "LoadState=loaded\nActiveState=active\nMainPID=0\n",
+  "LoadState=loaded\nActiveState=activating\nMainPID=0\n",
+  "LoadState=loaded\nActiveState=inactive\nMainPID=42\n",
+  "LoadState=masked\nActiveState=inactive\nMainPID=0\n",
+  "LoadState=loaded\nMainPID=0\n",
+])("installer refuses a non-cold manager report: %s", async (report) => {
+  const directory = await mkdtemp("/tmp/octo-install-cold-state-");
   try {
     await assert.rejects(
       guardServiceReplacement(
         serviceDefinition("linux", input(directory), 1000),
         input(directory),
-        absent,
+        () => report,
       ),
-      /native-owner-remains-present-without-checkpoint-control/u,
+      IncompleteActivation,
     );
   } finally {
-    lock.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

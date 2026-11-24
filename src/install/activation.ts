@@ -171,7 +171,8 @@ function managerPID(
       }),
   );
   if (
-    values.get("LoadState") === "not-found" &&
+    (values.get("LoadState") === "not-found" ||
+      values.get("LoadState") === "loaded") &&
     values.get("ActiveState") === "inactive" &&
     values.get("MainPID") === "0"
   )

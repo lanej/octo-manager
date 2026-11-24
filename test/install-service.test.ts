@@ -87,7 +87,7 @@ async function nativeFixture<T>(
     await rm(state, { recursive: true, force: true });
   }
 }
-test("Linux service activation is explicit, native and reports unavailable-manager manual startup", async () => {
+test("Linux service activation starts a stopped installed unit and verifies the exact native owner", async () => {
   await nativeFixture(async (selected, launch) => {
     const definition = serviceDefinition("linux", selected, 1000),
       calls: string[][] = [];
@@ -103,7 +103,7 @@ test("Linux service activation is explicit, native and reports unavailable-manag
       return args[1] === "show"
         ? started
           ? `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid)}\n`
-          : "LoadState=not-found\nActiveState=inactive\nMainPID=0\n"
+          : "LoadState=loaded\nActiveState=inactive\nMainPID=0\n"
         : "";
     };
     expect(definition.text).toContain("WorkingDirectory=/fixture/release\n");
