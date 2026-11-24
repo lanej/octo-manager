@@ -8,7 +8,7 @@ import {
   NoticeReadinessSchema,
   type NoticeReadiness,
 } from "./receipt-types.js";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { ReadinessPreconditionError } from "./errors.js";
 import { nextInboxSequence } from "../submissions/schema.js";
@@ -51,6 +51,8 @@ import {
   type PreparationProfile,
 } from "./contracts.js";
 export class MergeStore {
+  private entriesByPr: StatementSync | undefined;
+  private settingByPr: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
     readonly tracking: TrackingStore,
@@ -183,11 +185,9 @@ export class MergeStore {
         ? this.db
             .prepare("SELECT data,pr_id FROM merge_entries ORDER BY rowid")
             .all()
-        : this.db
-            .prepare(
-              "SELECT data,pr_id FROM merge_entries WHERE pr_id=? ORDER BY rowid",
-            )
-            .all(prId);
+        : (this.entriesByPr ??= this.db.prepare(
+            "SELECT data,pr_id FROM merge_entries WHERE pr_id=? ORDER BY rowid",
+          )).all(prId);
     return rows.map((row) => this.entryRow(row));
   }
 
@@ -490,9 +490,9 @@ export class MergeStore {
   }
   settingSource(prId: string): "explicit" | "inherited" {
     const pr = this.tracking.prContext(prId);
-    const row = this.db
-      .prepare("SELECT value FROM settings WHERE key=?")
-      .get(`merge-setting:${pr.id}`);
+    const row = (this.settingByPr ??= this.db.prepare(
+      "SELECT value FROM settings WHERE key=?",
+    )).get(`merge-setting:${pr.id}`);
     if (row !== undefined) {
       const value: unknown = JSON.parse(String(row["value"]));
       if (
@@ -514,9 +514,9 @@ export class MergeStore {
   disableInherited(prId: string): void {
     const pr = this.tracking.prContext(prId);
     if (this.settingSource(pr.id) === "explicit") return;
-    const setting = this.db
-      .prepare("SELECT value FROM settings WHERE key=?")
-      .get(`merge-setting:${pr.id}`);
+    const setting = (this.settingByPr ??= this.db.prepare(
+      "SELECT value FROM settings WHERE key=?",
+    )).get(`merge-setting:${pr.id}`);
     const entry = this.entries(pr.id).find((value) => !terminal(value.state));
     if (
       setting?.["value"] ===

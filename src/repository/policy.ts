@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { Check } from "typebox/value";
 import { Compile } from "typebox/compile";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { githubRepository } from "../publication/contract.js";
 import type { TrackingStore } from "../tracking/store.js";
 import type { AgentMessage } from "../tracking/inbox.js";
@@ -83,6 +83,7 @@ export function load(root: string) {
   };
 }
 export class RepositoryPolicies {
+  private policyByPr: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
     private tracking: TrackingStore,
@@ -90,9 +91,9 @@ export class RepositoryPolicies {
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
   get(prId: string): AutomationPolicy | undefined {
-    const row = this.db
-      .prepare("SELECT value FROM settings WHERE key=?")
-      .get(`repository-policy:${prId}`);
+    const row = (this.policyByPr ??= this.db.prepare(
+      "SELECT value FROM settings WHERE key=?",
+    )).get(`repository-policy:${prId}`);
     return row === undefined
       ? undefined
       : storedPolicy(JSON.parse(String(row["value"])));
