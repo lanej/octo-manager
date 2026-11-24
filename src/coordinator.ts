@@ -143,6 +143,7 @@ export class Coordinator extends EventEmitter {
     this.githubScheduler.ensureReviews(url);
     return Promise.resolve(this.githubScheduler.reviewState(url).details);
   }
+  isStopping(): boolean { return this.stopping || this.stopped; }
   snapshot(): Snapshot {
     if (this.finalSnapshot) return this.finalSnapshot;
     const recoveryPid = [...this.recoveryPids][0];
