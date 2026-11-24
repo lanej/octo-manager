@@ -8,7 +8,11 @@ Queue reconciliation permits up to four recipients at once and serializes all wo
 
 Queue-mode Codex endpoints receive one pending digest per agent. PR feedback and optional submission callbacks share this delivery path; publication remains opt-in. Individual inbox messages and their evidence remain immutable. The digest groups current applicable unread items by PR, preserving distinct typed statuses without forwarding external prose or model analysis. Per-action and per-assessment identifiers remain available through explicit typed inspection. Each revision fits 20 items and 6,000 UTF-8 bytes; unread overflow advances after receipt.
 
-Queued bodies contain only linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; all original members remain independently tracked. Assessment, role, individual IDs and instructions are available through retrieval rather than repeated in the notification. Grouping uses typed views, not stored prose.
+Queued bodies contain linked PR/commit headings, fixed reasons, optional item counts and one `octo-manager read ID` command. Matching headings and reasons share a count; all original members remain independently tracked. Merge confirmations include one routing explanation identifying whether the session was addressed as a PR owner, subscriber, or both. That role is frozen when the notice is created; later reassignment does not rewrite historical delivery evidence. Assessment, individual IDs and instructions remain available through retrieval rather than repeated in the notification. Grouping uses typed views, not stored prose.
+
+Merge confirmations distinguish an observed external merge, which reconciles Octo's workflow state, from a merge matched to Octo's confirmed operation and commit. Observing a merge does not establish its age or the external actor. Older notices without origin evidence retain the generic GitHub-confirmed label. Frozen individual bodies, digest revisions and their receipts remain unchanged across renderer upgrades.
+
+New merge-origin metadata is optional in stored safe notices, so existing notices remain readable without rewriting them. Older coordinators whose strict notice decoder does not recognize `mergeOrigin` cannot read newly created notices with that field; preserve a database backup when planning a downgrade across this format change.
 
 ## Replacement and cancellation
 

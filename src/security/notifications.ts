@@ -45,6 +45,9 @@ export const NoticeSchema = Type.Object(
     prUrl: Type.Optional(Type.String()),
     head: Type.Optional(Type.String()),
     mergeState: Type.Optional(Type.Enum(EntryState)),
+    mergeOrigin: Type.Optional(
+      Type.Union([Type.Literal("external"), Type.Literal("octo")]),
+    ),
     issueStage: Type.Optional(Type.Enum(IssueStage)),
     issueWaiting: Type.Optional(Type.Enum(Waiting)),
     issueRevision: Type.Optional(Type.String()),
@@ -224,7 +227,11 @@ export function noticeView(
     reference,
     title:
       notice.mergeState === EntryState.Merged
-        ? "GitHub confirmed merge"
+        ? notice.mergeOrigin === "external"
+          ? "External merge observed · workflow reconciled"
+          : notice.mergeOrigin === "octo"
+            ? "GitHub confirmed merge · Octo execution"
+            : "GitHub confirmed merge"
         : noticeLabel(notice),
     fields,
   };

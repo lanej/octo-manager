@@ -561,3 +561,40 @@ test("current notification instructions isolate unrelated entry and operation hi
     await f.close();
   }
 });
+
+test("compiled policy reads retain fresh rows, independent values and invalid-data rejection", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "state", "jobs.sqlite"));
+  try {
+    const policy = f.c.store.repositories.get(f.pr.id);
+    if (policy === undefined) throw new Error("Missing policy");
+    policy.root = "caller mutation";
+    expect(f.c.store.repositories.get(f.pr.id)?.root).toBe(f.root);
+    const original = f.c.store.repositories.get(f.pr.id);
+    if (original === undefined) throw new Error("Missing stored policy");
+    const save = (value: unknown) =>
+      db
+        .prepare("UPDATE settings SET value=? WHERE key=?")
+        .run(JSON.stringify(value), `repository-policy:${f.pr.id}`);
+    save({ ...original, autoMerge: !original.autoMerge });
+    expect(f.c.store.repositories.get(f.pr.id)?.autoMerge).toBe(
+      !original.autoMerge,
+    );
+    for (const invalid of [
+      { ...original, status: "unknown" },
+      { ...original, autoMerge: "true" },
+      { ...original, epoch: 0.5 },
+      { ...original, instructions: { unexpected: "instruction" } },
+    ]) {
+      save(invalid);
+      expect(() => f.c.store.repositories.get(f.pr.id)).toThrow(
+        "Invalid merge-chain data",
+      );
+    }
+    save(original);
+    expect(f.c.store.repositories.get(f.pr.id)).toEqual(original);
+  } finally {
+    db.close();
+    await f.close();
+  }
+});

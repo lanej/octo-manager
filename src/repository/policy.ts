@@ -3,6 +3,7 @@ import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { Check } from "typebox/value";
+import { Compile } from "typebox/compile";
 import type { DatabaseSync } from "node:sqlite";
 import { githubRepository } from "../publication/contract.js";
 import type { TrackingStore } from "../tracking/store.js";
@@ -13,7 +14,6 @@ import { CheckWatchState } from "../tracking/checks.js";
 import { EntryState, terminal } from "../merging/contracts.js";
 import { NotificationState } from "./contracts.js";
 import type { MergeStore } from "../merging/store.js";
-import { checked } from "../merging/contracts.js";
 import {
   AutomationPolicySchema,
   ConfigSchema,
@@ -22,6 +22,12 @@ import {
   type AutomationPolicy,
   type Instructions,
 } from "./contracts.js";
+const policyValidator = Compile(AutomationPolicySchema);
+function storedPolicy(value: unknown): AutomationPolicy {
+  if (!policyValidator.Check(value))
+    throw new Error("Invalid merge-chain data");
+  return value;
+}
 function read(path: string): string | undefined {
   try {
     const info = lstatSync(path);
@@ -89,7 +95,7 @@ export class RepositoryPolicies {
       .get(`repository-policy:${prId}`);
     return row === undefined
       ? undefined
-      : checked(AutomationPolicySchema, JSON.parse(String(row["value"])));
+      : storedPolicy(JSON.parse(String(row["value"])));
   }
   bind(prId: string, agentId: string, cwd?: string): void {
     if (cwd === undefined || this.tracking.pr(prId).ownerAgentId !== agentId)
@@ -144,7 +150,7 @@ export class RepositoryPolicies {
     this.tick();
   }
   private save(policy: AutomationPolicy): void {
-    checked(AutomationPolicySchema, policy);
+    storedPolicy(policy);
     this.db
       .prepare(
         "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",

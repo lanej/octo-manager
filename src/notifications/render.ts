@@ -13,6 +13,7 @@ import {
 } from "../security/notifications.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { AgentMessage } from "../tracking/inbox.js";
+import { EntryState } from "../merging/contracts.js";
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
@@ -39,12 +40,35 @@ function heading(view: NoticeView): string {
   return `${renderReference(view.reference)} · ${view.title}`;
 }
 
+function mergeRouting(notices: readonly (SafeNotice | undefined)[]): string[] {
+  const roles = new Set(
+    notices.flatMap((notice) =>
+      notice?.kind === "merge" &&
+      notice.mergeState === EntryState.Merged &&
+      notice.role !== undefined
+        ? [notice.role]
+        : [],
+    ),
+  );
+  if (roles.size === 0) return [];
+  const role = roles.has("owner")
+    ? roles.has("observer")
+      ? "a PR owner or subscriber"
+      : "the PR owner"
+    : "a PR subscriber";
+  return [`Merge updates were addressed to this session as ${role}.`];
+}
+
 export function renderDirectNotice(
   notice: SafeNotice,
   id: string,
   directory = defaultDirectory(),
 ): string {
-  return `${heading(noticeView(notice, ""))}\n${readFooter(notice.references?.message ?? shortId(id), directory)}`;
+  return [
+    heading(noticeView(notice, "")),
+    ...mergeRouting([notice]),
+    readFooter(notice.references?.message ?? shortId(id), directory),
+  ].join("\n");
 }
 
 export interface DigestGroup {
@@ -129,7 +153,11 @@ export function renderDigest(
       rows,
       (message) => presentations.get(message.id) ?? {},
     );
-    return `${groups.map(renderGroup).join("\n")}\n${readFooter(shortId(receiptId), directory)}`;
+    return [
+      ...groups.map(renderGroup),
+      ...mergeRouting(rows.map((message) => message.notice)),
+      readFooter(shortId(receiptId), directory),
+    ].join("\n");
   }
   const selected: AgentMessage[] = [];
   for (const message of candidates) {

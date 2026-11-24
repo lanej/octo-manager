@@ -584,6 +584,12 @@ export class MergeService {
       );
       return;
     }
+    if (entry.state === EntryState.WaitingChecks && entry.nextAt === 0)
+      entry = this.store.state(
+        entry,
+        EntryState.WaitingChecks,
+        "Inspecting current GitHub merge eligibility",
+      );
     const snapshot = await this.snapshot(pr.id);
     pr = this.store.tracking.pr(pr.id);
     if (!this.active(entry)) return;

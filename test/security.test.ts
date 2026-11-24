@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { rejects } from "node:assert/strict";
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
+import { AssessmentStore } from "../src/assessments/store.js";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1138,6 +1139,26 @@ test("background assessment reads retain unfinished outcomes and audit supersede
     expect(f.store.assessments.list()).toHaveLength(1);
     const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
     try {
+      const reader = new AssessmentStore(db, () => 1);
+      const prepare = spyOn(db, "prepare");
+      let query: string | undefined;
+      try {
+        expect(reader.reconciliationCandidates()).toHaveLength(0);
+        query = prepare.mock.calls.find(([sql]) =>
+          sql.startsWith("SELECT data FROM evidence_assessments"),
+        )?.[0];
+      } finally {
+        prepare.mockRestore();
+      }
+      if (query === undefined) throw new Error("Missing candidate query");
+      const plan = db.prepare(`EXPLAIN QUERY PLAN ${query}`).all();
+      expect(
+        plan.some((row) =>
+          String(row["detail"]).includes(
+            "USING INDEX assessments_to_reconcile",
+          ),
+        ),
+      ).toBe(true);
       db.prepare("UPDATE evidence_assessments SET data='{}' WHERE id=?").run(
         item.id,
       );
