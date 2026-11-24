@@ -8,7 +8,8 @@ export function currentMergeChecks(
   observation: ObservationInput | PRObservation,
 ): CheckObservation[] {
   const workflows =
-    observation.workflows?.state === "complete"
+    observation.workflows !== undefined &&
+    observation.workflows.state !== "unavailable"
       ? observation.workflows.value
       : [];
   const superseded = workflows.filter(
@@ -35,7 +36,7 @@ export function currentMergeChecks(
   );
   const suites = new Set(superseded.map((run) => run.suiteId));
   const runs =
-    observation.checks.state === "complete" ? observation.checks.value : [];
+    observation.checks.state !== "unavailable" ? observation.checks.value : [];
   const values = [...runs, ...workflows];
   return values
     .filter(

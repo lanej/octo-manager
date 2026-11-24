@@ -725,16 +725,21 @@ export class MergeStore {
       .all()
       .map((row) => checked(ChainSchema, JSON.parse(String(row["data"]))))) {
       const entries = this.entriesForChain(chain.id);
-      if (
-        entries.length > 0 &&
-        entries.every((item) => item.state === EntryState.Merged)
-      ) {
+      if (entries.length > 0 && entries.every((item) => terminal(item.state))) {
+        const merged = entries.every(
+          (item) => item.state === EntryState.Merged,
+        );
         this.writeChain({
           ...chain,
-          state: ChainState.Completed,
+          state: merged ? ChainState.Completed : ChainState.Cancelled,
           updatedAt: this.now(),
         });
-        this.event("merge_chain_completed", "All selected PRs merged");
+        this.event(
+          merged ? "merge_chain_completed" : "merge_chain_cancelled",
+          merged
+            ? "All selected PRs merged"
+            : "All selected entries settled; at least one entry cancelled",
+        );
       }
     }
   }

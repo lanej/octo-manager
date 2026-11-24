@@ -3,7 +3,11 @@ import { storedCheckEvidence } from "./checks.js";
 import { storedFeedback, storedReviews } from "./feedback.js";
 import { targetBase } from "./evidence.js";
 import { prLifecycle, type PRLifecycle } from "./states.js";
-import type { ObservationInput, PRObservation } from "./types.js";
+import type {
+  CheckObservation,
+  ObservationInput,
+  PRObservation,
+} from "./types.js";
 
 export type ReferenceObservation = Pick<
   PRObservation,
@@ -16,6 +20,7 @@ export interface ObservationRepository {
   append(prId: string, input: ObservationInput): PRObservation;
   latest(prId: string): PRObservation | undefined;
   lifecycle(id: number): PRLifecycle;
+  check(id: number, sourceId: string): CheckObservation | undefined;
 }
 
 // Uses the caller's transaction so observation, actions and deliveries commit together.
@@ -81,6 +86,16 @@ export class SQLiteObservationRepository implements ObservationRepository {
         : {}),
       ...(feedback === undefined ? {} : { feedback }),
     };
+  }
+  check(id: number, sourceId: string): CheckObservation | undefined {
+    const row = this.db
+      .prepare("SELECT checks_json FROM pr_observations WHERE id=?")
+      .get(id);
+    if (row === undefined) return undefined;
+    const checks = storedCheckEvidence(row["checks_json"]);
+    return checks === undefined || checks.state === "unavailable"
+      ? undefined
+      : checks.value.find((check) => check.id === sourceId);
   }
   lifecycle(id: number): PRLifecycle {
     const row = this.db

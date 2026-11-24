@@ -13,6 +13,8 @@ message DomainCheckRecord {
   optional string conclusion = 6;
   optional int64 at = 7;
   optional string url = 8;
+  optional int64 workflow_run_id = 13;
+  optional int64 workflow_run_attempt = 14;
   optional int64 suite_id = 9;
   optional int64 workflow_id = 10;
   optional int64 run_number = 11;
@@ -32,6 +34,8 @@ message DomainCheckEvidenceVariant1ValueItem {
   optional string conclusion = 6;
   optional int64 at = 7;
   optional string url = 8;
+  optional int64 workflow_run_id = 13;
+  optional int64 workflow_run_attempt = 14;
   optional int64 suite_id = 9;
   optional int64 workflow_id = 10;
   optional int64 run_number = 11;
@@ -60,6 +64,8 @@ message DomainCheckEvidenceVariant2ValueItem {
   optional string conclusion = 6;
   optional int64 at = 7;
   optional string url = 8;
+  optional int64 workflow_run_id = 13;
+  optional int64 workflow_run_attempt = 14;
   optional int64 suite_id = 9;
   optional int64 workflow_id = 10;
   optional int64 run_number = 11;

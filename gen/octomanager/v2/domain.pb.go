@@ -4363,21 +4363,23 @@ func (DecidePRReferenceRequestDecision) EnumDescriptor() ([]byte, []int) {
 
 // DomainCheckRecord records one check execution at an observed PR revision.
 type DomainCheckRecord struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Key           *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
-	Name          *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	HeadSha       *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
-	Status        *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
-	Conclusion    *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
-	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
-	Url           *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
-	SuiteId       *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
-	WorkflowId    *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
-	RunNumber     *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
-	Event         *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Key                *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Name               *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	HeadSha            *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	Status             *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Conclusion         *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
+	At                 *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	Url                *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	WorkflowRunId      *int64                 `protobuf:"varint,13,opt,name=workflow_run_id,json=workflowRunId,proto3,oneof" json:"workflow_run_id,omitempty"`
+	WorkflowRunAttempt *int64                 `protobuf:"varint,14,opt,name=workflow_run_attempt,json=workflowRunAttempt,proto3,oneof" json:"workflow_run_attempt,omitempty"`
+	SuiteId            *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
+	WorkflowId         *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
+	RunNumber          *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
+	Event              *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DomainCheckRecord) Reset() {
@@ -4466,6 +4468,20 @@ func (x *DomainCheckRecord) GetUrl() string {
 	return ""
 }
 
+func (x *DomainCheckRecord) GetWorkflowRunId() int64 {
+	if x != nil && x.WorkflowRunId != nil {
+		return *x.WorkflowRunId
+	}
+	return 0
+}
+
+func (x *DomainCheckRecord) GetWorkflowRunAttempt() int64 {
+	if x != nil && x.WorkflowRunAttempt != nil {
+		return *x.WorkflowRunAttempt
+	}
+	return 0
+}
+
 func (x *DomainCheckRecord) GetSuiteId() int64 {
 	if x != nil && x.SuiteId != nil {
 		return *x.SuiteId
@@ -4496,21 +4512,23 @@ func (x *DomainCheckRecord) GetEvent() string {
 
 // DomainCheckEvidenceVariant1ValueItem represents one item in DomainCheckEvidenceVariant1Value.
 type DomainCheckEvidenceVariant1ValueItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Key           *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
-	Name          *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	HeadSha       *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
-	Status        *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
-	Conclusion    *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
-	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
-	Url           *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
-	SuiteId       *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
-	WorkflowId    *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
-	RunNumber     *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
-	Event         *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Key                *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Name               *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	HeadSha            *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	Status             *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Conclusion         *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
+	At                 *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	Url                *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	WorkflowRunId      *int64                 `protobuf:"varint,13,opt,name=workflow_run_id,json=workflowRunId,proto3,oneof" json:"workflow_run_id,omitempty"`
+	WorkflowRunAttempt *int64                 `protobuf:"varint,14,opt,name=workflow_run_attempt,json=workflowRunAttempt,proto3,oneof" json:"workflow_run_attempt,omitempty"`
+	SuiteId            *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
+	WorkflowId         *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
+	RunNumber          *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
+	Event              *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DomainCheckEvidenceVariant1ValueItem) Reset() {
@@ -4597,6 +4615,20 @@ func (x *DomainCheckEvidenceVariant1ValueItem) GetUrl() string {
 		return *x.Url
 	}
 	return ""
+}
+
+func (x *DomainCheckEvidenceVariant1ValueItem) GetWorkflowRunId() int64 {
+	if x != nil && x.WorkflowRunId != nil {
+		return *x.WorkflowRunId
+	}
+	return 0
+}
+
+func (x *DomainCheckEvidenceVariant1ValueItem) GetWorkflowRunAttempt() int64 {
+	if x != nil && x.WorkflowRunAttempt != nil {
+		return *x.WorkflowRunAttempt
+	}
+	return 0
 }
 
 func (x *DomainCheckEvidenceVariant1ValueItem) GetSuiteId() int64 {
@@ -4727,21 +4759,23 @@ func (x *DomainCheckEvidenceVariant1) GetValue() *DomainCheckEvidenceVariant1Val
 
 // DomainCheckEvidenceVariant2ValueItem represents one item in DomainCheckEvidenceVariant2Value.
 type DomainCheckEvidenceVariant2ValueItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Key           *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
-	Name          *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	HeadSha       *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
-	Status        *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
-	Conclusion    *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
-	At            *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
-	Url           *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
-	SuiteId       *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
-	WorkflowId    *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
-	RunNumber     *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
-	Event         *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Key                *string                `protobuf:"bytes,2,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Name               *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	HeadSha            *string                `protobuf:"bytes,4,opt,name=head_sha,json=headSha,proto3,oneof" json:"head_sha,omitempty"`
+	Status             *string                `protobuf:"bytes,5,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Conclusion         *string                `protobuf:"bytes,6,opt,name=conclusion,proto3,oneof" json:"conclusion,omitempty"`
+	At                 *int64                 `protobuf:"varint,7,opt,name=at,proto3,oneof" json:"at,omitempty"`
+	Url                *string                `protobuf:"bytes,8,opt,name=url,proto3,oneof" json:"url,omitempty"`
+	WorkflowRunId      *int64                 `protobuf:"varint,13,opt,name=workflow_run_id,json=workflowRunId,proto3,oneof" json:"workflow_run_id,omitempty"`
+	WorkflowRunAttempt *int64                 `protobuf:"varint,14,opt,name=workflow_run_attempt,json=workflowRunAttempt,proto3,oneof" json:"workflow_run_attempt,omitempty"`
+	SuiteId            *int64                 `protobuf:"varint,9,opt,name=suite_id,json=suiteId,proto3,oneof" json:"suite_id,omitempty"`
+	WorkflowId         *int64                 `protobuf:"varint,10,opt,name=workflow_id,json=workflowId,proto3,oneof" json:"workflow_id,omitempty"`
+	RunNumber          *int64                 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
+	Event              *string                `protobuf:"bytes,12,opt,name=event,proto3,oneof" json:"event,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DomainCheckEvidenceVariant2ValueItem) Reset() {
@@ -4828,6 +4862,20 @@ func (x *DomainCheckEvidenceVariant2ValueItem) GetUrl() string {
 		return *x.Url
 	}
 	return ""
+}
+
+func (x *DomainCheckEvidenceVariant2ValueItem) GetWorkflowRunId() int64 {
+	if x != nil && x.WorkflowRunId != nil {
+		return *x.WorkflowRunId
+	}
+	return 0
+}
+
+func (x *DomainCheckEvidenceVariant2ValueItem) GetWorkflowRunAttempt() int64 {
+	if x != nil && x.WorkflowRunAttempt != nil {
+		return *x.WorkflowRunAttempt
+	}
+	return 0
 }
 
 func (x *DomainCheckEvidenceVariant2ValueItem) GetSuiteId() int64 {
@@ -18247,7 +18295,7 @@ var File_octomanager_v2_domain_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\n" +
-	"\x1boctomanager/v2/domain.proto\x12\x0eoctomanager.v2\"\xef\x03\n" +
+	"\x1boctomanager/v2/domain.proto\x12\x0eoctomanager.v2\"\x80\x05\n" +
 	"\x11DomainCheckRecord\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x15\n" +
 	"\x03key\x18\x02 \x01(\tH\x01R\x03key\x88\x01\x01\x12\x17\n" +
@@ -18258,15 +18306,17 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"conclusion\x18\x06 \x01(\tH\x05R\n" +
 	"conclusion\x88\x01\x01\x12\x13\n" +
 	"\x02at\x18\a \x01(\x03H\x06R\x02at\x88\x01\x01\x12\x15\n" +
-	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12\x1e\n" +
-	"\bsuite_id\x18\t \x01(\x03H\bR\asuiteId\x88\x01\x01\x12$\n" +
+	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12+\n" +
+	"\x0fworkflow_run_id\x18\r \x01(\x03H\bR\rworkflowRunId\x88\x01\x01\x125\n" +
+	"\x14workflow_run_attempt\x18\x0e \x01(\x03H\tR\x12workflowRunAttempt\x88\x01\x01\x12\x1e\n" +
+	"\bsuite_id\x18\t \x01(\x03H\n" +
+	"R\asuiteId\x88\x01\x01\x12$\n" +
 	"\vworkflow_id\x18\n" +
-	" \x01(\x03H\tR\n" +
+	" \x01(\x03H\vR\n" +
 	"workflowId\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"run_number\x18\v \x01(\x03H\n" +
-	"R\trunNumber\x88\x01\x01\x12\x19\n" +
-	"\x05event\x18\f \x01(\tH\vR\x05event\x88\x01\x01B\x05\n" +
+	"run_number\x18\v \x01(\x03H\fR\trunNumber\x88\x01\x01\x12\x19\n" +
+	"\x05event\x18\f \x01(\tH\rR\x05event\x88\x01\x01B\x05\n" +
 	"\x03_idB\x06\n" +
 	"\x04_keyB\a\n" +
 	"\x05_nameB\v\n" +
@@ -18274,11 +18324,13 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\a_statusB\r\n" +
 	"\v_conclusionB\x05\n" +
 	"\x03_atB\x06\n" +
-	"\x04_urlB\v\n" +
+	"\x04_urlB\x12\n" +
+	"\x10_workflow_run_idB\x17\n" +
+	"\x15_workflow_run_attemptB\v\n" +
 	"\t_suite_idB\x0e\n" +
 	"\f_workflow_idB\r\n" +
 	"\v_run_numberB\b\n" +
-	"\x06_event\"\x82\x04\n" +
+	"\x06_event\"\x93\x05\n" +
 	"$DomainCheckEvidenceVariant1ValueItem\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x15\n" +
 	"\x03key\x18\x02 \x01(\tH\x01R\x03key\x88\x01\x01\x12\x17\n" +
@@ -18289,15 +18341,17 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"conclusion\x18\x06 \x01(\tH\x05R\n" +
 	"conclusion\x88\x01\x01\x12\x13\n" +
 	"\x02at\x18\a \x01(\x03H\x06R\x02at\x88\x01\x01\x12\x15\n" +
-	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12\x1e\n" +
-	"\bsuite_id\x18\t \x01(\x03H\bR\asuiteId\x88\x01\x01\x12$\n" +
+	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12+\n" +
+	"\x0fworkflow_run_id\x18\r \x01(\x03H\bR\rworkflowRunId\x88\x01\x01\x125\n" +
+	"\x14workflow_run_attempt\x18\x0e \x01(\x03H\tR\x12workflowRunAttempt\x88\x01\x01\x12\x1e\n" +
+	"\bsuite_id\x18\t \x01(\x03H\n" +
+	"R\asuiteId\x88\x01\x01\x12$\n" +
 	"\vworkflow_id\x18\n" +
-	" \x01(\x03H\tR\n" +
+	" \x01(\x03H\vR\n" +
 	"workflowId\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"run_number\x18\v \x01(\x03H\n" +
-	"R\trunNumber\x88\x01\x01\x12\x19\n" +
-	"\x05event\x18\f \x01(\tH\vR\x05event\x88\x01\x01B\x05\n" +
+	"run_number\x18\v \x01(\x03H\fR\trunNumber\x88\x01\x01\x12\x19\n" +
+	"\x05event\x18\f \x01(\tH\rR\x05event\x88\x01\x01B\x05\n" +
 	"\x03_idB\x06\n" +
 	"\x04_keyB\a\n" +
 	"\x05_nameB\v\n" +
@@ -18305,7 +18359,9 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\a_statusB\r\n" +
 	"\v_conclusionB\x05\n" +
 	"\x03_atB\x06\n" +
-	"\x04_urlB\v\n" +
+	"\x04_urlB\x12\n" +
+	"\x10_workflow_run_idB\x17\n" +
+	"\x15_workflow_run_attemptB\v\n" +
 	"\t_suite_idB\x0e\n" +
 	"\f_workflow_idB\r\n" +
 	"\v_run_numberB\b\n" +
@@ -18315,7 +18371,7 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\x1bDomainCheckEvidenceVariant1\x12K\n" +
 	"\x05state\x18\x01 \x01(\x0e20.octomanager.v2.DomainCheckEvidenceVariant1StateH\x00R\x05state\x88\x01\x01\x12F\n" +
 	"\x05value\x18\x02 \x01(\v20.octomanager.v2.DomainCheckEvidenceVariant1ValueR\x05valueB\b\n" +
-	"\x06_state\"\x82\x04\n" +
+	"\x06_state\"\x93\x05\n" +
 	"$DomainCheckEvidenceVariant2ValueItem\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x15\n" +
 	"\x03key\x18\x02 \x01(\tH\x01R\x03key\x88\x01\x01\x12\x17\n" +
@@ -18326,15 +18382,17 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"conclusion\x18\x06 \x01(\tH\x05R\n" +
 	"conclusion\x88\x01\x01\x12\x13\n" +
 	"\x02at\x18\a \x01(\x03H\x06R\x02at\x88\x01\x01\x12\x15\n" +
-	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12\x1e\n" +
-	"\bsuite_id\x18\t \x01(\x03H\bR\asuiteId\x88\x01\x01\x12$\n" +
+	"\x03url\x18\b \x01(\tH\aR\x03url\x88\x01\x01\x12+\n" +
+	"\x0fworkflow_run_id\x18\r \x01(\x03H\bR\rworkflowRunId\x88\x01\x01\x125\n" +
+	"\x14workflow_run_attempt\x18\x0e \x01(\x03H\tR\x12workflowRunAttempt\x88\x01\x01\x12\x1e\n" +
+	"\bsuite_id\x18\t \x01(\x03H\n" +
+	"R\asuiteId\x88\x01\x01\x12$\n" +
 	"\vworkflow_id\x18\n" +
-	" \x01(\x03H\tR\n" +
+	" \x01(\x03H\vR\n" +
 	"workflowId\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"run_number\x18\v \x01(\x03H\n" +
-	"R\trunNumber\x88\x01\x01\x12\x19\n" +
-	"\x05event\x18\f \x01(\tH\vR\x05event\x88\x01\x01B\x05\n" +
+	"run_number\x18\v \x01(\x03H\fR\trunNumber\x88\x01\x01\x12\x19\n" +
+	"\x05event\x18\f \x01(\tH\rR\x05event\x88\x01\x01B\x05\n" +
 	"\x03_idB\x06\n" +
 	"\x04_keyB\a\n" +
 	"\x05_nameB\v\n" +
@@ -18342,7 +18400,9 @@ const file_octomanager_v2_domain_proto_rawDesc = "" +
 	"\a_statusB\r\n" +
 	"\v_conclusionB\x05\n" +
 	"\x03_atB\x06\n" +
-	"\x04_urlB\v\n" +
+	"\x04_urlB\x12\n" +
+	"\x10_workflow_run_idB\x17\n" +
+	"\x15_workflow_run_attemptB\v\n" +
 	"\t_suite_idB\x0e\n" +
 	"\f_workflow_idB\r\n" +
 	"\v_run_numberB\b\n" +

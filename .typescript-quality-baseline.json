@@ -2533,22 +2533,6 @@
       "file": "src/tracking/policy.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (c && [\"success\", \"neutral\", \"skipped\"].includes(c.conclusion))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (c && c.id !== b.sourceId)",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/policy.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "evidenceUrl: c.url || url,",
       "count": 1
