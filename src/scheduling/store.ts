@@ -3,6 +3,7 @@ import type { PullRequestDetails } from "../github.js";
 import {
   decode,
   DispatchSchema,
+  RefreshKind,
   ScheduleSchema,
   ScheduleState,
   ViewSchema,
@@ -43,6 +44,22 @@ export class ScheduleStore {
     return this.db
       .prepare("SELECT data FROM github_schedules ORDER BY due_at_ms,key")
       .all()
+      .map((row) => decode(ScheduleSchema, String(row["data"])));
+  }
+  queuedKeys(): Set<string> {
+    return new Set(
+      this.db
+        .prepare("SELECT key FROM github_schedules WHERE state=?")
+        .all(ScheduleState.Queued)
+        .map((row) => String(row["key"])),
+    );
+  }
+  reviews(): ScheduledRefresh[] {
+    return this.db
+      .prepare(
+        "SELECT data FROM github_schedules WHERE kind=? ORDER BY due_at_ms,key",
+      )
+      .all(RefreshKind.Reviews)
       .map((row) => decode(ScheduleSchema, String(row["data"])));
   }
   get(key: string): ScheduledRefresh | undefined {

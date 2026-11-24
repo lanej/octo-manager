@@ -1,8 +1,9 @@
-import { test } from "bun:test";
+import { test, spyOn } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -12,6 +13,8 @@ import {
   type PollState,
 } from "../src/tracking/polling.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+import { RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
+import { TrackingState } from "../src/tracking/retirement.js";
 const url = "https://github.com/owner/repo/pull/1";
 function observation(head = "head"): ObservationInput {
   return {
@@ -157,6 +160,133 @@ test("the real tracker skips unchanged PRs until their schedule is due and refre
     assert.equal(calls, 7);
   } finally {
     await service.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("idle tracking schedule reads stay bounded by active PRs and see freshly queued archived work", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-idle-schedules-"));
+  const store = new Store(directory, () => 1000);
+  const external = new DatabaseSync(join(directory, "jobs.sqlite"));
+  const config = defaultTrackingConfig();
+  config.endpoints = {};
+  const owner = { harness: "codex", endpoint: "local", sessionId: "idle" };
+  const archived: string[] = [];
+  let reads = 0;
+  const service = new TrackingService(store.tracking, config, () => 1000, {
+    schedules: store.schedules,
+    read: () => {
+      reads++;
+      return Promise.resolve({ ...observation(), lifecycle: "closed" });
+    },
+  });
+  const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+  const prepare = spyOn(DatabaseSync.prototype, "prepare");
+  try {
+    for (let number = 1; number <= 96; number++) {
+      const pr = store.tracking.track(
+        `https://github.com/owner/repo/pull/${String(number)}`,
+        owner,
+      );
+      const closed = { ...observation(), lifecycle: "closed" } as const;
+      store.tracking.observe(pr.id, closed, config);
+      store.tracking.observe(pr.id, closed, config);
+      assert.equal(store.tracking.pr(pr.id).state, TrackingState.Archived);
+      archived.push(pr.id);
+      store.schedules.save({
+        key: `tracking:${pr.id}`,
+        kind: RefreshKind.Tracking,
+        subject: pr.id,
+        dueAtMs: 1000,
+        intervalMs: 60000,
+        epoch: store.tracking.pr(pr.id).trackingEpoch,
+        state: ScheduleState.Deferred,
+      });
+    }
+    const idleReads = async (expected: number) => {
+      prepare.mockClear();
+      service.tick();
+      await settle();
+      assert.equal(
+        prepare.mock.calls.filter(([sql]) =>
+          /SELECT .* FROM github_schedules/.test(sql),
+        ).length,
+        expected,
+      );
+    };
+    await idleReads(1);
+    assert.equal(reads, 0);
+    const active = store.tracking.track(
+      "https://github.com/owner/repo/pull/97",
+      owner,
+    );
+    store.schedules.save({
+      key: `tracking:${active.id}`,
+      kind: RefreshKind.Tracking,
+      subject: active.id,
+      dueAtMs: 999999,
+      intervalMs: 60000,
+      epoch: active.trackingEpoch,
+      state: ScheduleState.Deferred,
+    });
+    await idleReads(2);
+    assert.equal(reads, 0);
+    const id = archived[0];
+    if (id === undefined) throw new Error("Missing archived fixture PR");
+    external
+      .prepare(
+        "UPDATE github_schedules SET state='queued',data=json_set(data,'$.state','queued','$.subject','unrelated') WHERE key=?",
+      )
+      .run(`tracking:${id}`);
+    service.tick();
+    await settle();
+    assert.equal(reads, 1);
+    assert.equal(
+      store.schedules.get(`tracking:${id}`)?.state,
+      ScheduleState.Deferred,
+    );
+    await idleReads(2);
+    assert.equal(reads, 1);
+    external
+      .prepare(
+        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?",
+      )
+      .run(`tracking:${active.id}`);
+    assert.throws(() => {
+      service.tick();
+    }, /Invalid stored GitHub schedule data/);
+    external
+      .prepare(
+        "UPDATE github_schedules SET state='queued',data=json_set(json_remove(data,'$.intervalMs'),'$.state','queued') WHERE key=?",
+      )
+      .run(`tracking:${id}`);
+    store.tracking.untrack(active.id);
+    assert.throws(() => {
+      service.tick();
+    }, /Invalid stored GitHub schedule data/);
+    assert.equal(
+      external
+        .prepare("SELECT state FROM github_schedules WHERE key=?")
+        .get(`tracking:${id}`)?.["state"],
+      ScheduleState.Queued,
+    );
+    external
+      .prepare(
+        "UPDATE github_schedules SET state='deferred',data=json_set(data,'$.state','deferred','$.intervalMs',60000) WHERE key=?",
+      )
+      .run(`tracking:${id}`);
+    external
+      .prepare(
+        "UPDATE github_schedules SET state='queued',data=json_set(data,'$.state','queued') WHERE key=?",
+      )
+      .run(`tracking:${active.id}`);
+    await idleReads(1);
+    assert.equal(reads, 1);
+  } finally {
+    prepare.mockRestore();
+    await service.close();
+    external.close();
     store.close();
     await rm(directory, { recursive: true, force: true });
   }

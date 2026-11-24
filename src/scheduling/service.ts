@@ -158,7 +158,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     };
   }
   private refreshReviews(): void {
-    for (const entry of this.store.list()) {
+    for (const entry of this.store.reviews()) {
       if (entry.kind !== RefreshKind.Reviews || this.reviews.has(entry.key))
         continue;
       if (

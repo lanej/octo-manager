@@ -357,19 +357,23 @@ export class TrackingService {
     }
     for (const id of this.store.retirement.expire())
       this.refreshControllers.get(id)?.abort();
-    for (const p of this.store.prContexts())
+    const queued = this.options.schedules?.queuedKeys();
+    for (const p of this.store.prContexts()) {
       if (
-        p.enabled &&
-        this.now() >= this.githubRetryAt &&
-        (p.state === TrackingState.Watching ||
-          p.state === TrackingState.Draining ||
-          this.options.schedules?.get(`tracking:${p.id}`)?.state ===
-            ScheduleState.Queued) &&
-        ((this.pollState(p.id)?.epoch === p.trackingEpoch
-          ? this.pollState(p.id)?.nextAt
-          : undefined) ?? 0) <= this.now()
+        !p.enabled ||
+        this.now() < this.githubRetryAt ||
+        (p.state !== TrackingState.Watching &&
+          p.state !== TrackingState.Draining &&
+          queued?.has(`tracking:${p.id}`) !== true)
+      )
+        continue;
+      const state = this.pollState(p.id);
+      if (
+        ((state?.epoch === p.trackingEpoch ? state.nextAt : undefined) ?? 0) <=
+        this.now()
       )
         this.runPoll(p.id);
+    }
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
       this.deliveryWork = this.deliverNext()

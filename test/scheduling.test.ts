@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/store.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import {
@@ -433,4 +434,44 @@ test("cold authentication cannot compress physical HTTP sends below the configur
     scheduler.tick();
     await second;
     assert.deepEqual(sent, [3000, 5000]);
+  }));
+
+test("review ticks isolate tracking history and run newly queued work without dashboard interest", () =>
+  fixture(async (store, scheduler) => {
+    const db = new DatabaseSync(join(store.directory, "jobs.sqlite"));
+    try {
+      for (let index = 0; index < 96; index++)
+        store.schedules.save({
+          key: `tracking:archived-${String(index)}`,
+          kind: RefreshKind.Tracking,
+          subject: `archived-${String(index)}`,
+          dueAtMs: 0,
+          intervalMs: 60000,
+          state: ScheduleState.Deferred,
+        });
+      db.prepare(
+        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE kind='tracking'",
+      ).run();
+      assert.throws(
+        () => store.schedules.list(),
+        /Invalid stored GitHub schedule data/,
+      );
+      assert.deepEqual(store.schedules.reviews(), []);
+      scheduler.tick();
+      await settle();
+      scheduler.ensureReviews(url);
+      scheduler.tick();
+      await settle();
+      assert.equal(store.schedules.view(url)?.title, "Stored review");
+      assert.equal(store.schedules.reviews().length, 1);
+      const key = `reviews:${url}`;
+      db.prepare(
+        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?",
+      ).run(key);
+      assert.throws(() => {
+        scheduler.tick();
+      }, /Invalid stored GitHub schedule data/);
+    } finally {
+      db.close();
+    }
   }));
