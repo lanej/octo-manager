@@ -18,11 +18,18 @@ import {
 import { join, resolve } from "node:path";
 import { serviceDefinition } from "../src/install/service.js";
 
+import { connectNodeAdapter } from "@connectrpc/connect-node";
+import { wireLifecycle } from "../src/lifecycle-rpc.js";
+import { schedulerClient } from "../src/client.js";
+import type { ActivationTarget } from "../src/lifecycle.js";
+import { LifecycleAction } from "../src/gen/octomanager/v2/lifecycle_pb.js";
+import { SchedulerService } from "../src/gen/octomanager/v2/scheduler_pb.js";
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-test("installer preserves legacy consumers and reports partial promotion after an acknowledged current change", async () => {
+async function installerFixture() {
   const root = await mkdtemp("/tmp/octo-install-staging-"),
     source = join(root, "project"),
     home = join(root, "home"),
@@ -87,9 +94,12 @@ test("installer preserves legacy consumers and reports partial promotion after a
                   builder.onLoad(
                     { filter: /install-local\.ts$/ },
                     async (args) => ({
-                      contents: (await readFile(args.path, "utf8")).replace(
+                      contents: (
+                        'import { readFileSync as fixtureReadFileSync, appendFileSync as fixtureAppendFileSync } from "node:fs";\n' +
+                        (await readFile(args.path, "utf8"))
+                      ).replace(
                         "  return execFileSync(command, args, {",
-                        '  if (command === "/bin/launchctl") throw Object.assign(new Error("No fixture manager"), {status: 113});\n  return execFileSync(command, args, {',
+                        '  if (command === "/bin/launchctl") {\n    const report = process.env["OCTO_TEST_MANAGER_REPORT"];\n    if (report === undefined) throw Object.assign(new Error("No fixture manager"), {status: 113});\n    if (args[0] === "print") return fixtureReadFileSync(report, "utf8");\n    const ledger = process.env["OCTO_TEST_MANAGER_MUTATIONS"];\n    if (ledger !== undefined) fixtureAppendFileSync(ledger, JSON.stringify([command, ...args]) + String.fromCharCode(10));\n    throw new Error("Fixture refuses mutative OS control");\n  }\n  return execFileSync(command, args, {',
                       ),
                       loader: "ts",
                       resolveDir: resolve(args.path, ".."),
@@ -126,15 +136,85 @@ test("installer preserves legacy consumers and reports partial promotion after a
   const runtime = process.execPath;
   await writeFile(
     join(bin, "bun"),
-    `#!${runtime}\nimport { cpSync, mkdirSync } from 'node:fs';\nimport { join } from 'node:path';\nconst args=process.argv.slice(2);\nif(args[0]==='--version'){console.log(process.versions.bun);}\nelse if(args[0]==='run'&&args[1]==='build'){}\nelse if(args[0]==='node_modules/typescript/bin/tsc'){cpSync(join(process.cwd(),'fixture-dist'),args[2],{recursive:true});}\nelse if(args[0]==='install'){mkdirSync(join(process.cwd(),'node_modules'));}\nelse {const child=Bun.spawn([${JSON.stringify(runtime)},...args],{stdin:'inherit',stdout:'inherit',stderr:'inherit'});process.exitCode=await child.exited;}\n`,
+    `#!${runtime}
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+const args=process.argv.slice(2);
+if(args[0]==='--version'){console.log(process.versions.bun);}
+else if(args[0]==='run'&&args[1]==='build'){}
+else if(args[0]==='node_modules/typescript/bin/tsc'){cpSync(join(process.cwd(),'fixture-dist'),args[2],{recursive:true});}
+else if(args[0]==='install'){mkdirSync(join(process.cwd(),'node_modules'));}
+else if(args[1]==='lifecycle'&&args[2]==='artifact'&&process.env.OCTO_TEST_ARTIFACT_SEQUENCE){const path=process.env.OCTO_TEST_ARTIFACT_SEQUENCE;const value=JSON.parse(readFileSync(path,'utf8'));const identity=value.identities[Math.min(value.index,value.identities.length-1)];value.index++;writeFileSync(path,JSON.stringify(value));console.log(JSON.stringify({expected_identity:identity}));}
+else {const child=Bun.spawn([${JSON.stringify(runtime)},...args],{stdin:'inherit',stdout:'inherit',stderr:'inherit'});process.exitCode=await child.exited;}
+`,
     { mode: 0o755 },
   );
   await writeFile(join(bin, "gh"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   await writeFile(
     join(bin, "systemctl"),
-    "#!/bin/sh\nprintf '%s\\n' 'LoadState=not-found' 'ActiveState=inactive' 'MainPID=0'\n",
+    `#!${runtime}
+import { readFileSync, appendFileSync } from 'node:fs';
+const args=process.argv.slice(2), report=process.env.OCTO_TEST_MANAGER_REPORT;
+if(report&&args[1]==='show'){console.log(readFileSync(report,'utf8'));}
+else if(report&&args[1]!=='show-environment'){const ledger=process.env.OCTO_TEST_MANAGER_MUTATIONS;if(ledger)appendFileSync(ledger,JSON.stringify(args)+String.fromCharCode(10));process.exitCode=1;}
+else console.log(['LoadState=not-found','ActiveState=inactive','MainPID=0'].join(String.fromCharCode(10)));
+`,
     { mode: 0o755 },
   );
+  const environment: NodeJS.ProcessEnv = {
+    ...process.env,
+    HOME: home,
+    PATH: bin + ":" + (process.env["PATH"] ?? ""),
+    OCTO_MANAGER_STATE: state,
+    XDG_CONFIG_HOME: configHome,
+    CODEX_HOME: codexHome,
+  };
+  delete environment["PROJECT_UPDATE_OPERATION_DIR"];
+  delete environment["PROJECT_UPDATE_RUN_ID"];
+  async function install(flag?: string) {
+    const child = Bun.spawn(
+      [
+        runtime,
+        join(source, "scripts/install-local.js"),
+        "--home",
+        home,
+        "--codex",
+        ...(flag === undefined ? [] : [flag]),
+      ],
+      { env: environment, stdout: "pipe", stderr: "pipe" },
+    );
+    const stdout = await new Response(child.stdout).text(),
+      stderr = await new Response(child.stderr).text();
+    return { status: await child.exited, stdout, stderr };
+  }
+  return {
+    root,
+    state,
+    base,
+    current,
+    legacy,
+    launcher,
+    hooks,
+    config,
+    definition,
+    environment,
+    install,
+  };
+}
+
+test("installer preserves legacy consumers and reports partial promotion after an acknowledged current change", async () => {
+  const {
+    root,
+    state,
+    base,
+    current,
+    legacy,
+    launcher,
+    hooks,
+    config,
+    definition,
+    install,
+  } = await installerFixture();
   let requests = 0,
     legacyReads = 0;
   const server = createServer((request, response) => {
@@ -187,32 +267,6 @@ test("installer preserves legacy consumers and reports partial promotion after a
   const paths = [launcher, hooks, config, definition.file],
     contents = await Promise.all(paths.map((path) => readFile(path, "utf8"))),
     stateBefore = await stat(state);
-  const environment: NodeJS.ProcessEnv = {
-    ...process.env,
-    HOME: home,
-    PATH: bin + ":" + (process.env["PATH"] ?? ""),
-    OCTO_MANAGER_STATE: state,
-    XDG_CONFIG_HOME: configHome,
-    CODEX_HOME: codexHome,
-  };
-  delete environment["PROJECT_UPDATE_OPERATION_DIR"];
-  delete environment["PROJECT_UPDATE_RUN_ID"];
-  async function install(flag: string) {
-    const child = Bun.spawn(
-      [
-        runtime,
-        join(source, "scripts/install-local.js"),
-        "--home",
-        home,
-        "--codex",
-        flag,
-      ],
-      { env: environment, stdout: "pipe", stderr: "pipe" },
-    );
-    const stdout = await new Response(child.stdout).text(),
-      stderr = await new Response(child.stderr).text();
-    return { status: await child.exited, stdout, stderr };
-  }
   try {
     expect(await legacyRead()).toBe("{}");
     const staged = await install("--stage-only");
@@ -275,6 +329,116 @@ test("installer preserves legacy consumers and reports partial promotion after a
       await Promise.all(paths.map((path) => readFile(path, "utf8"))),
     ).toEqual(contents);
     expect(partial.stderr).toContain("install-backups");
+  } finally {
+    if (server.listening)
+      await new Promise<void>((done, reject) => {
+        server.close((error) => {
+          if (error === undefined) done();
+          else reject(error);
+        });
+      });
+    await rm(root, { recursive: true, force: true });
+  }
+}, 20000);
+
+test("installer freezes its staged identity and preserves the checkpointed owner when selection changes", async () => {
+  const fixture = await installerFixture(),
+    { root, state, environment, install } = fixture;
+  const frozen = "a".repeat(64),
+    changed = "b".repeat(64),
+    running = "c".repeat(64);
+  const operation = "11111111-2222-4333-8444-555555555555";
+  const target: ActivationTarget = {
+    target: "local",
+    expected_identity: running,
+    running_identity: running,
+    ready: false,
+    process: {
+      pid: process.pid,
+      start_identity: "retained-start",
+      native_id: "retained-owner",
+      owner_verified: true,
+    },
+    sessions: [],
+    scheduler_paused: true,
+    retirement_policy: "successful-exit",
+    stop_accepted: false,
+    checkpoint: { state: "confirmed", run_id: operation },
+  };
+  let stops = 0;
+  const server = createServer(
+    connectNodeAdapter({
+      routes: (router) => {
+        router.service(SchedulerService, {
+          getServerInfo() {
+            return { apiVersion: 2 };
+          },
+          runtimeLifecycle(request) {
+            if (request.action === LifecycleAction.STOP) stops++;
+            else if (request.action !== LifecycleAction.INVENTORY)
+              throw new Error("Unexpected fixture mutation");
+            return {
+              report: wireLifecycle({ schema_version: 1, targets: [target] }),
+            };
+          },
+        });
+      },
+    }),
+  );
+  try {
+    await new Promise<void>((done, reject) => {
+      server.once("error", reject);
+      server.listen(join(state, "run.sock"), () => {
+        server.off("error", reject);
+        done();
+      });
+    });
+    await chmod(join(state, "run.sock"), 0o600);
+    const directory = join(root, "operation"),
+      identities = join(root, "identities.json"),
+      manager = join(root, "manager.txt"),
+      mutations = join(root, "manager-mutations.log");
+    await mkdir(directory, { mode: 0o700 });
+    await writeFile(
+      join(directory, "octo-manager-inventory.json"),
+      JSON.stringify({ schema_version: 1, targets: [target] }),
+      { mode: 0o600 },
+    );
+    await writeFile(
+      identities,
+      JSON.stringify({ identities: [frozen, changed], index: 0 }),
+      { mode: 0o600 },
+    );
+    await writeFile(
+      manager,
+      process.platform === "darwin"
+        ? `state = running\npid = ${String(process.pid)}\n`
+        : `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid)}\n`,
+      { mode: 0o600 },
+    );
+    await writeFile(mutations, "", { mode: 0o600 });
+    environment["PROJECT_UPDATE_OPERATION_DIR"] = directory;
+    environment["PROJECT_UPDATE_RUN_ID"] = operation;
+    environment["OCTO_TEST_ARTIFACT_SEQUENCE"] = identities;
+    environment["OCTO_TEST_MANAGER_REPORT"] = manager;
+    environment["OCTO_TEST_MANAGER_MUTATIONS"] = mutations;
+    const outcome = await install();
+    assert.equal(outcome.status, 3, outcome.stderr);
+    const receipt: unknown = JSON.parse(outcome.stdout);
+    assert(record(receipt));
+    expect(receipt["expected_identity"]).toBe(frozen);
+    expect(receipt["started"]).toBe(false);
+    expect(stops).toBe(0);
+    expect(receipt["incomplete_activation"]).toBe(true);
+    expect(receipt["reason"]).toBe(
+      "native-selected-artifact-identity-changed-before-retirement",
+    );
+    const observed: unknown = JSON.parse(await readFile(identities, "utf8"));
+    assert(record(observed));
+    expect(observed["index"]).toBe(2);
+    expect(await readFile(mutations, "utf8")).toBe("");
+    expect(server.listening).toBe(true);
+    expect((await schedulerClient(state).getServerInfo({})).apiVersion).toBe(2);
   } finally {
     if (server.listening)
       await new Promise<void>((done, reject) => {

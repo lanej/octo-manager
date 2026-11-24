@@ -113,16 +113,31 @@ test("Linux service activation is explicit, native and reports unavailable-manag
     expect(definition.text).toContain(
       'Environment="CODEX_HOME=/fixture/codex"',
     );
-    const manual = await startService(definition, selected, false, run, false);
+    const manual = await startService(
+      definition,
+      selected,
+      false,
+      run,
+      false,
+      image,
+    );
     expect(manual.started).toBe(false);
     expect(manual.serviceManager).toBe("manual");
     expect(manual.manualCommand).toContain("serve");
     expect(calls).toHaveLength(0);
-    const noStart = await startService(definition, selected, true, run, true);
+    const noStart = await startService(
+      definition,
+      selected,
+      true,
+      run,
+      true,
+      image,
+    );
     expect(noStart.started).toBe(false);
     expect(calls).toHaveLength(0);
     expect(
-      (await startService(definition, selected, false, run, true)).started,
+      (await startService(definition, selected, false, run, true, image))
+        .started,
     ).toBe(true);
     expect(
       calls.filter((args) => args[0] === "systemctl").map((args) => args[2]),
@@ -145,6 +160,7 @@ test("Linux service activation is explicit, native and reports unavailable-manag
           throw new Error("Invalid unit");
         },
         true,
+        image,
       );
     } catch {
       failed = true;
@@ -193,6 +209,7 @@ test("launchd starts only an authoritatively absent service and confirms the exa
         return `state = running\npid = ${String(process.pid)}\n`;
       },
       true,
+      image,
     );
     expect(result.started).toBe(true);
     expect(
@@ -234,6 +251,7 @@ test("manual startup preserves the exact alternate installation environment", as
       false,
       () => "",
       false,
+      image,
     );
     if (result.manualCommand === undefined)
       throw new Error("No manual command");

@@ -322,6 +322,7 @@ async function main(): Promise<void> {
       values["no-start"] === true,
       (command, args) => run(command, args),
       available,
+      stagedRelease.expected_identity,
       binding,
     );
     console.log(

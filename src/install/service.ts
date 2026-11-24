@@ -100,6 +100,7 @@ export async function startService(
   noStart: boolean,
   run: ServiceRunner,
   managerAvailable: boolean,
+  expectedIdentity: string,
   binding?: CheckpointBinding,
 ): Promise<ServiceResult> {
   const result: ServiceResult = {
@@ -135,13 +136,16 @@ export async function startService(
       reason:
         "No user service manager is available; launcher and hooks are installed",
     };
-  const expectedIdentity = selectedServiceIdentity(input, run);
   const activation = await guardServiceReplacement(
     definition,
     input,
     run,
     binding,
   );
+  if (selectedServiceIdentity(input, run) !== expectedIdentity)
+    throw new IncompleteActivation(
+      "native-selected-artifact-identity-changed-before-retirement",
+    );
   if (activation === "checkpointed") {
     if (binding === undefined)
       throw new Error("Checkpoint binding missing after owner guard");
