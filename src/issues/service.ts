@@ -13,6 +13,7 @@ import {
   type IssuePolicy,
   type Assignment,
   type StageResult,
+  type TrackerObservation,
 } from "./contracts.js";
 import type {
   IssueTracker,
@@ -23,6 +24,13 @@ import type {
 import { IssueStore } from "./store.js";
 import { applyResult, canImplement } from "./decisions.js";
 import { assignmentPrompt, assignmentLabel } from "./prompts.js";
+class TrackerRefreshFailure extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : "Tracker unavailable", {
+      cause,
+    });
+  }
+}
 export interface IssueOptions {
   trackers: IssueTracker[];
   dispatchers: AgentDispatcher[];
@@ -591,16 +599,41 @@ export class IssueService {
     }
   }
   private async refresh(issue: IssueRecord): Promise<IssueRecord> {
-    const observed = await this.tracker(issue).observe(
-      issue.ref,
-      AbortSignal.any([this.abort.signal, AbortSignal.timeout(30000)]),
-    );
-    issue = this.store.get(issue.id);
-    if (terminal(issue.stage)) return issue;
-    if (!observed.complete)
-      throw new Error(
-        "Incomplete issue comment evidence; retaining previous lifecycle",
+    let observed: TrackerObservation;
+    try {
+      observed = await this.tracker(issue).observe(
+        issue.ref,
+        AbortSignal.any([this.abort.signal, AbortSignal.timeout(30000)]),
       );
+    } catch (error) {
+      if (this.abort.signal.aborted) throw error;
+      const current = this.store.get(issue.id);
+      if (
+        terminal(current.stage) &&
+        (current.assignmentId !== "" ||
+          !this.store.subscriptions.observesSource(current))
+      )
+        return current;
+      this.store.subscriptions.failure(
+        current,
+        error instanceof Error ? error.message : "Tracker unavailable",
+      );
+      throw new TrackerRefreshFailure(error);
+    }
+    issue = this.store.get(issue.id);
+    if (
+      terminal(issue.stage) &&
+      (issue.assignmentId !== "" ||
+        !this.store.subscriptions.observesSource(issue))
+    )
+      return issue;
+    if (!observed.complete) {
+      if (this.abort.signal.aborted) return issue;
+      const detail =
+        "Incomplete issue comment evidence; retaining previous lifecycle";
+      this.store.subscriptions.failure(issue, detail);
+      throw new TrackerRefreshFailure(new Error(detail));
+    }
     const ownPosts = this.store.ownPosts(issue.id);
     const comments = observed.comments.filter(
       (comment) =>
@@ -608,6 +641,22 @@ export class IssueService {
           (post) => post.url === comment.url && post.body === comment.body,
         ),
     );
+    if (terminal(issue.stage)) {
+      const next = {
+        ...issue,
+        // Terminal execution input still fences retained effects; observation belongs to its separate baseline.
+        nextAt: this.now() + 900000,
+      };
+      this.store.atomic(() => {
+        this.store.subscriptions.observe(next, observed);
+        this.store.save(
+          next,
+          "observed",
+          "Subscribed terminal issue observation retained without execution",
+        );
+      });
+      return next;
+    }
     const changed = comments.filter(
       (comment) =>
         !issue.reviewedComments.includes(`${comment.id}:${comment.revision}`),
@@ -657,19 +706,46 @@ export class IssueService {
       nextAt: this.now() + interval,
       pollIntervalMs: interval,
     };
-    this.store.save(
-      next,
-      "observed",
-      hasNew
-        ? "New issue input requires assessment"
-        : "Tracker observation retained",
-    );
+    this.store.atomic(() => {
+      this.store.subscriptions.observe(next, observed);
+      this.store.save(
+        next,
+        "observed",
+        hasNew
+          ? "New issue input requires assessment"
+          : "Tracker observation retained",
+      );
+    });
     return next;
   }
   private async run(): Promise<void> {
+    let sourceIssueIds: ReadonlySet<string> | undefined;
     for (const original of this.store.list()) {
       let issue = original;
-      if (terminal(issue.stage) && issue.assignmentId === "") continue;
+      if (terminal(issue.stage) && issue.assignmentId === "") {
+        if (
+          issue.nextAt <= this.now() &&
+          (sourceIssueIds ??= this.store.subscriptions.sourceIssueIds()).has(
+            issue.id,
+          ) &&
+          this.store.subscriptions.observesSource(issue)
+        ) {
+          try {
+            await this.refresh(issue);
+          } catch (error) {
+            if (this.abort.signal.aborted) return;
+            const current = this.store.get(issue.id);
+            this.store.save(
+              { ...current, nextAt: this.now() + 900000 },
+              "subscription_refresh_failed",
+              error instanceof Error
+                ? error.message
+                : "Subscribed tracker read unavailable",
+            );
+          }
+        }
+        continue;
+      }
       if (
         issue.waiting === Waiting.Blocked &&
         issue.assignmentId === "" &&
@@ -679,6 +755,7 @@ export class IssueService {
       try {
         if (!terminal(issue.stage) && issue.nextAt <= this.now())
           issue = await this.refresh(issue);
+        if (terminal(issue.stage) && issue.assignmentId === "") continue;
         const policy = this.options.policy(issue.root);
         if (policy.hash !== issue.policyHash) {
           issue = {
@@ -801,6 +878,18 @@ export class IssueService {
       } catch (error) {
         if (this.abort.signal.aborted) return;
         const current = this.store.get(issue.id);
+        if (error instanceof TrackerRefreshFailure && terminal(current.stage)) {
+          if (
+            current.assignmentId === "" &&
+            this.store.subscriptions.observesSource(current)
+          )
+            this.store.save(
+              { ...current, nextAt: this.now() + 900000 },
+              "subscription_refresh_failed",
+              error.message,
+            );
+          continue;
+        }
         const detail =
           error instanceof Error
             ? error.message
@@ -814,7 +903,9 @@ export class IssueService {
               epoch: current.epoch + 1,
               detail,
             },
-            "blocked",
+            error instanceof TrackerRefreshFailure
+              ? "refresh_failed"
+              : "blocked",
             detail,
           );
         const assignment = this.store

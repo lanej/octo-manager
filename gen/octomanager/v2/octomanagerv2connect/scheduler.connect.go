@@ -48,6 +48,12 @@ const (
 	// SchedulerServiceUpdateIssueProcedure is the fully-qualified name of the SchedulerService's
 	// UpdateIssue RPC.
 	SchedulerServiceUpdateIssueProcedure = "/octomanager.v2.SchedulerService/UpdateIssue"
+	// SchedulerServiceSetIssueSubscriptionProcedure is the fully-qualified name of the
+	// SchedulerService's SetIssueSubscription RPC.
+	SchedulerServiceSetIssueSubscriptionProcedure = "/octomanager.v2.SchedulerService/SetIssueSubscription"
+	// SchedulerServiceListIssueSubscriptionsProcedure is the fully-qualified name of the
+	// SchedulerService's ListIssueSubscriptions RPC.
+	SchedulerServiceListIssueSubscriptionsProcedure = "/octomanager.v2.SchedulerService/ListIssueSubscriptions"
 	// SchedulerServiceGetServerInfoProcedure is the fully-qualified name of the SchedulerService's
 	// GetServerInfo RPC.
 	SchedulerServiceGetServerInfoProcedure = "/octomanager.v2.SchedulerService/GetServerInfo"
@@ -243,6 +249,10 @@ type SchedulerServiceClient interface {
 	GetIssue(context.Context, *connect.Request[v2.GetIssueRequest]) (*connect.Response[v2.GetIssueResponse], error)
 	// Records approvals, answers, and lifecycle controls.
 	UpdateIssue(context.Context, *connect.Request[v2.UpdateIssueRequest]) (*connect.Response[v2.UpdateIssueResponse], error)
+	// SetIssueSubscription changes only one subscriber's delivery selection.
+	SetIssueSubscription(context.Context, *connect.Request[v2.SetIssueSubscriptionRequest]) (*connect.Response[v2.SetIssueSubscriptionResponse], error)
+	// ListIssueSubscriptions reads effective issue delivery selections.
+	ListIssueSubscriptions(context.Context, *connect.Request[v2.ListIssueSubscriptionsRequest]) (*connect.Response[v2.ListIssueSubscriptionsResponse], error)
 	// Reports the wire API version before clients perform coordinator operations.
 	GetServerInfo(context.Context, *connect.Request[v2.GetServerInfoRequest]) (*connect.Response[v2.GetServerInfoResponse], error)
 	// Sets an owner-authorized per-PR automatic merge override.
@@ -406,6 +416,18 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+SchedulerServiceUpdateIssueProcedure,
 			connect.WithSchema(schedulerServiceMethods.ByName("UpdateIssue")),
+			connect.WithClientOptions(opts...),
+		),
+		setIssueSubscription: connect.NewClient[v2.SetIssueSubscriptionRequest, v2.SetIssueSubscriptionResponse](
+			httpClient,
+			baseURL+SchedulerServiceSetIssueSubscriptionProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("SetIssueSubscription")),
+			connect.WithClientOptions(opts...),
+		),
+		listIssueSubscriptions: connect.NewClient[v2.ListIssueSubscriptionsRequest, v2.ListIssueSubscriptionsResponse](
+			httpClient,
+			baseURL+SchedulerServiceListIssueSubscriptionsProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("ListIssueSubscriptions")),
 			connect.WithClientOptions(opts...),
 		),
 		getServerInfo: connect.NewClient[v2.GetServerInfoRequest, v2.GetServerInfoResponse](
@@ -784,6 +806,8 @@ type schedulerServiceClient struct {
 	listIssues                     *connect.Client[v2.ListIssuesRequest, v2.ListIssuesResponse]
 	getIssue                       *connect.Client[v2.GetIssueRequest, v2.GetIssueResponse]
 	updateIssue                    *connect.Client[v2.UpdateIssueRequest, v2.UpdateIssueResponse]
+	setIssueSubscription           *connect.Client[v2.SetIssueSubscriptionRequest, v2.SetIssueSubscriptionResponse]
+	listIssueSubscriptions         *connect.Client[v2.ListIssueSubscriptionsRequest, v2.ListIssueSubscriptionsResponse]
 	getServerInfo                  *connect.Client[v2.GetServerInfoRequest, v2.GetServerInfoResponse]
 	setAutoMerge                   *connect.Client[v2.SetAutoMergeRequest, v2.SetAutoMergeResponse]
 	queueMergeChain                *connect.Client[v2.QueueMergeChainRequest, v2.QueueMergeChainResponse]
@@ -870,6 +894,16 @@ func (c *schedulerServiceClient) GetIssue(ctx context.Context, req *connect.Requ
 // UpdateIssue calls octomanager.v2.SchedulerService.UpdateIssue.
 func (c *schedulerServiceClient) UpdateIssue(ctx context.Context, req *connect.Request[v2.UpdateIssueRequest]) (*connect.Response[v2.UpdateIssueResponse], error) {
 	return c.updateIssue.CallUnary(ctx, req)
+}
+
+// SetIssueSubscription calls octomanager.v2.SchedulerService.SetIssueSubscription.
+func (c *schedulerServiceClient) SetIssueSubscription(ctx context.Context, req *connect.Request[v2.SetIssueSubscriptionRequest]) (*connect.Response[v2.SetIssueSubscriptionResponse], error) {
+	return c.setIssueSubscription.CallUnary(ctx, req)
+}
+
+// ListIssueSubscriptions calls octomanager.v2.SchedulerService.ListIssueSubscriptions.
+func (c *schedulerServiceClient) ListIssueSubscriptions(ctx context.Context, req *connect.Request[v2.ListIssueSubscriptionsRequest]) (*connect.Response[v2.ListIssueSubscriptionsResponse], error) {
+	return c.listIssueSubscriptions.CallUnary(ctx, req)
 }
 
 // GetServerInfo calls octomanager.v2.SchedulerService.GetServerInfo.
@@ -1190,6 +1224,10 @@ type SchedulerServiceHandler interface {
 	GetIssue(context.Context, *connect.Request[v2.GetIssueRequest]) (*connect.Response[v2.GetIssueResponse], error)
 	// Records approvals, answers, and lifecycle controls.
 	UpdateIssue(context.Context, *connect.Request[v2.UpdateIssueRequest]) (*connect.Response[v2.UpdateIssueResponse], error)
+	// SetIssueSubscription changes only one subscriber's delivery selection.
+	SetIssueSubscription(context.Context, *connect.Request[v2.SetIssueSubscriptionRequest]) (*connect.Response[v2.SetIssueSubscriptionResponse], error)
+	// ListIssueSubscriptions reads effective issue delivery selections.
+	ListIssueSubscriptions(context.Context, *connect.Request[v2.ListIssueSubscriptionsRequest]) (*connect.Response[v2.ListIssueSubscriptionsResponse], error)
 	// Reports the wire API version before clients perform coordinator operations.
 	GetServerInfo(context.Context, *connect.Request[v2.GetServerInfoRequest]) (*connect.Response[v2.GetServerInfoResponse], error)
 	// Sets an owner-authorized per-PR automatic merge override.
@@ -1349,6 +1387,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 		SchedulerServiceUpdateIssueProcedure,
 		svc.UpdateIssue,
 		connect.WithSchema(schedulerServiceMethods.ByName("UpdateIssue")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceSetIssueSubscriptionHandler := connect.NewUnaryHandler(
+		SchedulerServiceSetIssueSubscriptionProcedure,
+		svc.SetIssueSubscription,
+		connect.WithSchema(schedulerServiceMethods.ByName("SetIssueSubscription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceListIssueSubscriptionsHandler := connect.NewUnaryHandler(
+		SchedulerServiceListIssueSubscriptionsProcedure,
+		svc.ListIssueSubscriptions,
+		connect.WithSchema(schedulerServiceMethods.ByName("ListIssueSubscriptions")),
 		connect.WithHandlerOptions(opts...),
 	)
 	schedulerServiceGetServerInfoHandler := connect.NewUnaryHandler(
@@ -1729,6 +1779,10 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 			schedulerServiceGetIssueHandler.ServeHTTP(w, r)
 		case SchedulerServiceUpdateIssueProcedure:
 			schedulerServiceUpdateIssueHandler.ServeHTTP(w, r)
+		case SchedulerServiceSetIssueSubscriptionProcedure:
+			schedulerServiceSetIssueSubscriptionHandler.ServeHTTP(w, r)
+		case SchedulerServiceListIssueSubscriptionsProcedure:
+			schedulerServiceListIssueSubscriptionsHandler.ServeHTTP(w, r)
 		case SchedulerServiceGetServerInfoProcedure:
 			schedulerServiceGetServerInfoHandler.ServeHTTP(w, r)
 		case SchedulerServiceSetAutoMergeProcedure:
@@ -1878,6 +1932,14 @@ func (UnimplementedSchedulerServiceHandler) GetIssue(context.Context, *connect.R
 
 func (UnimplementedSchedulerServiceHandler) UpdateIssue(context.Context, *connect.Request[v2.UpdateIssueRequest]) (*connect.Response[v2.UpdateIssueResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.UpdateIssue is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) SetIssueSubscription(context.Context, *connect.Request[v2.SetIssueSubscriptionRequest]) (*connect.Response[v2.SetIssueSubscriptionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.SetIssueSubscription is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) ListIssueSubscriptions(context.Context, *connect.Request[v2.ListIssueSubscriptionsRequest]) (*connect.Response[v2.ListIssueSubscriptionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.ListIssueSubscriptions is not implemented"))
 }
 
 func (UnimplementedSchedulerServiceHandler) GetServerInfo(context.Context, *connect.Request[v2.GetServerInfoRequest]) (*connect.Response[v2.GetServerInfoResponse], error) {

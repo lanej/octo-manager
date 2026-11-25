@@ -1008,11 +1008,16 @@ func (x *NotificationMergeItem) GetDetail() *DomainMergeEntry {
 
 // NotificationIssueItem identifies an issue without forwarding its title or discussion by default.
 type NotificationIssueItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
-	Stage         IssueStage             `protobuf:"varint,2,opt,name=stage,proto3,enum=octomanager.v2.IssueStage" json:"stage,omitempty"`
-	Waiting       IssueWaiting           `protobuf:"varint,3,opt,name=waiting,proto3,enum=octomanager.v2.IssueWaiting" json:"waiting,omitempty"`
-	Detail        *ManagedIssue          `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	IssueId string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	Stage   IssueStage             `protobuf:"varint,2,opt,name=stage,proto3,enum=octomanager.v2.IssueStage" json:"stage,omitempty"`
+	Waiting IssueWaiting           `protobuf:"varint,3,opt,name=waiting,proto3,enum=octomanager.v2.IssueWaiting" json:"waiting,omitempty"`
+	Detail  *ManagedIssue          `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	// Event metadata is fixed when the observed change is recorded.
+	EventKind IssueNotificationEventKind `protobuf:"varint,5,opt,name=event_kind,json=eventKind,proto3,enum=octomanager.v2.IssueNotificationEventKind" json:"event_kind,omitempty"`
+	EventId   string                     `protobuf:"bytes,6,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	// Untrusted bounded evidence is included only on explicit full inspection.
+	Evidence      *IssueNotificationEvidence `protobuf:"bytes,7,opt,name=evidence,proto3" json:"evidence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1071,6 +1076,27 @@ func (x *NotificationIssueItem) GetWaiting() IssueWaiting {
 func (x *NotificationIssueItem) GetDetail() *ManagedIssue {
 	if x != nil {
 		return x.Detail
+	}
+	return nil
+}
+
+func (x *NotificationIssueItem) GetEventKind() IssueNotificationEventKind {
+	if x != nil {
+		return x.EventKind
+	}
+	return IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED
+}
+
+func (x *NotificationIssueItem) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *NotificationIssueItem) GetEvidence() *IssueNotificationEvidence {
+	if x != nil {
+		return x.Evidence
 	}
 	return nil
 }
@@ -1783,12 +1809,16 @@ const file_octomanager_v2_notifications_proto_rawDesc = "" +
 	"\bentry_id\x18\x01 \x01(\tR\aentryId\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\tR\achainId\x12;\n" +
 	"\x05state\x18\x03 \x01(\x0e2%.octomanager.v2.DomainMergeEntryStateR\x05state\x128\n" +
-	"\x06detail\x18\x04 \x01(\v2 .octomanager.v2.DomainMergeEntryR\x06detail\"\xd2\x01\n" +
+	"\x06detail\x18\x04 \x01(\v2 .octomanager.v2.DomainMergeEntryR\x06detail\"\xff\x02\n" +
 	"\x15NotificationIssueItem\x12\x19\n" +
 	"\bissue_id\x18\x01 \x01(\tR\aissueId\x120\n" +
 	"\x05stage\x18\x02 \x01(\x0e2\x1a.octomanager.v2.IssueStageR\x05stage\x126\n" +
 	"\awaiting\x18\x03 \x01(\x0e2\x1c.octomanager.v2.IssueWaitingR\awaiting\x124\n" +
-	"\x06detail\x18\x04 \x01(\v2\x1c.octomanager.v2.ManagedIssueR\x06detail\"\xc8\x01\n" +
+	"\x06detail\x18\x04 \x01(\v2\x1c.octomanager.v2.ManagedIssueR\x06detail\x12I\n" +
+	"\n" +
+	"event_kind\x18\x05 \x01(\x0e2*.octomanager.v2.IssueNotificationEventKindR\teventKind\x12\x19\n" +
+	"\bevent_id\x18\x06 \x01(\tR\aeventId\x12E\n" +
+	"\bevidence\x18\a \x01(\v2).octomanager.v2.IssueNotificationEvidenceR\bevidence\"\xc8\x01\n" +
 	"\x1aNotificationSubmissionItem\x12#\n" +
 	"\rsubmission_id\x18\x01 \x01(\tR\fsubmissionId\x12C\n" +
 	"\x05state\x18\x02 \x01(\x0e2-.octomanager.v2.DomainArchivedSubmissionStateR\x05state\x12@\n" +
@@ -1884,10 +1914,12 @@ var file_octomanager_v2_notifications_proto_goTypes = []any{
 	(IssueStage)(0),                                // 34: octomanager.v2.IssueStage
 	(IssueWaiting)(0),                              // 35: octomanager.v2.IssueWaiting
 	(*ManagedIssue)(nil),                           // 36: octomanager.v2.ManagedIssue
-	(DomainArchivedSubmissionState)(0),             // 37: octomanager.v2.DomainArchivedSubmissionState
-	(*DomainArchivedSubmission)(nil),               // 38: octomanager.v2.DomainArchivedSubmission
-	(*PRParticipant)(nil),                          // 39: octomanager.v2.PRParticipant
-	(*DomainPRReference)(nil),                      // 40: octomanager.v2.DomainPRReference
+	(IssueNotificationEventKind)(0),                // 37: octomanager.v2.IssueNotificationEventKind
+	(*IssueNotificationEvidence)(nil),              // 38: octomanager.v2.IssueNotificationEvidence
+	(DomainArchivedSubmissionState)(0),             // 39: octomanager.v2.DomainArchivedSubmissionState
+	(*DomainArchivedSubmission)(nil),               // 40: octomanager.v2.DomainArchivedSubmission
+	(*PRParticipant)(nil),                          // 41: octomanager.v2.PRParticipant
+	(*DomainPRReference)(nil),                      // 42: octomanager.v2.DomainPRReference
 }
 var file_octomanager_v2_notifications_proto_depIdxs = []int32{
 	25, // 0: octomanager.v2.GetAgentDigestResponse.inspection:type_name -> octomanager.v2.DomainDigestInspection
@@ -1911,22 +1943,24 @@ var file_octomanager_v2_notifications_proto_depIdxs = []int32{
 	34, // 18: octomanager.v2.NotificationIssueItem.stage:type_name -> octomanager.v2.IssueStage
 	35, // 19: octomanager.v2.NotificationIssueItem.waiting:type_name -> octomanager.v2.IssueWaiting
 	36, // 20: octomanager.v2.NotificationIssueItem.detail:type_name -> octomanager.v2.ManagedIssue
-	37, // 21: octomanager.v2.NotificationSubmissionItem.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
-	38, // 22: octomanager.v2.NotificationSubmissionItem.detail:type_name -> octomanager.v2.DomainArchivedSubmission
-	39, // 23: octomanager.v2.NotificationParticipantsItem.detail:type_name -> octomanager.v2.PRParticipant
-	40, // 24: octomanager.v2.NotificationReferenceItem.detail:type_name -> octomanager.v2.DomainPRReference
-	0,  // 25: octomanager.v2.NotificationUnavailableItem.reason:type_name -> octomanager.v2.NotificationUnavailableReason
-	10, // 26: octomanager.v2.GetNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
-	27, // 27: octomanager.v2.AcknowledgeNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	10, // 28: octomanager.v2.AcknowledgeNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
-	27, // 29: octomanager.v2.ReadNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
-	10, // 30: octomanager.v2.ReadNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
-	23, // 31: octomanager.v2.ReadNotificationMessageResponse.instructions:type_name -> octomanager.v2.NotificationReadInstructions
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	37, // 21: octomanager.v2.NotificationIssueItem.event_kind:type_name -> octomanager.v2.IssueNotificationEventKind
+	38, // 22: octomanager.v2.NotificationIssueItem.evidence:type_name -> octomanager.v2.IssueNotificationEvidence
+	39, // 23: octomanager.v2.NotificationSubmissionItem.state:type_name -> octomanager.v2.DomainArchivedSubmissionState
+	40, // 24: octomanager.v2.NotificationSubmissionItem.detail:type_name -> octomanager.v2.DomainArchivedSubmission
+	41, // 25: octomanager.v2.NotificationParticipantsItem.detail:type_name -> octomanager.v2.PRParticipant
+	42, // 26: octomanager.v2.NotificationReferenceItem.detail:type_name -> octomanager.v2.DomainPRReference
+	0,  // 27: octomanager.v2.NotificationUnavailableItem.reason:type_name -> octomanager.v2.NotificationUnavailableReason
+	10, // 28: octomanager.v2.GetNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	27, // 29: octomanager.v2.AcknowledgeNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	10, // 30: octomanager.v2.AcknowledgeNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	27, // 31: octomanager.v2.ReadNotificationMessageRequest.agent_target:type_name -> octomanager.v2.AgentTarget
+	10, // 32: octomanager.v2.ReadNotificationMessageResponse.message:type_name -> octomanager.v2.NotificationMessage
+	23, // 33: octomanager.v2.ReadNotificationMessageResponse.instructions:type_name -> octomanager.v2.NotificationReadInstructions
+	34, // [34:34] is the sub-list for method output_type
+	34, // [34:34] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_notifications_proto_init() }

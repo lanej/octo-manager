@@ -216,6 +216,74 @@ func (IssueOperation) EnumDescriptor() ([]byte, []int) {
 	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{2}
 }
 
+// IssueNotificationEventKind separates source changes from coordinator progress.
+type IssueNotificationEventKind int32
+
+const (
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED      IssueNotificationEventKind = 0
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_TITLE            IssueNotificationEventKind = 1
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION      IssueNotificationEventKind = 2
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_COMMENT          IssueNotificationEventKind = 3
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_CLOSED           IssueNotificationEventKind = 4
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_REOPENED         IssueNotificationEventKind = 5
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR      IssueNotificationEventKind = 6
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE  IssueNotificationEventKind = 7
+	IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY IssueNotificationEventKind = 8
+)
+
+// Enum value maps for IssueNotificationEventKind.
+var (
+	IssueNotificationEventKind_name = map[int32]string{
+		0: "ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED",
+		1: "ISSUE_NOTIFICATION_EVENT_KIND_TITLE",
+		2: "ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION",
+		3: "ISSUE_NOTIFICATION_EVENT_KIND_COMMENT",
+		4: "ISSUE_NOTIFICATION_EVENT_KIND_CLOSED",
+		5: "ISSUE_NOTIFICATION_EVENT_KIND_REOPENED",
+		6: "ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR",
+		7: "ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE",
+		8: "ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY",
+	}
+	IssueNotificationEventKind_value = map[string]int32{
+		"ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED":      0,
+		"ISSUE_NOTIFICATION_EVENT_KIND_TITLE":            1,
+		"ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION":      2,
+		"ISSUE_NOTIFICATION_EVENT_KIND_COMMENT":          3,
+		"ISSUE_NOTIFICATION_EVENT_KIND_CLOSED":           4,
+		"ISSUE_NOTIFICATION_EVENT_KIND_REOPENED":         5,
+		"ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR":      6,
+		"ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE":  7,
+		"ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY": 8,
+	}
+)
+
+func (x IssueNotificationEventKind) Enum() *IssueNotificationEventKind {
+	p := new(IssueNotificationEventKind)
+	*p = x
+	return p
+}
+
+func (x IssueNotificationEventKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (IssueNotificationEventKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_octomanager_v2_issues_proto_enumTypes[3].Descriptor()
+}
+
+func (IssueNotificationEventKind) Type() protoreflect.EnumType {
+	return &file_octomanager_v2_issues_proto_enumTypes[3]
+}
+
+func (x IssueNotificationEventKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use IssueNotificationEventKind.Descriptor instead.
+func (IssueNotificationEventKind) EnumDescriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{3}
+}
+
 // IssueReference retains provider-qualified identity.
 type IssueReference struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1270,6 +1338,476 @@ func (x *IssueEffect) GetUrl() string {
 	return ""
 }
 
+// IssueEventFilter is present even for an explicit empty selection (mute).
+type IssueEventFilter struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Events        []IssueNotificationEventKind `protobuf:"varint,1,rep,packed,name=events,proto3,enum=octomanager.v2.IssueNotificationEventKind" json:"events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueEventFilter) Reset() {
+	*x = IssueEventFilter{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueEventFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueEventFilter) ProtoMessage() {}
+
+func (x *IssueEventFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueEventFilter.ProtoReflect.Descriptor instead.
+func (*IssueEventFilter) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *IssueEventFilter) GetEvents() []IssueNotificationEventKind {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+// IssueSubscription reports effective preferences; explicit is false for the legacy default.
+type IssueSubscription struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	IssueId       string                       `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	AgentId       string                       `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Explicit      bool                         `protobuf:"varint,3,opt,name=explicit,proto3" json:"explicit,omitempty"`
+	Events        []IssueNotificationEventKind `protobuf:"varint,4,rep,packed,name=events,proto3,enum=octomanager.v2.IssueNotificationEventKind" json:"events,omitempty"`
+	Mode          string                       `protobuf:"bytes,5,opt,name=mode,proto3" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueSubscription) Reset() {
+	*x = IssueSubscription{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueSubscription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueSubscription) ProtoMessage() {}
+
+func (x *IssueSubscription) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueSubscription.ProtoReflect.Descriptor instead.
+func (*IssueSubscription) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *IssueSubscription) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *IssueSubscription) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *IssueSubscription) GetExplicit() bool {
+	if x != nil {
+		return x.Explicit
+	}
+	return false
+}
+
+func (x *IssueSubscription) GetEvents() []IssueNotificationEventKind {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+func (x *IssueSubscription) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+// SetIssueSubscriptionRequest changes delivery only; an absent filter resets the legacy coordinator/refresh-status default.
+// A present filter with no events mutes this subscriber without changing enrollment or execution authority.
+type SetIssueSubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Filter        *IssueEventFilter      `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetIssueSubscriptionRequest) Reset() {
+	*x = SetIssueSubscriptionRequest{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetIssueSubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetIssueSubscriptionRequest) ProtoMessage() {}
+
+func (x *SetIssueSubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetIssueSubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*SetIssueSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SetIssueSubscriptionRequest) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *SetIssueSubscriptionRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *SetIssueSubscriptionRequest) GetFilter() *IssueEventFilter {
+	if x != nil {
+		return x.Filter
+	}
+	return nil
+}
+
+// ListIssueSubscriptionsRequest identifies an already enrolled issue.
+type ListIssueSubscriptionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListIssueSubscriptionsRequest) Reset() {
+	*x = ListIssueSubscriptionsRequest{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListIssueSubscriptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListIssueSubscriptionsRequest) ProtoMessage() {}
+
+func (x *ListIssueSubscriptionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListIssueSubscriptionsRequest.ProtoReflect.Descriptor instead.
+func (*ListIssueSubscriptionsRequest) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListIssueSubscriptionsRequest) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+// SetIssueSubscriptionResponse returns effective delivery selections after an update.
+type SetIssueSubscriptionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Subscriptions []*IssueSubscription   `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetIssueSubscriptionResponse) Reset() {
+	*x = SetIssueSubscriptionResponse{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetIssueSubscriptionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetIssueSubscriptionResponse) ProtoMessage() {}
+
+func (x *SetIssueSubscriptionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetIssueSubscriptionResponse.ProtoReflect.Descriptor instead.
+func (*SetIssueSubscriptionResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SetIssueSubscriptionResponse) GetSubscriptions() []*IssueSubscription {
+	if x != nil {
+		return x.Subscriptions
+	}
+	return nil
+}
+
+// IssueNotificationEvidence retains the bounded observed change, not current issue content.
+type IssueNotificationEvidence struct {
+	state    protoimpl.MessageState     `protogen:"open.v1"`
+	Id       string                     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	IssueId  string                     `protobuf:"bytes,2,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	Kind     IssueNotificationEventKind `protobuf:"varint,3,opt,name=kind,proto3,enum=octomanager.v2.IssueNotificationEventKind" json:"kind,omitempty"`
+	Revision string                     `protobuf:"bytes,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	// Before and after are bounded untrusted producer content, never automatic notification instructions.
+	Before          string `protobuf:"bytes,5,opt,name=before,proto3" json:"before,omitempty"`
+	After           string `protobuf:"bytes,6,opt,name=after,proto3" json:"after,omitempty"`
+	CommentId       string `protobuf:"bytes,7,opt,name=comment_id,json=commentId,proto3" json:"comment_id,omitempty"`
+	CommentRevision string `protobuf:"bytes,8,opt,name=comment_revision,json=commentRevision,proto3" json:"comment_revision,omitempty"`
+	Url             string `protobuf:"bytes,9,opt,name=url,proto3" json:"url,omitempty"`
+	AtMs            uint64 `protobuf:"varint,10,opt,name=at_ms,json=atMs,proto3" json:"at_ms,omitempty"`
+	BeforeTruncated bool   `protobuf:"varint,11,opt,name=before_truncated,json=beforeTruncated,proto3" json:"before_truncated,omitempty"`
+	AfterTruncated  bool   `protobuf:"varint,12,opt,name=after_truncated,json=afterTruncated,proto3" json:"after_truncated,omitempty"`
+	// Digests identify full observed strings even when the excerpts are truncated.
+	BeforeDigest  string `protobuf:"bytes,13,opt,name=before_digest,json=beforeDigest,proto3" json:"before_digest,omitempty"`
+	AfterDigest   string `protobuf:"bytes,14,opt,name=after_digest,json=afterDigest,proto3" json:"after_digest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueNotificationEvidence) Reset() {
+	*x = IssueNotificationEvidence{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueNotificationEvidence) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueNotificationEvidence) ProtoMessage() {}
+
+func (x *IssueNotificationEvidence) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueNotificationEvidence.ProtoReflect.Descriptor instead.
+func (*IssueNotificationEvidence) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *IssueNotificationEvidence) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetKind() IssueNotificationEventKind {
+	if x != nil {
+		return x.Kind
+	}
+	return IssueNotificationEventKind_ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED
+}
+
+func (x *IssueNotificationEvidence) GetRevision() string {
+	if x != nil {
+		return x.Revision
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetBefore() string {
+	if x != nil {
+		return x.Before
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetAfter() string {
+	if x != nil {
+		return x.After
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetCommentId() string {
+	if x != nil {
+		return x.CommentId
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetCommentRevision() string {
+	if x != nil {
+		return x.CommentRevision
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetAtMs() uint64 {
+	if x != nil {
+		return x.AtMs
+	}
+	return 0
+}
+
+func (x *IssueNotificationEvidence) GetBeforeTruncated() bool {
+	if x != nil {
+		return x.BeforeTruncated
+	}
+	return false
+}
+
+func (x *IssueNotificationEvidence) GetAfterTruncated() bool {
+	if x != nil {
+		return x.AfterTruncated
+	}
+	return false
+}
+
+func (x *IssueNotificationEvidence) GetBeforeDigest() string {
+	if x != nil {
+		return x.BeforeDigest
+	}
+	return ""
+}
+
+func (x *IssueNotificationEvidence) GetAfterDigest() string {
+	if x != nil {
+		return x.AfterDigest
+	}
+	return ""
+}
+
+// ListIssueSubscriptionsResponse returns the implicit owner and explicit subscribers.
+type ListIssueSubscriptionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Subscriptions []*IssueSubscription   `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListIssueSubscriptionsResponse) Reset() {
+	*x = ListIssueSubscriptionsResponse{}
+	mi := &file_octomanager_v2_issues_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListIssueSubscriptionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListIssueSubscriptionsResponse) ProtoMessage() {}
+
+func (x *ListIssueSubscriptionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_octomanager_v2_issues_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListIssueSubscriptionsResponse.ProtoReflect.Descriptor instead.
+func (*ListIssueSubscriptionsResponse) Descriptor() ([]byte, []int) {
+	return file_octomanager_v2_issues_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ListIssueSubscriptionsResponse) GetSubscriptions() []*IssueSubscription {
+	if x != nil {
+		return x.Subscriptions
+	}
+	return nil
+}
+
 var File_octomanager_v2_issues_proto protoreflect.FileDescriptor
 
 const file_octomanager_v2_issues_proto_rawDesc = "" +
@@ -1366,7 +1904,42 @@ const file_octomanager_v2_issues_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x14\n" +
 	"\x05state\x18\x03 \x01(\tR\x05state\x12\x10\n" +
-	"\x03url\x18\x04 \x01(\tR\x03url*\xff\x01\n" +
+	"\x03url\x18\x04 \x01(\tR\x03url\"V\n" +
+	"\x10IssueEventFilter\x12B\n" +
+	"\x06events\x18\x01 \x03(\x0e2*.octomanager.v2.IssueNotificationEventKindR\x06events\"\xbd\x01\n" +
+	"\x11IssueSubscription\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12\x1a\n" +
+	"\bexplicit\x18\x03 \x01(\bR\bexplicit\x12B\n" +
+	"\x06events\x18\x04 \x03(\x0e2*.octomanager.v2.IssueNotificationEventKindR\x06events\x12\x12\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\"\x8d\x01\n" +
+	"\x1bSetIssueSubscriptionRequest\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x128\n" +
+	"\x06filter\x18\x03 \x01(\v2 .octomanager.v2.IssueEventFilterR\x06filter\":\n" +
+	"\x1dListIssueSubscriptionsRequest\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\"g\n" +
+	"\x1cSetIssueSubscriptionResponse\x12G\n" +
+	"\rsubscriptions\x18\x01 \x03(\v2!.octomanager.v2.IssueSubscriptionR\rsubscriptions\"\xdd\x03\n" +
+	"\x19IssueNotificationEvidence\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bissue_id\x18\x02 \x01(\tR\aissueId\x12>\n" +
+	"\x04kind\x18\x03 \x01(\x0e2*.octomanager.v2.IssueNotificationEventKindR\x04kind\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\tR\brevision\x12\x16\n" +
+	"\x06before\x18\x05 \x01(\tR\x06before\x12\x14\n" +
+	"\x05after\x18\x06 \x01(\tR\x05after\x12\x1d\n" +
+	"\n" +
+	"comment_id\x18\a \x01(\tR\tcommentId\x12)\n" +
+	"\x10comment_revision\x18\b \x01(\tR\x0fcommentRevision\x12\x10\n" +
+	"\x03url\x18\t \x01(\tR\x03url\x12\x13\n" +
+	"\x05at_ms\x18\n" +
+	" \x01(\x04R\x04atMs\x12)\n" +
+	"\x10before_truncated\x18\v \x01(\bR\x0fbeforeTruncated\x12'\n" +
+	"\x0fafter_truncated\x18\f \x01(\bR\x0eafterTruncated\x12#\n" +
+	"\rbefore_digest\x18\r \x01(\tR\fbeforeDigest\x12!\n" +
+	"\fafter_digest\x18\x0e \x01(\tR\vafterDigest\"i\n" +
+	"\x1eListIssueSubscriptionsResponse\x12G\n" +
+	"\rsubscriptions\x18\x01 \x03(\v2!.octomanager.v2.IssueSubscriptionR\rsubscriptions*\xff\x01\n" +
 	"\n" +
 	"IssueStage\x12\x1b\n" +
 	"\x17ISSUE_STAGE_UNSPECIFIED\x10\x00\x12\x1d\n" +
@@ -1394,7 +1967,17 @@ const file_octomanager_v2_issues_proto_rawDesc = "" +
 	"\x16ISSUE_OPERATION_RESUME\x10\x05\x12\x1a\n" +
 	"\x16ISSUE_OPERATION_CANCEL\x10\x06\x12\x1b\n" +
 	"\x17ISSUE_OPERATION_REFRESH\x10\a\x12%\n" +
-	"!ISSUE_OPERATION_APPROVE_FOLLOW_UP\x10\bB@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
+	"!ISSUE_OPERATION_APPROVE_FOLLOW_UP\x10\b*\xba\x03\n" +
+	"\x1aIssueNotificationEventKind\x12-\n" +
+	")ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED\x10\x00\x12'\n" +
+	"#ISSUE_NOTIFICATION_EVENT_KIND_TITLE\x10\x01\x12-\n" +
+	")ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION\x10\x02\x12)\n" +
+	"%ISSUE_NOTIFICATION_EVENT_KIND_COMMENT\x10\x03\x12(\n" +
+	"$ISSUE_NOTIFICATION_EVENT_KIND_CLOSED\x10\x04\x12*\n" +
+	"&ISSUE_NOTIFICATION_EVENT_KIND_REOPENED\x10\x05\x12-\n" +
+	")ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR\x10\x06\x121\n" +
+	"-ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE\x10\a\x122\n" +
+	".ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY\x10\bB@Z>github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2b\x06proto3"
 
 var (
 	file_octomanager_v2_issues_proto_rawDescOnce sync.Once
@@ -1408,47 +1991,61 @@ func file_octomanager_v2_issues_proto_rawDescGZIP() []byte {
 	return file_octomanager_v2_issues_proto_rawDescData
 }
 
-var file_octomanager_v2_issues_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_octomanager_v2_issues_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_octomanager_v2_issues_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_octomanager_v2_issues_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_octomanager_v2_issues_proto_goTypes = []any{
-	(IssueStage)(0),             // 0: octomanager.v2.IssueStage
-	(IssueWaiting)(0),           // 1: octomanager.v2.IssueWaiting
-	(IssueOperation)(0),         // 2: octomanager.v2.IssueOperation
-	(*IssueReference)(nil),      // 3: octomanager.v2.IssueReference
-	(*IssueBrief)(nil),          // 4: octomanager.v2.IssueBrief
-	(*ManagedIssue)(nil),        // 5: octomanager.v2.ManagedIssue
-	(*IssueAssignment)(nil),     // 6: octomanager.v2.IssueAssignment
-	(*IssueEvent)(nil),          // 7: octomanager.v2.IssueEvent
-	(*EnrollIssueRequest)(nil),  // 8: octomanager.v2.EnrollIssueRequest
-	(*EnrollIssueResponse)(nil), // 9: octomanager.v2.EnrollIssueResponse
-	(*ListIssuesRequest)(nil),   // 10: octomanager.v2.ListIssuesRequest
-	(*ListIssuesResponse)(nil),  // 11: octomanager.v2.ListIssuesResponse
-	(*GetIssueRequest)(nil),     // 12: octomanager.v2.GetIssueRequest
-	(*GetIssueResponse)(nil),    // 13: octomanager.v2.GetIssueResponse
-	(*UpdateIssueRequest)(nil),  // 14: octomanager.v2.UpdateIssueRequest
-	(*UpdateIssueResponse)(nil), // 15: octomanager.v2.UpdateIssueResponse
-	(*IssueEffect)(nil),         // 16: octomanager.v2.IssueEffect
+	(IssueStage)(0),                        // 0: octomanager.v2.IssueStage
+	(IssueWaiting)(0),                      // 1: octomanager.v2.IssueWaiting
+	(IssueOperation)(0),                    // 2: octomanager.v2.IssueOperation
+	(IssueNotificationEventKind)(0),        // 3: octomanager.v2.IssueNotificationEventKind
+	(*IssueReference)(nil),                 // 4: octomanager.v2.IssueReference
+	(*IssueBrief)(nil),                     // 5: octomanager.v2.IssueBrief
+	(*ManagedIssue)(nil),                   // 6: octomanager.v2.ManagedIssue
+	(*IssueAssignment)(nil),                // 7: octomanager.v2.IssueAssignment
+	(*IssueEvent)(nil),                     // 8: octomanager.v2.IssueEvent
+	(*EnrollIssueRequest)(nil),             // 9: octomanager.v2.EnrollIssueRequest
+	(*EnrollIssueResponse)(nil),            // 10: octomanager.v2.EnrollIssueResponse
+	(*ListIssuesRequest)(nil),              // 11: octomanager.v2.ListIssuesRequest
+	(*ListIssuesResponse)(nil),             // 12: octomanager.v2.ListIssuesResponse
+	(*GetIssueRequest)(nil),                // 13: octomanager.v2.GetIssueRequest
+	(*GetIssueResponse)(nil),               // 14: octomanager.v2.GetIssueResponse
+	(*UpdateIssueRequest)(nil),             // 15: octomanager.v2.UpdateIssueRequest
+	(*UpdateIssueResponse)(nil),            // 16: octomanager.v2.UpdateIssueResponse
+	(*IssueEffect)(nil),                    // 17: octomanager.v2.IssueEffect
+	(*IssueEventFilter)(nil),               // 18: octomanager.v2.IssueEventFilter
+	(*IssueSubscription)(nil),              // 19: octomanager.v2.IssueSubscription
+	(*SetIssueSubscriptionRequest)(nil),    // 20: octomanager.v2.SetIssueSubscriptionRequest
+	(*ListIssueSubscriptionsRequest)(nil),  // 21: octomanager.v2.ListIssueSubscriptionsRequest
+	(*SetIssueSubscriptionResponse)(nil),   // 22: octomanager.v2.SetIssueSubscriptionResponse
+	(*IssueNotificationEvidence)(nil),      // 23: octomanager.v2.IssueNotificationEvidence
+	(*ListIssueSubscriptionsResponse)(nil), // 24: octomanager.v2.ListIssueSubscriptionsResponse
 }
 var file_octomanager_v2_issues_proto_depIdxs = []int32{
-	3,  // 0: octomanager.v2.ManagedIssue.reference:type_name -> octomanager.v2.IssueReference
+	4,  // 0: octomanager.v2.ManagedIssue.reference:type_name -> octomanager.v2.IssueReference
 	0,  // 1: octomanager.v2.ManagedIssue.stage:type_name -> octomanager.v2.IssueStage
 	1,  // 2: octomanager.v2.ManagedIssue.waiting:type_name -> octomanager.v2.IssueWaiting
-	4,  // 3: octomanager.v2.ManagedIssue.brief:type_name -> octomanager.v2.IssueBrief
-	6,  // 4: octomanager.v2.ManagedIssue.assignment:type_name -> octomanager.v2.IssueAssignment
-	5,  // 5: octomanager.v2.EnrollIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
-	5,  // 6: octomanager.v2.ListIssuesResponse.issues:type_name -> octomanager.v2.ManagedIssue
-	5,  // 7: octomanager.v2.GetIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
-	6,  // 8: octomanager.v2.GetIssueResponse.assignments:type_name -> octomanager.v2.IssueAssignment
-	7,  // 9: octomanager.v2.GetIssueResponse.events:type_name -> octomanager.v2.IssueEvent
-	4,  // 10: octomanager.v2.GetIssueResponse.briefs:type_name -> octomanager.v2.IssueBrief
-	16, // 11: octomanager.v2.GetIssueResponse.effects:type_name -> octomanager.v2.IssueEffect
+	5,  // 3: octomanager.v2.ManagedIssue.brief:type_name -> octomanager.v2.IssueBrief
+	7,  // 4: octomanager.v2.ManagedIssue.assignment:type_name -> octomanager.v2.IssueAssignment
+	6,  // 5: octomanager.v2.EnrollIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
+	6,  // 6: octomanager.v2.ListIssuesResponse.issues:type_name -> octomanager.v2.ManagedIssue
+	6,  // 7: octomanager.v2.GetIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
+	7,  // 8: octomanager.v2.GetIssueResponse.assignments:type_name -> octomanager.v2.IssueAssignment
+	8,  // 9: octomanager.v2.GetIssueResponse.events:type_name -> octomanager.v2.IssueEvent
+	5,  // 10: octomanager.v2.GetIssueResponse.briefs:type_name -> octomanager.v2.IssueBrief
+	17, // 11: octomanager.v2.GetIssueResponse.effects:type_name -> octomanager.v2.IssueEffect
 	2,  // 12: octomanager.v2.UpdateIssueRequest.operation:type_name -> octomanager.v2.IssueOperation
-	5,  // 13: octomanager.v2.UpdateIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 13: octomanager.v2.UpdateIssueResponse.issue:type_name -> octomanager.v2.ManagedIssue
+	3,  // 14: octomanager.v2.IssueEventFilter.events:type_name -> octomanager.v2.IssueNotificationEventKind
+	3,  // 15: octomanager.v2.IssueSubscription.events:type_name -> octomanager.v2.IssueNotificationEventKind
+	18, // 16: octomanager.v2.SetIssueSubscriptionRequest.filter:type_name -> octomanager.v2.IssueEventFilter
+	19, // 17: octomanager.v2.SetIssueSubscriptionResponse.subscriptions:type_name -> octomanager.v2.IssueSubscription
+	3,  // 18: octomanager.v2.IssueNotificationEvidence.kind:type_name -> octomanager.v2.IssueNotificationEventKind
+	19, // 19: octomanager.v2.ListIssueSubscriptionsResponse.subscriptions:type_name -> octomanager.v2.IssueSubscription
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_octomanager_v2_issues_proto_init() }
@@ -1462,8 +2059,8 @@ func file_octomanager_v2_issues_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_octomanager_v2_issues_proto_rawDesc), len(file_octomanager_v2_issues_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   14,
+			NumEnums:      4,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

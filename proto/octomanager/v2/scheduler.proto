@@ -25,6 +25,10 @@ service SchedulerService {
   rpc GetIssue(GetIssueRequest) returns (GetIssueResponse);
   // Records approvals, answers, and lifecycle controls.
   rpc UpdateIssue(UpdateIssueRequest) returns (UpdateIssueResponse);
+  // SetIssueSubscription changes only one subscriber's delivery selection.
+  rpc SetIssueSubscription(SetIssueSubscriptionRequest) returns (SetIssueSubscriptionResponse);
+  // ListIssueSubscriptions reads effective issue delivery selections.
+  rpc ListIssueSubscriptions(ListIssueSubscriptionsRequest) returns (ListIssueSubscriptionsResponse);
   // Reports the wire API version before clients perform coordinator operations.
   rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
   // Sets an owner-authorized per-PR automatic merge override.
