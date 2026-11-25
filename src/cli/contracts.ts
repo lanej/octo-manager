@@ -6,6 +6,7 @@ export type Capability =
   | "notifications"
   | "merging"
   | "repairs"
+  | "diagnostics"
   | "activity"
   | "history"
   | "issues";

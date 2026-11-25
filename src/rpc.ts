@@ -1,3 +1,4 @@
+import { diagnosticsRoutes } from "./diagnostics/rpc.js";
 import { actionName, wireLifecycle } from "./lifecycle-rpc.js";
 import { Messages } from "./notifications/messages.js";
 import { wireAssessment } from "./assessments/rpc.js";
@@ -82,6 +83,7 @@ export function schedulerRoutes(coordinator: Coordinator, router: ConnectRouter)
   };
   router.service(SchedulerService, {
     ...issueRoutes(coordinator.issues),
+    ...diagnosticsRoutes(coordinator.diagnostics),
     async runtimeLifecycle(r) {
       return {
         report: wireLifecycle(

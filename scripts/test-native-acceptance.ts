@@ -1,3 +1,4 @@
+import { PerformanceCaptureState } from "../src/gen/octomanager/v2/diagnostics_pb.js";
 import { buildNative } from "./build-native.js";
 import {
   mkdtemp,
@@ -141,6 +142,45 @@ try {
     }
   }
   assert(ready, "Relocated native server did not become ready");
+  const captureCommand = Bun.spawn(
+    [
+      binary,
+      "--state",
+      state,
+      "diagnostics",
+      "capture",
+      "--seconds",
+      "1",
+      "--wait",
+      "--json",
+    ],
+    { cwd: home, env, stdout: "pipe", stderr: "pipe" },
+  );
+  const captureOutput = await new Response(captureCommand.stdout).text();
+  const captureErrors = await new Response(captureCommand.stderr).text();
+  assert(
+    (await captureCommand.exited) === 0,
+    "Native diagnostics capture failed: " + captureErrors,
+  );
+  const captureResult: unknown = JSON.parse(captureOutput);
+  assert(
+    typeof captureResult === "object" &&
+      captureResult !== null &&
+      "id" in captureResult &&
+      typeof captureResult.id === "string",
+    "Native capture did not return an identity",
+  );
+  const captured = (
+    await client.getPerformanceCapture({ id: captureResult.id })
+  ).capture;
+  assert(
+    captured?.state === PerformanceCaptureState.COMPLETED &&
+      (captured.report?.queryEvents ?? 0) > 0 &&
+      captured.report?.scopes.some(
+        (scope) => scope.name === "jobs" && scope.cycles > 0,
+      ) === true,
+    "Native capture did not retain completed query and scheduler work",
+  );
   const report = await runtimeLifecycle(state, {
     action: "inventory",
     expectedNativeId: "",

@@ -1,3 +1,4 @@
+import { commands as diagnosticsCommands } from "./diagnostics/diagnostics-commands.js";
 import { commands as issueCommands } from "./issues/issue-commands.js";
 import { commands as applicationCommands } from "./cli/application-commands.js";
 import { commands as publicationCommands } from "./publication/publication-commands.js";
@@ -51,6 +52,7 @@ export const commandSpecs: CommandSpec[] = [
   ...mergingCommands,
   ...repairsCommands,
   ...activityCommands,
+  ...diagnosticsCommands,
   ...historyCommands,
 ];
 // These forms occur in durable notices or installed hook definitions.

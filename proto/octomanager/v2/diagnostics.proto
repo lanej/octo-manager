@@ -1,0 +1,94 @@
+syntax = "proto3";
+package octomanager.v2;
+
+option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanagerv2";
+
+// PerformanceCaptureState distinguishes partial captures from completed intervals.
+enum PerformanceCaptureState {
+  PERFORMANCE_CAPTURE_STATE_UNSPECIFIED = 0;
+  PERFORMANCE_CAPTURE_STATE_COLLECTING = 1;
+  PERFORMANCE_CAPTURE_STATE_COMPLETED = 2;
+  PERFORMANCE_CAPTURE_STATE_STOPPED = 3;
+  PERFORMANCE_CAPTURE_STATE_INTERRUPTED = 4;
+  PERFORMANCE_CAPTURE_STATE_FAILED = 5;
+}
+// A bounded sampled caller stack and its observation count.
+message PerformanceStackSample {
+  string stack = 1;
+  uint32 observations = 2;
+}
+// PerformanceQuery counts completed statement events, including nested SQLite helpers.
+message PerformanceQuery {
+  string scope = 1;
+  string fingerprint = 2;
+  string sql_shape = 3;
+  bool shape_truncated = 4;
+  uint32 count = 5;
+  double runtime_ms = 6;
+  double max_runtime_ms = 7;
+  uint32 zero_duration_count = 8;
+  repeated PerformanceStackSample stacks = 9;
+  uint32 dropped_stack_samples = 10;
+}
+// PerformanceScope records wall time, not CPU; write events do not establish global state changes.
+message PerformanceScope {
+  string name = 1;
+  uint32 cycles = 2;
+  uint32 cycles_without_observed_writes = 3;
+  uint32 query_events = 4;
+  uint32 write_events = 5;
+  uint32 unclassified_events = 6;
+  double elapsed_ms = 7;
+  double max_elapsed_ms = 8;
+}
+// Bounded query and loop observations with explicit measurement limits.
+message PerformanceReport {
+  uint32 query_events = 1;
+  uint32 zero_duration_count = 2;
+  uint32 dropped_events = 3;
+  uint32 callback_failures = 4;
+  uint32 ignored_database_events = 5;
+  double observer_elapsed_ms = 6;
+  repeated PerformanceQuery queries = 7;
+  repeated PerformanceScope scopes = 8;
+  repeated string limits = 9;
+  double elapsed_ms = 10;
+  uint32 dropped_scopes = 11;
+}
+// The durable capture identity, interval, outcome and optional terminal report.
+message PerformanceCapture {
+  string id = 1;
+  string request_id = 2;
+  PerformanceCaptureState state = 3;
+  int64 started_at_ms = 4;
+  int64 ended_at_ms = 5;
+  uint32 duration_ms = 6;
+  string artifact_path = 7;
+  string detail = 8;
+  PerformanceReport report = 9;
+}
+// Requests an idempotent capture lasting one second to five minutes.
+message StartPerformanceCaptureRequest {
+  string request_id = 1;
+  uint32 duration_ms = 2;
+}
+// Returns the accepted or previously retained capture.
+message StartPerformanceCaptureResponse {
+  PerformanceCapture capture = 1;
+}
+// Selects a capture by its server-generated identity.
+message GetPerformanceCaptureRequest {
+  string id = 1;
+}
+// Returns capture metadata and any terminal report.
+message GetPerformanceCaptureResponse {
+  PerformanceCapture capture = 1;
+}
+// Selects a capture to stop without discarding its observations.
+message StopPerformanceCaptureRequest {
+  string id = 1;
+}
+// Returns the stopped or already terminal capture.
+message StopPerformanceCaptureResponse {
+  PerformanceCapture capture = 1;
+}

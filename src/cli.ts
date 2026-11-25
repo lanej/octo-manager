@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { diagnosticsCLI } from "./diagnostics/cli.js";
 import { nativeAot, packageRoot } from "./package-root.js";
 import { startupRecord } from "./startup-context.js";
 import { requireBun } from "./runtime.js";
@@ -35,6 +36,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     case "merging": await mergingCLI(parsed); return;
     case "notifications": await notificationsCLI(parsed); return;
     case "subscriptions": await subscriptionsCLI(parsed); return;
+    case "diagnostics": await diagnosticsCLI(parsed); return;
     case "activity": await activityCLI(parsed); return;
     case "repairs": await repairsCLI(parsed); return;
     case "history": await submissionsCLI(parsed); return;
