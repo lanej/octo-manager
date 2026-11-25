@@ -149,7 +149,18 @@ async function fixture(initialReview: string | null = null) {
   );
   const id = messageReceiptId(notice.body);
   if (id === undefined) throw new Error("No receipt command");
-  await coordinator.start();
+  const start = async () => {
+    // These policy cases advance merge reconciliation explicitly; the Pi case below exercises automatic dispatch.
+    const automatic = spyOn(coordinator.merging, "start").mockImplementation(
+      () => {},
+    );
+    try {
+      await coordinator.start();
+    } finally {
+      automatic.mockRestore();
+    }
+  };
+  await start();
   return {
     directory,
     pr,
@@ -194,7 +205,7 @@ async function fixture(initialReview: string | null = null) {
     async reopen() {
       await coordinator.close();
       coordinator = new Coordinator(directory, options);
-      await coordinator.start();
+      await start();
     },
     advance() {
       now += 600000;
@@ -207,7 +218,6 @@ async function fixture(initialReview: string | null = null) {
 }
 test("Ready offers one read command; hook receipt alone cannot merge; explicit CLI request survives restart and replays once", async () => {
   const f = await fixture();
-  const dispatch = spyOn(f.coordinator.merging, "tick");
   try {
     expect(f.notice.body).toContain(`[PR #38](${url}) · Ready`);
     expect(f.notice.body).toContain(`\`octo-manager read ${f.id}`);
@@ -248,8 +258,6 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     expect(inspected).toMatchObject({
       merge: { pr: url, head, method: "squash" },
     });
-    // Retain the accepted request across restart before allowing its scheduled dispatch.
-    dispatch.mockResolvedValue(undefined);
     const child = Bun.spawn(
       [
         process.execPath,
@@ -281,7 +289,6 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     expect(output).toContain('"queued"');
     expect(f.writes).toBe(0);
     expect(f.coordinator.store.merging.entries()[0]?.autoMerge).toBe(false);
-    dispatch.mockRestore();
     await f.reopen();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -289,7 +296,6 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
   } finally {
-    dispatch.mockRestore();
     await f.close();
   }
 });
@@ -1610,7 +1616,8 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
     expect(await request("e".repeat(40))).toContain("blocked");
     expect(coordinator.store.merging.entries()).toHaveLength(0);
     expect(await request(head)).toContain("queued");
-    await coordinator.merging.tick();
+    const mergeDeadline = Date.now() + 1000;
+    while (writes === 0 && Date.now() < mergeDeadline) await Bun.sleep(5);
     expect(writes).toBe(1);
     const merged: unknown = JSON.parse(await request(head));
     assert(
