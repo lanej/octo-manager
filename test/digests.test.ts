@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { migrateDigestMembership } from "../src/notifications/schema.js";
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -127,6 +127,7 @@ async function fixture() {
       () => now,
       {
         connect,
+        intervalMs: 1000,
         inputRevision: () =>
           JSON.stringify([store.inputRevision(), config.endpoints]),
       },
@@ -193,6 +194,7 @@ async function fixture() {
         () => now,
         {
           connect,
+          intervalMs: 1000,
           inputRevision: () =>
             JSON.stringify([store.inputRevision(), config.endpoints]),
         },
@@ -1141,6 +1143,163 @@ test("cleanup candidate reads follow persisted terminal cleanup state without re
     );
     expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(0);
     expect(f.store.digests.active(f.actor.id)).toEqual(unavailable);
+  } finally {
+    await f.close();
+  }
+});
+
+test("queue probes use exact owned revisions and unresolved withdrawals without rereading settled history", async () => {
+  const f = await fixture();
+  try {
+    const route = {
+      kind: "codex_queue" as const,
+      socket: "/fixture/queue.sock",
+    };
+    for (let index = 0; index < 120; index++) {
+      const value = f.store.digests.create(f.actor.id, route, () => ({
+        body: `Historical ${String(index)}`,
+        messageIds: [`historical-${String(index)}`],
+      }));
+      f.store.digests.save(
+        { ...value, state: DigestState.Cancelled, cleanupPending: false },
+        "fixture_terminal",
+      );
+      f.store.digests.event(f.actor.id, value.id, "queue_cancel_started", {
+        queueId: `old-${String(index)}`,
+        clientId: `old-client-${String(index)}`,
+      });
+      f.store.digests.event(f.actor.id, value.id, "queue_cancel_confirmed", {
+        queueId: `old-${String(index)}`,
+      });
+    }
+    const legacy = f.notice("Consumed legacy"),
+      legacyMessage = f.store.tracking.inbox.get(legacy.id);
+    if (legacyMessage === undefined) throw new Error("Missing legacy message");
+    f.store.tracking.acknowledgeMessage(legacy.id, f.actor.id);
+    const uncertain = f.store.digests.create(f.actor.id, route, () => ({
+      body: "Legacy collapse",
+      messageIds: [legacy.id],
+    }));
+    f.store.digests.save(
+      { ...uncertain, state: DigestState.Cancelled, cleanupPending: false },
+      "fixture_terminal",
+    );
+    f.store.digests.event(f.actor.id, uncertain.id, "queue_cancel_started", {
+      queueId: "consumed-legacy",
+      clientId: legacy.id,
+    });
+    expect(
+      f.store.digests
+        .withdrawalDigests(f.actor.id, route.socket)
+        .map((value) => value.id),
+    ).toEqual([uncertain.id]);
+    f.notice("Current work");
+    await f.flush();
+    expect(f.store.digests.withdrawalDigests(f.actor.id, route.socket)).toEqual(
+      [],
+    );
+    expect(f.store.digests.events(uncertain.id).at(-1)?.kind).toBe(
+      "queue_cancel_reconciled",
+    );
+    const current = f.store.digests.active(f.actor.id);
+    if (current === undefined) throw new Error("Missing active digest");
+    const owned = f.store.digests.version(current.id, current.revision);
+    const otherAgent = f.store.tracking.registerAgent({
+      harness: "codex",
+      endpoint: "direct",
+      sessionId: "foreign-queue-owner",
+    });
+    const foreign = f.store.digests.create(otherAgent.id, route, () => ({
+      body: "Foreign digest",
+      messageIds: ["foreign-message"],
+    }));
+    f.store.digests.save(
+      { ...foreign, state: DigestState.Cancelled, cleanupPending: false },
+      "fixture_terminal",
+    );
+    const foreignRevision = f.store.digests.version(
+      foreign.id,
+      foreign.revision,
+    );
+    const foreignSlots = [
+      {
+        queueId: "foreign-owner",
+        clientId: foreignRevision.dispatchId,
+        body: foreignRevision.body,
+      },
+      {
+        queueId: "same-prefix",
+        clientId: owned.dispatchId.slice(0, 8) + "-foreign-suffix",
+        body: owned.body,
+      },
+      ...Array.from({ length: 30 }, (_, index) => ({
+        queueId: `foreign-${String(index)}`,
+        clientId: `foreign-client-${String(index)}`,
+        body: "Unowned queue content",
+      })),
+    ];
+    f.queue.slots.push(...foreignSlots);
+    const versions = spyOn(f.store.digests, "revisions"),
+      events = spyOn(f.store.digests, "events"),
+      list = spyOn(f.store.digests, "list"),
+      points = spyOn(f.store.digests, "queuedRevision");
+    try {
+      const expectedPointReads = f.queue.slots.length;
+      await f.flush();
+      expect(
+        list.mock.calls.filter(([agentId]) => agentId === f.actor.id),
+      ).toEqual([]);
+      expect(versions.mock.calls.length).toBeLessThanOrEqual(2);
+      expect(events.mock.calls.length).toBeLessThanOrEqual(2);
+      expect(points).toHaveBeenCalledTimes(expectedPointReads);
+      for (const item of foreignSlots)
+        expect(f.queue.slots).toContainEqual(item);
+      expect(
+        f.store.tracking.inbox.get(legacy.id)?.acknowledgedAt,
+      ).toBeDefined();
+    } finally {
+      versions.mockRestore();
+      events.mockRestore();
+      list.mockRestore();
+      points.mockRestore();
+    }
+  } finally {
+    await f.close();
+  }
+});
+
+test("settled withdrawals with malformed identities still fail closed during queue recovery", async () => {
+  const f = await fixture();
+  try {
+    const route = {
+      kind: "codex_queue" as const,
+      socket: "/fixture/queue.sock",
+    };
+    const history = f.store.digests.create(f.actor.id, route, () => ({
+      body: "Malformed withdrawal history",
+      messageIds: ["historical-message"],
+    }));
+    f.store.digests.save(
+      { ...history, state: DigestState.Cancelled, cleanupPending: false },
+      "fixture_terminal",
+    );
+    f.store.digests.event(f.actor.id, history.id, "queue_cancel_started", {
+      queueId: "missing-client",
+    });
+    f.store.digests.event(f.actor.id, history.id, "queue_cancel_confirmed", {
+      queueId: "missing-client",
+    });
+    expect(
+      f.store.digests
+        .withdrawalDigests(f.actor.id, route.socket)
+        .map((value) => value.id),
+    ).toEqual([history.id]);
+    f.notice("Unrelated new work");
+    await f.flush();
+    expect(f.store.digests.active(f.actor.id)?.error).toBe(
+      "Invalid withdrawal identity",
+    );
+    expect(f.queue.operations).toEqual([]);
   } finally {
     await f.close();
   }

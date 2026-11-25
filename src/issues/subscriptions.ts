@@ -80,6 +80,7 @@ export class IssueSubscriptions {
     private db: DatabaseSync,
     private now: () => number,
     private notifications?: NotificationRepository,
+    private changed?: () => void,
   ) {
     db.exec(`CREATE TABLE IF NOT EXISTS issue_subscriptions(issue_id TEXT NOT NULL REFERENCES managed_issues(id),agent_id TEXT NOT NULL REFERENCES agent_refs(id),events TEXT CHECK(events IS NULL OR json_valid(events)),PRIMARY KEY(issue_id,agent_id)) STRICT;
 CREATE TABLE IF NOT EXISTS issue_source_observations(issue_id TEXT PRIMARY KEY REFERENCES managed_issues(id),data TEXT NOT NULL CHECK(json_valid(data))) STRICT;
@@ -172,6 +173,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
           .prepare("UPDATE issue_notices SET applicable=0 WHERE id=?")
           .run(String(row["id"]));
     }
+    this.changed?.();
     return this.list(issue);
   }
   evidence(id: string): IssueNotificationEvidence | undefined {
@@ -225,6 +227,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         .get() === undefined
     )
       return;
+    this.changed?.();
     for (const subscription of this.list(issue)) {
       if (!subscription.events.includes(kind)) continue;
       const messageId = this.notifications?.newMessageId() ?? randomUUID();
@@ -347,6 +350,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       )
       .run(issue.id);
     if (actionable && emit) this.emit(issue, kind, revision, "", issue.detail);
+    this.changed?.();
   }
   sourceIssueIds(): ReadonlySet<string> {
     return new Set(

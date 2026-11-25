@@ -22,7 +22,7 @@ Independent check-run IDs remain independent. Only cancelled workflow suites wit
 
 ## Shared scheduler and cached views
 
-The coordinator owns one GitHub scheduling tick. Its default cadence is one second. Tracking, notifications and merge reconciliation run from that clock; each retains its existing eligibility and freshness rules. Every GitHub API request, including pagination, logs, GraphQL and merge operations, passes through the shared dispatch gate.
+The coordinator owns one scheduler and one timer for capability deadlines and input changes. Tracking, notifications and merge reconciliation register work with that scheduler and retain their eligibility and freshness rules. The dashboard heartbeat defaults to five seconds and does not drive capability polling. Every GitHub API request, including pagination, logs, GraphQL and merge operations, passes through the shared dispatch gate.
 
 Optional failure-log enrichment has a five-second total budget, including queue wait. If it expires, the notification proceeds with its evidence link and no excerpt.
 
@@ -37,10 +37,10 @@ Pressing `u` queues a refresh for the next available slot. Repeated requests col
 Optional `config.json` settings:
 
 ```json
-{"polling":{"tickMs":1000,"requestSpacingMs":2000,"minimumMs":60000,"maximumMs":900000,"activeMaximumMs":120000}}
+{"polling":{"tickMs":5000,"requestSpacingMs":2000,"minimumMs":60000,"maximumMs":900000,"activeMaximumMs":120000}}
 ```
 
-`tickMs` is an integer from 100 ms to one minute; `requestSpacingMs` must be at least the tick interval and at most one hour. The PR polling minimum is at least one second, the maximum at most one hour, and the active ceiling lies within those bounds. Omitting settings preserves the defaults above.
+`tickMs` controls the dashboard heartbeat and is an integer from 100 ms to one minute. `requestSpacingMs` independently controls physical GitHub request pacing and is an integer from 100 ms to one hour. The PR polling minimum is at least one second, the maximum at most one hour, and the active ceiling lies within those bounds. Omitting settings preserves the defaults above.
 
 Schema 15 stores tracking/review schedules, review views and dispatch/cooldown deadlines. Restart retains backoff, requeues interrupted reads and preserves asynchronous merge identities. Review cache storage is bounded to 128 views and 16 MiB, evicting the oldest written view. Reopening an evicted view queues a refresh; reopening a failed first load preserves its retry deadline unless explicitly refreshed. Older coordinators reject schema 15.
 

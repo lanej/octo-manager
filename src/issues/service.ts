@@ -1,3 +1,4 @@
+import { type WorkScheduler, type ScheduledTask } from "../scheduling/work.js";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { realpathSync as realpath } from "node:fs";
@@ -40,6 +41,7 @@ export interface IssueOptions {
 }
 export class IssueService {
   private work: Promise<void> | undefined;
+  private task: ScheduledTask | undefined;
   private effectChecks = new Map<string, number>();
   private abort = new AbortController();
   constructor(
@@ -313,6 +315,44 @@ export class IssueService {
     this.store.remember(requestId, input, issue.id);
     return issue;
   }
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("issues", async () => {
+      await this.tick();
+      return this.nextDeadline();
+    });
+    this.task.wake();
+  }
+  wake(): void {
+    this.task?.wake();
+  }
+  private nextDeadline(): number | undefined {
+    if (this.abort.signal.aborted) return undefined;
+    const now = this.now();
+    const sources = this.store.subscriptions.sourceIssueIds();
+    const issues = this.store
+      .list()
+      .filter(
+        (issue) =>
+          !terminal(issue.stage) ||
+          issue.assignmentId !== "" ||
+          sources.has(issue.id),
+      );
+    if (issues.length === 0 && this.store.effects().length === 0)
+      return undefined;
+    const deadlines = [now + 30000];
+    for (const issue of issues) {
+      if (issue.nextAt > now) deadlines.push(issue.nextAt);
+      if (
+        issue.clarificationDueAt !== undefined &&
+        issue.clarificationDueAt > now
+      )
+        deadlines.push(issue.clarificationDueAt);
+      if (issue.assignmentId !== "") deadlines.push(now + 5000);
+    }
+    for (const at of this.effectChecks.values())
+      if (at > now) deadlines.push(at);
+    return Math.min(...deadlines);
+  }
   tick(): Promise<void> {
     if (this.work != null) return this.work;
     if (this.abort.signal.aborted) return Promise.resolve();
@@ -343,6 +383,7 @@ export class IssueService {
     );
   }
   async close(): Promise<void> {
+    this.task?.close();
     this.abort.abort();
     await this.work;
   }
@@ -756,6 +797,8 @@ export class IssueService {
         if (!terminal(issue.stage) && issue.nextAt <= this.now())
           issue = await this.refresh(issue);
         if (terminal(issue.stage) && issue.assignmentId === "") continue;
+        if (issue.waiting === Waiting.Paused && issue.assignmentId === "")
+          continue;
         const policy = this.options.policy(issue.root);
         if (policy.hash !== issue.policyHash) {
           issue = {

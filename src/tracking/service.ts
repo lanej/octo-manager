@@ -1,3 +1,5 @@
+import type { FSWatcher } from "node:fs";
+import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
 import {
@@ -46,8 +48,12 @@ export interface TrackingOptions {
 }
 export class TrackingService {
   private handoffWork: Promise<void> | undefined;
+  private handoffDirty = false;
   private handoffs: Handoffs | undefined;
-  private timer?: ReturnType<typeof setInterval>;
+  private handoffWatcher: FSWatcher | undefined;
+  private handoffWatchWork: Promise<void> | undefined;
+  private handoffWatchFailure: { error: Error } | undefined;
+  private task: ScheduledTask | undefined;
   private refreshes = new Map<string, Promise<unknown>>();
   private refreshTriggers = new Map<string, "manual" | "poll">();
   private refreshEpochs = new Map<string, number>();
@@ -102,9 +108,42 @@ export class TrackingService {
   get failureExcerpt(): typeof readFailureExcerpt {
     return this.options.failureExcerpt ?? readFailureExcerpt;
   }
-  start(): void {
-    this.timer = setInterval(() => this.tick(), 1000);
-    this.tick();
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("tracking", () => this.tick());
+    if (this.handoffs !== undefined) {
+      const failed = (error: unknown) => {
+        this.handoffWatcher?.close();
+        this.handoffWatcher = undefined;
+        this.handoffWatchFailure = {
+          error:
+            error instanceof Error
+              ? error
+              : new Error("Handoff watcher failed"),
+        };
+        this.task?.wake();
+      };
+      this.handoffWatchWork = this.handoffs
+        .watch(() => {
+          this.handoffChanged();
+        }, failed)
+        .then((watcher) => {
+          if (this.stopped) watcher.close();
+          else {
+            this.handoffWatcher = watcher;
+            this.handoffChanged();
+          }
+        })
+        .catch(failed);
+    }
+    this.task.wake();
+  }
+  private handoffChanged(): void {
+    if (this.handoffWork !== undefined) this.handoffDirty = true;
+    else this.task?.wake();
+  }
+  wake(): void {
+    this.deliveryNotBefore.clear();
+    this.task?.wake();
   }
   private validateTarget(target: AgentTarget): void {
     if (
@@ -153,6 +192,7 @@ export class TrackingService {
       nextAt: this.now(),
     };
     this.savePoll(pr.id, next, true);
+    this.wake();
   }
   private pollState(id: string): PollState | undefined {
     const saved = this.options.schedules?.get(`tracking:${id}`);
@@ -321,6 +361,7 @@ export class TrackingService {
         this.refreshEpochs.delete(p.id);
         this.refreshTriggers.delete(p.id);
         this.refreshControllers.delete(p.id);
+        this.wake();
       }
       return this.store.pr(p.id);
     })();
@@ -328,8 +369,14 @@ export class TrackingService {
     this.refreshes.set(p.id, work);
     return work;
   }
-  tick(): void {
+  tick(): number | undefined {
     if (this.stopped) return;
+    if (this.handoffWatchFailure !== undefined) {
+      const { error } = this.handoffWatchFailure;
+      this.handoffWatchFailure = undefined;
+      throw error;
+    }
+    let next = this.now() + 30000;
     if (this.handoffs !== undefined && this.handoffWork === undefined) {
       this.handoffWork = this.handoffs
         .drain((request) => {
@@ -355,12 +402,18 @@ export class TrackingService {
         .catch(() => {})
         .finally(() => {
           this.handoffWork = undefined;
+          if (this.handoffDirty) {
+            this.handoffDirty = false;
+            this.task?.wake();
+          }
         });
     }
     for (const id of this.store.retirement.expire())
       this.refreshControllers.get(id)?.abort();
     const queued = this.options.schedules?.queuedKeys();
     for (const p of this.store.prContexts()) {
+      if (p.state === TrackingState.Draining && p.drainDeadlineAt !== undefined)
+        next = Math.min(next, p.drainDeadlineAt);
       if (
         !p.enabled ||
         this.now() < this.githubRetryAt ||
@@ -375,6 +428,11 @@ export class TrackingService {
         this.now()
       )
         this.runPoll(p.id);
+      if (!this.refreshes.has(p.id))
+        next = Math.min(
+          next,
+          Math.max(this.githubRetryAt, state?.nextAt ?? this.now()),
+        );
     }
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
@@ -384,7 +442,9 @@ export class TrackingService {
           this.deliveryBusy = false;
           delete this.deliveryWork;
         });
+      next = Math.min(next, this.deliveryDeadline);
     }
+    return next;
   }
   private runPoll(id: string): void {
     const saved = this.options.schedules?.get(`tracking:${id}`);
@@ -406,7 +466,8 @@ export class TrackingService {
       this.options.managedQueue?.(agentId) === true
     );
   }
-  private async deliverNext(): Promise<void> {
+  private deliveryNotBefore = new Map<string, number>();
+  private *deliveryPlans(): Generator<{ delivery: Delivery; at: number }> {
     const candidates = this.store.deliveryCandidates();
     const managed = this.options.managedQueueBatch?.([
       ...new Set(
@@ -415,39 +476,91 @@ export class TrackingService {
           .map((candidate) => candidate.recipientAgentId),
       ),
     ]);
-    const d = candidates.find((d) => {
+    for (const d of candidates) {
       // Recorded pull-inbox work belongs to digest reconciliation; direct selection does not need its body.
-      if (d.messageRecorded && managed?.has(d.recipientAgentId) === true)
-        return false;
-      if (d.messageRecorded && this.usesPullInbox(d.recipientAgentId))
-        return false;
-
+      if (
+        d.messageRecorded &&
+        (managed?.has(d.recipientAgentId) === true ||
+          this.usesPullInbox(d.recipientAgentId))
+      )
+        continue;
       const message = this.store.inbox.get(d.id);
       if (
         message?.acknowledgedAt !== undefined ||
         (message !== undefined && this.usesPullInbox(d.recipientAgentId))
       )
-        return false;
-      if (this.store.inbox.isReplaced(d.id))
-        return (
+        continue;
+      const replaced = this.store.inbox.isReplaced(d.id);
+      let at: number | undefined;
+      if (replaced) {
+        if (
           message !== undefined &&
           (d.progress.state === DeliveryState.Uncertain ||
-            d.progress.state === DeliveryState.Delivered) &&
-          message.nextCheckAt <= this.now()
-        );
-      return (
-        (d.progress.state === DeliveryState.Pending &&
-          d.progress.nextAttemptAt <= this.now()) ||
-        (d.progress.state === DeliveryState.Uncertain &&
-          (message?.nextCheckAt ?? this.nextUncertainCheck.get(d.id) ?? 0) <=
-            this.now()) ||
-        (d.progress.state === DeliveryState.Delivered &&
-          message !== undefined &&
-          message.applicable &&
-          message.nextCheckAt <= this.now())
-      );
-    });
-    if (!d) return;
+            d.progress.state === DeliveryState.Delivered)
+        )
+          at = message.nextCheckAt;
+      } else if (d.progress.state === DeliveryState.Pending)
+        at = d.progress.nextAttemptAt;
+      else if (d.progress.state === DeliveryState.Uncertain)
+        at = message?.nextCheckAt ?? this.nextUncertainCheck.get(d.id) ?? 0;
+      else if (
+        d.progress.state === DeliveryState.Delivered &&
+        message?.applicable === true
+      )
+        at = message.nextCheckAt;
+      if (at === undefined) continue;
+      const action = this.store.action(d.actionId);
+      if (
+        !replaced &&
+        (!this.store.pr(action.prId).enabled ||
+          !unfinished(action) ||
+          !this.store.subscriptions.includes(action.prId, d.recipientAgentId))
+      )
+        continue;
+      yield {
+        delivery: d,
+        at: Math.max(at, this.deliveryNotBefore.get(d.id) ?? 0),
+      };
+    }
+  }
+  private deliveryDeadline = Infinity;
+  private async deliverNext(): Promise<void> {
+    this.deliveryDeadline = Infinity;
+    let plan: { delivery: Delivery; at: number } | undefined;
+    for (const candidate of this.deliveryPlans()) {
+      if (candidate.at <= this.now()) {
+        plan = candidate;
+        break;
+      }
+      this.deliveryDeadline = Math.min(this.deliveryDeadline, candidate.at);
+    }
+    if (plan === undefined) return;
+    try {
+      await this.deliver(plan.delivery);
+    } finally {
+      const current = this.store
+        .deliveryCandidates()
+        .find((value) => value.id === plan.delivery.id);
+      const message = this.store.inbox.get(plan.delivery.id);
+      const next =
+        current?.progress.state === DeliveryState.Pending
+          ? current.progress.nextAttemptAt
+          : current?.progress.state === DeliveryState.Uncertain
+            ? (message?.nextCheckAt ??
+              this.nextUncertainCheck.get(plan.delivery.id) ??
+              0)
+            : current?.progress.state === DeliveryState.Delivered &&
+                message?.applicable === true
+              ? message.nextCheckAt
+              : undefined;
+      // An unchanged due row needs bounded upkeep rather than another immediate attempt.
+      if (next !== undefined && next <= this.now())
+        this.deliveryNotBefore.set(plan.delivery.id, this.now() + 30000);
+      else this.deliveryNotBefore.delete(plan.delivery.id);
+      this.task?.wake();
+    }
+  }
+  private async deliver(d: Delivery): Promise<void> {
     if (this.store.inbox.isReplaced(d.id)) {
       await this.reconcileReplaced(d);
       return;
@@ -830,7 +943,9 @@ export class TrackingService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    if (this.timer) clearInterval(this.timer);
+    this.task?.close();
+    this.handoffWatcher?.close();
+    await this.handoffWatchWork;
     for (const controller of this.refreshControllers.values())
       controller.abort();
     for (const c of this.connections) c.close();

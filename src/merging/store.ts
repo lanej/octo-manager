@@ -85,6 +85,21 @@ function needsInheritedDisable(
         entry.autoMergeStage !== undefined))
   );
 }
+function readinessInputs(value: NoticeReadiness | undefined): string {
+  return JSON.stringify(
+    value === undefined
+      ? null
+      : [
+          value.target,
+          value.policy,
+          value.generation,
+          [...value.recipients].sort(),
+          value.eligible,
+          value.reason,
+          value.inspectionError !== undefined,
+        ],
+  );
+}
 export class MergeStore {
   private entriesByPr: StatementSync | undefined;
   private settingByPr: StatementSync | undefined;
@@ -123,11 +138,18 @@ export class MergeStore {
   }
   saveNoticeReadiness(value: NoticeReadiness): void {
     checked(NoticeReadinessSchema, value);
+    const previous = this.noticeReadiness(value.target.prId);
     this.db
       .prepare(
         "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
       )
       .run(`merge-readiness:${value.target.prId}`, JSON.stringify(value));
+    if (readinessInputs(previous) !== readinessInputs(value))
+      this.event(
+        "merge_notification_updated",
+        "Merge readiness changed",
+        value.target.prId,
+      );
   }
   receiptRequest(
     id: string,
@@ -1246,18 +1268,20 @@ export class MergeStore {
     applicable: boolean,
     recipients?: readonly string[],
   ): void {
-    this.transaction(() => {
+    const changed = this.transaction(() => {
+      let changed = false;
       for (const participant of this.tracking.subscriptions.list(pr)) {
         if (
           recipients !== undefined &&
           !recipients.includes(participant.agentId)
         )
           continue;
-        this.db
+        const retired = this.db
           .prepare(
             "UPDATE merge_notices SET applicable=0 WHERE subject_kind=? AND subject_id=? AND recipient_agent_id=? AND revision!=? AND applicable=1",
           )
           .run(kind, subjectId, participant.agentId, revision);
+        changed ||= Number(retired.changes) > 0;
         if (!applicable) continue;
         if (
           this.db
@@ -1312,7 +1336,7 @@ export class MergeStore {
           }
         }
         this.tracking.inbox.freezeNotice(id, notice);
-        this.db
+        const inserted = this.db
           .prepare(
             "INSERT OR IGNORE INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
           )
@@ -1330,8 +1354,12 @@ export class MergeStore {
             this.now(),
             1,
           );
+        changed ||= Number(inserted.changes) > 0;
       }
+      return changed;
     });
+    if (changed)
+      this.event("merge_notification_updated", "Merge notices changed", pr.id);
   }
   inspect(id?: string) {
     const chains = id === undefined ? this.chains() : [this.chain(id)],

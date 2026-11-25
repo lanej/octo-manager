@@ -416,15 +416,18 @@ test("empty and pending hosted checks cannot pass; transient reads retry without
     assert.equal(c.store.repairs.get(a.id).state, RepairState.AwaitingChecks);
     mode = "pending";
     now += 16000;
+    c.repairs.wake();
     await new Promise((r) => setTimeout(r, 350));
     assert.equal(c.store.repairs.get(a.id).state, RepairState.AwaitingChecks);
     mode = "unavailable";
     now += 16000;
+    c.repairs.wake();
     await new Promise((r) => setTimeout(r, 350));
     assert.match(c.store.repairs.get(a.id).detail, /verification unavailable/u);
     assert.equal(c.store.repairs.get(a.id).state, RepairState.AwaitingChecks);
     mode = "success";
     now += 16000;
+    c.repairs.wake();
     const done = await wait(c, a.id);
     assert.equal(done.state, RepairState.Succeeded, done.detail);
     assert.equal(pushes, 1);

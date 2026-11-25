@@ -1,3 +1,4 @@
+import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { mechanicalConflicts } from "./mechanical.js";
 import type { ConflictStore } from "./cases.js";
 import { join } from "node:path";
@@ -31,7 +32,7 @@ export interface RepairOptions {
   observe?: (url: string, signal: AbortSignal) => Promise<ObservationInput>;
 }
 export class RepairService {
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private scheduled: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private controller: AbortController | undefined;
   private stopped = false;
@@ -79,25 +80,41 @@ export class RepairService {
       this.store.list().some((a) => a.prId === pr.id && activeRepair(a.state))
     )
       throw new Error("Another repair is active for this PR");
-    return this.store.request(input, structuredClone(profile), pr.id);
+    const attempt = this.store.request(input, structuredClone(profile), pr.id);
+    this.wake();
+    return attempt;
   }
-  start(): void {
-    this.timer = setInterval(() => {
-      this.tick();
-    }, 250);
-    this.tick();
+  start(scheduler: WorkScheduler): void {
+    if (this.stopped || this.scheduled !== undefined) return;
+    this.scheduled = scheduler.task("repairs", () => this.tick());
+    this.wake();
   }
-  private tick(): void {
-    if (this.stopped || this.work !== undefined) return;
-    const a = this.store
-      .list()
-      .find(
-        (a) =>
-          a.state === RepairState.Queued ||
-          (a.state === RepairState.AwaitingChecks &&
-            (this.nextVerify.get(a.id) ?? 0) <= this.now()),
-      );
-    if (a === undefined) return;
+  wake(): void {
+    this.scheduled?.wake();
+  }
+  private nextAt(attempts: readonly RepairAttempt[]): number | undefined {
+    let next: number | undefined;
+    for (const attempt of attempts) {
+      const at =
+        attempt.state === RepairState.Queued
+          ? this.now()
+          : attempt.state === RepairState.AwaitingChecks
+            ? (this.nextVerify.get(attempt.id) ?? this.now())
+            : undefined;
+      if (at !== undefined) next = next === undefined ? at : Math.min(next, at);
+    }
+    return next;
+  }
+  private async tick(): Promise<number | undefined> {
+    if (this.stopped || this.work !== undefined) return undefined;
+    const attempts = this.store.list();
+    const a = attempts.find(
+      (a) =>
+        a.state === RepairState.Queued ||
+        (a.state === RepairState.AwaitingChecks &&
+          (this.nextVerify.get(a.id) ?? 0) <= this.now()),
+    );
+    if (a === undefined) return this.nextAt(attempts);
     const controller = new AbortController();
     this.controller = controller;
     this.work = (
@@ -123,6 +140,8 @@ export class RepairService {
         this.work = undefined;
         this.controller = undefined;
       });
+    await this.work;
+    return this.nextAt(this.store.list());
   }
   private update(
     a: RepairAttempt,
@@ -389,7 +408,7 @@ export class RepairService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.scheduled?.close();
     this.controller?.abort();
     await this.work;
   }

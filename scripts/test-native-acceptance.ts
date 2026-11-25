@@ -137,6 +137,11 @@ try {
     }
   }
   assert(ready, "Relocated native server did not become ready");
+  const captureRequestId = "native-acceptance-capture";
+  await client.startPerformanceCapture({
+    requestId: captureRequestId,
+    durationMs: 1000,
+  });
   const captureCommand = Bun.spawn(
     [
       binary,
@@ -146,11 +151,16 @@ try {
       "capture",
       "--seconds",
       "1",
+      "--request-id",
+      captureRequestId,
       "--wait",
       "--json",
     ],
     { cwd: home, env, stdout: "pipe", stderr: "pipe" },
   );
+  // Idle jobs have no periodic tick; a real API mutation supplies observable scheduled work.
+  await client.setPaused({ paused: true });
+  await client.setPaused({ paused: false });
   const captureOutput = await new Response(captureCommand.stdout).text();
   const captureErrors = await new Response(captureCommand.stderr).text();
   assert(
