@@ -219,3 +219,24 @@ Pending effect checks are spaced by a minute in memory; restart can cause an imm
 `issue show --full` returns the latest ten brief versions, ten assignment attempts, twenty pending effects, and fifty lifecycle events. `--before` pages events; it does not page briefs or assignments. The dashboard holds up to fifty current issue summaries, and `issue list --offset` pages the full collection. A `completed` effect record can mean a now-inapplicable intent was retired; use its kind, URL, and lifecycle events before treating it as proof of a remote mutation.
 
 Review the [decision core](../src/issues/decisions.ts), [application orchestration](../src/issues/service.ts), and [adapter contracts](../src/issues/ports.ts) together. The GitHub adapter bounds issue/comment collections at 1,000 records and rejects unsupported/incomplete reconciliation. The Git adapter uses trusted linked metadata, disables executable hook/filter paths, and fences writes with current authority. Controlled race and hostile-hook tests protect these boundaries; the dated [provider trial](live-acceptance.md#issue-lifecycle-provider-trial--2026-11-16) records what was exercised live, including the controller-owned fixture merges.
+
+## Issue event subscriptions
+
+Notification subscriptions are independent of issue execution. `octo-manager issue subscriptions ISSUE_ID` reports the implicit owner and other subscribers, each effective event selection, and its `legacy` or `selected` mode. Subscription operations require an existing enrolled issue and registered agent; they do not load dispatch profiles, change approval, resume workers, or cancel enrollment.
+
+```sh
+# Observe content changes without closure or polling-status notifications.
+octo-manager issue subscribe ISSUE_ID --agent-id AGENT_ID --events title,description,comment
+# Mute this subscriber while preserving enrollment and history.
+octo-manager issue subscribe ISSUE_ID --agent-id AGENT_ID --events none
+# Reset this subscriber to the legacy delivery default.
+octo-manager issue subscribe ISSUE_ID --agent-id AGENT_ID
+```
+
+The event names are `title`, `description`, `comment`, `closed`, `reopened`, `coordinator`, `refresh_failure`, and `refresh_recovery`. The legacy default includes only coordinator progress and refresh failure/recovery notices. Existing owners retain that default until explicitly changed. An omitted RPC filter resets it; a present filter with an empty event array mutes delivery. New observers use the same default when they omit a selection. A comment event identifies a newly observed comment ID/revision, including an edit to an existing comment. Repeated observations of the same comment revision do not notify again.
+
+The first complete provider observation establishes a baseline without replaying historical comments. Complete later snapshots produce observed changes; an incomplete or failed read retains the prior baseline. Polling cannot capture edits that occur and revert entirely between observations. Explicit source-event subscribers can continue read-only observation of terminal issues after retained assignment reconciliation has cleared the assignment identity; closure, reopening, or comments cannot restore execution authority or undo cancellation. Without selected source events, terminal retirement behavior remains unchanged.
+
+Event filtering applies before subscriber inbox creation. Changing preferences also makes excluded pending notices inapplicable, so the normal digest reconciler can withdraw and replace queued mixed digests. Already received notices and immutable digest revisions remain in history; a subscription change cannot retract content already received by a session. Selected content events remain readable when unrelated coordinator status changes. Automatic notifications contain only fixed event identity and kind; `octo-manager messages show RECEIPT --full` inspects bounded untrusted evidence without recording receipt; `octo-manager read RECEIPT` retrieves that evidence and records delivery. The evidence is frozen at observation time, with truncation indicators and full observed-string digests when an excerpt is limited. Current issue state and the original event evidence are separate fields.
+
+The GitHub adapter retains its completeness guard: a comment over 16,000 code units or an incomplete paged comment read marks the whole observation incomplete. This can postpone title, description, and closure events as well as comments; previous complete evidence remains authoritative until a complete observation succeeds. Refresh failure and recovery are independent historical events, so an explicitly selected transient failure remains readable after recovery.

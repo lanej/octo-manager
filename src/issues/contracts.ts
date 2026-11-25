@@ -210,3 +210,14 @@ export function clarificationTimeout(stage: string): number | undefined {
       return undefined;
   }
 }
+
+export enum IssueNotificationKind {
+  Title = "title",
+  Description = "description",
+  Comment = "comment",
+  Closed = "closed",
+  Reopened = "reopened",
+  Coordinator = "coordinator",
+  RefreshFailure = "refresh_failure",
+  RefreshRecovery = "refresh_recovery",
+}

@@ -39,6 +39,8 @@ const issue = fields(
 );
 const response = fields([], { issue });
 export const issueOutputs = {
+  "issue-subscribe": fields(["subscriptions"]),
+  "issue-subscriptions": fields(["subscriptions"]),
   "issue-track": response,
   "issue-list": fields(["hasMore"], { issues: rows(issue) }),
   "issue-show": fields(["hasMoreEvents", "effects"], {

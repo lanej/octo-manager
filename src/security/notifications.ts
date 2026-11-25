@@ -1,4 +1,5 @@
 import { EntryState } from "../merging/contracts.js";
+import { IssueNotificationKind } from "../issues/contracts.js";
 import { IssueStage, Waiting } from "../issues/contracts.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { Action } from "../tracking/types.js";
@@ -51,6 +52,8 @@ export const NoticeSchema = Type.Object(
     issueStage: Type.Optional(Type.Enum(IssueStage)),
     issueWaiting: Type.Optional(Type.Enum(Waiting)),
     issueRevision: Type.Optional(Type.String()),
+    issueEventKind: Type.Optional(Type.Enum(IssueNotificationKind)),
+    issueEventId: Type.Optional(Type.String()),
     assessmentId: Type.Optional(Type.String()),
     subject: Type.Optional(
       Type.Object(
@@ -88,7 +91,9 @@ const labels: Record<SafeNotice["kind"], string> = {
   issue: "Issue update",
 };
 export function noticeLabel(notice: SafeNotice): string {
-  return labels[notice.kind];
+  return notice.issueEventKind === undefined
+    ? labels[notice.kind]
+    : `Issue ${notice.issueEventKind.replaceAll("_", " ")}`;
 }
 export function parseNotice(value: unknown): SafeNotice {
   if (!Check(NoticeSchema, value)) throw new Error("Invalid safe notification");

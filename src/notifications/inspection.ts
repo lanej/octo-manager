@@ -20,6 +20,10 @@ import type { SubmissionState } from "../submissions/contracts.js";
 import { GetActionResponseSchema } from "../gen/octomanager/v2/tracking_pb.js";
 import { wireAction } from "../tracking/rpc.js";
 import { wireAssessment } from "../assessments/rpc.js";
+import {
+  wireIssueEvidence,
+  wireIssueNotificationKind,
+} from "../issues/subscription-wire.js";
 import { wireIssue } from "../issues/rpc.js";
 import { noticeLabel } from "../security/notifications.js";
 import type { Store } from "../store.js";
@@ -157,6 +161,26 @@ export function inspectMessage(
           case: "issue",
           value: create(NotificationIssueItemSchema, {
             issueId: value.id,
+            ...(message?.notice?.issueEventId === undefined
+              ? {}
+              : { eventId: message.notice.issueEventId }),
+            ...(message?.notice?.issueEventKind === undefined
+              ? {}
+              : {
+                  eventKind: wireIssueNotificationKind(
+                    message.notice.issueEventKind,
+                  ),
+                }),
+            ...(full && message?.notice?.issueEventId !== undefined
+              ? (() => {
+                  const evidence = store.issues.subscriptions.evidence(
+                    message.notice.issueEventId,
+                  );
+                  return evidence === undefined
+                    ? {}
+                    : { evidence: wireIssueEvidence(evidence) };
+                })()
+              : {}),
             stage: projected.stage,
             waiting: projected.waiting,
             ...(full ? { detail: projected } : {}),

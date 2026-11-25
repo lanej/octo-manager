@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file octomanager/v2/issues.proto.
  */
 export const file_octomanager_v2_issues: GenFile = /*@__PURE__*/
-  fileDesc("ChtvY3RvbWFuYWdlci92Mi9pc3N1ZXMucHJvdG8SDm9jdG9tYW5hZ2VyLnYyIlUKDklzc3VlUmVmZXJlbmNlEhAKCHByb3ZpZGVyGAEgASgJEg8KB3Byb2plY3QYAiABKAkSEwoLZXh0ZXJuYWxfaWQYAyABKAkSCwoDdXJsGAQgASgJIpMBCgpJc3N1ZUJyaWVmEg8KB3ZlcnNpb24YASABKA0SDwoHb3V0Y29tZRgCIAEoCRINCgVzY29wZRgDIAEoCRIQCghjcml0ZXJpYRgEIAMoCRITCgthc3N1bXB0aW9ucxgFIAMoCRIRCglxdWVzdGlvbnMYBiADKAkSGgoSYmxvY2tpbmdfcXVlc3Rpb25zGAcgASgIIu4DCgxNYW5hZ2VkSXNzdWUSCgoCaWQYASABKAkSMQoJcmVmZXJlbmNlGAIgASgLMh4ub2N0b21hbmFnZXIudjIuSXNzdWVSZWZlcmVuY2USDQoFdGl0bGUYAyABKAkSKQoFc3RhZ2UYBCABKA4yGi5vY3RvbWFuYWdlci52Mi5Jc3N1ZVN0YWdlEi0KB3dhaXRpbmcYBSABKA4yHC5vY3RvbWFuYWdlci52Mi5Jc3N1ZVdhaXRpbmcSDgoGZGV0YWlsGAYgASgJEikKBWJyaWVmGAcgASgLMhoub2N0b21hbmFnZXIudjIuSXNzdWVCcmllZhIVCg1hc3NpZ25tZW50X2lkGAggASgJEg4KBnByX3VybBgJIAEoCRIVCg11cGRhdGVkX2F0X21zGAogASgEEiQKF2NsYXJpZmljYXRpb25fZHVlX2F0X21zGAsgASgESACIAQESGQoRZXh0ZXJuYWxseV9jbG9zZWQYDCABKAgSGAoQYXBwcm92ZWRfdmVyc2lvbhgNIAEoDRIRCgl3b3Jrc3BhY2UYDiABKAkSMwoKYXNzaWdubWVudBgPIAEoCzIfLm9jdG9tYW5hZ2VyLnYyLklzc3VlQXNzaWdubWVudEIaChhfY2xhcmlmaWNhdGlvbl9kdWVfYXRfbXMiuAEKD0lzc3VlQXNzaWdubWVudBIKCgJpZBgBIAEoCRIMCgRyb2xlGAIgASgJEg0KBXN0YXRlGAMgASgJEhIKCnNlc3Npb25faWQYBCABKAkSDwoHdHVybl9pZBgFIAEoCRIVCg1icmllZl92ZXJzaW9uGAYgASgNEg4KBmRldGFpbBgHIAEoCRIPCgdoYXJuZXNzGAggASgJEg0KBW1vZGVsGAkgASgJEhAKCGV2aWRlbmNlGAogAygJIksKCklzc3VlRXZlbnQSEAoIc2VxdWVuY2UYASABKAQSDQoFYXRfbXMYAiABKAQSDAoEa2luZBgDIAEoCRIOCgZkZXRhaWwYBCABKAkibQoSRW5yb2xsSXNzdWVSZXF1ZXN0EhAKCHByb3ZpZGVyGAEgASgJEgsKA3VybBgCIAEoCRIMCgRyb290GAMgASgJEhYKDm93bmVyX2FnZW50X2lkGAQgASgJEhIKCnJlcXVlc3RfaWQYBSABKAkiQgoTRW5yb2xsSXNzdWVSZXNwb25zZRIrCgVpc3N1ZRgBIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZSIjChFMaXN0SXNzdWVzUmVxdWVzdBIOCgZvZmZzZXQYASABKA0iVAoSTGlzdElzc3Vlc1Jlc3BvbnNlEiwKBmlzc3VlcxgBIAMoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZRIQCghoYXNfbW9yZRgCIAEoCCI2Cg9HZXRJc3N1ZVJlcXVlc3QSCgoCaWQYASABKAkSFwoPYmVmb3JlX3NlcXVlbmNlGAIgASgEIpQCChBHZXRJc3N1ZVJlc3BvbnNlEisKBWlzc3VlGAEgASgLMhwub2N0b21hbmFnZXIudjIuTWFuYWdlZElzc3VlEjQKC2Fzc2lnbm1lbnRzGAIgAygLMh8ub2N0b21hbmFnZXIudjIuSXNzdWVBc3NpZ25tZW50EioKBmV2ZW50cxgDIAMoCzIaLm9jdG9tYW5hZ2VyLnYyLklzc3VlRXZlbnQSFwoPaGFzX21vcmVfZXZlbnRzGAQgASgIEioKBmJyaWVmcxgFIAMoCzIaLm9jdG9tYW5hZ2VyLnYyLklzc3VlQnJpZWYSLAoHZWZmZWN0cxgGIAMoCzIbLm9jdG9tYW5hZ2VyLnYyLklzc3VlRWZmZWN0IowBChJVcGRhdGVJc3N1ZVJlcXVlc3QSCgoCaWQYASABKAkSMQoJb3BlcmF0aW9uGAIgASgOMh4ub2N0b21hbmFnZXIudjIuSXNzdWVPcGVyYXRpb24SDAoEdGV4dBgDIAEoCRIVCg1icmllZl92ZXJzaW9uGAQgASgNEhIKCnJlcXVlc3RfaWQYBSABKAkiQgoTVXBkYXRlSXNzdWVSZXNwb25zZRIrCgVpc3N1ZRgBIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZSJDCgtJc3N1ZUVmZmVjdBIKCgJpZBgBIAEoCRIMCgRraW5kGAIgASgJEg0KBXN0YXRlGAMgASgJEgsKA3VybBgEIAEoCSr/AQoKSXNzdWVTdGFnZRIbChdJU1NVRV9TVEFHRV9VTlNQRUNJRklFRBAAEh0KGUlTU1VFX1NUQUdFX0lOVkVTVElHQVRJT04QARIVChFJU1NVRV9TVEFHRV9SRUFEWRACEhsKF0lTU1VFX1NUQUdFX0lOX1BST0dSRVNTEAMSFwoTSVNTVUVfU1RBR0VfVEVTVElORxAEEhkKFUlTU1VFX1NUQUdFX0lOX1JFVklFVxAFEhwKGElTU1VFX1NUQUdFX1ZFUklGSUNBVElPThAGEhQKEElTU1VFX1NUQUdFX0RPTkUQBxIZChVJU1NVRV9TVEFHRV9DQU5DRUxMRUQQCCrGAQoMSXNzdWVXYWl0aW5nEh0KGUlTU1VFX1dBSVRJTkdfVU5TUEVDSUZJRUQQABIWChJJU1NVRV9XQUlUSU5HX05PTkUQARIlCiFJU1NVRV9XQUlUSU5HX05FRURTX0NMQVJJRklDQVRJT04QAhIZChVJU1NVRV9XQUlUSU5HX0JMT0NLRUQQAxIjCh9JU1NVRV9XQUlUSU5HX0FXQUlUSU5HX0FQUFJPVkFMEAQSGAoUSVNTVUVfV0FJVElOR19QQVVTRUQQBSqqAgoOSXNzdWVPcGVyYXRpb24SHwobSVNTVUVfT1BFUkFUSU9OX1VOU1BFQ0lGSUVEEAASGwoXSVNTVUVfT1BFUkFUSU9OX0FQUFJPVkUQARInCiNJU1NVRV9PUEVSQVRJT05fQVBQUk9WRV9QVUJMSUNBVElPThACEhoKFklTU1VFX09QRVJBVElPTl9BTlNXRVIQAxIZChVJU1NVRV9PUEVSQVRJT05fUEFVU0UQBBIaChZJU1NVRV9PUEVSQVRJT05fUkVTVU1FEAUSGgoWSVNTVUVfT1BFUkFUSU9OX0NBTkNFTBAGEhsKF0lTU1VFX09QRVJBVElPTl9SRUZSRVNIEAcSJQohSVNTVUVfT1BFUkFUSU9OX0FQUFJPVkVfRk9MTE9XX1VQEAhCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YyO29jdG9tYW5hZ2VydjJiBnByb3RvMw");
+  fileDesc("ChtvY3RvbWFuYWdlci92Mi9pc3N1ZXMucHJvdG8SDm9jdG9tYW5hZ2VyLnYyIlUKDklzc3VlUmVmZXJlbmNlEhAKCHByb3ZpZGVyGAEgASgJEg8KB3Byb2plY3QYAiABKAkSEwoLZXh0ZXJuYWxfaWQYAyABKAkSCwoDdXJsGAQgASgJIpMBCgpJc3N1ZUJyaWVmEg8KB3ZlcnNpb24YASABKA0SDwoHb3V0Y29tZRgCIAEoCRINCgVzY29wZRgDIAEoCRIQCghjcml0ZXJpYRgEIAMoCRITCgthc3N1bXB0aW9ucxgFIAMoCRIRCglxdWVzdGlvbnMYBiADKAkSGgoSYmxvY2tpbmdfcXVlc3Rpb25zGAcgASgIIu4DCgxNYW5hZ2VkSXNzdWUSCgoCaWQYASABKAkSMQoJcmVmZXJlbmNlGAIgASgLMh4ub2N0b21hbmFnZXIudjIuSXNzdWVSZWZlcmVuY2USDQoFdGl0bGUYAyABKAkSKQoFc3RhZ2UYBCABKA4yGi5vY3RvbWFuYWdlci52Mi5Jc3N1ZVN0YWdlEi0KB3dhaXRpbmcYBSABKA4yHC5vY3RvbWFuYWdlci52Mi5Jc3N1ZVdhaXRpbmcSDgoGZGV0YWlsGAYgASgJEikKBWJyaWVmGAcgASgLMhoub2N0b21hbmFnZXIudjIuSXNzdWVCcmllZhIVCg1hc3NpZ25tZW50X2lkGAggASgJEg4KBnByX3VybBgJIAEoCRIVCg11cGRhdGVkX2F0X21zGAogASgEEiQKF2NsYXJpZmljYXRpb25fZHVlX2F0X21zGAsgASgESACIAQESGQoRZXh0ZXJuYWxseV9jbG9zZWQYDCABKAgSGAoQYXBwcm92ZWRfdmVyc2lvbhgNIAEoDRIRCgl3b3Jrc3BhY2UYDiABKAkSMwoKYXNzaWdubWVudBgPIAEoCzIfLm9jdG9tYW5hZ2VyLnYyLklzc3VlQXNzaWdubWVudEIaChhfY2xhcmlmaWNhdGlvbl9kdWVfYXRfbXMiuAEKD0lzc3VlQXNzaWdubWVudBIKCgJpZBgBIAEoCRIMCgRyb2xlGAIgASgJEg0KBXN0YXRlGAMgASgJEhIKCnNlc3Npb25faWQYBCABKAkSDwoHdHVybl9pZBgFIAEoCRIVCg1icmllZl92ZXJzaW9uGAYgASgNEg4KBmRldGFpbBgHIAEoCRIPCgdoYXJuZXNzGAggASgJEg0KBW1vZGVsGAkgASgJEhAKCGV2aWRlbmNlGAogAygJIksKCklzc3VlRXZlbnQSEAoIc2VxdWVuY2UYASABKAQSDQoFYXRfbXMYAiABKAQSDAoEa2luZBgDIAEoCRIOCgZkZXRhaWwYBCABKAkibQoSRW5yb2xsSXNzdWVSZXF1ZXN0EhAKCHByb3ZpZGVyGAEgASgJEgsKA3VybBgCIAEoCRIMCgRyb290GAMgASgJEhYKDm93bmVyX2FnZW50X2lkGAQgASgJEhIKCnJlcXVlc3RfaWQYBSABKAkiQgoTRW5yb2xsSXNzdWVSZXNwb25zZRIrCgVpc3N1ZRgBIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZSIjChFMaXN0SXNzdWVzUmVxdWVzdBIOCgZvZmZzZXQYASABKA0iVAoSTGlzdElzc3Vlc1Jlc3BvbnNlEiwKBmlzc3VlcxgBIAMoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZRIQCghoYXNfbW9yZRgCIAEoCCI2Cg9HZXRJc3N1ZVJlcXVlc3QSCgoCaWQYASABKAkSFwoPYmVmb3JlX3NlcXVlbmNlGAIgASgEIpQCChBHZXRJc3N1ZVJlc3BvbnNlEisKBWlzc3VlGAEgASgLMhwub2N0b21hbmFnZXIudjIuTWFuYWdlZElzc3VlEjQKC2Fzc2lnbm1lbnRzGAIgAygLMh8ub2N0b21hbmFnZXIudjIuSXNzdWVBc3NpZ25tZW50EioKBmV2ZW50cxgDIAMoCzIaLm9jdG9tYW5hZ2VyLnYyLklzc3VlRXZlbnQSFwoPaGFzX21vcmVfZXZlbnRzGAQgASgIEioKBmJyaWVmcxgFIAMoCzIaLm9jdG9tYW5hZ2VyLnYyLklzc3VlQnJpZWYSLAoHZWZmZWN0cxgGIAMoCzIbLm9jdG9tYW5hZ2VyLnYyLklzc3VlRWZmZWN0IowBChJVcGRhdGVJc3N1ZVJlcXVlc3QSCgoCaWQYASABKAkSMQoJb3BlcmF0aW9uGAIgASgOMh4ub2N0b21hbmFnZXIudjIuSXNzdWVPcGVyYXRpb24SDAoEdGV4dBgDIAEoCRIVCg1icmllZl92ZXJzaW9uGAQgASgNEhIKCnJlcXVlc3RfaWQYBSABKAkiQgoTVXBkYXRlSXNzdWVSZXNwb25zZRIrCgVpc3N1ZRgBIAEoCzIcLm9jdG9tYW5hZ2VyLnYyLk1hbmFnZWRJc3N1ZSJDCgtJc3N1ZUVmZmVjdBIKCgJpZBgBIAEoCRIMCgRraW5kGAIgASgJEg0KBXN0YXRlGAMgASgJEgsKA3VybBgEIAEoCSJOChBJc3N1ZUV2ZW50RmlsdGVyEjoKBmV2ZW50cxgBIAMoDjIqLm9jdG9tYW5hZ2VyLnYyLklzc3VlTm90aWZpY2F0aW9uRXZlbnRLaW5kIpMBChFJc3N1ZVN1YnNjcmlwdGlvbhIQCghpc3N1ZV9pZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIQCghleHBsaWNpdBgDIAEoCBI6CgZldmVudHMYBCADKA4yKi5vY3RvbWFuYWdlci52Mi5Jc3N1ZU5vdGlmaWNhdGlvbkV2ZW50S2luZBIMCgRtb2RlGAUgASgJInMKG1NldElzc3VlU3Vic2NyaXB0aW9uUmVxdWVzdBIQCghpc3N1ZV9pZBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCRIwCgZmaWx0ZXIYAyABKAsyIC5vY3RvbWFuYWdlci52Mi5Jc3N1ZUV2ZW50RmlsdGVyIjEKHUxpc3RJc3N1ZVN1YnNjcmlwdGlvbnNSZXF1ZXN0EhAKCGlzc3VlX2lkGAEgASgJIlgKHFNldElzc3VlU3Vic2NyaXB0aW9uUmVzcG9uc2USOAoNc3Vic2NyaXB0aW9ucxgBIAMoCzIhLm9jdG9tYW5hZ2VyLnYyLklzc3VlU3Vic2NyaXB0aW9uIs4CChlJc3N1ZU5vdGlmaWNhdGlvbkV2aWRlbmNlEgoKAmlkGAEgASgJEhAKCGlzc3VlX2lkGAIgASgJEjgKBGtpbmQYAyABKA4yKi5vY3RvbWFuYWdlci52Mi5Jc3N1ZU5vdGlmaWNhdGlvbkV2ZW50S2luZBIQCghyZXZpc2lvbhgEIAEoCRIOCgZiZWZvcmUYBSABKAkSDQoFYWZ0ZXIYBiABKAkSEgoKY29tbWVudF9pZBgHIAEoCRIYChBjb21tZW50X3JldmlzaW9uGAggASgJEgsKA3VybBgJIAEoCRINCgVhdF9tcxgKIAEoBBIYChBiZWZvcmVfdHJ1bmNhdGVkGAsgASgIEhcKD2FmdGVyX3RydW5jYXRlZBgMIAEoCBIVCg1iZWZvcmVfZGlnZXN0GA0gASgJEhQKDGFmdGVyX2RpZ2VzdBgOIAEoCSJaCh5MaXN0SXNzdWVTdWJzY3JpcHRpb25zUmVzcG9uc2USOAoNc3Vic2NyaXB0aW9ucxgBIAMoCzIhLm9jdG9tYW5hZ2VyLnYyLklzc3VlU3Vic2NyaXB0aW9uKv8BCgpJc3N1ZVN0YWdlEhsKF0lTU1VFX1NUQUdFX1VOU1BFQ0lGSUVEEAASHQoZSVNTVUVfU1RBR0VfSU5WRVNUSUdBVElPThABEhUKEUlTU1VFX1NUQUdFX1JFQURZEAISGwoXSVNTVUVfU1RBR0VfSU5fUFJPR1JFU1MQAxIXChNJU1NVRV9TVEFHRV9URVNUSU5HEAQSGQoVSVNTVUVfU1RBR0VfSU5fUkVWSUVXEAUSHAoYSVNTVUVfU1RBR0VfVkVSSUZJQ0FUSU9OEAYSFAoQSVNTVUVfU1RBR0VfRE9ORRAHEhkKFUlTU1VFX1NUQUdFX0NBTkNFTExFRBAIKsYBCgxJc3N1ZVdhaXRpbmcSHQoZSVNTVUVfV0FJVElOR19VTlNQRUNJRklFRBAAEhYKEklTU1VFX1dBSVRJTkdfTk9ORRABEiUKIUlTU1VFX1dBSVRJTkdfTkVFRFNfQ0xBUklGSUNBVElPThACEhkKFUlTU1VFX1dBSVRJTkdfQkxPQ0tFRBADEiMKH0lTU1VFX1dBSVRJTkdfQVdBSVRJTkdfQVBQUk9WQUwQBBIYChRJU1NVRV9XQUlUSU5HX1BBVVNFRBAFKqoCCg5Jc3N1ZU9wZXJhdGlvbhIfChtJU1NVRV9PUEVSQVRJT05fVU5TUEVDSUZJRUQQABIbChdJU1NVRV9PUEVSQVRJT05fQVBQUk9WRRABEicKI0lTU1VFX09QRVJBVElPTl9BUFBST1ZFX1BVQkxJQ0FUSU9OEAISGgoWSVNTVUVfT1BFUkFUSU9OX0FOU1dFUhADEhkKFUlTU1VFX09QRVJBVElPTl9QQVVTRRAEEhoKFklTU1VFX09QRVJBVElPTl9SRVNVTUUQBRIaChZJU1NVRV9PUEVSQVRJT05fQ0FOQ0VMEAYSGwoXSVNTVUVfT1BFUkFUSU9OX1JFRlJFU0gQBxIlCiFJU1NVRV9PUEVSQVRJT05fQVBQUk9WRV9GT0xMT1dfVVAQCCq6AwoaSXNzdWVOb3RpZmljYXRpb25FdmVudEtpbmQSLQopSVNTVUVfTk9USUZJQ0FUSU9OX0VWRU5UX0tJTkRfVU5TUEVDSUZJRUQQABInCiNJU1NVRV9OT1RJRklDQVRJT05fRVZFTlRfS0lORF9USVRMRRABEi0KKUlTU1VFX05PVElGSUNBVElPTl9FVkVOVF9LSU5EX0RFU0NSSVBUSU9OEAISKQolSVNTVUVfTk9USUZJQ0FUSU9OX0VWRU5UX0tJTkRfQ09NTUVOVBADEigKJElTU1VFX05PVElGSUNBVElPTl9FVkVOVF9LSU5EX0NMT1NFRBAEEioKJklTU1VFX05PVElGSUNBVElPTl9FVkVOVF9LSU5EX1JFT1BFTkVEEAUSLQopSVNTVUVfTk9USUZJQ0FUSU9OX0VWRU5UX0tJTkRfQ09PUkRJTkFUT1IQBhIxCi1JU1NVRV9OT1RJRklDQVRJT05fRVZFTlRfS0lORF9SRUZSRVNIX0ZBSUxVUkUQBxIyCi5JU1NVRV9OT1RJRklDQVRJT05fRVZFTlRfS0lORF9SRUZSRVNIX1JFQ09WRVJZEAhCQFo+Z2l0aHViLmNvbS9sYW5lai9vY3RvLW1hbmFnZXIvZ2VuL29jdG9tYW5hZ2VyL3YyO29jdG9tYW5hZ2VydjJiBnByb3RvMw");
 
 /**
  * IssueReference retains provider-qualified identity.
@@ -544,6 +544,239 @@ export const IssueEffectSchema: GenMessage<IssueEffect> = /*@__PURE__*/
   messageDesc(file_octomanager_v2_issues, 13);
 
 /**
+ * IssueEventFilter is present even for an explicit empty selection (mute).
+ *
+ * @generated from message octomanager.v2.IssueEventFilter
+ */
+export type IssueEventFilter = Message<"octomanager.v2.IssueEventFilter"> & {
+  /**
+   * @generated from field: repeated octomanager.v2.IssueNotificationEventKind events = 1;
+   */
+  events: IssueNotificationEventKind[];
+};
+
+/**
+ * Describes the message octomanager.v2.IssueEventFilter.
+ * Use `create(IssueEventFilterSchema)` to create a new message.
+ */
+export const IssueEventFilterSchema: GenMessage<IssueEventFilter> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 14);
+
+/**
+ * IssueSubscription reports effective preferences; explicit is false for the legacy default.
+ *
+ * @generated from message octomanager.v2.IssueSubscription
+ */
+export type IssueSubscription = Message<"octomanager.v2.IssueSubscription"> & {
+  /**
+   * @generated from field: string issue_id = 1;
+   */
+  issueId: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: bool explicit = 3;
+   */
+  explicit: boolean;
+
+  /**
+   * @generated from field: repeated octomanager.v2.IssueNotificationEventKind events = 4;
+   */
+  events: IssueNotificationEventKind[];
+
+  /**
+   * @generated from field: string mode = 5;
+   */
+  mode: string;
+};
+
+/**
+ * Describes the message octomanager.v2.IssueSubscription.
+ * Use `create(IssueSubscriptionSchema)` to create a new message.
+ */
+export const IssueSubscriptionSchema: GenMessage<IssueSubscription> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 15);
+
+/**
+ * SetIssueSubscriptionRequest changes delivery only; an absent filter resets the legacy coordinator/refresh-status default.
+ * A present filter with no events mutes this subscriber without changing enrollment or execution authority.
+ *
+ * @generated from message octomanager.v2.SetIssueSubscriptionRequest
+ */
+export type SetIssueSubscriptionRequest = Message<"octomanager.v2.SetIssueSubscriptionRequest"> & {
+  /**
+   * @generated from field: string issue_id = 1;
+   */
+  issueId: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: octomanager.v2.IssueEventFilter filter = 3;
+   */
+  filter?: IssueEventFilter | undefined;
+};
+
+/**
+ * Describes the message octomanager.v2.SetIssueSubscriptionRequest.
+ * Use `create(SetIssueSubscriptionRequestSchema)` to create a new message.
+ */
+export const SetIssueSubscriptionRequestSchema: GenMessage<SetIssueSubscriptionRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 16);
+
+/**
+ * ListIssueSubscriptionsRequest identifies an already enrolled issue.
+ *
+ * @generated from message octomanager.v2.ListIssueSubscriptionsRequest
+ */
+export type ListIssueSubscriptionsRequest = Message<"octomanager.v2.ListIssueSubscriptionsRequest"> & {
+  /**
+   * @generated from field: string issue_id = 1;
+   */
+  issueId: string;
+};
+
+/**
+ * Describes the message octomanager.v2.ListIssueSubscriptionsRequest.
+ * Use `create(ListIssueSubscriptionsRequestSchema)` to create a new message.
+ */
+export const ListIssueSubscriptionsRequestSchema: GenMessage<ListIssueSubscriptionsRequest> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 17);
+
+/**
+ * SetIssueSubscriptionResponse returns effective delivery selections after an update.
+ *
+ * @generated from message octomanager.v2.SetIssueSubscriptionResponse
+ */
+export type SetIssueSubscriptionResponse = Message<"octomanager.v2.SetIssueSubscriptionResponse"> & {
+  /**
+   * @generated from field: repeated octomanager.v2.IssueSubscription subscriptions = 1;
+   */
+  subscriptions: IssueSubscription[];
+};
+
+/**
+ * Describes the message octomanager.v2.SetIssueSubscriptionResponse.
+ * Use `create(SetIssueSubscriptionResponseSchema)` to create a new message.
+ */
+export const SetIssueSubscriptionResponseSchema: GenMessage<SetIssueSubscriptionResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 18);
+
+/**
+ * IssueNotificationEvidence retains the bounded observed change, not current issue content.
+ *
+ * @generated from message octomanager.v2.IssueNotificationEvidence
+ */
+export type IssueNotificationEvidence = Message<"octomanager.v2.IssueNotificationEvidence"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string issue_id = 2;
+   */
+  issueId: string;
+
+  /**
+   * @generated from field: octomanager.v2.IssueNotificationEventKind kind = 3;
+   */
+  kind: IssueNotificationEventKind;
+
+  /**
+   * @generated from field: string revision = 4;
+   */
+  revision: string;
+
+  /**
+   * Before and after are bounded untrusted producer content, never automatic notification instructions.
+   *
+   * @generated from field: string before = 5;
+   */
+  before: string;
+
+  /**
+   * @generated from field: string after = 6;
+   */
+  after: string;
+
+  /**
+   * @generated from field: string comment_id = 7;
+   */
+  commentId: string;
+
+  /**
+   * @generated from field: string comment_revision = 8;
+   */
+  commentRevision: string;
+
+  /**
+   * @generated from field: string url = 9;
+   */
+  url: string;
+
+  /**
+   * @generated from field: uint64 at_ms = 10;
+   */
+  atMs: bigint;
+
+  /**
+   * @generated from field: bool before_truncated = 11;
+   */
+  beforeTruncated: boolean;
+
+  /**
+   * @generated from field: bool after_truncated = 12;
+   */
+  afterTruncated: boolean;
+
+  /**
+   * Digests identify full observed strings even when the excerpts are truncated.
+   *
+   * @generated from field: string before_digest = 13;
+   */
+  beforeDigest: string;
+
+  /**
+   * @generated from field: string after_digest = 14;
+   */
+  afterDigest: string;
+};
+
+/**
+ * Describes the message octomanager.v2.IssueNotificationEvidence.
+ * Use `create(IssueNotificationEvidenceSchema)` to create a new message.
+ */
+export const IssueNotificationEvidenceSchema: GenMessage<IssueNotificationEvidence> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 19);
+
+/**
+ * ListIssueSubscriptionsResponse returns the implicit owner and explicit subscribers.
+ *
+ * @generated from message octomanager.v2.ListIssueSubscriptionsResponse
+ */
+export type ListIssueSubscriptionsResponse = Message<"octomanager.v2.ListIssueSubscriptionsResponse"> & {
+  /**
+   * @generated from field: repeated octomanager.v2.IssueSubscription subscriptions = 1;
+   */
+  subscriptions: IssueSubscription[];
+};
+
+/**
+ * Describes the message octomanager.v2.ListIssueSubscriptionsResponse.
+ * Use `create(ListIssueSubscriptionsResponseSchema)` to create a new message.
+ */
+export const ListIssueSubscriptionsResponseSchema: GenMessage<ListIssueSubscriptionsResponse> = /*@__PURE__*/
+  messageDesc(file_octomanager_v2_issues, 20);
+
+/**
  * IssueStage describes work progress independently of tracker status.
  *
  * @generated from enum octomanager.v2.IssueStage
@@ -701,4 +934,62 @@ export enum IssueOperation {
  */
 export const IssueOperationSchema: GenEnum<IssueOperation> = /*@__PURE__*/
   enumDesc(file_octomanager_v2_issues, 2);
+
+/**
+ * IssueNotificationEventKind separates source changes from coordinator progress.
+ *
+ * @generated from enum octomanager.v2.IssueNotificationEventKind
+ */
+export enum IssueNotificationEventKind {
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_TITLE = 1;
+   */
+  TITLE = 1,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION = 2;
+   */
+  DESCRIPTION = 2,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_COMMENT = 3;
+   */
+  COMMENT = 3,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_CLOSED = 4;
+   */
+  CLOSED = 4,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_REOPENED = 5;
+   */
+  REOPENED = 5,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR = 6;
+   */
+  COORDINATOR = 6,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE = 7;
+   */
+  REFRESH_FAILURE = 7,
+
+  /**
+   * @generated from enum value: ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY = 8;
+   */
+  REFRESH_RECOVERY = 8,
+}
+
+/**
+ * Describes the enum octomanager.v2.IssueNotificationEventKind.
+ */
+export const IssueNotificationEventKindSchema: GenEnum<IssueNotificationEventKind> = /*@__PURE__*/
+  enumDesc(file_octomanager_v2_issues, 3);
 

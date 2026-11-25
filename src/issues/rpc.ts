@@ -12,6 +12,10 @@ import {
   type IssueRecord,
   type Assignment,
 } from "./contracts.js";
+import {
+  issueNotificationKind,
+  wireIssueSubscription,
+} from "./subscription-wire.js";
 import type { IssueService } from "./service.js";
 const stages: Record<IssueStage, WireStage> = {
   investigation: WireStage.INVESTIGATION,
@@ -101,13 +105,42 @@ function perform<T>(work: () => T): T {
     );
   }
 }
+function subscriptionIssue(service: IssueService, id: string): IssueRecord {
+  if (id.trim().length === 0) throw new Error("Issue ID required");
+  return service.store.get(id);
+}
 export function issueRoutes(
   service: IssueService,
 ): Pick<
   ServiceImpl<typeof SchedulerService>,
-  "enrollIssue" | "listIssues" | "getIssue" | "updateIssue"
+  | "enrollIssue"
+  | "listIssues"
+  | "getIssue"
+  | "updateIssue"
+  | "setIssueSubscription"
+  | "listIssueSubscriptions"
 > {
   return {
+    setIssueSubscription(request) {
+      return perform(() =>
+        service.store.atomic(() => ({
+          subscriptions: service.store.subscriptions
+            .set(
+              subscriptionIssue(service, request.issueId),
+              request.agentId,
+              request.filter?.events.map(issueNotificationKind),
+            )
+            .map(wireIssueSubscription),
+        })),
+      );
+    },
+    listIssueSubscriptions(request) {
+      return perform(() => ({
+        subscriptions: service.store.subscriptions
+          .list(subscriptionIssue(service, request.issueId))
+          .map(wireIssueSubscription),
+      }));
+    },
     enrollIssue(request) {
       return perform(() => ({
         issue: wireIssue(

@@ -146,3 +146,67 @@ message IssueEffect {
   string state = 3;
   string url = 4;
 }
+
+// IssueNotificationEventKind separates source changes from coordinator progress.
+enum IssueNotificationEventKind {
+  ISSUE_NOTIFICATION_EVENT_KIND_UNSPECIFIED = 0;
+  ISSUE_NOTIFICATION_EVENT_KIND_TITLE = 1;
+  ISSUE_NOTIFICATION_EVENT_KIND_DESCRIPTION = 2;
+  ISSUE_NOTIFICATION_EVENT_KIND_COMMENT = 3;
+  ISSUE_NOTIFICATION_EVENT_KIND_CLOSED = 4;
+  ISSUE_NOTIFICATION_EVENT_KIND_REOPENED = 5;
+  ISSUE_NOTIFICATION_EVENT_KIND_COORDINATOR = 6;
+  ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_FAILURE = 7;
+  ISSUE_NOTIFICATION_EVENT_KIND_REFRESH_RECOVERY = 8;
+}
+// IssueEventFilter is present even for an explicit empty selection (mute).
+message IssueEventFilter {
+  repeated IssueNotificationEventKind events = 1;
+}
+// IssueSubscription reports effective preferences; explicit is false for the legacy default.
+message IssueSubscription {
+  string issue_id = 1;
+  string agent_id = 2;
+  bool explicit = 3;
+  repeated IssueNotificationEventKind events = 4;
+  string mode = 5;
+}
+// SetIssueSubscriptionRequest changes delivery only; an absent filter resets the legacy coordinator/refresh-status default.
+// A present filter with no events mutes this subscriber without changing enrollment or execution authority.
+message SetIssueSubscriptionRequest {
+  string issue_id = 1;
+  string agent_id = 2;
+  IssueEventFilter filter = 3;
+}
+// ListIssueSubscriptionsRequest identifies an already enrolled issue.
+message ListIssueSubscriptionsRequest {
+  string issue_id = 1;
+}
+// SetIssueSubscriptionResponse returns effective delivery selections after an update.
+message SetIssueSubscriptionResponse {
+  repeated IssueSubscription subscriptions = 1;
+}
+// IssueNotificationEvidence retains the bounded observed change, not current issue content.
+message IssueNotificationEvidence {
+  string id = 1;
+  string issue_id = 2;
+  IssueNotificationEventKind kind = 3;
+  string revision = 4;
+  // Before and after are bounded untrusted producer content, never automatic notification instructions.
+  string before = 5;
+  string after = 6;
+  string comment_id = 7;
+  string comment_revision = 8;
+  string url = 9;
+  uint64 at_ms = 10;
+  bool before_truncated = 11;
+  bool after_truncated = 12;
+  // Digests identify full observed strings even when the excerpts are truncated.
+  string before_digest = 13;
+  string after_digest = 14;
+}
+
+// ListIssueSubscriptionsResponse returns the implicit owner and explicit subscribers.
+message ListIssueSubscriptionsResponse {
+  repeated IssueSubscription subscriptions = 1;
+}
