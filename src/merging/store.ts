@@ -50,9 +50,45 @@ import {
   type QueueInput,
   type PreparationProfile,
 } from "./contracts.js";
+function settingSource(
+  value: string | undefined,
+  entries: readonly MergeEntry[],
+): "explicit" | "inherited" {
+  if (value !== undefined) {
+    const setting: unknown = JSON.parse(value);
+    return typeof setting === "object" &&
+      setting !== null &&
+      "source" in setting &&
+      setting.source === "explicit"
+      ? "explicit"
+      : "inherited";
+  }
+  return entries.some(
+    (entry) => !terminal(entry.state) && entry.autoMergeSource !== "inherited",
+  )
+    ? "explicit"
+    : "inherited";
+}
+function needsInheritedDisable(
+  value: string | undefined,
+  entries: readonly MergeEntry[],
+  epoch: number,
+): boolean {
+  if (settingSource(value, entries) === "explicit") return false;
+  const entry = entries.find((value) => !terminal(value.state));
+  return (
+    value !== JSON.stringify({ source: "inherited", epoch }) ||
+    (entry !== undefined &&
+      (entry.autoMerge ||
+        entry.autoMergeSource !== "inherited" ||
+        entry.trackingEpoch !== epoch ||
+        entry.autoMergeStage !== undefined))
+  );
+}
 export class MergeStore {
   private entriesByPr: StatementSync | undefined;
   private settingByPr: StatementSync | undefined;
+  private inheritedCandidates: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
     readonly tracking: TrackingStore,
@@ -493,40 +529,60 @@ export class MergeStore {
     const row = (this.settingByPr ??= this.db.prepare(
       "SELECT value FROM settings WHERE key=?",
     )).get(`merge-setting:${pr.id}`);
-    if (row !== undefined) {
-      const value: unknown = JSON.parse(String(row["value"]));
+    return settingSource(
+      row === undefined ? undefined : String(row["value"]),
+      row === undefined ? this.entries(pr.id) : [],
+    );
+  }
+  // A fresh bulk preflight avoids repeating idempotent revocation for every historical policy.
+  // Actual mutations still re-read their authority and merge state in disableInherited.
+  inheritedDisableCandidates(prIds: readonly string[]): Set<string> {
+    if (prIds.length === 0) return new Set();
+    const rows = (this.inheritedCandidates ??= this.db.prepare(
+      "SELECT p.id,p.tracking_epoch,s.value,e.data,e.pr_id FROM json_each(?) ids JOIN tracked_prs p ON p.id=ids.value LEFT JOIN settings s ON s.key='merge-setting:'||p.id LEFT JOIN merge_entries e ON e.pr_id=p.id ORDER BY ids.key,e.rowid",
+    )).all(JSON.stringify(prIds));
+    const states = new Map<
+      string,
+      { epoch: number; setting: string | undefined; entries: MergeEntry[] }
+    >();
+    for (const row of rows) {
+      const id = String(row["id"]);
+      let state = states.get(id);
+      if (state === undefined) {
+        state = {
+          epoch: Number(row["tracking_epoch"]),
+          setting: row["value"] === null ? undefined : String(row["value"]),
+          entries: [],
+        };
+        states.set(id, state);
+      }
       if (
-        typeof value === "object" &&
-        value !== null &&
-        "source" in value &&
-        value.source === "explicit"
+        row["data"] !== null &&
+        !(
+          state.setting !== undefined &&
+          settingSource(state.setting, []) === "explicit"
+        )
       )
-        return "explicit";
-      return "inherited";
+        state.entries.push(this.entryRow(row));
     }
-    return this.entries(pr.id).some(
-      (entry) =>
-        !terminal(entry.state) && entry.autoMergeSource !== "inherited",
-    )
-      ? "explicit"
-      : "inherited";
+    return new Set(
+      [...states]
+        .filter(([, state]) =>
+          needsInheritedDisable(state.setting, state.entries, state.epoch),
+        )
+        .map(([id]) => id),
+    );
   }
   disableInherited(prId: string): void {
     const pr = this.tracking.prContext(prId);
-    if (this.settingSource(pr.id) === "explicit") return;
-    const setting = (this.settingByPr ??= this.db.prepare(
+    const row = (this.settingByPr ??= this.db.prepare(
       "SELECT value FROM settings WHERE key=?",
     )).get(`merge-setting:${pr.id}`);
-    const entry = this.entries(pr.id).find((value) => !terminal(value.state));
-    if (
-      setting?.["value"] ===
-        JSON.stringify({ source: "inherited", epoch: pr.trackingEpoch }) &&
-      (entry === undefined ||
-        (!entry.autoMerge &&
-          entry.autoMergeSource === "inherited" &&
-          entry.trackingEpoch === pr.trackingEpoch &&
-          entry.autoMergeStage === undefined))
-    )
+    const setting = row === undefined ? undefined : String(row["value"]);
+    // Explicit settings do not require decoding unrelated merge history.
+    if (setting !== undefined && settingSource(setting, []) === "explicit")
+      return;
+    if (!needsInheritedDisable(setting, this.entries(pr.id), pr.trackingEpoch))
       return;
     this.autoMerge(
       pr.id,

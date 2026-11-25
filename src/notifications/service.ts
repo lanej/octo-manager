@@ -201,26 +201,37 @@ export class DigestService {
       )
       .digest("hex");
   }
+  private canSkipDiscovery(
+    agentId: string,
+    revision: string | undefined,
+  ): boolean {
+    const previous = this.checks.get(agentId);
+    return (
+      revision !== undefined &&
+      previous?.inputRevision === revision &&
+      previous.at > this.now()
+    );
+  }
   private async discover(): Promise<void> {
     const recoveryRevision = this.options.inputRevision?.();
+    let revision = recoveryRevision;
     if (
       recoveryRevision === undefined ||
       recoveryRevision !== this.recoveryRevision
     ) {
       this.tracking.store.prepareSafeRecovery();
       this.recoveryRevision = recoveryRevision;
+      // Recovery can create notices; eligibility must use its resulting revision.
+      revision = this.options.inputRevision?.();
     }
     for (const agent of this.tracking.store.agents()) {
+      // Unchanged recipients need neither a database probe nor an event-loop yield.
+      if (this.canSkipDiscovery(agent.id, revision)) continue;
       await setImmediate();
       if (this.stopped) break;
-      const previous = this.checks.get(agent.id);
-      const revision = this.options.inputRevision?.();
-      if (
-        revision !== undefined &&
-        previous?.inputRevision === revision &&
-        previous.at > this.now()
-      )
-        continue;
+      // Awaited work can admit local or external writes. Refresh before using the snapshot again.
+      revision = this.options.inputRevision?.();
+      if (this.canSkipDiscovery(agent.id, revision)) continue;
       if (!this.managed(agent.id) || this.running.has(agent.id)) continue;
       this.queued.set(agent.id, {
         agent,
