@@ -265,7 +265,7 @@ export class TrackingStore {
   }
   private prRow(id: string) {
     const row = (this.prByIdentity ??= this.db.prepare(
-      "SELECT * FROM tracked_prs WHERE id=? OR url=? ORDER BY rowid LIMIT 1",
+      "SELECT * FROM tracked_prs WHERE rowid=(SELECT min(rowid) FROM (SELECT rowid FROM tracked_prs WHERE id=? UNION ALL SELECT rowid FROM tracked_prs WHERE url=?))",
     )).get(id, id);
     if (row === undefined) throw new Error("Tracked PR not found");
     return row;
