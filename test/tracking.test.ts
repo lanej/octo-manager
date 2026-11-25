@@ -126,6 +126,36 @@ test("PR point reads retain fresh observations without decoding unrelated histor
     await rm(dir, { recursive: true, force: true });
   }
 });
+test("PR identity lookup preserves earliest-row matches across ID and URL", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-pr-identity-"));
+  const store = new Store(dir);
+  const db = new DatabaseSync(join(dir, "jobs.sqlite"));
+  try {
+    const first = store.tracking.track(url, target);
+    const second = store.tracking.track(
+      "https://github.com/owner/repo/pull/2",
+      target,
+    );
+    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(
+      second.id,
+      first.id,
+    );
+    assert.equal(store.tracking.pr(second.id).id, first.id);
+    assert.equal(store.tracking.prContext(second.id).id, first.id);
+    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(url, first.id);
+    assert.equal(store.tracking.pr(second.id).id, second.id);
+    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(
+      first.id,
+      second.id,
+    );
+    assert.equal(store.tracking.pr(first.id).id, first.id);
+    assert.equal(store.tracking.prContext(first.id).id, first.id);
+  } finally {
+    db.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 test("tracking preserves jobs across migration and restart, blocker episodes and ownership", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-tracking-"));
   let store = new Store(dir, () => 2000);
