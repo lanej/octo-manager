@@ -66,9 +66,9 @@ function observation(revision = "1"): TrackerObservation {
     revision,
   };
 }
-function setup() {
+function setup(changed?: () => void) {
   const directory = mkdtempSync(join(tmpdir(), "octo-issue-subscriptions-"));
-  const store = new Store(directory);
+  const store = new Store(directory, Date.now, changed);
   const owner = store.tracking.registerAgent({
     harness: "codex",
     endpoint: "local",
@@ -1199,6 +1199,36 @@ test("selected source comments include reconciled Octo posts without adding work
     expect(f.store.issues.assignments(f.value.id)).toEqual([]);
   } finally {
     await service.close();
+    f.close();
+  }
+});
+
+test("scheduled issue source changes wake reconciliation without polling SQLite", () => {
+  let changes = 0;
+  const f = setup(() => {
+    changes++;
+  });
+  try {
+    f.store.issues.subscriptions.set(f.value, f.owner.id, [Kind.Title]);
+    const baseline = observation();
+    f.store.issues.subscriptions.observe(f.value, baseline);
+    changes = 0;
+    f.store.issues.subscriptions.observe(f.value, baseline);
+    expect(changes).toBe(0);
+    const updated = { ...observation("2"), title: "Changed upstream title" };
+    f.store.issues.subscriptions.observe(f.value, updated);
+    expect(changes).toBeGreaterThan(0);
+    expect(
+      inbox(f.store, f.owner.id).some(
+        (message) =>
+          message.notice?.kind === "issue" &&
+          message.notice.issueEventKind === Kind.Title,
+      ),
+    ).toBe(true);
+    changes = 0;
+    f.store.issues.subscriptions.observe(f.value, updated);
+    expect(changes).toBe(0);
+  } finally {
     f.close();
   }
 });

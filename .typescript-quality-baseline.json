@@ -558,39 +558,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-confusing-void-expression",
       "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, \"worker_idle\", \"Worker slot released\"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "const job = this.store.submit(parseTask(v.task), v.requestId); this.notify(); queueMicrotask(() => this.tick()); return job;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
       "source": "if (this.server?.listening) await new Promise<void>(resolve => this.server!.close(() => resolve()));",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "if (v.op === \"pause\" || v.op === \"resume\") { this.store.setPaused(v.op === \"pause\"); this.notify(); queueMicrotask(() => this.tick()); return { scheduler: v.op === \"pause\" ? \"paused\" : \"running\" }; }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "this.timer = setInterval(() => this.tick(), 100);",
       "count": 1
     },
     {
@@ -798,23 +766,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, \"worker_idle\", \"Worker slot released\"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!active.killTimer) active.killTimer = setTimeout(() => active.child?.kill(\"SIGKILL\"), 5000);",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!job) return;",
       "count": 1
     },
     {
@@ -846,14 +798,6 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (this.stopping || this.active || this.recoveryPids.size || this.store.paused()) return;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if(this.active)this.abort(this.active);",
       "count": 1
     },
@@ -863,14 +807,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "return { scheduler: this.stopped ? \"stopped\" : this.stopping ? \"stopping\" : this.store.paused() ? \"paused\" : \"running\", worker: recoveryPid ? \"recovering\" : this.active ? \"busy\" : \"idle\", jobs: this.store.jobs(), events: this.store.events(), ...(recoveryPid ? { recoveryPid } : {}) };",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "this.stopping = true; if (this.timer) clearInterval(this.timer); this.notify();",
       "count": 1
     },
     {
@@ -939,14 +875,6 @@
     },
     {
       "file": "src/coordinator.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected number value in conditional. An explicit zero/NaN check is required.",
-      "source": "if (this.stopping || this.active || this.recoveryPids.size || this.store.paused()) return;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
       "tool": "format",
       "rule": "prettier",
       "message": "Formatting differs",
@@ -959,14 +887,6 @@
       "rule": "TS2412",
       "message": "Type 'number | undefined' is not assignable to type 'number' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.\n  Type 'undefined' is not assignable to type 'number'.",
       "source": "job.attempts[job.attempts.length - 1]!.pid = child.pid;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS2412",
-      "message": "Type 'undefined' is not assignable to type 'Active' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.",
-      "source": "active.exited = this.run(active).finally(() => { if (active.killTimer) clearTimeout(active.killTimer); if (this.active === active) { this.active = undefined; this.store.event(active.jobId, \"worker_idle\", \"Worker slot released\"); } this.notify(); if (!this.stopping) queueMicrotask(() => this.tick()); });",
       "count": 1
     },
     {
@@ -1150,14 +1070,6 @@
       "tool": "tsc",
       "rule": "TS4111",
       "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (v.op === \"pause\" || v.op === \"resume\") { this.store.setPaused(v.op === \"pause\"); this.notify(); queueMicrotask(() => this.tick()); return { scheduler: v.op === \"pause\" ? \"paused\" : \"running\" }; }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
       "source": "if (v.op === \"retry\" && typeof v.id === \"string\") {",
       "count": 1
     },
@@ -1182,23 +1094,7 @@
       "tool": "tsc",
       "rule": "TS4111",
       "message": "Property 'requestId' comes from an index signature, so it must be accessed with ['requestId'].",
-      "source": "const job = this.store.submit(parseTask(v.task), v.requestId); this.notify(); queueMicrotask(() => this.tick()); return job;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'requestId' comes from an index signature, so it must be accessed with ['requestId'].",
       "source": "if (v.op === \"submit\" && typeof v.requestId === \"string\") {",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'task' comes from an index signature, so it must be accessed with ['task'].",
-      "source": "const job = this.store.submit(parseTask(v.task), v.requestId); this.notify(); queueMicrotask(() => this.tick()); return job;",
       "count": 1
     },
     {

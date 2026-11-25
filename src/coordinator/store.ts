@@ -54,7 +54,7 @@ export class Store {
   readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
-  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: () => void) {
+  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: () => void, private wakeJobs?: () => void) {
     privateDirectory(directory);
     this.ownership = new DatabaseSync(join(directory, "coordinator-lock.sqlite"));
     try {
@@ -95,14 +95,17 @@ export class Store {
       migrateMerging(this.db);
       migrateAutoMerge(this.db);
       migrateScheduling(this.db);
-      this.issues=new IssueStore(this.db,this.now,this.notificationRepository);
+      this.issues=new IssueStore(this.db,this.now,this.notificationRepository,()=>{ this.wakeDigests?.(); });
       this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
-        if (kind === "merge_entry_updated") this.wakeDigests?.();
+        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.();
       });
-      this.repositories=new RepositoryPolicies(new RepositoryPolicyStore(this.db),this.tracking,this.merging,(kind,detail,prId)=>this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null));
+      this.repositories=new RepositoryPolicies(new RepositoryPolicyStore(this.db),this.tracking,this.merging,(kind,detail,prId)=>{
+        this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
+        this.wakeDigests?.();
+      });
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => {
@@ -111,12 +114,11 @@ export class Store {
       }, this.notificationRepository);
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
-      this.notificationRevision = new NotificationInputRevision(this.db);
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) { this.db?.close(); this.ownership.close(); throw error; }
   }
-  private readonly notificationRevision: NotificationInputRevision;
-  notificationInputRevision(): string { return this.notificationRevision.current(); }
+  private notificationRevision: NotificationInputRevision | undefined;
+  notificationInputRevision(): string { return (this.notificationRevision ??= new NotificationInputRevision(this.db)).current(); }
   inputRevision(): string {
     return JSON.stringify(this.db.prepare("SELECT total_changes() AS local_changes, (SELECT data_version FROM pragma_data_version) AS external_changes").get());
   }
@@ -146,6 +148,7 @@ export class Store {
       this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(job.id, this.now(), kind, detail.slice(0, 16000));
       this.db.exec("COMMIT");
     } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    this.wakeJobs?.();
   }
   event(jobId: string, kind: string, detail: string): void {
     this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(jobId, this.now(), kind, detail.slice(0, 16000));
@@ -177,6 +180,7 @@ export class Store {
       this.event("", value ? "scheduler_paused" : "scheduler_resumed", "Dispatch setting changed");
       this.db.exec("COMMIT");
     } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    this.wakeJobs?.();
   }
   close(): void { if (this.closed) return; this.closed = true; this.db.close(); this.ownership.close(); }
 }

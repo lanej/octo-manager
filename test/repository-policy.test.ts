@@ -684,3 +684,30 @@ test("idle policy enforcement batches stale historical contexts while retaining 
     await f.close();
   }
 });
+
+test("policy file instruction changes invalidate notification inputs independently of merge settings", async () => {
+  const f = await fixture();
+  const changed = spyOn(f.c, "inputsChanged");
+  try {
+    const before = f.c.store.merging.entry(url);
+    await writeFile(
+      join(f.root, "octo-manager.toml"),
+      config.replace(
+        "Repair the review findings.",
+        "Inspect the new policy instructions.",
+      ),
+    );
+    expect(f.c.store.repositories.tick()).toEqual({ monitorFiles: true });
+    expect(
+      f.c.store.repositories.get(f.pr.id)?.instructions.review_feedback,
+    ).toBe("Inspect the new policy instructions.");
+    expect(f.c.store.merging.entry(url)).toEqual(before);
+    expect(changed).toHaveBeenCalled();
+    changed.mockClear();
+    f.c.store.repositories.tick();
+    expect(changed).not.toHaveBeenCalled();
+  } finally {
+    changed.mockRestore();
+    await f.close();
+  }
+});

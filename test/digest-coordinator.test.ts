@@ -672,7 +672,7 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
     expect(recovery).not.toHaveBeenCalled();
     now += 60001;
     await coordinator.digests.flush();
-    expect(reads).toHaveBeenCalled();
+    expect(reads).not.toHaveBeenCalled();
     expect(recovery).not.toHaveBeenCalled();
     reads.mockClear();
     const request = coordinator.store.submissions.request({

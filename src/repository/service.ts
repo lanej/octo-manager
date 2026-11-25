@@ -79,7 +79,8 @@ export class RepositoryPolicies {
     });
     this.tick();
   }
-  tick(): void {
+  tick(): { monitorFiles: boolean } {
+    let monitorFiles = false;
     const roots = new Map<
       string,
       ReturnType<typeof loadRepositoryConfig> | Error
@@ -112,6 +113,7 @@ export class RepositoryPolicies {
         }
         continue;
       }
+      monitorFiles = true;
       let loaded = roots.get(prior.root);
       if (loaded === undefined) {
         try {
@@ -196,6 +198,7 @@ export class RepositoryPolicies {
         this.merging.policyStage(pr.id, next.stage);
       }
     }
+    return { monitorFiles };
   }
   forMessage(message: AgentMessage): string | undefined {
     const actionId =

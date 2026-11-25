@@ -1683,3 +1683,82 @@ test("readiness candidates retain an offer until retirement even after its last 
     await f.close();
   }
 });
+
+test("cached readiness changes wake a recipient after the previous Ready offer was receipted", async () => {
+  const f = await fixture();
+  try {
+    await f.coordinator.githubScheduler.close();
+    await schedulerClient(f.directory).acknowledgeAgentDigest({
+      receiptId: f.id,
+      agentTarget: owner,
+    });
+    await f.coordinator.digests.flush();
+    expect(
+      f.coordinator.store.digests.active(f.pr.ownerAgentId),
+    ).toBeUndefined();
+    const observations = f.coordinator.store
+      .events()
+      .filter((event) => event.kind === "pr_observed").length;
+    f.current.review = "REVIEW_REQUIRED";
+    f.advance();
+    await f.coordinator.merging.receipts.refresh();
+    const end = Date.now() + 1000;
+    while (
+      f.coordinator.store.digests.active(f.pr.ownerAgentId) === undefined &&
+      Date.now() < end
+    )
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 5);
+      });
+    const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
+    expect(digest).toBeDefined();
+    if (digest === undefined)
+      throw new Error("Changed readiness did not wake notification delivery");
+    const body = f.coordinator.store.digests.version(
+      digest.id,
+      digest.revision,
+    ).body;
+    expect(body).toContain("Checks complete · merge prerequisites not met");
+    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.eligible).toBe(
+      false,
+    );
+    expect(
+      f.coordinator.store
+        .events()
+        .filter((event) => event.kind === "pr_observed"),
+    ).toHaveLength(observations);
+    expect(f.coordinator.store.merging.entries()).toHaveLength(0);
+    expect(f.writes).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+
+test("readiness input signals ignore refreshed timestamps and preserve failure and recovery", async () => {
+  const f = await fixture();
+  try {
+    await f.coordinator.githubScheduler.close();
+    const sequence = f.coordinator.store.sequence();
+    f.advance();
+    await f.coordinator.merging.receipts.refresh();
+    const signals = () =>
+      f.coordinator.store
+        .eventsSince(sequence)
+        .filter((event) => event.kind === "merge_notification_updated");
+    expect(signals()).toHaveLength(0);
+    f.failReads("Synthetic readiness failure");
+    f.advance();
+    await f.coordinator.merging.receipts.refresh();
+    expect(signals()).toHaveLength(1);
+    f.failReads("A different readiness failure");
+    f.advance();
+    await f.coordinator.merging.receipts.refresh();
+    expect(signals()).toHaveLength(1);
+    f.failReads();
+    f.advance();
+    await f.coordinator.merging.receipts.refresh();
+    expect(signals()).toHaveLength(2);
+  } finally {
+    await f.close();
+  }
+});

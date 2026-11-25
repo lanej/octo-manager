@@ -20,6 +20,7 @@ export class IssueStore {
     private db: DatabaseSync,
     private now: () => number,
     notifications?: NotificationRepository,
+    changed?: () => void,
   ) {
     db.exec(`CREATE TABLE IF NOT EXISTS issue_briefs(issue_id TEXT NOT NULL, version INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(issue_id,version));
 CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
@@ -27,7 +28,12 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
  CREATE TABLE IF NOT EXISTS issue_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT, issue_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_requests(id TEXT PRIMARY KEY, input TEXT NOT NULL, issue_id TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_effects(id TEXT PRIMARY KEY, issue_id TEXT NOT NULL, kind TEXT NOT NULL, body TEXT NOT NULL, title TEXT NOT NULL, state TEXT NOT NULL, url TEXT NOT NULL);`);
-    this.subscriptions = new IssueSubscriptions(db, now, notifications);
+    this.subscriptions = new IssueSubscriptions(
+      db,
+      now,
+      notifications,
+      changed,
+    );
   }
   atomic<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");

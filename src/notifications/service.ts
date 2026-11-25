@@ -41,10 +41,13 @@ export interface DigestOptions {
   presentation?: (message: AgentMessage) => MessagePresentation;
   ownerFeedbackCovered?: (message: AgentMessage) => boolean;
   connect?: (agent: AgentRef, socket: string) => QueueConnection;
+  // Inspect an admitted queue again at this deadline; empty recipients await intake.
   intervalMs?: number;
 }
 export class DigestService {
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private started = false;
+  private agents = new Map<string, AgentRef>();
   private discovery: Promise<void> | undefined;
   private recoveryRevision: string | undefined;
   private queued = new Map<string, { agent: AgentRef; urgent: boolean }>();
@@ -97,29 +100,28 @@ export class DigestService {
     return managed;
   };
   start(): void {
-    this.timer = setInterval(() => {
-      this.requestDiscovery().catch(() => {});
-    }, this.options.intervalMs ?? 1000);
+    this.started = true;
     this.requestDiscovery().catch(() => {});
   }
   flush(): Promise<void> {
     return this.requestDiscovery().then(() => this.waitIdle());
   }
-  private requestDiscovery(): Promise<void> {
+  private requestDiscovery(inputsChanged = true): Promise<void> {
     if (this.stopped) return Promise.resolve();
     this.discovery ??= performanceScope(
       this.directory,
       "digest-discovery",
-      () => this.discover(),
+      () => this.discover(inputsChanged),
     ).finally(() => {
       this.discovery = undefined;
       if (this.wakePending) this.wake();
+      this.schedule();
       this.settleIdle();
     });
     return this.discovery;
   }
   wake(): void {
-    if (this.timer === undefined || this.stopped) return;
+    if (!this.started || this.stopped) return;
     this.generation++;
     this.wakePending = true;
     if (this.discovery !== undefined || this.wakeScheduled) return;
@@ -132,6 +134,24 @@ export class DigestService {
         return this.requestDiscovery();
       })
       .catch(() => {});
+  }
+  private schedule(): void {
+    if (this.timer !== undefined) clearTimeout(this.timer);
+    this.timer = undefined;
+    if (!this.started || this.stopped) return;
+    let at = Infinity;
+    for (const [agentId, check] of this.checks) {
+      if (!this.running.has(agentId) && !this.queued.has(agentId))
+        at = Math.min(at, check.at);
+    }
+    if (!Number.isFinite(at)) return;
+    this.timer = setTimeout(
+      () => {
+        this.timer = undefined;
+        this.requestDiscovery(false).catch(() => {});
+      },
+      Math.min(2147483647, Math.max(0, at - this.now())),
+    );
   }
   applicable(message: AgentMessage): boolean {
     return (
@@ -217,7 +237,20 @@ export class DigestService {
       previous.at > this.now()
     );
   }
-  private async discover(): Promise<void> {
+  private async discover(inputsChanged: boolean): Promise<void> {
+    if (!inputsChanged) {
+      for (const [agentId, check] of this.checks) {
+        const agent = this.agents.get(agentId);
+        if (
+          agent !== undefined &&
+          check.at <= this.now() &&
+          !this.running.has(agentId)
+        )
+          this.queued.set(agentId, { agent, urgent: false });
+      }
+      this.pump();
+      return;
+    }
     const recoveryRevision = this.options.inputRevision?.();
     let revision = recoveryRevision;
     if (
@@ -229,7 +262,12 @@ export class DigestService {
       // Recovery can create notices; eligibility must use its resulting revision.
       revision = this.options.inputRevision?.();
     }
-    for (const agent of this.tracking.store.agents()) {
+    this.agents = new Map(
+      this.tracking.store.agents().map((agent) => [agent.id, agent]),
+    );
+    for (const agentId of this.checks.keys())
+      if (!this.agents.has(agentId)) this.checks.delete(agentId);
+    for (const agent of this.agents.values()) {
       // Unchanged recipients need neither a database probe nor an event-loop yield.
       if (this.canSkipDiscovery(agent.id, revision)) continue;
       await setImmediate();
@@ -262,6 +300,12 @@ export class DigestService {
         () => this.reconcileAgent(next.agent),
       )
         .catch((error: unknown) => {
+          const previous = this.checks.get(next.agent.id);
+          this.checks.set(next.agent.id, {
+            signature: previous?.signature ?? "",
+            at: this.now() + 5000,
+            failures: (previous?.failures ?? 0) + 1,
+          });
           this.store.event(
             next.agent.id,
             undefined,
@@ -277,6 +321,7 @@ export class DigestService {
         .finally(() => {
           this.running.delete(next.agent.id);
           this.pump();
+          this.schedule();
           this.settleIdle();
         });
       this.running.set(next.agent.id, work);
@@ -305,7 +350,10 @@ export class DigestService {
   }
   private async reconcileAgent(agent: AgentRef): Promise<void> {
     const inputRevision = this.options.inputRevision?.();
-    if (!this.managed(agent.id)) return;
+    if (!this.managed(agent.id)) {
+      this.checks.delete(agent.id);
+      return;
+    }
     const generation = this.generation;
     const inputs = this.inputs(agent.id);
     if (
@@ -320,7 +368,7 @@ export class DigestService {
       else
         this.checks.set(agent.id, {
           signature: "",
-          at: this.now() + 60000,
+          at: Infinity,
           failures: 0,
           inputRevision: revision,
         });
@@ -336,7 +384,7 @@ export class DigestService {
     }
     let failures = 0;
     let failure: string | undefined;
-    let delay = 1000;
+    let delay = this.options.intervalMs ?? 1000;
     let archived = false;
     try {
       await this.sync(agent);
@@ -388,7 +436,11 @@ export class DigestService {
           ? signature
           : this.signature(agent, latest),
       at: Math.max(
-        this.now() + (failure === undefined && idle ? 60000 : delay),
+        failure === undefined && idle
+          ? latest.legacy.length === 0
+            ? Infinity
+            : this.now() + 60000
+          : this.now() + delay,
         fresh !== undefined &&
           (fresh.state === State.Uncertain || fresh.state === State.Unavailable)
           ? fresh.nextCheckAt
@@ -1002,7 +1054,7 @@ export class DigestService {
   async close(): Promise<void> {
     this.stopped = true;
     this.queued.clear();
-    if (this.timer !== undefined) clearInterval(this.timer);
+    if (this.timer !== undefined) clearTimeout(this.timer);
     for (const connection of this.connections) connection.close();
     await this.discovery;
     await Promise.all(this.running.values());

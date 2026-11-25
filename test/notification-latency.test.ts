@@ -76,15 +76,19 @@ class Queue implements QueueConnection {
     this.unblock.release();
   }
 }
-async function fixture(count: number) {
+async function fixture(
+  count: number,
+  options: { now?: () => number; intervalMs?: number } = {},
+) {
+  const now = options.now ?? (() => 1000);
   const directory = await mkdtemp("/tmp/octo-notification-latency-"),
-    store = new Store(directory, () => 1000),
+    store = new Store(directory, now),
     config = defaultTrackingConfig();
   config.endpoints["local"] = {
     delivery: "queue",
     socket: "/fixture/queue.sock",
   };
-  const tracking = new TrackingService(store.tracking, config, () => 1000);
+  const tracking = new TrackingService(store.tracking, config, now);
   let active = 0,
     maximum = 0,
     notices = 0;
@@ -113,9 +117,9 @@ async function fixture(count: number) {
     tracking,
     store.submissions,
     directory,
-    () => 1000,
+    now,
     {
-      intervalMs: 60000,
+      intervalMs: options.intervalMs ?? 60000,
       inputRevision: () => {
         revisionReads++;
         return JSON.stringify([store.inputRevision(), config.endpoints]);
@@ -346,6 +350,105 @@ test("idle discovery reads one revision across a retained cohort and still obser
   } finally {
     history.mockRestore();
     external.close();
+    await f.close();
+  }
+});
+
+test("idle digest recipients sleep until an intake event wakes discovery", async () => {
+  const f = await fixture(1, { now: Date.now, intervalMs: 5 });
+  const agents = spyOn(f.store.tracking, "agents");
+  try {
+    f.service.start();
+    await f.service.flush();
+    agents.mockClear();
+    const revisionReads = f.revisionReads;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(agents).not.toHaveBeenCalled();
+    expect(f.revisionReads).toBe(revisionReads);
+    f.notice(0);
+    f.service.wake();
+    const queue = f.queues[0];
+    if (queue === undefined) throw new Error("Missing queue");
+    await within(queue.enqueued.promise);
+    expect(queue.slots).toHaveLength(1);
+  } finally {
+    agents.mockRestore();
+    await f.close();
+  }
+});
+
+test("queue inspection deadlines reconcile only the due recipient", async () => {
+  const f = await fixture(2, { now: Date.now, intervalMs: 10 });
+  const agents = spyOn(f.store.tracking, "agents");
+  const active = spyOn(f.store.digests, "active");
+  try {
+    f.notice(0);
+    f.service.start();
+    await f.service.flush();
+    agents.mockClear();
+    active.mockClear();
+    const queue = f.queues[0];
+    if (queue === undefined) throw new Error("Missing queue");
+    const before = queue.preparations;
+    await new Promise((resolve) => setTimeout(resolve, 35));
+    expect(agents).not.toHaveBeenCalled();
+    expect(queue.preparations).toBeGreaterThan(before);
+    const actor = f.store.tracking
+      .agents()
+      .find((agent) => agent.sessionId === "latency-1");
+    if (actor === undefined) throw new Error("Missing idle recipient");
+    expect(active.mock.calls.some(([agentId]) => agentId === actor.id)).toBe(
+      false,
+    );
+  } finally {
+    agents.mockRestore();
+    active.mockRestore();
+    await f.close();
+  }
+});
+
+test("digest queries reuse prepared statements while returning current rows", async () => {
+  const f = await fixture(1);
+  const prepare = spyOn(DatabaseSync.prototype, "prepare");
+  try {
+    const actor = f.store.tracking.agents()[0];
+    if (actor === undefined) throw new Error("Missing recipient");
+    expect(f.store.digests.active(actor.id)).toBeUndefined();
+    f.notice(0);
+    await f.service.flush();
+    const digest = f.store.digests.active(actor.id);
+    if (digest === undefined) throw new Error("Missing digest");
+    for (let index = 0; index < 20; index++)
+      expect(f.store.digests.active(actor.id)?.id).toBe(digest.id);
+    expect(
+      prepare.mock.calls.filter(([sql]) =>
+        sql.startsWith(
+          "SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN",
+        ),
+      ),
+    ).toHaveLength(1);
+  } finally {
+    prepare.mockRestore();
+    await f.close();
+  }
+});
+
+test("a failed scheduled reconciliation backs off instead of retaining an expired deadline", async () => {
+  const f = await fixture(1, { now: Date.now, intervalMs: 10 });
+  try {
+    f.notice(0);
+    f.service.start();
+    await f.service.flush();
+    const active = spyOn(f.store.digests, "active").mockImplementation(() => {
+      throw new Error("Controlled read failure");
+    });
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      expect(active).toHaveBeenCalledTimes(1);
+    } finally {
+      active.mockRestore();
+    }
+  } finally {
     await f.close();
   }
 });
