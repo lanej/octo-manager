@@ -2,6 +2,7 @@ syntax = "proto3";
 package octomanager.v2;
 
 import "octomanager/v2/activity.proto";
+import "octomanager/v2/diagnostics.proto";
 import "octomanager/v2/domain.proto";
 import "octomanager/v2/github.proto";
 import "octomanager/v2/issues.proto";
@@ -15,6 +16,12 @@ option go_package = "github.com/lanej/octo-manager/gen/octomanager/v2;octomanage
 
 // SchedulerService exposes the versioned coordinator API over local Connect RPC.
 service SchedulerService {
+  // Starts a bounded, opt-in local performance capture; one capture may run at a time.
+  rpc StartPerformanceCapture(StartPerformanceCaptureRequest) returns (StartPerformanceCaptureResponse);
+  // Inspects a retained capture without starting or extending it.
+  rpc GetPerformanceCapture(GetPerformanceCaptureRequest) returns (GetPerformanceCaptureResponse);
+  // Stops an active capture and preserves its partial report.
+  rpc StopPerformanceCapture(StopPerformanceCaptureRequest) returns (StopPerformanceCaptureResponse);
   // Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
   rpc RuntimeLifecycle(RuntimeLifecycleRequest) returns (RuntimeLifecycleResponse);
   // Enrolls an issue for investigation through its configured tracker.

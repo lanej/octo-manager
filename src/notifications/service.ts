@@ -1,3 +1,4 @@
+import { performanceScope } from "../diagnostics/scope.js";
 import { createHash } from "node:crypto";
 import { setImmediate } from "node:timers/promises";
 import type { MessagePresentation } from "../merging/receipt-types.js";
@@ -106,7 +107,11 @@ export class DigestService {
   }
   private requestDiscovery(): Promise<void> {
     if (this.stopped) return Promise.resolve();
-    this.discovery ??= this.discover().finally(() => {
+    this.discovery ??= performanceScope(
+      this.directory,
+      "digest-discovery",
+      () => this.discover(),
+    ).finally(() => {
       this.discovery = undefined;
       if (this.wakePending) this.wake();
       this.settleIdle();
@@ -251,7 +256,11 @@ export class DigestService {
         this.queued.values().next().value;
       if (next === undefined) break;
       this.queued.delete(next.agent.id);
-      const work = this.reconcileAgent(next.agent)
+      const work = performanceScope(
+        this.directory,
+        "digest-reconciliation",
+        () => this.reconcileAgent(next.agent),
+      )
         .catch((error: unknown) => {
           this.store.event(
             next.agent.id,

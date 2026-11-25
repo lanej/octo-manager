@@ -162,3 +162,5 @@ Run `PROTOBUF_AGAINST='.git#ref=origin/main' bun run check` for full verificatio
 ## Issue lifecycle
 
 Explicitly enroll issues for investigation, versioned briefs, clarification, implementation, testing, review, and post-merge acceptance verification. Repository policy controls each authority gate; tracker and dispatcher ports keep GitHub and Codex replaceable. See the [issue lifecycle guide](docs/issues.md) for configuration, commands, evidence, and recovery. **d**, then **6 Issues**, shows current issue work.
+
+Use [bounded performance captures](docs/diagnostics.md) to inspect SQLite query volume and scheduler work on the running daemon: `octo-manager diagnostics capture --seconds 60 --wait`. Tracing is off by default and expires automatically.

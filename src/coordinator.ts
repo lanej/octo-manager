@@ -1,3 +1,5 @@
+import { PerformanceDiagnostics } from "./diagnostics/service.js";
+import { performanceScope } from "./diagnostics/scope.js";
 import { workerModule } from "./package-root.js";
 import { responseMaxBytes } from "./api/limits.js";
 import { AssessmentService } from "./assessments/service.js";
@@ -54,6 +56,7 @@ export class Coordinator extends EventEmitter {
   private readonly activation = new Activation();
   private nativeCalls = 0;
   private checkpointWork: Promise<ActivationReport> | undefined;
+  readonly diagnostics: PerformanceDiagnostics;
   readonly store: Store;
   readonly tracking: TrackingService;
   readonly assessments: AssessmentService;
@@ -79,16 +82,17 @@ export class Coordinator extends EventEmitter {
   private finalSnapshot?: Snapshot;
   constructor(readonly directory: string, private options: CoordinatorOptions = {}) {
     super(); this.now = options.now ?? Date.now;
+    this.diagnostics = new PerformanceDiagnostics(directory);
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     let digests: DigestService | undefined;
     this.store = new Store(directory, this.now, () => { digests?.wake(); });
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
-      this.store.repositories.tick();
-      this.tracking.tick();
-      this.issues.tick().catch((error: unknown) => { this.store.event("", "issue_scheduler_error", error instanceof Error ? error.message : "Issue tick failed"); });
-      this.submissions.reconcileLegacy(this.now());
-      this.notifications.flush().catch(()=>{});
-      this.merging.tick().catch(()=>{});
+      performanceScope(directory, "repository-policy", () => { this.store.repositories.tick(); });
+      performanceScope(directory, "tracking", () => { this.tracking.tick(); });
+      performanceScope(directory, "issues", () => this.issues.tick()).catch((error: unknown) => { this.store.event("", "issue_scheduler_error", error instanceof Error ? error.message : "Issue tick failed"); });
+      performanceScope(directory, "legacy-reconciliation", () => { this.submissions.reconcileLegacy(this.now()); });
+      performanceScope(directory, "notification-flush", () => this.notifications.flush()).catch(()=>{});
+      performanceScope(directory, "merging", () => this.merging.tick()).catch(()=>{});
     });
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), managedQueueBatch:(agentIds)=>this.digests.managedBatch(agentIds), notificationRecorded:()=>{this.digests.wake();} });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
@@ -182,7 +186,8 @@ export class Coordinator extends EventEmitter {
     }
     throw new Error("Unsupported command or arguments");
   }
-  tick(): void {
+  tick(): void { performanceScope(this.directory, "jobs", () => { this.tickJobs(); }); }
+  private tickJobs(): void {
     for (const pid of this.recoveryPids) if (!processAlive(pid)) {
       this.recoveryPids.delete(pid);
       for (const job of this.store.jobs()) {
@@ -410,6 +415,7 @@ export class Coordinator extends EventEmitter {
       this.notifications.close(),
       this.tracking.close(),
     ]);
+    this.diagnostics.close();
     this.activation.confirm();
     return report();
     })();
@@ -436,6 +442,7 @@ export class Coordinator extends EventEmitter {
       if (this.server?.listening) await new Promise<void>(resolve => this.server!.close(() => resolve()));
       if (existsSync(this.socketPath)) unlinkSync(this.socketPath);
       this.finalSnapshot = { ...this.snapshot(), scheduler: "stopped" };
+      this.diagnostics.close();
       this.stopped = true; this.releaseDispatch?.(); this.store.close();
     })();
     return this.closePromise;

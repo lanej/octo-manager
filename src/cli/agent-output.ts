@@ -1,4 +1,5 @@
 import type { Capability, ParsedCommand } from "./contracts.js";
+import { fields } from "./projection.js";
 import type { Projection } from "./projection.js";
 import { applicationOutputs } from "./application-output.js";
 import { trackingOutputs } from "../tracking/agent-output.js";
@@ -20,6 +21,24 @@ const outputs: Record<Capability, Readonly<Record<string, Projection>>> = {
   notifications: notificationOutputs,
   repairs: repairOutputs,
   activity: activityOutputs,
+  diagnostics: Object.fromEntries(
+    ["diagnostics-capture", "diagnostics-show", "diagnostics-stop"].map(
+      (command) => [
+        command,
+        fields([
+          "id",
+          "requestId",
+          "state",
+          "startedAtMs",
+          "endedAtMs",
+          "durationMs",
+          "artifactPath",
+          "detail",
+          "report",
+        ]),
+      ],
+    ),
+  ),
   history: historyOutputs,
   publication: publicationOutputs,
 };

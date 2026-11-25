@@ -33,6 +33,15 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SchedulerServiceStartPerformanceCaptureProcedure is the fully-qualified name of the
+	// SchedulerService's StartPerformanceCapture RPC.
+	SchedulerServiceStartPerformanceCaptureProcedure = "/octomanager.v2.SchedulerService/StartPerformanceCapture"
+	// SchedulerServiceGetPerformanceCaptureProcedure is the fully-qualified name of the
+	// SchedulerService's GetPerformanceCapture RPC.
+	SchedulerServiceGetPerformanceCaptureProcedure = "/octomanager.v2.SchedulerService/GetPerformanceCapture"
+	// SchedulerServiceStopPerformanceCaptureProcedure is the fully-qualified name of the
+	// SchedulerService's StopPerformanceCapture RPC.
+	SchedulerServiceStopPerformanceCaptureProcedure = "/octomanager.v2.SchedulerService/StopPerformanceCapture"
 	// SchedulerServiceRuntimeLifecycleProcedure is the fully-qualified name of the SchedulerService's
 	// RuntimeLifecycle RPC.
 	SchedulerServiceRuntimeLifecycleProcedure = "/octomanager.v2.SchedulerService/RuntimeLifecycle"
@@ -239,6 +248,12 @@ const (
 
 // SchedulerServiceClient is a client for the octomanager.v2.SchedulerService service.
 type SchedulerServiceClient interface {
+	// Starts a bounded, opt-in local performance capture; one capture may run at a time.
+	StartPerformanceCapture(context.Context, *connect.Request[v2.StartPerformanceCaptureRequest]) (*connect.Response[v2.StartPerformanceCaptureResponse], error)
+	// Inspects a retained capture without starting or extending it.
+	GetPerformanceCapture(context.Context, *connect.Request[v2.GetPerformanceCaptureRequest]) (*connect.Response[v2.GetPerformanceCaptureResponse], error)
+	// Stops an active capture and preserves its partial report.
+	StopPerformanceCapture(context.Context, *connect.Request[v2.StopPerformanceCaptureRequest]) (*connect.Response[v2.StopPerformanceCaptureResponse], error)
 	// Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
 	RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error)
 	// Enrolls an issue for investigation through its configured tracker.
@@ -388,6 +403,24 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	schedulerServiceMethods := v2.File_octomanager_v2_scheduler_proto.Services().ByName("SchedulerService").Methods()
 	return &schedulerServiceClient{
+		startPerformanceCapture: connect.NewClient[v2.StartPerformanceCaptureRequest, v2.StartPerformanceCaptureResponse](
+			httpClient,
+			baseURL+SchedulerServiceStartPerformanceCaptureProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("StartPerformanceCapture")),
+			connect.WithClientOptions(opts...),
+		),
+		getPerformanceCapture: connect.NewClient[v2.GetPerformanceCaptureRequest, v2.GetPerformanceCaptureResponse](
+			httpClient,
+			baseURL+SchedulerServiceGetPerformanceCaptureProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("GetPerformanceCapture")),
+			connect.WithClientOptions(opts...),
+		),
+		stopPerformanceCapture: connect.NewClient[v2.StopPerformanceCaptureRequest, v2.StopPerformanceCaptureResponse](
+			httpClient,
+			baseURL+SchedulerServiceStopPerformanceCaptureProcedure,
+			connect.WithSchema(schedulerServiceMethods.ByName("StopPerformanceCapture")),
+			connect.WithClientOptions(opts...),
+		),
 		runtimeLifecycle: connect.NewClient[v2.RuntimeLifecycleRequest, v2.RuntimeLifecycleResponse](
 			httpClient,
 			baseURL+SchedulerServiceRuntimeLifecycleProcedure,
@@ -801,6 +834,9 @@ func NewSchedulerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // schedulerServiceClient implements SchedulerServiceClient.
 type schedulerServiceClient struct {
+	startPerformanceCapture        *connect.Client[v2.StartPerformanceCaptureRequest, v2.StartPerformanceCaptureResponse]
+	getPerformanceCapture          *connect.Client[v2.GetPerformanceCaptureRequest, v2.GetPerformanceCaptureResponse]
+	stopPerformanceCapture         *connect.Client[v2.StopPerformanceCaptureRequest, v2.StopPerformanceCaptureResponse]
 	runtimeLifecycle               *connect.Client[v2.RuntimeLifecycleRequest, v2.RuntimeLifecycleResponse]
 	enrollIssue                    *connect.Client[v2.EnrollIssueRequest, v2.EnrollIssueResponse]
 	listIssues                     *connect.Client[v2.ListIssuesRequest, v2.ListIssuesResponse]
@@ -869,6 +905,21 @@ type schedulerServiceClient struct {
 	cancelJob                      *connect.Client[v2.CancelJobRequest, v2.CancelJobResponse]
 	retryJob                       *connect.Client[v2.RetryJobRequest, v2.RetryJobResponse]
 	setPaused                      *connect.Client[v2.SetPausedRequest, v2.SetPausedResponse]
+}
+
+// StartPerformanceCapture calls octomanager.v2.SchedulerService.StartPerformanceCapture.
+func (c *schedulerServiceClient) StartPerformanceCapture(ctx context.Context, req *connect.Request[v2.StartPerformanceCaptureRequest]) (*connect.Response[v2.StartPerformanceCaptureResponse], error) {
+	return c.startPerformanceCapture.CallUnary(ctx, req)
+}
+
+// GetPerformanceCapture calls octomanager.v2.SchedulerService.GetPerformanceCapture.
+func (c *schedulerServiceClient) GetPerformanceCapture(ctx context.Context, req *connect.Request[v2.GetPerformanceCaptureRequest]) (*connect.Response[v2.GetPerformanceCaptureResponse], error) {
+	return c.getPerformanceCapture.CallUnary(ctx, req)
+}
+
+// StopPerformanceCapture calls octomanager.v2.SchedulerService.StopPerformanceCapture.
+func (c *schedulerServiceClient) StopPerformanceCapture(ctx context.Context, req *connect.Request[v2.StopPerformanceCaptureRequest]) (*connect.Response[v2.StopPerformanceCaptureResponse], error) {
+	return c.stopPerformanceCapture.CallUnary(ctx, req)
 }
 
 // RuntimeLifecycle calls octomanager.v2.SchedulerService.RuntimeLifecycle.
@@ -1214,6 +1265,12 @@ func (c *schedulerServiceClient) SetPaused(ctx context.Context, req *connect.Req
 
 // SchedulerServiceHandler is an implementation of the octomanager.v2.SchedulerService service.
 type SchedulerServiceHandler interface {
+	// Starts a bounded, opt-in local performance capture; one capture may run at a time.
+	StartPerformanceCapture(context.Context, *connect.Request[v2.StartPerformanceCaptureRequest]) (*connect.Response[v2.StartPerformanceCaptureResponse], error)
+	// Inspects a retained capture without starting or extending it.
+	GetPerformanceCapture(context.Context, *connect.Request[v2.GetPerformanceCaptureRequest]) (*connect.Response[v2.GetPerformanceCaptureResponse], error)
+	// Stops an active capture and preserves its partial report.
+	StopPerformanceCapture(context.Context, *connect.Request[v2.StopPerformanceCaptureRequest]) (*connect.Response[v2.StopPerformanceCaptureResponse], error)
 	// Inspects or performs a native checkpoint, retirement or restoration bound to an owner incarnation.
 	RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error)
 	// Enrolls an issue for investigation through its configured tracker.
@@ -1359,6 +1416,24 @@ type SchedulerServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	schedulerServiceMethods := v2.File_octomanager_v2_scheduler_proto.Services().ByName("SchedulerService").Methods()
+	schedulerServiceStartPerformanceCaptureHandler := connect.NewUnaryHandler(
+		SchedulerServiceStartPerformanceCaptureProcedure,
+		svc.StartPerformanceCapture,
+		connect.WithSchema(schedulerServiceMethods.ByName("StartPerformanceCapture")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceGetPerformanceCaptureHandler := connect.NewUnaryHandler(
+		SchedulerServiceGetPerformanceCaptureProcedure,
+		svc.GetPerformanceCapture,
+		connect.WithSchema(schedulerServiceMethods.ByName("GetPerformanceCapture")),
+		connect.WithHandlerOptions(opts...),
+	)
+	schedulerServiceStopPerformanceCaptureHandler := connect.NewUnaryHandler(
+		SchedulerServiceStopPerformanceCaptureProcedure,
+		svc.StopPerformanceCapture,
+		connect.WithSchema(schedulerServiceMethods.ByName("StopPerformanceCapture")),
+		connect.WithHandlerOptions(opts...),
+	)
 	schedulerServiceRuntimeLifecycleHandler := connect.NewUnaryHandler(
 		SchedulerServiceRuntimeLifecycleProcedure,
 		svc.RuntimeLifecycle,
@@ -1769,6 +1844,12 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 	)
 	return "/octomanager.v2.SchedulerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SchedulerServiceStartPerformanceCaptureProcedure:
+			schedulerServiceStartPerformanceCaptureHandler.ServeHTTP(w, r)
+		case SchedulerServiceGetPerformanceCaptureProcedure:
+			schedulerServiceGetPerformanceCaptureHandler.ServeHTTP(w, r)
+		case SchedulerServiceStopPerformanceCaptureProcedure:
+			schedulerServiceStopPerformanceCaptureHandler.ServeHTTP(w, r)
 		case SchedulerServiceRuntimeLifecycleProcedure:
 			schedulerServiceRuntimeLifecycleHandler.ServeHTTP(w, r)
 		case SchedulerServiceEnrollIssueProcedure:
@@ -1913,6 +1994,18 @@ func NewSchedulerServiceHandler(svc SchedulerServiceHandler, opts ...connect.Han
 
 // UnimplementedSchedulerServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchedulerServiceHandler struct{}
+
+func (UnimplementedSchedulerServiceHandler) StartPerformanceCapture(context.Context, *connect.Request[v2.StartPerformanceCaptureRequest]) (*connect.Response[v2.StartPerformanceCaptureResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.StartPerformanceCapture is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) GetPerformanceCapture(context.Context, *connect.Request[v2.GetPerformanceCaptureRequest]) (*connect.Response[v2.GetPerformanceCaptureResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.GetPerformanceCapture is not implemented"))
+}
+
+func (UnimplementedSchedulerServiceHandler) StopPerformanceCapture(context.Context, *connect.Request[v2.StopPerformanceCaptureRequest]) (*connect.Response[v2.StopPerformanceCaptureResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.StopPerformanceCapture is not implemented"))
+}
 
 func (UnimplementedSchedulerServiceHandler) RuntimeLifecycle(context.Context, *connect.Request[v2.RuntimeLifecycleRequest]) (*connect.Response[v2.RuntimeLifecycleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octomanager.v2.SchedulerService.RuntimeLifecycle is not implemented"))
