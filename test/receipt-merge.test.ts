@@ -965,13 +965,17 @@ test("read failures and recovery do not repeat a receipted Ready decision, inclu
 test("known dependency blockers avoid eligibility reads and repeat notices", async () => {
   const f = await fixture();
   try {
+    await f.coordinator.tracking.close();
     const parent = f.coordinator.store.tracking.track(
       "https://github.com/owner/repo/pull/37",
       owner,
     );
     f.coordinator.store.tracking.observe(
       parent.id,
-      f.current.observation,
+      {
+        ...f.current.observation,
+        checks: { state: "unavailable", reason: "Prerequisite is incomplete" },
+      },
       defaultTrackingConfig(),
     );
     f.coordinator.store.merging.confirm(
