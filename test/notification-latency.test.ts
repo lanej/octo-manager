@@ -107,6 +107,7 @@ async function fixture(count: number) {
         },
       ),
   );
+  let revisionReads = 0;
   const service = new DigestService(
     store.digests,
     tracking,
@@ -115,8 +116,10 @@ async function fixture(count: number) {
     () => 1000,
     {
       intervalMs: 60000,
-      inputRevision: () =>
-        JSON.stringify([store.inputRevision(), config.endpoints]),
+      inputRevision: () => {
+        revisionReads++;
+        return JSON.stringify([store.inputRevision(), config.endpoints]);
+      },
       connect: (agent) => {
         const queue =
           queues[agents.findIndex((value) => value.id === agent.id)];
@@ -129,6 +132,9 @@ async function fixture(count: number) {
     store,
     service,
     queues,
+    get revisionReads() {
+      return revisionReads;
+    },
     get maximum() {
       return maximum;
     },
@@ -307,6 +313,39 @@ test("prepared inbox lookups avoid recompilation while observing fresh receipts"
     expect(lookupCompilations).toHaveLength(1);
   } finally {
     prepare.mockRestore();
+    await f.close();
+  }
+});
+
+test("idle discovery reads one revision across a retained cohort and still observes external invalidation", async () => {
+  const f = await fixture(125);
+  const external = new DatabaseSync(`${f.store.directory}/jobs.sqlite`);
+  const history = spyOn(f.store.tracking.inbox, "list");
+  try {
+    await f.service.flush();
+    await f.service.flush();
+    history.mockClear();
+    const before = f.revisionReads;
+    await f.service.flush();
+    expect(f.revisionReads - before).toBeLessThanOrEqual(2);
+    expect(history).not.toHaveBeenCalled();
+    external
+      .prepare(
+        "INSERT INTO settings(key,value) VALUES('fixture-external-input','changed')",
+      )
+      .run();
+    await f.service.flush();
+    expect(history).toHaveBeenCalled();
+    f.notice(0);
+    const pending = f.service.flush();
+    await setImmediate();
+    f.notice(124);
+    await within(pending);
+    expect(f.queues[0]?.slots).toHaveLength(1);
+    expect(f.queues[124]?.slots).toHaveLength(1);
+  } finally {
+    history.mockRestore();
+    external.close();
     await f.close();
   }
 });
