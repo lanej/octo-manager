@@ -13,6 +13,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/internal/tui/presentation"
 )
 
 const savedOperationLimit = 50
@@ -266,12 +267,12 @@ func (m *Model) operationRecordSummary(item operatorActivityItem) layout.RecordS
 	}
 
 	if item.event != nil {
-		presentation := m.presentEvent(item.event)
-		record.Title = text.Log(presentation.title, m.theme)
+		eventView := m.presentEvent(item.event)
+		record.Title = text.Log(eventView.title, m.theme)
 
-		record.Subtitle = oneLine(presentation.detail)
+		record.Subtitle = oneLine(eventView.detail)
 		if context := item.event.GetActionContext(); context != nil {
-			record.Status = text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
+			record.Status = text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), presentation.ActionTone(context.GetState()), m.theme, text.Normal)
 			record.Fields = append(record.Fields, layout.Pair{Label: "Actor", Value: historicalActionActor(context)})
 		} else if item.event.GetKind() == "action_progress" {
 			record.Status = text.Pill("Transition unknown", text.Warning, m.theme, text.Normal)
@@ -282,7 +283,7 @@ func (m *Model) operationRecordSummary(item operatorActivityItem) layout.RecordS
 
 	report := item.report.GetReport()
 	record.Title = text.Log(activityTitle(report.GetName()), m.theme)
-	record.Status = text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal)
+	record.Status = text.Pill(activityOutcome(report.GetOutcome()), presentation.OutcomeTone(report.GetOutcome()), m.theme, text.Normal)
 
 	return record
 }
@@ -356,7 +357,7 @@ func (m *Model) operationDocument(item operatorActivityItem) layout.DetailDocume
 }
 
 func (m *Model) eventOperationSection(event *v1.JobEvent) layout.DetailSection {
-	presentation := m.presentEvent(event)
+	eventView := m.presentEvent(event)
 
 	section := layout.DetailSection{
 		ID: "event", Title: "Recorded event", FullWidth: true,
@@ -364,7 +365,7 @@ func (m *Model) eventOperationSection(event *v1.JobEvent) layout.DetailSection {
 			{Label: "Source", Value: "Coordinator event"},
 			{Label: "Recorded", Value: m.timestamp(event.GetAtMs(), fullTimestamp)},
 		},
-		Paragraphs: []string{safe(presentation.detail)},
+		Paragraphs: []string{safe(eventView.detail)},
 	}
 	if context := event.GetActionContext(); context != nil {
 		section.Fields = append(section.Fields,
@@ -375,8 +376,8 @@ func (m *Model) eventOperationSection(event *v1.JobEvent) layout.DetailSection {
 		section.Paragraphs = append(section.Paragraphs, "Legacy event: transition state and actor were not recorded.")
 	}
 
-	if presentation.prURL != "" {
-		section.Body = m.detailLinks("PR", presentation.prURL)
+	if eventView.prURL != "" {
+		section.Body = m.detailLinks("PR", eventView.prURL)
 	}
 
 	return section

@@ -2,8 +2,8 @@ import {
   githubReads,
   GitHubRateLimitError,
   type GitHubReads,
-} from "../github-api.js";
-import { canonicalPR } from "./github.js";
+} from "../github/reads.js";
+import { canonicalPR } from "../github/pr-identity.js";
 export interface NotificationUpdate {
   id: string;
   updatedAt: number;

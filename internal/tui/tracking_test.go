@@ -10,6 +10,7 @@ import (
 	"github.com/lanej/charmed/text"
 	"github.com/lanej/charmed/theme"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/internal/tui/presentation"
 )
 
 func TestTrackedPRWithoutWorkerAndNavigation(t *testing.T) {
@@ -78,7 +79,7 @@ func TestTrackingAtomsKeepLiveWorkAheadOfHistory(t *testing.T) {
 			t.Fatal("atom presentation obscured current work or delivery semantics")
 		}
 
-		if deliveryTone(v1.DeliveryState_DELIVERY_STATE_DELIVERED) == text.Success {
+		if presentation.DeliveryTone(v1.DeliveryState_DELIVERY_STATE_DELIVERED) == text.Success {
 			t.Fatal("delivery acceptance was styled as verified success")
 		}
 

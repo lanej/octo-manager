@@ -1,6 +1,7 @@
 import { posix } from "node:path";
-import { githubReads } from "../github-api.js";
-import { ghRead, type ReadGitHub, canonicalPR } from "../tracking/github.js";
+import { githubReads } from "../github/reads.js";
+import { ghRead, type ReadGitHub } from "../github/reads.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import {
   hash,
   isPullRequestTemplate,

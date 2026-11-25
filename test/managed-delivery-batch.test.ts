@@ -2,7 +2,7 @@ import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import {
   TrackingService,
   type TrackingOptions,

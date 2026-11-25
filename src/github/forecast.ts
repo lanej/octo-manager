@@ -1,4 +1,4 @@
-import type { GitHubBudget, GitHubResource } from "./github-usage.js";
+import type { GitHubBudget, GitHubResource } from "./usage.js";
 export enum ForecastState {
   Unknown = "unknown",
   OnTrack = "on_track",

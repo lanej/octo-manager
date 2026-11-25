@@ -1,14 +1,15 @@
-import { sendWorkerResult } from "./worker-delivery.js";
-import { workerResultText } from "./worker-result.js";
+import { sendWorkerResult } from "./jobs/worker-delivery.js";
+import { workerResultText } from "./jobs/worker-result.js";
 import type { StageTask } from "./submissions/contracts.js";
 import { repairWorkerTask, record, single, type RepairWorkerTask } from "./repairs/types.js";
 import { createAgentSession, DefaultResourceLoader, getAgentDir, SessionManager, SettingsManager, type AgentSession, type ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
-import { createWorkerRuntime } from "./auth.js";
-import { workerModel, type WorkerProvider } from "./worker-model.js";
-import { conflictBrief } from "./fixture.js";
-import { cleanText, parseTask, type Task } from "./domain.js";
+import { createWorkerRuntime } from "./jobs/auth.js";
+import { workerModel, type WorkerProvider } from "./jobs/worker-model.js";
+import { conflictBrief } from "./jobs/fixture.js";
+import { parseTask, type Task } from "./jobs/domain.js";
+import { cleanText } from "./text.js";
 
 let session: AgentSession | undefined;
 let attempt = 0;

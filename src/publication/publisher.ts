@@ -1,4 +1,4 @@
-import { sdkTransport, type GitHubTransport } from "../github-sdk.js";
+import { sdkTransport, type GitHubTransport } from "../github/sdk.js";
 import { trackingRequest } from "../client.js";
 import { readContract, validateDraft, PublicationError } from "./contract.js";
 import {

@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
-import type { ActionEventContext } from "./tracking/types.js";
+import type { ActionEventContext } from "../tracking/types.js";
 
 export type Status = "queued" | "running" | "conflicted" | "resolving" | "retry_wait" | "cancelling" | "cancelled" | "succeeded" | "failed" | "interrupted";
 export type Task = { kind: "summarize_pr"; url: string } | { kind: "resolve_conflict" };
+export type JobCommand =
+  | { op: "submit"; requestId: string; task: Task }
+  | { op: "get" | "cancel" | "retry"; id: string };
 export interface Attempt { number: number; startedAt: number; endedAt?: number; pid?: number; exitObservedAt?: number; error?: string }
 export interface Job {
   id: string; requestId: string; digest: string; task: Task; status: Status;
@@ -41,6 +44,3 @@ export function nextReady(jobs: Job[], now: number): Job | undefined {
   return jobs.find(j => j.status === "queued" && j.availableAt <= now);
 }
 export function retryDelay(retryCount: number): number | undefined { return [1000, 5000][retryCount]; }
-export function cleanText(value: string, limit = 16000): string {
-  return value.replace(/\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|$))/g, "").replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "").slice(0, limit);
-}

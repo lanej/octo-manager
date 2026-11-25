@@ -14,6 +14,7 @@ import (
 	"github.com/lanej/charmed/feedback"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/internal/tui/presentation"
 )
 
 const activityPageSize = 50
@@ -207,19 +208,19 @@ func (m *Model) activityRows() []activityLogRow {
 	rows := make([]activityLogRow, 0, min(activityPageSize, len(items)))
 	for _, item := range items[:min(activityPageSize, len(items))] {
 		if event := item.event; event != nil {
-			presentation := m.presentEvent(event)
+			eventView := m.presentEvent(event)
 			context := event.GetActionContext()
 
 			subject := "coordinator"
-			if presentation.prURL != "" {
-				subject = m.link(presentation.prURL)
+			if eventView.prURL != "" {
+				subject = m.link(eventView.prURL)
 			} else if event.GetPrId() != "" {
 				subject = "PR context unavailable"
 			}
 
-			message := text.Log(presentation.title, m.theme)
+			message := text.Log(eventView.title, m.theme)
 			if context != nil {
-				message += " · " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), actionTone(context.GetState()), m.theme, text.Normal)
+				message += " · " + text.Pill(stateName(context.GetState().String(), "ACTION_STATE_"), presentation.ActionTone(context.GetState()), m.theme, text.Normal)
 				if context.GetActorAgentId() != "" {
 					message += " · " + safe(context.GetActorHarness()) + " " + sessionContext(context.GetActorLabel(), "", context.GetActorSessionId())
 				}
@@ -227,11 +228,11 @@ func (m *Model) activityRows() []activityLogRow {
 				message += " · transition unknown · Legacy event: transition state and actor were not recorded."
 			}
 
-			if presentation.detail != "" {
-				message += " · " + presentation.detail
+			if eventView.detail != "" {
+				message += " · " + eventView.detail
 			}
 
-			rows = append(rows, activityLogRow{at: event.GetAtMs(), subject: subject, prURL: presentation.prURL, message: oneLine(message)})
+			rows = append(rows, activityLogRow{at: event.GetAtMs(), subject: subject, prURL: eventView.prURL, message: oneLine(message)})
 
 			continue
 		}
@@ -252,7 +253,7 @@ func (m *Model) activityRows() []activityLogRow {
 			subject = m.link(report.GetPrUrl())
 		}
 
-		message := text.Pill(activityOutcome(report.GetOutcome()), outcomeTone(report.GetOutcome()), m.theme, text.Normal) + " · " + text.Log(activityTitle(report.GetName()), m.theme)
+		message := text.Pill(activityOutcome(report.GetOutcome()), presentation.OutcomeTone(report.GetOutcome()), m.theme, text.Normal) + " · " + text.Log(activityTitle(report.GetName()), m.theme)
 		message += " · " + safe(report.GetDetail())
 
 		message += " · " + identity

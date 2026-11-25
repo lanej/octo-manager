@@ -9,7 +9,7 @@ import { toBinary } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { schedulerClient } from "../src/client.js";
 import { Coordinator } from "../src/coordinator.js";
-import { digest, type Job } from "../src/domain.js";
+import { digest, type Job } from "../src/jobs/domain.js";
 import { GetSnapshotResponseSchema } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
 test(

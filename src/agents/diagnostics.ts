@@ -1,4 +1,4 @@
-import { cleanText } from "../domain.js";
+import { cleanText } from "../text.js";
 
 export function codexVersion(value: unknown): string | undefined {
   if (

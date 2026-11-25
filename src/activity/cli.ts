@@ -1,8 +1,8 @@
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import { toJson } from "@bufbuild/protobuf";
 import { RecordActivityResponseSchema } from "../gen/octomanager/v2/activity_pb.js";
 import { ListActivityResponseSchema } from "../gen/octomanager/v2/scheduler_pb.js";
-import type { parseCommand } from "../arguments.js";
+import type { parseCommand } from "../cli/arguments.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { schedulerClient } from "../client.js";

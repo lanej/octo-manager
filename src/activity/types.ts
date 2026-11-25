@@ -1,4 +1,4 @@
-import { canonicalPR } from "../tracking/github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 
 export enum ActivityName {
   MergePR = "merge_pr",

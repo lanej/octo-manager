@@ -1,6 +1,6 @@
 import "../src/executable.js";
 import { BedrockRuntimeClient } from "@aws-sdk/client-bedrock-runtime";
-import { createWorkerRuntime } from "../src/auth.js";
+import { createWorkerRuntime } from "../src/jobs/auth.js";
 import { join } from "node:path";
 
 let networkAttempts = 0;

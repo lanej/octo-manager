@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Coordinator } from "../src/coordinator.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import { GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubRateLimitError } from "../src/github/reads.js";
 import {
   ChainState,
   EntryState,

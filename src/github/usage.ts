@@ -1,4 +1,4 @@
-import { QuotaHistory, type QuotaForecast } from "./github-forecast.js";
+import { QuotaHistory, type QuotaForecast } from "./forecast.js";
 export type GitHubResource = "core" | "graphql";
 export interface GitHubBudget {
   limit: number;

@@ -26,7 +26,7 @@ import {
 } from "../issues/subscription-wire.js";
 import { wireIssue } from "../issues/rpc.js";
 import { noticeLabel } from "../security/notifications.js";
-import type { Store } from "../store.js";
+import type { Store } from "../coordinator/store.js";
 import type { DigestRevision } from "./types.js";
 import type { AgentMessage, NotificationSource } from "./message.js";
 

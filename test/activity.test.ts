@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import {
   ActivityName,
   ActivityOutcome,

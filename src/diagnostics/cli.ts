@@ -8,7 +8,7 @@ import {
   PerformanceCaptureState as State,
 } from "../gen/octomanager/v2/diagnostics_pb.js";
 import { schedulerClient } from "../client.js";
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import type { ParsedCommand } from "../cli/contracts.js";
 
 export async function diagnosticsCLI(parsed: ParsedCommand): Promise<void> {

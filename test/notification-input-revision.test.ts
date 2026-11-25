@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NotificationInputRevision } from "../src/notifications/input-revision.js";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 
 function schema(db: DatabaseSync): void {
   db.exec(

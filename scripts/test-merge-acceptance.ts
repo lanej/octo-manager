@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { Coordinator } from "../src/coordinator.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ChainState, EntryState } from "../src/merging/contracts.js";
-import { githubReads } from "../src/github-api.js";
+import { githubReads } from "../src/github/reads.js";
 const owner = process.env["OCTO_ACCEPTANCE_OWNER"];
 if (
   process.env["OCTO_LIVE_MERGE_ACCEPTANCE"] !== "1" ||

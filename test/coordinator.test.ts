@@ -8,8 +8,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Coordinator, processAlive } from '../src/coordinator.js';
 import { request } from '../src/client.js';
-import { Store } from '../src/store.js';
-import type { Job } from '../src/domain.js';
+import { Store } from '../src/coordinator/store.js';
 const fake = fileURLToPath(new URL('./fake-worker.mjs', import.meta.url));
 async function waitFor<T>(read: () => T, predicate: (value: T) => boolean, timeout = 10000): Promise<T> {
   const end = Date.now() + timeout;
@@ -20,7 +19,7 @@ async function withCoordinator(mode: string, run: (c: Coordinator, directory: st
   const c = new Coordinator(directory, { workerPath: fake, workerEnv: { PG_TEST_MODE: mode }, now: clock });
   try { await c.start(); await run(c, directory); } finally { await c.close(); await rm(directory, { recursive: true, force: true }); }
 }
-function submit(c: Coordinator, requestId: string) { return c.command({ op: 'submit', requestId, task: { kind: 'resolve_conflict' } }) as Job; }
+function submit(c: Coordinator, requestId: string) { return c.command({ op: 'submit', requestId, task: { kind: 'resolve_conflict' } }); }
 test('real IPC submissions deduplicate, pause, dispatch FIFO and record conflict states', async () => {
   await withCoordinator('resolve', async (c, directory) => {
     c.command({ op: 'pause' });

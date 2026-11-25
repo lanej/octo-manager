@@ -2,7 +2,7 @@ import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { setImmediate } from "node:timers/promises";
 import { DatabaseSync } from "node:sqlite";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { DigestService } from "../src/notifications/service.js";

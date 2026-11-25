@@ -4,7 +4,7 @@ import { MergeDeclined } from "./async-merge.js";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { GitHubHTTPError, GitHubRateLimitError } from "../github-api.js";
+import { GitHubHTTPError, GitHubRateLimitError } from "../github/reads.js";
 import type { TrackingService } from "../tracking/service.js";
 import type { ConflictStore } from "../repairs/cases.js";
 import { resolveId } from "../tracking/identifiers.js";

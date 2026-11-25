@@ -10,7 +10,7 @@ import {
   ChainState,
   OperationState,
 } from "../src/merging/contracts.js";
-import { load } from "../src/repository/policy.js";
+import { loadRepositoryConfig as load } from "../src/repository/config.js";
 import { NotificationState } from "../src/repository/contracts.js";
 import { schedulerClient } from "../src/client.js";
 import { unwire } from "../src/api/codec.js";

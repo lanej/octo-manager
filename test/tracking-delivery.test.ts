@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { DeliveryError, type AgentConnection } from "../src/agents/codex.js";
 import {

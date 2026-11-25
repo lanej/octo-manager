@@ -8,9 +8,9 @@ import {
   GitHubObservationChangedError,
   readObservation,
 } from "../src/tracking/github.js";
-import { GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubRateLimitError } from "../src/github/reads.js";
 import { TrackingService } from "../src/tracking/service.js";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 

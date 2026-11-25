@@ -4,7 +4,7 @@ import { IssueStage, Waiting } from "../issues/contracts.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { Action } from "../tracking/types.js";
 import { successfulCheck } from "../tracking/checks.js";
-import { canonicalPR } from "../tracking/github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 

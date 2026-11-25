@@ -12,7 +12,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { join, isAbsolute } from "node:path";
-import { canonicalPR } from "../tracking/github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import type { AgentTarget } from "../tracking/types.js";
 
 export interface Handoff {

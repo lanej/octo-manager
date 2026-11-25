@@ -1,5 +1,5 @@
-import { GitHubRequestCancelledError } from "../github-errors.js";
-import { githubReads, type GitHubQueryResult } from "../github-api.js";
+import { GitHubRequestCancelledError } from "../github/errors.js";
+import { githubReads, type GitHubQueryResult } from "../github/reads.js";
 import { trackingPR } from "./evidence.js";
 import type { TargetBase } from "./types.js";
 

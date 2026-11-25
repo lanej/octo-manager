@@ -1,19 +1,19 @@
-import { GitHubRequestCancelledError } from "../src/github-errors.js";
-import { sdkTransport } from "../src/github-sdk.js";
+import { GitHubRequestCancelledError } from "../src/github/errors.js";
+import { sdkTransport } from "../src/github/sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import {
   defaultSchedulerPolicy,
   RefreshKind,
   ScheduleState,
 } from "../src/scheduling/contracts.js";
-import { GitHubReads } from "../src/github-api.js";
+import { GitHubReads } from "../src/github/reads.js";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 

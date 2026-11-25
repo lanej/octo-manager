@@ -1,4 +1,4 @@
-import { sendWorkerResult } from "../src/worker-delivery.ts";
+import { sendWorkerResult } from "../src/jobs/worker-delivery.ts";
 import { randomUUID } from 'node:crypto';
 let attempt;
 let started = false;

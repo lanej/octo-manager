@@ -29,7 +29,7 @@ import {
   type PublisherGitHub,
   type RemotePR,
 } from "../src/publication/publisher.js";
-import type { GitHubTransport } from "../src/github-sdk.js";
+import type { GitHubTransport } from "../src/github/sdk.js";
 
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), "octo-publication-"));

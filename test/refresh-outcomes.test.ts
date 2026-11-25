@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { GitHubObservationChangedError } from "../src/tracking/github.js";
-import { GitHubRequestCancelledError } from "../src/github-errors.js";
+import { GitHubRequestCancelledError } from "../src/github/errors.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
 const input: ObservationInput = {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CodexSessionReference, createWorkerRuntime } from '../src/auth.js';
+import { CodexSessionReference, createWorkerRuntime } from '../src/jobs/auth.js';
 import type { CredentialStore } from '@earendil-works/pi-ai';
 
 const now = 1700000000000;

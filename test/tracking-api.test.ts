@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 import { readObservation } from "../src/tracking/github.js";
-import { publicPullRequest } from "../src/github.js";
+import { publicPullRequest } from "../src/jobs/github.js";
 import { loadTrackingConfig, selectProfile } from "../src/tracking/config.js";
 import { ActionState } from "../src/tracking/types.js";
 const url = "https://github.com/owner/private/pull/1";
@@ -243,7 +243,7 @@ test("additive migration preserves a pre-tracking database, event cursor, and id
     "INSERT INTO events(job_id,at,kind,detail) VALUES('legacy',123,'queued','fixture');INSERT INTO settings VALUES('instance_id','legacy-instance')",
   );
   db.close();
-  const { Store } = await import("../src/store.js");
+  const { Store } = await import("../src/coordinator/store.js");
   const store = new Store(dir);
   try {
     assert.deepEqual(store.get(job.id), job);

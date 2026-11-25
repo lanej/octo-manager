@@ -4,8 +4,8 @@ import {
   forecastQuota,
   ForecastState,
   QuotaHistory,
-} from "../src/github-forecast.js";
-import type { GitHubBudget } from "../src/github-usage.js";
+} from "../src/github/forecast.js";
+import type { GitHubBudget } from "../src/github/usage.js";
 const budget = (
   remaining: number,
   observedAtMs: number,

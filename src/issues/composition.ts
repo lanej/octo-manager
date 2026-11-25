@@ -1,6 +1,6 @@
 import { issueGit } from "./git-effects.js";
 import { GitHubPublisher } from "../publication/publisher.js";
-import { sdkTransport, type GitHubTransport } from "../github-sdk.js";
+import { sdkTransport, type GitHubTransport } from "../github/sdk.js";
 import { PublicationStore } from "../publication/store.js";
 import { publishRequest } from "../publication/publisher.js";
 import { readContract, githubRepository } from "../publication/contract.js";

@@ -1,8 +1,8 @@
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import { shortId } from "./identifiers.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import type { parseCommand } from "../arguments.js";
+import type { parseCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
 export async function subscriptionsCLI(
   parsed: ReturnType<typeof parseCommand>,

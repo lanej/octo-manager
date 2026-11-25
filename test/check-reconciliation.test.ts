@@ -3,7 +3,7 @@ import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import {
@@ -20,7 +20,7 @@ import {
 import { currentChecks } from "../src/tracking/policy.js";
 import { currentMergeChecks } from "../src/merging/checks.js";
 import { wire, unwire } from "../src/api/codec.js";
-import { GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubRateLimitError } from "../src/github/reads.js";
 import { DomainCheckEvidenceSchema } from "../src/gen/octomanager/v2/domain_pb.js";
 import { ActionState } from "../src/tracking/types.js";
 import type {

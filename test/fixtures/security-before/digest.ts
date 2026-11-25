@@ -2,7 +2,7 @@
 // Only import paths are adapted for this fixture.
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { cleanText } from "../../../src/domain.js";
+import { cleanText } from "../../../src/text.js";
 import { shortId } from "../../../src/tracking/identifiers.js";
 import type { AgentMessage } from "../../../src/tracking/inbox.js";
 function quote(value: string): string {

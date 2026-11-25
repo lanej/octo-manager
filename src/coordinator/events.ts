@@ -1,5 +1,5 @@
-import type { JobEvent } from "./domain.js";
-import { actionContext } from "./tracking/evidence.js";
+import type { JobEvent } from "../jobs/domain.js";
+import { actionContext } from "../tracking/evidence.js";
 
 function text(value: unknown): string {
   if (typeof value !== "string") throw new Error("Invalid stored event text");

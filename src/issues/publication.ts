@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { Check } from "typebox/value";
-import type { GitHubTransport } from "../github-sdk.js";
+import type { GitHubTransport } from "../github/sdk.js";
 import type { IssueRecord } from "./contracts.js";
 
 const linkedPR = Type.Object({
