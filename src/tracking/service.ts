@@ -40,7 +40,7 @@ export interface TrackingOptions {
   managedQueue?: (agentId: string) => boolean;
   // Positive ownership facts apply only to recorded rows in this synchronous selection pass.
   managedQueueBatch?: (agentIds: readonly string[]) => ReadonlySet<string>;
-  notificationRecorded?: () => void;
+  notificationRecorded?: (recipientAgentId: string) => void;
   failureExcerpt?: typeof readFailureExcerpt;
   read?: typeof readObservation;
   connect?: (agent: AgentRef) => AgentConnection;
@@ -584,7 +584,7 @@ export class TrackingService {
           this.store.inbox.freezeNotice(d.id, notice);
           this.store.inbox.record(d.id, this.store.inbox.render(d.id, notice));
         });
-        this.options.notificationRecorded?.();
+        this.options.notificationRecorded?.(d.recipientAgentId);
       }
     } catch (error) {
       const reason =

@@ -848,9 +848,7 @@ export class TrackingStore {
         )
         .run(this.now(), p.id);
       this.event("pr_observed", `Observed head ${o.headSha}`, p.id);
-      for (const a of this.actions().filter(
-        (a) => a.prId === p.id && unfinished(a),
-      )) {
+      for (const a of this.actions(p.id).filter(unfinished)) {
         const progress = this.closeProgress(a, o);
         if (progress) {
           this.saveAction(

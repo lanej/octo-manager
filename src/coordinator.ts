@@ -33,7 +33,7 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { schedulerRoutes } from "./api/routes.js";
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { Store } from "./coordinator/store.js";
+import { Store, type InputScope } from "./coordinator/store.js";
 import { activeStates, nextReady, parseTask, retryDelay, transition, type Job, type JobCommand, type Snapshot, type Status } from "./jobs/domain.js";
 import { cleanText } from "./text.js";
 import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./jobs/fixture.js";
@@ -86,7 +86,10 @@ export class Coordinator extends EventEmitter {
   private closePromise?: Promise<void>;
   private finalSnapshot?: Snapshot;
   private inputGeneration = 0;
-  private wakeServices = (): void => {};
+  private broadInputGeneration = 0;
+  private referenceRosterGeneration = 0;
+  private referenceInputs = new Map<string, number>();
+  private wakeServices: (scope?: InputScope) => void = () => {};
   constructor(readonly directory: string, private options: CoordinatorOptions = {}) {
     super(); this.now = options.now ?? Date.now;
     this.workScheduler = new WorkScheduler(this.now,
@@ -97,19 +100,20 @@ export class Coordinator extends EventEmitter {
       this.store.repositories.tick().monitorFiles ? this.now() + 5000 : undefined);
     this.diagnostics = new PerformanceDiagnostics(directory);
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
-    this.store = new Store(directory, this.now, () => { this.inputsChanged(); }, () => { this.jobWork.wake(); });
+    const scopedDigestInputs = options.digestOptions?.presentation === undefined && options.digestOptions?.ownerFeedbackCovered === undefined;
+    this.store = new Store(directory, this.now, scope => { this.inputsChanged(scope); }, () => { this.jobWork.wake(); });
     this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{});
-    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), managedQueueBatch:(agentIds)=>this.digests.managedBatch(agentIds), notificationRecorded:()=>{this.inputsChanged();} });
+    this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), managedQueueBatch:(agentIds)=>this.digests.managedBatch(agentIds), notificationRecorded:agentId=>{if(scopedDigestInputs)this.digests.wakeRecipient(agentId);else this.digests.wake();this.githubScheduler.emit("tick");} });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
-    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{referenceInputRevision:()=>String(this.inputGeneration),...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
+    this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{referenceInputRevision:prId=>prId === undefined ? String(this.referenceRosterGeneration) : [this.referenceRosterGeneration,this.referenceInputs.get(prId) ?? 0].join(":"),...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
     this.issues=new IssueService(this.store.issues,options.issueOptions ?? {trackers:[new GitHubIssueTracker()],dispatchers:[new CodexDispatcher()],workspace:new ManagedIssueWorkspace(),codeHost:trackedCodeHost(this.tracking,directory),policy:loadIssuePolicy},this.now);
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
-    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{...(options.digestOptions?.presentation === undefined && options.digestOptions?.ownerFeedbackCovered === undefined ? {inputRevision:()=>String(this.inputGeneration)} : {}),presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
+    this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{...(scopedDigestInputs ? {inputRevision:()=>String(this.broadInputGeneration)} : {}),presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
-    this.wakeServices = () => {
-      this.digests.wake(); this.assessments.wake(); this.repairs.wake();
+    this.wakeServices = scope => {
+      this.digests.wake(scopedDigestInputs && scope?.recipients !== "all" ? scope?.prId : undefined); this.assessments.wake(); this.repairs.wake();
       this.tracking.wake(); this.submissions.wake(); this.submissionNotifications.wake();
       this.issues.wake(); this.merging.wake(); this.notifications.wake();
       this.githubScheduler.emit("tick");
@@ -161,9 +165,12 @@ export class Coordinator extends EventEmitter {
     this.githubScheduler.ensureReviews(url);
     return Promise.resolve(this.githubScheduler.reviewState(url).details);
   }
-  inputsChanged(): void {
+  inputsChanged(scope?: InputScope): void {
     this.inputGeneration++;
-    this.wakeServices();
+    if (scope === undefined) this.referenceRosterGeneration++;
+    else this.referenceInputs.set(scope.prId, this.inputGeneration);
+    if (scope === undefined || scope.recipients === "all") this.broadInputGeneration++;
+    this.wakeServices(scope);
     this.policyWork.wake();
   }
   isStopping(): boolean { return this.stopping || this.stopped; }

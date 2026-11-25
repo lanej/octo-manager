@@ -36,6 +36,10 @@ export function privateDirectory(path: string): void {
   if (lstatSync(path).isSymbolicLink()) throw new Error("State directory must not be a symlink");
   chmodSync(path, 0o700);
 }
+export interface InputScope {
+  prId: string;
+  recipients?: "all";
+}
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
@@ -54,7 +58,7 @@ export class Store {
   readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
-  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: () => void, private wakeJobs?: () => void) {
+  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: (scope?: InputScope) => void, private wakeJobs?: () => void) {
     privateDirectory(directory);
     this.ownership = new DatabaseSync(join(directory, "coordinator-lock.sqlite"));
     try {
@@ -75,11 +79,11 @@ export class Store {
       this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
-        if (kind === "pr_observed" || kind === "pr_assigned" || kind === "pr_archived" ||
+        if (kind === "pr_observed" || kind === "pr_tracked" || kind === "pr_retracked" || kind === "pr_assigned" || kind === "pr_archived" ||
           kind === "pr_untracked" || kind === "pr_subscribed" ||
           kind === "pr_unsubscribed" || kind === "delivery_cancelled" ||
           kind === "message_acknowledged" || kind.startsWith("assessment_notification_"))
-          this.wakeDigests?.();
+          this.wakeDigests?.(kind === "pr_observed" || kind === "pr_archived" ? { prId } : undefined);
       }, this.notificationRepository, this.assessments);
       this.activity = new ActivityStore(this.db, this.now);
       migrateEvidence(this.db);
@@ -100,7 +104,7 @@ export class Store {
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
-        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.();
+        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.(prId === undefined ? undefined : { prId, recipients: "all" });
       });
       this.repositories=new RepositoryPolicies(new RepositoryPolicyStore(this.db),this.tracking,this.merging,(kind,detail,prId)=>{
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
