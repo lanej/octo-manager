@@ -19,8 +19,7 @@
     "generate:codex": "bun scripts/generate-codex-types.ts",
     "lint:biome": ".typescript-quality/node_modules/.bin/biome lint src test scripts --error-on-warnings",
     "build:native": "bun scripts/build-native.ts",
-    "test:native": "bun scripts/test-native-acceptance.ts",
-    "dashboard:tracking": "bun dist/dashboard/tracking.js"
+    "test:native": "bun scripts/test-native-acceptance.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.17.0",

@@ -1,6 +1,6 @@
 # PR tracking and Codex handoffs
 
-Tracking belongs to the TypeScript coordinator; the Go dashboard is its client. Tracked PRs exist independently of summary jobs. GitHub observations, pending actions, notification delivery, and worker completion have separate meanings.
+Tracking belongs to the TypeScript coordinator; the OpenTUI dashboard is its client. Tracked PRs exist independently of summary jobs. GitHub observations, pending actions, notification delivery, and worker completion have separate meanings.
 
 ## Enroll a PR
 
@@ -122,7 +122,7 @@ Codex RPC rejections retain the method, error code, bounded upstream message, an
 
 ## Terminal links
 
-PR, commit, and evidence references use Charmed’s OSC 8 link atom: a compact label retains its exact HTTPS destination. Tracking groups the PR, head, PR-reported base, current target, and available comparison ranges in declaration order and wraps between complete items as the pane changes width. Missing revisions remain explicit. Hover, selection, and opening belong to the terminal.
+Tracking shows the PR URL, observed head, PR-reported base, current target, and available evidence. Press `o` to open the selected GitHub PR. Missing revisions remain explicit.
 
 With the dotfiles Kitty mappings, `⌘⇧O` opens the last visible web link and `⌘⇧U` selects a labeled OSC 8 hyperlink through Kitty’s native picker. The hidden destination is used even when the label contains only a PR number or abbreviated commit. Kitty’s ordinary detected-URL hints remain available through `Ctrl+Shift+E`.
 

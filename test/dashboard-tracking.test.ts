@@ -1,69 +1,100 @@
 import { expect, test } from "bun:test";
 import { create } from "@bufbuild/protobuf";
 import { createTestRenderer } from "@opentui/core/testing";
-import { trackingView } from "../src/dashboard/tracking-view.js";
-import {
-  PendingActionSchema,
-  TrackedPullRequestSchema,
-  TrackingSnapshotSchema,
-  TrackingState,
-} from "../src/gen/octomanager/v2/tracking_pb.js";
+import { dashboardView } from "../src/dashboard/view.js";
+import { records } from "../src/dashboard/records.js";
+import { SnapshotSchema } from "../src/gen/octomanager/v2/scheduler_pb.js";
+import { TrackingState } from "../src/gen/octomanager/v2/tracking_pb.js";
 
-test("Tracking keeps the inspected PR through live reordering and a narrow resize", async () => {
-  await using screen = await createTestRenderer({
+test("Tracking retains the selected PR and inspection when observations reorder", async () => {
+  await using terminal = await createTestRenderer({
     width: 120,
-    height: 14,
+    height: 17,
     kittyKeyboard: true,
   });
-  const view = trackingView(screen.renderer, () => {
-    screen.renderer.destroy();
-  });
-  const first = create(TrackedPullRequestSchema, {
+  const first = {
     id: "first",
     url: "https://github.com/owner/repo/pull/1",
     trackingState: TrackingState.WATCHING,
-  });
-  const second = create(TrackedPullRequestSchema, {
+    enabled: true,
+  };
+  const second = {
     id: "second",
     url: "https://github.com/owner/repo/pull/2",
-    ownerAgentId: "expected-owner",
     trackingState: TrackingState.DRAINING,
+    ownerAgentId: "expected-owner",
+    enabled: true,
+  };
+  let snapshot = create(SnapshotSchema, { tracking: { prs: [first, second] } });
+  const view = dashboardView(terminal.renderer, {
+    changed() {
+      update();
+    },
+    action() {},
+    quit() {},
   });
-  const actions = ["First action", "Second action", "Third action"].map(
-    (summary) => create(PendingActionSchema, { prId: second.id, summary }),
-  );
-  view.update(
-    create(TrackingSnapshotSchema, { prs: [first, second], actions }),
-  );
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("› owner/repo #1");
-  screen.mockInput.pressKey("j");
-  screen.mockInput.pressEnter();
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("Owner: expected-owner");
+  function update() {
+    view.update(
+      records(view.screen, snapshot, () => "Unknown", 24),
+      "Live",
+      "",
+    );
+  }
+  update();
+  terminal.mockInput.pressKey("d");
+  terminal.mockInput.pressKey("4");
+  await terminal.flush();
+  expect(terminal.captureCharFrame()).toContain("› owner/repo #1");
+  terminal.mockInput.pressKey("j");
+  terminal.mockInput.pressEnter();
+  await terminal.flush();
+  expect(terminal.captureCharFrame()).toContain("Owner: expected-owner");
 
-  view.update(
-    create(TrackingSnapshotSchema, { prs: [second, first], actions }),
-  );
-  screen.resize(58, 14);
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("Owner: expected-owner");
-  expect(screen.captureCharFrame()).not.toContain("owner/repo #1");
+  snapshot = create(SnapshotSchema, {
+    tracking: { prs: [second, first] },
+    mergeStatuses: [{ prId: second.id, state: "uncertain" }],
+  });
+  update();
+  terminal.resize(58, 17);
+  await terminal.flush();
+  expect(terminal.captureCharFrame()).toContain("Owner: expected-owner");
+  expect(terminal.captureCharFrame()).toContain("Merge outcome unknown");
+  expect(terminal.captureCharFrame()).not.toContain("owner/repo #1");
 
-  view.disconnected();
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("Disconnected");
-  expect(screen.captureCharFrame()).toContain("Owner: expected-owner");
-  for (let index = 0; index < 4; index++) screen.mockInput.pressKey("]");
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("Third action");
-  view.update(
-    create(TrackingSnapshotSchema, { prs: [first, second], actions }),
+  terminal.mockInput.pressEscape();
+  await terminal.waitForFrame((frame) => frame.includes("› owner/repo #2"));
+  terminal.mockInput.pressEscape();
+  await terminal.waitForFrame((frame) =>
+    frame.includes("Octo Manager  /  Attention"),
   );
-  screen.resize(54, 14);
-  await screen.flush();
-  expect(screen.captureCharFrame()).toContain("Third action");
+  expect(terminal.captureCharFrame()).toContain("Merge outcome unknown");
+});
 
-  screen.mockInput.pressEscape();
-  await screen.waitForFrame((frame) => frame.includes("› owner/repo #2"));
+test("Attention excludes closed PRs with historical uncertain merge operations", () => {
+  const snapshot = create(SnapshotSchema, {
+    tracking: {
+      prs: [
+        {
+          id: "closed",
+          url: "https://github.com/owner/repo/pull/1",
+          observation: { lifecycle: "closed" },
+        },
+        {
+          id: "open",
+          url: "https://github.com/owner/repo/pull/2",
+          observation: { lifecycle: "open" },
+        },
+      ],
+    },
+    mergeStatuses: [
+      { prId: "closed", state: "uncertain" },
+      { prId: "open", state: "uncertain" },
+    ],
+  });
+  expect(
+    records("Attention", snapshot, () => "Unknown", 24).map((row) => row.prId),
+  ).toEqual(["open"]);
+  expect(
+    records("Deliveries", snapshot, () => "Unknown", 24).map((row) => row.prId),
+  ).toEqual(["open", "closed"]);
 });

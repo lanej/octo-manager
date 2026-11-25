@@ -1,6 +1,6 @@
 # Dashboard rendering performance
 
-The dashboard uses Charmed’s retained runtime and keeps one compiled responsive layout for the current tab, expansion state, and header height. Resizing resolves that declaration again; changing tabs replaces it. Per-region revisions cover visible data, native scrolling, focus, errors, and the terminal palette. Charmed batches presentation at up to 60 frames per second and retains the completed frame between updates, without an idle presentation timer.
+The retired Go dashboard used Charmed’s retained runtime and keeps one compiled responsive layout for the current tab, expansion state, and header height. Resizing resolves that declaration again; changing tabs replaces it. Per-region revisions cover visible data, native scrolling, focus, errors, and the terminal palette. Charmed batches presentation at up to 60 frames per second and retains the completed frame between updates, without an idle presentation timer.
 
 Pane sources are retained by value. Protobuf inputs are copied when they change, so mutating a snapshot in place without advancing its sequence still updates the display. Coordinator sequence and pointer identity are not visual cache keys. Output and review Markdown retain a prepared document across width changes; changed source or palette prepares a replacement. The existing 256 KiB source and 1 MiB rendered Markdown cache limits remain. Worker logs retain their native viewport, prepare only on worker tabs, and keep the latest 500 tool entries. GitHub traffic charts use `ApplyData` for equal observations and rebuild when their axis ranges or palette change.
 
@@ -24,7 +24,7 @@ Measurements below are medians of three 100 ms samples on one Apple Silicon host
 
 Tracking allocated about 5.46 MB per equal snapshot before retention and 0.40 MB afterward. Idle `Root.View()` changed from rebuilding the scene (about 1.60 ms and 1.36 MB per call) to returning the completed frame with zero allocations. That idle access benchmark does not establish idle process CPU; reconnect ticks and incoming stream observations still have processing costs. Changed observations still generate changed pane content before presentation; the runtime coalesces completed frames, not application message processing.
 
-Run the focused workloads with the repository’s declared Go toolchain:
+Reproduce the historical workloads by checking out the corresponding Go dashboard revision and using its declared Go toolchain:
 
 ```sh
 go test ./internal/tui -run '^$' -bench BenchmarkDashboard -benchmem -benchtime=100ms -count=3

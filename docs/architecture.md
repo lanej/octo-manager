@@ -1,13 +1,13 @@
 # Architecture
 
-Octo Manager coordinates issue remediation and PR delivery. The Bun coordinator owns durable lifecycle state, scheduling, policy decisions, and daemon-backed effects. A Charmed Go dashboard and CLI use the generated [Connect API](api.md). The standalone PR publisher has a separate receipt journal and does not acquire the coordinator's database lock.
+Octo Manager coordinates issue remediation and PR delivery. The Bun coordinator owns durable lifecycle state, scheduling, policy decisions, and daemon-backed effects. An OpenTUI dashboard and CLI use the generated [Connect API](api.md). The standalone PR publisher has a separate receipt journal and does not acquire the coordinator's database lock.
 
 ## Capability boundaries
 
 ```mermaid
 flowchart LR
     CLI[CLI and calling agents] -->|Connect over Unix socket| App[Bun application services]
-    TUI[Charmed Go dashboard] -->|Generated Connect client| App
+    TUI[OpenTUI dashboard] -->|Generated Connect client| App
     App --> Store[(SQLite state, intentions, evidence)]
     App --> TrackerPort[Issue-tracker port]
     App --> DispatchPort[Agent-dispatcher port]
@@ -41,8 +41,8 @@ Octo groups code by capability. Start in the folder named for the behavior you a
 | `src/cli/` and `src/api/` | Shared command parsing and output, Connect route registration, and wire projections. |
 | [Coordinator](../src/coordinator.ts) and `src/coordinator/` | Compose the daemon and own its socket, process lifecycle, state lock, shared database, and migration ordering. |
 | `src/github/` and `src/jobs/` | Shared GitHub identity, transport, errors, and quota accounting. Pi job state, retry policy, worker support, and demo fixtures belong to jobs. The shared [GitHub review reader](../src/github/reviews.ts) supplies dashboard evidence. The Pi model summary stays with jobs. |
-| `proto/`, `src/gen/`, and `gen/` | Versioned API definitions and generated bindings. Public CLI and worker entry points stay at the source root for the packaged runtime. |
-| `cmd/octo-manager-tui/`, `internal/client/`, and `internal/tui/` | Terminal entry point, Connect client, and dashboard composition respectively. |
+| `proto/` and `src/gen/` | Versioned API definitions and generated bindings. Public CLI and worker entry points stay at the source root for the packaged runtime. |
+| `src/dashboard/` | Terminal lifecycle, Connect subscription, dashboard records, and rendering. |
 
 - **Decisions take explicit facts.** `policy.ts` and `decisions.ts` own the decision and its result. [Inherited automation](../src/repository/policy.ts) chooses what to do with the tracked state and can request additional facts. The [repository service](../src/repository/service.ts) gathers those facts, reads [checkout configuration](../src/repository/config.ts) and [saved policy](../src/repository/store.ts), and acts on the decision.
 - **Application operations own workflow sequencing.** Capability RPC and CLI adapters validate and map boundary data, then invoke the operation. The [receipt merge request](../src/merging/receipt-request.ts) owns recipient resolution, digest acknowledgment, and scheduling. Acknowledgment and scheduling retain separate outcomes.
@@ -51,9 +51,7 @@ Octo groups code by capability. Start in the folder named for the behavior you a
 
 ### Dashboard and UI components
 
-Keep Bubble Tea lifecycle, stream subscription, focus, cached frames, and responsive composition in `internal/tui`. Arrange dashboard views by capability, as in the [Issues view](../internal/tui/issues_view.go) and [PR tracking view](../internal/tui/tracking_view.go). Put shared Octo-specific mappings with explicit inputs in [dashboard presentation](../internal/tui/presentation/status.go). Rendering consumes coordinator observations and does not decide workflow authority.
-
-Use Charmed's packages for reusable presentation and interaction such as themes, text, layout, focus, charts, and list-and-inspector patterns. A component belongs in Charmed when it can accept application-supplied data and callbacks without Octo concepts, generated API types, or Connect calls. Octo owns workflow views and interpretations, such as mapping an acknowledged action or uncertain delivery to a visual tone.
+The [dashboard entry point](../src/dashboard/main.ts) owns subscription lifetimes and explicit controls. The [record projections](../src/dashboard/records.ts) turn coordinator observations into evidence for each view. The [OpenTUI view](../src/dashboard/view.ts) owns keyboard navigation, scrolling, and responsive layout. Workflow authority remains in application services.
 
 ## Issue orchestration
 
@@ -67,7 +65,7 @@ The coordinator owns local commits and remote publication. Codex implementation 
 
 The shared scheduler dispatches provider reads with request spacing, adaptive polling, separate REST/GraphQL budgets, and cooldowns. Services retain observations and explicit completeness; failed or partial reads do not establish a clean state. [Polling](polling-and-auto-merge.md), [tracking](tracking.md), and [merge chains](merge-chains.md) describe their respective freshness and eligibility contracts.
 
-Charmed supplies semantic themes, compiled responsive layouts, focus, viewports, logs, prepared Markdown and retained rendering. The Go frontend owns terminal lifecycle, navigation and cached presentation, not provider polling or domain transitions. Views receive stored frames on the coordinator tick; refresh requests schedule work while cached content remains visible. Disconnecting a dashboard does not cancel jobs or issue assignments. See [dashboard layout](dashboard.md) and the dated [performance evidence](dashboard-performance.md).
+OpenTUI supplies terminal lifecycle, layout, and rendering. The dashboard receives stored frames on the coordinator tick. Explicit refresh requests schedule work while cached content remains visible. Disconnecting the dashboard leaves jobs and issue assignments running. See the [dashboard guide](dashboard.md) for controls and the [historical Charmed measurements](dashboard-performance.md) for the prior baseline.
 
 ## Pi job state machine
 

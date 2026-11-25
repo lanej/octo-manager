@@ -244,11 +244,6 @@ async function main(): Promise<void> {
         "--outDir",
         join(stage, "dist"),
       ]);
-      await copyFile(
-        join(source, "build", "octo-manager-tui"),
-        join(stage, "build", "octo-manager-tui"),
-      );
-      await chmod(join(stage, "build", "octo-manager-tui"), 0o755);
       if (native) {
         await copyFile(
           join(source, "build/octo-manager"),

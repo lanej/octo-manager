@@ -112,10 +112,6 @@ async function installerFixture() {
     });
     expect(built.success).toBe(true);
   }
-  await writeFile(
-    join(source, "build/octo-manager-tui"),
-    "fixture executable\n",
-  );
   execFileSync("git", ["init", "--quiet", source]);
   execFileSync("git", ["-C", source, "add", "."]);
   execFileSync("git", [

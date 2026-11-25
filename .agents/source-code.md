@@ -19,7 +19,6 @@ This summary lists the installed skill pins.
 | code-comments | 1.1.2 |
 | data-change-planning | 1.0.0 |
 | git | 1.1.0 |
-| go | 1.1.5 |
 | javascript | 1.1.3 |
 | library-code-comments | 1.0.1 |
 | protobuf | 1.0.3 |
@@ -31,6 +30,6 @@ This summary lists the installed skill pins.
 
 Read the installed project policy at `.agents/skills/source-code-lifecycle/SKILL.md` first, then load the installed skills relevant to the task. Preserve existing repository instructions and required gates.
 
-Use `source-code validate` to check packages and pins. Use `source-code upgrade --dry-run` to review available updates before applying them. Run the installed generated gates: `python3 scripts/check-source-code.py go`, `python3 scripts/check-source-code.py typescript`, `python3 scripts/check-source-code.py protobuf`.
+Use `source-code validate` to check packages and pins. Use `source-code upgrade --dry-run` to review available updates before applying them. Run the installed generated gates: `python3 scripts/check-source-code.py typescript`.
 
 The generated `AGENTS.override.md` routes agents to this policy and the authored project instructions. Other hosts should read that router explicitly when their native instruction discovery does not load it.
