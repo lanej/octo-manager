@@ -24,6 +24,8 @@ import {
 } from "./types.js";
 import { renderDigest } from "./render.js";
 const recipientConcurrency = 4;
+// Confirmed queue admission needs bounded external housekeeping; new inputs wake immediately.
+const queuedInspectionDelay = 60 * 1000;
 // Archived sessions retain unknown queue/receipt state and are probed at least every fifteen minutes.
 const archivedInspectionDelay = 15 * 60 * 1000;
 
@@ -41,7 +43,7 @@ export interface DigestOptions {
   presentation?: (message: AgentMessage) => MessagePresentation;
   ownerFeedbackCovered?: (message: AgentMessage) => boolean;
   connect?: (agent: AgentRef, socket: string) => QueueConnection;
-  // Inspect an admitted queue again at this deadline; empty recipients await intake.
+  // Override queue inspection deadlines; input wakeups remain immediate.
   intervalMs?: number;
 }
 export class DigestService {
@@ -275,7 +277,7 @@ export class DigestService {
       // Awaited work can admit local or external writes. Refresh before using the snapshot again.
       revision = this.options.inputRevision?.();
       if (this.canSkipDiscovery(agent.id, revision)) continue;
-      if (!this.managed(agent.id) || this.running.has(agent.id)) continue;
+      if (!this.managed(agent.id)) continue;
       this.queued.set(agent.id, {
         agent,
         urgent: this.pending(agent.id).length > 0,
@@ -289,9 +291,10 @@ export class DigestService {
       return;
     }
     while (this.running.size < recipientConcurrency && this.queued.size > 0) {
-      const next =
-        [...this.queued.values()].find((value) => value.urgent) ??
-        this.queued.values().next().value;
+      const available = [...this.queued.values()].filter(
+        (value) => !this.running.has(value.agent.id),
+      );
+      const next = available.find((value) => value.urgent) ?? available[0];
       if (next === undefined) break;
       this.queued.delete(next.agent.id);
       const work = performanceScope(
@@ -426,6 +429,15 @@ export class DigestService {
     }
     const latest = this.inputs(agent.id),
       fresh = latest.active;
+    // Cleanup on an older socket does not inspect the current queued membership.
+    const cleanupRoute = inputs.cleanup[0]?.transport.socket;
+    if (
+      failure === undefined &&
+      fresh?.state === State.Queued &&
+      latest.cleanup.length === 0 &&
+      (cleanupRoute === undefined || cleanupRoute === fresh.transport.socket)
+    )
+      delay = this.options.intervalMs ?? queuedInspectionDelay;
     const idle =
       latest.pending.length === 0 &&
       fresh === undefined &&
@@ -508,23 +520,14 @@ export class DigestService {
         version: DigestRevision;
       }[] = [];
       for (const item of queued) {
-        const known = this.store
-          .list(agent.id)
-          .find(
-            (value) =>
-              value.transport.socket === route.socket &&
-              this.store
-                .revisions(value.id)
-                .some((version) => version.dispatchId === item.clientId),
-          );
-        if (known !== undefined) {
-          const version = this.store
-            .revisions(known.id)
-            .find(
-              (value) =>
-                value.dispatchId === item.clientId && value.body === item.body,
-            );
-          if (version === undefined) {
+        const match = this.store.queuedRevision(
+          agent.id,
+          route.socket,
+          item.clientId,
+        );
+        if (match !== undefined) {
+          const { digest: known, version } = match;
+          if (version.body !== item.body) {
             this.store.event(agent.id, known.id, "queue_content_conflict", {
               queueId: item.queueId,
             });
@@ -563,9 +566,7 @@ export class DigestService {
               : "collapse legacy notification",
         );
       }
-      for (const digest of this.store
-        .list(agent.id)
-        .filter((value) => value.transport.socket === route.socket))
+      for (const digest of this.store.withdrawalDigests(agent.id, route.socket))
         await this.reconcileLegacyWithdrawals(
           connection,
           agent,
@@ -754,7 +755,8 @@ export class DigestService {
               ...active,
               state: State.Queued,
               queueId: keep.item.queueId,
-              nextCheckAt: this.now() + 1000,
+              nextCheckAt:
+                this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
             },
             "digest_queue_observed",
             { revision: version.revision, queueId: keep.item.queueId },
@@ -828,7 +830,8 @@ export class DigestService {
             ...fresh,
             state: State.Queued,
             queueId,
-            nextCheckAt: this.now() + 1000,
+            nextCheckAt:
+              this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
           },
           operation + "_confirmed",
           { revision: version.revision, queueId },

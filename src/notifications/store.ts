@@ -77,6 +77,54 @@ export class DigestStore {
       throw new Error("Invalid ambiguous message receipt ID");
     return revision(JSON.parse(String(rows[0]?.["data"])));
   }
+  queuedRevision(
+    agentId: string,
+    socket: string,
+    dispatchId: string,
+  ): { digest: Digest; version: DigestRevision } | undefined {
+    const row = this.statement(
+      `SELECT d.id,d.data AS digest,r.revision AS number,r.data AS revision
+       FROM agent_digest_revisions r INDEXED BY digest_dispatch_prefix
+       JOIN agent_digests d ON d.id=r.digest_id
+       WHERE substr(json_extract(r.data,'$.dispatchId'),1,8)=?
+         AND json_extract(r.data,'$.dispatchId')=? AND d.agent_id=?
+         AND json_extract(d.data,'$.transport.socket')=?
+       ORDER BY d.rowid,r.revision LIMIT 1`,
+    ).get(dispatchId.slice(0, 8), dispatchId, agentId, socket);
+    if (row === undefined) return undefined;
+    const value = digest(JSON.parse(String(row["digest"]))),
+      version = revision(JSON.parse(String(row["revision"])));
+    if (
+      value.id !== row["id"] ||
+      value.agentId !== agentId ||
+      value.transport.socket !== socket ||
+      version.digestId !== value.id ||
+      version.revision !== row["number"] ||
+      version.dispatchId !== dispatchId
+    )
+      throw new Error("Queued digest revision identity mismatch");
+    return { digest: value, version };
+  }
+  withdrawalDigests(agentId: string, socket: string): Digest[] {
+    // An unresolved withdrawal can outlive its terminal digest. Settled history cannot need queue reconciliation.
+    return this.statement(
+      `SELECT DISTINCT d.rowid,d.data FROM agent_digests d
+       JOIN agent_digest_events e INDEXED BY digest_events_by_kind ON e.digest_id=d.id
+       WHERE d.agent_id=? AND json_extract(d.data,'$.transport.socket')=?
+         AND e.kind IN ('queue_cancel_started','queue_cancel_confirmed','queue_cancel_reconciled')
+         AND (json_type(e.detail,'$.queueId') IS NOT 'text'
+           OR (e.kind='queue_cancel_started' AND json_type(e.detail,'$.clientId') IS NOT 'text')
+           OR (e.kind='queue_cancel_started' AND NOT EXISTS (
+             SELECT 1 FROM agent_digest_events later INDEXED BY digest_events_by_kind
+             WHERE later.digest_id=e.digest_id AND later.sequence>e.sequence
+               AND later.kind IN ('queue_cancel_started','queue_cancel_confirmed','queue_cancel_reconciled')
+               AND json_extract(later.detail,'$.queueId')=json_extract(e.detail,'$.queueId')
+           )))
+       ORDER BY d.rowid`,
+    )
+      .all(agentId, socket)
+      .map((row) => digest(JSON.parse(String(row["data"]))));
+  }
   delivery(id: string): DigestRevision {
     const found = this.findDelivery(id);
     if (found === undefined) throw new Error("Message receipt not found");

@@ -452,3 +452,68 @@ test("a failed scheduled reconciliation backs off instead of retaining an expire
     await f.close();
   }
 });
+
+test("an intake during final queue admission coalesces a follow-up without waiting for housekeeping", async () => {
+  const f = await fixture(1, { now: () => 1000, intervalMs: 60000 });
+  const queue = f.queues[0];
+  if (queue === undefined) throw new Error("Missing queue");
+  const entered = gate();
+  const release = gate();
+  const followedUp = gate();
+  const enqueue = queue.enqueueQueued.bind(queue);
+  let admissions = 0;
+  let active = 0;
+  let maximum = 0;
+  const admission = spyOn(queue, "enqueueQueued").mockImplementation(
+    async (...args) => {
+      const number = ++admissions;
+      active++;
+      maximum = Math.max(maximum, active);
+      try {
+        const item = await enqueue(...args);
+        if (number === 1) {
+          entered.release();
+          await release.promise;
+        } else followedUp.release();
+        return item;
+      } finally {
+        active--;
+      }
+    },
+  );
+  const close = spyOn(queue, "close").mockImplementation(() => {});
+  const discovery = spyOn(f.store.tracking, "agents");
+  try {
+    const first = f.notice(0);
+    f.service.start();
+    await within(entered.promise);
+    const before = discovery.mock.calls.length;
+    const second = f.notice(0);
+    f.service.wake();
+    const discover = async () => {
+      while (discovery.mock.calls.length === before) await setImmediate();
+      // The one recipient's discovery yields once before it can queue work.
+      await setImmediate();
+      await setImmediate();
+    };
+    await within(discover());
+    expect(admissions).toBe(1);
+    expect(queue.preparations).toBe(1);
+    release.release();
+    await within(followedUp.promise);
+    expect(maximum).toBe(1);
+    const digest = f.store.digests.active(first.agentId);
+    if (digest === undefined) throw new Error("Missing follow-up digest");
+    expect(digest.revision).toBe(2);
+    expect(
+      f.store.digests.version(digest.id, digest.revision).messageIds,
+    ).toEqual([first.id, second.id]);
+    expect(queue.slots).toHaveLength(1);
+  } finally {
+    release.release();
+    await f.close();
+    discovery.mockRestore();
+    close.mockRestore();
+    admission.mockRestore();
+  }
+});
