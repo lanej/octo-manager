@@ -1,3 +1,4 @@
+import { runtimeLifecycle } from "../src/lifecycle-rpc.js";
 import { rejects } from "node:assert/strict";
 import { expect, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -14,6 +15,7 @@ test("API mutations invalidate reconciliation inputs while inspection stays quie
     await client.getSnapshot({});
     await client.listTrackedPullRequests({});
     await client.listActivity({});
+    await runtimeLifecycle(directory, { action: "inventory" });
     expect(changed).not.toHaveBeenCalled();
     const registered = await client.registerAgent({
       target: { harness: "codex", endpoint: "local", sessionId: "api-intake" },

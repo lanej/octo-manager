@@ -6,7 +6,7 @@ const inputMethods: Readonly<Record<string, boolean>> = {
   startPerformanceCapture: false,
   getPerformanceCapture: false,
   stopPerformanceCapture: false,
-  runtimeLifecycle: true,
+  runtimeLifecycle: false,
   enrollIssue: true,
   listIssues: false,
   getIssue: false,
