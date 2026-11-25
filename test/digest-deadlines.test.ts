@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
 import { Store } from "../src/coordinator/store.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { DigestService } from "../src/notifications/service.js";
 import { DigestState } from "../src/notifications/types.js";
 import { SubmissionState } from "../src/submissions/contracts.js";
@@ -22,6 +23,7 @@ async function until(predicate: () => boolean): Promise<void> {
 async function fixture(intervalMs?: number) {
   const directory = await mkdtemp(join(tmpdir(), "octo-digest-deadline-"));
   let now = 1000;
+  const scheduler = new WorkScheduler(() => now);
   let revision = 0;
   let service: DigestService | undefined;
   const store = new Store(
@@ -95,6 +97,10 @@ async function fixture(intervalMs?: number) {
     store,
     actor,
     digests,
+    start() {
+      digests.start(scheduler);
+      scheduler.start();
+    },
     get inspections() {
       return inspections;
     },
@@ -150,7 +156,9 @@ async function fixture(intervalMs?: number) {
       await digests.flush();
     },
     async close() {
+      scheduler.stop();
       await digests.close();
+      await scheduler.close();
       await tracking.close();
       store.close();
       await rm(directory, { recursive: true, force: true });
@@ -181,7 +189,7 @@ test("confirmed admission sleeps for sixty seconds while external consumption re
 test("new notices and receipts wake confirmed queues before their housekeeping deadline", async () => {
   const f = await fixture();
   try {
-    f.digests.start();
+    f.start();
     f.notice();
     await until(() => f.slots.length === 1);
     const first = f.store.digests.active(f.actor.id);

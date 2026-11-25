@@ -1,8 +1,13 @@
+import {
+  defaultTrackingConfig,
+  loadTrackingConfig,
+} from "../src/tracking/config.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { GitHubRequestCancelledError } from "../src/github/errors.js";
 import { sdkTransport } from "../src/github/sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -206,59 +211,88 @@ test("persistent review cache, interrupted schedules and dispatch cooldowns surv
     await rm(directory, { recursive: true, force: true });
   }
 });
-test("dashboard frames follow coordinator ticks and cached refresh RPCs never fetch GitHub directly", async () => {
+test("dashboard frames update automatically and cached refresh RPCs share request admission", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-dashboard-stream-"));
   let calls = 0;
-  let at = 1000;
-  const coordinator = new Coordinator(directory, {
-    now: () => at,
-    reviewReader: () => {
-      calls++;
-      return Promise.resolve(details);
-    },
+  let finish: ((value: typeof details) => void) | undefined;
+  const config = defaultTrackingConfig();
+  config.polling = {
+    minimumMs: 60000,
+    maximumMs: 900000,
+    activeMaximumMs: 120000,
+    tickMs: 100,
+    requestSpacingMs: 100,
+  };
+  const coordinator: Coordinator = new Coordinator(directory, {
+    trackingConfig: config,
+    reviewReader: () =>
+      coordinator.githubScheduler.dispatch("core", () => {
+        calls++;
+        return new Promise<typeof details>((resolve) => {
+          finish = resolve;
+        });
+      }),
   });
+  const controller = new AbortController();
   try {
+    coordinator.store.schedules.saveDispatch({
+      ...coordinator.store.schedules.dispatch(),
+      nextAtMs: Date.now() + 60000,
+    });
     await coordinator.start();
     const client = schedulerClient(directory);
-    for (let i = 0; i < 8; i++) {
+    const initial = await client.getPullRequest({ url, refresh: true });
+    assert.equal(initial.pullRequest, undefined);
+    assert.equal(calls, 0);
+    const queuedDeadline = Date.now() + 1000;
+    while (
+      coordinator.githubScheduler.status().queuedRequests === 0 &&
+      Date.now() < queuedDeadline
+    )
+      await Bun.sleep(5);
+    assert.equal(coordinator.githubScheduler.status().queuedRequests, 1);
+    for (let i = 0; i < 3; i++) {
       const response = await client.getPullRequest({ url, refresh: true });
       assert.equal(response.pullRequest, undefined);
     }
-    assert.equal(calls, 0);
-    const controller = new AbortController();
     const frames = client.watchDashboard(
       { url, reviews: true },
-      { signal: controller.signal },
+      {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(1500)]),
+      },
     );
     const stream = frames[Symbol.asyncIterator]();
     const first = await stream.next();
     assert.equal(first.done, false);
     assert.equal(first.value.pullRequest, undefined);
-    assert.equal(calls, 0);
-    const second = stream.next();
-    at = 2000;
-    coordinator.githubScheduler.tick();
-    await second;
-    await settle();
+    coordinator.store.schedules.saveDispatch({
+      ...coordinator.store.schedules.dispatch(),
+      nextAtMs: Date.now(),
+    });
+    await client.getPullRequest({ url, refresh: true });
+    const deadline = Date.now() + 1000;
+    while (finish === undefined && Date.now() < deadline) await Bun.sleep(5);
     assert.equal(calls, 1);
-    const third = stream.next();
-    at = 3000;
-    coordinator.githubScheduler.tick();
-    const frame = await third;
+    assert(
+      finish !== undefined,
+      "shared dispatcher did not admit the queued request",
+    );
+    finish(details);
+    let frame = await stream.next();
+    while (frame.done !== true && frame.value.pullRequest === undefined)
+      frame = await stream.next();
     assert.equal(frame.done, false);
     assert.equal(frame.value.pullRequest?.title, "Stored review");
-    assert.equal(frame.value.snapshot?.githubScheduler?.tickSequence, 3n);
+    assert((frame.value.snapshot?.githubScheduler?.tickSequence ?? 0n) > 0n);
     controller.abort();
     await stream.return?.();
     await settle();
     const cached = await client.getPullRequest({ url });
     assert.equal(cached.pullRequest?.title, "Stored review");
     assert.equal(calls, 1);
-    at = 200000;
-    coordinator.githubScheduler.tick();
-    await settle();
-    assert.equal(calls, 1);
+    assert.equal(coordinator.githubScheduler.status().queuedRequests, 0);
   } finally {
+    controller.abort();
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
   }
@@ -500,3 +534,63 @@ test("review selection preserves payload kind authority across mismatched normal
       db.close();
     }
   }));
+
+test("shared work scheduler wakes GitHub requests and rearms their spacing deadline", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-shared-dispatch-"));
+  const store = new Store(directory);
+  const work = new WorkScheduler();
+  const scheduler = new GitHubScheduler(
+    store.schedules,
+    { ...defaultSchedulerPolicy, requestSpacingMs: 20 },
+    Date.now,
+    () => Promise.resolve(details),
+    () => {},
+  );
+  const starts: number[] = [];
+  try {
+    scheduler.start(work);
+    work.start();
+    await Promise.all(
+      [1, 2, 3].map((value) =>
+        scheduler.dispatch("core", () => {
+          starts.push(Date.now());
+          return Promise.resolve(value);
+        }),
+      ),
+    );
+    assert.equal(starts.length, 3);
+    assert((starts[1] ?? 0) - (starts[0] ?? 0) >= 20);
+    assert((starts[2] ?? 0) - (starts[1] ?? 0) >= 20);
+  } finally {
+    work.stop();
+    await scheduler.close();
+    await work.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("heartbeat defaults to five seconds independently of request pacing", async () => {
+  assert.equal(defaultSchedulerPolicy.tickMs, 5000);
+  const directory = await mkdtemp(join(tmpdir(), "octo-heartbeat-config-"));
+  const path = join(directory, "config.json");
+  try {
+    await writeFile(path, JSON.stringify({ polling: {} }));
+    assert.equal(loadTrackingConfig(path).polling?.tickMs, 5000);
+    assert.equal(loadTrackingConfig(path).polling?.requestSpacingMs, 2000);
+    await writeFile(
+      path,
+      JSON.stringify({ polling: { tickMs: 100, requestSpacingMs: 200 } }),
+    );
+    assert.equal(loadTrackingConfig(path).polling?.tickMs, 100);
+    for (const requestSpacingMs of [-1, 0, 99]) {
+      await writeFile(path, JSON.stringify({ polling: { requestSpacingMs } }));
+      assert.throws(
+        () => loadTrackingConfig(path),
+        /Invalid scheduler cadence/,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

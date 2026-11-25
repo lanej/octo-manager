@@ -14,7 +14,7 @@ import { trackedCodeHost } from "./issues/composition.js";
 import { Activation, type ActivationReport } from "./lifecycle.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
-import { LocalWork } from "./scheduling/local-work.js";
+import { WorkScheduler, type ScheduledTask } from "./scheduling/work.js";
 import {githubReads} from "./github/reads.js";
 import {MergeService,type MergeOptions} from "./merging/service.js";
 import {NotificationService} from "./tracking/notifications.js";
@@ -75,8 +75,9 @@ export class Coordinator extends EventEmitter {
   private server?: Server;
   private sockets = new Set<Socket>();
   readonly issues: IssueService;
-  private readonly jobWork: LocalWork;
-  private readonly policyWork: LocalWork;
+  private readonly workScheduler: WorkScheduler;
+  private readonly jobWork: ScheduledTask;
+  private readonly policyWork: ScheduledTask;
   private active: Active | undefined;
   private stopping = false;
   private stopped = false;
@@ -85,22 +86,19 @@ export class Coordinator extends EventEmitter {
   private closePromise?: Promise<void>;
   private finalSnapshot?: Snapshot;
   private inputGeneration = 0;
-  private wakeDigests = (): void => {};
+  private wakeServices = (): void => {};
   constructor(readonly directory: string, private options: CoordinatorOptions = {}) {
     super(); this.now = options.now ?? Date.now;
-    this.jobWork = new LocalWork(this.now, () => performanceScope(directory, "jobs", () => this.tickJobs()));
-    this.policyWork = new LocalWork(this.now, () => performanceScope(directory, "repository-policy", () =>
-      this.store.repositories.tick().monitorFiles ? this.now() + 1000 : undefined));
+    this.workScheduler = new WorkScheduler(this.now,
+      (key, error) => { this.store.event("", "scheduler_work_failed", `${key}: ${errorText(error)}`); },
+      (key, work) => performanceScope(directory, key, work));
+    this.jobWork = this.workScheduler.task("jobs", () => this.tickJobs());
+    this.policyWork = this.workScheduler.task("repository-policy", () =>
+      this.store.repositories.tick().monitorFiles ? this.now() + 5000 : undefined);
     this.diagnostics = new PerformanceDiagnostics(directory);
     const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
     this.store = new Store(directory, this.now, () => { this.inputsChanged(); }, () => { this.jobWork.wake(); });
-    this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{
-      performanceScope(directory, "tracking", () => { this.tracking.tick(); });
-      performanceScope(directory, "issues", () => this.issues.tick()).catch((error: unknown) => { this.store.event("", "issue_scheduler_error", error instanceof Error ? error.message : "Issue tick failed"); });
-      performanceScope(directory, "legacy-reconciliation", () => { this.submissions.reconcileLegacy(this.now()); });
-      performanceScope(directory, "notification-flush", () => this.notifications.flush()).catch(()=>{});
-      performanceScope(directory, "merging", () => this.merging.tick()).catch(()=>{});
-    });
+    this.githubScheduler=new GitHubScheduler(this.store.schedules,{tickMs:trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,requestSpacingMs:trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs},this.now,(url,signal)=>(this.options.reviewReader ?? readPullRequestDetails)(url,signal),()=>{});
     this.tracking = new TrackingService(this.store.tracking, trackingConfig, this.now, { ...options.trackingOptions, repositoryEnrollment:(prId,agentId,cwd)=>{this.store.repositories.bind(prId,agentId,cwd);}, schedules:this.store.schedules,interactive:work=>this.githubScheduler.interactive(work), stateDirectory: directory,managedQueue:(agentId)=>this.digests.managed(agentId), managedQueueBatch:(agentIds)=>this.digests.managedBatch(agentIds), notificationRecorded:()=>{this.inputsChanged();} });
     this.assessments = new AssessmentService(this.store.assessments, this.tracking, options.model, options.assess, this.now);
     this.merging=new MergeService(this.store.merging,this.tracking,trackingConfig.merging??{},directory,this.store.mergeConflicts,this.now,{referenceInputRevision:()=>String(this.inputGeneration),...options.mergeOptions,issueGate:url=>this.issues.mergeAllowed(url),repositoryInstructions:(message)=>this.store.repositories.forMessage(message)});
@@ -108,9 +106,14 @@ export class Coordinator extends EventEmitter {
     this.repairs = new RepairService(this.store.repairs, this.tracking, trackingConfig.repairs, directory, this.now, options.repairOptions, this.store.conflicts);
     this.submissions = new SubmissionService(this.store.submissions, this.tracking, {...(trackingConfig.submissionModels === undefined ? {} : {models:trackingConfig.submissionModels}),...options.submissionOptions});
     this.digests = new DigestService(this.store.digests,this.tracking,this.store.submissions,directory,this.now,{...(options.digestOptions?.presentation === undefined && options.digestOptions?.ownerFeedbackCovered === undefined ? {inputRevision:()=>String(this.inputGeneration)} : {}),presentation:this.merging.receipts.presentation,ownerFeedbackCovered:message=>this.store.merging.ownerFeedbackCovered(message),...options.digestOptions});
-    this.wakeDigests = () => { this.digests.wake(); };
     this.submissionNotifications = new SubmissionNotifications(this.store.submissions, this.tracking, options.trackingOptions?.connect,this.digests.managed);
     this.notifications=new NotificationService(this.store.notifications,this.tracking,this.now,options.notificationReader);
+    this.wakeServices = () => {
+      this.digests.wake(); this.assessments.wake(); this.repairs.wake();
+      this.tracking.wake(); this.submissions.wake(); this.submissionNotifications.wake();
+      this.issues.wake(); this.merging.wake(); this.notifications.wake();
+      this.githubScheduler.emit("tick");
+    };
     this.socketPath = join(directory, "run.sock");
     for (const job of this.store.jobs()) {
       let observedExit = false;
@@ -138,17 +141,20 @@ export class Coordinator extends EventEmitter {
       });
       await new Promise<void>((resolve, reject) => { this.server!.once("error", reject); this.server!.listen(this.socketPath, () => { this.server!.off("error", reject); resolve(); }); });
       chmodSync(this.socketPath, 0o600);
-      this.jobWork.start();
       this.releaseDispatch=githubReads.setDispatcher(this.githubScheduler);
-      this.assessments.start();
-      this.repairs.start();
-      this.submissions.start();
-      this.submissionNotifications.start();
-      this.digests.start();
-
-      this.policyWork.start();
-      this.githubScheduler.start();
-    } catch (error) { this.store.close(); throw error; }
+      this.assessments.start(this.workScheduler);
+      this.repairs.start(this.workScheduler);
+      this.submissions.start(this.workScheduler);
+      this.submissionNotifications.start(this.workScheduler);
+      this.digests.start(this.workScheduler);
+      this.tracking.start(this.workScheduler);
+      this.merging.start(this.workScheduler);
+      this.issues.start(this.workScheduler);
+      this.notifications.start(this.workScheduler);
+      this.githubScheduler.start(this.workScheduler);
+      this.jobWork.wake(); this.policyWork.wake();
+      this.workScheduler.start();
+    } catch (error) { this.workScheduler.stop(); this.store.close(); throw error; }
   }
   pullRequestDetails(url: string) {
     if (this.stopping) throw new Error("Coordinator is stopping");
@@ -157,7 +163,7 @@ export class Coordinator extends EventEmitter {
   }
   inputsChanged(): void {
     this.inputGeneration++;
-    this.wakeDigests();
+    this.wakeServices();
     this.policyWork.wake();
   }
   isStopping(): boolean { return this.stopping || this.stopped; }
@@ -166,7 +172,7 @@ export class Coordinator extends EventEmitter {
     const recoveryPid = [...this.recoveryPids][0];
     return { scheduler: this.stopped ? "stopped" : this.stopping ? "stopping" : this.store.paused() ? "paused" : "running", worker: recoveryPid ? "recovering" : this.active ? "busy" : "idle", jobs: this.store.jobs(), events: this.store.events(), ...(recoveryPid ? { recoveryPid } : {}) };
   }
-  private notify(): void { this.emit("change"); }
+  private notify(): void { this.emit("change"); this.githubScheduler.emit("tick"); }
   private change(id: string, status: Status, detail = "", patch: Partial<Job> = {}, clear: readonly ("error" | "result" | "fixture")[] = []): Job {
     const job = { ...transition(this.store.get(id), status, this.now()), ...patch };
     if (clear.includes("error")) delete job.error;
@@ -423,6 +429,7 @@ export class Coordinator extends EventEmitter {
     }
     this.stopping = true;
     this.store.setPaused(true);
+    this.workScheduler.stop();
     this.jobWork.close();
     this.policyWork.close();
     this.notifications.stop();
@@ -439,6 +446,7 @@ export class Coordinator extends EventEmitter {
       this.notifications.close(),
       this.tracking.close(),
     ]);
+    await this.workScheduler.close();
     this.diagnostics.close();
     this.activation.confirm();
     return report();
@@ -448,19 +456,16 @@ export class Coordinator extends EventEmitter {
   close(): Promise<void> {
     if (this.closePromise) return this.closePromise;
     this.closePromise = (async () => {
-      this.stopping = true; this.jobWork.close(); this.policyWork.close(); this.notify();
+      this.stopping = true; this.workScheduler.stop(); this.jobWork.close(); this.policyWork.close(); this.notify();
       if(this.active)this.abort(this.active);
       this.notifications.stop();
-      await this.assessments.close();
-      await this.githubScheduler.close();
-
-    await this.issues.close();
-    await this.merging.close();
-    await this.digests.close();
-      await this.submissions.close();
-      await this.submissionNotifications.close();
-      await this.repairs.close();
-      await Promise.all([this.notifications.close(),this.tracking.close()]);
+      await Promise.all([
+        this.assessments.close(), this.githubScheduler.close(), this.issues.close(),
+        this.merging.close(), this.digests.close(), this.submissions.close(),
+        this.submissionNotifications.close(), this.repairs.close(),
+        this.notifications.close(), this.tracking.close(),
+      ]);
+      await this.workScheduler.close();
       if (this.active) { await this.active.exited; }
       for (const socket of this.sockets) socket.destroy();
       if (this.server?.listening) await new Promise<void>(resolve => this.server!.close(() => resolve()));

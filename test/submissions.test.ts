@@ -1,3 +1,4 @@
+import { WorkScheduler } from "../src/scheduling/work.js";
 import {
   anchorPolicy,
   policyBlockers,
@@ -183,8 +184,13 @@ async function harness(run: RunStage, github = new GitHub()) {
     run,
     instructions: (role) => Promise.resolve(`Bounded ${role}`),
   });
-  service.start();
+  let scheduler = new WorkScheduler();
+  service.start(scheduler);
+  scheduler.start();
   return {
+    get scheduler() {
+      return scheduler;
+    },
     github,
     get store() {
       return store;
@@ -196,7 +202,9 @@ async function harness(run: RunStage, github = new GitHub()) {
       return tracking;
     },
     async reopen() {
+      scheduler.stop();
       await service.close();
+      await scheduler.close();
       await tracking.close();
       store.close();
       store = new Store(directory);
@@ -212,10 +220,14 @@ async function harness(run: RunStage, github = new GitHub()) {
         run,
         instructions: (role) => Promise.resolve(`Bounded ${role}`),
       });
-      service.start();
+      scheduler = new WorkScheduler();
+      service.start(scheduler);
+      scheduler.start();
     },
     async close() {
+      scheduler.stop();
       await service.close();
+      await scheduler.close();
       await tracking.close();
       store.close();
       await rm(directory, { recursive: true, force: true });
@@ -642,13 +654,14 @@ test("notification defers a busy owner then replays an absent accepted message w
       h.tracking,
       () => connection,
     );
-    delivery.start();
+    delivery.start(h.scheduler);
     await until(() => h.store.submissions.notices()[0]?.attempts.length === 1);
     expect(sent).toHaveLength(0);
     busy = false;
     let notice = h.store.submissions.notices()[0];
     if (notice === undefined) throw new Error("No notice");
     h.store.submissions.saveNotice(notice, "pending", "Test retry", 0);
+    delivery.wake();
     await until(() => sent.length === 1);
     notice = h.store.submissions.notices()[0];
     if (notice === undefined) throw new Error("No notice");
@@ -658,6 +671,7 @@ test("notification defers a busy owner then replays an absent accepted message w
       "Test absent queue recovery",
       0,
     );
+    delivery.wake();
     await until(() => sent.length === 2);
     expect(sent[0]).toBe(sent[1]);
   } finally {
@@ -689,7 +703,7 @@ test("receipt during send retains accepted transport evidence", async () => {
       h.tracking,
       () => connection,
     );
-    delivery.start();
+    delivery.start(h.scheduler);
     await until(() => finish !== undefined);
     const notice = h.store.submissions.notices()[0];
     if (notice === undefined || finish === undefined)
@@ -1013,12 +1027,55 @@ test("a removed endpoint cannot starve healthy submission recipients", async () 
       h.tracking,
       () => connection,
     );
-    delivery.start();
+    delivery.start(h.scheduler);
     await until(() => sent.length === 1);
     expect(sent).toEqual(["local"]);
     const unavailable = h.store.submissions.notices()[0];
     expect(unavailable?.state).toBe("unavailable");
     expect(unavailable?.nextCheckAt).toBeGreaterThan(Date.now());
+  } finally {
+    await delivery?.close();
+    await h.close();
+  }
+});
+
+test("stale inapplicable notification projections stay idle until new input", async () => {
+  const h = await harness(runner([]));
+  let delivery: SubmissionNotifications | undefined;
+  try {
+    const value = h.service.submit(request("stale-notice-projection"));
+    await until(
+      () => h.store.submissions.get(value.id).state === State.Succeeded,
+    );
+    const stale = h.store.submissions.notices()[0];
+    if (stale === undefined) throw new Error("No notice");
+    h.store.submissions.invalidateNotices(value.id);
+    const original = h.store.submissions.notices.bind(h.store.submissions);
+    let reads = 0;
+    h.store.submissions.notices = () => {
+      reads++;
+      return [stale];
+    };
+    let sends = 0;
+    delivery = new SubmissionNotifications(
+      h.store.submissions,
+      h.tracking,
+      () => {
+        sends++;
+        throw new Error("Stale notice must not connect");
+      },
+    );
+    delivery.start(h.scheduler);
+    await until(() => reads >= 2);
+    const settledReads = reads;
+    await Bun.sleep(30);
+    expect(reads).toBe(settledReads);
+    expect(sends).toBe(0);
+    expect(h.store.submissions.noticeApplicable(stale.id)).toBe(false);
+    h.store.submissions.notices = original;
+    delivery.wake();
+    await Bun.sleep(10);
+    expect(h.store.submissions.notices()).toHaveLength(0);
   } finally {
     await delivery?.close();
     await h.close();

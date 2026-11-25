@@ -968,12 +968,13 @@ test("auto-merge is opt-in, owner-controlled and can be turned off before dispat
       (await client.getSnapshot({})).snapshot?.mergeStatuses[0]?.autoMerge,
       true,
     );
+    await c.merging.tick();
     const chainId = c.store.merging.entry(first).chainId;
     c.store.merging.control(chainId, ChainState.Paused);
     const paused = (await client.getSnapshot({})).snapshot?.mergeStatuses[0];
     assert.ok(paused !== undefined);
     assert.equal(paused.chainState, "paused");
-    assert.equal(paused.state, "waiting");
+    assert.equal(paused.state, "waiting_owner");
     assert.equal(paused.autoMerge, true);
     c.store.merging.control(chainId, ChainState.Active);
     c.store.merging.ready(first, pr.ownerAgentId, a);

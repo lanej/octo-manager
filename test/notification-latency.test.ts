@@ -1,10 +1,12 @@
 import { test, expect, spyOn } from "bun:test";
+import { rejects } from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { setImmediate } from "node:timers/promises";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { DigestService } from "../src/notifications/service.js";
 import { SubmissionState } from "../src/submissions/contracts.js";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
@@ -81,6 +83,7 @@ async function fixture(
   options: { now?: () => number; intervalMs?: number } = {},
 ) {
   const now = options.now ?? (() => 1000);
+  const scheduler = new WorkScheduler(now);
   const directory = await mkdtemp("/tmp/octo-notification-latency-"),
     store = new Store(directory, now),
     config = defaultTrackingConfig();
@@ -136,6 +139,10 @@ async function fixture(
     store,
     service,
     queues,
+    start() {
+      service.start(scheduler);
+      scheduler.start();
+    },
     get revisionReads() {
       return revisionReads;
     },
@@ -172,8 +179,10 @@ async function fixture(
       return { id: notice.id, agentId: actor.id };
     },
     async close() {
+      scheduler.stop();
       for (const queue of queues) queue.unblock.release();
       await service.close();
+      await scheduler.close();
       await tracking.close();
       store.close();
       await rm(directory, { recursive: true, force: true });
@@ -189,7 +198,7 @@ test("a new recipient progresses while another recipient's queue is stalled", as
       throw new Error("Missing queues");
     slow.blocked = true;
     f.notice(0);
-    f.service.start();
+    f.start();
     await within(slow.started.promise);
     await setImmediate();
     f.notice(1);
@@ -358,7 +367,7 @@ test("idle digest recipients sleep until an intake event wakes discovery", async
   const f = await fixture(1, { now: Date.now, intervalMs: 5 });
   const agents = spyOn(f.store.tracking, "agents");
   try {
-    f.service.start();
+    f.start();
     await f.service.flush();
     agents.mockClear();
     const revisionReads = f.revisionReads;
@@ -383,7 +392,7 @@ test("queue inspection deadlines reconcile only the due recipient", async () => 
   const active = spyOn(f.store.digests, "active");
   try {
     f.notice(0);
-    f.service.start();
+    f.start();
     await f.service.flush();
     agents.mockClear();
     active.mockClear();
@@ -437,7 +446,7 @@ test("a failed scheduled reconciliation backs off instead of retaining an expire
   const f = await fixture(1, { now: Date.now, intervalMs: 10 });
   try {
     f.notice(0);
-    f.service.start();
+    f.start();
     await f.service.flush();
     const active = spyOn(f.store.digests, "active").mockImplementation(() => {
       throw new Error("Controlled read failure");
@@ -485,7 +494,7 @@ test("an intake during final queue admission coalesces a follow-up without waiti
   const discovery = spyOn(f.store.tracking, "agents");
   try {
     const first = f.notice(0);
-    f.service.start();
+    f.start();
     await within(entered.promise);
     const before = discovery.mock.calls.length;
     const second = f.notice(0);
@@ -515,5 +524,23 @@ test("an intake during final queue admission coalesces a follow-up without waiti
     discovery.mockRestore();
     close.mockRestore();
     admission.mockRestore();
+  }
+});
+
+test("started flush reports discovery failures through the shared scheduler", async () => {
+  const f = await fixture(1);
+  try {
+    f.start();
+    await f.service.flush();
+    const agents = spyOn(f.store.tracking, "agents").mockImplementation(() => {
+      throw new Error("Controlled discovery failure");
+    });
+    try {
+      await rejects(f.service.flush(), /Controlled discovery failure/u);
+    } finally {
+      agents.mockRestore();
+    }
+  } finally {
+    await f.close();
   }
 });

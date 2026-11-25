@@ -75,7 +75,7 @@ export class Store {
       this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
-        if (kind === "pr_observed" || kind === "pr_assigned" ||
+        if (kind === "pr_observed" || kind === "pr_assigned" || kind === "pr_archived" ||
           kind === "pr_untracked" || kind === "pr_subscribed" ||
           kind === "pr_unsubscribed" || kind === "delivery_cancelled" ||
           kind === "message_acknowledged" || kind.startsWith("assessment_notification_"))

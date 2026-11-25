@@ -64,6 +64,6 @@ export interface SchedulerPolicy {
   requestSpacingMs: number;
 }
 export const defaultSchedulerPolicy: SchedulerPolicy = {
-  tickMs: 1000,
+  tickMs: 5000,
   requestSpacingMs: 2000,
 };

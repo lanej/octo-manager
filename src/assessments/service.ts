@@ -1,3 +1,4 @@
+import { type WorkScheduler, type ScheduledTask } from "../scheduling/work.js";
 import {
   inputLimit,
   policyVersion,
@@ -51,7 +52,7 @@ export function boundedInput(
 }
 export class AssessmentService {
   private work: Promise<void> | undefined;
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private task: ScheduledTask | undefined;
   private stopped = false;
   private abort = new AbortController();
   constructor(
@@ -61,11 +62,12 @@ export class AssessmentService {
     private assess: Assess = assessmentRunner(),
     private now: () => number = Date.now,
   ) {}
-  start(): void {
-    this.timer = setInterval(() => {
-      this.tick().catch(() => {});
-    }, 1000);
-    this.tick().catch(() => {});
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("assessments", () => this.tick());
+    this.task.wake();
+  }
+  wake(): void {
+    this.task?.wake();
   }
   tick(): Promise<void> {
     if (this.stopped) return Promise.resolve();
@@ -77,6 +79,7 @@ export class AssessmentService {
     if (item === undefined) return Promise.resolve();
     this.work = this.run(item).finally(() => {
       this.work = undefined;
+      this.task?.wake();
     });
     return this.work;
   }
@@ -208,7 +211,7 @@ export class AssessmentService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.task?.close();
     this.abort.abort();
     await this.work;
   }

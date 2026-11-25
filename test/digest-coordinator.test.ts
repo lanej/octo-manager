@@ -6,6 +6,7 @@ import { messageReceiptId } from "../src/notifications/render.js";
 import { shortId } from "../src/tracking/identifiers.js";
 import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { Coordinator } from "../src/coordinator.js";
 import { codexHook } from "../src/integrations/codex.js";
 import { schedulerClient } from "../src/client.js";
@@ -127,6 +128,7 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     },
   });
   const { store, digests } = coordinator;
+  const scheduler = new WorkScheduler();
   const url = "https://github.com/owner/repo/pull/1";
   const head = "a".repeat(40);
   const check = {
@@ -191,7 +193,8 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
         store.tracking.acknowledgeMessage(message.id, agentId);
     store.tracking.observe(pr.id, input, config);
     freezePendingNotices();
-    digests.start();
+    digests.start(scheduler);
+    scheduler.start();
     await digests.flush();
     const original = slots.get(pr.ownerAgentId);
     if (original === undefined) throw new Error("Missing initial owner digest");
@@ -284,7 +287,9 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
       () => !slots.has(pr.ownerAgentId) && !slots.has(watcher.id),
     );
   } finally {
+    scheduler.stop();
     await coordinator.close();
+    await scheduler.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

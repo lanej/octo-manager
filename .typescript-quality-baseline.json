@@ -2036,14 +2036,6 @@
     {
       "file": "src/tracking/service.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "this.timer = setInterval(() => this.tick(), 1000);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
       "source": "? { state, nextAttemptAt: this.now() + retry! }",
@@ -2095,22 +2087,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
       "source": "if (!attempt)",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!d) return;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (this.timer) clearInterval(this.timer);",
       "count": 1
     },
     {

@@ -9,7 +9,7 @@ import {
 import { linkPRReferences } from "../src/notifications/links.js";
 import { DeliveryState } from "../src/tracking/types.js";
 import assert from "node:assert/strict";
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -207,6 +207,7 @@ async function fixture(initialReview: string | null = null) {
 }
 test("Ready offers one read command; hook receipt alone cannot merge; explicit CLI request survives restart and replays once", async () => {
   const f = await fixture();
+  const dispatch = spyOn(f.coordinator.merging, "tick");
   try {
     expect(f.notice.body).toContain(`[PR #38](${url}) · Ready`);
     expect(f.notice.body).toContain(`\`octo-manager read ${f.id}`);
@@ -247,6 +248,8 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     expect(inspected).toMatchObject({
       merge: { pr: url, head, method: "squash" },
     });
+    // Retain the accepted request across restart before allowing its scheduled dispatch.
+    dispatch.mockResolvedValue(undefined);
     const child = Bun.spawn(
       [
         process.execPath,
@@ -278,6 +281,7 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     expect(output).toContain('"queued"');
     expect(f.writes).toBe(0);
     expect(f.coordinator.store.merging.entries()[0]?.autoMerge).toBe(false);
+    dispatch.mockRestore();
     await f.reopen();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -285,6 +289,7 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
   } finally {
+    dispatch.mockRestore();
     await f.close();
   }
 });
@@ -1687,6 +1692,7 @@ test("readiness candidates retain an offer until retirement even after its last 
 test("cached readiness changes wake a recipient after the previous Ready offer was receipted", async () => {
   const f = await fixture();
   try {
+    await f.coordinator.tracking.close();
     await f.coordinator.githubScheduler.close();
     await schedulerClient(f.directory).acknowledgeAgentDigest({
       receiptId: f.id,

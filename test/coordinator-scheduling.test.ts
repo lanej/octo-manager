@@ -14,6 +14,7 @@ test("idle coordinator does not repeatedly read the jobs table", async () => {
   const coordinator = new Coordinator(directory, { workerPath });
   try {
     await coordinator.start();
+    await sleep(25);
     const reads = spyOn(coordinator.store, "jobs");
     try {
       await sleep(350);
@@ -65,6 +66,7 @@ test("repository reconciliation sleeps without configured files and wakes on inp
   const coordinator = new Coordinator(directory, { workerPath });
   try {
     await coordinator.start();
+    await sleep(25);
     const reads = spyOn(coordinator.store.repositories, "tick");
     try {
       await sleep(1100);

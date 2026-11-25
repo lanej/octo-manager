@@ -1,3 +1,4 @@
+import { type WorkScheduler, type ScheduledTask } from "../scheduling/work.js";
 import type { DatabaseSync } from "node:sqlite";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
@@ -152,6 +153,12 @@ export class NotificationStore {
       throw error;
     }
   }
+  nextRefreshAt(): number | undefined {
+    const value = this.db
+      .prepare("SELECT min(next_check_ms) AS next FROM notification_refreshes")
+      .get()?.["next"];
+    return typeof value === "number" ? value : undefined;
+  }
   pending(): { id: string; revision: number }[] {
     return this.db
       .prepare(
@@ -179,7 +186,7 @@ export class NotificationStore {
   }
 }
 export class NotificationService {
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private task: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private stopped = false;
   private controller: AbortController | undefined;
@@ -192,11 +199,24 @@ export class NotificationService {
   private isStopped(): boolean {
     return this.stopped;
   }
-  start(): void {
-    this.timer = setInterval(() => {
-      this.flush().catch(() => {});
-    }, 1000);
-    this.flush().catch(() => {});
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("notification-flush", async () => {
+      await this.flush();
+      if (this.stopped) return undefined;
+      const now = this.now();
+      const deadlines: number[] = [];
+      if (this.store.eligible()) {
+        const at = this.store.status().nextPollAt;
+        deadlines.push(at > now ? at : now + 30000);
+      }
+      const refresh = this.store.nextRefreshAt();
+      if (refresh !== undefined) deadlines.push(Math.max(now, refresh));
+      return deadlines.length === 0 ? undefined : Math.min(...deadlines);
+    });
+    this.task.wake();
+  }
+  wake(): void {
+    this.task?.wake();
   }
   flush(): Promise<void> {
     if (this.work !== undefined) return this.work;
@@ -273,7 +293,7 @@ export class NotificationService {
   }
   stop(): void {
     this.stopped = true;
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.task?.close();
     this.controller?.abort();
   }
   checkpointable(): boolean {

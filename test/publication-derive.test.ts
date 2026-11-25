@@ -1,3 +1,4 @@
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
 import { test, expect } from "bun:test";
@@ -140,9 +141,11 @@ test("default service retires queued legacy analysis and rejects new model reque
       return Promise.reject(new Error("Must not run"));
     },
   });
+  const scheduler = new WorkScheduler();
   try {
     const legacy = store.submissions.request(request);
-    service.start();
+    service.start(scheduler);
+    scheduler.start();
     expect(store.submissions.get(legacy.id).state).toBe(
       SubmissionState.NeedsInput,
     );
@@ -163,6 +166,8 @@ test("default service retires queued legacy analysis and rejects new model reque
     expect(next.items).toHaveLength(4);
     expect(next.items[0]?.["id"]).not.toBe(page.items[0]?.["id"]);
   } finally {
+    scheduler.stop();
+    await scheduler.close();
     await service.close();
     await tracking.close();
     store.close();

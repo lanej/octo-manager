@@ -1,3 +1,4 @@
+import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { performanceScope } from "../diagnostics/scope.js";
 import { createHash } from "node:crypto";
 import { setImmediate } from "node:timers/promises";
@@ -47,18 +48,20 @@ export interface DigestOptions {
   intervalMs?: number;
 }
 export class DigestService {
-  private timer: ReturnType<typeof setTimeout> | undefined;
+  private scheduled: ScheduledTask | undefined;
   private started = false;
   private agents = new Map<string, AgentRef>();
   private discovery: Promise<void> | undefined;
   private recoveryRevision: string | undefined;
   private queued = new Map<string, { agent: AgentRef; urgent: boolean }>();
   private running = new Map<string, Promise<void>>();
-  private idleWaiters = new Set<() => void>();
+  private idleWaiters = new Set<{
+    resolve: () => void;
+    reject: (error: unknown) => void;
+  }>();
   private generation = 0;
   private stopped = false;
-  private wakePending = false;
-  private wakeScheduled = false;
+  private inputDirty = false;
   private connections = new Set<QueueConnection>();
   private checks = new Map<
     string,
@@ -101,12 +104,27 @@ export class DigestService {
     }
     return managed;
   };
-  start(): void {
+  start(scheduler: WorkScheduler): void {
+    if (this.started || this.stopped) return;
+    this.scheduled = scheduler.task("digest-scheduling", () => {
+      if (this.discovery !== undefined)
+        return this.discovery.then(() => this.nextDeadline());
+      const inputsChanged = this.inputDirty;
+      this.inputDirty = false;
+      return this.requestDiscovery(inputsChanged).then(() =>
+        this.nextDeadline(),
+      );
+    });
     this.started = true;
-    this.requestDiscovery().catch(() => {});
+    this.wake();
   }
   flush(): Promise<void> {
-    return this.requestDiscovery().then(() => this.waitIdle());
+    if (!this.started)
+      return this.requestDiscovery().then(() => this.waitIdle());
+    this.generation++;
+    this.inputDirty = true;
+    this.scheduled?.runNow();
+    return this.waitIdle();
   }
   private requestDiscovery(inputsChanged = true): Promise<void> {
     if (this.stopped) return Promise.resolve();
@@ -114,46 +132,38 @@ export class DigestService {
       this.directory,
       "digest-discovery",
       () => this.discover(inputsChanged),
-    ).finally(() => {
-      this.discovery = undefined;
-      if (this.wakePending) this.wake();
-      this.schedule();
-      this.settleIdle();
-    });
+    )
+      .catch((error: unknown) => {
+        for (const waiter of this.idleWaiters) waiter.reject(error);
+        this.idleWaiters.clear();
+        throw error;
+      })
+      .finally(() => {
+        this.discovery = undefined;
+        this.schedule();
+        if (this.inputDirty) this.scheduled?.wake();
+        this.settleIdle();
+      });
     return this.discovery;
   }
   wake(): void {
     if (!this.started || this.stopped) return;
     this.generation++;
-    this.wakePending = true;
-    if (this.discovery !== undefined || this.wakeScheduled) return;
-    this.wakeScheduled = true;
-    setImmediate()
-      .then(() => {
-        this.wakeScheduled = false;
-        if (this.discovery !== undefined || this.stopped) return;
-        this.wakePending = false;
-        return this.requestDiscovery();
-      })
-      .catch(() => {});
+    this.inputDirty = true;
+    this.scheduled?.wake();
   }
-  private schedule(): void {
-    if (this.timer !== undefined) clearTimeout(this.timer);
-    this.timer = undefined;
-    if (!this.started || this.stopped) return;
+  private nextDeadline(): number | undefined {
+    if (!this.started || this.stopped) return undefined;
+    if (this.inputDirty) return this.now();
     let at = Infinity;
     for (const [agentId, check] of this.checks) {
       if (!this.running.has(agentId) && !this.queued.has(agentId))
         at = Math.min(at, check.at);
     }
-    if (!Number.isFinite(at)) return;
-    this.timer = setTimeout(
-      () => {
-        this.timer = undefined;
-        this.requestDiscovery(false).catch(() => {});
-      },
-      Math.min(2147483647, Math.max(0, at - this.now())),
-    );
+    return Number.isFinite(at) ? at : undefined;
+  }
+  private schedule(): void {
+    this.scheduled?.at(this.nextDeadline());
   }
   applicable(message: AgentMessage): boolean {
     return (
@@ -332,23 +342,25 @@ export class DigestService {
   }
   private waitIdle(): Promise<void> {
     if (
+      !this.inputDirty &&
       this.discovery === undefined &&
       this.running.size === 0 &&
       this.queued.size === 0
     )
       return Promise.resolve();
-    return new Promise((resolve) => {
-      this.idleWaiters.add(resolve);
+    return new Promise((resolve, reject) => {
+      this.idleWaiters.add({ resolve, reject });
     });
   }
   private settleIdle(): void {
     if (
+      this.inputDirty ||
       this.discovery !== undefined ||
       this.running.size > 0 ||
       this.queued.size > 0
     )
       return;
-    for (const resolve of this.idleWaiters) resolve();
+    for (const waiter of this.idleWaiters) waiter.resolve();
     this.idleWaiters.clear();
   }
   private async reconcileAgent(agent: AgentRef): Promise<void> {
@@ -1047,8 +1059,7 @@ export class DigestService {
       this.discovery === undefined &&
       this.running.size === 0 &&
       this.queued.size === 0 &&
-      !this.wakePending &&
-      !this.wakeScheduled &&
+      !this.inputDirty &&
       this.store
         .list()
         .every((value) => terminal(value) && !value.cleanupPending)
@@ -1056,8 +1067,9 @@ export class DigestService {
   }
   async close(): Promise<void> {
     this.stopped = true;
+    this.inputDirty = false;
     this.queued.clear();
-    if (this.timer !== undefined) clearTimeout(this.timer);
+    this.scheduled?.close();
     for (const connection of this.connections) connection.close();
     await this.discovery;
     await Promise.all(this.running.values());
