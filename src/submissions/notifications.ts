@@ -1,3 +1,4 @@
+import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { Check } from "typebox/value";
 import { Type } from "typebox";
 
@@ -38,7 +39,7 @@ export function parseNotice(value: unknown): Notice {
 export class SubmissionNotifications {
   private work: Promise<void> | undefined;
   private connection: AgentConnection | undefined;
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private task: ScheduledTask | undefined;
   private stopped = false;
   constructor(
     private store: SubmissionStore,
@@ -48,29 +49,47 @@ export class SubmissionNotifications {
   ) {
     store.recoverNotices();
   }
-  start(): void {
-    this.timer = setInterval(() => {
-      this.tick();
-    }, 1000);
-    this.tick();
-  }
-  private tick(): void {
-    if (this.stopped || this.work !== undefined) return;
-    this.work = this.deliver()
-      .catch(() => {})
-      .finally(() => {
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("submission-notifications", async () => {
+      if (this.stopped) return;
+      const attempted = this.store
+        .notices()
+        .find(
+          (value) =>
+            value.nextCheckAt <= Date.now() &&
+            this.managedQueue?.(value.recipient) !== true &&
+            this.store.noticeApplicable(value.id),
+        );
+      this.work =
+        attempted === undefined ? Promise.resolve() : this.deliver(attempted);
+      try {
+        await this.work;
+      } finally {
         this.work = undefined;
-      });
+      }
+      let next = Infinity;
+      for (const value of this.store.notices())
+        if (
+          this.managedQueue?.(value.recipient) !== true &&
+          this.store.noticeApplicable(value.id)
+        ) {
+          const stalled =
+            value.id === attempted?.id &&
+            value.nextCheckAt <= attempted.nextCheckAt &&
+            value.nextCheckAt <= Date.now();
+          next = Math.min(
+            next,
+            stalled ? Date.now() + 30000 : value.nextCheckAt,
+          );
+        }
+      return Number.isFinite(next) ? next : undefined;
+    });
+    this.wake();
   }
-  private async deliver(): Promise<void> {
-    const notice = this.store
-      .notices()
-      .find(
-        (value) =>
-          value.nextCheckAt <= Date.now() &&
-          this.managedQueue?.(value.recipient) !== true,
-      );
-    if (notice === undefined) return;
+  wake(): void {
+    this.task?.wake();
+  }
+  private async deliver(notice: Notice): Promise<void> {
     const agent = this.tracking.store.agent(notice.recipient),
       endpoint = this.tracking.config.endpoints[agent.endpoint];
     if (endpoint === undefined) {
@@ -160,7 +179,7 @@ export class SubmissionNotifications {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.task?.close();
     this.connection?.close();
     await this.work;
   }

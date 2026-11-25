@@ -1,3 +1,4 @@
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -436,8 +437,10 @@ test("the coordinator reports failed workflow completion without a waiting calle
       close: () => {},
     }),
   });
+  const scheduler = new WorkScheduler();
   try {
-    service.start();
+    service.start(scheduler);
+    scheduler.start();
     const pr = service.track(url, {
       harness: "codex",
       endpoint: "local",
@@ -453,6 +456,8 @@ test("the coordinator reports failed workflow completion without a waiting calle
       CheckWatchState.Completed,
     );
   } finally {
+    scheduler.stop();
+    await scheduler.close();
     if (timer !== undefined) clearTimeout(timer);
     await service.close();
     store.close();

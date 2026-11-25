@@ -1,3 +1,4 @@
+import { watch, type FSWatcher } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import {
   mkdir,
@@ -105,6 +106,17 @@ export class Handoffs {
     await privateDirectory(this.root);
     await privateDirectory(join(this.root, "pending"));
     await privateDirectory(join(this.root, "failed"));
+  }
+  async watch(
+    onChange: () => void,
+    onError: (error: Error) => void,
+  ): Promise<FSWatcher> {
+    await this.directories();
+    const watcher = watch(join(this.root, "pending"), (_event, filename) => {
+      if (filename === null || filename.endsWith(".json")) onChange();
+    });
+    watcher.on("error", onError);
+    return watcher;
   }
   async enqueue(
     url: string,

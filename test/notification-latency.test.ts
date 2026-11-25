@@ -1,10 +1,12 @@
 import { test, expect, spyOn } from "bun:test";
+import { rejects } from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { setImmediate } from "node:timers/promises";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { DigestService } from "../src/notifications/service.js";
 import { SubmissionState } from "../src/submissions/contracts.js";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
@@ -76,15 +78,20 @@ class Queue implements QueueConnection {
     this.unblock.release();
   }
 }
-async function fixture(count: number) {
+async function fixture(
+  count: number,
+  options: { now?: () => number; intervalMs?: number } = {},
+) {
+  const now = options.now ?? (() => 1000);
+  const scheduler = new WorkScheduler(now);
   const directory = await mkdtemp("/tmp/octo-notification-latency-"),
-    store = new Store(directory, () => 1000),
+    store = new Store(directory, now),
     config = defaultTrackingConfig();
   config.endpoints["local"] = {
     delivery: "queue",
     socket: "/fixture/queue.sock",
   };
-  const tracking = new TrackingService(store.tracking, config, () => 1000);
+  const tracking = new TrackingService(store.tracking, config, now);
   let active = 0,
     maximum = 0,
     notices = 0;
@@ -113,9 +120,9 @@ async function fixture(count: number) {
     tracking,
     store.submissions,
     directory,
-    () => 1000,
+    now,
     {
-      intervalMs: 60000,
+      intervalMs: options.intervalMs ?? 60000,
       inputRevision: () => {
         revisionReads++;
         return JSON.stringify([store.inputRevision(), config.endpoints]);
@@ -132,6 +139,10 @@ async function fixture(count: number) {
     store,
     service,
     queues,
+    start() {
+      service.start(scheduler);
+      scheduler.start();
+    },
     get revisionReads() {
       return revisionReads;
     },
@@ -168,8 +179,10 @@ async function fixture(count: number) {
       return { id: notice.id, agentId: actor.id };
     },
     async close() {
+      scheduler.stop();
       for (const queue of queues) queue.unblock.release();
       await service.close();
+      await scheduler.close();
       await tracking.close();
       store.close();
       await rm(directory, { recursive: true, force: true });
@@ -185,7 +198,7 @@ test("a new recipient progresses while another recipient's queue is stalled", as
       throw new Error("Missing queues");
     slow.blocked = true;
     f.notice(0);
-    f.service.start();
+    f.start();
     await within(slow.started.promise);
     await setImmediate();
     f.notice(1);
@@ -346,6 +359,188 @@ test("idle discovery reads one revision across a retained cohort and still obser
   } finally {
     history.mockRestore();
     external.close();
+    await f.close();
+  }
+});
+
+test("idle digest recipients sleep until an intake event wakes discovery", async () => {
+  const f = await fixture(1, { now: Date.now, intervalMs: 5 });
+  const agents = spyOn(f.store.tracking, "agents");
+  try {
+    f.start();
+    await f.service.flush();
+    agents.mockClear();
+    const revisionReads = f.revisionReads;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(agents).not.toHaveBeenCalled();
+    expect(f.revisionReads).toBe(revisionReads);
+    f.notice(0);
+    f.service.wake();
+    const queue = f.queues[0];
+    if (queue === undefined) throw new Error("Missing queue");
+    await within(queue.enqueued.promise);
+    expect(queue.slots).toHaveLength(1);
+  } finally {
+    agents.mockRestore();
+    await f.close();
+  }
+});
+
+test("queue inspection deadlines reconcile only the due recipient", async () => {
+  const f = await fixture(2, { now: Date.now, intervalMs: 10 });
+  const agents = spyOn(f.store.tracking, "agents");
+  const active = spyOn(f.store.digests, "active");
+  try {
+    f.notice(0);
+    f.start();
+    await f.service.flush();
+    agents.mockClear();
+    active.mockClear();
+    const queue = f.queues[0];
+    if (queue === undefined) throw new Error("Missing queue");
+    const before = queue.preparations;
+    await new Promise((resolve) => setTimeout(resolve, 35));
+    expect(agents).not.toHaveBeenCalled();
+    expect(queue.preparations).toBeGreaterThan(before);
+    const actor = f.store.tracking
+      .agents()
+      .find((agent) => agent.sessionId === "latency-1");
+    if (actor === undefined) throw new Error("Missing idle recipient");
+    expect(active.mock.calls.some(([agentId]) => agentId === actor.id)).toBe(
+      false,
+    );
+  } finally {
+    agents.mockRestore();
+    active.mockRestore();
+    await f.close();
+  }
+});
+
+test("digest queries reuse prepared statements while returning current rows", async () => {
+  const f = await fixture(1);
+  const prepare = spyOn(DatabaseSync.prototype, "prepare");
+  try {
+    const actor = f.store.tracking.agents()[0];
+    if (actor === undefined) throw new Error("Missing recipient");
+    expect(f.store.digests.active(actor.id)).toBeUndefined();
+    f.notice(0);
+    await f.service.flush();
+    const digest = f.store.digests.active(actor.id);
+    if (digest === undefined) throw new Error("Missing digest");
+    for (let index = 0; index < 20; index++)
+      expect(f.store.digests.active(actor.id)?.id).toBe(digest.id);
+    expect(
+      prepare.mock.calls.filter(([sql]) =>
+        sql.startsWith(
+          "SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN",
+        ),
+      ),
+    ).toHaveLength(1);
+  } finally {
+    prepare.mockRestore();
+    await f.close();
+  }
+});
+
+test("a failed scheduled reconciliation backs off instead of retaining an expired deadline", async () => {
+  const f = await fixture(1, { now: Date.now, intervalMs: 10 });
+  try {
+    f.notice(0);
+    f.start();
+    await f.service.flush();
+    const active = spyOn(f.store.digests, "active").mockImplementation(() => {
+      throw new Error("Controlled read failure");
+    });
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      expect(active).toHaveBeenCalledTimes(1);
+    } finally {
+      active.mockRestore();
+    }
+  } finally {
+    await f.close();
+  }
+});
+
+test("an intake during final queue admission coalesces a follow-up without waiting for housekeeping", async () => {
+  const f = await fixture(1, { now: () => 1000, intervalMs: 60000 });
+  const queue = f.queues[0];
+  if (queue === undefined) throw new Error("Missing queue");
+  const entered = gate();
+  const release = gate();
+  const followedUp = gate();
+  const enqueue = queue.enqueueQueued.bind(queue);
+  let admissions = 0;
+  let active = 0;
+  let maximum = 0;
+  const admission = spyOn(queue, "enqueueQueued").mockImplementation(
+    async (...args) => {
+      const number = ++admissions;
+      active++;
+      maximum = Math.max(maximum, active);
+      try {
+        const item = await enqueue(...args);
+        if (number === 1) {
+          entered.release();
+          await release.promise;
+        } else followedUp.release();
+        return item;
+      } finally {
+        active--;
+      }
+    },
+  );
+  const close = spyOn(queue, "close").mockImplementation(() => {});
+  const discovery = spyOn(f.store.tracking, "agents");
+  try {
+    const first = f.notice(0);
+    f.start();
+    await within(entered.promise);
+    const before = discovery.mock.calls.length;
+    const second = f.notice(0);
+    f.service.wake();
+    const discover = async () => {
+      while (discovery.mock.calls.length === before) await setImmediate();
+      // The one recipient's discovery yields once before it can queue work.
+      await setImmediate();
+      await setImmediate();
+    };
+    await within(discover());
+    expect(admissions).toBe(1);
+    expect(queue.preparations).toBe(1);
+    release.release();
+    await within(followedUp.promise);
+    expect(maximum).toBe(1);
+    const digest = f.store.digests.active(first.agentId);
+    if (digest === undefined) throw new Error("Missing follow-up digest");
+    expect(digest.revision).toBe(2);
+    expect(
+      f.store.digests.version(digest.id, digest.revision).messageIds,
+    ).toEqual([first.id, second.id]);
+    expect(queue.slots).toHaveLength(1);
+  } finally {
+    release.release();
+    await f.close();
+    discovery.mockRestore();
+    close.mockRestore();
+    admission.mockRestore();
+  }
+});
+
+test("started flush reports discovery failures through the shared scheduler", async () => {
+  const f = await fixture(1);
+  try {
+    f.start();
+    await f.service.flush();
+    const agents = spyOn(f.store.tracking, "agents").mockImplementation(() => {
+      throw new Error("Controlled discovery failure");
+    });
+    try {
+      await rejects(f.service.flush(), /Controlled discovery failure/u);
+    } finally {
+      agents.mockRestore();
+    }
+  } finally {
     await f.close();
   }
 });

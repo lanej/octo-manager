@@ -172,7 +172,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
       tickMs > 60000 ||
       typeof requestSpacingMs !== "number" ||
       !Number.isSafeInteger(requestSpacingMs) ||
-      requestSpacingMs < tickMs ||
+      requestSpacingMs < 100 ||
       requestSpacingMs > 3600000
     )
       throw new Error("Invalid scheduler cadence");

@@ -1,9 +1,11 @@
+import { Handoffs } from "../src/integrations/handoffs.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { actionNotice, renderNotice } from "../src/security/notifications.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readFailureExcerpt } from "../src/tracking/messages.js";
 import { shortId } from "../src/tracking/identifiers.js";
-import { test } from "bun:test";
+import { test, spyOn } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -469,6 +471,113 @@ test("local Pi tracking stores an inbox message without opening a Codex connecti
     assert.equal(store.tracking.inbox.get(notice.id)?.acknowledgedAt, 1000);
   } finally {
     await service.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("shared tracking work rearms a busy delivery at its five-second deadline without idle completion loops", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-delivery-deadline-"));
+  let at = 1000;
+  const store = new Store(dir, () => at);
+  const config = defaultTrackingConfig();
+  const p = store.tracking.track(url, target);
+  store.tracking.observe(p.id, input, config);
+  let preparations = 0;
+  const plans: number[] = [];
+  const scheduler = new WorkScheduler(
+    () => at,
+    undefined,
+    (key, work) => {
+      const result = work();
+      if (key === "tracking" && typeof result === "number") plans.push(result);
+      return result;
+    },
+  );
+  const service = new TrackingService(store.tracking, config, () => at, {
+    read: () => Promise.resolve(input),
+    connect: () =>
+      connection({
+        prepare: () => {
+          preparations++;
+          return Promise.resolve({ busy: true });
+        },
+      }),
+  });
+  try {
+    service.start(scheduler);
+    scheduler.start();
+    await until(() => plans.includes(6000));
+    assert.equal(preparations, 1);
+    const settled = plans.length;
+    await Bun.sleep(30);
+    assert.equal(plans.length, settled);
+    assert.equal(preparations, 1);
+    at = 6000;
+    service.wake();
+    await until(() => plans.includes(11000));
+    assert.equal(preparations, 2);
+  } finally {
+    scheduler.stop();
+    await service.close();
+    await scheduler.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a handoff arriving during an active drain coalesces a prompt follow-up", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-handoff-during-drain-"));
+  const store = new Store(dir);
+  const scheduler = new WorkScheduler();
+  let release: (() => void) | undefined;
+  let watching = false;
+  let notify: (() => void) | undefined;
+  const handoffs = new Handoffs(dir);
+  const originalWatch = handoffs.watch.bind(handoffs);
+  const watch = spyOn(Handoffs.prototype, "watch").mockImplementation(
+    async (changed, failed) => {
+      notify = changed;
+      const watcher = await originalWatch(changed, failed);
+      watching = true;
+      return watcher;
+    },
+  );
+  const drain = spyOn(Handoffs.prototype, "drain").mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  const service = new TrackingService(
+    store.tracking,
+    defaultTrackingConfig(),
+    Date.now,
+    {
+      stateDirectory: dir,
+      read: () => Promise.reject(new Error("Controlled unavailable provider")),
+    },
+  );
+  try {
+    service.start(scheduler);
+    scheduler.start();
+    await until(() => watching && release !== undefined);
+    await Bun.sleep(20);
+    await new Handoffs(dir).enqueue(url, target, "/tmp");
+    assert(notify !== undefined);
+    notify();
+    await Bun.sleep(20);
+    assert(release !== undefined);
+    release();
+    await until(() => store.tracking.prs().length === 1);
+    assert.equal(store.tracking.prs()[0]?.url, url);
+  } finally {
+    release?.();
+    scheduler.stop();
+    await service.close();
+    await scheduler.close();
+    drain.mockRestore();
+    watch.mockRestore();
     store.close();
     await rm(dir, { recursive: true, force: true });
   }

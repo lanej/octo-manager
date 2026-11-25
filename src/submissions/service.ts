@@ -1,3 +1,4 @@
+import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { Check } from "typebox/value";
 import {
   SubmissionState as State,
@@ -59,7 +60,7 @@ export class SubmissionService {
   private active:
     | { id: string; abort: AbortController; work: Promise<void> }
     | undefined;
-  private timer: ReturnType<typeof setInterval> | undefined;
+  private task: ScheduledTask | undefined;
   private stopped = false;
   private github: SubmissionGitHub;
   constructor(
@@ -81,7 +82,7 @@ export class SubmissionService {
             "Coordinator interrupted; retry explicitly after previous workers exit",
         });
   }
-  start(): void {
+  start(scheduler: WorkScheduler): void {
     if (this.options.allowLegacyExecution !== true) {
       for (const value of this.store.list()) {
         if (
@@ -95,6 +96,23 @@ export class SubmissionService {
           });
         }
       }
+      this.task = scheduler.task("legacy-reconciliation", () => {
+        this.reconcileLegacy(Date.now());
+        let next = Infinity;
+        for (const value of this.store.recoveryCandidates())
+          if (
+            value.brief !== undefined &&
+            [State.Uncertain, State.Publishing, State.Enrolling].includes(
+              value.state,
+            )
+          )
+            next = Math.min(next, this.store.reconciliation(value.id).nextAt);
+        if (!Number.isFinite(next)) return;
+        return this.active === undefined
+          ? next
+          : Math.max(next, Date.now() + 30000);
+      });
+      this.wake();
       return;
     }
     for (const value of this.store.list())
@@ -104,10 +122,16 @@ export class SubmissionService {
         value.notificationRevision === 0
       )
         this.notice(value.id);
-    this.timer = setInterval(() => {
+    this.task = scheduler.task("legacy-submissions", () => {
       this.tick();
-    }, 1000);
-    this.tick();
+      return this.store.list().some((value) => value.workerPids.some(alive))
+        ? Date.now() + 5000
+        : undefined;
+    });
+    this.task.wake();
+  }
+  wake(): void {
+    this.task?.wake();
   }
   reconcileLegacy(now: number): void {
     if (
@@ -150,9 +174,7 @@ export class SubmissionService {
       ...request,
       repository: request.repository.toLowerCase(),
     });
-    queueMicrotask(() => {
-      this.tick();
-    });
+    this.task?.wake();
     return value;
   }
   retry(id: string): Submission {
@@ -205,6 +227,7 @@ export class SubmissionService {
         })
         .finally(() => {
           this.active = undefined;
+          this.wake();
         });
       return value;
     }
@@ -226,9 +249,7 @@ export class SubmissionService {
       workerPids: [],
       notificationRevision: 0,
     });
-    queueMicrotask(() => {
-      this.tick();
-    });
+    this.task?.wake();
     return next;
   }
   cancel(id: string): Submission {
@@ -266,10 +287,7 @@ export class SubmissionService {
     this.active = active;
     active.work = this.execute(value.id, abort.signal).finally(() => {
       this.active = undefined;
-      if (!this.stopped)
-        queueMicrotask(() => {
-          this.tick();
-        });
+      if (!this.stopped) this.task?.wake();
     });
   }
   private update(id: string, patch: Partial<Submission>): Submission {
@@ -553,7 +571,7 @@ export class SubmissionService {
   }
   async close(): Promise<void> {
     this.stopped = true;
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.task?.close();
     this.active?.abort.abort();
     await this.active?.work;
   }

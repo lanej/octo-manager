@@ -1,3 +1,4 @@
+import { inputIntake } from "./intake.js";
 import { requestReceiptMerge } from "../merging/receipt-request.js";
 import { diagnosticsRoutes } from "../diagnostics/rpc.js";
 import { actionName, wireLifecycle } from "../lifecycle-rpc.js";
@@ -576,6 +577,9 @@ export function schedulerRoutes(
             release();
           }
         },
+        inputIntake(() => {
+          coordinator.inputsChanged();
+        }),
       ],
     },
   );

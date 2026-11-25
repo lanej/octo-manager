@@ -1,3 +1,4 @@
+import { type WorkScheduler, type ScheduledTask } from "../scheduling/work.js";
 import { setImmediate } from "node:timers/promises";
 import { ReceiptMerges, receiptContext } from "./receipts.js";
 import { MergeDeclined } from "./async-merge.js";
@@ -42,7 +43,7 @@ export interface MergeOptions {
   referenceInputRevision?: () => string;
 }
 export class MergeService {
-  private timer?: ReturnType<typeof setInterval>;
+  private task: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private abort = new AbortController();
   private provider: MergeProvider;
@@ -64,7 +65,7 @@ export class MergeService {
     const root = join(directory, "merge-workspaces");
     mkdirSync(root, { recursive: true, mode: 0o700 });
     this.prepare = options.prepare ?? preparer(root, cases);
-    this.interval = options.intervalMs ?? 1000;
+    this.interval = options.intervalMs ?? 30000;
     this.issueGate = options.issueGate ?? (() => true);
     store.recover();
     this.receipts = new ReceiptMerges(
@@ -84,14 +85,35 @@ export class MergeService {
   private profiles: Record<string, PreparationProfile>;
   private interval: number;
   private issueGate: (url: string) => boolean;
-  start(): void {
-    this.timer = setInterval(() => {
-      this.tick().catch((error: unknown) => {
-        console.error(
-          error instanceof Error ? error.message : "Merge-chain tick failed",
-        );
-      });
-    }, this.interval);
+  start(scheduler: WorkScheduler): void {
+    this.task = scheduler.task("merging", async () => {
+      await this.tick();
+      const now = this.now();
+      const entries = this.store.unfinishedEntries();
+      const operations = this.store.unfinishedOperations();
+      const readiness = this.store.readinessCandidates();
+      if (
+        entries.length === 0 &&
+        operations.length === 0 &&
+        readiness.size === 0
+      )
+        return undefined;
+      const deadlines = [now + this.interval];
+      for (const entry of entries)
+        if (entry.nextAt > now) deadlines.push(entry.nextAt);
+      for (const operation of operations)
+        if (operation.nextCheckAt !== undefined && operation.nextCheckAt > now)
+          deadlines.push(operation.nextCheckAt);
+      for (const id of readiness) {
+        const at = this.store.noticeReadiness(id)?.retryAt;
+        if (at !== undefined && at > now) deadlines.push(at);
+      }
+      return Math.min(...deadlines);
+    });
+    this.task.wake();
+  }
+  wake(): void {
+    this.task?.wake();
   }
   checkpointable(): boolean {
     return (
@@ -107,7 +129,7 @@ export class MergeService {
     );
   }
   async close(): Promise<void> {
-    if (this.timer !== undefined) clearInterval(this.timer);
+    this.task?.close();
     this.abort.abort();
     await this.work;
   }
