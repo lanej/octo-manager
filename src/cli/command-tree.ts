@@ -1,14 +1,14 @@
-import { commands as diagnosticsCommands } from "./diagnostics/diagnostics-commands.js";
-import { commands as issueCommands } from "./issues/issue-commands.js";
-import { commands as applicationCommands } from "./cli/application-commands.js";
-import { commands as publicationCommands } from "./publication/publication-commands.js";
-import { commands as trackingCommands } from "./tracking/tracking-commands.js";
-import { commands as subscriptionsCommands } from "./tracking/subscriptions-commands.js";
-import { commands as notificationsCommands } from "./notifications/notifications-commands.js";
-import { commands as mergingCommands } from "./merging/merging-commands.js";
-import { commands as repairsCommands } from "./repairs/repairs-commands.js";
-import { commands as activityCommands } from "./activity/activity-commands.js";
-import { commands as historyCommands } from "./submissions/history-commands.js";
+import { commands as diagnosticsCommands } from "../diagnostics/diagnostics-commands.js";
+import { commands as issueCommands } from "../issues/issue-commands.js";
+import { commands as applicationCommands } from "./application-commands.js";
+import { commands as publicationCommands } from "../publication/publication-commands.js";
+import { commands as trackingCommands } from "../tracking/tracking-commands.js";
+import { commands as subscriptionsCommands } from "../tracking/subscriptions-commands.js";
+import { commands as notificationsCommands } from "../notifications/notifications-commands.js";
+import { commands as mergingCommands } from "../merging/merging-commands.js";
+import { commands as repairsCommands } from "../repairs/repairs-commands.js";
+import { commands as activityCommands } from "../activity/activity-commands.js";
+import { commands as historyCommands } from "../submissions/history-commands.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -17,9 +17,9 @@ import {
   CommanderError,
   InvalidArgumentError,
 } from "commander";
-import { agentMode, readOnlyCommand } from "./cli-mode.js";
-import type { CommandSpec, ParsedCommand, Options } from "./cli/contracts.js";
-export type { ParsedCommand } from "./cli/contracts.js";
+import { agentMode, readOnlyCommand } from "./mode.js";
+import type { CommandSpec, ParsedCommand, Options } from "./contracts.js";
+export type { ParsedCommand } from "./contracts.js";
 const identity = [
   "--agent-id <id>",
   "--thread-id <id>",

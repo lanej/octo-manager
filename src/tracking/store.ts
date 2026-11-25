@@ -34,8 +34,13 @@ import {
 } from "./types.js";
 import type { TrackingConfig } from "./config.js";
 import { selectProfile } from "./config.js";
-import { canonicalPR } from "./github.js";
-import { closeProgress, findings } from "./policy.js";
+import { canonicalPR } from "../github/pr-identity.js";
+import {
+  alreadyReported,
+  checkWatchFindings,
+  closeProgress,
+  findings,
+} from "./policy.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
@@ -856,97 +861,18 @@ export class TrackingStore {
         }
       }
       const observedFindings = findings(o, p.url);
-      const checkResults = this.checks
-        .observe(
-          o,
-          p.state === TrackingState.Archived ||
-            (p.state === TrackingState.Draining && !terminalPR(o.lifecycle)),
-        )
-        .flatMap((watch) => {
-          const checks =
-            watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
-          const failures = checks.filter((check) => !successfulCheck(check));
-          const reported = [
-            ...this.actions().filter((action) => action.prId === p.id),
-            ...observedFindings,
-          ];
-          const unreported = failures.filter(
-            (check) =>
-              !reported.some((finding) => {
-                const blocker = finding.blocker;
-                if (blocker.kind === "check_results")
-                  return (
-                    blocker.headSha === watch.headSha &&
-                    blocker.checks.some(
-                      (previous) =>
-                        previous.id === check.id &&
-                        previous.conclusion === check.conclusion,
-                    )
-                  );
-                if (
-                  blocker.kind !== "check_failed" ||
-                  blocker.headSha !== watch.headSha
-                )
-                  return false;
-                if (blocker.sourceId === check.id) return true;
-                const job = checks.find(
-                  (candidate) => candidate.id === blocker.sourceId,
-                );
-                const run = (url: string) =>
-                  /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
-                    url,
-                  )?.[0];
-                return (
-                  job !== undefined &&
-                  job.at >= check.at &&
-                  run(job.url) !== undefined &&
-                  run(job.url) === run(check.url)
-                );
-              }),
-          );
-          if (
-            prLifecycle(o.lifecycle) === PRLifecycle.Merged ||
-            watch.state !== CheckWatchState.Completed ||
-            (unreported.length === 0 &&
-              (failures.length > 0 || terminalPR(o.lifecycle)))
-          )
-            return [];
-          return [
-            {
-              sourceKey: watch.id,
-              blocker: {
-                kind: "check_results" as const,
-                watchId: watch.id,
-                headSha: watch.headSha,
-                state: watch.state,
-                checks: failures.length === 0 ? checks : unreported,
-                ...(watch.replacementHeadSha === undefined
-                  ? {}
-                  : { replacementHeadSha: watch.replacementHeadSha }),
-              },
-              summary:
-                failures.length === 0
-                  ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${o.mergeability === "mergeable" ? "no merge conflicts" : o.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
-                  : unreported.length === 1
-                    ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
-                    : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
-              evidenceUrl: p.url,
-            },
-          ];
-        });
-      for (const f of [...findings(o, p.url), ...checkResults]) {
-        if (
-          this.actions().some(
-            (a) =>
-              a.prId === p.id &&
-              a.blocker.kind === f.blocker.kind &&
-              a.sourceKey === f.sourceKey &&
-              (f.blocker.kind === "review_feedback" ||
-                f.blocker.kind === "check_results" ||
-                unfinished(a)),
-          )
-        )
-          continue;
+      const watches = this.checks.observe(
+        o,
+        p.state === TrackingState.Archived ||
+          (p.state === TrackingState.Draining && !terminalPR(o.lifecycle)),
+      );
+      const existing = this.actions(p.id);
+      const reported = [...existing, ...observedFindings];
+      const checkResults = watches.flatMap((watch) =>
+        checkWatchFindings(watch, o, p.url, reported),
+      );
+      for (const f of [...observedFindings, ...checkResults]) {
+        if (alreadyReported(f, existing)) continue;
         const at = this.now(),
           a: Action = {
             id: randomUUID(),
@@ -960,6 +886,7 @@ export class TrackingStore {
             updatedAt: at,
           };
         this.saveAction(a, "action_opened");
+        existing.push(a);
         this.enqueue(a);
       }
       this.retirement.observeInside(p.id, o);

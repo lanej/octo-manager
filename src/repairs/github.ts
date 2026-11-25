@@ -1,4 +1,5 @@
-import { ghRead, canonicalPR } from "../tracking/github.js";
+import { ghRead } from "../github/reads.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import { record, single, type RebaseSource } from "./types.js";
 export async function rebaseSource(
   url: string,

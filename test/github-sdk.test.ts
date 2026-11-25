@@ -1,8 +1,8 @@
-import { GitHubRequestCancelledError } from "../src/github-errors.js";
+import { GitHubRequestCancelledError } from "../src/github/errors.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { sdkTransport } from "../src/github-sdk.js";
-import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
+import { sdkTransport } from "../src/github/sdk.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github/reads.js";
 
 test("official SDK caches credentials and preserves conditional responses and typed payloads", async () => {
   let tokens = 0;

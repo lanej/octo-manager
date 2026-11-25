@@ -2,9 +2,9 @@ import { actionNotice, renderNotice } from "../security/notifications.js";
 import { stripVTControlCharacters } from "node:util";
 import type { Action } from "./types.js";
 import { successfulCheck } from "./checks.js";
-import { canonicalPR } from "./github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import { failedStepLogs } from "./job-logs.js";
-import { githubReads } from "../github-api.js";
+import { githubReads } from "../github/reads.js";
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
     .filter(

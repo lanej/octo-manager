@@ -1,6 +1,6 @@
-import type { ParsedCommand } from "../arguments.js";
+import type { ParsedCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import { unwire } from "../api/codec.js";

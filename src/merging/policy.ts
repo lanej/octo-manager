@@ -2,7 +2,7 @@ import { pendingReview, ReviewState, reviewState } from "../tracking/states.js";
 import { ReviewAssessmentSource, type MergeEntry } from "./contracts.js";
 import { currentMergeChecks } from "./checks.js";
 import { createHash } from "node:crypto";
-import { canonicalPR } from "../tracking/github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import { actionableFeedback } from "../tracking/review-signals.js";
 import { compact } from "../tracking/messages.js";
 import type { ObservationInput, TrackedPR } from "../tracking/types.js";

@@ -9,7 +9,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { join, resolve, relative, isAbsolute } from "node:path";
-import { cleanText } from "../domain.js";
+import { cleanText } from "../text.js";
 import type { RebaseSource } from "./types.js";
 import { tmpdir } from "node:os";
 import type { ConflictVersions } from "./yaml.js";

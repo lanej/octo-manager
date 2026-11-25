@@ -13,7 +13,7 @@ import {
   ContractSchema,
   githubRepository,
 } from "./contract.js";
-import { sdkTransport, type GitHubTransport } from "../github-sdk.js";
+import { sdkTransport, type GitHubTransport } from "../github/sdk.js";
 const exec = promisify(execFile);
 const StyleSchema = Type.Object(
   {

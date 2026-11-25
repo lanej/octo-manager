@@ -1,16 +1,16 @@
-import { GitHubRequestCancelledError } from "./github-errors.js";
-import type { RequestDispatch } from "./scheduling/service.js";
+import { GitHubRequestCancelledError } from "./errors.js";
+import type { RequestDispatch } from "../scheduling/service.js";
 import {
   sdkTransport,
   type GitHubTransport,
   type GitHubResponse,
   type GitHubRequest,
-} from "./github-sdk.js";
+} from "./sdk.js";
 import {
   GitHubUsage,
   type GitHubReadUsage,
   type GitHubResource,
-} from "./github-usage.js";
+} from "./usage.js";
 interface CachedResponse {
   etag: string;
   body: string;
@@ -338,3 +338,11 @@ export class GitHubReads {
   }
 }
 export const githubReads = new GitHubReads();
+
+export type ReadGitHub = (
+  path: string,
+  signal?: AbortSignal,
+) => Promise<unknown>;
+
+export const ghRead: ReadGitHub = (path, signal) =>
+  githubReads.read(path, signal);

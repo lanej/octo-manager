@@ -1,7 +1,7 @@
 import { test, expect, spyOn } from "bun:test";
 import * as childProcess from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
-import { parseCommand } from "../src/arguments.js";
+import { parseCommand } from "../src/cli/arguments.js";
 import { publicationCLI } from "../src/publication/cli.js";
 import { initialize } from "../src/publication/contract.js";
 import { PublicationStore } from "../src/publication/store.js";

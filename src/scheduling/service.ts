@@ -1,9 +1,9 @@
-import { GitHubRequestCancelledError } from "../github-errors.js";
+import { GitHubRequestCancelledError } from "../github/errors.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { EventEmitter } from "node:events";
-import type { GitHubResource } from "../github-usage.js";
-import { canonicalPR } from "../tracking/github.js";
-import type { PullRequestDetails } from "../github.js";
+import type { GitHubResource } from "../github/usage.js";
+import { canonicalPR } from "../github/pr-identity.js";
+import type { PullRequestDetails } from "../github/reviews.js";
 import {
   RefreshKind,
   ScheduleState,

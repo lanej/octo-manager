@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { updateIssuePR } from "../src/issues/publication.js";
-import type { GitHubTransport } from "../src/github-sdk.js";
+import type { GitHubTransport } from "../src/github/sdk.js";
 
 function fixture() {
   const issue = {

@@ -14,7 +14,7 @@ import { trackedCodeHost } from "./issues/composition.js";
 import { Activation, type ActivationReport } from "./lifecycle.js";
 import {GitHubScheduler} from "./scheduling/service.js";
 import {defaultSchedulerPolicy} from "./scheduling/contracts.js";
-import {githubReads} from "./github-api.js";
+import {githubReads} from "./github/reads.js";
 import {MergeService,type MergeOptions} from "./merging/service.js";
 import {NotificationService} from "./tracking/notifications.js";
 import type {NotificationReader} from "./tracking/notification-reader.js";
@@ -29,13 +29,15 @@ import { fork, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
 import type { Socket } from "node:net";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
-import { schedulerRoutes } from "./rpc.js";
+import { schedulerRoutes } from "./api/routes.js";
 import { chmodSync, existsSync, lstatSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { Store } from "./store.js";
-import { activeStates, cleanText, nextReady, parseTask, retryDelay, transition, type Job, type Snapshot, type Status } from "./domain.js";
-import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./fixture.js";
-import { readPullRequest, readPullRequestDetails } from "./github.js";
+import { Store } from "./coordinator/store.js";
+import { activeStates, nextReady, parseTask, retryDelay, transition, type Job, type JobCommand, type Snapshot, type Status } from "./jobs/domain.js";
+import { cleanText } from "./text.js";
+import { createFixture, readConflict, writeResolution, validateResolution, finishFixture, removeFixture } from "./jobs/fixture.js";
+import { readPullRequest } from "./jobs/github.js";
+import { readPullRequestDetails } from "./github/reviews.js";
 
 interface Active { jobId: string; attempt: number; child?: ChildProcess; childExited?: boolean; abort: AbortController; exited: Promise<void>; killTimer?: NodeJS.Timeout }
 export interface CoordinatorOptions {
@@ -161,6 +163,8 @@ export class Coordinator extends EventEmitter {
     if (clear.includes("fixture")) delete job.fixture;
     this.store.save(job, status, detail); this.notify(); return job;
   }
+  command(value: JobCommand): Job;
+  command(value: unknown): unknown;
   command(value: unknown): unknown {
     if (!value || typeof value !== "object") throw new Error("Expected command object");
     const v = value as Record<string, unknown>;

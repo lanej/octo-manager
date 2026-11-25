@@ -1,7 +1,8 @@
 import { mergeProgress, type MergeProgress } from "./async-merge.js";
 import { Type, type Static } from "typebox";
-import { githubReads } from "../github-api.js";
-import { canonicalPR, readObservation } from "../tracking/github.js";
+import { githubReads } from "../github/reads.js";
+import { readObservation } from "../tracking/github.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import type { ObservationInput } from "../tracking/types.js";
 import { checked, Sha, type MergeEntry } from "./contracts.js";
 const GateSchema = Type.Object({

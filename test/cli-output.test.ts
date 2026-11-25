@@ -5,9 +5,9 @@ import {
   GetActionResponseSchema,
 } from "../src/gen/octomanager/v2/tracking_pb.js";
 import { NotificationMessageSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
-import { parseCommand } from "../src/arguments.js";
-import { agentResponse, printFailure } from "../src/cli-output.js";
-import { commandSpecs } from "../src/command-tree.js";
+import { parseCommand } from "../src/cli/arguments.js";
+import { agentResponse, printFailure } from "../src/cli/output.js";
+import { commandSpecs } from "../src/cli/command-tree.js";
 import {
   agentProjection,
   agentOutputExceptions,

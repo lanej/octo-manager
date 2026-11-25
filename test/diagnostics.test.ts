@@ -19,7 +19,7 @@ import { sqlShape, statementKind } from "../src/diagnostics/sql.js";
 import { PerformanceCaptureState as State } from "../src/gen/octomanager/v2/diagnostics_pb.js";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";
-import { parseCommand } from "../src/arguments.js";
+import { parseCommand } from "../src/cli/arguments.js";
 
 const directory = () => mkdtempSync(join(tmpdir(), "octo-diag-"));
 test("expanded SQL redaction removes literals, blobs, comments and quoted identifiers before grouping", () => {

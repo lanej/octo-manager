@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { readObservation } from "../src/tracking/github.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { TrackingService } from "../src/tracking/service.js";

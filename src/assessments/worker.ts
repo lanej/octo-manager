@@ -6,7 +6,7 @@ import {
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
 import { Check } from "typebox/value";
-import { createWorkerRuntime } from "../auth.js";
+import { createWorkerRuntime } from "../jobs/auth.js";
 import {
   InputSchema,
   inputLimit,

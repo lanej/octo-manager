@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { PullRequestDetails } from "../github.js";
+import type { PullRequestDetails } from "../github/reviews.js";
 import {
   decode,
   DispatchSchema,

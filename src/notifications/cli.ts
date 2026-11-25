@@ -9,13 +9,13 @@ import {
   DomainAgentDigestSchema,
   DomainReceiptTargetSchema,
 } from "../gen/octomanager/v2/domain_pb.js";
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import { shortId } from "../tracking/identifiers.js";
 import { receiptOutput, agentReceiptOutput } from "./receipt-output.js";
 import { readOutput } from "./read-output.js";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
-import type { parseCommand } from "../arguments.js";
+import type { parseCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
 export async function notificationsCLI(
   parsed: ReturnType<typeof parseCommand>,

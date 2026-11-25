@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { schedulerClient } from "../client.js";
 import type { ParsedCommand } from "../cli/contracts.js";
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import {
   SetIssueSubscriptionResponseSchema,
   ListIssueSubscriptionsResponseSchema,

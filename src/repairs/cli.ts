@@ -1,4 +1,4 @@
-import { printResult } from "../cli-output.js";
+import { printResult } from "../cli/output.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { toJson } from "@bufbuild/protobuf";
@@ -11,7 +11,7 @@ import {
   RequestRebaseResponseSchema,
   ListRepairsResponseSchema,
 } from "../gen/octomanager/v2/repairs_pb.js";
-import type { parseCommand } from "../arguments.js";
+import type { parseCommand } from "../cli/arguments.js";
 export async function repairsCLI(
   parsed: ReturnType<typeof parseCommand>,
 ): Promise<boolean> {

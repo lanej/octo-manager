@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { workerResultText } from "../src/worker-result.js";
+import { workerResultText } from "../src/jobs/worker-result.js";
 
 test("structured worker results preserve complete JSON beyond the prose limit", () => {
   const payload = { body: "A".repeat(20000) + "\n終", blockers: [] };

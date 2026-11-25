@@ -1,6 +1,6 @@
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
-import { readPullRequestDetails } from '../src/github.js';
+import { readPullRequestDetails } from '../src/github/reviews.js';
 
 const url='https://github.com/owner/repo/pull/12';
 test('review reads gate all message sources on public visibility and preserve source, timestamp and truncation',async()=>{
@@ -25,4 +25,17 @@ test('review reads gate all message sources on public visibility and preserve so
  }
  let called=false;
  await assert.rejects(readPullRequestDetails('file:///etc/passwd',undefined,async()=>{called=true;}));assert.equal(called,false);
+});
+
+test("a malformed review item fails the read without inventing a message", async () => {
+  await assert.rejects(
+    readPullRequestDetails(url, undefined, (path) =>
+      Promise.resolve(
+        path === "repos/owner/repo/pulls/12"
+          ? { base: { repo: { private: false } } }
+          : [null],
+      ),
+    ),
+    /invalid review or comment/,
+  );
 });

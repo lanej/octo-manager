@@ -5,7 +5,7 @@ import { evidenceResponseMaxBytes } from "../api/limits.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 import type { MessagePresentation } from "../merging/receipt-types.js";
 import { inspectMessage } from "./inspection.js";
-import type { Store } from "../store.js";
+import type { Store } from "../coordinator/store.js";
 import type { DigestService } from "./service.js";
 
 export class Messages {

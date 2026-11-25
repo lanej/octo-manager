@@ -1,8 +1,8 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { GitHubUsage } from "../src/github-usage.js";
-import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
-import { wireGitHubUsage } from "../src/github-usage-rpc.js";
+import { GitHubUsage } from "../src/github/usage.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github/reads.js";
+import { wireGitHubUsage } from "../src/api/github-usage.js";
 
 test("traffic history fills observed idle minutes, stays bounded, and preserves lifetime totals", () => {
   let at = 125000;

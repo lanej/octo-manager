@@ -1,5 +1,5 @@
-import { cleanText } from "../domain.js";
-import { canonicalPR } from "../tracking/github.js";
+import { cleanText } from "../text.js";
+import { canonicalPR } from "../github/pr-identity.js";
 export enum RepairState {
   Queued = "queued",
   Running = "running",

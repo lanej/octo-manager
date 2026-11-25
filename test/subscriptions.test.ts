@@ -1,7 +1,7 @@
 import { ParticipantRole } from "../src/tracking/subscriptions.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import {
   ActionState,

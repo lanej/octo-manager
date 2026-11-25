@@ -9,12 +9,15 @@ import {
 import { actionableFeedback } from "./review-signals.js";
 import {
   checkEvidence,
+  type CheckWatch,
+  CheckWatchState,
   checkReplaces,
   checksFinished,
   successfulCheck,
 } from "./checks.js";
 import {
   ActionState,
+  unfinished,
   type Action,
   type ActionProgress,
   type Blocker,
@@ -248,4 +251,92 @@ export function closeProgress(
     if (r !== undefined && r.id !== b.reviewId)
       return supersede("A newer review replaced this request");
   }
+}
+
+export function checkWatchFindings(
+  watch: CheckWatch,
+  observation: PRObservation,
+  url: string,
+  reported: readonly Pick<Finding, "blocker">[],
+): Finding[] {
+  const checks =
+    watch.evidence.state === "unavailable" ? [] : watch.evidence.value;
+  const failures = checks.filter((check) => !successfulCheck(check));
+  const unreported = failures.filter(
+    (check) =>
+      !reported.some((finding) => {
+        const blocker = finding.blocker;
+        if (blocker.kind === "check_results")
+          return (
+            blocker.headSha === watch.headSha &&
+            blocker.checks.some(
+              (previous) =>
+                previous.id === check.id &&
+                previous.conclusion === check.conclusion,
+            )
+          );
+        if (
+          blocker.kind !== "check_failed" ||
+          blocker.headSha !== watch.headSha
+        )
+          return false;
+        if (blocker.sourceId === check.id) return true;
+        const job = checks.find(
+          (candidate) => candidate.id === blocker.sourceId,
+        );
+        const run = (url: string) =>
+          /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+/.exec(
+            url,
+          )?.[0];
+        return (
+          job !== undefined &&
+          job.at >= check.at &&
+          run(job.url) !== undefined &&
+          run(job.url) === run(check.url)
+        );
+      }),
+  );
+  if (
+    prLifecycle(observation.lifecycle) === PRLifecycle.Merged ||
+    watch.state !== CheckWatchState.Completed ||
+    (unreported.length === 0 &&
+      (failures.length > 0 || terminalPR(observation.lifecycle)))
+  )
+    return [];
+  return [
+    {
+      sourceKey: watch.id,
+      blocker: {
+        kind: "check_results" as const,
+        watchId: watch.id,
+        headSha: watch.headSha,
+        state: watch.state,
+        checks: failures.length === 0 ? checks : unreported,
+        ...(watch.replacementHeadSha === undefined
+          ? {}
+          : { replacementHeadSha: watch.replacementHeadSha }),
+      },
+      summary:
+        failures.length === 0
+          ? `${checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks completed (includes neutral/skipped)"}; ${observation.mergeability === "mergeable" ? "no merge conflicts" : observation.mergeability === "conflicting" ? "merge conflict remains" : "conflict status unknown"}`
+          : unreported.length === 1
+            ? `Failed check: ${unreported[0]?.name ?? "workflow"}`
+            : `${String(unreported.length)} failed checks: ${unreported[0]?.name ?? "workflow"}`,
+      evidenceUrl: url,
+    },
+  ];
+}
+
+export function alreadyReported(
+  finding: Finding,
+  existing: readonly Action[],
+): boolean {
+  return existing.some(
+    (action) =>
+      action.blocker.kind === finding.blocker.kind &&
+      action.sourceKey === finding.sourceKey &&
+      (finding.blocker.kind === "review_feedback" ||
+        finding.blocker.kind === "check_results" ||
+        unfinished(action)),
+  );
 }

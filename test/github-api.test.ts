@@ -2,10 +2,10 @@ import type {
   GitHubRequest,
   GitHubResponse,
   GitHubTransport,
-} from "../src/github-sdk.js";
+} from "../src/github/sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github/reads.js";
 
 function http(
   status: number,

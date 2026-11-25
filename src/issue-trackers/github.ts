@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { Type } from "typebox";
-import { githubReads } from "../github-api.js";
+import { githubReads } from "../github/reads.js";
 import { checked } from "../merging/contracts.js";
 import type { IssueTracker } from "../issues/ports.js";
 import type { IssueReference, IssueComment } from "../issues/contracts.js";

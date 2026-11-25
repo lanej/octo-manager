@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { IssueService, type IssueOptions } from "../src/issues/service.js";
 import { Coordinator } from "../src/coordinator.js";
 import { schedulerClient } from "../src/client.js";

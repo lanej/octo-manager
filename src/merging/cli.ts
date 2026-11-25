@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import { schedulerClient } from "../client.js";
-import { printResult } from "../cli-output.js";
-import type { parseCommand } from "../arguments.js";
+import { printResult } from "../cli/output.js";
+import type { parseCommand } from "../cli/arguments.js";
 import {
   checked,
   CommandSchema,

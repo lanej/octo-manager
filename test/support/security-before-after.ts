@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { create } from "@bufbuild/protobuf";
-import { Store } from "../../src/store.js";
+import { Store } from "../../src/coordinator/store.js";
 import { TrackingService } from "../../src/tracking/service.js";
 import { defaultTrackingConfig } from "../../src/tracking/config.js";
 import {

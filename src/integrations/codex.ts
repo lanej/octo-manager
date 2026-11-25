@@ -3,8 +3,8 @@ import { constants } from "node:fs";
 import { mkdir, open } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { schedulerClient } from "../client.js";
-import { directoryLabel } from "../arguments.js";
-import { canonicalPR } from "../tracking/github.js";
+import { directoryLabel } from "../cli/arguments.js";
+import { canonicalPR } from "../github/pr-identity.js";
 import { Handoffs } from "./handoffs.js";
 
 function object(value: unknown): value is Record<string, unknown> {

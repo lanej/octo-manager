@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
-import { workerModel as parseWorkerModel } from "../worker-model.js";
+import { workerModel as parseWorkerModel } from "../jobs/worker-model.js";
 export interface CodexEndpoint {
   socket?: string;
   delivery?: "turn" | "queue";

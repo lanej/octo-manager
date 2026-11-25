@@ -1,7 +1,7 @@
 import {
   GitHubRequestCancelledError,
   throwIfGitHubCancelled,
-} from "./github-errors.js";
+} from "./errors.js";
 import { Octokit } from "@octokit/core";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

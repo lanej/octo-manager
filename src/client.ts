@@ -7,7 +7,7 @@ import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
 import { join } from "node:path";
 import { SchedulerService, JobStatus, SchedulerState, WorkerState, type Job as WireJob, type Snapshot as WireSnapshot, type JobEvent as WireEvent } from "./gen/octomanager/v2/scheduler_pb.js";
-import { digest, parseTask, type Job, type JobEvent, type Snapshot, type Status } from "./domain.js";
+import { digest, parseTask, type Job, type JobEvent, type Snapshot, type Status } from "./jobs/domain.js";
 
 export function schedulerClient(directory: string) {
   // WHY: Isolate Unix-socket requests so stream cancellation or coordinator restart cannot reuse a stale Bun HTTP connection.

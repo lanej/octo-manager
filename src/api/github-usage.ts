@@ -1,11 +1,11 @@
-import { ForecastState, type QuotaForecast } from "./github-forecast.js";
-import { GitHubForecastState } from "./gen/octomanager/v2/github_pb.js";
+import { ForecastState, type QuotaForecast } from "../github/forecast.js";
+import { GitHubForecastState } from "../gen/octomanager/v2/github_pb.js";
 import { create } from "@bufbuild/protobuf";
 import {
   GitHubReadUsageSchema,
   type GitHubReadUsage as WireUsage,
-} from "./gen/octomanager/v2/github_pb.js";
-import type { GitHubBudget, GitHubReadUsage } from "./github-usage.js";
+} from "../gen/octomanager/v2/github_pb.js";
+import type { GitHubBudget, GitHubReadUsage } from "../github/usage.js";
 
 const states: Record<ForecastState, GitHubForecastState> = {
   unknown: GitHubForecastState.UNKNOWN,

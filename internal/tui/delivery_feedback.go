@@ -8,6 +8,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/internal/tui/presentation"
 )
 
 func (m *Model) deliveryFeedbackSections(pr *v1.TrackedPullRequest) []layout.DetailSection {
@@ -85,7 +86,7 @@ func (m *Model) feedbackRoutes(pr *v1.TrackedPullRequest, action *v1.PendingActi
 	source, head := feedbackSource(action)
 	sourceStage := m.deliveryState("Review source", source, text.Info)
 	sourceStage.Detail = "Reviewed head " + deliveryRevision(head)
-	disposition := m.deliveryState("Disposition", stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()))
+	disposition := m.deliveryState("Disposition", stateName(action.GetState().String(), "ACTION_STATE_"), presentation.ActionTone(action.GetState()))
 	disposition.Detail = m.agentLabel(owner)
 
 	sections := make([]layout.DetailSection, 0, len(deliveries))
@@ -157,7 +158,7 @@ func (m *Model) feedbackReceipt(delivery *v1.ActionDelivery) (layout.StatusItem,
 		return m.deliveryState("Transport", "No delivery recorded", text.Neutral), m.deliveryState("Receipt", "Not recorded", text.Neutral)
 	}
 
-	transport := m.deliveryState("Transport", stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()))
+	transport := m.deliveryState("Transport", stateName(delivery.GetState().String(), "DELIVERY_STATE_"), presentation.DeliveryTone(delivery.GetState()))
 	transport.Detail = m.agentLabel(delivery.GetRecipientAgentId())
 
 	receipt := m.deliveryState("Receipt", "Not confirmed", text.Neutral)

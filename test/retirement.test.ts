@@ -1,8 +1,8 @@
 import { rejects } from "node:assert/strict";
-import { GitHubReads, GitHubRateLimitError } from "../src/github-api.js";
+import { GitHubReads, GitHubRateLimitError } from "../src/github/reads.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { TrackingState, ArchiveReason } from "../src/tracking/retirement.js";

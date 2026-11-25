@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { transition, nextReady, retryDelay, parseTask, cleanText, type Job } from '../src/domain.js';
-import { Store } from '../src/store.js';
-import { publicPullRequest } from '../src/github.js';
-import { createFixture, writeResolution, validateResolution, finishFixture, removeFixture } from '../src/fixture.js';
+import { transition, nextReady, retryDelay, parseTask, type Job } from '../src/jobs/domain.js';
+import { Store } from '../src/coordinator/store.js';
+import { cleanText } from '../src/text.js';
+import { publicPullRequest } from '../src/jobs/github.js';
+import { createFixture, writeResolution, validateResolution, finishFixture, removeFixture } from '../src/jobs/fixture.js';
 const temp = () => mkdtemp(join(tmpdir(), 'pg-'));
 test('jobs follow explicit conflict, completion and cancellation contracts', () => {
   const job = { status: 'queued', updatedAt: 0 } as Job;

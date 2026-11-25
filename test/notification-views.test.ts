@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { ActionState } from "../src/tracking/types.js";
-import { Store } from "../src/store.js";
+import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import {
   renderNotice,

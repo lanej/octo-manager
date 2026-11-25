@@ -1,3 +1,4 @@
+import { canonicalPR } from "../github/pr-identity.js";
 import { PRLifecycle, pendingReview, prLifecycle } from "./states.js";
 import {
   commentFeedback,
@@ -12,14 +13,18 @@ import {
   type CheckReconciliationContext,
 } from "./checks.js";
 import { trackingPR } from "./evidence.js";
-import { githubReads, GitHubRateLimitError } from "../github-api.js";
+import {
+  ghRead,
+  GitHubRateLimitError,
+  type ReadGitHub,
+} from "../github/reads.js";
 import { githubMetadata } from "./metadata.js";
 import type {
   ObservationInput,
   ObservationPart,
   CheckObservation,
 } from "./types.js";
-import { GitHubRequestCancelledError } from "../github-errors.js";
+import { GitHubRequestCancelledError } from "../github/errors.js";
 export class GitHubObservationChangedError extends Error {
   constructor() {
     super("GitHub PR revisions changed during observation; refresh again");
@@ -27,23 +32,10 @@ export class GitHubObservationChangedError extends Error {
   }
 }
 
-export type ReadGitHub = (path: string, signal?: AbortSignal) => Promise<any>;
-export async function ghRead(path: string, signal?: AbortSignal): Promise<any> {
-  return githubReads.read(path, signal);
-}
-export function canonicalPR(url: string): string {
-  const m =
-    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/([1-9][0-9]*)\/?$/.exec(
-      url,
-    );
-  if (!m || [".", ".."].includes(m[1]!) || [".", ".."].includes(m[2]!))
-    throw new Error("Invalid GitHub PR URL");
-  return `https://github.com/${m[1]!.toLowerCase()}/${m[2]!.toLowerCase()}/pull/${m[3]}`;
-}
 async function collection<T>(
   path: string,
   field: string | undefined,
-  map: (x: any) => T,
+  map: (value: unknown) => T,
   read: ReadGitHub,
   signal?: AbortSignal,
 ): Promise<ObservationPart<T[]>> {
@@ -55,7 +47,8 @@ async function collection<T>(
         `${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`,
         signal,
       );
-      const values = field ? raw[field] : raw;
+      const values =
+        field === undefined ? raw : record(raw) ? raw[field] : undefined;
       if (!Array.isArray(values)) throw new Error("Invalid GitHub collection");
       items.push(...values.map(map));
       if (values.length < 100) return { state: "complete", value: items };

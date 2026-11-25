@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { GitHubIssueTracker } from "../src/issue-trackers/github.js";
-import { GitHubReads } from "../src/github-api.js";
-import type { GitHubRequest } from "../src/github-sdk.js";
+import { GitHubReads } from "../src/github/reads.js";
+import type { GitHubRequest } from "../src/github/sdk.js";
 test("GitHub issue adapter preserves edits, reconciles marked writes, and closes through scheduled PATCH", async () => {
   const calls: GitHubRequest[] = [];
   let commentBody = "A correction";

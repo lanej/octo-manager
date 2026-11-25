@@ -29,7 +29,7 @@ Codex remains the interactive implementer and submits bounded work through `bin/
 
 The CLI and Charmed dashboard use generated clients for the [Connect API](api.md). This allows another Codex integration to speak the same contract without embedding Pi or importing SQLite. Dashboard disconnect cancels only its observation stream; job cancellation is an explicit API operation.
 
-Authentication is a separate concern from job orchestration. [auth.ts](../src/auth.ts) prefers existing Pi authentication, then references a supported file-backed Codex ChatGPT access token in memory. It neither copies credentials into Pi storage nor owns Codex refresh. The README describes the supported session types and optional login path.
+Authentication is a separate concern from job orchestration. [auth.ts](../src/jobs/auth.ts) prefers existing Pi authentication, then references a supported file-backed Codex ChatGPT access token in memory. It neither copies credentials into Pi storage nor owns Codex refresh. The README describes the supported session types and optional login path.
 
 ## Extending the worker
 

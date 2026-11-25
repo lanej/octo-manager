@@ -1,4 +1,4 @@
-import { cleanText } from "./domain.js";
+import { cleanText } from "../text.js";
 
 export function workerResultText(
   kind: "structured" | "prose",

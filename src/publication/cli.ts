@@ -1,5 +1,5 @@
 import { workerModule } from "../package-root.js";
-import { printAgentError, printResult } from "../cli-output.js";
+import { printAgentError, printResult } from "../cli/output.js";
 import { parse, SubmissionSchema } from "../submissions/contracts.js";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
-import type { parseCommand } from "../arguments.js";
+import type { parseCommand } from "../cli/arguments.js";
 import {
   initialize,
   readContract,

@@ -1,8 +1,8 @@
 import type { parseCommand } from "./arguments.js";
-import { agentMode } from "./cli-mode.js";
-import { cliJSON } from "./client.js";
-import { compact } from "./tracking/messages.js";
-import { agentProjection } from "./cli/agent-output.js";
+import { agentMode } from "./mode.js";
+import { cliJSON } from "../client.js";
+import { compact } from "../tracking/messages.js";
+import { agentProjection } from "./agent-output.js";
 
 export function agentResponse(
   parsed: ReturnType<typeof parseCommand>,

@@ -13,6 +13,7 @@ import (
 	"github.com/lanej/charmed/layout"
 	"github.com/lanej/charmed/text"
 	v1 "github.com/lanej/octo-manager/gen/octomanager/v2"
+	"github.com/lanej/octo-manager/internal/tui/presentation"
 )
 
 func (m *Model) agentLabel(id string) string {
@@ -165,7 +166,7 @@ func (m *Model) trackingContent() string {
 				heading = true
 			}
 
-			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), actionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
+			parts = append(parts, "", text.Pill(stateName(action.GetState().String(), "ACTION_STATE_"), presentation.ActionTone(action.GetState()), m.theme, text.Normal)+" "+text.Label(safe(action.GetSummary()), m.theme))
 			if result := action.GetCheckResults(); result != nil {
 				parts = append(parts, m.checkResultsContent(result, pr))
 			}
@@ -207,7 +208,7 @@ func (m *Model) trackingContent() string {
 					details = strings.TrimSuffix(details, "; receipt pending.") + "."
 				}
 
-				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), deliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), details)
+				parts = append(parts, "Delivery "+text.Pill(stateName(delivery.GetState().String(), "DELIVERY_STATE_"), presentation.DeliveryTone(delivery.GetState()), m.theme, text.Normal)+" · "+text.Label(m.agentLabel(delivery.GetRecipientAgentId()), m.theme), details)
 				if delivery.MessageSequence != nil {
 					receipt := "Awaiting agent receipt"
 					if delivery.AcknowledgedAtMs != nil {

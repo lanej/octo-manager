@@ -6,8 +6,8 @@ import {
   type PollState,
   type PollPolicy,
 } from "./polling.js";
-import { GitHubRequestCancelledError } from "../github-errors.js";
-import { GitHubRateLimitError } from "../github-api.js";
+import { GitHubRequestCancelledError } from "../github/errors.js";
+import { GitHubRateLimitError } from "../github/reads.js";
 import { TrackingState } from "./retirement.js";
 import { Handoffs } from "../integrations/handoffs.js";
 import { readFailureExcerpt } from "./messages.js";
