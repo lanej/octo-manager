@@ -84,6 +84,7 @@ export function load(root: string) {
 }
 export class RepositoryPolicies {
   private policyByPr: StatementSync | undefined;
+  private policiesForTick: StatementSync | undefined;
   constructor(
     private db: DatabaseSync,
     private tracking: TrackingStore,
@@ -160,14 +161,37 @@ export class RepositoryPolicies {
   }
   tick(): void {
     const roots = new Map<string, ReturnType<typeof load> | Error>();
-    for (const pr of this.tracking.prContexts()) {
-      const prior = this.get(pr.id);
+    const contexts = this.tracking.prContexts();
+    // Read current policies once per pass; no decisions survive into the next tick.
+    const policies = new Map(
+      (this.policiesForTick ??= this.db.prepare(
+        "SELECT p.id,s.value FROM tracked_prs p JOIN settings s ON s.key='repository-policy:'||p.id WHERE p.enabled=1",
+      ))
+        .all()
+        .map((row) => [
+          String(row["id"]),
+          storedPolicy(JSON.parse(String(row["value"]))),
+        ]),
+    );
+    const stale = contexts.filter((pr) => {
+      const prior = policies.get(pr.id);
+      return (
+        pr.enabled &&
+        prior !== undefined &&
+        (prior.ownerId !== pr.ownerAgentId || prior.epoch !== pr.trackingEpoch)
+      );
+    });
+    const disable = this.merging.inheritedDisableCandidates(
+      stale.map((pr) => pr.id),
+    );
+    for (const pr of contexts) {
+      const prior = policies.get(pr.id);
       if (prior === undefined || !pr.enabled) continue;
       if (
         prior.ownerId !== pr.ownerAgentId ||
         prior.epoch !== pr.trackingEpoch
       ) {
-        this.merging.disableInherited(pr.id);
+        if (disable.has(pr.id)) this.merging.disableInherited(pr.id);
         const error =
           "Repository policy requires enrollment by the current owner and tracking epoch";
         if (prior.error !== error) {

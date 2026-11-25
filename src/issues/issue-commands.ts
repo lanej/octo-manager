@@ -11,6 +11,23 @@ const actions = [
 ];
 export const commands: CommandSpec[] = [
   {
+    path: "issue subscribe <id>",
+    route: "issue-subscribe",
+    capability: "issues",
+    description:
+      "Set one agent's issue event selection (omitted events resets legacy default)",
+    options: [
+      "--agent-id <id>",
+      "--events <title,description,comment,closed,reopened,coordinator,refresh_failure,refresh_recovery|none>",
+    ],
+  },
+  {
+    path: "issue subscriptions <id>",
+    route: "issue-subscriptions",
+    capability: "issues",
+    description: "Inspect effective issue notification selections",
+  },
+  {
     path: "issue track <url>",
     route: "issue-track",
     capability: "issues",

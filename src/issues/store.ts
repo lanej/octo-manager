@@ -1,13 +1,11 @@
-import { renderDirectNotice } from "../notifications/render.js";
-import type { SafeNotice } from "../security/notifications.js";
+import { IssueSubscriptions } from "./subscriptions.js";
 import type { NotificationRepository } from "../notifications/repository.js";
 import {
   decodeIssue,
   decodeAssignment,
   decodeIssueBrief,
 } from "./validation.js";
-import { randomUUID, createHash } from "node:crypto";
-import { nextInboxSequence } from "../submissions/schema.js";
+import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type {
   Assignment,
@@ -15,12 +13,13 @@ import type {
   IssueEvent,
   Brief,
 } from "./contracts.js";
-import { AttemptState, Waiting, IssueStage } from "./contracts.js";
+import { AttemptState } from "./contracts.js";
 export class IssueStore {
+  readonly subscriptions: IssueSubscriptions;
   constructor(
     private db: DatabaseSync,
     private now: () => number,
-    private notifications?: NotificationRepository,
+    notifications?: NotificationRepository,
   ) {
     db.exec(`CREATE TABLE IF NOT EXISTS issue_briefs(issue_id TEXT NOT NULL, version INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(issue_id,version));
 CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
@@ -28,6 +27,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
  CREATE TABLE IF NOT EXISTS issue_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT, issue_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_requests(id TEXT PRIMARY KEY, input TEXT NOT NULL, issue_id TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_effects(id TEXT PRIMARY KEY, issue_id TEXT NOT NULL, kind TEXT NOT NULL, body TEXT NOT NULL, title TEXT NOT NULL, state TEXT NOT NULL, url TEXT NOT NULL);`);
+    this.subscriptions = new IssueSubscriptions(db, now, notifications);
   }
   atomic<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -51,62 +51,24 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         body: `${String(row["body"])}\n\n<!-- octo-issue:${String(row["id"])} -->`,
       }));
   }
-  private notice(issue: IssueRecord): void {
-    const installed = this.db
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='issue_notices'",
+  private notice(issue: IssueRecord, kind: string): void {
+    const revision = createHash("sha256")
+      .update(
+        JSON.stringify([
+          issue.stage,
+          issue.waiting,
+          issue.brief?.version,
+          issue.detail,
+        ]),
       )
-      .get();
-    if (installed == null) return;
-    const actionable =
-      issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
-    const id = this.notifications?.newMessageId() ?? randomUUID();
-    const notice: SafeNotice = {
-      version: 1,
-      kind: "issue",
-      assessment: "not_required",
-      subject: { kind: "issue", id: issue.id },
-      issueStage: issue.stage,
-      issueWaiting: issue.waiting,
-      issueRevision: createHash("sha256")
-        .update(
-          JSON.stringify([
-            issue.stage,
-            issue.waiting,
-            issue.brief?.version,
-            issue.detail,
-          ]),
-        )
-        .digest("hex"),
-    };
-    const previous = this.db
-      .prepare(
-        "SELECT id FROM issue_notices WHERE issue_id=? ORDER BY sequence DESC LIMIT 1",
-      )
-      .get(issue.id);
-    const prior =
-      typeof previous?.["id"] === "string"
-        ? this.notifications?.notice(previous["id"])
-        : undefined;
-    if (prior?.issueRevision === notice.issueRevision) return;
-    this.db
-      .prepare("UPDATE issue_notices SET applicable=0 WHERE issue_id=?")
-      .run(issue.id);
-    if (!actionable) return;
-    this.notifications?.freezeNotice(id, notice);
-    this.db
-      .prepare("INSERT INTO issue_notices VALUES(?,?,?,?,?,?,NULL,?,1)")
-      .run(
-        nextInboxSequence(this.db),
-        id,
-        issue.id,
-        issue.ownerId,
-        this.notifications?.render(id, notice) ??
-          renderDirectNotice(notice, id),
-        this.now(),
-        this.now(),
-      );
+      .digest("hex");
+    this.subscriptions.status(
+      issue,
+      revision,
+      kind !== "refresh_failed" && kind !== "subscription_refresh_failed",
+    );
   }
+
   list(): IssueRecord[] {
     return this.db
       .prepare("SELECT data FROM managed_issues ORDER BY rowid")
@@ -150,7 +112,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
           .prepare("INSERT OR IGNORE INTO issue_briefs VALUES(?,?,?)")
           .run(issue.id, issue.brief.version, JSON.stringify(issue.brief));
       }
-      this.notice(issue);
+      this.notice(issue, kind);
       this.db.exec("RELEASE issue_save");
     } catch (error) {
       this.db.exec("ROLLBACK TO issue_save; RELEASE issue_save");

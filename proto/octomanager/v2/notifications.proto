@@ -114,6 +114,11 @@ message NotificationIssueItem {
   IssueStage stage = 2;
   IssueWaiting waiting = 3;
   ManagedIssue detail = 4;
+  // Event metadata is fixed when the observed change is recorded.
+  IssueNotificationEventKind event_kind = 5;
+  string event_id = 6;
+  // Untrusted bounded evidence is included only on explicit full inspection.
+  IssueNotificationEvidence evidence = 7;
 }
 // NotificationSubmissionItem retains archived submission identity and state.
 message NotificationSubmissionItem {

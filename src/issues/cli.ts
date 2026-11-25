@@ -6,12 +6,16 @@ import { schedulerClient } from "../client.js";
 import type { ParsedCommand } from "../cli/contracts.js";
 import { printResult } from "../cli-output.js";
 import {
+  SetIssueSubscriptionResponseSchema,
+  ListIssueSubscriptionsResponseSchema,
   EnrollIssueResponseSchema,
   ListIssuesResponseSchema,
   GetIssueResponseSchema,
   UpdateIssueResponseSchema,
   IssueOperation,
 } from "../gen/octomanager/v2/issues_pb.js";
+import { IssueNotificationKind } from "./contracts.js";
+import { wireIssueNotificationKind } from "./subscription-wire.js";
 function integer(value: string | boolean | undefined): number {
   if (value === undefined) return 0;
   if (
@@ -34,6 +38,47 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
     ),
   );
   const requestId = values["request-id"] ?? randomUUID();
+  if (command === "issue-subscribe" || command === "issue-subscriptions") {
+    const selected = values["events"];
+    const eventNames =
+      selected === "none"
+        ? []
+        : typeof selected === "string"
+          ? selected.split(",")
+          : undefined;
+    const kinds = eventNames?.map((name) => {
+      const kind = Object.values(IssueNotificationKind).find(
+        (value) => value.localeCompare(name) === 0,
+      );
+      if (kind === undefined)
+        throw new Error(`Unsupported issue event: ${name}`);
+      return wireIssueNotificationKind(kind);
+    });
+    if (command === "issue-subscriptions")
+      printResult(
+        parsed,
+        toJson(
+          ListIssueSubscriptionsResponseSchema,
+          await client.listIssueSubscriptions({ issueId: id }),
+          { alwaysEmitImplicit: true },
+        ),
+      );
+    else
+      printResult(
+        parsed,
+        toJson(
+          SetIssueSubscriptionResponseSchema,
+          await client.setIssueSubscription({
+            issueId: id,
+            agentId:
+              values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"] ?? "",
+            ...(kinds === undefined ? {} : { filter: { events: kinds } }),
+          }),
+          { alwaysEmitImplicit: true },
+        ),
+      );
+    return;
+  }
   if (command === "issue-track") {
     const owner = values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"];
     if (owner == null)
