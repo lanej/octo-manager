@@ -598,3 +598,89 @@ test("compiled policy reads retain fresh rows, independent values and invalid-da
     await f.close();
   }
 });
+
+test("idle policy enforcement batches stale historical contexts while retaining fresh revocation and explicit authority", async () => {
+  const f = await fixture();
+  const db = new DatabaseSync(join(f.directory, "state", "jobs.sqlite"));
+  const contexts = spyOn(f.c.store.tracking, "prContext");
+  const policies = spyOn(f.c.store.repositories, "get");
+  try {
+    const policy = f.c.store.repositories.get(f.pr.id);
+    if (policy === undefined) throw new Error("Missing fixture policy");
+    const historical = Array.from({ length: 100 }, (_, index) => {
+      const pr = f.c.store.tracking.track(
+        `https://github.com/owner/repo/pull/${String(index + 100)}`,
+        owner,
+      );
+      db.prepare("INSERT INTO settings(key,value) VALUES(?,?)").run(
+        `repository-policy:${pr.id}`,
+        JSON.stringify({ ...policy, prId: pr.id, epoch: pr.trackingEpoch + 1 }),
+      );
+      db.prepare("INSERT INTO settings(key,value) VALUES(?,?)").run(
+        `merge-setting:${pr.id}`,
+        JSON.stringify({ source: "inherited", epoch: pr.trackingEpoch }),
+      );
+      return pr;
+    });
+    f.c.store.tracking.untrack(f.pr.id);
+    f.c.store.tracking.track(url, owner);
+    f.c.store.repositories.tick();
+    contexts.mockClear();
+    policies.mockClear();
+    const revision = f.c.store.inputRevision();
+    f.c.store.repositories.tick();
+    expect(contexts).not.toHaveBeenCalled();
+    expect(policies).not.toHaveBeenCalled();
+    expect(f.c.store.inputRevision()).toBe(revision);
+    const selected = historical[0];
+    if (selected === undefined) throw new Error("Missing historical context");
+    // An external writer can invalidate the normalized setting between ticks.
+    db.prepare("UPDATE settings SET value=? WHERE key=?").run(
+      JSON.stringify({
+        source: "inherited",
+        epoch: selected.trackingEpoch - 1,
+      }),
+      `merge-setting:${selected.id}`,
+    );
+    f.c.store.repositories.tick();
+    expect(
+      db
+        .prepare("SELECT value FROM settings WHERE key=?")
+        .get(`merge-setting:${selected.id}`)?.["value"],
+    ).toBe(
+      JSON.stringify({ source: "inherited", epoch: selected.trackingEpoch }),
+    );
+    const normalized = f.c.store.merging.entry(f.pr.id);
+    db.prepare(
+      "UPDATE merge_entries SET data=json_set(data,'$.prId',?) WHERE pr_id=?",
+    ).run(selected.id, f.pr.id);
+    expect(() => {
+      f.c.store.repositories.tick();
+    }).toThrow("PR identity mismatch");
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
+      JSON.stringify(normalized),
+      normalized.id,
+    );
+    f.c.store.merging.autoMerge(
+      f.pr.id,
+      f.pr.ownerAgentId,
+      true,
+      "explicit-historical-override",
+    );
+    const entry = f.c.store.merging.entry(f.pr.id);
+    db.prepare("UPDATE merge_entries SET data='{}' WHERE pr_id=?").run(f.pr.id);
+    expect(() => {
+      f.c.store.repositories.tick();
+    }).not.toThrow();
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
+      JSON.stringify(entry),
+      entry.id,
+    );
+    expect(f.c.store.merging.entry(f.pr.id).autoMerge).toBe(true);
+  } finally {
+    contexts.mockRestore();
+    policies.mockRestore();
+    db.close();
+    await f.close();
+  }
+});
