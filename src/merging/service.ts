@@ -101,7 +101,7 @@ export class MergeService {
         if (
           entry.nextAt > now &&
           entry.nextAt < Number.MAX_SAFE_INTEGER &&
-          this.active(entry) &&
+          (this.active(entry) || this.manualClosure(entry) !== undefined) &&
           !this.store.busy(entry.prId)
         )
           deadlines.push(entry.nextAt);
@@ -371,33 +371,44 @@ export class MergeService {
     this.store.completeChains();
     await this.receipts.refresh();
   }
-  private async reconcileManualClosure(entry: MergeEntry): Promise<boolean> {
+  private manualClosure(entry: MergeEntry) {
     if (
+      this.abort.signal.aborted ||
+      terminal(entry.state) ||
       entry.autoMerge ||
       entry.receiptId !== undefined ||
       entry.state === EntryState.Uncertain ||
-      entry.ready === undefined
+      entry.ready === undefined ||
+      this.store.busy(entry.prId)
     )
-      return false;
+      return undefined;
+    const current = this.store.entryById(entry.id);
+    if (current === undefined || fingerprint(current) !== fingerprint(entry))
+      return undefined;
     const pr = this.store.tracking.pr(entry.prId);
-    if (pr.observation === undefined || pr.observation.lifecycle === "open")
-      return false;
+    if (
+      !pr.enabled ||
+      pr.observation === undefined ||
+      pr.observation.lifecycle === "open" ||
+      this.store.chain(entry.chainId).state !== ChainState.Active
+    )
+      return undefined;
+    return { pr, observation: pr.observation, ready: entry.ready };
+  }
+  private async reconcileManualClosure(entry: MergeEntry): Promise<boolean> {
+    const selected = this.manualClosure(entry);
+    if (selected === undefined) return false;
+    const { pr, observation, ready } = selected;
     const unchanged = () => {
-      const current = this.store.entryById(entry.id);
-      const tracked = this.store.tracking.pr(entry.prId);
+      const current = this.manualClosure(entry);
       return (
-        !this.abort.signal.aborted &&
         current !== undefined &&
-        fingerprint(current) === fingerprint(entry) &&
-        tracked.enabled &&
-        tracked.url === pr.url &&
-        tracked.ownerAgentId === pr.ownerAgentId &&
-        tracked.trackingEpoch === pr.trackingEpoch &&
-        tracked.observation?.id === pr.observation?.id &&
-        tracked.observation?.headSha === pr.observation?.headSha &&
-        tracked.observation?.lifecycle === pr.observation?.lifecycle &&
-        this.store.chain(entry.chainId).state === ChainState.Active &&
-        !this.store.busy(entry.prId)
+        current.pr.url === pr.url &&
+        current.pr.ownerAgentId === pr.ownerAgentId &&
+        current.pr.trackingEpoch === pr.trackingEpoch &&
+        current.observation.id === observation.id &&
+        current.observation.headSha === observation.headSha &&
+        current.observation.lifecycle === observation.lifecycle
       );
     };
     if (!unchanged()) return true;
@@ -410,13 +421,13 @@ export class MergeService {
       const snapshot =
         this.provider.readiness === undefined
           ? await this.provider.inspect(pr.url, signal)
-          : await this.provider.readiness(pr.url, pr.observation, signal);
+          : await this.provider.readiness(pr.url, observation, signal);
       if (signal.aborted)
         throw new Error("External merge inspection cancelled");
       if (!unchanged()) return true;
       const observed = snapshot.observation;
       if (
-        observed.headSha !== pr.observation.headSha ||
+        observed.headSha !== observation.headSha ||
         observed.lifecycle === "open"
       )
         throw new Error("PR changed during external merge inspection");
@@ -426,8 +437,8 @@ export class MergeService {
           throw new Error("External merge commit is unconfirmed");
         checked(Sha, snapshot.mergeCommit);
         if (
-          observed.headSha === entry.ready.head &&
-          pr.ownerAgentId === entry.ready.ownerId
+          observed.headSha === ready.head &&
+          pr.ownerAgentId === ready.ownerId
         )
           this.store.state(entry, EntryState.Merged, "PR merged externally", {
             mergeCommit: snapshot.mergeCommit,
