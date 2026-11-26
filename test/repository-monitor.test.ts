@@ -101,14 +101,14 @@ test("policy intake follows root replacement and fails closed while the root is 
     await rename(root, join(directory, "old-repo"));
     await until(() => changes > 0);
     expect(monitor.read(root)).toBeInstanceOf(Error);
-    expect(monitor.retryNeeded()).toBe(true);
+    expect(monitor.retryNeeded()).toBe(false);
+    const missingChanges = changes;
     await mkdir(root);
     await writeFile(
       join(root, "octo-manager.toml"),
       "schema_version = 1\n[merging]\nauto_merge = true\n",
     );
-    // A missing root has no watcher; the explicit safety retry must restore intake.
-    monitor.invalidate();
+    await until(() => changes > missingChanges);
     expect(monitor.read(root)).toMatchObject({
       status: "valid",
       autoMerge: true,
@@ -123,6 +123,52 @@ test("policy intake follows root replacement and fails closed while the root is 
     expect(monitor.read(root)).toMatchObject({ stage: "beta" });
     monitor.retain(new Set());
     expect(monitor.retryNeeded()).toBe(false);
+  } finally {
+    monitor.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("missing checkouts stay parked and unavailable-watch retries preserve healthy root caches", async () => {
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), "octo-policy-monitor-")),
+  );
+  const healthy = join(directory, "healthy");
+  const absent = join(directory, "absent");
+  const unavailable = join(directory, "missing-parent", "repo");
+  const loads = new Map<string, number>();
+  const monitor = new RepositoryPolicyMonitor((path) => {
+    loads.set(path, (loads.get(path) ?? 0) + 1);
+    return loadRepositoryConfig(path);
+  });
+  monitor.start(() => {});
+  try {
+    await mkdir(healthy);
+    await writeFile(join(healthy, "octo-manager.toml"), "schema_version = 1\n");
+    await Bun.sleep(25);
+    expect(monitor.read(healthy)).toMatchObject({ status: "valid" });
+    expect(monitor.read(absent)).toBeInstanceOf(Error);
+    expect(monitor.retryNeeded()).toBe(false);
+    expect(monitor.read(unavailable)).toBeInstanceOf(Error);
+    expect(monitor.retryNeeded()).toBe(true);
+    for (let i = 0; i < 4; i++) {
+      monitor.retryUnavailable();
+      monitor.read(healthy);
+      monitor.read(absent);
+      monitor.read(unavailable);
+    }
+    expect(loads.get(healthy)).toBe(1);
+    expect(loads.has(absent)).toBe(false);
+    await mkdir(unavailable, { recursive: true });
+    await writeFile(
+      join(unavailable, "octo-manager.toml"),
+      "schema_version = 1\n",
+    );
+    monitor.retryUnavailable();
+    expect(monitor.read(unavailable)).toMatchObject({ status: "valid" });
+    expect(monitor.retryNeeded()).toBe(false);
+    monitor.read(healthy);
+    expect(loads.get(healthy)).toBe(1);
   } finally {
     monitor.close();
     await rm(directory, { recursive: true, force: true });

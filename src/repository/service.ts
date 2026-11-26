@@ -20,6 +20,7 @@ import {
 export class RepositoryPolicies {
   private monitor = new RepositoryPolicyMonitor();
   private reconcileAt: number | undefined;
+  private watchRetryAt: number | undefined;
   constructor(
     private store: RepositoryPolicyStore,
     private tracking: TrackingStore,
@@ -30,22 +31,29 @@ export class RepositoryPolicies {
     this.monitor.start(changed);
   }
   scheduled(now: number): number | undefined {
-    const refresh = this.reconcileAt !== undefined && now >= this.reconcileAt;
-    const { monitorFiles } = this.tick(refresh);
-    if (!monitorFiles) return (this.reconcileAt = undefined);
+    if (this.reconcileAt !== undefined && now >= this.reconcileAt) {
+      this.monitor.invalidate();
+      this.reconcileAt = undefined;
+    }
+    if (this.watchRetryAt !== undefined && now >= this.watchRetryAt) {
+      this.monitor.retryUnavailable();
+      this.watchRetryAt = undefined;
+    }
+    const { monitorFiles } = this.tick(false);
+    if (!monitorFiles) {
+      this.watchRetryAt = undefined;
+      return (this.reconcileAt = undefined);
+    }
     // Watcher failure retries are bounded; a slow safety pass recovers missed filesystem events.
-    const deadline = now + (this.monitor.retryNeeded() ? 5000 : 300000);
-    if (
-      refresh ||
-      this.reconcileAt === undefined ||
-      deadline < this.reconcileAt
-    )
-      this.reconcileAt = deadline;
-    return this.reconcileAt;
+    this.reconcileAt ??= now + 300000;
+    if (this.monitor.retryNeeded()) this.watchRetryAt ??= now + 5000;
+    else this.watchRetryAt = undefined;
+    return Math.min(this.reconcileAt, this.watchRetryAt ?? Infinity);
   }
   close(): void {
     this.monitor.close();
     this.reconcileAt = undefined;
+    this.watchRetryAt = undefined;
   }
   get(prId: string): AutomationPolicy | undefined {
     return this.store.get(prId);
