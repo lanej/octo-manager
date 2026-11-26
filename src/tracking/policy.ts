@@ -28,7 +28,11 @@ const failed = new Set(["failure", "timed_out", "cancelled", "action_required", 
 
 function latest<T>(items: T[], key: (item: T) => string, at: (item: T) => number): T[] {
   const map = new Map<string, T>();
-  for (const item of items) if (!map.has(key(item)) || at(item) >= at(map.get(key(item))!)) map.set(key(item), item);
+  for (const item of items) {
+    const id = key(item);
+    const previous = map.get(id);
+    if (previous === undefined || at(item) >= at(previous)) map.set(id, item);
+  }
   return [...map.values()];
 }
 
@@ -88,7 +92,7 @@ export function findings(o: PRObservation, url: string): Finding[] {
           checkKey: c.key,
         },
         summary: `Failed check: ${c.name}`,
-        evidenceUrl: c.url || url,
+        evidenceUrl: c.url === "" ? url : c.url,
       });
   for (const r of o.reviews.state === "complete" ? currentReviews(o) : [])
     if (reviewState(r.state) === ReviewState.ChangesRequested)
@@ -101,7 +105,7 @@ export function findings(o: PRObservation, url: string): Finding[] {
           reviewedHeadSha: r.headSha,
         },
         summary: `Changes requested by ${r.author}`,
-        evidenceUrl: r.url || url,
+        evidenceUrl: r.url === "" ? url : r.url,
       });
   return [...found, ...feedbackFindings(o)];
 }
@@ -203,6 +207,7 @@ export function closeProgress(
       return resolve("GitHub confirms review approved or dismissed");
     if (r && r.id !== b.reviewId) return supersede("A newer review replaced this request");
   }
+  return undefined;
 }
 
 export function checkWatchFindings(

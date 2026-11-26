@@ -1,3 +1,4 @@
+import { asyncFixture } from "./support/async-fixture.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm } from "node:fs/promises";
@@ -40,7 +41,6 @@ test("existing Codex auth is referenced in memory without copying refresh or ide
     const store = new CodexSessionReference(directory, () => now);
     const value = await store.read("openai-codex");
     assert.equal(value?.type, "oauth");
-    if (value?.type !== "oauth") assert.fail("Expected OAuth reference");
     assert.equal(value.access, accessToken());
     assert.equal(value.refresh, "");
     assert.equal(JSON.stringify(value).includes("refresh-must-never-be-used"), false);
@@ -56,10 +56,13 @@ test("refresh and logout callbacks cannot mutate the shared Codex session", asyn
     const store: CredentialStore = new CodexSessionReference(directory, () => now);
     let invoked = false;
     await assert.rejects(
-      store.modify("openai-codex", async () => {
-        invoked = true;
-        return undefined;
-      }),
+      store.modify(
+        "openai-codex",
+        asyncFixture(() => {
+          invoked = true;
+          return undefined;
+        }),
+      ),
       /read-only/,
     );
     await assert.rejects(store.delete("openai-codex"), /read-only/);

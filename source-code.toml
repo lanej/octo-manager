@@ -14,7 +14,7 @@ enabled = false
 
 [checks.typescript]
 enabled = true
-rollout = "ratchet"
+rollout = "strict"
 projects = ["tsconfig.quality.json"]
 
 [checks.protobuf]

@@ -34,8 +34,18 @@ import { selectProfile } from "./config.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import { alreadyReported, checkWatchFindings, closeProgress, findings } from "./policy.js";
 
-type Row = Record<string, any>;
-const parse = (s: unknown): any => JSON.parse(s as string);
+import {
+  actionProgress,
+  blocker,
+  deliveryOutcome,
+  deliveryProgress,
+  profile,
+  stored,
+  storedInteger,
+  storedText,
+} from "./persisted.js";
+
+type Row = Record<string, unknown>;
 
 export class TrackingStore {
   private readonly observations: ObservationRepository;
@@ -122,17 +132,17 @@ export class TrackingStore {
 
   private agentRow(r: Row): AgentRef {
     return {
-      id: r["id"],
-      harness: r["harness"],
-      endpoint: r["endpoint"],
-      sessionId: r["session_id"],
-      ...(r["label"] === null ? {} : { label: r["label"] }),
+      id: storedText(r["id"]),
+      harness: storedText(r["harness"]),
+      endpoint: storedText(r["endpoint"]),
+      sessionId: storedText(r["session_id"]),
+      ...(r["label"] === null ? {} : { label: storedText(r["label"]) }),
       ...(r["harness_version"] === null
         ? {}
         : {
             lastObservedRuntime: {
-              version: r["harness_version"],
-              observedAt: r["version_observed_at_ms"],
+              version: storedText(r["harness_version"]),
+              observedAt: storedInteger(r["version_observed_at_ms"]),
             },
           }),
     };
@@ -165,8 +175,8 @@ export class TrackingStore {
   private register(t: AgentTarget): AgentRef {
     if (
       !supportedTrackingTarget(t) ||
-      !t.endpoint ||
-      !t.sessionId ||
+      t.endpoint === "" ||
+      t.sessionId === "" ||
       t.sessionId.length > 200 ||
       t.endpoint.length > 200 ||
       (t.label?.length ?? 0) > 200
@@ -177,9 +187,11 @@ export class TrackingStore {
         "INSERT INTO agent_refs(id,harness,endpoint,session_id,label) VALUES(?,?,?,?,?) ON CONFLICT(harness,endpoint,session_id) DO NOTHING",
       )
       .run(randomUUID(), t.harness, t.endpoint, t.sessionId, t.label ?? null);
-    return this.agents().find(
+    const agent = this.agents().find(
       (a) => a.harness === t.harness && a.endpoint === t.endpoint && a.sessionId === t.sessionId,
-    )!;
+    );
+    if (!agent) throw new Error("Agent registration was not persisted");
+    return agent;
   }
 
   runtime(id: string, version: string): void {
@@ -228,20 +240,20 @@ export class TrackingStore {
 
   private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
-      id: r["id"],
-      url: r["url"],
-      originAgentId: r["origin_agent_id"],
-      ownerAgentId: r["owner_agent_id"],
-      enabled: !!r["enabled"],
+      id: storedText(r["id"]),
+      url: storedText(r["url"]),
+      originAgentId: storedText(r["origin_agent_id"]),
+      ownerAgentId: storedText(r["owner_agent_id"]),
+      enabled: storedInteger(r["enabled"]) !== 0,
       ...lifecycle(r),
-      createdAt: r["created_at_ms"],
-      updatedAt: r["updated_at_ms"],
+      createdAt: storedInteger(r["created_at_ms"]),
+      updatedAt: storedInteger(r["updated_at_ms"]),
       ...(r["last_refresh_error"] === null
         ? {}
         : {
             lastRefreshError: {
-              at: r["last_refresh_error_at_ms"],
-              message: r["last_refresh_error"],
+              at: storedInteger(r["last_refresh_error_at_ms"]),
+              message: storedText(r["last_refresh_error"]),
             },
           }),
     };
@@ -307,18 +319,18 @@ export class TrackingStore {
 
   private trackedAction(r: Row): Action {
     return {
-      id: r["id"],
-      prId: r["pr_id"],
-      openedObservationId: r["opened_observation_id"],
-      ownerAgentId: r["owner_agent_id"],
-      sourceKey: r["source_key"],
-      blocker: parse(r["blocker_json"]),
-      summary: r["summary"],
-      evidenceUrl: r["evidence_url"],
-      profile: parse(r["profile_json"]),
-      progress: parse(r["progress_json"]),
-      createdAt: r["created_at_ms"],
-      updatedAt: r["updated_at_ms"],
+      id: storedText(r["id"]),
+      prId: storedText(r["pr_id"]),
+      openedObservationId: storedInteger(r["opened_observation_id"]),
+      ownerAgentId: storedText(r["owner_agent_id"]),
+      sourceKey: storedText(r["source_key"]),
+      blocker: stored(blocker, r["blocker_json"]),
+      summary: storedText(r["summary"]),
+      evidenceUrl: storedText(r["evidence_url"]),
+      profile: stored(profile, r["profile_json"]),
+      progress: stored(actionProgress, r["progress_json"]),
+      createdAt: storedInteger(r["created_at_ms"]),
+      updatedAt: storedInteger(r["updated_at_ms"]),
     };
   }
 
@@ -398,13 +410,13 @@ export class TrackingStore {
 
   private deliveryRow(r: Row): Delivery {
     return {
-      id: r["id"],
-      actionId: r["action_id"],
-      recipientAgentId: r["recipient_agent_id"],
-      retryCount: r["retry_count"],
-      progress: parse(r["progress_json"]),
-      createdAt: r["created_at_ms"],
-      updatedAt: r["updated_at_ms"],
+      id: storedText(r["id"]),
+      actionId: storedText(r["action_id"]),
+      recipientAgentId: storedText(r["recipient_agent_id"]),
+      retryCount: storedInteger(r["retry_count"]),
+      progress: stored(deliveryProgress, r["progress_json"]),
+      createdAt: storedInteger(r["created_at_ms"]),
+      updatedAt: storedInteger(r["updated_at_ms"]),
     };
   }
 
@@ -413,11 +425,11 @@ export class TrackingStore {
       .prepare("SELECT * FROM delivery_attempts ORDER BY rowid")
       .all()
       .map((r: Row) => ({
-        deliveryId: r["delivery_id"],
-        number: r["number"],
-        startedAt: r["started_at_ms"],
-        ...(r["harness_version"] === null ? {} : { harnessVersion: r["harness_version"] }),
-        outcome: parse(r["outcome_json"]),
+        deliveryId: storedText(r["delivery_id"]),
+        number: storedInteger(r["number"]),
+        startedAt: storedInteger(r["started_at_ms"]),
+        ...(r["harness_version"] === null ? {} : { harnessVersion: storedText(r["harness_version"]) }),
+        outcome: stored(deliveryOutcome, r["outcome_json"]),
       }));
   }
 

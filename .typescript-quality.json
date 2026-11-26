@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "rollout": "ratchet",
+  "rollout": "strict",
   "projects": [
     "tsconfig.quality.json"
   ],

@@ -28,19 +28,38 @@ export class CodexSessionReference implements CredentialStore {
       if ((await stat(path)).size > 1024 * 1024) throw new Error("Oversized authentication file");
       raw = JSON.parse(await readFile(path, "utf8"));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
       throw new Error("Existing Codex authentication could not be read");
     }
     options?.signal?.throwIfAborted();
-    const document = raw as { auth_mode?: unknown; tokens?: { access_token?: unknown } } | null;
-    if (document?.auth_mode !== "chatgpt" || typeof document.tokens?.access_token !== "string") return undefined;
-    const access = document.tokens.access_token;
+    if (
+      typeof raw !== "object" ||
+      raw === null ||
+      !("auth_mode" in raw) ||
+      raw.auth_mode !== "chatgpt" ||
+      !("tokens" in raw)
+    )
+      return undefined;
+    const tokens = raw.tokens;
+    if (
+      typeof tokens !== "object" ||
+      tokens === null ||
+      !("access_token" in tokens) ||
+      typeof tokens.access_token !== "string"
+    )
+      return undefined;
+    const access = tokens.access_token;
     let expires: number;
     try {
-      const claims = JSON.parse(Buffer.from(access.split(".")[1] ?? "", "base64url").toString("utf8")) as {
-        exp?: unknown;
-      };
-      if (typeof claims.exp !== "number" || !Number.isFinite(claims.exp)) throw new Error("Missing expiry");
+      const claims: unknown = JSON.parse(Buffer.from(access.split(".")[1] ?? "", "base64url").toString("utf8"));
+      if (
+        typeof claims !== "object" ||
+        claims === null ||
+        !("exp" in claims) ||
+        typeof claims.exp !== "number" ||
+        !Number.isFinite(claims.exp)
+      )
+        throw new Error("Missing expiry");
       expires = claims.exp * 1000;
     } catch {
       throw new Error("Existing Codex authentication has an unsupported access token");
@@ -55,12 +74,12 @@ export class CodexSessionReference implements CredentialStore {
     return (await this.read("openai-codex", options)) ? [{ providerId: "openai-codex", type: "oauth" }] : [];
   }
 
-  async modify(): Promise<never> {
-    throw new Error("Codex authentication is read-only; Codex owns refresh and login");
+  modify(): Promise<never> {
+    return Promise.reject(new Error("Codex authentication is read-only; Codex owns refresh and login"));
   }
 
-  async delete(): Promise<never> {
-    throw new Error("Codex authentication is read-only; sign out through Codex");
+  delete(): Promise<never> {
+    return Promise.reject(new Error("Codex authentication is read-only; sign out through Codex"));
   }
 }
 

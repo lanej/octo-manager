@@ -1,8 +1,26 @@
 export function cleanText(value: string, limit = 16000): string {
-  return value
-    .replace(/\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|$))/g, "")
-    .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "")
-    .slice(0, limit);
+  const csi = /\[[0-?]*[ -/]*[@-~]/y;
+  const bell = String.fromCharCode(7);
+  let clean = "";
+
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code === 27) {
+      if (value[i + 1] === "]") {
+        const end = value.indexOf(bell, i + 2);
+        i = end === -1 ? value.length : end;
+        continue;
+      }
+      csi.lastIndex = i + 1;
+      if (csi.test(value)) {
+        i = csi.lastIndex - 1;
+        continue;
+      }
+    }
+    if ((code >= 32 && code !== 127) || code === 9 || code === 10) clean += value.charAt(i);
+  }
+
+  return clean.slice(0, limit);
 }
 
 // Subprocess and provider errors can contain unbounded output; retain the bounded diagnosis.

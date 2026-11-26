@@ -32,7 +32,7 @@ async function collection<T>(
   try {
     // WHY: Bounded pagination exposes incomplete evidence instead of clearing blockers from a truncated read.
     for (let page = 1; page <= 10; page++) {
-      const raw = await read(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`, signal);
+      const raw = await read(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${String(page)}`, signal);
       const values = field === undefined ? raw : record(raw) ? raw[field] : undefined;
       if (!Array.isArray(values)) throw new Error("Invalid GitHub collection");
       items.push(...values.map(map));
@@ -45,7 +45,7 @@ async function collection<T>(
     };
   } catch (error) {
     if (error instanceof GitHubRateLimitError) throw error;
-    return items.length
+    return items.length > 0
       ? {
           state: "partial",
           value: items,
@@ -175,16 +175,26 @@ export async function readObservation(
     collection(
       `${root}/commits/${pr.head.sha}/statuses`,
       undefined,
-      (c: any) => ({
-        id: `status:${c.id}`,
-        key: `status:${c.context}`,
-        name: String(c.context),
-        headSha: pr.head.sha,
-        status: String(c.state),
-        conclusion: String(c.state),
-        at: Date.parse(c.created_at ?? "") || 0,
-        url: String(c.target_url ?? url),
-      }),
+      (value: unknown) => {
+        if (
+          !record(value) ||
+          !positive(value["id"]) ||
+          typeof value["context"] !== "string" ||
+          typeof value["state"] !== "string"
+        )
+          throw new Error("Invalid GitHub commit status");
+        const at = Date.parse(typeof value["created_at"] === "string" ? value["created_at"] : "");
+        return {
+          id: `status:${String(value["id"])}`,
+          key: `status:${value["context"]}`,
+          name: value["context"],
+          headSha: pr.head.sha,
+          status: value["state"],
+          conclusion: value["state"],
+          at: Number.isFinite(at) ? at : 0,
+          url: typeof value["target_url"] === "string" ? value["target_url"] : url,
+        };
+      },
       read,
       signal,
     ),

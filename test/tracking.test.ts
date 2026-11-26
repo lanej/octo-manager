@@ -1,3 +1,4 @@
+import { present } from "./support/present.js";
 import { ReviewState } from "../src/tracking/states.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
@@ -128,7 +129,7 @@ test("tracking preserves jobs across migration and restart, blocker episodes and
     store.tracking.observe(p.id, observation(), config);
     assert.equal(store.tracking.actions().length, 1);
     assert.equal(store.tracking.deliveries().length, 1);
-    const action = store.tracking.actions()[0]!;
+    const action = present(store.tracking.actions()[0]);
     assert.throws(() => store.tracking.progress(action.id, "wrong", false), /another agent/);
     assert.throws(() => store.tracking.progress(action.id, p.ownerAgentId, true), /Acknowledge/);
     store.tracking.progress(action.id, p.ownerAgentId, false);
@@ -224,11 +225,11 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
       config,
     );
     assert.equal(
-      store.tracking.actions().find((a) => a.blocker.kind === "check_failed")!.progress.state,
+      present(store.tracking.actions().find((a) => a.blocker.kind === "check_failed")).progress.state,
       ActionState.Superseded,
     );
     assert.equal(
-      store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")!.progress.state,
+      present(store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")).progress.state,
       ActionState.Open,
     );
     store.tracking.observe(
@@ -244,7 +245,7 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
       config,
     );
     assert.equal(
-      store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")!.progress.state,
+      present(store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")).progress.state,
       ActionState.Resolved,
     );
   } finally {

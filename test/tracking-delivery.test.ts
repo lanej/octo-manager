@@ -1,3 +1,5 @@
+import { asyncFixture } from "./support/async-fixture.js";
+import { present } from "./support/present.js";
 import { Handoffs } from "../src/integrations/handoffs.js";
 import { WorkScheduler } from "../src/scheduling/work.js";
 import { actionNotice, renderNotice } from "../src/security/notifications.js";
@@ -38,9 +40,9 @@ async function until(check: () => boolean) {
 
 function connection(patch: Partial<AgentConnection> = {}): AgentConnection {
   return {
-    prepare: async () => ({ busy: false, version: "0.167.0" }),
-    send: async () => ({ turnId: "triage-turn" }),
-    find: async () => ({ found: false }),
+    prepare: asyncFixture(() => ({ busy: false, version: "0.167.0" })),
+    send: asyncFixture(() => ({ turnId: "triage-turn" })),
+    find: asyncFixture(() => ({ found: false })),
     close: () => {},
     ...patch,
   };
@@ -56,37 +58,37 @@ test("busy threads wait, delivery acceptance is not acknowledgment, and origin s
   const p = store.tracking.track(url, target);
   store.tracking.observe(p.id, input, config);
   const service = new TrackingService(store.tracking, config, () => at, {
-    read: async () => input,
+    read: asyncFixture(() => input),
     connect: () =>
       connection({
-        prepare: async () => ({ busy, version: "0.167.0" }),
-        send: async (agent, id, message) => {
+        prepare: asyncFixture(() => ({ busy, version: "0.167.0" })),
+        send: asyncFixture((agent, id, message) => {
           sends++;
           assert.equal(agent.sessionId, "owner");
           assert(message.includes("Merge conflict"));
           assert(message.includes(`octo-manager read ${shortId(id)}`));
           return { turnId: "turn" };
-        },
+        }),
       }),
   });
   try {
     service.tick();
     await until(
       () =>
-        store.tracking.deliveries()[0]!.progress.state === DeliveryState.Pending &&
-        store.tracking.deliveries()[0]!.updatedAt === at,
+        present(store.tracking.deliveries()[0]).progress.state === DeliveryState.Pending &&
+        present(store.tracking.deliveries()[0]).updatedAt === at,
     );
     await new Promise((r) => setTimeout(r, 10));
     assert.equal(sends, 0);
     busy = false;
     at += 5000;
     service.tick();
-    await until(() => store.tracking.deliveries()[0]!.progress.state === DeliveryState.Delivered);
-    assert.equal(store.tracking.actions()[0]!.progress.state, ActionState.Open);
+    await until(() => present(store.tracking.deliveries()[0]).progress.state === DeliveryState.Delivered);
+    assert.equal(present(store.tracking.actions()[0]).progress.state, ActionState.Open);
     assert.equal(sends, 1);
-    assert.equal(store.tracking.attempts()[0]!.harnessVersion, "0.167.0");
-    store.tracking.progress(store.tracking.actions()[0]!.id, p.ownerAgentId, false);
-    assert.equal(store.tracking.actions()[0]!.progress.state, ActionState.Acknowledged);
+    assert.equal(present(store.tracking.attempts()[0]).harnessVersion, "0.167.0");
+    store.tracking.progress(present(store.tracking.actions()[0]).id, p.ownerAgentId, false);
+    assert.equal(present(store.tracking.actions()[0]).progress.state, ActionState.Acknowledged);
   } finally {
     await service.close();
     store.close();
@@ -102,15 +104,15 @@ test("reassignment during an ambiguous send preserves attempt evidence and does 
   let rejectSend!: (e: Error) => void;
   let entered = false;
   const service = new TrackingService(store.tracking, config, Date.now, {
-    read: async () => input,
+    read: asyncFixture(() => input),
     connect: () =>
       connection({
-        send: async () => {
+        send: asyncFixture(() => {
           entered = true;
-          return new Promise((_, reject) => {
+          return new Promise<never>((_, reject) => {
             rejectSend = reject;
           });
-        },
+        }),
       }),
   });
   try {
@@ -118,9 +120,9 @@ test("reassignment during an ambiguous send preserves attempt evidence and does 
     await until(() => entered);
     store.tracking.assign(p.id, { ...target, sessionId: "new-owner" });
     rejectSend(new DeliveryError("Lost response", true));
-    await until(() => store.tracking.attempts()[0]!.outcome.state === "uncertain");
-    assert.equal(store.tracking.deliveries()[0]!.progress.state, DeliveryState.Cancelled);
-    assert.equal(store.tracking.deliveries()[1]!.progress.state, DeliveryState.Pending);
+    await until(() => present(store.tracking.attempts()[0]).outcome.state === "uncertain");
+    assert.equal(present(store.tracking.deliveries()[0]).progress.state, DeliveryState.Cancelled);
+    assert.equal(present(store.tracking.deliveries()[1]).progress.state, DeliveryState.Pending);
   } finally {
     await service.close();
     store.close();
@@ -136,39 +138,39 @@ test("uncertain sends are reconciled after restart without blindly resending", a
   store.tracking.observe(p.id, input, config);
   let sends = 0;
   let service = new TrackingService(store.tracking, config, () => at, {
-    read: async () => input,
+    read: asyncFixture(() => input),
     connect: () =>
       connection({
-        send: async () => {
+        send: asyncFixture(() => {
           sends++;
           throw new DeliveryError("Lost acceptance", true);
-        },
+        }),
       }),
   });
   try {
     service.tick();
-    await until(() => store.tracking.deliveries()[0]!.progress.state === DeliveryState.Uncertain);
+    await until(() => present(store.tracking.deliveries()[0]).progress.state === DeliveryState.Uncertain);
     await service.close();
     store.close();
     store = new Store(dir, () => at);
     service = new TrackingService(store.tracking, config, () => at, {
-      read: async () => input,
+      read: asyncFixture(() => input),
       connect: () =>
         connection({
-          find: async () => ({
+          find: asyncFixture(() => ({
             found: true,
             queueId: "accepted-before-restart",
             note: "Queue admission only",
-          }),
-          send: async () => {
+          })),
+          send: asyncFixture(() => {
             sends++;
             return {};
-          },
+          }),
         }),
     });
     at += 60000;
     service.tick();
-    await until(() => store.tracking.deliveries()[0]!.progress.state === DeliveryState.Delivered);
+    await until(() => present(store.tracking.deliveries()[0]).progress.state === DeliveryState.Delivered);
     assert.equal(sends, 1);
     const progress = store.tracking.deliveries()[0]?.progress;
     assert(progress?.state === DeliveryState.Delivered);
@@ -190,12 +192,12 @@ test("durable messages keep retrying transient failures and explicit retry reset
   const p = store.tracking.track(url, target);
   store.tracking.observe(p.id, input, config);
   const service = new TrackingService(store.tracking, config, () => at, {
-    read: async () => input,
+    read: asyncFixture(() => input),
     connect: () =>
       connection({
-        prepare: async () => {
+        prepare: asyncFixture(() => {
           throw new DeliveryError("Offline", false, permanent);
-        },
+        }),
       }),
   });
   try {
@@ -211,10 +213,10 @@ test("durable messages keep retrying transient failures and explicit retry reset
     await until(() => store.tracking.attempts().length === 5);
     assert.equal(store.tracking.deliveries()[0]?.progress.state, DeliveryState.Unavailable);
     permanent = false;
-    store.tracking.retryDelivery(store.tracking.deliveries()[0]!.id);
+    store.tracking.retryDelivery(present(store.tracking.deliveries()[0]).id);
     service.tick();
     await until(() => store.tracking.attempts().length === 6);
-    assert.equal(store.tracking.deliveries()[0]!.progress.state, DeliveryState.Pending);
+    assert.equal(present(store.tracking.deliveries()[0]).progress.state, DeliveryState.Pending);
   } finally {
     await service.close();
     store.close();
@@ -232,7 +234,7 @@ test("shutdown aborts an in-flight GitHub refresh", async () => {
     read: async (_url, s) => {
       signal = s;
       return new Promise((_, reject) => {
-        s!.addEventListener(
+        present(s).addEventListener(
           "abort",
           () => {
             reject(new Error("aborted"));
@@ -249,7 +251,7 @@ test("shutdown aborts an in-flight GitHub refresh", async () => {
     await until(() => signal !== undefined);
     await service.close();
     await refresh;
-    assert(signal!.aborted);
+    assert(present(signal).aborted);
   } finally {
     await service.close();
     store.close();

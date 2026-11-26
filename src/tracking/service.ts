@@ -556,7 +556,7 @@ export class TrackingService {
     try {
       const prepared = await connection.prepare(agent);
       if (!this.current(d)) return;
-      if (prepared.version) this.store.runtime(agent.id, prepared.version);
+      if (prepared.version !== undefined && prepared.version !== "") this.store.runtime(agent.id, prepared.version);
       if (reconciling) {
         const found = await connection.find(agent, d.id, message?.body);
         if (message) {
@@ -607,15 +607,16 @@ export class TrackingService {
       }
       if (!this.current(d) || this.store.inbox.isReplaced(d.id) || !message || !message.notice) return;
       const previous = this.store.attempts().filter((a) => a.deliveryId === d.id);
-      attempt = {
+      const started: DeliveryAttempt = {
         deliveryId: d.id,
         number: previous.length + 1,
         startedAt: this.now(),
-        harnessVersion: prepared.version,
+        ...(prepared.version === undefined ? {} : { harnessVersion: prepared.version }),
         outcome: { state: "sending" },
       };
+      attempt = started;
       this.store.transaction(() => {
-        this.store.saveAttempt(attempt!);
+        this.store.saveAttempt(started);
         this.store.saveDelivery(
           {
             ...d,
@@ -630,7 +631,7 @@ export class TrackingService {
       this.store.inbox.defer(d.id, this.now() + 300000);
       this.store.transaction(() => {
         this.store.saveAttempt({
-          ...attempt!,
+          ...started,
           outcome: {
             state: "accepted",
             at: this.now(),
@@ -680,25 +681,24 @@ export class TrackingService {
       const applicable = this.current(d, true);
       if (!attempt && !applicable) return;
       const reason = error instanceof Error ? error.message : "Agent delivery failed";
-      if (!attempt)
-        attempt = {
-          deliveryId: d.id,
-          number: this.store.attempts().filter((a) => a.deliveryId === d.id).length + 1,
-          startedAt: this.now(),
-          outcome: { state: "sending" },
-        };
+      const failedAttempt: DeliveryAttempt = attempt ?? {
+        deliveryId: d.id,
+        number: this.store.attempts().filter((a) => a.deliveryId === d.id).length + 1,
+        startedAt: this.now(),
+        outcome: { state: "sending" },
+      };
       const uncertain = reconciling || (error instanceof DeliveryError && error.uncertain);
       const retry = !message
         ? [5000, 30000, 120000][d.retryCount ?? 0]
         : [5000, 30000, 120000][Math.min(d.retryCount ?? 0, 2)];
-      const state = uncertain
-        ? DeliveryState.Uncertain
+      const progress: Delivery["progress"] = uncertain
+        ? { state: DeliveryState.Uncertain, at: this.now(), reason }
         : (error instanceof DeliveryError && error.permanent) || retry === undefined
-          ? DeliveryState.Unavailable
-          : DeliveryState.Pending;
+          ? { state: DeliveryState.Unavailable, at: this.now(), reason }
+          : { state: DeliveryState.Pending, nextAttemptAt: this.now() + retry };
       this.store.transaction(() => {
         this.store.saveAttempt({
-          ...attempt!,
+          ...failedAttempt,
           outcome: {
             state: uncertain ? "uncertain" : "rejected",
             at: this.now(),
@@ -710,13 +710,10 @@ export class TrackingService {
             {
               ...d,
               retryCount: (d.retryCount ?? 0) + 1,
-              progress:
-                state === DeliveryState.Pending
-                  ? { state, nextAttemptAt: this.now() + retry! }
-                  : { state, at: this.now(), reason },
+              progress,
               updatedAt: this.now(),
             },
-            `delivery_${state}`,
+            `delivery_${progress.state}`,
           );
       });
       if (uncertain) {

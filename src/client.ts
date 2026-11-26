@@ -18,7 +18,15 @@ import {
   type Snapshot as WireSnapshot,
   type JobEvent as WireEvent,
 } from "./gen/octomanager/v2/scheduler_pb.js";
-import { digest, parseTask, type Job, type JobEvent, type Snapshot, type Status } from "./jobs/domain.js";
+import {
+  digest,
+  parseTask,
+  type Job,
+  type JobEvent,
+  type JobCommand,
+  type Snapshot,
+  type Status,
+} from "./jobs/domain.js";
 
 export function schedulerClient(directory: string) {
   // WHY: Isolate Unix-socket requests so stream cancellation or coordinator restart cannot reuse a stale Bun HTTP connection.
@@ -67,6 +75,30 @@ export function schedulerClient(directory: string) {
   );
 }
 
+const jobStatuses: Partial<Record<JobStatus, Status>> = {
+  [JobStatus.QUEUED]: "queued",
+  [JobStatus.RUNNING]: "running",
+  [JobStatus.CONFLICTED]: "conflicted",
+  [JobStatus.RESOLVING]: "resolving",
+  [JobStatus.RETRY_WAIT]: "retry_wait",
+  [JobStatus.CANCELLING]: "cancelling",
+  [JobStatus.CANCELLED]: "cancelled",
+  [JobStatus.SUCCEEDED]: "succeeded",
+  [JobStatus.FAILED]: "failed",
+  [JobStatus.INTERRUPTED]: "interrupted",
+};
+const schedulerStates: Partial<Record<SchedulerState, Snapshot["scheduler"]>> = {
+  [SchedulerState.RUNNING]: "running",
+  [SchedulerState.PAUSED]: "paused",
+  [SchedulerState.STOPPING]: "stopping",
+  [SchedulerState.STOPPED]: "stopped",
+};
+const workerStates: Partial<Record<WorkerState, Snapshot["worker"]>> = {
+  [WorkerState.IDLE]: "idle",
+  [WorkerState.BUSY]: "busy",
+  [WorkerState.RECOVERING]: "recovering",
+};
+
 function job(value?: WireJob): Job {
   if (!value?.task) throw new Error("Server returned no job task");
   const task = parseTask(
@@ -74,8 +106,8 @@ function job(value?: WireJob): Job {
       ? { kind: "resolve_conflict" }
       : { kind: "summarize_pr", url: value.task.kind.case === "summarizePullRequest" ? value.task.kind.value.url : "" },
   );
-  const status = JobStatus[value.status]?.toLowerCase() as Status;
-  if (!status || status === ("unspecified" as Status)) throw new Error("Unsupported job status");
+  const status = jobStatuses[value.status];
+  if (status === undefined) throw new Error("Unsupported job status");
   return {
     id: value.id,
     requestId: value.requestId,
@@ -122,45 +154,67 @@ function event(value: WireEvent): JobEvent {
 
 function snapshot(value?: WireSnapshot): Snapshot {
   if (!value) throw new Error("Server returned no snapshot");
+  const scheduler = schedulerStates[value.scheduler];
+  const worker = workerStates[value.worker];
+  if (scheduler === undefined || worker === undefined) throw new Error("Unsupported scheduler or worker state");
   return {
-    scheduler: SchedulerState[value.scheduler].toLowerCase() as Snapshot["scheduler"],
-    worker: WorkerState[value.worker].toLowerCase() as Snapshot["worker"],
+    scheduler,
+    worker,
     jobs: value.jobs.map(job),
     events: value.recentEvents.map(event),
     ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }),
   };
 }
 
-export async function request(directory: string, command: object): Promise<any> {
+type SnapshotCommand = { op: "snapshot" };
+type PauseCommand = { op: "pause" | "resume" };
+type EventsCommand = { op: "events"; id: string; after?: bigint | number | string };
+type PauseResult = Pick<Snapshot, "scheduler">;
+
+export function request(directory: string, command: JobCommand): Promise<Job>;
+export function request(directory: string, command: SnapshotCommand): Promise<Snapshot>;
+export function request(directory: string, command: PauseCommand): Promise<PauseResult>;
+export function request(directory: string, command: EventsCommand): Promise<JobEvent[]>;
+export async function request(
+  directory: string,
+  command: JobCommand | SnapshotCommand | PauseCommand | EventsCommand,
+): Promise<Job | Snapshot | PauseResult | JobEvent[]> {
   const client = schedulerClient(directory);
-  const c = command as Record<string, any>;
-  if (c["op"] === "snapshot") return snapshot((await client.getSnapshot({})).snapshot);
-  if (c["op"] === "get") return job((await client.getJob({ id: c["id"] })).job);
-  if (c["op"] === "submit") {
-    const task = parseTask(c["task"]);
-    return job(
-      (
-        await client.submitJob({
-          requestId: c["requestId"],
-          task: {
-            kind:
-              task.kind === "resolve_conflict"
-                ? { case: "resolveConflict", value: {} }
-                : { case: "summarizePullRequest", value: { url: task.url } },
-          },
+  switch (command.op) {
+    case "snapshot":
+      return snapshot((await client.getSnapshot({})).snapshot);
+    case "get":
+      return job((await client.getJob({ id: command.id })).job);
+    case "cancel":
+      return job((await client.cancelJob({ id: command.id })).job);
+    case "retry":
+      return job((await client.retryJob({ id: command.id })).job);
+    case "submit": {
+      const task = parseTask(command.task);
+      const result = await client.submitJob({
+        requestId: command.requestId,
+        task: {
+          kind:
+            task.kind === "resolve_conflict"
+              ? { case: "resolveConflict", value: {} }
+              : { case: "summarizePullRequest", value: { url: task.url } },
+        },
+      });
+      return job(result.job);
+    }
+    case "pause":
+    case "resume": {
+      const result = snapshot((await client.setPaused({ paused: command.op === "pause" })).snapshot);
+      return { scheduler: result.scheduler };
+    }
+    case "events":
+      return (
+        await client.listEvents({
+          afterSequence: BigInt(command.after ?? 0),
+          jobId: command.id,
         })
-      ).job,
-    );
+      ).events.map(event);
   }
-  if (c["op"] === "cancel") return job((await client.cancelJob({ id: c["id"] })).job);
-  if (c["op"] === "retry") return job((await client.retryJob({ id: c["id"] })).job);
-  if (c["op"] === "pause" || c["op"] === "resume") {
-    const result = snapshot((await client.setPaused({ paused: c["op"] === "pause" })).snapshot);
-    return { scheduler: result.scheduler };
-  }
-  if (c["op"] === "events")
-    return (await client.listEvents({ afterSequence: BigInt(c["after"] ?? 0), jobId: c["id"] })).events.map(event);
-  throw new Error("Unsupported command");
 }
 
 export async function trackingRequest(

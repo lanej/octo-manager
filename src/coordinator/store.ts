@@ -1,3 +1,5 @@
+import { Type } from "typebox";
+import { Check } from "typebox/value";
 import { NotificationInputRevision } from "../notifications/input-revision.js";
 import { migrateTracking } from "../tracking/schema.js";
 import { NotificationRepository } from "../notifications/repository.js";
@@ -29,7 +31,43 @@ import { DatabaseSync } from "node:sqlite";
 import { chmodSync, mkdirSync, lstatSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { digest, type Job, type JobEvent, type Task } from "../jobs/domain.js";
+import { digest, jobTransitions, parseTask, type Status, type Job, type JobEvent, type Task } from "../jobs/domain.js";
+
+const storedJobShape = Type.Object({
+  id: Type.String(),
+  requestId: Type.String(),
+  digest: Type.String(),
+  task: Type.Unknown(),
+  status: Type.String(),
+  createdAt: Type.Integer(),
+  updatedAt: Type.Integer(),
+  retryCount: Type.Integer(),
+  availableAt: Type.Integer(),
+  result: Type.Optional(Type.String()),
+  error: Type.Optional(Type.String()),
+  fixture: Type.Optional(Type.String()),
+  attempts: Type.Array(
+    Type.Object({
+      number: Type.Integer(),
+      startedAt: Type.Integer(),
+      endedAt: Type.Optional(Type.Integer()),
+      pid: Type.Optional(Type.Integer()),
+      exitObservedAt: Type.Optional(Type.Integer()),
+      error: Type.Optional(Type.String()),
+    }),
+  ),
+});
+
+function jobStatus(value: string): value is Status {
+  return Object.hasOwn(jobTransitions, value);
+}
+
+function storedJob(data: unknown): Job {
+  if (typeof data !== "string") throw new Error("Invalid stored job text");
+  const value: unknown = JSON.parse(data);
+  if (!Check(storedJobShape, value) || !jobStatus(value.status)) throw new Error("Invalid stored job record");
+  return { ...value, task: parseTask(value.task), status: value.status };
+}
 
 export function privateDirectory(path: string): void {
   mkdirSync(path, { recursive: true, mode: 0o700 });
@@ -45,7 +83,7 @@ export interface InputScope {
 }
 
 export class Store {
-  private db!: DatabaseSync;
+  private db: DatabaseSync;
   readonly tracking: TrackingStore;
   readonly notificationRepository: NotificationRepository;
   readonly assessments: AssessmentStore;
@@ -81,8 +119,10 @@ export class Store {
       this.ownership.close();
       throw new Error("Another coordinator owns this state directory");
     }
+    let opened: DatabaseSync | undefined;
     try {
-      this.db = new DatabaseSync(join(directory, "jobs.sqlite"));
+      opened = new DatabaseSync(join(directory, "jobs.sqlite"));
+      this.db = opened;
       this.db.exec(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
       );
@@ -194,7 +234,7 @@ export class Store {
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
     } catch (error) {
-      this.db?.close();
+      opened?.close();
       this.ownership.close();
       throw error;
     }
@@ -220,20 +260,20 @@ export class Store {
     return this.db
       .prepare("SELECT data FROM jobs ORDER BY rowid")
       .all()
-      .map((r) => JSON.parse(r["data"] as string) as Job);
+      .map((r) => storedJob(r["data"]));
   }
 
   get(id: string): Job {
     const row = this.db.prepare("SELECT data FROM jobs WHERE id=?").get(id);
     if (!row) throw new Error("Job not found");
-    return JSON.parse(row["data"] as string) as Job;
+    return storedJob(row["data"]);
   }
 
   submit(task: Task, requestId: string): Job {
-    if (!requestId || requestId.length > 200) throw new Error("Invalid request ID");
+    if (requestId === "" || requestId.length > 200) throw new Error("Invalid request ID");
     const row = this.db.prepare("SELECT data FROM jobs WHERE request_id=?").get(requestId);
     if (row) {
-      const existing = JSON.parse(row["data"] as string) as Job;
+      const existing = storedJob(row["data"]);
       if (existing.digest !== digest(task)) throw new Error("Request ID already used with a different task");
       return existing;
     }
@@ -303,18 +343,23 @@ export class Store {
   }
 
   events(after = 0, jobId?: string): JobEvent[] {
-    const rows = jobId
-      ? this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId)
-      : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
+    const rows =
+      jobId !== undefined && jobId !== ""
+        ? this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId)
+        : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
     return rows.map(storedEvent);
   }
 
   sequence(): number {
-    return Number(this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()!["seq"]);
+    const sequence = this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()?.["seq"];
+    if (typeof sequence !== "number" && typeof sequence !== "bigint") throw new Error("Invalid stored event sequence");
+    return Number(sequence);
   }
 
   instanceId(): string {
-    return this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()!["value"] as string;
+    const value = this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()?.["value"];
+    if (typeof value !== "string") throw new Error("Invalid stored instance ID");
+    return value;
   }
 
   eventsSince(after: number, jobId?: string, prId?: string): JobEvent[] {

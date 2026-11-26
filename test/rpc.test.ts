@@ -1,3 +1,4 @@
+import { present } from "./support/present.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -40,7 +41,7 @@ test("generated Connect contract has typed failures, atomic snapshot cursors, re
     await coordinator.start();
     coordinator.command({ op: "pause" });
     const client = schedulerClient(directory);
-    const before = (await client.getSnapshot({})).snapshot!;
+    const before = present((await client.getSnapshot({})).snapshot);
     assert(before.githubUsage !== undefined);
     assert(before.githubUsage.sampledAtMs >= before.githubUsage.startedAtMs);
     assert(before.githubUsage.minutes.length >= 1);
@@ -60,8 +61,8 @@ test("generated Connect contract has typed failures, atomic snapshot cursors, re
     await assert.rejects(client.getPullRequest({ url: "file:///etc/passwd" }), code(Code.InvalidArgument));
     await assert.rejects(client.submitJob({ requestId: "bad", task: {} }), code(Code.InvalidArgument));
     const request = { requestId: "one", task: { kind: { case: "resolveConflict" as const, value: {} } } };
-    const accepted = (await client.submitJob(request)).job!;
-    assert.equal((await client.submitJob(request)).job!.id, accepted.id);
+    const accepted = present((await client.submitJob(request)).job);
+    assert.equal(present((await client.submitJob(request)).job).id, accepted.id);
     await assert.rejects(
       client.submitJob({
         requestId: "one",
@@ -75,10 +76,12 @@ test("generated Connect contract has typed failures, atomic snapshot cursors, re
     const subscription = client.watch({ instanceId: before.instanceId, afterSequence: before.sequence });
     const stream = subscription[Symbol.asyncIterator]();
     const first = await stream.next();
-    assert.equal(first.value!.event!.jobId, accepted.id);
-    assert.equal(first.value!.event!.kind, "queued");
+    assert.ok(first.done !== true);
+    const firstEvent = present(first.value.event);
+    assert.equal(firstEvent.jobId, accepted.id);
+    assert.equal(firstEvent.kind, "queued");
     await stream.return?.();
-    assert.equal((await client.getJob({ id: accepted.id })).job!.status, JobStatus.QUEUED);
+    assert.equal(present((await client.getJob({ id: accepted.id })).job).status, JobStatus.QUEUED);
     const wrong = client.watch({ instanceId: "replaced-state", afterSequence: 0n })[Symbol.asyncIterator]();
     await assert.rejects(wrong.next(), code(Code.FailedPrecondition));
     const future = client.watch({ instanceId: before.instanceId, afterSequence: 999999n })[Symbol.asyncIterator]();
@@ -86,19 +89,19 @@ test("generated Connect contract has typed failures, atomic snapshot cursors, re
     await client.cancelJob({ id: accepted.id });
     await assert.rejects(client.retryJob({ id: accepted.id }), code(Code.FailedPrecondition));
     const cursor = BigInt(coordinator.store.sequence());
-    for (let i = 0; i < 205; i++) coordinator.store.event(accepted.id, "progress", `part ${i}`);
+    for (let i = 0; i < 205; i++) coordinator.store.event(accepted.id, "progress", `part ${String(i)}`);
     const page = await client.listEvents({ afterSequence: cursor, jobId: accepted.id });
     assert.equal(page.events.length, 200);
-    const next = await client.listEvents({ afterSequence: page.events.at(-1)!.sequence, jobId: accepted.id });
+    const next = await client.listEvents({ afterSequence: present(page.events.at(-1)).sequence, jobId: accepted.id });
     assert.equal(next.events.length, 5);
-    assert.equal(next.events.at(-1)!.sequence, BigInt(coordinator.store.sequence()));
+    assert.equal(present(next.events.at(-1)).sequence, BigInt(coordinator.store.sequence()));
     await coordinator.close();
     const replacement = await createApplicationFixture(directory);
     try {
       await replacement.start();
-      const resumed = (await schedulerClient(directory).getSnapshot({})).snapshot!;
+      const resumed = present((await schedulerClient(directory).getSnapshot({})).snapshot);
       assert.equal(resumed.instanceId, before.instanceId);
-      assert.equal(resumed.sequence, next.events.at(-1)!.sequence);
+      assert.equal(resumed.sequence, present(next.events.at(-1)).sequence);
     } finally {
       await replacement.close();
     }

@@ -238,7 +238,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
       ...(values["include-acknowledged"] === undefined ? {} : { includeAcknowledged: values["include-acknowledged"] }),
       label: values.label ?? directoryLabel(values.cwd ?? process.cwd()),
     });
-  } else if (command === "submit" && argument === "summarize-pr" && values.url)
+  } else if (command === "submit" && argument === "summarize-pr" && values.url !== undefined && values.url !== "")
     result = await request(directory, {
       op: "submit",
       requestId: values["request-id"] ?? randomUUID(),
@@ -257,11 +257,12 @@ async function execute(parsed: ParsedCommand): Promise<void> {
       task: { kind: "summarize_pr", url: values.url ?? "https://github.com/earendil-works/pi/pull/11546" },
     });
     result = { conflict, github };
-  } else if (["get", "cancel", "retry"].includes(command) && id) result = await request(directory, { op: command, id });
-  else if (["pause", "resume"].includes(command)) result = await request(directory, { op: command });
-  else if (command === "events" && id) {
+  } else if ((command === "get" || command === "cancel" || command === "retry") && id !== undefined && id !== "")
+    result = await request(directory, { op: command, id });
+  else if (command === "pause" || command === "resume") result = await request(directory, { op: command });
+  else if (command === "events" && id !== undefined && id !== "") {
     let cursor = Number(values.after ?? 0);
-    do {
+    for (;;) {
       const events: JobEvent[] = await request(directory, { op: "events", id, after: cursor });
       if (parsed.output.agent && !parsed.output.full) {
         printResult(parsed, events);
@@ -271,11 +272,11 @@ async function execute(parsed: ParsedCommand): Promise<void> {
         printResult(parsed, event);
         cursor = event.seq;
       }
-      if (!values.watch) break;
+      if (values.watch !== true) break;
       const job = await request(directory, { op: "get", id });
       if (terminalStates.includes(job.status) && events.length < 200) break;
       await new Promise((resolve) => setTimeout(resolve, 250));
-    } while (true);
+    }
     return;
   } else throw new Error("Unsupported command; see --help");
   printResult(parsed, result);

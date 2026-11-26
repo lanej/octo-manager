@@ -43,7 +43,9 @@ function stop(): void {
   aborted = true;
   for (const request of pending.values()) request.reject(new Error("Worker aborted"));
   pending.clear();
-  void session?.abort();
+  session?.abort().catch(() => {
+    process.exitCode = 1;
+  });
   setTimeout(() => process.exit(0), 5000).unref();
   if (!session) process.exit(0);
 }
@@ -89,7 +91,10 @@ function callTool(name: string, args: unknown): Promise<unknown> {
   const id = randomUUID();
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    send({ type: "tool", id, name, args });
+    send({ type: "tool", id, name, args }).catch((error: unknown) => {
+      pending.delete(id);
+      reject(error instanceof Error ? error : new Error("Worker IPC send failed", { cause: error }));
+    });
   });
 }
 
@@ -138,7 +143,7 @@ function prStage(raw: Record<string, unknown>): StageTask {
 
 async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): Promise<void> {
   let flushTimer: NodeJS.Timeout | undefined;
-  let budgetExceeded = false;
+  const budget = { exceeded: false };
   let provider: WorkerProvider | undefined;
   const delivery = { terminalSent: false };
   const finish = async (value: object) => {
@@ -149,7 +154,7 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
     const selected = workerModel(modelId);
     provider = selected.provider;
     const { runtime, source } = await createWorkerRuntime({ provider: selected.provider });
-    if (aborted) return;
+    if (workerAborted()) return;
     await send({
       type: "progress",
       text:
@@ -230,13 +235,13 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
       tools: tools.map((t) => t.name),
       customTools: tools,
     }));
-    if (aborted) return;
+    if (workerAborted()) return;
     let turns = 0;
     let toolCalls = 0;
     let output = "";
     const flush = () => {
-      if (output) {
-        send({ type: "progress", text: cleanText(output, 2000) });
+      if (output !== "") {
+        send({ type: "progress", text: cleanText(output, 2000) }).catch(stop);
         output = "";
       }
     };
@@ -246,7 +251,7 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
         (event.type === "turn_start" && ++turns > (task.kind === "pr_stage" ? 1 : 12)) ||
         (event.type === "tool_execution_start" && ++toolCalls > 40)
       ) {
-        budgetExceeded = true;
+        budget.exceeded = true;
         const current = session;
         if (current)
           current.abort().catch(() => {
@@ -266,8 +271,8 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
             : `Read and summarize this public PR: ${task.url}. Describe its purpose and current state. Do not inspect or change other objects.`,
     );
     flush();
-    if (budgetExceeded) throw new Error("Budget exceeded");
-    if (aborted) return;
+    if (budget.exceeded) throw new Error("Budget exceeded");
+    if (workerAborted()) return;
     const last = [...session.messages].reverse().find((message) => message.role === "assistant");
     if (
       last?.role === "assistant" &&

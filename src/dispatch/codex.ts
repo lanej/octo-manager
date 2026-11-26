@@ -1,37 +1,12 @@
 import type { ThreadSetNameParams } from "../agents/protocol/v2/ThreadSetNameParams.js";
 import type { ThreadTurnsListParams } from "../agents/protocol/v2/ThreadTurnsListParams.js";
 import type { JsonValue } from "../agents/protocol/serde_json/JsonValue.js";
-import { Type } from "typebox";
 import { CodexConnection } from "../agents/codex.js";
 import type { ThreadStartParams } from "../agents/protocol/v2/ThreadStartParams.js";
 import type { ThreadResumeParams } from "../agents/protocol/v2/ThreadResumeParams.js";
 import type { TurnStartParams } from "../agents/protocol/v2/TurnStartParams.js";
-import { checked } from "../merging/contracts.js";
 import { result, ResultSchema, Role, type Assignment } from "../issues/contracts.js";
 import type { AgentDispatcher, DispatchStatus } from "../issues/ports.js";
-
-const turnSchema = Type.Object({
-  id: Type.String(),
-  status: Type.String(),
-  items: Type.Array(
-    Type.Object({
-      type: Type.String(),
-      text: Type.Optional(Type.String()),
-      content: Type.Optional(
-        Type.Array(
-          Type.Object({
-            type: Type.String(),
-            text: Type.Optional(Type.String()),
-          }),
-        ),
-      ),
-    }),
-  ),
-});
-const threadResponse = Type.Object({
-  thread: Type.Object({ id: Type.String() }),
-});
-const turnsResponse = Type.Object({ data: Type.Array(turnSchema) });
 
 function jsonValue(value: unknown): JsonValue {
   if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number")
@@ -91,7 +66,7 @@ export class CodexDispatcher implements AgentDispatcher {
           ephemeral: false,
           developerInstructions: assignment.profile.instructions,
         };
-        const response = checked(threadResponse, await connection.dispatch("thread/start", params));
+        const response = await connection.dispatch("thread/start", params);
         sessionId = response.thread.id;
         checkpoint(sessionId);
       } else {
@@ -139,10 +114,7 @@ export class CodexDispatcher implements AgentDispatcher {
             }
           : { type: "readOnly", networkAccess: false },
       };
-      const started = checked(
-        Type.Object({ turn: Type.Object({ id: Type.String() }) }),
-        await connection.dispatch("turn/start", params),
-      );
+      const started = await connection.dispatch("turn/start", params);
       return {
         state: "running",
         sessionId,
@@ -171,7 +143,7 @@ export class CodexDispatcher implements AgentDispatcher {
         sortDirection: "desc",
         itemsView: "full",
       };
-      const response = checked(turnsResponse, await connection.dispatch("thread/turns/list", params));
+      const response = await connection.dispatch("thread/turns/list", params);
       const turn = response.data.find((value) =>
         assignment.turnId.length > 0
           ? value.id === assignment.turnId

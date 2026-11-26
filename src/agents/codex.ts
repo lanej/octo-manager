@@ -1,3 +1,8 @@
+import { Type, type Static, type TSchema } from "typebox";
+import { Check } from "typebox/value";
+import type { ThreadStartParams } from "./protocol/v2/ThreadStartParams.js";
+import type { ThreadSetNameParams } from "./protocol/v2/ThreadSetNameParams.js";
+import type { TurnInterruptParams } from "./protocol/v2/TurnInterruptParams.js";
 import type { ThreadQueueDeleteParams } from "./protocol/v2/ThreadQueueDeleteParams.js";
 import WebSocket from "ws";
 import { codexVersion, rpcRejection } from "./diagnostics.js";
@@ -6,13 +11,76 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AgentRef } from "../tracking/types.js";
 import type { InitializeParams } from "./protocol/InitializeParams.js";
-import type { InitializeResponse } from "./protocol/InitializeResponse.js";
 import type { ThreadQueueAddParams } from "./protocol/v2/ThreadQueueAddParams.js";
 import type { ThreadQueueListParams } from "./protocol/v2/ThreadQueueListParams.js";
 import type { ThreadReadParams } from "./protocol/v2/ThreadReadParams.js";
 import type { ThreadResumeParams } from "./protocol/v2/ThreadResumeParams.js";
 import type { TurnStartParams } from "./protocol/v2/TurnStartParams.js";
 import type { ThreadTurnsListParams } from "./protocol/v2/ThreadTurnsListParams.js";
+
+const turnSchema = Type.Object({
+  id: Type.String(),
+  status: Type.String(),
+  items: Type.Array(
+    Type.Object({
+      type: Type.String(),
+      text: Type.Optional(Type.String()),
+      content: Type.Optional(
+        Type.Array(
+          Type.Object({
+            type: Type.String(),
+            text: Type.Optional(Type.String()),
+          }),
+        ),
+      ),
+    }),
+  ),
+});
+const threadResponse = Type.Object({
+  thread: Type.Object({ id: Type.String() }),
+});
+const turnsResponse = Type.Object({ data: Type.Array(turnSchema) });
+const turnStartedResponse = Type.Object({ turn: Type.Object({ id: Type.String() }) });
+
+type Requests = {
+  initialize: InitializeParams;
+  "thread/start": ThreadStartParams;
+  "thread/name/set": ThreadSetNameParams;
+  "thread/read": ThreadReadParams;
+  "thread/resume": ThreadResumeParams;
+  "thread/turns/list": ThreadTurnsListParams;
+  "thread/queue/list": ThreadQueueListParams;
+  "thread/queue/add": ThreadQueueAddParams;
+  "thread/queue/delete": ThreadQueueDeleteParams;
+  "turn/start": TurnStartParams;
+  "turn/interrupt": TurnInterruptParams;
+};
+
+function decodeReply<T extends TSchema>(method: keyof Requests, schema: T, value: unknown): Static<T>;
+function decodeReply(method: keyof Requests, schema: TSchema, value: unknown): unknown {
+  if (!Check(schema, value)) throw new DeliveryError(`Incomplete Codex ${method} response`, true);
+  return value;
+}
+
+type DispatchReplies = {
+  "thread/start": Static<typeof threadResponse>;
+  "thread/name/set": unknown;
+  "thread/read": unknown;
+  "thread/turns/list": Static<typeof turnsResponse>;
+  "thread/resume": unknown;
+  "turn/start": Static<typeof turnStartedResponse>;
+  "turn/interrupt": unknown;
+};
+
+const replies: { [Method in keyof DispatchReplies]: (value: unknown) => DispatchReplies[Method] } = {
+  "thread/start": (value) => decodeReply("thread/start", threadResponse, value),
+  "thread/name/set": (value) => value,
+  "thread/read": (value) => value,
+  "thread/turns/list": (value) => decodeReply("thread/turns/list", turnsResponse, value),
+  "thread/resume": (value) => value,
+  "turn/start": (value) => decodeReply("turn/start", turnStartedResponse, value),
+  "turn/interrupt": (value) => value,
+};
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -100,12 +168,12 @@ export class CodexConnection implements AgentConnection {
     {
       method: string;
       threadId: string | undefined;
-      resolve: (value: any) => void;
+      resolve: (value: unknown) => void;
       reject: (error: Error) => void;
       timer: ReturnType<typeof setTimeout>;
     }
   >();
-  private ready: Promise<InitializeResponse>;
+  private ready: Promise<void>;
   private runtimeVersion: string | undefined;
 
   constructor(
@@ -122,7 +190,12 @@ export class CodexConnection implements AgentConnection {
     this.socket.on("message", (data) => {
       let m: unknown;
       try {
-        m = JSON.parse(data.toString());
+        const bytes = Array.isArray(data)
+          ? Buffer.concat(data)
+          : data instanceof ArrayBuffer
+            ? Buffer.from(data)
+            : data;
+        m = JSON.parse(bytes.toString("utf8"));
       } catch {
         return;
       }
@@ -172,7 +245,6 @@ export class CodexConnection implements AgentConnection {
       const info = await this.call("initialize", initialize);
       this.socket.send(JSON.stringify({ method: "initialized" }));
       this.runtimeVersion = codexVersion(info);
-      return info as InitializeResponse;
     });
     void this.ready.catch(() => {});
   }
@@ -185,7 +257,7 @@ export class CodexConnection implements AgentConnection {
     this.pending.clear();
   }
 
-  private call(method: string, params: unknown): Promise<any> {
+  private call<Method extends keyof Requests>(method: Method, params: Requests[Method]): Promise<unknown> {
     if (this.socket.readyState !== WebSocket.OPEN)
       return Promise.reject(new DeliveryError("Codex connection unavailable"));
     const id = ++this.sequence;
@@ -194,7 +266,7 @@ export class CodexConnection implements AgentConnection {
         this.pending.delete(id);
         reject(new DeliveryError("Codex request timed out"));
       }, 10000);
-      const threadId = object(params) && typeof params["threadId"] === "string" ? params["threadId"] : undefined;
+      const threadId = "threadId" in params && typeof params.threadId === "string" ? params.threadId : undefined;
       this.pending.set(id, { method, threadId, resolve, reject, timer });
       this.socket.send(JSON.stringify({ id, method, params }), (error) => {
         if (error) {
@@ -206,25 +278,17 @@ export class CodexConnection implements AgentConnection {
     });
   }
 
-  async dispatch(
-    method:
-      | "thread/start"
-      | "thread/name/set"
-      | "thread/read"
-      | "thread/turns/list"
-      | "thread/resume"
-      | "turn/start"
-      | "turn/interrupt",
-    params: object,
-  ): Promise<unknown> {
+  async dispatch<Method extends keyof DispatchReplies>(
+    method: Method,
+    params: Requests[Method],
+  ): Promise<DispatchReplies[Method]> {
     await this.ready;
-    const value: unknown = await this.call(method, params);
-    return value;
+    return replies[method](await this.call(method, params));
   }
 
   async prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }> {
-    const info = await this.ready;
-    const version = codexVersion(info);
+    await this.ready;
+    const version = this.runtimeVersion;
     if (this.delivery === "queue") {
       const params: ThreadQueueListParams = {
         threadId: agent.sessionId,
@@ -265,9 +329,7 @@ export class CodexConnection implements AgentConnection {
       clientUserMessageId: deliveryId,
     };
     try {
-      const result = await this.call("turn/start", params);
-      if (typeof result.turn?.id !== "string")
-        throw new DeliveryError("Codex acceptance response was incomplete", true);
+      const result = replies["turn/start"](await this.call("turn/start", params));
       return { turnId: result.turn.id };
     } catch (error) {
       if (error instanceof DeliveryError && error.permanent) throw error;

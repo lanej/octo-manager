@@ -1,3 +1,4 @@
+import { present } from "./support/present.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -10,13 +11,12 @@ import { createApplicationFixture, type ApplicationFixture } from "./support/app
 import { processAlive } from "../src/jobs/runtime.js";
 import { request } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
-import { record } from "../src/api/codec.js";
 
 const fake = fileURLToPath(new URL("./fake-worker.mjs", import.meta.url));
 
 async function waitFor<T>(read: () => T, predicate: (value: T) => boolean, timeout = 10000): Promise<T> {
   const end = Date.now() + timeout;
-  while (true) {
+  for (;;) {
     const value = read();
     if (predicate(value)) return value;
     if (Date.now() > end) throw new Error(`Timed out: ${JSON.stringify(value)}`);
@@ -67,7 +67,7 @@ test("real IPC submissions deduplicate, pause, dispatch FIFO and record conflict
     const all = c.snapshot().jobs;
     assert.equal(all.length, 2);
     assert.ok(all.every((j) => j.attempts.length === 1 && j.status === "succeeded"));
-    assert.ok(all[0]!.attempts[0]!.endedAt! <= all[1]!.attempts[0]!.startedAt);
+    assert.ok(present(present(present(all[0]).attempts[0]).endedAt) <= present(present(all[1]).attempts[0]).startedAt);
     for (const j of all)
       assert.deepEqual(
         c.store
@@ -118,7 +118,7 @@ test("queued cancellation never dispatches and invalid resolutions fail without 
       (j) => j.status === "failed",
     );
     assert.equal(c.store.get(bad.id).attempts.length, 1);
-    assert.match(c.store.get(bad.id).error!, /maxAttempts/);
+    assert.match(present(c.store.get(bad.id).error), /maxAttempts/);
   });
 });
 test("transient retry waits for injected clock; auth failure does not auto-retry", async () => {
@@ -201,7 +201,7 @@ test("recovery blocks replacement dispatch while the previous PID remains alive"
     const store = new Store(directory);
     const job = store.submit({ kind: "resolve_conflict" }, "old");
     store.save(
-      { ...job, status: "resolving", attempts: [{ number: 1, startedAt: Date.now(), pid: survivor.pid }] },
+      { ...job, status: "resolving", attempts: [{ number: 1, startedAt: Date.now(), pid: present(survivor.pid) }] },
       "resolving",
     );
     store.close();
@@ -213,7 +213,7 @@ test("recovery blocks replacement dispatch while the previous PID remains alive"
     c = await createApplicationFixture(directory, { workerPath: fake });
     await c.start();
     assert.equal(c.snapshot().worker, "recovering");
-    assert.throws(() => c!.command({ op: "retry", id: job.id }), /previous worker/);
+    assert.throws(() => present(c).command({ op: "retry", id: job.id }), /previous worker/);
     const waiting = submit(c, "waiting");
     c.tick();
     assert.equal(c.store.get(waiting.id).status, "queued");
@@ -222,7 +222,7 @@ test("recovery blocks replacement dispatch while the previous PID remains alive"
     await exit;
     c.tick();
     await waitFor(
-      () => c!.store.get(waiting.id),
+      () => present(c).store.get(waiting.id),
       (j) => j.status === "succeeded",
     );
   } finally {
@@ -240,33 +240,27 @@ test("a killed coordinator releases ownership and its child stops on disconnect"
       stdio: ["ignore", "pipe", "pipe"],
     });
     await Promise.race([
-      once(old.stdout!, "data"),
+      once(present(old.stdout), "data"),
       once(old, "exit").then(() => {
         throw new Error("Test coordinator exited before readiness");
       }),
     ]);
-    const submitted: unknown = await request(directory, {
+    const job = await request(directory, {
       op: "submit",
       requestId: "crash",
       task: { kind: "resolve_conflict" },
     });
-    assert.ok(typeof submitted === "object" && submitted !== null && "id" in submitted);
-    assert.ok(typeof submitted.id === "string");
-    const job = { id: submitted.id };
     let pid: number | undefined;
     for (let i = 0; i < 200; i++) {
-      const status = record(await request(directory, { op: "get", id: job.id }));
-      const attempts = status["attempts"];
-      assert.ok(Array.isArray(attempts));
-      const attempt: unknown = attempts[0];
-      const candidate = attempt === undefined ? undefined : record(attempt)["pid"];
-      if (typeof candidate === "number" && candidate > 0) {
+      const status = await request(directory, { op: "get", id: job.id });
+      const candidate = status.attempts[0]?.pid;
+      if (candidate !== undefined && candidate > 0) {
         pid = candidate;
         break;
       }
       await new Promise((r) => setTimeout(r, 20));
     }
-    assert.ok(pid);
+    assert.ok(pid !== undefined && pid > 0);
     const exit = once(old, "exit");
     old.kill("SIGKILL");
     await exit;
@@ -281,7 +275,7 @@ test("a killed coordinator releases ownership and its child stops on disconnect"
     replacement.command({ op: "retry", id: job.id });
     replacement.tick();
     await waitFor(
-      () => replacement!.store.get(job.id),
+      () => present(replacement).store.get(job.id),
       (j) => j.status === "succeeded",
     );
     assert.equal(replacement.store.get(job.id).attempts.length, 2);
@@ -300,8 +294,8 @@ test("simultaneous coordinator startup admits exactly one owner", async () => {
   );
   const errors = children.map(() => "");
   children.forEach((child, i) =>
-    child.stderr.on("data", (chunk) => {
-      errors[i] += chunk.toString();
+    child.stderr.on("data", (chunk: Buffer) => {
+      errors[i] = (errors[i] ?? "") + chunk.toString();
     }),
   );
   try {
@@ -363,7 +357,7 @@ for (const boundary of ["crash-before-pid", "crash-after-pid"])
       replacement.command({ op: "retry", id: job.id });
       replacement.tick();
       await waitFor(
-        () => replacement!.store.get(job.id),
+        () => present(replacement).store.get(job.id),
         (j) => j.status === "succeeded",
       );
     } finally {
@@ -385,9 +379,9 @@ test("production Pi worker fails cleanly without login and releases its slot", a
       () => c.store.get(job.id),
       (j) => j.status === "failed",
     );
-    assert.match(c.store.get(job.id).error!, /Authentication required/);
+    assert.match(present(c.store.get(job.id).error), /Authentication required/);
     assert.equal(c.store.get(job.id).attempts.length, 1);
-    assert.ok(c.store.get(job.id).attempts[0]!.exitObservedAt);
+    assert.notEqual(present(c.store.get(job.id).attempts[0]).exitObservedAt, undefined);
     await waitFor(
       () => c.snapshot().worker,
       (worker) => worker === "idle",

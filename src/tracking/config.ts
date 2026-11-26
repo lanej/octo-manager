@@ -69,7 +69,7 @@ const defaults: TrackingConfig = {
 };
 
 function object(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function defaultTrackingConfig(): TrackingConfig {
@@ -83,7 +83,8 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   try {
     raw = JSON.parse(readFileSync(target, "utf8"));
   } catch (error) {
-    if (!path && (error as NodeJS.ErrnoException).code === "ENOENT") return structuredClone(defaults);
+    if ((path === undefined || path === "") && error instanceof Error && "code" in error && error.code === "ENOENT")
+      return structuredClone(defaults);
     throw new Error("Invalid tracking configuration: could not read JSON");
   }
   if (
@@ -194,14 +195,14 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
     if (!object(raw["profiles"])) throw new Error("Invalid profiles");
     for (const [name, p] of Object.entries(raw["profiles"])) {
       if (
-        !name ||
+        name === "" ||
         !object(p) ||
         Object.keys(p).some((k) => !["instructions", "harness", "model"].includes(k)) ||
         typeof p["instructions"] !== "string" ||
-        !p["instructions"].trim() ||
+        p["instructions"].trim() === "" ||
         p["instructions"].length > 8000 ||
-        (p["harness"] !== undefined && (typeof p["harness"] !== "string" || !p["harness"])) ||
-        (p["model"] !== undefined && (typeof p["model"] !== "string" || !p["model"]))
+        (p["harness"] !== undefined && (typeof p["harness"] !== "string" || p["harness"] === "")) ||
+        (p["model"] !== undefined && (typeof p["model"] !== "string" || p["model"] === ""))
       )
         throw new Error("Invalid profile");
       result.profiles[name] = {
@@ -250,5 +251,7 @@ export function selectProfile(blocker: Blocker, config: TrackingConfig): Executi
       r.kind === blocker.kind &&
       (r.checkName === undefined || (blocker.kind === "check_failed" && r.checkName === blocker.checkName)),
   );
-  return structuredClone(config.profiles[rule?.profile ?? blocker.kind]!);
+  const profile = config.profiles[rule?.profile ?? blocker.kind];
+  if (!profile) throw new Error("Configured tracking profile is missing");
+  return structuredClone(profile);
 }

@@ -1,3 +1,4 @@
+import { present } from "./support/present.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -16,8 +17,25 @@ import {
 } from "../src/jobs/fixture.js";
 
 const temp = () => mkdtemp(join(tmpdir(), "pg-"));
+
+function jobFixture(overrides: Partial<Job> = {}): Job {
+  return {
+    id: "test",
+    requestId: "test",
+    digest: "test",
+    task: { kind: "resolve_conflict" },
+    status: "queued",
+    createdAt: 0,
+    updatedAt: 0,
+    attempts: [],
+    retryCount: 0,
+    availableAt: 0,
+    ...overrides,
+  };
+}
+
 test("jobs follow explicit conflict, completion and cancellation contracts", () => {
-  const job = { status: "queued", updatedAt: 0 } as Job;
+  const job = jobFixture();
   const running = transition(job, "running", 10);
   const conflict = transition(running, "conflicted", 11);
   assert.equal(transition(transition(conflict, "resolving", 12), "succeeded", 13).status, "succeeded");
@@ -28,17 +46,17 @@ test("jobs follow explicit conflict, completion and cancellation contracts", () 
 });
 test("FIFO selects due queued work and retry budget is bounded", () => {
   const jobs = [
-    { id: "first", status: "queued", createdAt: 1, availableAt: 5 },
-    { id: "later", status: "queued", createdAt: 2, availableAt: 0 },
-    { id: "running", status: "running", createdAt: 0, availableAt: 0 },
-  ] as Job[];
+    jobFixture({ id: "first", status: "queued", createdAt: 1, availableAt: 5 }),
+    jobFixture({ id: "later", status: "queued", createdAt: 2, availableAt: 0 }),
+    jobFixture({ id: "running", status: "running", createdAt: 0, availableAt: 0 }),
+  ];
   assert.equal(nextReady(jobs, 4)?.id, "later");
   assert.equal(nextReady(jobs, 5)?.id, "first");
   assert.deepEqual([retryDelay(0), retryDelay(1), retryDelay(2)], [1000, 5000, undefined]);
   const tied = [
-    { id: "z", status: "queued", createdAt: 1, availableAt: 0 },
-    { id: "a", status: "queued", createdAt: 1, availableAt: 0 },
-  ] as Job[];
+    jobFixture({ id: "z", status: "queued", createdAt: 1, availableAt: 0 }),
+    jobFixture({ id: "a", status: "queued", createdAt: 1, availableAt: 0 }),
+  ];
   assert.equal(nextReady(tied, 1)?.id, "z");
   const [first, second] = tied;
   assert.ok(first);
@@ -62,7 +80,7 @@ test("private or indeterminate repository data is withheld from model tools", ()
     title: "public",
     body: "safe",
     head: { sha: "abc" },
-  }) as { body: string };
+  });
   assert.equal(result.body, "safe");
 });
 test("task input rejects alternate hosts, arbitrary fields and shell fragments", () => {
@@ -84,7 +102,7 @@ test("store deduplicates requests, rejects changed payload and excludes another 
     store = new Store(path, () => 123);
     const first = store.submit({ kind: "resolve_conflict" }, "same");
     assert.equal(store.submit({ kind: "resolve_conflict" }, "same").id, first.id);
-    assert.throws(() => store!.submit({ kind: "summarize_pr", url: "https://github.com/a/b/pull/1" }, "same"));
+    assert.throws(() => present(store).submit({ kind: "summarize_pr", url: "https://github.com/a/b/pull/1" }, "same"));
     assert.throws(() => new Store(path), /Another coordinator/);
     assert.equal(store.events(0, first.id).length, 1);
     store.setPaused(true);
@@ -112,7 +130,9 @@ test("real merge conflict rejects either side and completes a verified combined 
     await writeFile(join(fixture.path, "unexpected.txt"), "unexpected");
     assert.equal((await validateResolution(fixture.path)).valid, false);
     await rm(join(fixture.path, "unexpected.txt"));
-    assert.equal(JSON.parse(await finishFixture(fixture.path)).clean, true);
+    const result: unknown = JSON.parse(await finishFixture(fixture.path));
+    assert.ok(typeof result === "object" && result !== null && "clean" in result);
+    assert.equal(result.clean, true);
     await removeFixture(directory, fixture.path);
     await assert.rejects(removeFixture(directory, directory), /outside owned fixtures/);
   } finally {

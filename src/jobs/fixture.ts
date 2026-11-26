@@ -76,7 +76,7 @@ export async function createFixture(directory: string): Promise<{ path: string; 
     try {
       await git(path, ["merge", "--no-commit", "source"]);
     } catch (error) {
-      if ((error as { code?: number }).code !== 1) throw error;
+      if (!(error instanceof Error) || !("code" in error) || error.code !== 1) throw error;
     }
     const unmerged = await git(path, ["diff", "--name-only", "--diff-filter=U"]);
     if (unmerged !== policyFile) throw new Error("Fixture did not produce the expected Git conflict");
@@ -92,7 +92,8 @@ export async function readConflict(path: string): Promise<{ brief: string; conte
 }
 
 export async function writeResolution(path: string, policy: unknown): Promise<string> {
-  if (!policy || typeof policy !== "object" || Array.isArray(policy)) throw new Error("Policy must be a JSON object");
+  if (policy === null || typeof policy !== "object" || Array.isArray(policy))
+    throw new Error("Policy must be a JSON object");
   const bytes = JSON.stringify(policy);
   if (bytes.length > 2048) throw new Error("Policy is too large");
   await writeFile(await safeFile(path), bytes + "\n");
@@ -101,7 +102,10 @@ export async function writeResolution(path: string, policy: unknown): Promise<st
 
 export async function validateResolution(path: string): Promise<{ valid: boolean; reason: string }> {
   try {
-    const value = JSON.parse(await readFile(await safeFile(path), "utf8")) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(await readFile(await safeFile(path), "utf8"));
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+      return { valid: false, reason: "Resolution must be valid JSON without conflict markers" };
+    const value: Record<string, unknown> = Object.fromEntries(Object.entries(parsed));
     const valid =
       Object.keys(value).sort().join() === Object.keys(expected).sort().join() &&
       Object.entries(expected).every(([key, v]) => value[key] === v);
@@ -128,14 +132,17 @@ export async function finishFixture(path: string, signal?: AbortSignal): Promise
   signal?.throwIfAborted();
   await git(path, ["add", policyFile], signal);
   await git(path, ["commit", "-m", "resolve retry policy conflict"], signal);
-  if (await git(path, ["status", "--porcelain"], signal)) throw new Error("Fixture is not clean after merge");
+  if ((await git(path, ["status", "--porcelain"], signal)) !== "") throw new Error("Fixture is not clean after merge");
   const parents = (await git(path, ["rev-list", "--parents", "-n", "1", "HEAD"], signal)).split(" ");
   if (parents.length !== 3) throw new Error("Resolution did not create a merge commit");
   return JSON.stringify({ policy: expected, mergeCommit: parents[0], clean: true });
 }
 
 export async function removeFixture(directory: string, path: string): Promise<void> {
-  if (dirname(resolve(path)) !== resolve(directory, "fixtures") || !path.split("/").at(-1)?.startsWith("attempt-"))
+  if (
+    dirname(resolve(path)) !== resolve(directory, "fixtures") ||
+    path.split("/").at(-1)?.startsWith("attempt-") !== true
+  )
     throw new Error("Refusing cleanup outside owned fixtures");
   await rm(path, { recursive: true, force: true });
 }

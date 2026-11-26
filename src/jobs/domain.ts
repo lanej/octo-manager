@@ -77,8 +77,8 @@ export function transition(job: Job, next: Status, now: number): Job {
 }
 
 export function parseTask(value: unknown): Task {
-  if (!value || typeof value !== "object") throw new Error("Task must be an object");
-  const v = value as Record<string, unknown>;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("Task must be an object");
+  const v: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   if (v["kind"] === "resolve_conflict" && Object.keys(v).length === 1) return { kind: v["kind"] };
   if (v["kind"] === "summarize_pr" && Object.keys(v).length === 2 && typeof v["url"] === "string") {
     const match = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/([1-9][0-9]*)\/?$/.exec(

@@ -13,7 +13,7 @@ export async function readPullRequest(url: string, signal?: AbortSignal): Promis
   return publicPullRequest(Object.fromEntries(Object.entries(pr)));
 }
 
-export function publicPullRequest(pr: Record<string, unknown>): unknown {
+export function publicPullRequest(pr: Record<string, unknown>) {
   requirePublicPullRequest(pr);
   const value = pr["body"];
   const body = typeof value === "string" ? value : "";

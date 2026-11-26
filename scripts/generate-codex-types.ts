@@ -19,7 +19,11 @@ try {
     if (visited.has(path)) return;
     visited.add(path);
     const source = readFileSync(path, "utf8");
-    for (const match of source.matchAll(/from "([^"]+)"/g)) copy(resolve(dirname(path), match[1]! + ".ts"));
+    for (const match of source.matchAll(/from "([^"]+)"/g)) {
+      const imported = match[1];
+      if (imported === undefined) throw new Error("Invalid generated import");
+      copy(resolve(dirname(path), imported + ".ts"));
+    }
     const target = join("src/agents/protocol", relative(scratch, path));
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, source.replace(/from "([^"]+)"/g, 'from "$1.js"'));

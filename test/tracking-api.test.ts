@@ -1,3 +1,5 @@
+import { asyncFixture } from "./support/async-fixture.js";
+import { present } from "./support/present.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -25,11 +27,11 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
   const dir = await mkdtemp(join(tmpdir(), "octo-api-"));
   const coordinator = await createApplicationFixture(dir, {
     trackingOptions: {
-      read: async () => input,
+      read: asyncFixture(() => input),
       connect: () => ({
-        prepare: async () => ({ busy: true }),
-        send: async () => ({}),
-        find: async () => ({ found: false }),
+        prepare: asyncFixture(() => ({ busy: true })),
+        send: asyncFixture(() => ({})),
+        find: asyncFixture(() => ({ found: false })),
         close() {},
       }),
     },
@@ -45,31 +47,36 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
         stderr: "pipe",
       },
     );
-    const result = JSON.parse(await new Response(cli.stdout).text());
+    const result: unknown = JSON.parse(await new Response(cli.stdout).text());
+    assert.ok(typeof result === "object" && result !== null && "pr" in result);
+    const pr = result.pr;
+    assert.ok(typeof pr === "object" && pr !== null && "url" in pr && "id" in pr && "ownerAgentId" in pr);
+    assert.ok(typeof pr.id === "string");
+    assert.ok(typeof pr.ownerAgentId === "string");
     assert.equal(await cli.exited, 0);
-    assert.equal(result.pr.url, url);
+    assert.equal(pr.url, url);
     const client = schedulerClient(dir);
-    await client.refreshTrackedPullRequest({ id: result.pr.id });
+    await client.refreshTrackedPullRequest({ id: pr.id });
     coordinator.githubScheduler.tick();
     await new Promise((resolve) => setImmediate(resolve));
-    const snapshot = (await client.getSnapshot({})).snapshot!;
+    const snapshot = present((await client.getSnapshot({})).snapshot);
     assert.equal(snapshot.jobs.length, 0);
-    assert.equal(snapshot.tracking!.prs.length, 1);
-    const action = snapshot.tracking!.actions[0]!;
+    assert.equal(present(snapshot.tracking).prs.length, 1);
+    const action = present(present(snapshot.tracking).actions[0]);
     await client.acknowledgeAction({
       id: action.id,
-      agentId: result.pr.ownerAgentId,
+      agentId: pr.ownerAgentId,
     });
     await client.startAction({
       id: action.id,
-      agentId: result.pr.ownerAgentId,
+      agentId: pr.ownerAgentId,
     });
     const events = await client.listEvents({
       afterSequence: 0n,
-      prId: result.pr.id,
+      prId: pr.id,
     });
     assert(events.events.some((e) => e.actionId === action.id));
-    assert(events.events.every((e) => e.prId === result.pr.id));
+    assert(events.events.every((e) => e.prId === pr.id));
     const store = coordinator.store.tracking;
     assert.equal(store.action(action.id).progress.state, ActionState.Working);
     const db = new DatabaseSync(join(dir, "jobs.sqlite"));
@@ -85,7 +92,7 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
       assert.throws(() =>
         db
           .prepare("UPDATE actions SET opened_observation_id=? WHERE id=?")
-          .run(store.pr(second.id).observation!.id, action.id),
+          .run(present(store.pr(second.id).observation).id, action.id),
       );
     } finally {
       db.close();
@@ -107,7 +114,7 @@ test("private observations remain separate from public-only Pi tools; partial la
   const o = await readObservation(
     url,
     undefined,
-    async (path) => {
+    asyncFixture((path) => {
       paths.push(path);
       if (path.endsWith("/pulls/1")) return raw;
       if (path.includes("/git/ref/")) return { object: { sha: "base-tip" } };
@@ -123,7 +130,7 @@ test("private observations remain separate from public-only Pi tools; partial la
       }
       if (path.includes("check-runs")) return { check_runs: [] };
       return [];
-    },
+    }),
     () => 1000,
   );
   assert.equal(o.headSha, "head");

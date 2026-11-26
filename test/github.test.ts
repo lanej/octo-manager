@@ -1,3 +1,4 @@
+import { asyncFixture } from "./support/async-fixture.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { readPullRequestDetails } from "../src/github/reviews.js";
@@ -5,7 +6,7 @@ import { readPullRequestDetails } from "../src/github/reviews.js";
 const url = "https://github.com/owner/repo/pull/12";
 test("review reads gate all message sources on public visibility and preserve source, timestamp and truncation", async () => {
   const paths: string[] = [];
-  const read = async (path: string) => {
+  const read = asyncFixture((path: string) => {
     paths.push(path);
     if (path === "repos/owner/repo/pulls/12")
       return { base: { repo: { private: false } }, title: "Example PR", state: "open", head: { sha: "abc" } };
@@ -38,7 +39,7 @@ test("review reads gate all message sources on public visibility and preserve so
       body: "Done",
       created_at: "2026-11-08T12:02:00Z",
     }));
-  };
+  });
   const details = await readPullRequestDetails(url, undefined, read);
   assert.equal(paths[0], "repos/owner/repo/pulls/12");
   assert.equal(paths.length, 4);
@@ -59,19 +60,27 @@ test("review reads gate all message sources on public visibility and preserve so
   for (const visibility of [true, undefined]) {
     let calls = 0;
     await assert.rejects(
-      readPullRequestDetails(url, undefined, async () => {
-        calls++;
-        return { base: { repo: { private: visibility } } };
-      }),
+      readPullRequestDetails(
+        url,
+        undefined,
+        asyncFixture(() => {
+          calls++;
+          return { base: { repo: { private: visibility } } };
+        }),
+      ),
       /Only confirmed public/,
     );
     assert.equal(calls, 1);
   }
   let called = false;
   await assert.rejects(
-    readPullRequestDetails("file:///etc/passwd", undefined, async () => {
-      called = true;
-    }),
+    readPullRequestDetails(
+      "file:///etc/passwd",
+      undefined,
+      asyncFixture(() => {
+        called = true;
+      }),
+    ),
   );
   assert.equal(called, false);
 });
