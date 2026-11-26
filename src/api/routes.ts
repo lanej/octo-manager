@@ -32,7 +32,6 @@ import {
   trackingOperation,
 } from "../tracking/rpc.js";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
-import { setTimeout as delay } from "node:timers/promises";
 import {
   SchedulerService,
   type Task as WireTask,
@@ -548,21 +547,36 @@ export function schedulerRoutes(
             Code.OutOfRange,
           );
         let cursor = Number(request.afterSequence);
+        const signal = AbortSignal.any([
+          context.signal,
+          application.services.githubScheduler.signal,
+        ]);
         while (!context.signal.aborted) {
-          if (application.runtime.isStopping())
+          if (application.runtime.isStopping() || signal.aborted)
             throw new ConnectError("Coordinator is stopping", Code.Unavailable);
-          const events = application.store.eventsSince(
-            cursor,
-            request.jobId,
-            request.prId,
-          );
-          for (const event of events) {
-            cursor = event.seq;
-            yield { event: wireEvent(event) };
+          let resume = () => {};
+          const notification = new Promise<void>((resolve) => {
+            resume = resolve;
+          });
+          // Subscribe before the read: appends during cursor draining must also wake
+          // this consumer, including while a yielded page is under backpressure.
+          const release = application.store.subscribeEvents(resume);
+          signal.addEventListener("abort", resume, { once: true });
+          try {
+            const events = application.store.eventsSince(
+              cursor,
+              request.jobId,
+              request.prId,
+            );
+            for (const event of events) {
+              cursor = event.seq;
+              yield { event: wireEvent(event) };
+            }
+            if (events.length === 0) await notification;
+          } finally {
+            release();
+            signal.removeEventListener("abort", resume);
           }
-          await delay(50, undefined, { signal: context.signal }).catch(
-            () => {},
-          );
         }
       },
     },

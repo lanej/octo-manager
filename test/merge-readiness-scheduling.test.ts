@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Store } from "../src/coordinator/store.js";
 import { MergeService } from "../src/merging/service.js";
+import { EntryState, OperationState } from "../src/merging/contracts.js";
 import type { MergeProvider, MergeSnapshot } from "../src/merging/github.js";
 import { WorkScheduler } from "../src/scheduling/work.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -92,7 +93,7 @@ async function fixture() {
     directory,
     store.mergeConflicts,
     clock,
-    { provider, intervalMs: 30000, referenceInputRevision: () => "fixture" },
+    { provider, referenceInputRevision: () => "fixture" },
   );
   const pr = store.tracking.track(url, {
     harness: "codex",
@@ -125,6 +126,7 @@ async function fixture() {
     pr,
     inspect,
     merge,
+    provider,
     get message() {
       const value = store.tracking.inbox
         .list(pr.ownerAgentId, 0, false, true)
@@ -156,6 +158,7 @@ async function fixture() {
 
 test("readiness offers refresh after five minutes even without a queued merge entry", async () => {
   const f = await fixture();
+  const ticks = spyOn(f.service, "tick");
   try {
     const initial = f.store.merging.noticeReadiness(f.pr.id);
     expect(initial?.eligible).toBe(true);
@@ -170,6 +173,7 @@ test("readiness offers refresh after five minutes even without a queued merge en
     f.advance(299999);
     await settle();
     expect(f.inspect).toHaveBeenCalledTimes(1);
+    expect(ticks).toHaveBeenCalledTimes(1);
     expect(f.store.merging.noticeReadiness(f.pr.id)?.eligible).toBe(true);
     f.advance(1);
     await settle();
@@ -180,11 +184,12 @@ test("readiness offers refresh after five minutes even without a queued merge en
     expect(f.merge).not.toHaveBeenCalled();
     expect(f.store.merging.unfinishedEntries()).toEqual([]);
   } finally {
+    ticks.mockRestore();
     await f.close();
   }
 });
 
-test("an expired readiness cache without eligible recipients uses a future retry instead of spinning", async () => {
+test("an expired readiness cache without eligible recipients sleeps until input changes", async () => {
   const f = await fixture();
   const ticks = spyOn(f.service, "tick");
   try {
@@ -200,8 +205,70 @@ test("an expired readiness cache without eligible recipients uses a future retry
     expect(ticks).toHaveBeenCalledTimes(1);
     f.advance(1);
     await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(0);
+    f.config.endpoints["local"] = { delivery: "queue", socket: "/controlled" };
+    f.service.wake();
+    await settle();
     expect(ticks).toHaveBeenCalledTimes(2);
-    expect(f.inspect).toHaveBeenCalledTimes(1);
+    expect(f.inspect).toHaveBeenCalledTimes(2);
+    expect(f.merge).not.toHaveBeenCalled();
+  } finally {
+    ticks.mockRestore();
+    await f.close();
+  }
+});
+
+test("an accepted asynchronous merge sleeps until its result deadline", async () => {
+  const f = await fixture();
+  const ticks = spyOn(f.service, "tick");
+  const result = mock(() =>
+    Promise.resolve({
+      state: "pending" as const,
+      requestId: "accepted-request",
+    }),
+  );
+  f.provider.result = result;
+  try {
+    f.store.merging.queue({
+      requestId: "async-clock",
+      actorId: f.pr.ownerAgentId,
+      entries: [{ prUrl: f.pr.url, checks: ["CI"] }],
+    });
+    const entry = f.store.merging.unfinishedEntries()[0];
+    if (entry === undefined) throw new Error("Missing queued entry");
+    f.store.merging.state(entry, EntryState.Merging, "GitHub request accepted");
+    f.store.merging.saveOperation({
+      id: "async-operation",
+      epoch: f.pr.trackingEpoch,
+      entryId: entry.id,
+      prId: f.pr.id,
+      kind: "merge",
+      state: OperationState.Running,
+      phase: "merging",
+      head: "a".repeat(40),
+      baseRef: "main",
+      baseSha: "b".repeat(40),
+      graph: "fixture-graph",
+      ownerId: f.pr.ownerAgentId,
+      createdAt: 1000,
+      updatedAt: 1000,
+      detail: "Accepted",
+      requestId: "accepted-request",
+      nextCheckAt: 61000,
+    });
+    f.service.start(f.scheduler);
+    f.scheduler.start();
+    await settle();
+    f.advance(59999);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    expect(result).not.toHaveBeenCalled();
+    f.advance(1);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(2);
+    expect(result).toHaveBeenCalledTimes(1);
+    expect(f.store.merging.unfinishedOperations()[0]?.nextCheckAt).toBe(121000);
     expect(f.merge).not.toHaveBeenCalled();
   } finally {
     ticks.mockRestore();

@@ -12,6 +12,7 @@ export class RepairStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
+    private changed?: () => void,
   ) {
     const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
     if (
@@ -115,6 +116,7 @@ export class RepairStore {
         )
         .run(a.updatedAt, a.detail, a.prId);
       this.db.exec("COMMIT");
+      this.changed?.();
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;

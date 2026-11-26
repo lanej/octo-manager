@@ -20,6 +20,7 @@ export class ActivityStore {
   constructor(
     private readonly db: DatabaseSync,
     private readonly now: () => number,
+    private readonly changed?: () => void,
   ) {
     const version = db.prepare("PRAGMA user_version").get();
     if (version === undefined) throw new Error("Missing database version");
@@ -87,6 +88,7 @@ export class ActivityStore {
           recordedAt,
         );
       this.db.exec("COMMIT");
+      this.changed?.();
       return { ...input, sequence, recordedAt };
     } catch (error) {
       this.db.exec("ROLLBACK");

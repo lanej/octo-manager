@@ -182,6 +182,7 @@ export class ApplicationRuntime implements Application {
     this.workScheduler.stop();
     this.jobs.stop();
     this.policyWork.close();
+    this.store.repositories.close();
     this.services.stopIntake();
     this.checkpointWork = (async () => {
       await this.services.close();
@@ -199,6 +200,7 @@ export class ApplicationRuntime implements Application {
     this.workScheduler.stop();
     this.jobs.stop(true);
     this.policyWork.close();
+    this.store.repositories.close();
     this.services.stopIntake();
     this.services.githubScheduler.emit("tick");
     this.closeWork = (async () => {
@@ -213,6 +215,7 @@ export class ApplicationRuntime implements Application {
       this.workScheduler.stop();
       this.jobs.stop(true);
       this.policyWork.close();
+      this.store.repositories.close();
       this.services.stopIntake();
       await this.services.close();
       await this.workScheduler.close();

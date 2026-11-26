@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import { expect, jest, mock, spyOn, test } from "bun:test";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1230,5 +1231,82 @@ test("scheduled issue source changes wake reconciliation without polling SQLite"
     expect(changes).toBe(0);
   } finally {
     f.close();
+  }
+});
+
+test("terminal source monitoring sleeps until its real observation deadline", async () => {
+  jest.useFakeTimers({ now: 1000 });
+  let now = 1000;
+  const f = setup();
+  const value = { ...f.value, stage: IssueStage.Done, nextAt: 901000 };
+  const observe = mock(() => Promise.resolve(observation()));
+  const service = new IssueService(
+    f.store.issues,
+    {
+      trackers: [
+        {
+          provider: "test",
+          identify: () => value.ref,
+          verifyRepository: () => {},
+          observe,
+          post: () => Promise.reject(new Error("Unexpected post")),
+          findPost: () => Promise.resolve(undefined),
+          createFollowUp: () =>
+            Promise.reject(new Error("Unexpected follow-up")),
+          findFollowUp: () => Promise.resolve(undefined),
+          close: () => Promise.reject(new Error("Unexpected close")),
+        },
+      ],
+      dispatchers: [],
+      workspace: {
+        allocate: () => Promise.reject(new Error("Unexpected assignment")),
+      },
+      codeHost: {
+        commit: () => Promise.reject(new Error("Unexpected commit")),
+        publish: () => Promise.reject(new Error("Unexpected publication")),
+        enroll: () => {
+          throw new Error("Unexpected enrollment");
+        },
+        inspect: () => undefined,
+      },
+      policy: () => {
+        throw new Error("Terminal source must not load execution policy");
+      },
+    },
+    () => now,
+  );
+  const scheduler = new WorkScheduler(() => now);
+  const ticks = spyOn(service, "tick");
+  const settle = async () => {
+    for (let i = 0; i < 30; i++) {
+      jest.advanceTimersByTime(0);
+      await Promise.resolve();
+    }
+  };
+  try {
+    f.store.issues.save(value, "done", "Done");
+    f.store.issues.subscriptions.set(value, f.owner.id, [Kind.Title]);
+    service.start(scheduler);
+    scheduler.start();
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    expect(observe).not.toHaveBeenCalled();
+    now += 899999;
+    jest.advanceTimersByTime(899999);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    now++;
+    jest.advanceTimersByTime(1);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(2);
+    expect(observe).toHaveBeenCalledTimes(1);
+    expect(f.store.issues.get(value.id).nextAt).toBe(1801000);
+    expect(f.store.issues.assignments()).toEqual([]);
+  } finally {
+    ticks.mockRestore();
+    await service.close();
+    await scheduler.close();
+    f.close();
+    jest.useRealTimers();
   }
 });

@@ -142,8 +142,13 @@ export class TrackingService {
     else this.task?.wake();
   }
   wake(): void {
-    this.deliveryNotBefore.clear();
     this.task?.wake();
+  }
+  inputsChanged(prId?: string): void {
+    for (const [id, value] of this.deliveryNotBefore)
+      if (prId === undefined || value.prId === prId)
+        this.deliveryNotBefore.delete(id);
+    this.wake();
   }
   private validateTarget(target: AgentTarget): void {
     if (
@@ -376,7 +381,11 @@ export class TrackingService {
       this.handoffWatchFailure = undefined;
       throw error;
     }
-    let next = this.now() + 30000;
+    // File intake only needs a fallback while its push channel is unavailable.
+    let next =
+      this.handoffs !== undefined && this.handoffWatcher === undefined
+        ? this.now() + 30000
+        : Infinity;
     if (this.handoffs !== undefined && this.handoffWork === undefined) {
       this.handoffWork = this.handoffs
         .drain((request) => {
@@ -416,12 +425,15 @@ export class TrackingService {
         next = Math.min(next, p.drainDeadlineAt);
       if (
         !p.enabled ||
-        this.now() < this.githubRetryAt ||
         (p.state !== TrackingState.Watching &&
           p.state !== TrackingState.Draining &&
           queued?.has(`tracking:${p.id}`) !== true)
       )
         continue;
+      if (this.now() < this.githubRetryAt) {
+        next = Math.min(next, this.githubRetryAt);
+        continue;
+      }
       const state = this.pollState(p.id);
       if (
         ((state?.epoch === p.trackingEpoch ? state.nextAt : undefined) ?? 0) <=
@@ -444,7 +456,7 @@ export class TrackingService {
         });
       next = Math.min(next, this.deliveryDeadline);
     }
-    return next;
+    return Number.isFinite(next) ? next : undefined;
   }
   private runPoll(id: string): void {
     const saved = this.options.schedules?.get(`tracking:${id}`);
@@ -466,7 +478,7 @@ export class TrackingService {
       this.options.managedQueue?.(agentId) === true
     );
   }
-  private deliveryNotBefore = new Map<string, number>();
+  private deliveryNotBefore = new Map<string, { at: number; prId: string }>();
   private *deliveryPlans(): Generator<{ delivery: Delivery; at: number }> {
     const candidates = this.store.deliveryCandidates();
     const managed = this.options.managedQueueBatch?.([
@@ -519,7 +531,7 @@ export class TrackingService {
         continue;
       yield {
         delivery: d,
-        at: Math.max(at, this.deliveryNotBefore.get(d.id) ?? 0),
+        at: Math.max(at, this.deliveryNotBefore.get(d.id)?.at ?? 0),
       };
     }
   }
@@ -555,7 +567,10 @@ export class TrackingService {
               : undefined;
       // An unchanged due row needs bounded upkeep rather than another immediate attempt.
       if (next !== undefined && next <= this.now())
-        this.deliveryNotBefore.set(plan.delivery.id, this.now() + 30000);
+        this.deliveryNotBefore.set(plan.delivery.id, {
+          at: this.now() + 30000,
+          prId: this.store.action(plan.delivery.actionId).prId,
+        });
       else this.deliveryNotBefore.delete(plan.delivery.id);
       this.task?.wake();
     }

@@ -37,8 +37,10 @@ export function privateDirectory(path: string): void {
   chmodSync(path, 0o700);
 }
 export interface InputScope {
-  prId: string;
+  prId?: string;
   recipients?: "all";
+  notificationEligibility?: true;
+  source?: "tracking" | "merge" | "repository" | "issues" | "submissions";
 }
 export class Store {
   private db!: DatabaseSync;
@@ -58,6 +60,9 @@ export class Store {
   readonly notifications:NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
+  private readonly eventListeners = new Set<() => void>();
+  private eventNotificationQueued = false;
+  private eventSequence = 0;
   constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: (scope?: InputScope) => void, private wakeJobs?: () => void) {
     privateDirectory(directory);
     this.ownership = new DatabaseSync(join(directory, "coordinator-lock.sqlite"));
@@ -79,15 +84,16 @@ export class Store {
       this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
       this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
+        this.notifyEvents();
         if (kind === "pr_observed" || kind === "pr_tracked" || kind === "pr_retracked" || kind === "pr_assigned" || kind === "pr_archived" ||
           kind === "pr_untracked" || kind === "pr_subscribed" ||
           kind === "pr_unsubscribed" || kind === "delivery_cancelled" ||
           kind === "message_acknowledged" || kind.startsWith("assessment_notification_"))
-          this.wakeDigests?.(kind === "pr_observed" || kind === "pr_archived" ? { prId } : undefined);
+          this.wakeDigests?.(kind === "pr_observed" || kind === "pr_archived" ? { prId, source: "tracking", ...(kind === "pr_archived" ? { notificationEligibility: true } : {}) } : undefined);
       }, this.notificationRepository, this.assessments);
-      this.activity = new ActivityStore(this.db, this.now);
+      this.activity = new ActivityStore(this.db, this.now, () => { this.notifyEvents(); });
       migrateEvidence(this.db);
-      this.repairs = new RepairStore(this.db, this.now);
+      this.repairs = new RepairStore(this.db, this.now, () => { this.notifyEvents(); });
       this.conflicts = new ConflictStore(this.db, this.now);
       migrateFeedback(this.db);
       migrateInbox(this.db);
@@ -99,22 +105,24 @@ export class Store {
       migrateMerging(this.db);
       migrateAutoMerge(this.db);
       migrateScheduling(this.db);
-      this.issues=new IssueStore(this.db,this.now,this.notificationRepository,()=>{ this.wakeDigests?.(); });
+      this.issues=new IssueStore(this.db,this.now,this.notificationRepository,()=>{ this.wakeDigests?.({source: "issues", recipients: "all"}); });
       this.schedules=new ScheduleStore(this.db,this.now);
       this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
       this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
-        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.(prId === undefined ? undefined : { prId, recipients: "all" });
+        this.notifyEvents();
+        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.(prId === undefined ? undefined : { prId, recipients: "all", source: "merge" });
       });
       this.repositories=new RepositoryPolicies(new RepositoryPolicyStore(this.db),this.tracking,this.merging,(kind,detail,prId)=>{
         this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
-        this.wakeDigests?.();
+        this.notifyEvents();
+        this.wakeDigests?.({ ...(prId === undefined ? {} : { prId }), recipients: "all", source: "repository" });
       });
       this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
       this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => {
         this.event("", kind, detail);
-        if (kind === "submission_notification") this.wakeDigests?.();
+        if (kind === "submission_notification") this.wakeDigests?.({ source: "submissions", recipients: "all" });
       }, this.notificationRepository);
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
@@ -152,10 +160,31 @@ export class Store {
       this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(job.id, this.now(), kind, detail.slice(0, 16000));
       this.db.exec("COMMIT");
     } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    this.notifyEvents();
     this.wakeJobs?.();
   }
   event(jobId: string, kind: string, detail: string): void {
     this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(jobId, this.now(), kind, detail.slice(0, 16000));
+    this.notifyEvents();
+  }
+  subscribeEvents(listener: () => void): () => void {
+    if (this.eventListeners.size === 0) this.eventSequence = this.sequence();
+    this.eventListeners.add(listener);
+    return () => { this.eventListeners.delete(listener); };
+  }
+  private notifyEvents(): void {
+    if (this.eventNotificationQueued) return;
+    this.eventNotificationQueued = true;
+    // Event callbacks can run inside a synchronous transaction. Observe its committed
+    // cursor only after the caller has committed or rolled back, never from mid-write.
+    queueMicrotask(() => {
+      this.eventNotificationQueued = false;
+      if (this.closed || this.eventListeners.size === 0) return;
+      const sequence = this.sequence();
+      if (sequence === this.eventSequence) return;
+      this.eventSequence = sequence;
+      for (const listener of this.eventListeners) listener();
+    });
   }
   events(after = 0, jobId?: string): JobEvent[] {
     const rows = jobId

@@ -24,6 +24,7 @@ import {
   type ApplicationFixture,
 } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
+import type { WatchDashboardResponse } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
 const url = "https://github.com/owner/repo/pull/31";
 const details = {
@@ -600,3 +601,106 @@ test("heartbeat defaults to five seconds independently of request pacing", async
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test(
+  "dashboard subscribers share retained state across heartbeats and stop liveness work when disconnected",
+  async () => {
+    const directory = await mkdtemp(join(tmpdir(), "octo-dashboard-retained-"));
+    const config = defaultTrackingConfig();
+    config.polling = {
+      minimumMs: 60000,
+      maximumMs: 900000,
+      activeMaximumMs: 120000,
+      tickMs: 25,
+      requestSpacingMs: 100,
+    };
+    const application = await createApplicationFixture(directory, {
+      trackingConfig: config,
+    });
+    const controller = new AbortController();
+    const nextFrame = async (stream: AsyncIterator<WatchDashboardResponse>) => {
+      const result = await stream.next();
+      if (result.done === true)
+        throw new Error("Dashboard stream ended before its next frame");
+      return result.value;
+    };
+    try {
+      await application.start();
+      application.command({ op: "pause" });
+      await Bun.sleep(20);
+      const original = application.store.jobs.bind(application.store);
+      let reads = 0;
+      application.store.jobs = () => {
+        reads++;
+        return original();
+      };
+      const client = schedulerClient(directory);
+      const firstUpdates = client.watchDashboard(
+        {},
+        { signal: controller.signal },
+      );
+      const secondUpdates = client.watchDashboard(
+        {},
+        { signal: controller.signal },
+      );
+      const first = firstUpdates[Symbol.asyncIterator]();
+      const second = secondUpdates[Symbol.asyncIterator]();
+      await nextFrame(first);
+      await nextFrame(second);
+      assert.equal(
+        reads,
+        1,
+        "a second subscriber must reuse the full projection",
+      );
+      const frame = await nextFrame(first);
+      await nextFrame(second);
+      assert.equal(
+        reads,
+        1,
+        "liveness frames must not reread full dashboard state",
+      );
+      assert((frame.snapshot?.githubScheduler?.tickSequence ?? 0n) > 0n);
+      application.store.event(
+        "",
+        "dashboard_event",
+        "invalidate the retained projection",
+      );
+      let changed = await nextFrame(first);
+      while (
+        changed.snapshot?.recentEvents.every(
+          (event) => event.kind !== "dashboard_event",
+        ) === true
+      )
+        changed = await nextFrame(first);
+      const secondChanged = await nextFrame(second);
+      assert(
+        secondChanged.snapshot?.recentEvents.some(
+          (event) => event.kind === "dashboard_event",
+        ) === true,
+      );
+      assert.equal(
+        reads,
+        2,
+        "one committed change needs one shared projection rebuild",
+      );
+      controller.abort();
+      await first.return?.();
+      await second.return?.();
+      const deadline = Date.now() + 1000;
+      while (
+        application.githubScheduler.status().nextTickAtMs !== 0 &&
+        Date.now() < deadline
+      )
+        await Bun.sleep(5);
+      assert.equal(application.githubScheduler.status().nextTickAtMs, 0);
+      const sequence = application.githubScheduler.status().tickSequence;
+      await Bun.sleep(75);
+      assert.equal(application.githubScheduler.status().tickSequence, sequence);
+    } finally {
+      controller.abort();
+      await application.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+  process.env["CI"] === undefined ? 2500 : 10000,
+);

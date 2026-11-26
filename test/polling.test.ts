@@ -15,7 +15,35 @@ import {
 import type { ObservationInput } from "../src/tracking/types.js";
 import { RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
 import { TrackingState } from "../src/tracking/retirement.js";
+import { GitHubRateLimitError } from "../src/github/reads.js";
 const url = "https://github.com/owner/repo/pull/1";
+test("tracking arms the rate-limit deadline without a periodic upkeep timer", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "octo-poll-cooldown-"));
+  const now = 1000,
+    retryAt = 121000;
+  const store = new Store(directory, () => now);
+  const pr = store.tracking.track(url, {
+    harness: "codex",
+    endpoint: "local",
+    sessionId: "cooldown-owner",
+  });
+  const service = new TrackingService(
+    store.tracking,
+    defaultTrackingConfig(),
+    () => now,
+    {
+      read: () => Promise.reject(new GitHubRateLimitError(retryAt)),
+    },
+  );
+  try {
+    await service.refresh(pr.id);
+    assert.equal(service.tick(), retryAt);
+  } finally {
+    await service.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 function observation(head = "head"): ObservationInput {
   return {
     observedAt: 1,

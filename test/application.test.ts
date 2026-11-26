@@ -54,6 +54,102 @@ test("early inputs retain revisions and coalesce wakes until the complete graph 
   }).toThrow("already bound");
 });
 
+test("buffered input coalescing preserves every affected capability and recipient scope", () => {
+  const inputs = new ApplicationInputs();
+  inputs.changed({ prId: "A", source: "tracking" });
+  inputs.changed({
+    prId: "A",
+    source: "tracking",
+    notificationEligibility: true,
+  });
+  inputs.changed({ prId: "A", source: "merge", recipients: "all" });
+  inputs.changed({ source: "issues", recipients: "all" });
+  const changes: Array<InputScope | undefined> = [];
+  inputs.bind({
+    changed: (scope) => {
+      changes.push(scope);
+    },
+    jobs: () => {},
+    recipient: () => {},
+  });
+  expect(changes).toEqual([
+    { prId: "A", recipients: "all", notificationEligibility: true },
+    { source: "issues", recipients: "all" },
+  ]);
+  expect(inputs.referenceRevision("A")).toBe("0:3");
+  expect(inputs.broadRevision()).toBe("2");
+});
+
+test("PR observations wake evidence consumers without unrelated capability scans", async () => {
+  const path = await directory();
+  const assembly = await assembleApplication(path);
+  const { services, store } = assembly;
+  const pr = store.tracking.track("https://github.com/owner/repo/pull/1", {
+    harness: "codex",
+    endpoint: "local",
+    sessionId: "scoped-owner",
+  });
+  const assessment = spyOn(services.assessments, "wake"),
+    merge = spyOn(services.merging, "wake"),
+    digest = spyOn(services.digests, "wake"),
+    tracking = spyOn(services.tracking, "inputsChanged"),
+    repair = spyOn(services.repairs, "wake"),
+    issue = spyOn(services.issues, "wake"),
+    submission = spyOn(services.submissions, "wake"),
+    submissionNotice = spyOn(services.submissionNotifications, "wake"),
+    notifications = spyOn(services.notifications, "wake");
+  const spies = [
+    assessment,
+    merge,
+    digest,
+    tracking,
+    repair,
+    issue,
+    submission,
+    submissionNotice,
+    notifications,
+  ];
+  try {
+    store.tracking.observe(
+      pr.id,
+      {
+        observedAt: 1000,
+        headSha: "head",
+        baseSha: "base",
+        lifecycle: "open",
+        mergeability: "mergeable",
+        checks: { state: "complete", value: [] },
+        reviews: { state: "complete", value: [] },
+      },
+      services.tracking.config,
+    );
+    expect(assessment).toHaveBeenCalledTimes(1);
+    expect(merge).toHaveBeenCalledTimes(1);
+    expect(digest).toHaveBeenCalledWith(pr.id);
+    expect(tracking).toHaveBeenCalledWith(pr.id);
+    for (const spy of [
+      repair,
+      issue,
+      submission,
+      submissionNotice,
+      notifications,
+    ])
+      expect(spy).not.toHaveBeenCalled();
+    for (const spy of spies) spy.mockClear();
+    assembly.inputs.changed({ source: "submissions", recipients: "all" });
+    expect(submission).toHaveBeenCalledTimes(1);
+    expect(submissionNotice).toHaveBeenCalledTimes(1);
+    expect(assessment).not.toHaveBeenCalled();
+    expect(repair).not.toHaveBeenCalled();
+    expect(issue).not.toHaveBeenCalled();
+    expect(notifications).not.toHaveBeenCalled();
+  } finally {
+    for (const spy of spies) spy.mockRestore();
+    await assembly.runtime.close();
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
 test("close during startup shares work, prevents dispatch and releases ownership", async () => {
   const path = await directory();
   const assembly = await assembleApplication(path);
