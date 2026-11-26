@@ -31,6 +31,12 @@ import {
   type TrackedPullRequest,
 } from "../gen/octomanager/v2/tracking_pb.js";
 
+import {
+  dashboardLink,
+  markdownReference,
+  type DashboardLink,
+} from "./links.js";
+
 export const primary = ["Attention", "Deliveries", "Activity"] as const;
 export const diagnostics = [
   "Reviews",
@@ -41,6 +47,22 @@ export const diagnostics = [
   "Issues",
 ] as const;
 export type Screen = (typeof primary)[number] | (typeof diagnostics)[number];
+export type StatusTone =
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "danger"
+  | "accent";
+type DetailFact = {
+  label: string;
+  value: string;
+};
+export type DetailLine =
+  | string
+  | (DetailFact & { kind: "pill"; tone: StatusTone })
+  | (DetailFact & { kind: "link"; link: DashboardLink });
+
 export interface DeliveryPresentation {
   subject: string;
   title?: string;
@@ -48,10 +70,10 @@ export interface DeliveryPresentation {
   group: "Needs intervention" | "In progress" | "Delivered / closed";
   next: string;
   observed: string;
-  identity: string[];
-  verification: string[];
-  authority: string[];
-  feedback: string[];
+  identity: DetailLine[];
+  verification: DetailLine[];
+  authority: DetailLine[];
+  feedback: DetailLine[];
 }
 export interface RecordView {
   id: string;
@@ -89,11 +111,89 @@ function field(
   return `${name}: ${value === undefined || value === "" ? fallback : String(value)}`;
 }
 
+function pill(
+  label: string,
+  value: string | undefined,
+  tone: StatusTone,
+): DetailLine {
+  return {
+    kind: "pill",
+    label,
+    value: value === undefined || value === "" ? "Unknown" : value,
+    tone,
+  };
+}
+
+function reference(label: string, url: string): DetailLine {
+  const link = dashboardLink(url);
+  return link === undefined
+    ? field(label, url === "" ? undefined : "Unsupported URL")
+    : { kind: "link", label, value: link.label, link };
+}
+
+const monitoringTones: Record<TrackingState, StatusTone> = {
+  [TrackingState.UNSPECIFIED]: "neutral",
+  [TrackingState.WATCHING]: "success",
+  [TrackingState.DRAINING]: "warning",
+  [TrackingState.ARCHIVED]: "neutral",
+  [TrackingState.DISABLED]: "neutral",
+};
+
+const transportTones: Record<DeliveryState, StatusTone> = {
+  [DeliveryState.UNSPECIFIED]: "neutral",
+  [DeliveryState.PENDING]: "info",
+  [DeliveryState.SENDING]: "info",
+  [DeliveryState.DELIVERED]: "success",
+  [DeliveryState.UNCERTAIN]: "warning",
+  [DeliveryState.UNAVAILABLE]: "danger",
+  [DeliveryState.CANCELLED]: "neutral",
+};
+
+const dispositionTones: Record<ActionState, StatusTone> = {
+  [ActionState.UNSPECIFIED]: "neutral",
+  [ActionState.OPEN]: "warning",
+  [ActionState.ACKNOWLEDGED]: "info",
+  [ActionState.WORKING]: "info",
+  [ActionState.RESOLVED]: "success",
+  [ActionState.SUPERSEDED]: "neutral",
+};
+
+function enumTone(
+  tones: Partial<Record<number, StatusTone>>,
+  value?: number,
+): StatusTone {
+  return value === undefined ? "neutral" : (tones[value] ?? "neutral");
+}
+
+function prStateTone(state: string | undefined): StatusTone {
+  if (state === "merged") return "success";
+  if (state === "open") return "info";
+  return "neutral";
+}
+
+function mergeProgressTone(state: string | undefined): StatusTone {
+  switch (state) {
+    case "uncertain":
+    case "waiting_owner":
+      return "warning";
+    case "blocked":
+      return "danger";
+    case "merged":
+      return "success";
+    case "waiting":
+    case "preparing":
+    case "waiting_checks":
+    case "ready":
+    case "merging":
+      return "info";
+    case undefined:
+    default:
+      return "neutral";
+  }
+}
+
 export function prLabel(url: string): string {
-  return url.replace(
-    /^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)$/u,
-    "$1 #$2",
-  );
+  return dashboardLink(url)?.label ?? url;
 }
 
 export function browserURL(value: string): string | undefined {
@@ -233,7 +333,7 @@ function prRecord(
       "Merge blocked",
       "Inspect the coordinator's reported blocker.",
     ]);
-  const actionDetails = actions.flatMap((action) => {
+  const actionDetails = actions.flatMap((action): DetailLine[] => {
     const routes =
       tracking?.deliveries.filter(
         (delivery) => delivery.actionId === action.id,
@@ -295,7 +395,7 @@ function prRecord(
           ]
         : []),
       field("Evidence head", action.evidenceHeadSha),
-      field("Evidence", action.evidenceUrl),
+      reference("Evidence", action.evidenceUrl),
       ...routes.flatMap((delivery) => [
         field(
           "Recipient",
@@ -303,17 +403,25 @@ function prRecord(
             (agent) => agent.id === delivery.recipientAgentId,
           )?.target?.label ?? delivery.recipientAgentId,
         ),
-        field("Transport", enumName(DeliveryState, delivery.state)),
-        field(
-          "Receipt",
-          delivery.acknowledgedAtMs === undefined
-            ? delivery.messageSequence === undefined
-              ? "Unavailable"
-              : "Awaiting acknowledgment"
-            : time(delivery.acknowledgedAtMs),
+        pill(
+          "Transport",
+          enumName(DeliveryState, delivery.state),
+          enumTone(transportTones, delivery.state),
         ),
+        delivery.acknowledgedAtMs !== undefined
+          ? pill("Receipt", "Acknowledged", "success")
+          : delivery.messageSequence === undefined
+            ? pill("Receipt", "Unavailable", "neutral")
+            : pill("Receipt", "Awaiting acknowledgment", "warning"),
+        ...(delivery.acknowledgedAtMs === undefined
+          ? []
+          : [field("Receipt recorded", time(delivery.acknowledgedAtMs))]),
       ]),
-      field("Owner disposition", enumName(ActionState, action.state)),
+      pill(
+        "Owner disposition",
+        enumName(ActionState, action.state),
+        enumTone(dispositionTones, action.state),
+      ),
     ];
   });
   if (pr?.refreshError !== undefined)
@@ -344,13 +452,24 @@ function prRecord(
   )[0] ?? [190, "Unknown", ""];
   const owner = tracking?.agents.find((agent) => agent.id === pr?.ownerAgentId);
   const evidence = [observation?.checks, observation?.workflows].flatMap(
-    (value, index) => {
+    (value, index): DetailLine[] => {
       const variant = value?.variant;
       const label = index === 0 ? "Checks" : "Workflows";
       if (variant?.case !== "variant1" && variant?.case !== "variant2")
-        return [field(label, variant === undefined ? undefined : "Incomplete")];
+        return [
+          pill(
+            label,
+            variant === undefined ? undefined : "Incomplete",
+            "neutral",
+          ),
+        ];
+      const complete = variant.case === "variant1";
       return [
-        `${label} · ${variant.case === "variant1" ? "complete" : "partial"}`,
+        pill(
+          label,
+          complete ? "complete" : "partial",
+          complete ? "info" : "warning",
+        ),
         ...(variant.value.value?.items.map(
           (check) =>
             `  ${check.name ?? "Unknown check"} · ${check.conclusion ?? check.status ?? "unknown"} · ${check.headSha === undefined || check.headSha === "" ? "unpinned" : check.headSha === observation?.headSha ? "current head" : "different head"}`,
@@ -382,32 +501,68 @@ function prRecord(
             owner?.target?.label ?? pr?.ownerAgentId,
             "Unassigned",
           ),
-          field("Monitoring", enumName(TrackingState, pr?.trackingState)),
-          field("PR state", observation?.lifecycle),
+          pill(
+            "Monitoring",
+            enumName(TrackingState, pr?.trackingState),
+            enumTone(monitoringTones, pr?.trackingState),
+          ),
+          pill(
+            "PR state",
+            observation?.lifecycle,
+            prStateTone(observation?.lifecycle),
+          ),
           field("Head", observation?.headSha),
           field("PR base", observation?.baseSha),
-          field("Target", observation?.targetBase?.ref),
+          observation?.targetBase?.ref === undefined ||
+          observation.targetBase.ref === ""
+            ? field("Target branch", undefined)
+            : pill(
+                "Target branch",
+                observation.targetBase.ref.replace(/^refs\/heads\//u, ""),
+                "accent",
+              ),
           field("Target head", observation?.targetBase?.sha),
         ],
         verification: [
-          field("Mergeability", observation?.mergeability),
+          pill(
+            "Mergeability",
+            observation?.mergeability,
+            observation?.mergeability === "mergeable"
+              ? "success"
+              : observation?.mergeability === "conflicting"
+                ? "danger"
+                : "neutral",
+          ),
           ...evidence,
           field("Refresh error", pr?.refreshError, "None reported"),
         ],
         authority: [
-          field("Auto merge", merge?.autoMerge === true ? "On" : "Off"),
+          pill(
+            "Auto merge",
+            merge?.autoMerge === true ? "On" : "Off",
+            merge?.autoMerge === true ? "info" : "neutral",
+          ),
           field("Authority source", merge?.autoMergeSource),
-          field("Coordinator progress", merge?.state),
-          field(
+          pill(
+            "Coordinator progress",
+            merge?.state.replaceAll("_", " "),
+            mergeProgressTone(merge?.state),
+          ),
+          pill(
             "Merge result",
             rank === -2
               ? "Confirmed"
               : merge?.state === "uncertain"
                 ? "Unconfirmed"
                 : "No confirmation in stored evidence",
+            rank === -2
+              ? "success"
+              : merge?.state === "uncertain"
+                ? "warning"
+                : "neutral",
           ),
           ...(merge?.prerequisiteUrls.map((address) =>
-            field("Requires merge", address),
+            reference("Requires merge", address),
           ) ?? []),
         ],
         feedback:
@@ -782,7 +937,7 @@ export function reviewDetail(
           ...review.messages.flatMap((message) => [
             "",
             `${message.author} · ${message.kind} · ${message.state} · ${time(message.atMs)}`,
-            field("Source", message.url),
+            field("Source", markdownReference(message.url)),
             field("Revision", message.commitSha),
             message.path === ""
               ? ""

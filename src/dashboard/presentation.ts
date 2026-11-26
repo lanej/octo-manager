@@ -1,11 +1,21 @@
-import { bg, bold, fg, link, StyledText, type TextChunk } from "@opentui/core";
 import {
-  browserURL,
+  bg,
+  bold,
+  fg,
+  link,
+  underline,
+  StyledText,
+  type TextChunk,
+} from "@opentui/core";
+import {
+  type DetailLine,
+  type StatusTone,
   type DeliveryPresentation,
   type RecordView,
   type Screen,
   safeText,
 } from "./records.js";
+import { dashboardLink } from "./links.js";
 
 export interface Palette {
   accent: string;
@@ -14,6 +24,7 @@ export interface Palette {
   surface: string;
   tab: string;
   warning: string;
+  danger: string;
   success: string;
   info: string;
   foreground?: string;
@@ -49,12 +60,29 @@ function deliveryColor(delivery: DeliveryPresentation, palette: Palette) {
   return palette.info;
 }
 
+function linkChunk(
+  label: string,
+  address: string,
+  palette: Palette,
+): TextChunk {
+  return link(address)(underline(fg(palette.accent)(label)));
+}
+
+function pillChunk(
+  label: string,
+  tone: StatusTone,
+  palette: Palette,
+): TextChunk {
+  const color = tone === "neutral" ? palette.muted : palette[tone];
+  return bg(palette.surface)(fg(color)(` ${line(label)} `));
+}
+
 function subject(row: RecordView, width: number, palette: Palette) {
-  const value = fg(palette.accent)(
-    clip(line(row.delivery?.subject ?? row.label), width),
-  );
-  const address = row.url === undefined ? undefined : browserURL(row.url);
-  return address === undefined ? value : link(address)(value);
+  const text = clip(line(row.delivery?.subject ?? row.label), width);
+  const address = row.url === undefined ? undefined : dashboardLink(row.url);
+  return address === undefined
+    ? fg(palette.accent)(text)
+    : linkChunk(text, address.url, palette);
 }
 
 export function listContent(
@@ -122,19 +150,49 @@ function section(title: string, width: number, palette: Palette): TextChunk[] {
   ];
 }
 
-function fact(value: string, palette: Palette): TextChunk[] {
+const referenceFields = new Set([
+  "PR",
+  "Issue",
+  "Evidence",
+  "Source",
+  "Requires merge",
+]);
+
+function fact(value: DetailLine, palette: Palette): TextChunk[] {
+  if (typeof value !== "string") {
+    const label = fg(palette.muted)(`${value.label}: `);
+    const content =
+      value.kind === "link"
+        ? linkChunk(line(value.link.label), value.link.url, palette)
+        : pillChunk(value.value, value.tone, palette);
+    return [label, content];
+  }
   const text = safeText(value);
   const separator = text.indexOf(": ");
   if (separator <= 0 || separator > 26 || text.startsWith("• "))
     return [plain(text)];
+  const label = text.slice(0, separator);
+  const detail = text.slice(separator + 2);
+  const reference = referenceFields.has(label)
+    ? dashboardLink(detail)
+    : undefined;
   return [
-    fg(palette.muted)(text.slice(0, separator + 2)),
-    plain(text.slice(separator + 2)),
+    fg(palette.muted)(`${label}: `),
+    reference === undefined
+      ? plain(detail)
+      : linkChunk(line(reference.label), reference.url, palette),
   ];
 }
 
-function facts(lines: readonly string[], palette: Palette): TextChunk[] {
+function facts(lines: readonly DetailLine[], palette: Palette): TextChunk[] {
   return lines.flatMap((value) => [...fact(value, palette), plain("\n")]);
+}
+
+function factWidth(chunks: readonly TextChunk[]): number {
+  return chunks.reduce(
+    (width, chunk) => width + Bun.stringWidth(chunk.text),
+    0,
+  );
 }
 
 function identityAndVerification(
@@ -145,12 +203,15 @@ function identityAndVerification(
   const leftWidth = Math.floor((width - 4) / 2);
   const rightWidth = width - leftWidth - 4;
   const { identity, verification } = delivery;
-  const fits = (value: string, cells: number) =>
-    !value.includes("\n") && Bun.stringWidth(safeText(value)) <= cells;
+  const leftFacts = identity.map((value) => fact(value, palette));
+  const rightFacts = verification.map((value) => fact(value, palette));
+  const fits = (chunks: readonly TextChunk[], cells: number) =>
+    chunks.every((chunk) => !chunk.text.includes("\n")) &&
+    factWidth(chunks) <= cells;
   if (
     width < 66 ||
-    !identity.every((value) => fits(value, leftWidth)) ||
-    !verification.every((value) => fits(value, rightWidth))
+    !leftFacts.every((value) => fits(value, leftWidth)) ||
+    !rightFacts.every((value) => fits(value, rightWidth))
   ) {
     return [
       ...section("Identity", width, palette),
@@ -171,11 +232,11 @@ function identityAndVerification(
     index < Math.max(identity.length, verification.length);
     index++
   ) {
-    const left = identity[index] ?? "";
+    const left = leftFacts[index] ?? [];
     columns.push(
-      ...fact(left, palette),
-      plain(" ".repeat(leftWidth + 4 - Bun.stringWidth(safeText(left)))),
-      ...fact(verification[index] ?? "", palette),
+      ...left,
+      plain(" ".repeat(leftWidth + 4 - factWidth(left))),
+      ...(rightFacts[index] ?? []),
       plain("\n"),
     );
   }
