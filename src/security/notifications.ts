@@ -46,9 +46,7 @@ export const NoticeSchema = Type.Object(
     prUrl: Type.Optional(Type.String()),
     head: Type.Optional(Type.String()),
     mergeState: Type.Optional(Type.Enum(EntryState)),
-    mergeOrigin: Type.Optional(
-      Type.Union([Type.Literal("external"), Type.Literal("octo")]),
-    ),
+    mergeOrigin: Type.Optional(Type.Union([Type.Literal("external"), Type.Literal("octo")])),
     issueStage: Type.Optional(Type.Enum(IssueStage)),
     issueWaiting: Type.Optional(Type.Enum(Waiting)),
     issueRevision: Type.Optional(Type.String()),
@@ -64,9 +62,7 @@ export const NoticeSchema = Type.Object(
         { additionalProperties: false },
       ),
     ),
-    role: Type.Optional(
-      Type.Union([Type.Literal("owner"), Type.Literal("observer")]),
-    ),
+    role: Type.Optional(Type.Union([Type.Literal("owner"), Type.Literal("observer")])),
     assessment: Type.Union([
       Type.Literal("pending"),
       Type.Literal("completed"),
@@ -107,11 +103,7 @@ export function validPR(value: string): string | undefined {
     return undefined;
   }
 }
-export function actionNotice(
-  action: Action,
-  prUrl: string,
-  assessment?: SafeNotice["assessment"],
-): SafeNotice {
+export function actionNotice(action: Action, prUrl: string, assessment?: SafeNotice["assessment"]): SafeNotice {
   const b = action.blocker;
   const kind =
     b.kind === "check_results"
@@ -122,11 +114,7 @@ export function actionNotice(
           : "checks_completed"
       : b.kind;
   const revision =
-    b.kind === "changes_requested"
-      ? b.reviewedHeadSha
-      : b.kind === "review_feedback"
-        ? b.feedback.headSha
-        : b.headSha;
+    b.kind === "changes_requested" ? b.reviewedHeadSha : b.kind === "review_feedback" ? b.feedback.headSha : b.headSha;
   const url = validPR(prUrl);
   return {
     version: 1,
@@ -174,13 +162,8 @@ export function noticeView(
 ): NoticeView {
   const url = notice.prUrl === undefined ? undefined : validPR(notice.prUrl);
   const group: NoticeReference =
-    url === undefined
-      ? { label: "Octo" }
-      : { label: `PR #${new URL(url).pathname.split("/").at(-1) ?? ""}`, url };
-  const head =
-    notice.head !== undefined && /^[a-f0-9]{40,64}$/u.test(notice.head)
-      ? notice.head
-      : undefined;
+    url === undefined ? { label: "Octo" } : { label: `PR #${new URL(url).pathname.split("/").at(-1) ?? ""}`, url };
+  const head = notice.head !== undefined && /^[a-f0-9]{40,64}$/u.test(notice.head) ? notice.head : undefined;
   const reference =
     url !== undefined && head !== undefined
       ? {
@@ -188,17 +171,12 @@ export function noticeView(
           url: `${url}/commits/${head}`,
         }
       : group;
-  const id = (value: string, ids: string[]) =>
-    /^[a-f0-9-]{8,36}$/u.test(value) ? shortId(value, ids) : "unavailable";
-  const fields: NoticeField[] = [
-    { label: "Assessment", value: notice.assessment },
-  ];
-  if (notice.issueStage !== undefined)
-    fields.push({ label: "Issue stage", value: notice.issueStage });
+  const id = (value: string, ids: string[]) => (/^[a-f0-9-]{8,36}$/u.test(value) ? shortId(value, ids) : "unavailable");
+  const fields: NoticeField[] = [{ label: "Assessment", value: notice.assessment }];
+  if (notice.issueStage !== undefined) fields.push({ label: "Issue stage", value: notice.issueStage });
   if (notice.issueWaiting !== undefined && notice.issueWaiting !== Waiting.None)
     fields.push({ label: "Waiting", value: notice.issueWaiting });
-  if (notice.role !== undefined)
-    fields.push({ label: "Role", value: notice.role });
+  if (notice.role !== undefined) fields.push({ label: "Role", value: notice.role });
   if (notice.assessmentId !== undefined)
     fields.push({
       label: "Assessment record",
@@ -220,12 +198,10 @@ export function noticeView(
     label: "Action",
     value:
       notice.subject?.kind === "action"
-        ? (notice.references?.subject ??
-          id(notice.subject.id, identities?.actions ?? []))
+        ? (notice.references?.subject ?? id(notice.subject.id, identities?.actions ?? []))
         : actionId === ""
           ? "none"
-          : (notice.references?.action ??
-            id(actionId, identities?.actions ?? [])),
+          : (notice.references?.action ?? id(actionId, identities?.actions ?? [])),
   });
   return {
     group,
@@ -242,9 +218,7 @@ export function noticeView(
   };
 }
 export function renderReference(reference: NoticeReference): string {
-  return reference.url === undefined
-    ? reference.label
-    : `[${reference.label}](${reference.url})`;
+  return reference.url === undefined ? reference.label : `[${reference.label}](${reference.url})`;
 }
 export function renderNotice(
   notice: SafeNotice,
@@ -255,9 +229,7 @@ export function renderNotice(
   const view = noticeView(notice, actionId, identities);
   const id =
     notice.references?.message ??
-    (/^[a-f0-9-]{8,36}$/u.test(messageId)
-      ? shortId(messageId, identities?.messages ?? [])
-      : "unavailable");
+    (/^[a-f0-9-]{8,36}$/u.test(messageId) ? shortId(messageId, identities?.messages ?? []) : "unavailable");
   return [
     `[octo-delivery:${id}]`,
     "[octo-notice:v1]",

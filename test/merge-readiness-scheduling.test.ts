@@ -1,12 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  expect,
-  jest,
-  mock,
-  spyOn,
-  test,
-} from "bun:test";
+import { afterEach, beforeEach, expect, jest, mock, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -34,9 +26,7 @@ async function settle() {
   }
 }
 async function fixture() {
-  const directory = await mkdtemp(
-    join(tmpdir(), "octo-merge-readiness-clock-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "octo-merge-readiness-clock-"));
   const config = defaultTrackingConfig();
   config.endpoints["local"] = { delivery: "queue", socket: "/controlled" };
   let now = 1000;
@@ -82,37 +72,23 @@ async function fixture() {
     methods: ["squash"],
   };
   const inspect = mock(() => Promise.resolve(structuredClone(current)));
-  const merge = mock(() =>
-    Promise.reject(new Error("No merge effect is authorized in this fixture")),
-  );
+  const merge = mock(() => Promise.reject(new Error("No merge effect is authorized in this fixture")));
   const provider: MergeProvider = { inspect, merge };
-  const service = new MergeService(
-    store.merging,
-    tracking,
-    {},
-    directory,
-    store.mergeConflicts,
-    clock,
-    { provider, referenceInputRevision: () => "fixture" },
-  );
+  const service = new MergeService(store.merging, tracking, {}, directory, store.mergeConflicts, clock, {
+    provider,
+    referenceInputRevision: () => "fixture",
+  });
   const pr = store.tracking.track(url, {
     harness: "codex",
     endpoint: "local",
     sessionId: "readiness-clock-owner",
   });
   store.tracking.observe(pr.id, current.observation, config);
-  const action = store.tracking
-    .actions(pr.id)
-    .find((value) => value.blocker.kind === "check_results");
+  const action = store.tracking.actions(pr.id).find((value) => value.blocker.kind === "check_results");
   if (action === undefined) throw new Error("Missing completion action");
-  const delivery = store.tracking
-    .deliveries()
-    .find((value) => value.actionId === action.id);
+  const delivery = store.tracking.deliveries().find((value) => value.actionId === action.id);
   if (delivery === undefined) throw new Error("Missing completion delivery");
-  store.tracking.inbox.record(
-    delivery.id,
-    agentMessage(action, url, delivery.id),
-  );
+  store.tracking.inbox.record(delivery.id, agentMessage(action, url, delivery.id));
   const initial = service.tick();
   await settle();
   await initial;
@@ -130,9 +106,7 @@ async function fixture() {
     get message() {
       const value = store.tracking.inbox
         .list(pr.ownerAgentId, 0, false, true)
-        .messages.find(
-          (item) => store.merging.readinessAction(item.id) === action.id,
-        );
+        .messages.find((item) => store.merging.readinessAction(item.id) === action.id);
       if (value === undefined) throw new Error("Missing readiness offer");
       return value;
     },

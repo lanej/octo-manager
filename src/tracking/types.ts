@@ -193,10 +193,7 @@ export type DeliveryProgress =
       note?: string;
     }
   | {
-      state:
-        | DeliveryState.Uncertain
-        | DeliveryState.Unavailable
-        | DeliveryState.Cancelled;
+      state: DeliveryState.Uncertain | DeliveryState.Unavailable | DeliveryState.Cancelled;
       at: number;
       reason: string;
     };
@@ -228,6 +225,4 @@ export interface TrackingSnapshot {
   checkWatches: CheckWatch[];
 }
 export const unfinished = (a: Action): boolean =>
-  [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(
-    a.progress.state,
-  );
+  [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(a.progress.state);

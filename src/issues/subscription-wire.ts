@@ -1,9 +1,6 @@
 import { IssueNotificationEventKind } from "../gen/octomanager/v2/issues_pb.js";
 import { IssueNotificationKind } from "./contracts.js";
-import type {
-  IssueNotificationEvidence,
-  IssueSubscription,
-} from "./subscriptions.js";
+import type { IssueNotificationEvidence, IssueSubscription } from "./subscriptions.js";
 const kinds: Record<IssueNotificationKind, IssueNotificationEventKind> = {
   title: IssueNotificationEventKind.TITLE,
   description: IssueNotificationEventKind.DESCRIPTION,
@@ -14,14 +11,10 @@ const kinds: Record<IssueNotificationKind, IssueNotificationEventKind> = {
   refresh_failure: IssueNotificationEventKind.REFRESH_FAILURE,
   refresh_recovery: IssueNotificationEventKind.REFRESH_RECOVERY,
 };
-export function wireIssueNotificationKind(
-  kind: IssueNotificationKind,
-): IssueNotificationEventKind {
+export function wireIssueNotificationKind(kind: IssueNotificationKind): IssueNotificationEventKind {
   return kinds[kind];
 }
-export function issueNotificationKind(
-  kind: IssueNotificationEventKind,
-): IssueNotificationKind {
+export function issueNotificationKind(kind: IssueNotificationEventKind): IssueNotificationKind {
   switch (kind) {
     case IssueNotificationEventKind.TITLE:
       return IssueNotificationKind.Title;

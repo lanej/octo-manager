@@ -27,25 +27,13 @@ export function dashboardLink(value: string): DashboardLink | undefined {
     };
   }
 
-  const pull = /^(\/[\w.-]+\/[\w.-]+)\/pull\/([1-9]\d*)\/?$/u.exec(
-    address.pathname,
-  );
+  const pull = /^(\/[\w.-]+\/[\w.-]+)\/pull\/([1-9]\d*)\/?$/u.exec(address.pathname);
   if (pull?.[1] !== undefined && pull[2] !== undefined) {
     const anchor = address.hash.slice(1);
-    const detail =
-      /^(pullrequestreview|discussion_r|issuecomment)-?(\d+)$/u.exec(anchor);
+    const detail = /^(pullrequestreview|discussion_r|issuecomment)-?(\d+)$/u.exec(anchor);
     const description =
-      detail?.[1] === "pullrequestreview"
-        ? "review"
-        : detail?.[1] === "discussion_r"
-          ? "thread"
-          : "comment";
-    const suffix =
-      detail?.[2] !== undefined
-        ? ` · ${description} ${detail[2]}`
-        : anchor === ""
-          ? ""
-          : ` · ${anchor}`;
+      detail?.[1] === "pullrequestreview" ? "review" : detail?.[1] === "discussion_r" ? "thread" : "comment";
+    const suffix = detail?.[2] !== undefined ? ` · ${description} ${detail[2]}` : anchor === "" ? "" : ` · ${anchor}`;
     return { label: `${pull[1].slice(1)} #${pull[2]}${suffix}`, url: value };
   }
 

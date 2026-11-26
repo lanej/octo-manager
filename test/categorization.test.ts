@@ -1,14 +1,7 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  CategorizationEngine,
-  shouldNotify,
-} from "../src/categorization/engine.js";
-import {
-  MessageCategory,
-  type GitHubMessage,
-  type HeuristicClassifier,
-} from "../src/categorization/types.js";
+import { CategorizationEngine, shouldNotify } from "../src/categorization/engine.js";
+import { MessageCategory, type GitHubMessage, type HeuristicClassifier } from "../src/categorization/types.js";
 const engine = new CategorizationEngine();
 function codex(status: string, findings: boolean | null): GitHubMessage {
   return {
@@ -35,8 +28,7 @@ test("author-routed heuristics produce inspectable categories and delivery polic
     assert(result.rule.length > 0 && result.reason.length > 0);
     assert.equal(shouldNotify(result), expected === MessageCategory.Unknown);
   }
-  const text =
-    "Copilot reviewed 10 out of 10 changed files and generated 0 comments.";
+  const text = "Copilot reviewed 10 out of 10 changed files and generated 0 comments.";
   const copilot: GitHubMessage = {
     author: "copilot-pull-request-reviewer[bot]",
     source: "review",
@@ -50,17 +42,10 @@ test("author-routed heuristics produce inspectable categories and delivery polic
     }).category,
     MessageCategory.Findings,
   );
+  assert.equal(engine.categorize({ ...copilot, author: "human" }).category, MessageCategory.Unknown);
+  assert.equal(engine.categorize({ ...copilot, source: "inline" }).category, MessageCategory.Unknown);
   assert.equal(
-    engine.categorize({ ...copilot, author: "human" }).category,
-    MessageCategory.Unknown,
-  );
-  assert.equal(
-    engine.categorize({ ...copilot, source: "inline" }).category,
-    MessageCategory.Unknown,
-  );
-  assert.equal(
-    engine.categorize({ ...copilot, body: "Copilot review is inconclusive." })
-      .category,
+    engine.categorize({ ...copilot, body: "Copilot review is inconclusive." }).category,
     MessageCategory.Inconclusive,
   );
 });
@@ -78,9 +63,7 @@ test("engine author registry selects a heuristic without coupling delivery polic
       };
     },
   };
-  const configured = new CategorizationEngine(
-    new Map([["example[bot]", classifier]]),
-  );
+  const configured = new CategorizationEngine(new Map([["example[bot]", classifier]]));
   const message: GitHubMessage = {
     author: "Example[bot]",
     source: "conversation",
@@ -91,9 +74,6 @@ test("engine author registry selects a heuristic without coupling delivery polic
   assert.equal(result.classifier.id, "example-patterns");
   assert.equal(result.classifier.version, 3);
   assert.equal(shouldNotify(result), false);
-  assert.equal(
-    configured.categorize({ ...message, author: "other" }).category,
-    MessageCategory.Unknown,
-  );
+  assert.equal(configured.categorize({ ...message, author: "other" }).category, MessageCategory.Unknown);
   assert.equal(calls, 1);
 });

@@ -3,19 +3,13 @@ import type { DigestStore } from "./store.js";
 import type { TrackingConfig } from "../tracking/config.js";
 import { terminal } from "./types.js";
 
-export function managedQueuePolicy(
-  tracking: TrackingStore,
-  digests: DigestStore,
-  config: TrackingConfig,
-) {
+export function managedQueuePolicy(tracking: TrackingStore, digests: DigestStore, config: TrackingConfig) {
   const managed = (agentId: string): boolean => {
     const agent = tracking.agent(agentId);
     if (agent.harness === "pi") return false;
     return (
       config.endpoints[agent.endpoint]?.delivery === "queue" ||
-      digests
-        .list(agentId)
-        .some((value) => !terminal(value) || value.cleanupPending)
+      digests.list(agentId).some((value) => !terminal(value) || value.cleanupPending)
     );
   };
   const managedBatch = (agentIds: readonly string[]): ReadonlySet<string> => {

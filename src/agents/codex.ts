@@ -17,12 +17,7 @@ function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function threadState(value: unknown): unknown {
-  if (
-    !object(value) ||
-    !object(value["thread"]) ||
-    !object(value["thread"]["status"])
-  )
-    return undefined;
+  if (!object(value) || !object(value["thread"]) || !object(value["thread"]["status"])) return undefined;
   return value["thread"]["status"]["type"];
 }
 export interface QueuedMessage {
@@ -33,16 +28,9 @@ export interface QueuedMessage {
 export interface QueueConnection {
   prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }>;
   queued(agent: AgentRef): Promise<QueuedMessage[]>;
-  enqueueQueued(
-    agent: AgentRef,
-    clientId: string,
-    body: string,
-  ): Promise<QueuedMessage>;
+  enqueueQueued(agent: AgentRef, clientId: string, body: string): Promise<QueuedMessage>;
   cancelQueued(agent: AgentRef, queueId: string): Promise<boolean>;
-  received(
-    agent: AgentRef,
-    bodies: string[],
-  ): Promise<{ bodies: string[]; complete: boolean }>;
+  received(agent: AgentRef, bodies: string[]): Promise<{ bodies: string[]; complete: boolean }>;
   close(): void;
 }
 function queuedMessage(value: unknown): QueuedMessage {
@@ -57,12 +45,7 @@ function queuedMessage(value: unknown): QueuedMessage {
   const input: unknown[] = value["input"];
   const body =
     input.length > 0 &&
-    input.every(
-      (part) =>
-        object(part) &&
-        part["type"] === "text" &&
-        typeof part["text"] === "string",
-    )
+    input.every((part) => object(part) && part["type"] === "text" && typeof part["text"] === "string")
       ? input.map((part) => (object(part) ? String(part["text"]) : "")).join("")
       : undefined;
   return {
@@ -74,11 +57,7 @@ function queuedMessage(value: unknown): QueuedMessage {
 export function codexSocketPath(socket?: string): string {
   return (
     socket ??
-    join(
-      process.env["CODEX_HOME"] ?? join(homedir(), ".codex"),
-      "app-server-control",
-      "app-server-control.sock",
-    )
+    join(process.env["CODEX_HOME"] ?? join(homedir(), ".codex"), "app-server-control", "app-server-control.sock")
   );
 }
 export class DeliveryError extends Error {
@@ -100,16 +79,8 @@ export interface AgentAcceptance {
 const queueNote = "Accepted by the Codex queue; agent receipt is pending.";
 export interface AgentConnection {
   prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }>;
-  send(
-    agent: AgentRef,
-    deliveryId: string,
-    text: string,
-  ): Promise<AgentAcceptance>;
-  find(
-    agent: AgentRef,
-    deliveryId: string,
-    expectedBody?: string,
-  ): Promise<AgentAcceptance & { found: boolean }>;
+  send(agent: AgentRef, deliveryId: string, text: string): Promise<AgentAcceptance>;
+  find(agent: AgentRef, deliveryId: string, expectedBody?: string): Promise<AgentAcceptance & { found: boolean }>;
   close(): void;
 }
 // WHY: The existing daemon accepts WebSocket frames over its Unix socket; the CLI proxy forwards raw bytes rather than newline JSON.
@@ -146,12 +117,7 @@ export class CodexConnection implements AgentConnection {
       } catch {
         return;
       }
-      if (
-        typeof m === "object" &&
-        m !== null &&
-        "id" in m &&
-        typeof m.id === "number"
-      ) {
+      if (typeof m === "object" && m !== null && "id" in m && typeof m.id === "number") {
         const p = this.pending.get(m.id);
         if (p === undefined) return;
         this.pending.delete(m.id);
@@ -167,26 +133,24 @@ export class CodexConnection implements AgentConnection {
                 m.error["code"] === -32600 &&
                 typeof m.error["message"] === "string" &&
                 (m.error["message"] === `session ${p.threadId} is archived` ||
-                  m.error["message"].startsWith(
-                    `session ${p.threadId} is archived.`,
-                  )),
+                  m.error["message"].startsWith(`session ${p.threadId} is archived.`)),
             ),
           );
         else p.resolve("result" in m ? m.result : undefined);
       }
       // WHY: Notification clients do not answer approval requests. Existing interactive hosts remain responsible.
     });
-    this.socket.on("error", () =>
-      this.fail(new DeliveryError("Codex connection unavailable")),
-    );
-    this.socket.on("close", () =>
-      this.fail(new DeliveryError("Codex connection closed")),
-    );
+    this.socket.on("error", () => {
+      this.fail(new DeliveryError("Codex connection unavailable"));
+    });
+    this.socket.on("close", () => {
+      this.fail(new DeliveryError("Codex connection closed"));
+    });
     this.ready = new Promise<void>((resolve, reject) => {
       this.socket.once("open", resolve);
-      this.socket.once("error", () =>
-        reject(new DeliveryError("Codex connection unavailable")),
-      );
+      this.socket.once("error", () => {
+        reject(new DeliveryError("Codex connection unavailable"));
+      });
     }).then(async () => {
       const initialize: InitializeParams = {
         clientInfo: {
@@ -194,10 +158,7 @@ export class CodexConnection implements AgentConnection {
           title: "Octo Manager",
           version: "0.1.0",
         },
-        capabilities:
-          this.delivery === "queue"
-            ? { experimentalApi: true, requestAttestation: false }
-            : null,
+        capabilities: this.delivery === "queue" ? { experimentalApi: true, requestAttestation: false } : null,
       };
       const info = await this.call("initialize", initialize);
       this.socket.send(JSON.stringify({ method: "initialized" }));
@@ -222,10 +183,7 @@ export class CodexConnection implements AgentConnection {
         this.pending.delete(id);
         reject(new DeliveryError("Codex request timed out"));
       }, 10000);
-      const threadId =
-        object(params) && typeof params["threadId"] === "string"
-          ? params["threadId"]
-          : undefined;
+      const threadId = object(params) && typeof params["threadId"] === "string" ? params["threadId"] : undefined;
       this.pending.set(id, { method, threadId, resolve, reject, timer });
       this.socket.send(JSON.stringify({ id, method, params }), (error) => {
         if (error) {
@@ -279,21 +237,13 @@ export class CodexConnection implements AgentConnection {
     }
     const state = threadState(result);
     if (state !== "idle" && state !== "active")
-      throw new DeliveryError(
-        "Codex thread is not available for delivery",
-        false,
-        true,
-      );
+      throw new DeliveryError("Codex thread is not available for delivery", false, true);
     return {
       busy: state === "active",
       ...(version === undefined ? {} : { version }),
     };
   }
-  async send(
-    agent: AgentRef,
-    deliveryId: string,
-    text: string,
-  ): Promise<AgentAcceptance> {
+  async send(agent: AgentRef, deliveryId: string, text: string): Promise<AgentAcceptance> {
     if (this.delivery === "queue") return this.enqueue(agent, deliveryId, text);
     const params: TurnStartParams = {
       threadId: agent.sessionId,
@@ -303,21 +253,14 @@ export class CodexConnection implements AgentConnection {
     try {
       const result = await this.call("turn/start", params);
       if (typeof result.turn?.id !== "string")
-        throw new DeliveryError(
-          "Codex acceptance response was incomplete",
-          true,
-        );
+        throw new DeliveryError("Codex acceptance response was incomplete", true);
       return { turnId: result.turn.id };
     } catch (error) {
       if (error instanceof DeliveryError && error.permanent) throw error;
       throw new DeliveryError("Codex delivery acceptance is unknown", true);
     }
   }
-  private async enqueue(
-    agent: AgentRef,
-    deliveryId: string,
-    text: string,
-  ): Promise<{ queueId: string; note: string }> {
+  private async enqueue(agent: AgentRef, deliveryId: string, text: string): Promise<{ queueId: string; note: string }> {
     const params: ThreadQueueAddParams = {
       threadId: agent.sessionId,
       clientUserMessageId: deliveryId,
@@ -328,25 +271,15 @@ export class CodexConnection implements AgentConnection {
       if (!object(result) || !object(result["queuedSubmission"]))
         throw new DeliveryError("Codex queue receipt is incomplete", true);
       const receipt = result["queuedSubmission"];
-      if (
-        typeof receipt["id"] !== "string" ||
-        receipt["id"] === "" ||
-        receipt["clientUserMessageId"] !== deliveryId
-      )
-        throw new DeliveryError(
-          "Codex queue receipt does not match this delivery",
-          true,
-        );
+      if (typeof receipt["id"] !== "string" || receipt["id"] === "" || receipt["clientUserMessageId"] !== deliveryId)
+        throw new DeliveryError("Codex queue receipt does not match this delivery", true);
       return {
         queueId: receipt["id"],
         note: queueNote,
       };
     } catch (error) {
       if (error instanceof DeliveryError && error.permanent) throw error;
-      throw new DeliveryError(
-        "Codex queue acceptance is unknown; inspect before retrying",
-        true,
-      );
+      throw new DeliveryError("Codex queue acceptance is unknown; inspect before retrying", true);
     }
   }
   async find(
@@ -379,8 +312,7 @@ export class CodexConnection implements AgentConnection {
         }
         const next = result["nextCursor"];
         if (next === undefined || next === null || next === "") break;
-        if (typeof next !== "string")
-          throw new DeliveryError("Codex queue cursor invalid");
+        if (typeof next !== "string") throw new DeliveryError("Codex queue cursor invalid");
         cursor = next;
       }
     }
@@ -394,57 +326,34 @@ export class CodexConnection implements AgentConnection {
         ...(cursor === undefined ? {} : { cursor }),
       };
       const result: unknown = await this.call("thread/turns/list", params);
-      if (!object(result) || !Array.isArray(result["data"]))
-        throw new DeliveryError("Codex history unavailable");
+      if (!object(result) || !Array.isArray(result["data"])) throw new DeliveryError("Codex history unavailable");
       const turns: unknown[] = result["data"];
       for (const turn of turns) {
         if (
           object(turn) &&
           typeof turn["id"] === "string" &&
-          (expectedBody !== undefined ||
-            JSON.stringify(turn["items"] ?? []).includes(
-              `[octo-delivery:${deliveryId}]`,
-            ))
+          (expectedBody !== undefined || JSON.stringify(turn["items"] ?? []).includes(`[octo-delivery:${deliveryId}]`))
         ) {
-          const items: unknown[] = Array.isArray(turn["items"])
-            ? turn["items"]
-            : [];
+          const items: unknown[] = Array.isArray(turn["items"]) ? turn["items"] : [];
           const received =
             expectedBody !== undefined &&
             items.some((item) => {
-              if (
-                !object(item) ||
-                item["type"] !== "userMessage" ||
-                !Array.isArray(item["content"])
-              )
-                return false;
+              if (!object(item) || item["type"] !== "userMessage" || !Array.isArray(item["content"])) return false;
               const content: unknown[] = item["content"];
               return (
                 content.length > 0 &&
-                content.every(
-                  (part) =>
-                    object(part) &&
-                    part["type"] === "text" &&
-                    typeof part["text"] === "string",
-                ) &&
-                content
-                  .map((part) => (object(part) ? part["text"] : ""))
-                  .join("") === expectedBody
+                content.every((part) => object(part) && part["type"] === "text" && typeof part["text"] === "string") &&
+                content.map((part) => (object(part) ? part["text"] : "")).join("") === expectedBody
               );
             });
-          if (received)
-            return { found: true, turnId: turn["id"], received: true };
-          if (expectedBody === undefined)
-            return { found: true, turnId: turn["id"] };
+          if (received) return { found: true, turnId: turn["id"], received: true };
+          if (expectedBody === undefined) return { found: true, turnId: turn["id"] };
         }
       }
       const next = result["nextCursor"];
       if (next === undefined || next === null || next === "")
-        return queued === undefined
-          ? { found: false }
-          : { found: true, ...queued };
-      if (typeof next !== "string")
-        throw new DeliveryError("Codex history cursor invalid");
+        return queued === undefined ? { found: false } : { found: true, ...queued };
+      if (typeof next !== "string") throw new DeliveryError("Codex history cursor invalid");
       cursor = next;
     }
     return queued === undefined ? { found: false } : { found: true, ...queued };
@@ -469,20 +378,13 @@ export class CodexConnection implements AgentConnection {
       }
       const next = result["nextCursor"];
       if (next === undefined || next === null || next === "") return values;
-      if (typeof next !== "string" || cursors.has(next))
-        throw new DeliveryError("Invalid queue coverage cursor");
+      if (typeof next !== "string" || cursors.has(next)) throw new DeliveryError("Invalid queue coverage cursor");
       cursors.add(next);
       cursor = next;
     }
-    throw new DeliveryError(
-      "Queue inspection bound reached; coverage is incomplete",
-    );
+    throw new DeliveryError("Queue inspection bound reached; coverage is incomplete");
   }
-  async enqueueQueued(
-    agent: AgentRef,
-    clientId: string,
-    body: string,
-  ): Promise<QueuedMessage> {
+  async enqueueQueued(agent: AgentRef, clientId: string, body: string): Promise<QueuedMessage> {
     await this.ready;
     const params: ThreadQueueAddParams = {
       threadId: agent.sessionId,
@@ -490,14 +392,10 @@ export class CodexConnection implements AgentConnection {
       input: [{ type: "text", text: body, text_elements: [] }],
     };
     const result: unknown = await this.call("thread/queue/add", params);
-    if (!object(result))
-      throw new DeliveryError("Invalid queue admission response", true);
+    if (!object(result)) throw new DeliveryError("Invalid queue admission response", true);
     const item = queuedMessage(result["queuedSubmission"]);
     if (item.clientId !== clientId || item.body !== body)
-      throw new DeliveryError(
-        "Queue admission does not confirm the intended digest revision",
-        true,
-      );
+      throw new DeliveryError("Queue admission does not confirm the intended digest revision", true);
     return item;
   }
   async cancelQueued(agent: AgentRef, queueId: string): Promise<boolean> {
@@ -511,10 +409,7 @@ export class CodexConnection implements AgentConnection {
       throw new DeliveryError("Invalid queue cancellation response", true);
     return result["deleted"];
   }
-  async received(
-    agent: AgentRef,
-    bodies: string[],
-  ): Promise<{ bodies: string[]; complete: boolean }> {
+  async received(agent: AgentRef, bodies: string[]): Promise<{ bodies: string[]; complete: boolean }> {
     await this.ready;
     const expected = new Set(bodies),
       found = new Set<string>(),
@@ -536,36 +431,21 @@ export class CodexConnection implements AgentConnection {
         if (!object(turn) || !Array.isArray(turn["items"])) continue;
         const items: unknown[] = turn["items"];
         for (const item of items) {
-          if (
-            !object(item) ||
-            item["type"] !== "userMessage" ||
-            !Array.isArray(item["content"])
-          )
-            continue;
+          if (!object(item) || item["type"] !== "userMessage" || !Array.isArray(item["content"])) continue;
           const content: unknown[] = item["content"];
           if (
             content.length === 0 ||
-            !content.every(
-              (part) =>
-                object(part) &&
-                part["type"] === "text" &&
-                typeof part["text"] === "string",
-            )
+            !content.every((part) => object(part) && part["type"] === "text" && typeof part["text"] === "string")
           )
             continue;
-          const body = content
-            .map((part) => (object(part) ? String(part["text"]) : ""))
-            .join("");
+          const body = content.map((part) => (object(part) ? String(part["text"]) : "")).join("");
           if (expected.has(body)) found.add(body);
         }
       }
       const next = result["nextCursor"];
-      if (next === undefined || next === null || next === "")
-        return { bodies: [...found], complete: true };
-      if (typeof next !== "string" || cursors.has(next))
-        throw new DeliveryError("Invalid receipt coverage cursor");
-      if (found.size === expected.size)
-        return { bodies: [...found], complete: false };
+      if (next === undefined || next === null || next === "") return { bodies: [...found], complete: true };
+      if (typeof next !== "string" || cursors.has(next)) throw new DeliveryError("Invalid receipt coverage cursor");
+      if (found.size === expected.size) return { bodies: [...found], complete: false };
       cursors.add(next);
       cursor = next;
     }

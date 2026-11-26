@@ -7,9 +7,7 @@ const object = <T extends Record<string, TSchema>>(properties: T) =>
 const strings = (maxItems = 100) => Type.Array(text(), { maxItems });
 export const policyAnalystVersion = 3;
 export function isPullRequestTemplate(path: string): boolean {
-  return /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/iu.test(
-    path,
-  );
+  return /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/iu.test(path);
 }
 export enum SubmissionState {
   Queued = "queued",
@@ -46,9 +44,7 @@ export const ValidationSchema = object({
   evidenceUrl: Type.Optional(text(2000)),
 });
 export const SubmissionInputSchema = object({
-  mode: Type.Optional(
-    Type.Union([Type.Literal("publish"), Type.Literal("policy")]),
-  ),
+  mode: Type.Optional(Type.Union([Type.Literal("publish"), Type.Literal("policy")])),
   requestId: text(200),
   repository: Type.String({
     pattern: "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
@@ -114,13 +110,11 @@ const ProfileSchema = Type.Object(
   {
     minWords: Type.Integer({
       minimum: 0,
-      description:
-        "Advisory minimum description length; never pad a PR to meet it.",
+      description: "Advisory minimum description length; never pad a PR to meet it.",
     }),
     maxWords: Type.Integer({
       minimum: 1,
-      description:
-        "Advisory upper range; preserve required and material context.",
+      description: "Advisory upper range; preserve required and material context.",
     }),
     guidance: text(),
     advisory: Type.Literal(true),
@@ -143,11 +137,7 @@ export const PolicySchema = object({
   repository: text(200),
   version: Type.Integer({ minimum: 1 }),
   sourceDigest: text(100),
-  analystVersion: Type.Union([
-    Type.Literal(1),
-    Type.Literal(2),
-    Type.Literal(policyAnalystVersion),
-  ]),
+  analystVersion: Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(policyAnalystVersion)]),
   stockVersion: Type.Literal(1),
   createdAtMs: Type.Integer(),
   citationCorrections: Type.Optional(
@@ -171,11 +161,7 @@ export const ChangeAnalysisSchema = object({
       statement: text(),
       falsification: text(),
       evidenceRefs: strings(100),
-      basis: Type.Union([
-        Type.Literal("reported"),
-        Type.Literal("observed"),
-        Type.Literal("unverified"),
-      ]),
+      basis: Type.Union([Type.Literal("reported"), Type.Literal("observed"), Type.Literal("unverified")]),
     }),
     { maxItems: 100 },
   ),
@@ -214,14 +200,11 @@ export type Requirement = Static<typeof RequirementSchema>;
 export type PolicyAnalysis = Static<typeof PolicyAnalysisSchema>;
 export type RepositoryPolicy = Static<typeof PolicySchema>;
 export type ChangeAnalysis = Static<typeof ChangeAnalysisSchema>;
-export function normalizeChangeEvidence(
-  change: ChangeAnalysis,
-): ChangeAnalysis {
+export function normalizeChangeEvidence(change: ChangeAnalysis): ChangeAnalysis {
   return {
     ...change,
     claims: change.claims.map((claim) =>
-      claim.basis === "observed" &&
-      claim.evidenceRefs.some((ref) => ref.startsWith("validation:"))
+      claim.basis === "observed" && claim.evidenceRefs.some((ref) => ref.startsWith("validation:"))
         ? { ...claim, basis: "reported" }
         : claim,
     ),
@@ -241,11 +224,7 @@ export const SnapshotSchema = object({
   sourceDigest: text(100),
 });
 export const StageResultSchema = object({
-  role: Type.Union([
-    Type.Literal("policy"),
-    Type.Literal("change"),
-    Type.Literal("writer"),
-  ]),
+  role: Type.Union([Type.Literal("policy"), Type.Literal("change"), Type.Literal("writer")]),
   model: text(200),
   promptDigest: text(100),
   raw: text(65536),
@@ -279,42 +258,15 @@ export interface StageTask {
   input: unknown;
   schema: TSchema;
 }
-export function parse(
-  schema: typeof SubmissionInputSchema,
-  value: unknown,
-): Static<typeof SubmissionInputSchema>;
-export function parse(
-  schema: typeof PolicySchema,
-  value: unknown,
-): Static<typeof PolicySchema>;
-export function parse(
-  schema: typeof PolicyAnalysisSchema,
-  value: unknown,
-): Static<typeof PolicyAnalysisSchema>;
-export function parse(
-  schema: typeof ChangeAnalysisSchema,
-  value: unknown,
-): Static<typeof ChangeAnalysisSchema>;
-export function parse(
-  schema: typeof WriterSchema,
-  value: unknown,
-): Static<typeof WriterSchema>;
-export function parse(
-  schema: typeof BriefSchema,
-  value: unknown,
-): Static<typeof BriefSchema>;
-export function parse(
-  schema: typeof SnapshotSchema,
-  value: unknown,
-): Static<typeof SnapshotSchema>;
-export function parse(
-  schema: typeof StageResultSchema,
-  value: unknown,
-): Static<typeof StageResultSchema>;
-export function parse(
-  schema: typeof SubmissionSchema,
-  value: unknown,
-): Static<typeof SubmissionSchema>;
+export function parse(schema: typeof SubmissionInputSchema, value: unknown): Static<typeof SubmissionInputSchema>;
+export function parse(schema: typeof PolicySchema, value: unknown): Static<typeof PolicySchema>;
+export function parse(schema: typeof PolicyAnalysisSchema, value: unknown): Static<typeof PolicyAnalysisSchema>;
+export function parse(schema: typeof ChangeAnalysisSchema, value: unknown): Static<typeof ChangeAnalysisSchema>;
+export function parse(schema: typeof WriterSchema, value: unknown): Static<typeof WriterSchema>;
+export function parse(schema: typeof BriefSchema, value: unknown): Static<typeof BriefSchema>;
+export function parse(schema: typeof SnapshotSchema, value: unknown): Static<typeof SnapshotSchema>;
+export function parse(schema: typeof StageResultSchema, value: unknown): Static<typeof StageResultSchema>;
+export function parse(schema: typeof SubmissionSchema, value: unknown): Static<typeof SubmissionSchema>;
 export function parse(schema: TSchema, value: unknown): unknown;
 export function parse(schema: TSchema, value: unknown): unknown {
   if (!Check(schema, value)) throw new Error("Invalid structured PR data");
@@ -354,14 +306,10 @@ export const stockProfiles: Record<
     advisory: true,
     minWords: 250,
     maxWords: 600,
-    guidance:
-      "Cross-boundary, migration, concurrency, security, breaking-change or rollout concerns",
+    guidance: "Cross-boundary, migration, concurrency, security, breaking-change or rollout concerns",
   },
 };
-export function renderTemplate(
-  policy: RepositoryPolicy,
-  tier: Complexity,
-): string {
+export function renderTemplate(policy: RepositoryPolicy, tier: Complexity): string {
   const profiles = policy.complexityProfiles ?? stockProfiles;
   return policy.analysis.template !== ""
     ? policy.analysis.template
@@ -370,36 +318,23 @@ export function renderTemplate(
 export function applicable(requirement: Requirement, files: string[]): boolean {
   return (
     requirement.scope === "*" ||
-    files.some(
-      (file) =>
-        file === requirement.scope ||
-        file.startsWith(requirement.scope.replace(/\/$/, "") + "/"),
-    )
+    files.some((file) => file === requirement.scope || file.startsWith(requirement.scope.replace(/\/$/, "") + "/"))
   );
 }
-export function policyBlockers(
-  analysis: PolicyAnalysis,
-  sources: Source[],
-): string[] {
+export function policyBlockers(analysis: PolicyAnalysis, sources: Source[]): string[] {
   const blockers = [...analysis.blockers];
   const ids = new Set<string>();
   for (const requirement of analysis.requirements) {
-    if (ids.has(requirement.id))
-      blockers.push(`Duplicate requirement ${requirement.id}`);
+    if (ids.has(requirement.id)) blockers.push(`Duplicate requirement ${requirement.id}`);
     ids.add(requirement.id);
     const source = sources.find(
-      (source) =>
-        source.path === requirement.sourcePath &&
-        source.sha === requirement.sourceSha,
+      (source) => source.path === requirement.sourcePath && source.sha === requirement.sourceSha,
     );
     if (
       source === undefined ||
       !source.text
         .split("\n")
-        .slice(
-          requirement.line - 1,
-          requirement.line - 1 + requirement.quote.split("\n").length,
-        )
+        .slice(requirement.line - 1, requirement.line - 1 + requirement.quote.split("\n").length)
         .join("\n")
         .includes(requirement.quote)
     )
@@ -416,19 +351,10 @@ export function policyBlockers(
   }
   return blockers;
 }
-export function publicationBlockers(
-  brief: PrBrief,
-  policy: RepositoryPolicy,
-  files: string[],
-): string[] {
+export function publicationBlockers(brief: PrBrief, policy: RepositoryPolicy, files: string[]): string[] {
   const checks = brief.draft.requirementChecks;
-  const blockers = [
-    ...brief.change.blockers,
-    ...brief.draft.blockers,
-    ...policy.analysis.blockers,
-  ];
-  if (brief.draft.title.trim().length === 0)
-    blockers.push("PR title must not be blank");
+  const blockers = [...brief.change.blockers, ...brief.draft.blockers, ...policy.analysis.blockers];
+  if (brief.draft.title.trim().length === 0) blockers.push("PR title must not be blank");
   if (brief.draft.title.trimStart().startsWith("#"))
     blockers.push("PR title must be plain text, not a Markdown heading");
   if (
@@ -437,21 +363,13 @@ export function publicationBlockers(
         rule.strength === "required" &&
         applicable(rule, files) &&
         rule.check.kind === "title_max_length" &&
-        !checks.some(
-          (check) =>
-            check.ruleId === rule.id && check.status === "not_applicable",
-        ),
+        !checks.some((check) => check.ruleId === rule.id && check.status === "not_applicable"),
     ) &&
     Array.from(brief.draft.title).length > 72
   )
     blockers.push("PR title must be at most 72 characters by default");
-  if (brief.draft.body.trim().length === 0)
-    blockers.push("PR body must not be blank");
-  if (
-    Array.from(brief.draft.title).some(
-      (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
-    )
-  )
+  if (brief.draft.body.trim().length === 0) blockers.push("PR body must not be blank");
+  if (Array.from(brief.draft.title).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127))
     blockers.push("PR title must be one printable line");
   const publicationText = `${brief.draft.title}\n${brief.draft.body}`;
   if (
@@ -462,26 +380,17 @@ export function publicationBlockers(
       publicationText,
     )
   )
-    blockers.push(
-      "Replace local-only links with durable evidence or describe the gap",
-    );
+    blockers.push("Replace local-only links with durable evidence or describe the gap");
   const evidence = new Set([
     "diff",
-    ...brief.request.validation.map(
-      (_, index) => `validation:${String(index)}`,
-    ),
+    ...brief.request.validation.map((_, index) => `validation:${String(index)}`),
     ...policy.sources.map((source) => `source:${source.path}`),
   ]);
   for (const claim of brief.change.claims) {
     if (claim.evidenceRefs.some((ref) => !evidence.has(ref)))
       blockers.push(`Unknown evidence reference for claim: ${claim.statement}`);
-    if (
-      claim.basis === "observed" &&
-      claim.evidenceRefs.some((ref) => ref.startsWith("validation:"))
-    )
-      blockers.push(
-        "Caller-reported validation cannot be marked independently observed",
-      );
+    if (claim.basis === "observed" && claim.evidenceRefs.some((ref) => ref.startsWith("validation:")))
+      blockers.push("Caller-reported validation cannot be marked independently observed");
   }
   for (const rule of policy.analysis.requirements.filter(
     (rule) => rule.strength === "required" && applicable(rule, files),
@@ -489,9 +398,7 @@ export function publicationBlockers(
     const assessment = checks.find((check) => check.ruleId === rule.id);
     if (assessment?.status === "not_applicable") {
       if (rule.condition === undefined || assessment.rationale.trim() === "")
-        blockers.push(
-          `Required ${rule.id}: not-applicable requires a verified source condition and rationale`,
-        );
+        blockers.push(`Required ${rule.id}: not-applicable requires a verified source condition and rationale`);
       continue;
     }
     let met: boolean;
@@ -500,32 +407,21 @@ export function publicationBlockers(
         met = brief.draft.body.includes(rule.check.value);
         break;
       case "title_prefix":
-        met = rule.check.prefixes.some((prefix) =>
-          brief.draft.title.startsWith(prefix),
-        );
+        met = rule.check.prefixes.some((prefix) => brief.draft.title.startsWith(prefix));
         break;
       case "title_max_length":
         met = Array.from(brief.draft.title).length <= rule.check.maximum;
         break;
       case "evidence_required":
-        met = brief.request.validation.some(
-          (entry) =>
-            entry.evidenceUrl !== undefined || entry.note !== undefined,
-        );
+        met = brief.request.validation.some((entry) => entry.evidenceUrl !== undefined || entry.note !== undefined);
         break;
       case "semantic":
-        met = checks.some(
-          (check) => check.ruleId === rule.id && check.status === "satisfied",
-        );
+        met = checks.some((check) => check.ruleId === rule.id && check.status === "satisfied");
         break;
     }
     if (!met) blockers.push(`Required ${rule.id}: ${rule.description}`);
   }
-  if (
-    /TODO:\s*attach|<What changes|<Concrete example|<Material compatibility/i.test(
-      brief.draft.body,
-    )
-  )
+  if (/TODO:\s*attach|<What changes|<Concrete example|<Material compatibility/i.test(brief.draft.body))
     blockers.push("Unfilled PR template placeholders");
   return blockers;
 }
@@ -553,14 +449,11 @@ export function anchorPolicy(
   const corrections: NonNullable<RepositoryPolicy["citationCorrections"]> = [];
   const requirements = analysis.requirements.map((requirement) => {
     const source = sources.find(
-      (source) =>
-        source.path === requirement.sourcePath &&
-        source.sha === requirement.sourceSha,
+      (source) => source.path === requirement.sourcePath && source.sha === requirement.sourceSha,
     );
     if (source === undefined) return requirement;
     const index = source.text.indexOf(requirement.quote);
-    if (index < 0 || source.text.indexOf(requirement.quote, index + 1) >= 0)
-      return requirement;
+    if (index < 0 || source.text.indexOf(requirement.quote, index + 1) >= 0) return requirement;
     const line = source.text.slice(0, index).split("\n").length;
     if (line === requirement.line) return requirement;
     corrections.push({

@@ -46,7 +46,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "copy(resolve(dirname(path), match[1]! + \".ts\"));",
+      "source": "for (const match of source.matchAll(/from \"([^\"]+)\"/g)) copy(resolve(dirname(path), match[1]! + \".ts\"));",
       "count": 1
     },
     {
@@ -55,30 +55,6 @@
       "rule": "@typescript-eslint/no-base-to-string",
       "message": "'data' may use Object's default stringification format ('[object Object]') when stringified.",
       "source": "m = JSON.parse(data.toString());",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "reject(new DeliveryError(\"Codex connection unavailable\")),",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "this.fail(new DeliveryError(\"Codex connection closed\")),",
-      "count": 1
-    },
-    {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "this.fail(new DeliveryError(\"Codex connection unavailable\")),",
       "count": 1
     },
     {
@@ -146,30 +122,6 @@
       "count": 1
     },
     {
-      "file": "src/agents/codex.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (error) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "process.exitCode = await new Promise<number>((resolve, reject) => { child.on(\"error\", reject); child.on(\"exit\", code => resolve(code ?? 1)); }); return;",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "process.exitCode = await new Promise<number>((resolve, reject) => { child.on(\"error\", reject); child.on(\"exit\", code => resolve(code ?? 1)); });",
-      "count": 1
-    },
-    {
       "file": "src/cli.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
@@ -190,7 +142,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "const conflict = await request(directory, { op: \"submit\", requestId: `${requestId}:conflict`, task: { kind: \"resolve_conflict\" } });",
+      "source": "const conflict = await request(directory, {",
       "count": 1
     },
     {
@@ -206,7 +158,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "const github = await request(directory, { op: \"submit\", requestId: `${requestId}:github`, task: { kind: \"summarize_pr\", url: values.url ?? \"https://github.com/earendil-works/pi/pull/11546\" } });",
+      "source": "const github = await request(directory, {",
       "count": 1
     },
     {
@@ -254,7 +206,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "source": "} else if (command === \"submit\" && argument === \"summarize-pr\" && values.url) result = await request(directory, { op: \"submit\", requestId: values[\"request-id\"] ?? randomUUID(), task: { kind: \"summarize_pr\", url: values.url } });",
+      "source": "} else if (command === \"submit\" && argument === \"summarize-pr\" && values.url)",
       "count": 1
     },
     {
@@ -263,22 +215,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
       "source": "else if (command === \"events\" && id) {",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/cli.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'OCTO_MANAGER_STATE' comes from an index signature, so it must be accessed with ['OCTO_MANAGER_STATE'].",
-      "source": "const directory = resolve(values.state ?? process.env.OCTO_MANAGER_STATE ?? join(homedir(), \".local\", \"state\", \"octo-manager\"));",
       "count": 1
     },
     {
@@ -300,14 +236,6 @@
     {
       "file": "src/client.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "return { scheduler: SchedulerState[value.scheduler]!.toLowerCase() as Snapshot[\"scheduler\"], worker: WorkerState[value.worker]!.toLowerCase() as Snapshot[\"worker\"], jobs: value.jobs.map(job), events: value.recentEvents.map(event), ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }) };",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, value is always falsy.",
       "source": "if (!status || status === (\"unspecified\" as Status)) throw new Error(\"Unsupported job status\");",
@@ -324,17 +252,9 @@
     {
       "file": "src/client.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "return { scheduler: SchedulerState[value.scheduler]!.toLowerCase() as Snapshot[\"scheduler\"], worker: WorkerState[value.worker]!.toLowerCase() as Snapshot[\"worker\"], jobs: value.jobs.map(job), events: value.recentEvents.map(event), ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }) };",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `string | number | bigint | boolean`.",
-      "source": "if (c.op === \"events\") return (await client.listEvents({ afterSequence: BigInt(c.after ?? 0), jobId: c.id })).events.map(event);",
+      "source": "return (await client.listEvents({ afterSequence: BigInt(c[\"after\"] ?? 0), jobId: c[\"id\"] })).events.map(event);",
       "count": 1
     },
     {
@@ -342,7 +262,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "if (c.op === \"cancel\") return job((await client.cancelJob({ id: c.id })).job);",
+      "source": "if (c[\"op\"] === \"cancel\") return job((await client.cancelJob({ id: c[\"id\"] })).job);",
       "count": 1
     },
     {
@@ -350,7 +270,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "if (c.op === \"events\") return (await client.listEvents({ afterSequence: BigInt(c.after ?? 0), jobId: c.id })).events.map(event);",
+      "source": "if (c[\"op\"] === \"get\") return job((await client.getJob({ id: c[\"id\"] })).job);",
       "count": 1
     },
     {
@@ -358,7 +278,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "if (c.op === \"get\") return job((await client.getJob({ id: c.id })).job);",
+      "source": "if (c[\"op\"] === \"retry\") return job((await client.retryJob({ id: c[\"id\"] })).job);",
       "count": 1
     },
     {
@@ -366,7 +286,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "if (c.op === \"retry\") return job((await client.retryJob({ id: c.id })).job);",
+      "source": "requestId: c[\"requestId\"],",
       "count": 1
     },
     {
@@ -374,7 +294,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "return job((await client.submitJob({ requestId: c.requestId, task: { kind: task.kind === \"resolve_conflict\" ? { case: \"resolveConflict\", value: {} } : { case: \"summarizePullRequest\", value: { url: task.url } } } })).job);",
+      "source": "return (await client.listEvents({ afterSequence: BigInt(c[\"after\"] ?? 0), jobId: c[\"id\"] })).events.map(event);",
       "count": 1
     },
     {
@@ -382,7 +302,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type '\"idle\" | \"busy\" | \"recovering\"' is more narrow than the original type.",
-      "source": "return { scheduler: SchedulerState[value.scheduler]!.toLowerCase() as Snapshot[\"scheduler\"], worker: WorkerState[value.worker]!.toLowerCase() as Snapshot[\"worker\"], jobs: value.jobs.map(job), events: value.recentEvents.map(event), ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }) };",
+      "source": "worker: WorkerState[value.worker].toLowerCase() as Snapshot[\"worker\"],",
       "count": 1
     },
     {
@@ -390,7 +310,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type '\"stopped\" | \"paused\" | \"running\" | \"stopping\"' is more narrow than the original type.",
-      "source": "return { scheduler: SchedulerState[value.scheduler]!.toLowerCase() as Snapshot[\"scheduler\"], worker: WorkerState[value.worker]!.toLowerCase() as Snapshot[\"worker\"], jobs: value.jobs.map(job), events: value.recentEvents.map(event), ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }) };",
+      "source": "scheduler: SchedulerState[value.scheduler].toLowerCase() as Snapshot[\"scheduler\"],",
       "count": 1
     },
     {
@@ -413,144 +333,16 @@
       "file": "src/client.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!value?.task) throw new Error(\"Server returned no job task\");",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!value) throw new Error(\"Server returned no snapshot\");",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "if (!status || status === (\"unspecified\" as Status)) throw new Error(\"Unsupported job status\");",
       "count": 1
     },
     {
-      "file": "src/client.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'after' comes from an index signature, so it must be accessed with ['after'].",
-      "source": "if (c.op === \"events\") return (await client.listEvents({ afterSequence: BigInt(c.after ?? 0), jobId: c.id })).events.map(event);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": "if (c.op === \"cancel\") return job((await client.cancelJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": "if (c.op === \"events\") return (await client.listEvents({ afterSequence: BigInt(c.after ?? 0), jobId: c.id })).events.map(event);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": "if (c.op === \"get\") return job((await client.getJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": "if (c.op === \"retry\") return job((await client.retryJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"cancel\") return job((await client.cancelJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"events\") return (await client.listEvents({ afterSequence: BigInt(c.after ?? 0), jobId: c.id })).events.map(event);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"get\") return job((await client.getJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"pause\" || c.op === \"resume\") { const result = snapshot((await client.setPaused({ paused: c.op === \"pause\" })).snapshot); return { scheduler: result.scheduler }; }",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"retry\") return job((await client.retryJob({ id: c.id })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"snapshot\") return snapshot((await client.getSnapshot({})).snapshot);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'op' comes from an index signature, so it must be accessed with ['op'].",
-      "source": "if (c.op === \"submit\") {",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'requestId' comes from an index signature, so it must be accessed with ['requestId'].",
-      "source": "return job((await client.submitJob({ requestId: c.requestId, task: { kind: task.kind === \"resolve_conflict\" ? { case: \"resolveConflict\", value: {} } : { case: \"summarizePullRequest\", value: { url: task.url } } } })).job);",
-      "count": 1
-    },
-    {
-      "file": "src/client.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'task' comes from an index signature, so it must be accessed with ['task'].",
-      "source": "const task = parseTask(c.task);",
+      "file": "src/coordinator/store.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "return Number(this.db.prepare(\"SELECT COALESCE(MAX(seq),0) AS seq FROM events\").get()![\"seq\"]);",
       "count": 1
     },
     {
@@ -558,15 +350,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "instanceId(): string { return this.db.prepare(\"SELECT value FROM settings WHERE key='instance_id'\").get()!.value as string; }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "sequence(): number { return Number(this.db.prepare(\"SELECT COALESCE(MAX(seq),0) AS seq FROM events\").get()!.seq); }",
+      "source": "return this.db.prepare(\"SELECT value FROM settings WHERE key='instance_id'\").get()![\"value\"] as string;",
       "count": 1
     },
     {
@@ -574,7 +358,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary optional chain on a non-nullish value.",
-      "source": "} catch (error) { this.db?.close(); this.ownership.close(); throw error; }",
+      "source": "this.db?.close();",
       "count": 1
     },
     {
@@ -582,7 +366,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "const existing = JSON.parse(row.data as string) as Job;",
+      "source": ".map((r) => JSON.parse(r[\"data\"] as string) as Job);",
       "count": 1
     },
     {
@@ -590,7 +374,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "jobs(): Job[] { return this.db.prepare(\"SELECT data FROM jobs ORDER BY rowid\").all().map(r => JSON.parse(r.data as string) as Job); }",
+      "source": "const existing = JSON.parse(row[\"data\"] as string) as Job;",
       "count": 1
     },
     {
@@ -598,7 +382,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "return JSON.parse(row.data as string) as Job;",
+      "source": "return JSON.parse(row[\"data\"] as string) as Job;",
       "count": 1
     },
     {
@@ -606,7 +390,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'string' is more narrow than the original type.",
-      "source": "const existing = JSON.parse(row.data as string) as Job;",
+      "source": ".map((r) => JSON.parse(r[\"data\"] as string) as Job);",
       "count": 1
     },
     {
@@ -614,7 +398,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'string' is more narrow than the original type.",
-      "source": "instanceId(): string { return this.db.prepare(\"SELECT value FROM settings WHERE key='instance_id'\").get()!.value as string; }",
+      "source": "const existing = JSON.parse(row[\"data\"] as string) as Job;",
       "count": 1
     },
     {
@@ -622,7 +406,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'string' is more narrow than the original type.",
-      "source": "jobs(): Job[] { return this.db.prepare(\"SELECT data FROM jobs ORDER BY rowid\").all().map(r => JSON.parse(r.data as string) as Job); }",
+      "source": "return JSON.parse(row[\"data\"] as string) as Job;",
       "count": 1
     },
     {
@@ -630,23 +414,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'string' is more narrow than the original type.",
-      "source": "return JSON.parse(row.data as string) as Job;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!row) throw new Error(\"Job not found\");",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (row) {",
+      "source": "return this.db.prepare(\"SELECT value FROM settings WHERE key='instance_id'\").get()![\"value\"] as string;",
       "count": 1
     },
     {
@@ -666,67 +434,11 @@
       "count": 1
     },
     {
-      "file": "src/coordinator/store.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'data' comes from an index signature, so it must be accessed with ['data'].",
-      "source": "const existing = JSON.parse(row.data as string) as Job;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'data' comes from an index signature, so it must be accessed with ['data'].",
-      "source": "jobs(): Job[] { return this.db.prepare(\"SELECT data FROM jobs ORDER BY rowid\").all().map(r => JSON.parse(r.data as string) as Job); }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'data' comes from an index signature, so it must be accessed with ['data'].",
-      "source": "return JSON.parse(row.data as string) as Job;",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'seq' comes from an index signature, so it must be accessed with ['seq'].",
-      "source": "sequence(): number { return Number(this.db.prepare(\"SELECT COALESCE(MAX(seq),0) AS seq FROM events\").get()!.seq); }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'value' comes from an index signature, so it must be accessed with ['value'].",
-      "source": "instanceId(): string { return this.db.prepare(\"SELECT value FROM settings WHERE key='instance_id'\").get()!.value as string; }",
-      "count": 1
-    },
-    {
-      "file": "src/coordinator/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'value' comes from an index signature, so it must be accessed with ['value'].",
-      "source": "paused(): boolean { return this.db.prepare(\"SELECT value FROM settings WHERE key='paused'\").get()?.value === \"true\"; }",
-      "count": 1
-    },
-    {
       "file": "src/jobs/auth.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe assertion from `any` detected: consider using type guards or a safer assertion.",
-      "source": "const claims = JSON.parse(Buffer.from(access.split(\".\")[1] ?? \"\", \"base64url\").toString(\"utf8\")) as { exp?: unknown };",
+      "source": "const claims = JSON.parse(Buffer.from(access.split(\".\")[1] ?? \"\", \"base64url\").toString(\"utf8\")) as {",
       "count": 1
     },
     {
@@ -750,7 +462,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async method 'delete' has no 'await' expression.",
-      "source": "async delete(): Promise<never> { throw new Error(\"Codex authentication is read-only; sign out through Codex\"); }",
+      "source": "async delete(): Promise<never> {",
       "count": 1
     },
     {
@@ -758,39 +470,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async method 'modify' has no 'await' expression.",
-      "source": "async modify(): Promise<never> { throw new Error(\"Codex authentication is read-only; Codex owns refresh and login\"); }",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/auth.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!await credentials.read(\"openai-codex\")) throw new Error(\"No existing ChatGPT authentication found in Pi or Codex\");",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/auth.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "return await this.read(\"openai-codex\", options) ? [{ providerId: \"openai-codex\", type: \"oauth\" }] : [];",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/auth.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/auth.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'CODEX_HOME' comes from an index signature, so it must be accessed with ['CODEX_HOME'].",
-      "source": "const credentials = new CodexSessionReference(options.codexHome ?? process.env.CODEX_HOME ?? join(homedir(), \".codex\"), options.now);",
+      "source": "async modify(): Promise<never> {",
       "count": 1
     },
     {
@@ -807,70 +487,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
       "source": "if (!value || typeof value !== \"object\") throw new Error(\"Task must be an object\");",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!match || match[1] === \".\" || match[1] === \"..\" || match[2] === \".\" || match[2] === \"..\") throw new Error(\"Expected a github.com pull request URL\");",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "if (v.kind === \"resolve_conflict\" && Object.keys(v).length === 1) return { kind: v.kind };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "if (v.kind === \"summarize_pr\" && Object.keys(v).length === 2 && typeof v.url === \"string\") {",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'kind' comes from an index signature, so it must be accessed with ['kind'].",
-      "source": "return { kind: v.kind, url: v.url.replace(/\\/$/, \"\") };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'url' comes from an index signature, so it must be accessed with ['url'].",
-      "source": "const match = /^https:\\/\\/github\\.com\\/([A-Za-z0-9_.-]+)\\/([A-Za-z0-9_.-]+)\\/pull\\/([1-9][0-9]*)\\/?$/.exec(v.url);",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'url' comes from an index signature, so it must be accessed with ['url'].",
-      "source": "if (v.kind === \"summarize_pr\" && Object.keys(v).length === 2 && typeof v.url === \"string\") {",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/domain.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'url' comes from an index signature, so it must be accessed with ['url'].",
-      "source": "return { kind: v.kind, url: v.url.replace(/\\/$/, \"\") };",
       "count": 1
     },
     {
@@ -902,7 +518,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable boolean value in conditional. Please handle the nullish case explicitly.",
-      "source": "if (dirname(resolve(path)) !== resolve(directory, \"fixtures\") || !path.split(\"/\").at(-1)?.startsWith(\"attempt-\")) throw new Error(\"Refusing cleanup outside owned fixtures\");",
+      "source": "if (dirname(resolve(path)) !== resolve(directory, \"fixtures\") || !path.split(\"/\").at(-1)?.startsWith(\"attempt-\"))",
       "count": 1
     },
     {
@@ -911,118 +527,6 @@
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
       "source": "if (await git(path, [\"status\", \"--porcelain\"], signal)) throw new Error(\"Fixture is not clean after merge\");",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/fixture.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/fixture.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'PATH' comes from an index signature, so it must be accessed with ['PATH'].",
-      "source": "env: { PATH: process.env.PATH, LANG: \"C\", GIT_CONFIG_NOSYSTEM: \"1\", GIT_CONFIG_GLOBAL: \"/dev/null\", GIT_TERMINAL_PROMPT: \"0\" },",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-explicit-any",
-      "message": "Unexpected any. Specify a different type.",
-      "source": "export function publicPullRequest(pr: Record<string, any>): unknown {",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .ref on an `any` value.",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .sha on an `any` value.",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'base' comes from an index signature, so it must be accessed with ['base'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'body' comes from an index signature, so it must be accessed with ['body'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'head' comes from an index signature, so it must be accessed with ['head'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'html_url' comes from an index signature, so it must be accessed with ['html_url'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'merged' comes from an index signature, so it must be accessed with ['merged'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'state' comes from an index signature, so it must be accessed with ['state'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
-      "count": 1
-    },
-    {
-      "file": "src/jobs/github.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'title' comes from an index signature, so it must be accessed with ['title'].",
-      "source": "return { url: pr.html_url, title: cleanText(String(pr.title), 2000), body: cleanText(String(pr.body ?? \"\"), 16000), bodyTruncated: String(pr.body ?? \"\").length > 16000, state: pr.state, merged: pr.merged, headSha: pr.head?.sha, base: pr.base?.ref };",
       "count": 1
     },
     {
@@ -1052,25 +556,9 @@
     {
       "file": "src/tracking/config.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "...(p.harness === undefined ? {} : { harness: p.harness as string }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "...(p.model === undefined ? {} : { model: p.model as string }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'ErrnoException' is more narrow than the original type.",
-      "source": "if (!path && (error as NodeJS.ErrnoException).code === \"ENOENT\")",
+      "source": "if (!path && (error as NodeJS.ErrnoException).code === \"ENOENT\") return structuredClone(defaults);",
       "count": 1
     },
     {
@@ -1086,7 +574,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "source": "if (!path && (error as NodeJS.ErrnoException).code === \"ENOENT\")",
+      "source": "if (!path && (error as NodeJS.ErrnoException).code === \"ENOENT\") return structuredClone(defaults);",
       "count": 1
     },
     {
@@ -1102,7 +590,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
-      "source": "!p.instructions.trim() ||",
+      "source": "!p[\"instructions\"].trim() ||",
       "count": 1
     },
     {
@@ -1110,7 +598,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
-      "source": "(p.model !== undefined && (typeof p.model !== \"string\" || !p.model))",
+      "source": "(p[\"harness\"] !== undefined && (typeof p[\"harness\"] !== \"string\" || !p[\"harness\"])) ||",
       "count": 1
     },
     {
@@ -1118,159 +606,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
-      "source": "(typeof p.harness !== \"string\" || !p.harness)) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'endpoints' comes from an index signature, so it must be accessed with ['endpoints'].",
-      "source": "for (const [name, e] of Object.entries(raw.endpoints)) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'endpoints' comes from an index signature, so it must be accessed with ['endpoints'].",
-      "source": "if (!object(raw.endpoints)) throw new Error(\"Invalid endpoints\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'endpoints' comes from an index signature, so it must be accessed with ['endpoints'].",
-      "source": "if (raw.endpoints !== undefined) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness' comes from an index signature, so it must be accessed with ['harness'].",
-      "source": "...(p.harness === undefined ? {} : { harness: p.harness as string }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness' comes from an index signature, so it must be accessed with ['harness'].",
-      "source": "(p.harness !== undefined &&",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness' comes from an index signature, so it must be accessed with ['harness'].",
-      "source": "(typeof p.harness !== \"string\" || !p.harness)) ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'instructions' comes from an index signature, so it must be accessed with ['instructions'].",
-      "source": "!p.instructions.trim() ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'instructions' comes from an index signature, so it must be accessed with ['instructions'].",
-      "source": "instructions: p.instructions,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'instructions' comes from an index signature, so it must be accessed with ['instructions'].",
-      "source": "p.instructions.length > 8000 ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'instructions' comes from an index signature, so it must be accessed with ['instructions'].",
-      "source": "typeof p.instructions !== \"string\" ||",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'model' comes from an index signature, so it must be accessed with ['model'].",
-      "source": "...(p.model === undefined ? {} : { model: p.model as string }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'model' comes from an index signature, so it must be accessed with ['model'].",
-      "source": "(p.model !== undefined && (typeof p.model !== \"string\" || !p.model))",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profiles' comes from an index signature, so it must be accessed with ['profiles'].",
-      "source": "for (const [name, p] of Object.entries(raw.profiles)) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profiles' comes from an index signature, so it must be accessed with ['profiles'].",
-      "source": "if (!object(raw.profiles)) throw new Error(\"Invalid profiles\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profiles' comes from an index signature, so it must be accessed with ['profiles'].",
-      "source": "if (raw.profiles !== undefined) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'rules' comes from an index signature, so it must be accessed with ['rules'].",
-      "source": "if (!Array.isArray(raw.rules)) throw new Error(\"Invalid routing rules\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'rules' comes from an index signature, so it must be accessed with ['rules'].",
-      "source": "if (raw.rules !== undefined) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'rules' comes from an index signature, so it must be accessed with ['rules'].",
-      "source": "result.rules = raw.rules.map((r) => {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/config.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'XDG_CONFIG_HOME' comes from an index signature, so it must be accessed with ['XDG_CONFIG_HOME'].",
-      "source": "process.env.XDG_CONFIG_HOME ?? join(homedir(), \".config\"),",
+      "source": "(p[\"model\"] !== undefined && (typeof p[\"model\"] !== \"string\" || !p[\"model\"]))",
       "count": 1
     },
     {
@@ -1366,7 +702,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"number\" of template literal expression.",
-      "source": "`${path}${path.includes(\"?\") ? \"&\" : \"?\"}per_page=100&page=${page}`,",
+      "source": "const raw = await read(`${path}${path.includes(\"?\") ? \"&\" : \"?\"}per_page=100&page=${page}`, signal);",
       "count": 1
     },
     {
@@ -1390,7 +726,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "if (!map.has(key(item)) || at(item) >= at(map.get(key(item))!))",
+      "source": "for (const item of items) if (!map.has(key(item)) || at(item) >= at(map.get(key(item))!)) map.set(key(item), item);",
       "count": 1
     },
     {
@@ -1418,43 +754,11 @@
       "count": 1
     },
     {
-      "file": "src/tracking/rpc.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "observation: p.observation",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/rpc.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "refreshErrorAtMs: p.lastRefreshError",
-      "count": 1
-    },
-    {
       "file": "src/tracking/schema.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "const version = Number(db.prepare(\"PRAGMA user_version\").get()!.user_version);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/schema.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'user_version' comes from an index signature, so it must be accessed with ['user_version'].",
-      "source": "const version = Number(db.prepare(\"PRAGMA user_version\").get()!.user_version);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "this.store.saveDelivery(",
+      "source": "const version = Number(db.prepare(\"PRAGMA user_version\").get()![\"user_version\"]);",
       "count": 1
     },
     {
@@ -1479,38 +783,6 @@
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
       "source": "this.store.saveAttempt(attempt!);",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "!!value &&",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "...(this.deliveryWork ? [this.deliveryWork] : []),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!attempt && !applicable) return;",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/service.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!attempt)",
       "count": 1
     },
     {
@@ -1558,7 +830,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": ": { harnessVersion: r.harness_version }),",
+      "source": "...(r[\"harness_version\"] === null ? {} : { harnessVersion: r[\"harness_version\"] }),",
       "count": 1
     },
     {
@@ -1566,7 +838,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "...(r.label === null ? {} : { label: r.label }),",
+      "source": "...(r[\"label\"] === null ? {} : { label: r[\"label\"] }),",
       "count": 1
     },
     {
@@ -1574,7 +846,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "actionId: r.action_id,",
+      "source": "actionId: r[\"action_id\"],",
       "count": 1
     },
     {
@@ -1582,7 +854,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "at: r.last_refresh_error_at_ms,",
+      "source": "at: r[\"last_refresh_error_at_ms\"],",
       "count": 1
     },
     {
@@ -1590,7 +862,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "blocker: parse(r.blocker_json),",
+      "source": "blocker: parse(r[\"blocker_json\"]),",
       "count": 1
     },
     {
@@ -1598,7 +870,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "createdAt: r.created_at_ms,",
+      "source": "createdAt: r[\"created_at_ms\"],",
       "count": 3
     },
     {
@@ -1606,7 +878,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "deliveryId: r.delivery_id,",
+      "source": "deliveryId: r[\"delivery_id\"],",
       "count": 1
     },
     {
@@ -1614,7 +886,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "endpoint: r.endpoint,",
+      "source": "endpoint: r[\"endpoint\"],",
       "count": 1
     },
     {
@@ -1622,7 +894,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "evidenceUrl: r.evidence_url,",
+      "source": "evidenceUrl: r[\"evidence_url\"],",
       "count": 1
     },
     {
@@ -1630,7 +902,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "harness: r.harness,",
+      "source": "harness: r[\"harness\"],",
       "count": 1
     },
     {
@@ -1638,7 +910,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "id: r.id,",
+      "source": "id: r[\"id\"],",
       "count": 4
     },
     {
@@ -1646,7 +918,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "message: r.last_refresh_error,",
+      "source": "message: r[\"last_refresh_error\"],",
       "count": 1
     },
     {
@@ -1654,7 +926,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "number: r.number,",
+      "source": "number: r[\"number\"],",
       "count": 1
     },
     {
@@ -1662,7 +934,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "observedAt: r.version_observed_at_ms,",
+      "source": "observedAt: r[\"version_observed_at_ms\"],",
       "count": 1
     },
     {
@@ -1670,7 +942,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "openedObservationId: r.opened_observation_id,",
+      "source": "openedObservationId: r[\"opened_observation_id\"],",
       "count": 1
     },
     {
@@ -1678,7 +950,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "originAgentId: r.origin_agent_id,",
+      "source": "originAgentId: r[\"origin_agent_id\"],",
       "count": 1
     },
     {
@@ -1686,7 +958,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "outcome: parse(r.outcome_json),",
+      "source": "outcome: parse(r[\"outcome_json\"]),",
       "count": 1
     },
     {
@@ -1694,7 +966,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "ownerAgentId: r.owner_agent_id,",
+      "source": "ownerAgentId: r[\"owner_agent_id\"],",
       "count": 2
     },
     {
@@ -1702,7 +974,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "prId: r.pr_id,",
+      "source": "prId: r[\"pr_id\"],",
       "count": 1
     },
     {
@@ -1710,7 +982,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "profile: parse(r.profile_json),",
+      "source": "profile: parse(r[\"profile_json\"]),",
       "count": 1
     },
     {
@@ -1718,7 +990,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "progress: parse(r.progress_json),",
+      "source": "progress: parse(r[\"progress_json\"]),",
       "count": 2
     },
     {
@@ -1726,7 +998,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "recipientAgentId: r.recipient_agent_id,",
+      "source": "recipientAgentId: r[\"recipient_agent_id\"],",
       "count": 1
     },
     {
@@ -1734,7 +1006,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "retryCount: r.retry_count,",
+      "source": "retryCount: r[\"retry_count\"],",
       "count": 1
     },
     {
@@ -1742,7 +1014,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "sessionId: r.session_id,",
+      "source": "sessionId: r[\"session_id\"],",
       "count": 1
     },
     {
@@ -1750,7 +1022,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "sourceKey: r.source_key,",
+      "source": "sourceKey: r[\"source_key\"],",
       "count": 1
     },
     {
@@ -1758,7 +1030,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "startedAt: r.started_at_ms,",
+      "source": "startedAt: r[\"started_at_ms\"],",
       "count": 1
     },
     {
@@ -1766,7 +1038,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "summary: r.summary,",
+      "source": "summary: r[\"summary\"],",
       "count": 1
     },
     {
@@ -1774,7 +1046,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "updatedAt: r.updated_at_ms,",
+      "source": "updatedAt: r[\"updated_at_ms\"],",
       "count": 3
     },
     {
@@ -1782,7 +1054,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "url: r.url,",
+      "source": "url: r[\"url\"],",
       "count": 1
     },
     {
@@ -1790,7 +1062,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "version: r.harness_version,",
+      "source": "version: r[\"harness_version\"],",
       "count": 1
     },
     {
@@ -1806,31 +1078,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected any value in conditional. An explicit comparison or type conversion is required.",
-      "source": "enabled: !!r.enabled,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!d) throw new Error(\"Delivery not found\");",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (existing) {",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (progress) {",
+      "source": "enabled: !!r[\"enabled\"],",
       "count": 1
     },
     {
@@ -1850,275 +1098,11 @@
       "count": 1
     },
     {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'action_id' comes from an index signature, so it must be accessed with ['action_id'].",
-      "source": "actionId: r.action_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'blocker_json' comes from an index signature, so it must be accessed with ['blocker_json'].",
-      "source": "blocker: parse(r.blocker_json),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'created_at_ms' comes from an index signature, so it must be accessed with ['created_at_ms'].",
-      "source": "createdAt: r.created_at_ms,",
-      "count": 3
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'delivery_id' comes from an index signature, so it must be accessed with ['delivery_id'].",
-      "source": "deliveryId: r.delivery_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'enabled' comes from an index signature, so it must be accessed with ['enabled'].",
-      "source": "enabled: !!r.enabled,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'endpoint' comes from an index signature, so it must be accessed with ['endpoint'].",
-      "source": "endpoint: r.endpoint,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'evidence_url' comes from an index signature, so it must be accessed with ['evidence_url'].",
-      "source": "evidenceUrl: r.evidence_url,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness_version' comes from an index signature, so it must be accessed with ['harness_version'].",
-      "source": ": { harnessVersion: r.harness_version }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness_version' comes from an index signature, so it must be accessed with ['harness_version'].",
-      "source": "...(r.harness_version === null",
-      "count": 2
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness_version' comes from an index signature, so it must be accessed with ['harness_version'].",
-      "source": "version: r.harness_version,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'harness' comes from an index signature, so it must be accessed with ['harness'].",
-      "source": "harness: r.harness,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'id' comes from an index signature, so it must be accessed with ['id'].",
-      "source": "id: r.id,",
-      "count": 4
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'label' comes from an index signature, so it must be accessed with ['label'].",
-      "source": "...(r.label === null ? {} : { label: r.label }),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'last_refresh_error_at_ms' comes from an index signature, so it must be accessed with ['last_refresh_error_at_ms'].",
-      "source": "at: r.last_refresh_error_at_ms,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'last_refresh_error' comes from an index signature, so it must be accessed with ['last_refresh_error'].",
-      "source": "...(r.last_refresh_error === null",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'last_refresh_error' comes from an index signature, so it must be accessed with ['last_refresh_error'].",
-      "source": "message: r.last_refresh_error,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'number' comes from an index signature, so it must be accessed with ['number'].",
-      "source": "number: r.number,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'opened_observation_id' comes from an index signature, so it must be accessed with ['opened_observation_id'].",
-      "source": "openedObservationId: r.opened_observation_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'origin_agent_id' comes from an index signature, so it must be accessed with ['origin_agent_id'].",
-      "source": "originAgentId: r.origin_agent_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'outcome_json' comes from an index signature, so it must be accessed with ['outcome_json'].",
-      "source": "outcome: parse(r.outcome_json),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'owner_agent_id' comes from an index signature, so it must be accessed with ['owner_agent_id'].",
-      "source": "ownerAgentId: r.owner_agent_id,",
-      "count": 2
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'pr_id' comes from an index signature, so it must be accessed with ['pr_id'].",
-      "source": "prId: r.pr_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'profile_json' comes from an index signature, so it must be accessed with ['profile_json'].",
-      "source": "profile: parse(r.profile_json),",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'progress_json' comes from an index signature, so it must be accessed with ['progress_json'].",
-      "source": "progress: parse(r.progress_json),",
-      "count": 2
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'recipient_agent_id' comes from an index signature, so it must be accessed with ['recipient_agent_id'].",
-      "source": "recipientAgentId: r.recipient_agent_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'retry_count' comes from an index signature, so it must be accessed with ['retry_count'].",
-      "source": "retryCount: r.retry_count,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'session_id' comes from an index signature, so it must be accessed with ['session_id'].",
-      "source": "sessionId: r.session_id,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'source_key' comes from an index signature, so it must be accessed with ['source_key'].",
-      "source": "sourceKey: r.source_key,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'started_at_ms' comes from an index signature, so it must be accessed with ['started_at_ms'].",
-      "source": "startedAt: r.started_at_ms,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'summary' comes from an index signature, so it must be accessed with ['summary'].",
-      "source": "summary: r.summary,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'updated_at_ms' comes from an index signature, so it must be accessed with ['updated_at_ms'].",
-      "source": "updatedAt: r.updated_at_ms,",
-      "count": 3
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'url' comes from an index signature, so it must be accessed with ['url'].",
-      "source": "url: r.url,",
-      "count": 1
-    },
-    {
-      "file": "src/tracking/store.ts",
-      "tool": "tsc",
-      "rule": "TS4111",
-      "message": "Property 'version_observed_at_ms' comes from an index signature, so it must be accessed with ['version_observed_at_ms'].",
-      "source": "observedAt: r.version_observed_at_ms,",
-      "count": 1
-    },
-    {
       "file": "src/worker.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "return new Promise(resolve => { if (process.connected) process.send?.({ ...value, attempt }, undefined, undefined, () => resolve()); else resolve(); });",
+      "rule": "@typescript-eslint/no-floating-promises",
+      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
+      "source": "send({ type: \"progress\", text: cleanText(output, 2000) });",
       "count": 1
     },
     {
@@ -2126,15 +1110,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-floating-promises",
       "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "const flush = () => { if (output) { send({ type: \"progress\", text: cleanText(output, 2000) }); output = \"\"; } };",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-floating-promises",
-      "message": "Promises must be awaited, end with a call to .catch, or end with a call to .then with a rejection handler.",
-      "source": "return new Promise((resolve, reject) => { pending.set(id, { resolve, reject }); send({ type: \"tool\", id, name, args }); });",
+      "source": "send({ type: \"tool\", id, name, args });",
       "count": 1
     },
     {
@@ -2165,40 +1141,8 @@
       "file": "src/worker.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!model) throw new Error(\"Unknown model\");",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (!session) process.exit(0);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "if (flushTimer) clearInterval(flushTimer);",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
       "message": "Unexpected string value in conditional. An explicit empty string check is required.",
-      "source": "const flush = () => { if (output) { send({ type: \"progress\", text: cleanText(output, 2000) }); output = \"\"; } };",
-      "count": 1
-    },
-    {
-      "file": "src/worker.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
+      "source": "if (output) {",
       "count": 1
     },
     {
@@ -2206,7 +1150,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, comparison is always false, since `\"oauth\" !== \"oauth\"` is false.",
-      "source": "if (value?.type !== 'oauth') assert.fail('Expected OAuth reference');",
+      "source": "if (value?.type !== \"oauth\") assert.fail(\"Expected OAuth reference\");",
       "count": 1
     },
     {
@@ -2214,7 +1158,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary optional chain on a non-nullish value.",
-      "source": "if (value?.type !== 'oauth') assert.fail('Expected OAuth reference');",
+      "source": "if (value?.type !== \"oauth\") assert.fail(\"Expected OAuth reference\");",
       "count": 1
     },
     {
@@ -2222,40 +1166,24 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async arrow function has no 'await' expression.",
-      "source": "await assert.rejects(store.modify('openai-codex', async () => { invoked = true; return undefined; }), /read-only/);",
+      "source": "store.modify(\"openai-codex\", async () => {",
       "count": 1
     },
     {
-      "file": "test/auth.test.ts",
+      "file": "test/coordinator.test.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable object value in conditional. An explicit null check is required.",
-      "source": "assert.ok(runtime.getModel('openai-codex', 'gpt-6.1-terra'));",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "() => c!.store.get(waiting.id),",
       "count": 1
     },
     {
-      "file": "test/auth.test.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
+      "file": "test/coordinator.test.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "await new Promise<void>((resolve) => http.close(() => resolve()));",
-      "count": 1
-    },
-    {
-      "file": "test/codex-transport.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "await new Promise<void>((resolve) => ws.close(() => resolve()));",
-      "count": 1
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "() => replacement!.store.get(job.id),",
+      "count": 2
     },
     {
       "file": "test/coordinator.test.ts",
@@ -2294,7 +1222,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "assert.throws(() => c!.command({ op: 'retry', id: job.id }), /previous worker/);",
+      "source": "assert.throws(() => c!.command({ op: \"retry\", id: job.id }), /previous worker/);",
       "count": 1
     },
     {
@@ -2302,63 +1230,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "await Promise.race([once(old.stdout!, 'data'), once(old, 'exit').then(() => { throw new Error('Coordinator failed before readiness'); })]);",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "await Promise.race([once(old.stdout!, 'data'), once(old, 'exit').then(() => { throw new Error('Test coordinator exited before readiness'); })]);",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "await waitFor(() => { replacement!.tick(); return replacement!.snapshot().worker; }, worker => worker === 'idle');",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "await waitFor(() => processAlive(pid!), alive => !alive);",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "await waitFor(() => replacement!.store.get(job.id), j => j.status === 'succeeded');",
-      "count": 2
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "c.tick(); await waitFor(() => c!.store.get(waiting.id), j => j.status === 'succeeded');",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "const outcomes = await Promise.all(children.map(child => Promise.race([once(child.stdout!, 'data').then(() => 'ready'), once(child, 'exit').then(() => 'exited')])));",
+      "source": "once(old.stdout!, \"data\"),",
       "count": 1
     },
     {
@@ -2366,39 +1238,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unnecessary-condition",
       "message": "Unnecessary conditional, value is always truthy.",
-      "source": "while (true) { const value = read(); if (predicate(value)) return value; if (Date.now() > end) throw new Error(`Timed out: ${JSON.stringify(value)}`); await new Promise(r => setTimeout(r, 20)); }",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "await Promise.race([once(old.stdout!, 'data'), once(old, 'exit').then(() => { throw new Error('Coordinator failed before readiness'); })]);",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "await waitFor(() => processAlive(pid!), alive => !alive);",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unnecessary-type-assertion",
-      "message": "This assertion is unnecessary since it does not change the type of the expression.",
-      "source": "const outcomes = await Promise.all(children.map(child => Promise.race([once(child.stdout!, 'data').then(() => 'ready'), once(child, 'exit').then(() => 'exited')])));",
+      "source": "while (true) {",
       "count": 1
     },
     {
@@ -2406,7 +1246,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `string | undefined`.",
-      "source": "assert.equal(replacement.store.events(0, job.id).filter(e => e.kind === 'tool' || e.kind === 'progress').length, 0);",
+      "source": "replacement.store.events(0, job.id).filter((e) => e.kind === \"tool\" || e.kind === \"progress\").length,",
       "count": 1
     },
     {
@@ -2414,7 +1254,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "assert.equal(replacement.store.get(job.id).attempts.length, 2);",
+      "source": "() => replacement!.store.get(job.id),",
       "count": 1
     },
     {
@@ -2422,23 +1262,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-argument",
       "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "assert.equal(replacement.store.get(job.id).status, 'interrupted');",
-      "count": 2
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-argument",
-      "message": "Unsafe argument of type `any` assigned to a parameter of type `string`.",
-      "source": "await waitFor(() => replacement!.store.get(job.id), j => j.status === 'succeeded');",
-      "count": 2
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "const job = await request(directory, { op: 'submit', requestId: 'boundary', task: { kind: 'resolve_conflict' } });",
+      "source": "assert.equal(replacement.store.get(job.id).status, \"interrupted\");",
       "count": 1
     },
     {
@@ -2446,7 +1270,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "const job = await request(directory, { op: 'submit', requestId: 'crash', task: { kind: 'resolve_conflict' } });",
+      "source": "const job = await request(directory, { op: \"submit\", requestId: \"boundary\", task: { kind: \"resolve_conflict\" } });",
       "count": 1
     },
     {
@@ -2454,7 +1278,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "const snapshot = await request(directory, { op: 'snapshot' });",
+      "source": "const snapshot = await request(directory, { op: \"snapshot\" });",
       "count": 1
     },
     {
@@ -2462,23 +1286,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-assignment",
       "message": "Unsafe assignment of an `any` value.",
-      "source": "for (let i = 0; i < 200; i++) { const j = await request(directory, { op: 'get', id: job.id }); pid = j.attempts[0]?.pid; if (pid) break; await new Promise(r => setTimeout(r, 20)); }",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "replacement.command({ op: 'retry', id: job.id }); replacement.tick();",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-assignment",
-      "message": "Unsafe assignment of an `any` value.",
-      "source": "replacement.tick(); replacement.command({ op: 'retry', id: job.id }); replacement.tick();",
+      "source": "replacement.command({ op: \"retry\", id: job.id });",
       "count": 1
     },
     {
@@ -2486,15 +1294,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-call",
       "message": "Unsafe call of a(n) `any` typed value.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .attempts on an `any` value.",
-      "source": "for (let i = 0; i < 200; i++) { const j = await request(directory, { op: 'get', id: job.id }); pid = j.attempts[0]?.pid; if (pid) break; await new Promise(r => setTimeout(r, 20)); }",
+      "source": "errors[i] += chunk.toString();",
       "count": 1
     },
     {
@@ -2502,7 +1302,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
-      "source": "assert.equal(new Set(jobs.map(j => j.id)).size, 1);",
+      "source": "() => replacement!.store.get(job.id),",
       "count": 1
     },
     {
@@ -2510,7 +1310,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
-      "source": "assert.equal(replacement.store.events(0, job.id).filter(e => e.kind === 'tool' || e.kind === 'progress').length, 0);",
+      "source": "assert.equal(new Set(jobs.map((j) => j.id)).size, 1);",
       "count": 1
     },
     {
@@ -2518,7 +1318,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
-      "source": "assert.equal(replacement.store.get(job.id).attempts.length, 2);",
+      "source": "assert.equal(replacement.store.get(job.id).status, \"interrupted\");",
       "count": 1
     },
     {
@@ -2526,23 +1326,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
-      "source": "assert.equal(replacement.store.get(job.id).status, 'interrupted');",
-      "count": 2
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "await waitFor(() => replacement!.store.get(job.id), j => j.status === 'succeeded');",
-      "count": 2
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "for (let i = 0; i < 200; i++) { const j = await request(directory, { op: 'get', id: job.id }); pid = j.attempts[0]?.pid; if (pid) break; await new Promise(r => setTimeout(r, 20)); }",
+      "source": "replacement.command({ op: \"retry\", id: job.id });",
       "count": 1
     },
     {
@@ -2550,15 +1334,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .id on an `any` value.",
-      "source": "replacement.command({ op: 'retry', id: job.id }); replacement.tick();",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-unsafe-member-access",
-      "message": "Unsafe member access .id on an `any` value.",
-      "source": "replacement.tick(); replacement.command({ op: 'retry', id: job.id }); replacement.tick();",
+      "source": "replacement.store.events(0, job.id).filter((e) => e.kind === \"tool\" || e.kind === \"progress\").length,",
       "count": 1
     },
     {
@@ -2566,7 +1342,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .scheduler on an `any` value.",
-      "source": "assert.equal(snapshot.scheduler, 'running');",
+      "source": "assert.equal(snapshot.scheduler, \"running\");",
       "count": 1
     },
     {
@@ -2574,7 +1350,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .toString on an `any` value.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
+      "source": "errors[i] += chunk.toString();",
       "count": 1
     },
     {
@@ -2582,7 +1358,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-return",
       "message": "Unsafe return of a value of type `any`.",
-      "source": "assert.equal(new Set(jobs.map(j => j.id)).size, 1);",
+      "source": "assert.equal(new Set(jobs.map((j) => j.id)).size, 1);",
       "count": 1
     },
     {
@@ -2590,7 +1366,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-plus-operands",
       "message": "Invalid operand for a '+' operation. Operands must each be a number or string. Got `any`.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
+      "source": "errors[i] += chunk.toString();",
       "count": 1
     },
     {
@@ -2598,7 +1374,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-plus-operands",
       "message": "Invalid operand for a '+' operation. Operands must each be a number or string. Got `string | undefined`.",
-      "source": "children.forEach((child, i) => child.stderr!.on('data', chunk => { errors[i] += chunk.toString(); }));",
+      "source": "errors[i] += chunk.toString();",
       "count": 1
     },
     {
@@ -2619,26 +1395,10 @@
     },
     {
       "file": "test/coordinator.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/strict-boolean-expressions",
-      "message": "Unexpected nullable number value in conditional. Please handle the nullish/zero/NaN cases explicitly.",
-      "source": "for (let i = 0; i < 200; i++) { const j = await request(directory, { op: 'get', id: job.id }); pid = j.attempts[0]?.pid; if (pid) break; await new Promise(r => setTimeout(r, 20)); }",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "test/coordinator.test.ts",
       "tool": "tsc",
       "rule": "TS2375",
       "message": "Type '{ number: number; startedAt: number; pid: number | undefined; }' is not assignable to type 'Attempt' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.\n  Types of property 'pid' are incompatible.\n    Type 'number | undefined' is not assignable to type 'number'.\n      Type 'undefined' is not assignable to type 'number'.",
-      "source": "store.save({ ...job, status: 'resolving', attempts: [{ number: 1, startedAt: Date.now(), pid: survivor.pid }] }, 'resolving'); store.close();",
+      "source": "{ ...job, status: \"resolving\", attempts: [{ number: 1, startedAt: Date.now(), pid: survivor.pid }] },",
       "count": 1
     },
     {
@@ -2646,7 +1406,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/consistent-type-assertions",
       "message": "Always prefer const x: T = { ... }.",
-      "source": "const job = { status: 'queued', updatedAt: 0 } as Job;",
+      "source": "const job = { status: \"queued\", updatedAt: 0 } as Job;",
       "count": 1
     },
     {
@@ -2654,15 +1414,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(nextReady([{ ...tied[0]!, createdAt: 20 }, { ...tied[1]!, createdAt: 10 }], 25)?.id, 'z');",
-      "count": 1
-    },
-    {
-      "file": "test/core.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "assert.throws(() => store!.submit({ kind: 'summarize_pr', url: 'https://github.com/a/b/pull/1' }, 'same'));",
+      "source": "assert.throws(() => store!.submit({ kind: \"summarize_pr\", url: \"https://github.com/a/b/pull/1\" }, \"same\"));",
       "count": 1
     },
     {
@@ -2678,7 +1430,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type '{ body: string; }' is more narrow than the original type.",
-      "source": "const result = publicPullRequest({ base: { repo: { private: false }, ref: 'main' }, title: 'public', body: 'safe', head: { sha: 'abc' } }) as { body: string };",
+      "source": "const result = publicPullRequest({",
       "count": 1
     },
     {
@@ -2686,7 +1438,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'Job' is more narrow than the original type.",
-      "source": "const job = { status: 'queued', updatedAt: 0 } as Job;",
+      "source": "const job = { status: \"queued\", updatedAt: 0 } as Job;",
       "count": 1
     },
     {
@@ -2694,7 +1446,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'Job[]' is more narrow than the original type.",
-      "source": "const jobs = [{ id: 'first', status: 'queued', createdAt: 1, availableAt: 5 }, { id: 'later', status: 'queued', createdAt: 2, availableAt: 0 }, { id: 'running', status: 'running', createdAt: 0, availableAt: 0 }] as Job[];",
+      "source": "const jobs = [",
       "count": 1
     },
     {
@@ -2702,31 +1454,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-type-assertion",
       "message": "Unsafe type assertion: type 'Job[]' is more narrow than the original type.",
-      "source": "const tied = [{ id: 'z', status: 'queued', createdAt: 1, availableAt: 0 }, { id: 'a', status: 'queued', createdAt: 1, availableAt: 0 }] as Job[];",
-      "count": 1
-    },
-    {
-      "file": "test/core.test.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
-      "count": 1
-    },
-    {
-      "file": "test/github.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(details.messages.length,102);assert.equal(details.messages[0]!.state,'CHANGES_REQUESTED');assert.equal(details.messages[0]!.commitSha,'older');",
-      "count": 1
-    },
-    {
-      "file": "test/github.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(details.messages[1]!.path,'src/worker.ts');assert.equal(details.messages[1]!.line,14);assert.equal(details.messages[1]!.bodyMarkdown.length,4000);assert.equal(details.messages[1]!.bodyTruncated,true);",
+      "source": "const tied = [",
       "count": 1
     },
     {
@@ -2734,7 +1462,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async arrow function 'read' has no 'await' expression.",
-      "source": "const read=async(path:string)=>{",
+      "source": "const read = async (path: string) => {",
       "count": 1
     },
     {
@@ -2742,7 +1470,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async arrow function has no 'await' expression.",
-      "source": "await assert.rejects(readPullRequestDetails('file:///etc/passwd',undefined,async()=>{called=true;}));assert.equal(called,false);",
+      "source": "readPullRequestDetails(\"file:///etc/passwd\", undefined, async () => {",
       "count": 1
     },
     {
@@ -2750,15 +1478,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/require-await",
       "message": "Async arrow function has no 'await' expression.",
-      "source": "await assert.rejects(readPullRequestDetails(url,undefined,async()=>{calls++;return {base:{repo:{private:visibility}}};}),/Only confirmed public/);",
-      "count": 1
-    },
-    {
-      "file": "test/github.test.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
+      "source": "readPullRequestDetails(url, undefined, async () => {",
       "count": 1
     },
     {
@@ -2790,7 +1510,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "assert.equal(first.value!.event!.kind, 'queued');",
+      "source": "assert.equal(first.value!.event!.kind, \"queued\");",
       "count": 1
     },
     {
@@ -2854,7 +1574,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .event on an `any` value.",
-      "source": "assert.equal(first.value!.event!.kind, 'queued');",
+      "source": "assert.equal(first.value!.event!.kind, \"queued\");",
       "count": 1
     },
     {
@@ -2870,7 +1590,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-unsafe-member-access",
       "message": "Unsafe member access .kind on an `any` value.",
-      "source": "assert.equal(first.value!.event!.kind, 'queued');",
+      "source": "assert.equal(first.value!.event!.kind, \"queued\");",
       "count": 1
     },
     {
@@ -2878,15 +1598,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/restrict-template-expressions",
       "message": "Invalid type \"number\" of template literal expression.",
-      "source": "for (let i = 0; i < 205; i++) coordinator.store.event(accepted.id, 'progress', `part ${i}`);",
-      "count": 1
-    },
-    {
-      "file": "test/rpc.test.ts",
-      "tool": "format",
-      "rule": "prettier",
-      "message": "Formatting differs",
-      "source": "",
+      "source": "for (let i = 0; i < 205; i++) coordinator.store.event(accepted.id, \"progress\", `part ${i}`);",
       "count": 1
     },
     {
@@ -3036,17 +1748,9 @@
     {
       "file": "test/tracking-delivery.test.ts",
       "tool": "eslint",
-      "rule": "@typescript-eslint/no-confusing-void-expression",
-      "message": "Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function.",
-      "source": "s!.addEventListener(\"abort\", () => reject(new Error(\"aborted\")), {",
-      "count": 1
-    },
-    {
-      "file": "test/tracking-delivery.test.ts",
-      "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "() => store.tracking.attempts()[0]!.outcome.state === \"uncertain\",",
+      "source": "assert.equal(store.tracking.actions()[0]!.progress.state, ActionState.Acknowledged);",
       "count": 1
     },
     {
@@ -3070,6 +1774,30 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
+      "source": "assert.equal(store.tracking.deliveries()[0]!.progress.state, DeliveryState.Cancelled);",
+      "count": 1
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "assert.equal(store.tracking.deliveries()[0]!.progress.state, DeliveryState.Pending);",
+      "count": 1
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "assert.equal(store.tracking.deliveries()[1]!.progress.state, DeliveryState.Pending);",
+      "count": 1
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
       "source": "assert(signal!.aborted);",
       "count": 1
     },
@@ -3078,7 +1806,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "s!.addEventListener(\"abort\", () => reject(new Error(\"aborted\")), {",
+      "source": "await until(() => store.tracking.attempts()[0]!.outcome.state === \"uncertain\");",
       "count": 1
     },
     {
@@ -3086,32 +1814,32 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.actions()[0]!.id,",
-      "count": 1
-    },
-    {
-      "file": "test/tracking-delivery.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.actions()[0]!.progress.state,",
-      "count": 1
-    },
-    {
-      "file": "test/tracking-delivery.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.deliveries()[0]!.progress.state ===",
-      "count": 4
-    },
-    {
-      "file": "test/tracking-delivery.test.ts",
-      "tool": "eslint",
-      "rule": "@typescript-eslint/no-non-null-assertion",
-      "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.deliveries()[0]!.progress.state,",
+      "source": "await until(() => store.tracking.deliveries()[0]!.progress.state === DeliveryState.Delivered);",
       "count": 2
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "await until(() => store.tracking.deliveries()[0]!.progress.state === DeliveryState.Uncertain);",
+      "count": 1
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "s!.addEventListener(",
+      "count": 1
+    },
+    {
+      "file": "test/tracking-delivery.test.ts",
+      "tool": "eslint",
+      "rule": "@typescript-eslint/no-non-null-assertion",
+      "message": "Forbidden non-null assertion.",
+      "source": "store.tracking.deliveries()[0]!.progress.state === DeliveryState.Pending &&",
+      "count": 1
     },
     {
       "file": "test/tracking-delivery.test.ts",
@@ -3126,7 +1854,7 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.deliveries()[1]!.progress.state,",
+      "source": "store.tracking.progress(store.tracking.actions()[0]!.id, p.ownerAgentId, false);",
       "count": 1
     },
     {
@@ -3222,16 +1950,16 @@
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "store.tracking.actions().find((a) => a.blocker.kind === \"check_failed\")!",
-      "count": 1
+      "source": "store.tracking.actions().find((a) => a.blocker.kind === \"changes_requested\")!.progress.state,",
+      "count": 2
     },
     {
       "file": "test/tracking.test.ts",
       "tool": "eslint",
       "rule": "@typescript-eslint/no-non-null-assertion",
       "message": "Forbidden non-null assertion.",
-      "source": "store.tracking",
-      "count": 2
+      "source": "store.tracking.actions().find((a) => a.blocker.kind === \"check_failed\")!.progress.state,",
+      "count": 1
     }
   ]
 }

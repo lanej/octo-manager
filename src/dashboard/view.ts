@@ -12,20 +12,9 @@ import {
   TextRenderable,
 } from "@opentui/core";
 import { compactMarkdownLinks } from "./links.js";
-import {
-  diagnostics,
-  primary,
-  safeText,
-  type RecordView,
-  type Screen,
-} from "./records.js";
+import { diagnostics, primary, safeText, type RecordView, type Screen } from "./records.js";
 
-import {
-  detailContent,
-  listContent,
-  plain,
-  type Palette,
-} from "./presentation.js";
+import { detailContent, listContent, plain, type Palette } from "./presentation.js";
 
 type Theme = "terminal" | "dark" | "light" | "contrast" | "mono";
 const colorful = {
@@ -105,16 +94,10 @@ interface Selection {
   inspecting: boolean;
 }
 
-export function dashboardView(
-  renderer: CliRenderer,
-  controls: Controls,
-  theme: Theme = "terminal",
-) {
+export function dashboardView(renderer: CliRenderer, controls: Controls, theme: Theme = "terminal") {
   const palette: Palette = palettes[theme];
-  const foreground =
-    palette.foreground === undefined ? {} : { fg: palette.foreground };
-  if (palette.background !== undefined)
-    renderer.setBackgroundColor(palette.background);
+  const foreground = palette.foreground === undefined ? {} : { fg: palette.foreground };
+  if (palette.background !== undefined) renderer.setBackgroundColor(palette.background);
   const header = new TextRenderable(renderer, {
     height: 1,
     fg: palette.accent,
@@ -191,8 +174,7 @@ export function dashboardView(
   detailPanel.add(inspector);
   body.add(listPanel);
   body.add(detailPanel);
-  for (const node of [header, tabs, body, status, footer])
-    renderer.root.add(node);
+  for (const node of [header, tabs, body, status, footer]) renderer.root.add(node);
 
   let screen: Screen = "Attention";
   let origin: Screen = screen;
@@ -226,32 +208,16 @@ export function dashboardView(
     const single = screen === "GitHub";
     const inDiagnostics = diagnostics.some((name) => name === screen);
     const stackedTabs = inDiagnostics && renderer.width < 82;
-    const stackedFooter =
-      !compact && renderer.width < 82 && renderer.height >= 11;
+    const stackedFooter = !compact && renderer.width < 82 && renderer.height >= 11;
     tabs.height = stackedTabs ? 2 : 1;
     footer.height = stackedFooter ? 2 : 1;
     const fullDetail =
-      current.inspecting &&
-      item?.delivery !== undefined &&
-      (screen === "Attention" || screen === "Deliveries");
+      current.inspecting && item?.delivery !== undefined && (screen === "Attention" || screen === "Deliveries");
     const detailedRows = rows.some((row) => row.delivery !== undefined);
-    const availableRows = Math.max(
-      1,
-      renderer.height - (notice === "" ? 5 : 6),
-    );
-    const visibleRows = Math.max(
-      1,
-      Math.floor(availableRows / (detailedRows ? 4 : 1)),
-    );
-    current.first = Math.max(
-      0,
-      Math.min(current.first, rows.length - visibleRows),
-    );
-    if (index >= 0)
-      current.first = Math.min(
-        index,
-        Math.max(current.first, index - visibleRows + 1),
-      );
+    const availableRows = Math.max(1, renderer.height - (notice === "" ? 5 : 6));
+    const visibleRows = Math.max(1, Math.floor(availableRows / (detailedRows ? 4 : 1)));
+    current.first = Math.max(0, Math.min(current.first, rows.length - visibleRows));
+    if (index >= 0) current.first = Math.min(index, Math.max(current.first, index - visibleRows + 1));
 
     const indicator = connection === "Live" ? palette.success : palette.warning;
     header.content = new StyledText([
@@ -259,9 +225,7 @@ export function dashboardView(
       plain(` / ${screen}   `),
       bg(palette.surface)(fg(indicator)(` ● ${connection.toUpperCase()} `)),
     ]);
-    const navigation = primary.some((value) => value === screen)
-      ? primary
-      : diagnostics;
+    const navigation = primary.some((value) => value === screen) ? primary : diagnostics;
     tabs.content = new StyledText(
       navigation.flatMap((name, i) => {
         const label = ` ${String(i + 1)} ${name} `;
@@ -292,23 +256,14 @@ export function dashboardView(
       current.inspecting || single
         ? "q Quit   Esc Back   [/] Scroll"
         : "q Quit   d Diagnostics   j/k Move   Enter Inspect";
-    footer.content = compact
-      ? "q Quit"
-      : `${shortcuts}${stackedFooter ? "\n" : "   "}${keys}`;
+    footer.content = compact ? "q Quit" : `${shortcuts}${stackedFooter ? "\n" : "   "}${keys}`;
     const listWidth =
-      wide && item !== undefined && !single
-        ? Math.max(32, Math.floor(renderer.width * 0.35))
-        : renderer.width;
+      wide && item !== undefined && !single ? Math.max(32, Math.floor(renderer.width * 0.35)) : renderer.width;
     listPanel.width = listWidth;
     listPanel.title = ` ${screen.toUpperCase()} · ${String(rows.length)} `;
-    listPanel.visible =
-      item === undefined ||
-      (!single && !fullDetail && (wide || !current.inspecting));
-    detailPanel.visible =
-      item !== undefined && (single || wide || current.inspecting);
-    const detailWidth = listPanel.visible
-      ? renderer.width - listWidth - 6
-      : renderer.width - 4;
+    listPanel.visible = item === undefined || (!single && !fullDetail && (wide || !current.inspecting));
+    detailPanel.visible = item !== undefined && (single || wide || current.inspecting);
+    const detailWidth = listPanel.visible ? renderer.width - listWidth - 6 : renderer.width - 4;
     const detailTitle =
       item?.delivery !== undefined
         ? "DELIVERY DETAIL"
@@ -316,8 +271,7 @@ export function dashboardView(
           ? "OPERATION & EVENT EVIDENCE"
           : screen.toUpperCase();
     detailPanel.title = ` ${detailTitle} `;
-    detailPanel.borderColor =
-      current.inspecting || single ? palette.accent : palette.border;
+    detailPanel.borderColor = current.inspecting || single ? palette.accent : palette.border;
     if (listPanel.visible) {
       const listText = listContent(
         rows.slice(current.first, current.first + visibleRows),
@@ -336,9 +290,7 @@ export function dashboardView(
     details.visible = !logFocused;
     markdown.visible = !logFocused && item?.markdown !== undefined;
     log.visible = logFocused;
-    const markdownContent = safeText(
-      (item?.markdown ?? "").slice(0, 256 * 1024),
-    );
+    const markdownContent = safeText((item?.markdown ?? "").slice(0, 256 * 1024));
     if (markdownContent !== prevMarkdown) {
       markdown.content = markdownContent;
       prevMarkdown = markdownContent;
@@ -349,12 +301,7 @@ export function dashboardView(
       prevLog = logText;
     }
     if (detailPanel.visible) {
-      const detailText = detailContent(
-        item,
-        Math.max(1, detailWidth),
-        palette,
-        screen,
-      );
+      const detailText = detailContent(item, Math.max(1, detailWidth), palette, screen);
       const detailKey = JSON.stringify(detailText.chunks);
       if (detailKey !== previousDetails) {
         details.content = detailText;
@@ -388,9 +335,7 @@ export function dashboardView(
     const current = selection();
     const inPrimary = primary.some((value) => value === screen);
     const options = inPrimary ? primary : diagnostics;
-    const destination = /^[1-6]$/u.test(name)
-      ? options[Number(name) - 1]
-      : undefined;
+    const destination = /^[1-6]$/u.test(name) ? options[Number(name) - 1] : undefined;
     if (destination !== undefined) {
       changeScreen(destination);
       return;
@@ -428,17 +373,10 @@ export function dashboardView(
     if (
       down ||
       up ||
-      ((screen === "Output" || screen === "Runtime" || screen === "Issues") &&
-        (name === "h" || name === "l"))
+      ((screen === "Output" || screen === "Runtime" || screen === "Issues") && (name === "h" || name === "l"))
     ) {
       const index = rows.findIndex((row) => row.id === current.id);
-      const next =
-        rows[
-          Math.max(
-            0,
-            Math.min(rows.length - 1, index + (down || name === "l" ? 1 : -1)),
-          )
-        ];
+      const next = rows[Math.max(0, Math.min(rows.length - 1, index + (down || name === "l" ? 1 : -1)))];
       if (next?.id !== current.id) {
         current.id = next?.id;
         inspector.scrollTop = 0;

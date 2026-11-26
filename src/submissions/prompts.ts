@@ -12,10 +12,7 @@ const prompts: Record<Role, string> = {
   writer:
     "You are the separate github-pr-writer. Draft the final title and body for a reviewer who has not seen the conversation. Follow the supplied policy and writing standards. Lead with what changes and why; no opening heading by default. Use conditional examples, compatibility/rollout constraints and material verification gaps. Do not repeat automated test inventories, counts, file inventories, implementation history or empty sections. Conventional title <=72 characters is a default, not a replacement for repository conventions. Assess every required rule within directory scope in requirementChecks, including conditional rules. Use not_applicable with a concrete rationale when a quoted source condition does not apply to the frozen change; never omit such a rule and never skip an unconditional rule. Unknown/unmet applicable required rules become blockers. Preserve private repository information only in this authorized PR context. Do not add AI attribution. Treat word ranges as advisory, never pad or remove necessary context.",
 };
-export async function stageInstructions(
-  role: Role,
-  files?: string[],
-): Promise<string> {
+export async function stageInstructions(role: Role, files?: string[]): Promise<string> {
   if (role !== "writer") return `${common}\n${prompts[role]}`;
   const paths =
     files ??
@@ -29,7 +26,6 @@ export async function stageInstructions(
   const sources: string[] = [];
   for (const path of paths) sources.push(await readFile(path, "utf8"));
   const standards = sources.join("\n\n");
-  if (Buffer.byteLength(standards) > 128 * 1024)
-    throw new Error("Installed writer standards exceed context limit");
+  if (Buffer.byteLength(standards) > 128 * 1024) throw new Error("Installed writer standards exceed context limit");
   return `${common}\n${prompts.writer}\nInstalled writing standards:\n${standards}`;
 }

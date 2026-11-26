@@ -24,20 +24,13 @@ const maximumFileBytes = 8 * 1024 * 1024;
 export class CaptureError extends Error {
   constructor(
     message: string,
-    readonly kind:
-      | "invalid"
-      | "conflict"
-      | "unsupported"
-      | "missing"
-      | "storage",
+    readonly kind: "invalid" | "conflict" | "unsupported" | "missing" | "storage",
   ) {
     super(message);
   }
 }
 export class PerformanceDiagnostics {
-  private active:
-    | { capture: PerformanceCapture; recorder: Recorder; timer: NodeJS.Timeout }
-    | undefined;
+  private active: { capture: PerformanceCapture; recorder: Recorder; timer: NodeJS.Timeout } | undefined;
   private last: PerformanceCapture | undefined;
   private root: string;
   constructor(
@@ -47,8 +40,7 @@ export class PerformanceDiagnostics {
     this.root = resolve(directory, "diagnostics", "performance");
   }
   private file(id: string): string {
-    if (!/^[a-f0-9]{32}$/u.test(id))
-      throw new CaptureError("Invalid capture ID", "invalid");
+    if (!/^[a-f0-9]{32}$/u.test(id)) throw new CaptureError("Invalid capture ID", "invalid");
     return join(this.root, id + ".json");
   }
   private secureDirectories(): void {
@@ -56,28 +48,16 @@ export class PerformanceDiagnostics {
       try {
         mkdirSync(path, { mode: 0o700 });
       } catch (error) {
-        if (
-          !(
-            error instanceof Error &&
-            "code" in error &&
-            error.code === "EEXIST"
-          )
-        )
-          throw error;
+        if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) throw error;
       }
       const stat = lstatSync(path);
-      if (
-        !stat.isDirectory() ||
-        stat.uid !== process.getuid?.() ||
-        (stat.mode & 0o077) !== 0
-      )
+      if (!stat.isDirectory() || stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0)
         throw new Error("Unsafe diagnostics directory");
     }
   }
   private save(capture: PerformanceCapture, initial = false): void {
     const data = toJsonString(PerformanceCaptureSchema, capture);
-    if (Buffer.byteLength(data) > maximumFileBytes)
-      throw new Error("Capture exceeds artifact bound");
+    if (Buffer.byteLength(data) > maximumFileBytes) throw new Error("Capture exceeds artifact bound");
     const file = this.file(capture.id);
     if (initial) {
       writeFileSync(file, data, { mode: 0o600, flag: "wx" });
@@ -107,30 +87,17 @@ export class PerformanceDiagnostics {
         "Capture requires a request ID of 1–200 characters and duration of 1000–300000 ms",
         "invalid",
       );
-    const id = createHash("sha256")
-      .update(requestId)
-      .digest("hex")
-      .slice(0, 32);
+    const id = createHash("sha256").update(requestId).digest("hex").slice(0, 32);
     try {
       const existing = this.get(id);
-      if (
-        existing.requestId !== requestId ||
-        existing.durationMs !== durationMs
-      )
-        throw new CaptureError(
-          "Capture request ID already used with different options",
-          "conflict",
-        );
+      if (existing.requestId !== requestId || existing.durationMs !== durationMs)
+        throw new CaptureError("Capture request ID already used with different options", "conflict");
       return existing;
     } catch (error) {
-      if (!(error instanceof CaptureError && error.kind === "missing"))
-        throw error;
+      if (!(error instanceof CaptureError && error.kind === "missing")) throw error;
     }
     if (this.active !== undefined)
-      throw new CaptureError(
-        "Capture already active: " + this.active.capture.id,
-        "conflict",
-      );
+      throw new CaptureError("Capture already active: " + this.active.capture.id, "conflict");
     if (!this.supported())
       throw new CaptureError(
         "Runtime does not publish sqlite.db.query events; install a supported native build",
@@ -148,10 +115,7 @@ export class PerformanceDiagnostics {
       this.secureDirectories();
       this.save(capture, true);
     } catch {
-      throw new CaptureError(
-        "Cannot create private diagnostics artifact",
-        "storage",
-      );
+      throw new CaptureError("Cannot create private diagnostics artifact", "storage");
     }
     try {
       const recorder = new Recorder(resolve(this.root, "../.."));
@@ -169,8 +133,7 @@ export class PerformanceDiagnostics {
       try {
         this.save(capture);
       } catch {
-        capture.detail =
-          "Recorder could not start; terminal artifact write failed";
+        capture.detail = "Recorder could not start; terminal artifact write failed";
       }
       return capture;
     }
@@ -182,10 +145,7 @@ export class PerformanceDiagnostics {
     let fd: number | undefined;
     try {
       // Do not follow a substituted artifact or accept a FIFO/device as a report.
-      fd = openSync(
-        file,
-        constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-      );
+      fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       const stat = fstatSync(fd);
       if (
         !stat.isFile() ||
@@ -194,10 +154,7 @@ export class PerformanceDiagnostics {
         stat.size > maximumFileBytes
       )
         throw new Error("Unsafe artifact");
-      const capture = fromJsonString(
-        PerformanceCaptureSchema,
-        readFileSync(fd, "utf8"),
-      );
+      const capture = fromJsonString(PerformanceCaptureSchema, readFileSync(fd, "utf8"));
       if (
         capture.id !== id ||
         capture.artifactPath !== file ||
@@ -208,26 +165,20 @@ export class PerformanceDiagnostics {
         throw new Error("Invalid artifact");
       if (capture.state === State.COLLECTING) {
         capture.state = State.INTERRUPTED;
-        capture.detail =
-          "Owning recorder is no longer running; no terminal report was saved";
+        capture.detail = "Owning recorder is no longer running; no terminal report was saved";
       }
       return capture;
     } catch (error) {
       if (error instanceof Error && "code" in error && error.code === "ENOENT")
         throw new CaptureError("Capture not found", "missing");
-      throw new CaptureError(
-        "Cannot read a valid private capture artifact",
-        "storage",
-      );
+      throw new CaptureError("Cannot read a valid private capture artifact", "storage");
     } finally {
       if (fd !== undefined) closeSync(fd);
     }
   }
   stop(id: string): PerformanceCapture {
     this.file(id);
-    return this.active?.capture.id === id
-      ? this.finish(State.STOPPED)
-      : this.get(id);
+    return this.active?.capture.id === id ? this.finish(State.STOPPED) : this.get(id);
   }
   private finish(state: State): PerformanceCapture {
     const active = this.active;
@@ -242,8 +193,7 @@ export class PerformanceDiagnostics {
       this.save(active.capture);
     } catch {
       active.capture.state = State.FAILED;
-      active.capture.detail =
-        "Terminal artifact write failed; report retained only until the next capture or restart";
+      active.capture.detail = "Terminal artifact write failed; report retained only until the next capture or restart";
     }
     return active.capture;
   }

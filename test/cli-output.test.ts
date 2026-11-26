@@ -1,21 +1,13 @@
 import { test, expect, spyOn } from "bun:test";
 import { create, toJson } from "@bufbuild/protobuf";
-import {
-  PendingActionSchema,
-  GetActionResponseSchema,
-} from "../src/gen/octomanager/v2/tracking_pb.js";
+import { PendingActionSchema, GetActionResponseSchema } from "../src/gen/octomanager/v2/tracking_pb.js";
 import { NotificationMessageSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
 import { parseCommand } from "../src/cli/arguments.js";
 import { agentResponse, printFailure } from "../src/cli/output.js";
 import { commandSpecs } from "../src/cli/command-tree.js";
-import {
-  agentProjection,
-  agentOutputExceptions,
-} from "../src/cli/agent-output.js";
+import { agentProjection, agentOutputExceptions } from "../src/cli/agent-output.js";
 function output(args: string[], raw: unknown): unknown {
-  return JSON.parse(
-    agentResponse(parseCommand(args, { OCTO_MANAGER_AGENT: "1" }), raw),
-  );
+  return JSON.parse(agentResponse(parseCommand(args, { OCTO_MANAGER_AGENT: "1" }), raw));
 }
 test("explicit JSON is separate from agent detection and full inspection never replays a mutation", () => {
   expect(parseCommand(["pr", "list"], {}).output).toEqual({
@@ -28,29 +20,21 @@ test("explicit JSON is separate from agent detection and full inspection never r
     json: true,
     full: false,
   });
-  expect(
-    parseCommand(["pr", "list"], { CODEX_THREAD_ID: "thread" }).output,
-  ).toEqual({ agent: true, json: true, full: false });
-  expect(
-    parseCommand(["pr", "list"], { CODEX_THREAD_ID: "  " }).output.agent,
-  ).toBe(false);
+  expect(parseCommand(["pr", "list"], { CODEX_THREAD_ID: "thread" }).output).toEqual({
+    agent: true,
+    json: true,
+    full: false,
+  });
+  expect(parseCommand(["pr", "list"], { CODEX_THREAD_ID: "  " }).output.agent).toBe(false);
   expect(
     parseCommand(["pr", "list"], {
       CODEX_THREAD_ID: "thread",
       OCTO_MANAGER_AGENT: "0",
     }).output.agent,
   ).toBe(false);
-  expect(
-    parseCommand(["pr", "list", "--agent"], { OCTO_MANAGER_AGENT: "0" }).output
-      .agent,
-  ).toBe(true);
-  expect(
-    parseCommand(["pr", "list"], { OCTO_MANAGER_AGENT: "1" }).values.json,
-  ).toBe(true);
-  expect(
-    parseCommand(["pr", "show", "p", "--full"], { CODEX_THREAD_ID: "thread" })
-      .output.full,
-  ).toBe(true);
+  expect(parseCommand(["pr", "list", "--agent"], { OCTO_MANAGER_AGENT: "0" }).output.agent).toBe(true);
+  expect(parseCommand(["pr", "list"], { OCTO_MANAGER_AGENT: "1" }).values.json).toBe(true);
+  expect(parseCommand(["pr", "show", "p", "--full"], { CODEX_THREAD_ID: "thread" }).output.full).toBe(true);
   for (const args of [
     ["pr", "track", "--url", "https://github.com/o/r/pull/1"],
     ["ack", "12345678"],
@@ -69,11 +53,7 @@ test("every registered command has a projection or an intentional protocol excep
       capability: spec.capability,
       positionals: spec.route.split(" "),
     });
-    expect(
-      projection !== undefined ||
-        agentOutputExceptions[spec.route] !== undefined,
-      spec.path,
-    ).toBe(true);
+    expect(projection !== undefined || agentOutputExceptions[spec.route] !== undefined, spec.path).toBe(true);
   }
 });
 
@@ -141,9 +121,7 @@ test("tracking keeps independent complete collections and exact identity, links 
     ],
     agents: raw.agents,
   });
-  expect(
-    JSON.stringify(output(["agent", "status"], raw)).length,
-  ).toBeGreaterThan(3000);
+  expect(JSON.stringify(output(["agent", "status"], raw)).length).toBeGreaterThan(3000);
   const messages = Array.from({ length: 20 }, (_, i) => ({
     id: `message-${String(i)}`,
     sequence: i + 1,
@@ -179,9 +157,7 @@ test("merge inspection retains the exact target and readiness while omitting tra
     ready,
     checks: ["CI"],
   };
-  expect(
-    output(["pr", "ready", merge.pr, "--head", merge.head], entry),
-  ).toEqual(entry);
+  expect(output(["pr", "ready", merge.pr, "--head", merge.head], entry)).toEqual(entry);
   expect(
     output(["pr", "auto-merge", merge.pr, "--on"], {
       prId: "pr",
@@ -206,16 +182,12 @@ test("merge inspection retains the exact target and readiness while omitting tra
 test("agent pagination preserves uint64 cursors beyond the safe integer range", () => {
   expect(
     output(["agent", "inbox"], {
-      messages: [
-        { id: "message", sequence: 9007199254740993n, applicable: true },
-      ],
+      messages: [{ id: "message", sequence: 9007199254740993n, applicable: true }],
       nextSequence: 9007199254740993n,
       hasMore: true,
     }),
   ).toEqual({
-    messages: [
-      { id: "message", sequence: "9007199254740993", applicable: true },
-    ],
+    messages: [{ id: "message", sequence: "9007199254740993", applicable: true }],
     nextSequence: "9007199254740993",
     hasMore: true,
   });
@@ -227,28 +199,16 @@ test("safe action and message projections retain the validated evidence revision
     notificationKind: "review_feedback",
     evidenceHeadSha: head,
   });
-  const result = output(
-    ["action", "show", "action"],
-    create(GetActionResponseSchema, { action }),
-  );
+  const result = output(["action", "show", "action"], create(GetActionResponseSchema, { action }));
   expect(result).toHaveProperty("action.notificationKind", "review_feedback");
   expect(result).toHaveProperty("action.evidenceHeadSha", head);
   const message = create(NotificationMessageSchema, {
     id: "receipt",
     items: [{ id: "member", source: { case: "action", value: { action } } }],
   });
-  const inspected = output(
-    ["message", "receipt"],
-    toJson(NotificationMessageSchema, message),
-  );
-  expect(inspected).toHaveProperty(
-    "items.0.action.action.notificationKind",
-    "review_feedback",
-  );
-  expect(inspected).toHaveProperty(
-    "items.0.action.action.evidenceHeadSha",
-    head,
-  );
+  const inspected = output(["message", "receipt"], toJson(NotificationMessageSchema, message));
+  expect(inspected).toHaveProperty("items.0.action.action.notificationKind", "review_feedback");
+  expect(inspected).toHaveProperty("items.0.action.action.evidenceHeadSha", head);
 });
 
 test("issues preserve titles, full criteria and questions, and continuation state", () => {
@@ -264,9 +224,7 @@ test("issues preserve titles, full criteria and questions, and continuation stat
     stage: "ready",
     brief,
   }));
-  expect(
-    output(["issue", "list", "--offset", "20"], { issues, hasMore: true }),
-  ).toEqual({ issues, hasMore: true });
+  expect(output(["issue", "list", "--offset", "20"], { issues, hasMore: true })).toEqual({ issues, hasMore: true });
 });
 
 test("repairs, activity, participants and archived pages retain their own paging and failure evidence", () => {
@@ -379,11 +337,9 @@ test("agent failures preserve diagnostics and structured codes on stderr", () =>
   const write = spyOn(console, "error").mockImplementation(() => {});
   try {
     const message = "Diagnostic detail ".repeat(100);
-    printFailure(
-      Object.assign(new Error(message), { code: "unavailable" }),
-      ["pr", "show", "missing"],
-      { OCTO_MANAGER_AGENT: "1" },
-    );
+    printFailure(Object.assign(new Error(message), { code: "unavailable" }), ["pr", "show", "missing"], {
+      OCTO_MANAGER_AGENT: "1",
+    });
     expect(write).toHaveBeenCalledTimes(1);
     const value: unknown = JSON.parse(String(write.mock.calls[0]?.[0]));
     expect(value).toEqual({ error: { message, code: "unavailable" } });

@@ -6,16 +6,8 @@ import {
   IssueWaiting as WireWaiting,
   IssueOperation,
 } from "../gen/octomanager/v2/issues_pb.js";
-import {
-  IssueStage,
-  Waiting,
-  type IssueRecord,
-  type Assignment,
-} from "./contracts.js";
-import {
-  issueNotificationKind,
-  wireIssueSubscription,
-} from "./subscription-wire.js";
+import { IssueStage, Waiting, type IssueRecord, type Assignment } from "./contracts.js";
+import { issueNotificationKind, wireIssueSubscription } from "./subscription-wire.js";
 import type { IssueService } from "./service.js";
 const stages: Record<IssueStage, WireStage> = {
   investigation: WireStage.INVESTIGATION,
@@ -46,15 +38,11 @@ export function wireIssue(issue: IssueRecord, assignment?: Assignment) {
     assignmentId: issue.assignmentId,
     prUrl: issue.prUrl,
     updatedAtMs: BigInt(issue.updatedAt),
-    clarificationDueAtMs:
-      issue.clarificationDueAt === undefined
-        ? undefined
-        : BigInt(issue.clarificationDueAt),
+    clarificationDueAtMs: issue.clarificationDueAt === undefined ? undefined : BigInt(issue.clarificationDueAt),
     externallyClosed: issue.externalClosed,
     approvedVersion: issue.approvedVersion,
     workspace: issue.workspace,
-    assignment:
-      assignment === undefined ? undefined : wireAssignment(assignment),
+    assignment: assignment === undefined ? undefined : wireAssignment(assignment),
   };
 }
 function wireAssignment(item: Assignment) {
@@ -99,10 +87,7 @@ function perform<T>(work: () => T): T {
   try {
     return work();
   } catch (error) {
-    throw new ConnectError(
-      error instanceof Error ? error.message : "Issue operation failed",
-      Code.FailedPrecondition,
-    );
+    throw new ConnectError(error instanceof Error ? error.message : "Issue operation failed", Code.FailedPrecondition);
   }
 }
 function subscriptionIssue(service: IssueService, id: string): IssueRecord {
@@ -113,12 +98,7 @@ export function issueRoutes(
   service: IssueService,
 ): Pick<
   ServiceImpl<typeof SchedulerService>,
-  | "enrollIssue"
-  | "listIssues"
-  | "getIssue"
-  | "updateIssue"
-  | "setIssueSubscription"
-  | "listIssueSubscriptions"
+  "enrollIssue" | "listIssues" | "getIssue" | "updateIssue" | "setIssueSubscription" | "listIssueSubscriptions"
 > {
   return {
     setIssueSubscription(request) {
@@ -144,13 +124,7 @@ export function issueRoutes(
     enrollIssue(request) {
       return perform(() => ({
         issue: wireIssue(
-          service.enroll(
-            request.provider,
-            request.url,
-            request.root,
-            request.ownerAgentId,
-            request.requestId,
-          ),
+          service.enroll(request.provider, request.url, request.root, request.ownerAgentId, request.requestId),
         ),
       }));
     },
@@ -159,9 +133,7 @@ export function issueRoutes(
       return {
         issues: all
           .slice(request.offset, request.offset + 20)
-          .map((issue) =>
-            wireIssue(issue, service.store.assignments(issue.id).at(-1)),
-          ),
+          .map((issue) => wireIssue(issue, service.store.assignments(issue.id).at(-1))),
         hasMore: all.length > request.offset + 20,
       };
     },
@@ -170,9 +142,7 @@ export function issueRoutes(
         const issue = service.store.get(request.id);
         const events = service.store.events(
           issue.id,
-          request.beforeSequence === 0n
-            ? Number.MAX_SAFE_INTEGER
-            : Number(request.beforeSequence),
+          request.beforeSequence === 0n ? Number.MAX_SAFE_INTEGER : Number(request.beforeSequence),
         );
         return {
           issue: wireIssue(issue, service.store.assignments(issue.id).at(-1)),
@@ -187,10 +157,7 @@ export function issueRoutes(
               state: effect.state,
               url: effect.url,
             })),
-          assignments: service.store
-            .assignments(issue.id)
-            .slice(-10)
-            .map(wireAssignment),
+          assignments: service.store.assignments(issue.id).slice(-10).map(wireAssignment),
           events: events.map((event) => ({
             sequence: BigInt(event.sequence),
             atMs: BigInt(event.at),

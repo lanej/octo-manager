@@ -9,9 +9,7 @@ const profile = Type.Object(
     harness: Type.String({ minLength: 1 }),
     model: Type.String({ minLength: 1 }),
     instructions: Type.Optional(Type.String({ maxLength: 4000 })),
-    timeout_ms: Type.Optional(
-      Type.Integer({ minimum: 1000, maximum: 86400000 }),
-    ),
+    timeout_ms: Type.Optional(Type.Integer({ minimum: 1000, maximum: 86400000 })),
   },
   { additionalProperties: false },
 );
@@ -21,9 +19,7 @@ export const IssueConfigSchema = Type.Object(
     auto_publish: Type.Optional(Type.Boolean()),
     proceed_under_assumptions: Type.Optional(Type.Boolean()),
     auto_follow_ups: Type.Optional(Type.Boolean()),
-    clarification_timeout_ms: Type.Optional(
-      Type.Integer({ minimum: 0, maximum: 604800000 }),
-    ),
+    clarification_timeout_ms: Type.Optional(Type.Integer({ minimum: 0, maximum: 604800000 })),
     clarification_timeout_disabled: Type.Optional(Type.Boolean()),
     max_concurrency: Type.Optional(Type.Integer({ minimum: 1, maximum: 10 })),
     profiles: Type.Object(
@@ -40,8 +36,7 @@ export const IssueConfigSchema = Type.Object(
 export type IssueConfig = Static<typeof IssueConfigSchema>;
 function read(path: string): string {
   const info = lstatSync(path);
-  if (!info.isFile() || info.size > 65536)
-    throw new Error("Issue policy must be a regular file of at most 64 KiB");
+  if (!info.isFile() || info.size > 65536) throw new Error("Issue policy must be a regular file of at most 64 KiB");
   return readFileSync(path, "utf8");
 }
 export function loadIssuePolicy(root: string): IssuePolicy {
@@ -55,22 +50,14 @@ export function loadIssuePolicy(root: string): IssuePolicy {
     !("issues" in parsed) ||
     !Check(IssueConfigSchema, parsed.issues)
   )
-    throw new Error(
-      "Configure issues.profiles in repository octo-manager.toml",
-    );
+    throw new Error("Configure issues.profiles in repository octo-manager.toml");
   let stage = "unknown";
   try {
     const manifest: unknown = JSON.parse(read(join(root, ".source-code.json")));
-    if (
-      typeof manifest === "object" &&
-      manifest !== null &&
-      "stage" in manifest &&
-      typeof manifest.stage === "string"
-    )
+    if (typeof manifest === "object" && manifest !== null && "stage" in manifest && typeof manifest.stage === "string")
       stage = manifest.stage;
   } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
-      throw error;
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
   }
   const config = parsed.issues;
   const convert = (value: IssueConfig["profiles"]["investigation"]) => ({

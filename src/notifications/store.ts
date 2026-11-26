@@ -36,20 +36,12 @@ export class DigestStore {
     db.exec(
       "CREATE INDEX IF NOT EXISTS digest_dispatch_prefix ON agent_digest_revisions(substr(json_extract(data,'$.dispatchId'),1,8))",
     );
-    db.exec(
-      "CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)",
-    );
-    db.exec(
-      "CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)",
-    );
+    db.exec("CREATE INDEX IF NOT EXISTS digest_events_by_kind ON agent_digest_events(digest_id,kind,sequence)");
+    db.exec("CREATE INDEX IF NOT EXISTS digest_events_by_digest ON agent_digest_events(digest_id,sequence)");
   }
   archivedInspection(agentId: string): ArchivedInspection | undefined {
-    const row = this.statement("SELECT value FROM settings WHERE key=?").get(
-      `digest-archive-check:${agentId}`,
-    );
-    return row === undefined
-      ? undefined
-      : archivedInspection(JSON.parse(String(row["value"])));
+    const row = this.statement("SELECT value FROM settings WHERE key=?").get(`digest-archive-check:${agentId}`);
+    return row === undefined ? undefined : archivedInspection(JSON.parse(String(row["value"])));
   }
   saveArchivedInspection(agentId: string, value: ArchivedInspection): void {
     archivedInspection(value);
@@ -58,23 +50,19 @@ export class DigestStore {
     ).run(`digest-archive-check:${agentId}`, JSON.stringify(value));
   }
   clearArchivedInspection(agentId: string): void {
-    this.statement("DELETE FROM settings WHERE key=?").run(
-      `digest-archive-check:${agentId}`,
-    );
+    this.statement("DELETE FROM settings WHERE key=?").run(`digest-archive-check:${agentId}`);
   }
   private dispatchId(): string {
     return allocateMessageId(this.db);
   }
 
   findDelivery(id: string): DigestRevision | undefined {
-    if (!/^[a-f0-9-]{8,36}$/u.test(id))
-      throw new Error("Invalid message receipt ID");
+    if (!/^[a-f0-9-]{8,36}$/u.test(id)) throw new Error("Invalid message receipt ID");
     const rows = this.statement(
       "SELECT data FROM agent_digest_revisions WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? AND replace(json_extract(data,'$.dispatchId'),'-','') LIKE ? LIMIT 2",
     ).all(id.slice(0, 8), `${id.replaceAll("-", "")}%`);
     if (rows.length === 0) return undefined;
-    if (rows.length > 1)
-      throw new Error("Invalid ambiguous message receipt ID");
+    if (rows.length > 1) throw new Error("Invalid ambiguous message receipt ID");
     return revision(JSON.parse(String(rows[0]?.["data"])));
   }
   queuedRevision(
@@ -134,9 +122,7 @@ export class DigestStore {
     const rows =
       agentId === undefined
         ? this.statement("SELECT data FROM agent_digests ORDER BY rowid").all()
-        : this.statement(
-            "SELECT data FROM agent_digests WHERE agent_id=? ORDER BY rowid",
-          ).all(agentId);
+        : this.statement("SELECT data FROM agent_digests WHERE agent_id=? ORDER BY rowid").all(agentId);
     return rows.map((row) => digest(JSON.parse(String(row["data"]))));
   }
   cleanup(agentId: string): Digest[] {
@@ -147,18 +133,14 @@ export class DigestStore {
       .map((row) => digest(JSON.parse(String(row["data"]))));
   }
   get(id: string): Digest {
-    let row = this.statement("SELECT data FROM agent_digests WHERE id=?").get(
-      id,
-    );
+    let row = this.statement("SELECT data FROM agent_digests WHERE id=?").get(id);
     if (row === undefined) {
       const ids = this.statement("SELECT id FROM agent_digests ORDER BY rowid")
         .all()
         .map((value) => String(value["id"]));
       const full = resolveId(id, ids);
       if (full === undefined) throw new Error("Digest not found");
-      row = this.statement("SELECT data FROM agent_digests WHERE id=?").get(
-        full,
-      );
+      row = this.statement("SELECT data FROM agent_digests WHERE id=?").get(full);
     }
     if (row === undefined) throw new Error("Digest not found");
     return digest(JSON.parse(String(row["data"])));
@@ -167,9 +149,7 @@ export class DigestStore {
     const row = this.statement(
       "SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN ('received','cancelled') ORDER BY rowid LIMIT 1",
     ).get(agentId);
-    return row === undefined
-      ? undefined
-      : digest(JSON.parse(String(row["data"])));
+    return row === undefined ? undefined : digest(JSON.parse(String(row["data"])));
   }
   coveredMessageIds(agentId: string): Set<string> {
     return new Set(
@@ -181,37 +161,31 @@ export class DigestStore {
     );
   }
   revisions(id: string): DigestRevision[] {
-    return this.statement(
-      "SELECT data FROM agent_digest_revisions WHERE digest_id=? ORDER BY revision",
-    )
+    return this.statement("SELECT data FROM agent_digest_revisions WHERE digest_id=? ORDER BY revision")
       .all(id)
       .map((row) => revision(JSON.parse(String(row["data"]))));
   }
   version(id: string, number: number): DigestRevision {
-    const row = this.statement(
-      "SELECT data FROM agent_digest_revisions WHERE digest_id=? AND revision=?",
-    ).get(id, number);
+    const row = this.statement("SELECT data FROM agent_digest_revisions WHERE digest_id=? AND revision=?").get(
+      id,
+      number,
+    );
     if (row === undefined) throw new Error("Digest revision not found");
     return revision(JSON.parse(String(row["data"])));
   }
 
   hasEvent(id: string, kind: string): boolean {
     return (
-      this.statement(
-        "SELECT 1 FROM agent_digest_events WHERE digest_id=? AND kind=? LIMIT 1",
-      ).get(id, kind) !== undefined
+      this.statement("SELECT 1 FROM agent_digest_events WHERE digest_id=? AND kind=? LIMIT 1").get(id, kind) !==
+      undefined
     );
   }
   events(id: string, kinds?: readonly string[], limit?: number): DigestEvent[] {
     if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0))
       throw new Error("Invalid digest event limit");
     if (kinds?.length === 0 || limit === 0) return [];
-    const filter =
-      kinds === undefined
-        ? ""
-        : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
-    const index =
-      kinds === undefined ? "digest_events_by_digest" : "digest_events_by_kind";
+    const filter = kinds === undefined ? "" : ` AND kind IN (${kinds.map(() => "?").join(",")})`;
+    const index = kinds === undefined ? "digest_events_by_digest" : "digest_events_by_kind";
     const rows = this.statement(
       `SELECT sequence,digest_id AS digestId,agent_id AS agentId,at_ms AS at,kind,detail FROM agent_digest_events INDEXED BY ${index} WHERE digest_id=?${filter} ORDER BY sequence${limit === undefined ? "" : " DESC LIMIT ?"}`,
     ).all(id, ...(kinds ?? []), ...(limit === undefined ? [] : [limit]));
@@ -276,11 +250,9 @@ export class DigestStore {
     const previous = this.version(value.id, value.revision);
     const current = render(previous.dispatchId);
     if (
-      JSON.stringify(current.messageIds) ===
-        JSON.stringify(previous.messageIds) &&
+      JSON.stringify(current.messageIds) === JSON.stringify(previous.messageIds) &&
       current.body === previous.body &&
-      JSON.stringify(current.mergeTarget) ===
-        JSON.stringify(previous.mergeTarget)
+      JSON.stringify(current.mergeTarget) === JSON.stringify(previous.mergeTarget)
     )
       return value;
     const dispatchId = this.dispatchId();
@@ -332,20 +304,16 @@ export class DigestStore {
   defer(value: Digest, nextCheckAt: number): void {
     this.write({ ...value, nextCheckAt });
   }
-  event(
-    agentId: string,
-    digestId: string | undefined,
-    kind: string,
-    detail: unknown,
-  ): void {
-    this.statement(
-      "INSERT INTO agent_digest_events(digest_id,agent_id,at_ms,kind,detail) VALUES(?,?,?,?,?)",
-    ).run(digestId ?? null, agentId, this.now(), kind, JSON.stringify(detail));
+  event(agentId: string, digestId: string | undefined, kind: string, detail: unknown): void {
+    this.statement("INSERT INTO agent_digest_events(digest_id,agent_id,at_ms,kind,detail) VALUES(?,?,?,?,?)").run(
+      digestId ?? null,
+      agentId,
+      this.now(),
+      kind,
+      JSON.stringify(detail),
+    );
     const reason =
-      typeof detail === "object" &&
-      detail !== null &&
-      "reason" in detail &&
-      typeof detail.reason === "string"
+      typeof detail === "object" && detail !== null && "reason" in detail && typeof detail.reason === "string"
         ? detail.reason
         : undefined;
     this.eventSink(
@@ -375,23 +343,21 @@ export class DigestStore {
         at: Number(row["at_ms"]),
       }));
   }
-  receipt(
-    id: string,
-    number: number,
-  ): { agentId: string; at: number } | undefined {
-    const row = this.statement(
-      "SELECT agent_id,at_ms FROM agent_digest_receipts WHERE digest_id=? AND revision=?",
-    ).get(id, number);
-    return row === undefined
-      ? undefined
-      : { agentId: String(row["agent_id"]), at: Number(row["at_ms"]) };
+  receipt(id: string, number: number): { agentId: string; at: number } | undefined {
+    const row = this.statement("SELECT agent_id,at_ms FROM agent_digest_receipts WHERE digest_id=? AND revision=?").get(
+      id,
+      number,
+    );
+    return row === undefined ? undefined : { agentId: String(row["agent_id"]), at: Number(row["at_ms"]) };
   }
   receiveInside(value: Digest, number: number): void {
-    if (!this.db.isTransaction)
-      throw new Error("Digest receipt requires a coordinator transaction");
-    const inserted = this.statement(
-      "INSERT OR IGNORE INTO agent_digest_receipts VALUES(?,?,?,?)",
-    ).run(value.id, number, value.agentId, this.now());
+    if (!this.db.isTransaction) throw new Error("Digest receipt requires a coordinator transaction");
+    const inserted = this.statement("INSERT OR IGNORE INTO agent_digest_receipts VALUES(?,?,?,?)").run(
+      value.id,
+      number,
+      value.agentId,
+      this.now(),
+    );
     if (Number(inserted.changes) === 0) return;
     this.write({
       ...this.get(value.id),
@@ -405,14 +371,9 @@ export class DigestStore {
   }
   recover(): void {
     for (const value of this.list())
-      if (
-        value.state === DigestState.Withdrawing ||
-        value.state === DigestState.Enqueueing
-      )
-        this.save(
-          { ...value, state: DigestState.Uncertain, nextCheckAt: this.now() },
-          "digest_recovery",
-          { reason: "Coordinator interrupted a queue operation" },
-        );
+      if (value.state === DigestState.Withdrawing || value.state === DigestState.Enqueueing)
+        this.save({ ...value, state: DigestState.Uncertain, nextCheckAt: this.now() }, "digest_recovery", {
+          reason: "Coordinator interrupted a queue operation",
+        });
   }
 }

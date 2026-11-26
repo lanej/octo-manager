@@ -7,8 +7,7 @@ function integer(value: unknown): number {
   return value;
 }
 function report(row: Record<string, unknown>): ActivityReport {
-  if (typeof row["payload"] !== "string")
-    throw new Error("Invalid stored activity");
+  if (typeof row["payload"] !== "string") throw new Error("Invalid stored activity");
   const value: unknown = JSON.parse(row["payload"]);
   return {
     ...activityInput(value),
@@ -25,8 +24,7 @@ export class ActivityStore {
     const version = db.prepare("PRAGMA user_version").get();
     if (version === undefined) throw new Error("Missing database version");
     const current = integer(version["user_version"]);
-    if (current > 15)
-      throw new Error("Activity database is newer than this application");
+    if (current > 15) throw new Error("Activity database is newer than this application");
     if (current >= 2) return;
     db.exec(`BEGIN IMMEDIATE;
       CREATE TABLE agent_activity (
@@ -51,14 +49,10 @@ export class ActivityStore {
     const payload = JSON.stringify(input);
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      const existing = this.db
-        .prepare("SELECT * FROM agent_activity WHERE request_id=?")
-        .get(input.requestId);
+      const existing = this.db.prepare("SELECT * FROM agent_activity WHERE request_id=?").get(input.requestId);
       if (existing !== undefined) {
         if (existing["payload"] !== payload)
-          throw new Error(
-            "Activity request ID already used with a different report",
-          );
+          throw new Error("Activity request ID already used with a different report");
         const result = report(existing);
         this.db.exec("COMMIT");
         return result;
@@ -68,25 +62,13 @@ export class ActivityStore {
         .prepare(
           "INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES('',?,'agent_activity',?,(SELECT id FROM tracked_prs WHERE url=?))",
         )
-        .run(
-          recordedAt,
-          `${input.name}: ${input.outcome} · ${input.detail}`,
-          input.prUrl ?? null,
-        );
+        .run(recordedAt, `${input.name}: ${input.outcome} · ${input.detail}`, input.prUrl ?? null);
       const sequence = Number(event.lastInsertRowid);
       this.db
         .prepare(
           "INSERT INTO agent_activity(sequence,request_id,operation_id,name,outcome,payload,recorded_at_ms) VALUES(?,?,?,?,?,?,?)",
         )
-        .run(
-          sequence,
-          input.requestId,
-          input.operationId,
-          input.name,
-          input.outcome,
-          payload,
-          recordedAt,
-        );
+        .run(sequence, input.requestId, input.operationId, input.name, input.outcome, payload, recordedAt);
       this.db.exec("COMMIT");
       this.changed?.();
       return { ...input, sequence, recordedAt };
@@ -98,15 +80,11 @@ export class ActivityStore {
   list(after: number, before?: number): ActivityReport[] {
     if (before !== undefined)
       return this.db
-        .prepare(
-          "SELECT * FROM agent_activity WHERE sequence<? ORDER BY sequence DESC LIMIT 200",
-        )
+        .prepare("SELECT * FROM agent_activity WHERE sequence<? ORDER BY sequence DESC LIMIT 200")
         .all(integer(before))
         .map(report);
     return this.db
-      .prepare(
-        "SELECT * FROM agent_activity WHERE sequence>? ORDER BY sequence LIMIT 200",
-      )
+      .prepare("SELECT * FROM agent_activity WHERE sequence>? ORDER BY sequence LIMIT 200")
       .all(integer(after))
       .map(report);
   }

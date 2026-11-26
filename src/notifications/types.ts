@@ -29,8 +29,7 @@ export const ArchivedInspectionSchema = Type.Object(
 );
 export type ArchivedInspection = Static<typeof ArchivedInspectionSchema>;
 export function archivedInspection(value: unknown): ArchivedInspection {
-  if (!Check(ArchivedInspectionSchema, value))
-    throw new Error("Invalid archived queue inspection");
+  if (!Check(ArchivedInspectionSchema, value)) throw new Error("Invalid archived queue inspection");
   return value;
 }
 export const DigestSchema = Type.Object(
@@ -92,8 +91,5 @@ export function digestEvent(value: unknown): DigestEvent {
   return value;
 }
 export function terminal(value: Digest): boolean {
-  return (
-    value.state === DigestState.Received ||
-    value.state === DigestState.Cancelled
-  );
+  return value.state === DigestState.Received || value.state === DigestState.Cancelled;
 }

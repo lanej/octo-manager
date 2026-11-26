@@ -5,37 +5,23 @@ import { setTimeout as delay } from "node:timers/promises";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "../test/support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "../test/support/application.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ChainState, EntryState } from "../src/merging/contracts.js";
 import { githubReads } from "../src/github/reads.js";
 const owner = process.env["OCTO_ACCEPTANCE_OWNER"];
-if (
-  process.env["OCTO_LIVE_MERGE_ACCEPTANCE"] !== "1" ||
-  owner === undefined ||
-  !/^[A-Za-z0-9-]+$/u.test(owner)
-)
+if (process.env["OCTO_LIVE_MERGE_ACCEPTANCE"] !== "1" || owner === undefined || !/^[A-Za-z0-9-]+$/u.test(owner))
   throw new Error(
     "Opt in with OCTO_LIVE_MERGE_ACCEPTANCE=1 and OCTO_ACCEPTANCE_OWNER=YOUR_LOGIN; this creates and merges PRs in two new private fixture repositories",
   );
 const exec = promisify(execFile),
   directory = await mkdtemp(join(tmpdir(), "octo-live-merge-")),
   stamp = String(Date.now());
-const repositories = [
-  `${owner}/octo-merge-library-${stamp}`,
-  `${owner}/octo-merge-application-${stamp}`,
-];
+const repositories = [`${owner}/octo-merge-library-${stamp}`, `${owner}/octo-merge-application-${stamp}`];
 const created: string[] = [];
 let coordinator: ApplicationFixture | undefined;
 let passed = false;
-async function command(
-  binary: string,
-  args: string[],
-  cwd = directory,
-): Promise<string> {
+async function command(binary: string, args: string[], cwd = directory): Promise<string> {
   const result = await exec(binary, args, {
     cwd,
     timeout: 120000,
@@ -43,10 +29,7 @@ async function command(
   });
   return result.stdout.trim();
 }
-async function fixture(
-  repository: string,
-  revision?: string,
-): Promise<{ url: string; initial: string }> {
+async function fixture(repository: string, revision?: string): Promise<{ url: string; initial: string }> {
   const path = join(directory, repository.split("/").at(-1) ?? "fixture");
   await mkdir(path);
   const git = (args: string[]) =>
@@ -66,29 +49,13 @@ async function fixture(
       path,
     );
   await git(["init", "-b", "main"]);
-  await writeFile(
-    join(path, "README.md"),
-    "Disposable Octo merge-chain acceptance fixture.\n",
-  );
+  await writeFile(join(path, "README.md"), "Disposable Octo merge-chain acceptance fixture.\n");
   if (revision !== undefined)
-    await writeFile(
-      join(path, "versions.toml"),
-      `[tools.library]\nrevision = "${revision}"\n`,
-    );
+    await writeFile(join(path, "versions.toml"), `[tools.library]\nrevision = "${revision}"\n`);
   await git(["add", "."]);
   await git(["commit", "-m", "Fixture base"]);
   const initial = await git(["rev-parse", "HEAD"]);
-  await command("gh", [
-    "repo",
-    "create",
-    repository,
-    "--private",
-    "--source",
-    path,
-    "--remote",
-    "origin",
-    "--push",
-  ]);
+  await command("gh", ["repo", "create", repository, "--private", "--source", path, "--remote", "origin", "--push"]);
   created.push(repository);
   await git(["checkout", "-b", "fixture-change"]);
   await writeFile(join(path, "feature.txt"), "Fixture feature.\n");
@@ -167,19 +134,12 @@ try {
   const deadline = Date.now() + 300000;
   while (Date.now() < deadline) {
     for (const entry of coordinator.store.merging.entries()) {
-      if (
-        entry.state === EntryState.Uncertain ||
-        entry.state === EntryState.Blocked
-      )
+      if (entry.state === EntryState.Uncertain || entry.state === EntryState.Blocked)
         throw new Error(`Acceptance needs inspection: ${entry.detail}`);
       await coordinator.tracking.refresh(entry.prId);
       if (entry.state === EntryState.Merged) continue;
       const pr = tracking.pr(entry.prId);
-      if (
-        pr.observation !== undefined &&
-        entry.ready === undefined &&
-        entry.preparationHold !== true
-      )
+      if (pr.observation !== undefined && entry.ready === undefined && entry.preparationHold !== true)
         coordinator.merging.command({
           op: "ready",
           pr: pr.id,
@@ -192,24 +152,15 @@ try {
       });
     }
     await coordinator.merging.tick();
-    if (
-      coordinator.store.merging.chain(chain.id).state === ChainState.Completed
-    ) {
+    if (coordinator.store.merging.chain(chain.id).state === ChainState.Completed) {
       const entries = coordinator.store.merging.entries(),
         merged = entries.find((entry) => entry.prId === first.id)?.mergeCommit;
       assert(merged !== undefined);
-      const result: unknown = await githubReads.read(
-        `repos/${application}/contents/versions.toml?ref=main`,
-      );
+      const result: unknown = await githubReads.read(`repos/${application}/contents/versions.toml?ref=main`);
       assert(
-        typeof result === "object" &&
-          result !== null &&
-          "content" in result &&
-          typeof result.content === "string",
+        typeof result === "object" && result !== null && "content" in result && typeof result.content === "string",
       );
-      assert(
-        Buffer.from(result.content, "base64").toString("utf8").includes(merged),
-      );
+      assert(Buffer.from(result.content, "base64").toString("utf8").includes(merged));
       console.log(
         JSON.stringify({
           result: "passed",
@@ -226,16 +177,10 @@ try {
     }
     await delay(61000);
   }
-  assert.equal(
-    coordinator.store.merging.chain(chain.id).state,
-    ChainState.Completed,
-    "Acceptance timed out",
-  );
+  assert.equal(coordinator.store.merging.chain(chain.id).state, ChainState.Completed, "Acceptance timed out");
 } finally {
   await coordinator?.close();
-  console.error(
-    `Disposable repositories retained for inspection: ${created.join(", ")}`,
-  );
+  console.error(`Disposable repositories retained for inspection: ${created.join(", ")}`);
   if (passed) await rm(directory, { recursive: true, force: true });
   else console.error(`Acceptance evidence retained at ${directory}`);
 }

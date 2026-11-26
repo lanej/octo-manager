@@ -58,14 +58,8 @@ export function wireLifecycle(report: ActivationReport): LifecycleReport {
     })),
   });
 }
-export function readLifecycle(
-  report: LifecycleReport | undefined,
-): ActivationReport {
-  if (
-    report === undefined ||
-    report.schemaVersion !== 1 ||
-    report.targets.length !== 1
-  )
+export function readLifecycle(report: LifecycleReport | undefined): ActivationReport {
+  if (report === undefined || report.schemaVersion !== 1 || report.targets.length !== 1)
     throw new Error("Native lifecycle report schema unavailable");
   const target = report.targets[0];
   if (
@@ -79,14 +73,9 @@ export function readLifecycle(
     !target.process.ownerVerified ||
     target.sessions.length !== 0
   )
-    throw new Error(
-      "Native lifecycle process or session authority unavailable",
-    );
+    throw new Error("Native lifecycle process or session authority unavailable");
   const retirement = target.retirementPolicy;
-  if (
-    retirement !== LifecycleRetirementPolicy.UNKNOWN &&
-    retirement !== LifecycleRetirementPolicy.SUCCESSFUL_EXIT
-  )
+  if (retirement !== LifecycleRetirementPolicy.UNKNOWN && retirement !== LifecycleRetirementPolicy.SUCCESSFUL_EXIT)
     throw new Error("Native retirement policy unavailable");
   const value: ActivationReport = {
     schema_version: 1,
@@ -104,20 +93,14 @@ export function readLifecycle(
         },
         sessions: [],
         scheduler_paused: target.schedulerPaused,
-        retirement_policy:
-          retirement === LifecycleRetirementPolicy.SUCCESSFUL_EXIT
-            ? "successful-exit"
-            : "unknown",
+        retirement_policy: retirement === LifecycleRetirementPolicy.SUCCESSFUL_EXIT ? "successful-exit" : "unknown",
         stop_accepted: target.stopAccepted,
       },
     ],
   };
   if (target.checkpoint !== undefined) {
-    const entry = Object.entries(checkpoints).find(
-      ([, state]) => state === target.checkpoint?.state,
-    );
-    if (entry === undefined)
-      throw new Error("Native checkpoint state unavailable");
+    const entry = Object.entries(checkpoints).find(([, state]) => state === target.checkpoint?.state);
+    if (entry === undefined) throw new Error("Native checkpoint state unavailable");
     const state = entry[0];
     if (state !== "confirmed" && state !== "refused" && state !== "pending")
       throw new Error("Native checkpoint state unsupported");
@@ -137,9 +120,7 @@ export async function runtimeLifecycle(
   },
   timeoutMs?: number,
 ): Promise<ActivationReport> {
-  const entry = Object.entries(actions).find(
-    ([name]) => name === request.action,
-  );
+  const entry = Object.entries(actions).find(([name]) => name === request.action);
   if (entry === undefined) throw new Error("Unsupported lifecycle action");
   const response = await schedulerClient(directory).runtimeLifecycle(
     { ...request, action: entry[1] },

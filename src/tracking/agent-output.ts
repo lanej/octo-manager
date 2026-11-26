@@ -1,14 +1,7 @@
 import { fields, rows } from "../cli/projection.js";
 
 const agent = fields(["id", "target", "harnessVersion"]);
-const observation = fields([
-  "observedAtMs",
-  "headSha",
-  "baseSha",
-  "targetBase",
-  "lifecycle",
-  "mergeability",
-]);
+const observation = fields(["observedAtMs", "headSha", "baseSha", "targetBase", "lifecycle", "mergeability"]);
 const pr = fields(
   [
     "id",
@@ -24,14 +17,7 @@ const pr = fields(
   ],
   { observation },
 );
-const assessment = fields([
-  "id",
-  "actionId",
-  "state",
-  "headSha",
-  "policyVersion",
-  "truncated",
-]);
+const assessment = fields(["id", "actionId", "state", "headSha", "policyVersion", "truncated"]);
 const action = fields([
   "id",
   "prId",
@@ -65,23 +51,10 @@ const message = fields([
   "workflowPrId",
   "readyHead",
 ]);
-const checkWatch = fields([
-  "id",
-  "prId",
-  "headSha",
-  "state",
-  "replacementHeadSha",
-]);
+const checkWatch = fields(["id", "prId", "headSha", "state", "replacementHeadSha"]);
 const prResponse = fields(["refresh"], {
   pr,
-  repositoryPolicy: fields([
-    "status",
-    "stage",
-    "autoMerge",
-    "error",
-    "root",
-    "path",
-  ]),
+  repositoryPolicy: fields(["status", "stage", "autoMerge", "error", "root", "path"]),
 });
 const actionResponse = fields([], { action, assessment });
 export const trackingOutputs = {

@@ -22,8 +22,7 @@ export class ApplicationInputs {
   changed = (scope?: InputScope): void => {
     this.generation++;
     if (scope === undefined) this.roster++;
-    else if (scope.prId !== undefined)
-      this.references.set(scope.prId, this.generation);
+    else if (scope.prId !== undefined) this.references.set(scope.prId, this.generation);
     if (scope === undefined || scope.recipients === "all") this.broad++;
     if (this.targets !== undefined) {
       this.targets.changed(scope);
@@ -31,18 +30,12 @@ export class ApplicationInputs {
     }
     if (scope === undefined) this.pendingBroad = true;
     else {
-      const key =
-        scope.prId === undefined
-          ? `source:${scope.source ?? "unknown"}`
-          : `pr:${scope.prId}`;
+      const key = scope.prId === undefined ? `source:${scope.source ?? "unknown"}` : `pr:${scope.prId}`;
       const previous = this.pending.get(key);
       this.pending.set(key, {
         ...(scope.prId === undefined ? {} : { prId: scope.prId }),
-        ...(previous?.recipients === "all" || scope.recipients === "all"
-          ? { recipients: "all" }
-          : {}),
-        ...(previous?.notificationEligibility === true ||
-        scope.notificationEligibility === true
+        ...(previous?.recipients === "all" || scope.recipients === "all" ? { recipients: "all" } : {}),
+        ...(previous?.notificationEligibility === true || scope.notificationEligibility === true
           ? { notificationEligibility: true }
           : {}),
         ...(previous === undefined || previous.source === scope.source
@@ -59,12 +52,9 @@ export class ApplicationInputs {
   };
   broadRevision = (): string => String(this.broad);
   referenceRevision = (prId?: string): string =>
-    prId === undefined
-      ? String(this.roster)
-      : [this.roster, this.references.get(prId) ?? 0].join(":");
+    prId === undefined ? String(this.roster) : [this.roster, this.references.get(prId) ?? 0].join(":");
   bind(targets: InputTargets): void {
-    if (this.targets !== undefined)
-      throw new Error("Application inputs already bound");
+    if (this.targets !== undefined) throw new Error("Application inputs already bound");
     this.targets = targets;
     if (this.pendingBroad) targets.changed();
     else for (const scope of this.pending.values()) targets.changed(scope);

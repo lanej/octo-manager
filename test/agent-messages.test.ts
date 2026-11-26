@@ -2,11 +2,7 @@ import { failedStepLogs } from "../src/tracking/job-logs.js";
 import { shortId, resolveId } from "../src/tracking/identifiers.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  agentMessage,
-  logExcerpt,
-  readFailureExcerpt,
-} from "../src/tracking/messages.js";
+import { agentMessage, logExcerpt, readFailureExcerpt } from "../src/tracking/messages.js";
 import { CheckWatchState } from "../src/tracking/checks.js";
 import { ActionState, type Action } from "../src/tracking/types.js";
 const pr = "https://github.com/owner/repo/pull/13";
@@ -35,12 +31,7 @@ const action: Action = {
   updatedAt: 1,
 };
 test("agent notices contain fixed fields without external evidence, execution policy or receipt commands", () => {
-  const body = agentMessage(
-    action,
-    pr,
-    "delivery",
-    "ENOENT: handoff disappeared\n" + "😀".repeat(5000),
-  );
+  const body = agentMessage(action, pr, "delivery", "ENOENT: handoff disappeared\n" + "😀".repeat(5000));
   assert(Buffer.byteLength(body) < 4096);
   assert(body.includes("PR #13"));
   assert(body.includes("ad8968bf"));
@@ -55,26 +46,16 @@ test("agent notices contain fixed fields without external evidence, execution po
 });
 test("failure excerpts use bounded job logs and preserve a run link when diagnostics are unavailable", async () => {
   const log = `setup\tcheck\t2026-11-11T00:00:00Z ENOENT: handoff disappeared\nsetup\tcheck\t2026-11-11T00:00:00Z at status (handoffs.ts:203)`;
-  assert.equal(
-    logExcerpt(log),
-    "ENOENT: handoff disappeared\nat status (handoffs.ts:203)",
-  );
-  const excerpt = await readFailureExcerpt(
-    action,
-    pr,
-    AbortSignal.timeout(1000),
-    (repository, run, job) => {
-      assert.equal(repository, "owner/repo");
-      assert.equal(run, "20");
-      assert.equal(job, "10");
-      return Promise.resolve(log);
-    },
-  );
+  assert.equal(logExcerpt(log), "ENOENT: handoff disappeared\nat status (handoffs.ts:203)");
+  const excerpt = await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), (repository, run, job) => {
+    assert.equal(repository, "owner/repo");
+    assert.equal(run, "20");
+    assert.equal(job, "10");
+    return Promise.resolve(log);
+  });
   assert(excerpt !== undefined && excerpt.includes("ENOENT"));
   assert.equal(
-    await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), () =>
-      Promise.reject(new Error("unavailable")),
-    ),
+    await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), () => Promise.reject(new Error("unavailable"))),
     undefined,
   );
   assert(!agentMessage(action, pr, "delivery").includes(action.evidenceUrl));
@@ -142,14 +123,8 @@ test("failure excerpts select failed steps before bounded output and long cleanu
     "2026-11-13T00:00:00.100Z Error: expected setup diagnostic",
     "2026-11-13T00:01:00.100Z Error: expected test diagnostic",
     "2026-11-13T00:01:00.200Z FATAL ERROR: Allocation failed - JavaScript heap out of memory",
-    ...Array.from(
-      { length: 180 },
-      (_, i) => `2026-11-13T00:01:01.100Z stack frame ${String(i)}`,
-    ),
-    ...Array.from(
-      { length: 180 },
-      (_, i) => `2026-11-13T00:02:00.100Z cleanup ${String(i)}`,
-    ),
+    ...Array.from({ length: 180 }, (_, i) => `2026-11-13T00:01:01.100Z stack frame ${String(i)}`),
+    ...Array.from({ length: 180 }, (_, i) => `2026-11-13T00:02:00.100Z cleanup ${String(i)}`),
     "2026-11-13T00:02:00.200Z Error: unrelated cleanup message",
   ].join("\n");
   const metadata = {
@@ -173,19 +148,11 @@ test("failure excerpts select failed steps before bounded output and long cleanu
       },
     ],
   };
-  const excerpt = await readFailureExcerpt(
-    action,
-    pr,
-    AbortSignal.timeout(1000),
-    () =>
-      Promise.resolve(failedStepLogs(log, metadata, { job: "10", run: "20" })),
+  const excerpt = await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), () =>
+    Promise.resolve(failedStepLogs(log, metadata, { job: "10", run: "20" })),
   );
   assert(excerpt !== undefined);
-  assert(
-    excerpt.startsWith(
-      "FATAL ERROR: Allocation failed - JavaScript heap out of memory",
-    ),
-  );
+  assert(excerpt.startsWith("FATAL ERROR: Allocation failed - JavaScript heap out of memory"));
   assert(!excerpt.includes("cleanup"));
   assert(!excerpt.includes("2026-11-13"));
   assert(Buffer.byteLength(excerpt) <= 480);
@@ -196,18 +163,13 @@ test("failure excerpts select failed steps before bounded output and long cleanu
         {
           id: 10,
           run_id: 20,
-          steps: [
-            { conclusion: "failure", started_at: null, completed_at: null },
-          ],
+          steps: [{ conclusion: "failure", started_at: null, completed_at: null }],
         },
         { job: "10", run: "20" },
       ),
     /timing unavailable/,
   );
-  assert.throws(
-    () => failedStepLogs(log, metadata, { job: "10", run: "999" }),
-    /does not match/,
-  );
+  assert.throws(() => failedStepLogs(log, metadata, { job: "10", run: "999" }), /does not match/);
   assert.equal(
     await readFailureExcerpt(action, pr, AbortSignal.timeout(1000), () =>
       Promise.resolve(
@@ -216,9 +178,7 @@ test("failure excerpts select failed steps before bounded output and long cleanu
           {
             id: 10,
             run_id: 20,
-            steps: [
-              { conclusion: "failure", started_at: null, completed_at: null },
-            ],
+            steps: [{ conclusion: "failure", started_at: null, completed_at: null }],
           },
           { job: "10", run: "20" },
         ),
@@ -247,10 +207,7 @@ test("adjacent cleanup cannot replace the failed-step diagnostic", () => {
   };
   const log =
     "2026-11-13T00:01:01.900Z Error: actual failed step\n2026-11-13T00:01:02.400Z FATAL ERROR: expected cleanup fixture";
-  assert.equal(
-    logExcerpt(failedStepLogs(log, metadata, { job: "10", run: "20" })),
-    "Error: actual failed step",
-  );
+  assert.equal(logExcerpt(failedStepLogs(log, metadata, { job: "10", run: "20" })), "Error: actual failed step");
   const sameSecond = {
     ...metadata,
     steps: metadata.steps.map((step) => ({
@@ -259,8 +216,5 @@ test("adjacent cleanup cannot replace the failed-step diagnostic", () => {
       completed_at: "2026-11-13T00:01:02Z",
     })),
   };
-  assert.equal(
-    logExcerpt(failedStepLogs(log, sameSecond, { job: "10", run: "20" })),
-    undefined,
-  );
+  assert.equal(logExcerpt(failedStepLogs(log, sameSecond, { job: "10", run: "20" })), undefined);
 });

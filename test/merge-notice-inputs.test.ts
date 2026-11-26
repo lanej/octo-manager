@@ -14,31 +14,14 @@ test("merge notice insertion and retirement signal inputs only when rows change"
       sessionId: "notice-inputs",
     });
     const sequence = store.sequence();
-    const signals = () =>
-      store
-        .eventsSince(sequence)
-        .filter((event) => event.kind === "merge_notification_updated");
+    const signals = () => store.eventsSince(sequence).filter((event) => event.kind === "merge_notification_updated");
     store.merging.notice(pr, "reference", "fixture-reference", "one", "", true);
     expect(signals()).toHaveLength(1);
     store.merging.notice(pr, "reference", "fixture-reference", "one", "", true);
     expect(signals()).toHaveLength(1);
-    store.merging.notice(
-      pr,
-      "reference",
-      "fixture-reference",
-      "retired",
-      "",
-      false,
-    );
+    store.merging.notice(pr, "reference", "fixture-reference", "retired", "", false);
     expect(signals()).toHaveLength(2);
-    store.merging.notice(
-      pr,
-      "reference",
-      "fixture-reference",
-      "retired",
-      "",
-      false,
-    );
+    store.merging.notice(pr, "reference", "fixture-reference", "retired", "", false);
     expect(signals()).toHaveLength(2);
   } finally {
     store.close();

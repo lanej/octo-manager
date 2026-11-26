@@ -14,7 +14,10 @@ const noStoredCredentials: CredentialStore = {
 };
 
 export class CodexSessionReference implements CredentialStore {
-  constructor(private directory: string, private now: () => number = Date.now) {}
+  constructor(
+    private directory: string,
+    private now: () => number = Date.now,
+  ) {}
   async read(providerId: string, options?: AuthOperationOptions): Promise<Credential | undefined> {
     options?.signal?.throwIfAborted();
     if (providerId !== "openai-codex") return undefined;
@@ -33,36 +36,58 @@ export class CodexSessionReference implements CredentialStore {
     const access = document.tokens.access_token;
     let expires: number;
     try {
-      const claims = JSON.parse(Buffer.from(access.split(".")[1] ?? "", "base64url").toString("utf8")) as { exp?: unknown };
+      const claims = JSON.parse(Buffer.from(access.split(".")[1] ?? "", "base64url").toString("utf8")) as {
+        exp?: unknown;
+      };
       if (typeof claims.exp !== "number" || !Number.isFinite(claims.exp)) throw new Error("Missing expiry");
       expires = claims.exp * 1000;
-    } catch { throw new Error("Existing Codex authentication has an unsupported access token"); }
+    } catch {
+      throw new Error("Existing Codex authentication has an unsupported access token");
+    }
     // WHY: Codex alone owns refresh-token rotation. Never hand its refresh token to Pi or pretend an expired token is valid.
-    if (expires <= this.now() + 5 * 60 * 1000) throw new Error("Existing Codex authentication needs refreshing through Codex");
+    if (expires <= this.now() + 5 * 60 * 1000)
+      throw new Error("Existing Codex authentication needs refreshing through Codex");
     return { type: "oauth", access, refresh: "", expires };
   }
   async list(options?: AuthOperationOptions): Promise<readonly CredentialInfo[]> {
-    return await this.read("openai-codex", options) ? [{ providerId: "openai-codex", type: "oauth" }] : [];
+    return (await this.read("openai-codex", options)) ? [{ providerId: "openai-codex", type: "oauth" }] : [];
   }
-  async modify(): Promise<never> { throw new Error("Codex authentication is read-only; Codex owns refresh and login"); }
-  async delete(): Promise<never> { throw new Error("Codex authentication is read-only; sign out through Codex"); }
+  async modify(): Promise<never> {
+    throw new Error("Codex authentication is read-only; Codex owns refresh and login");
+  }
+  async delete(): Promise<never> {
+    throw new Error("Codex authentication is read-only; sign out through Codex");
+  }
 }
 
-export async function createWorkerRuntime(options: { provider?: WorkerProvider; piAgentDir?: string; codexHome?: string; now?: () => number } = {}): Promise<{ runtime: ModelRuntime; source: "pi" | "codex" | "aws" }> {
+export async function createWorkerRuntime(
+  options: { provider?: WorkerProvider; piAgentDir?: string; codexHome?: string; now?: () => number } = {},
+): Promise<{ runtime: ModelRuntime; source: "pi" | "codex" | "aws" }> {
   const piAgentDir = options.piAgentDir ?? getAgentDir();
   const piPath = join(piAgentDir, "auth.json");
   if (options.provider === "amazon-bedrock") {
     // WHY: Native Bedrock resolves ambient AWS credentials; an empty read-only store prevents Pi from creating an auth file.
-    const runtime = await ModelRuntime.create({ credentials: noStoredCredentials, modelsPath: null, allowModelNetwork: false });
-    if (!runtime.hasConfiguredAuth("amazon-bedrock")) throw new Error("Amazon Bedrock authentication is unavailable; configure existing AWS credentials or a Bedrock bearer token");
+    const runtime = await ModelRuntime.create({
+      credentials: noStoredCredentials,
+      modelsPath: null,
+      allowModelNetwork: false,
+    });
+    if (!runtime.hasConfiguredAuth("amazon-bedrock"))
+      throw new Error(
+        "Amazon Bedrock authentication is unavailable; configure existing AWS credentials or a Bedrock bearer token",
+      );
     return { runtime, source: "aws" };
   }
   if (existsSync(piPath)) {
     const runtime = await ModelRuntime.create({ authPath: piPath, modelsPath: null, allowModelNetwork: false });
     if (runtime.hasConfiguredAuth("openai-codex")) return { runtime, source: "pi" };
   }
-  const credentials = new CodexSessionReference(options.codexHome ?? process.env.CODEX_HOME ?? join(homedir(), ".codex"), options.now);
-  if (!await credentials.read("openai-codex")) throw new Error("No existing ChatGPT authentication found in Pi or Codex");
+  const credentials = new CodexSessionReference(
+    options.codexHome ?? process.env["CODEX_HOME"] ?? join(homedir(), ".codex"),
+    options.now,
+  );
+  if (!(await credentials.read("openai-codex")))
+    throw new Error("No existing ChatGPT authentication found in Pi or Codex");
   const runtime = await ModelRuntime.create({ credentials, modelsPath: null, allowModelNetwork: false });
   if (!runtime.hasConfiguredAuth("openai-codex")) throw new Error("Existing Codex authentication is unavailable");
   return { runtime, source: "codex" };

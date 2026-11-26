@@ -9,24 +9,18 @@ import { schedulerClient } from "../client.js";
 import { activityInput } from "./types.js";
 import { wireActivityInput } from "./rpc.js";
 
-export async function activityCLI(
-  parsed: ReturnType<typeof parseCommand>,
-): Promise<boolean> {
+export async function activityCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed;
-  if (positionals[0] !== "record-activity" && positionals[0] !== "activity")
-    return false;
+  if (positionals[0] !== "record-activity" && positionals[0] !== "activity") return false;
   if (values.help === true) {
     console.log(
       "record-activity --name merge_pr|run_checks|resolve_conflict|summarize_pr|notify_agent --outcome attempted|succeeded|failed|uncertain --request-id ID --operation-id ID --harness NAME --thread-id ID --detail TEXT [--url PR_URL] [--evidence HTTPS_URL] [--harness-version VERSION] [--model MODEL] [--label TOPIC] [--cwd DIR] [--state DIR]\nactivity [--after SEQUENCE] [--state DIR] [--json]\nActivity records caller reports; it does not execute or independently verify the action.",
     );
     return true;
   }
-  if (positionals.length !== 1)
-    throw new Error("Unexpected activity arguments");
+  if (positionals.length !== 1) throw new Error("Unexpected activity arguments");
   const directory = resolve(
-    values.state ??
-      process.env["OCTO_MANAGER_STATE"] ??
-      join(homedir(), ".local", "state", "octo-manager"),
+    values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local", "state", "octo-manager"),
   );
   const client = schedulerClient(directory);
   if (positionals[0] === "record-activity") {
@@ -49,20 +43,14 @@ export async function activityCLI(
     });
     printResult(
       parsed,
-      toJson(
-        RecordActivityResponseSchema,
-        await client.recordActivity({ report: wireActivityInput(input) }),
-      ),
+      toJson(RecordActivityResponseSchema, await client.recordActivity({ report: wireActivityInput(input) })),
     );
   } else {
     const after = values.after ?? "0";
     if (!/^\d+$/u.test(after)) throw new Error("Invalid activity cursor");
     printResult(
       parsed,
-      toJson(
-        ListActivityResponseSchema,
-        await client.listActivity({ afterSequence: BigInt(after) }),
-      ),
+      toJson(ListActivityResponseSchema, await client.listActivity({ afterSequence: BigInt(after) })),
     );
   }
   return true;

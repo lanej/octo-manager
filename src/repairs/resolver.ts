@@ -1,11 +1,6 @@
 import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
-import {
-  record,
-  single,
-  type RepairProfile,
-  type RepairWorkerTask,
-} from "./types.js";
+import { record, single, type RepairProfile, type RepairWorkerTask } from "./types.js";
 import type { RebaseWorkspace } from "./git.js";
 export type ResolveConflicts = (
   workspace: RebaseWorkspace,
@@ -40,15 +35,8 @@ export const createConflictResolver =
       await new Promise<void>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", (code) => {
-          if (
-            !completed ||
-            failure !== undefined ||
-            signal.aborted ||
-            code !== 0
-          )
-            reject(
-              failure ?? new Error("Repair session interrupted or timed out"),
-            );
+          if (!completed || failure !== undefined || signal.aborted || code !== 0)
+            reject(failure ?? new Error("Repair session interrupted or timed out"));
           else resolve();
         });
         child.on("message", (value: unknown) => {
@@ -62,18 +50,14 @@ export const createConflictResolver =
           }
           if (message["type"] === "done") {
             completed = true;
-            if (child.connected)
-              child.send({ type: "result_ack", attempt: 1 }, () => {});
+            if (child.connected) child.send({ type: "result_ack", attempt: 1 }, () => {});
             return;
           }
           if (message["type"] === "failure") {
             failure = new Error(
-              typeof message["error"] === "string"
-                ? message["error"].slice(0, 2000)
-                : "Repair worker failed",
+              typeof message["error"] === "string" ? message["error"].slice(0, 2000) : "Repair worker failed",
             );
-            if (child.connected)
-              child.send({ type: "result_ack", attempt: 1 }, () => {});
+            if (child.connected) child.send({ type: "result_ack", attempt: 1 }, () => {});
             return;
           }
           if (message["type"] !== "tool") return;
@@ -84,39 +68,26 @@ export const createConflictResolver =
                 const args = record(message["args"]);
                 const path = single(args["path"], "file path", 4000);
                 let result: unknown;
-                if (message["name"] === "read_file")
-                  result = await workspace.read(path);
+                if (message["name"] === "read_file") result = await workspace.read(path);
                 else if (message["name"] === "write_file") {
-                  if (!paths.includes(path))
-                    throw new Error(
-                      "This path is outside the current conflict set",
-                    );
+                  if (!paths.includes(path)) throw new Error("This path is outside the current conflict set");
                   const content = args["content"];
-                  if (typeof content !== "string")
-                    throw new Error("Resolution must be text");
+                  if (typeof content !== "string") throw new Error("Resolution must be text");
                   await workspace.write(path, content);
-                  result =
-                    "Resolution written; Octo will validate and continue the rebase.";
+                  result = "Resolution written; Octo will validate and continue the rebase.";
                 } else throw new Error("Unsupported repair tool");
-                if (child.connected)
-                  child.send({ type: "tool_result", id, result });
+                if (child.connected) child.send({ type: "tool_result", id, result });
               } catch (error) {
                 if (child.connected)
                   child.send({
                     type: "tool_result",
                     id,
-                    error:
-                      error instanceof Error
-                        ? error.message
-                        : "Repair tool failed",
+                    error: error instanceof Error ? error.message : "Repair tool failed",
                   });
               }
             })
             .catch((error: unknown) => {
-              failure =
-                error instanceof Error
-                  ? error
-                  : new Error("Repair tool failed");
+              failure = error instanceof Error ? error : new Error("Repair tool failed");
               stop();
             });
         });

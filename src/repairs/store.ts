@@ -55,14 +55,8 @@ export class RepairStore {
     if (item === undefined) throw new Error("Repair not found");
     return item;
   }
-  request(
-    input: RebaseInput,
-    profile: RepairProfile,
-    prId: string,
-  ): RepairAttempt {
-    const existing = this.list().find(
-      (a) => a.request.requestId === input.requestId,
-    );
+  request(input: RebaseInput, profile: RepairProfile, prId: string): RepairAttempt {
+    const existing = this.list().find((a) => a.request.requestId === input.requestId);
     if (existing !== undefined) {
       if (JSON.stringify(existing.request) !== JSON.stringify(input))
         throw new Error("Repair request ID already used with different input");
@@ -101,19 +95,9 @@ export class RepairStore {
         .prepare(
           "INSERT INTO repair_attempts VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,payload=excluded.payload,updated_at_ms=excluded.updated_at_ms",
         )
-        .run(
-          a.id,
-          a.request.requestId,
-          a.prId,
-          a.state,
-          JSON.stringify(a),
-          a.createdAt,
-          a.updatedAt,
-        );
+        .run(a.id, a.request.requestId, a.prId, a.state, JSON.stringify(a), a.createdAt, a.updatedAt);
       this.db
-        .prepare(
-          "INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES('',?,'repair_progress',?,?)",
-        )
+        .prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES('',?,'repair_progress',?,?)")
         .run(a.updatedAt, a.detail, a.prId);
       this.db.exec("COMMIT");
       this.changed?.();

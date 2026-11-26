@@ -1,8 +1,4 @@
-import {
-  expandInlineSequences,
-  validYamlCandidate,
-  yamlRecipe,
-} from "./yaml.js";
+import { expandInlineSequences, validYamlCandidate, yamlRecipe } from "./yaml.js";
 import { RecipeDecision, type ConflictStore } from "./cases.js";
 import type { RebaseWorkspace } from "./git.js";
 export async function mechanicalConflicts(
@@ -22,15 +18,7 @@ export async function mechanicalConflicts(
   const toolVersion = (await workspace.git(["--version"])) + "; yaml@2.9.0";
   for (const path of paths) {
     const captured = await workspace.conflictInputs(path);
-    const id = store.add(
-      repairId,
-      round,
-      path,
-      yamlRecipe,
-      captured.refs,
-      toolVersion,
-      captured.inputs,
-    );
+    const id = store.add(repairId, round, path, yamlRecipe, captured.refs, toolVersion, captured.inputs);
     cases.set(path, id);
     if (!/\.ya?ml$/iu.test(path)) {
       store.decide(id, RecipeDecision.Declined, "File is not YAML");
@@ -50,20 +38,13 @@ export async function mechanicalConflicts(
     try {
       expanded = expandInlineSequences(captured.inputs);
     } catch (error) {
-      store.decide(
-        id,
-        RecipeDecision.Declined,
-        error instanceof Error ? error.message : "Unsupported YAML",
-      );
+      store.decide(id, RecipeDecision.Declined, error instanceof Error ? error.message : "Unsupported YAML");
       remaining.push(path);
       continue;
     }
     try {
       const candidate = await workspace.mergeText(expanded);
-      if (
-        candidate === undefined ||
-        !validYamlCandidate(candidate, expanded.expected)
-      ) {
+      if (candidate === undefined || !validYamlCandidate(candidate, expanded.expected)) {
         store.decide(
           id,
           RecipeDecision.Declined,
@@ -73,12 +54,7 @@ export async function mechanicalConflicts(
         remaining.push(path);
         continue;
       }
-      store.decide(
-        id,
-        RecipeDecision.Pending,
-        "Candidate retained; applying to the isolated worktree",
-        candidate,
-      );
+      store.decide(id, RecipeDecision.Pending, "Candidate retained; applying to the isolated worktree", candidate);
       await workspace.write(path, candidate);
       store.decide(
         id,
@@ -88,11 +64,7 @@ export async function mechanicalConflicts(
       );
       applied++;
     } catch (error) {
-      store.decide(
-        id,
-        RecipeDecision.Error,
-        error instanceof Error ? error.message : "Mechanical resolver failed",
-      );
+      store.decide(id, RecipeDecision.Error, error instanceof Error ? error.message : "Mechanical resolver failed");
       remaining.push(path);
     }
   }

@@ -93,13 +93,7 @@ export const commands: CommandSpec[] = [
     route: "dependency-remove",
     capability: "merging",
     description: "Remove a confirmed dependency",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "dependency confirm",
@@ -128,12 +122,6 @@ export const commands: CommandSpec[] = [
     route: "reference-dismiss",
     capability: "merging",
     description: "Dismiss a discovered reference",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
 ];

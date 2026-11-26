@@ -1,11 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  SubmissionInputSchema,
-  PolicySchema,
-  BriefSchema,
-  SubmissionSchema,
-} from "../src/submissions/contracts.js";
+import { SubmissionInputSchema, PolicySchema, BriefSchema, SubmissionSchema } from "../src/submissions/contracts.js";
 const directory = new URL("../schemas/", import.meta.url);
 await mkdir(directory, { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -16,10 +11,6 @@ for (const [name, schema] of Object.entries({
 })) {
   await writeFile(
     join(directory.pathname, `${name}.schema.json`),
-    JSON.stringify(
-      { $schema: "http://json-schema.org/draft-07/schema#", ...schema },
-      null,
-      2,
-    ) + "\n",
+    JSON.stringify({ $schema: "http://json-schema.org/draft-07/schema#", ...schema }, null, 2) + "\n",
   );
 }

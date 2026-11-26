@@ -1,10 +1,4 @@
-import {
-  fromJson,
-  toJson,
-  type DescMessage,
-  type MessageShape,
-  type JsonValue,
-} from "@bufbuild/protobuf";
+import { fromJson, toJson, type DescMessage, type MessageShape, type JsonValue } from "@bufbuild/protobuf";
 import { shapes } from "../gen/api/shapes.js";
 export function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
@@ -22,11 +16,7 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
   }
   if (name === "int64" || name === "double") {
     const number = typeof value === "string" ? Number(value) : value;
-    if (
-      typeof number !== "number" ||
-      !Number.isFinite(number) ||
-      (name === "int64" && !Number.isSafeInteger(number))
-    )
+    if (typeof number !== "number" || !Number.isFinite(number) || (name === "int64" && !Number.isSafeInteger(number)))
       throw new Error("Invalid API number");
     return name === "int64" && encode ? String(number) : number;
   }
@@ -43,22 +33,15 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
       return encode ? (shape.numbers[index] ?? 0) : (shape.values[index] ?? "");
     }
     case "literal": {
-      const literal = convert(
-        shape.scalar,
-        encode ? value : record(value)["literal"],
-        encode,
-      );
+      const literal = convert(shape.scalar, encode ? value : record(value)["literal"], encode);
       const comparable = shape.scalar === "int64" ? Number(literal) : literal;
-      if (comparable !== shape.value)
-        throw new Error(`Invalid API literal ${name}`);
+      if (comparable !== shape.value) throw new Error(`Invalid API literal ${name}`);
       return encode ? { literal } : comparable;
     }
     case "list": {
       const items = encode ? value : (record(value)["items"] ?? []);
       if (!Array.isArray(items)) throw new Error("Invalid API list");
-      const converted = items.map((item: unknown) =>
-        convert(shape.element, item, encode),
-      );
+      const converted = items.map((item: unknown) => convert(shape.element, item, encode));
       return encode ? { items: converted } : converted;
     }
     case "union": {
@@ -67,23 +50,19 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
         const present = shape.variants
           .map((variant) => ({ variant: variant.type, key: variant.field }))
           .filter((v) => input[v.key] !== undefined);
-        if (present.length !== 1)
-          throw new Error("API variant must select one alternative");
+        if (present.length !== 1) throw new Error("API variant must select one alternative");
         const selected = present[0];
         if (selected === undefined) throw new Error("Missing API variant");
         return convert(selected.variant, input[selected.key], false);
       }
       const matches = shape.variants.flatMap((variant) => {
         try {
-          return [
-            { field: variant.field, value: convert(variant.type, value, true) },
-          ];
+          return [{ field: variant.field, value: convert(variant.type, value, true) }];
         } catch {
           return [];
         }
       });
-      if (matches.length !== 1)
-        throw new Error(`Invalid or ambiguous API variant ${name}`);
+      if (matches.length !== 1) throw new Error(`Invalid or ambiguous API variant ${name}`);
       const selected = matches[0];
       if (selected === undefined) throw new Error("Missing API variant");
       return { [selected.field]: selected.value };
@@ -91,18 +70,12 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
     case "object": {
       const input = record(value);
       const output: Record<string, JsonValue> = {};
-      if (
-        encode &&
-        Object.keys(input).some(
-          (key) => !shape.fields.some((field) => field.key === key),
-        )
-      )
+      if (encode && Object.keys(input).some((key) => !shape.fields.some((field) => field.key === key)))
         throw new Error(`Unknown API field in ${name}`);
       for (const field of shape.fields) {
         const item = input[field.key];
         if (item === undefined) {
-          if (field.required)
-            throw new Error(`Invalid missing API field ${name}.${field.key}`);
+          if (field.required) throw new Error(`Invalid missing API field ${name}.${field.key}`);
           continue;
         }
         output[field.key] = convert(field.type, item, encode);
@@ -111,16 +84,10 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
     }
   }
 }
-export function wire<S extends DescMessage>(
-  schema: S,
-  value: unknown,
-): MessageShape<S> {
+export function wire<S extends DescMessage>(schema: S, value: unknown): MessageShape<S> {
   const name = schema.name;
   return fromJson(schema, convert(name, value, true));
 }
-export function unwire<S extends DescMessage>(
-  schema: S,
-  value: MessageShape<S>,
-): unknown {
+export function unwire<S extends DescMessage>(schema: S, value: MessageShape<S>): unknown {
   return convert(schema.name, toJson(schema, value), false);
 }

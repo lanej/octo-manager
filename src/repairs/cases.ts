@@ -27,8 +27,7 @@ function texts(value: unknown): Partial<ConflictVersions> {
   const result: Partial<ConflictVersions> = {};
   for (const key of ["base", "target", "replayed"] as const) {
     if (raw[key] !== undefined) {
-      if (typeof raw[key] !== "string")
-        throw new Error("Invalid conflict evidence");
+      if (typeof raw[key] !== "string") throw new Error("Invalid conflict evidence");
       result[key] = raw[key];
     }
   }
@@ -65,9 +64,7 @@ export class ConflictStore {
       throw new Error("Unsupported conflict database version");
   }
   private decode(row: Record<string, unknown>): ConflictCase {
-    const decision = Object.values(RecipeDecision).find(
-      (value) => value === row["decision"],
-    );
+    const decision = Object.values(RecipeDecision).find((value) => value === row["decision"]);
     if (decision === undefined) throw new Error("Invalid conflict decision");
     const result: ConflictCase = {
       id: Number(row["id"]),
@@ -83,11 +80,7 @@ export class ConflictStore {
     };
     if (typeof row["inputs_json"] === "string") {
       const input = texts(JSON.parse(row["inputs_json"]));
-      if (
-        input.base === undefined ||
-        input.target === undefined ||
-        input.replayed === undefined
-      )
+      if (input.base === undefined || input.target === undefined || input.replayed === undefined)
         throw new Error("Incomplete conflict input");
       result.inputs = {
         base: input.base,
@@ -95,10 +88,8 @@ export class ConflictStore {
         replayed: input.replayed,
       };
     }
-    if (typeof row["candidate"] === "string")
-      result.candidate = row["candidate"];
-    if (typeof row["agent_result"] === "string")
-      result.agentResult = row["agent_result"];
+    if (typeof row["candidate"] === "string") result.candidate = row["candidate"];
+    if (typeof row["agent_result"] === "string") result.agentResult = row["agent_result"];
     return result;
   }
   list(after = 0): ConflictCase[] {
@@ -110,9 +101,7 @@ export class ConflictStore {
       .map((row) => this.decode(row));
   }
   get(id: number): ConflictCase {
-    const row = this.db
-      .prepare(`SELECT * FROM ${this.table} WHERE id=?`)
-      .get(id);
+    const row = this.db.prepare(`SELECT * FROM ${this.table} WHERE id=?`).get(id);
     if (row === undefined) throw new Error("Conflict case not found");
     return this.decode(row);
   }
@@ -141,21 +130,12 @@ export class ConflictStore {
       );
     return Number(result.lastInsertRowid);
   }
-  decide(
-    id: number,
-    decision: RecipeDecision,
-    reason: string,
-    candidate?: string,
-  ): void {
+  decide(id: number, decision: RecipeDecision, reason: string, candidate?: string): void {
     this.db
-      .prepare(
-        `UPDATE ${this.table} SET decision=?,reason=?,candidate=COALESCE(?,candidate) WHERE id=?`,
-      )
+      .prepare(`UPDATE ${this.table} SET decision=?,reason=?,candidate=COALESCE(?,candidate) WHERE id=?`)
       .run(decision, reason.slice(0, 2000), candidate ?? null, id);
   }
   agentResult(id: number, content: string): void {
-    this.db
-      .prepare(`UPDATE ${this.table} SET agent_result=? WHERE id=?`)
-      .run(content, id);
+    this.db.prepare(`UPDATE ${this.table} SET agent_result=? WHERE id=?`).run(content, id);
   }
 }

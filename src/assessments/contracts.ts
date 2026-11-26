@@ -49,23 +49,17 @@ export const AssessmentSchema = Type.Object(
     updatedAt: Type.Integer(),
     result: Type.Optional(ResultSchema),
     completionNotified: Type.Boolean(),
-    history: Type.Array(
-      Type.Object({ state: StateSchema, at: Type.Integer() }),
-    ),
+    history: Type.Array(Type.Object({ state: StateSchema, at: Type.Integer() })),
   },
   { additionalProperties: false },
 );
 export type Assessment = Static<typeof AssessmentSchema>;
 export function assessment(value: unknown): Assessment {
-  if (!Check(AssessmentSchema, value))
-    throw new Error("Invalid stored assessment");
+  if (!Check(AssessmentSchema, value)) throw new Error("Invalid stored assessment");
   return value;
 }
 export function result(value: unknown): AssessmentResult {
-  if (
-    !Check(ResultSchema, value) ||
-    Buffer.byteLength(JSON.stringify(value)) > outputLimit
-  )
+  if (!Check(ResultSchema, value) || Buffer.byteLength(JSON.stringify(value)) > outputLimit)
     throw new Error("Invalid assessment output");
   return value;
 }

@@ -12,17 +12,10 @@ import {
   ListRepairsResponseSchema,
 } from "../gen/octomanager/v2/repairs_pb.js";
 import type { parseCommand } from "../cli/arguments.js";
-export async function repairsCLI(
-  parsed: ReturnType<typeof parseCommand>,
-): Promise<boolean> {
+export async function repairsCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed;
   const command = positionals[0];
-  if (
-    command !== "rebase" &&
-    command !== "repairs" &&
-    command !== "conflict-cases" &&
-    command !== "conflict-case"
-  )
+  if (command !== "rebase" && command !== "repairs" && command !== "conflict-cases" && command !== "conflict-case")
     return false;
   if (values.help === true) {
     console.log(
@@ -30,30 +23,22 @@ export async function repairsCLI(
     );
     return true;
   }
-  if (positionals.length !== (command === "conflict-case" ? 2 : 1))
-    throw new Error("Unexpected repair arguments");
+  if (positionals.length !== (command === "conflict-case" ? 2 : 1)) throw new Error("Unexpected repair arguments");
   const client = schedulerClient(
-    resolve(
-      values.state ??
-        process.env["OCTO_MANAGER_STATE"] ??
-        join(homedir(), ".local", "state", "octo-manager"),
-    ),
+    resolve(values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local", "state", "octo-manager")),
   );
-  const label = (url: string) =>
-    url.replace("https://github.com/", "").replace("/pull/", "#");
+  const label = (url: string) => url.replace("https://github.com/", "").replace("/pull/", "#");
   if (command === "conflict-cases") {
     const after = values.after ?? "0";
     if (!/^\d+$/u.test(after)) throw new Error("Invalid case cursor");
     const response = await client.listConflictCases({ afterId: BigInt(after) });
-    if (values.json === true)
-      printResult(parsed, toJson(ListConflictCasesResponseSchema, response));
+    if (values.json === true) printResult(parsed, toJson(ListConflictCasesResponseSchema, response));
     else {
       for (const c of response.cases)
         console.log(
           `Case ${String(c.id)} · ${label(c.prUrl)} · ${c.path} · ${ConflictDecision[c.decision].replace("CONFLICT_DECISION_", "").toLowerCase()} · ${c.reason}`,
         );
-      if (response.cases.length === 0)
-        console.log("No conflict cases recorded.");
+      if (response.cases.length === 0) console.log("No conflict cases recorded.");
     }
     return true;
   }
@@ -61,8 +46,7 @@ export async function repairsCLI(
     const id = positionals[1] ?? "";
     if (!/^\d+$/u.test(id)) throw new Error("Invalid case ID");
     const response = await client.getConflictCase({ id: BigInt(id) });
-    if (values.json === true)
-      printResult(parsed, toJson(GetConflictCaseResponseSchema, response));
+    if (values.json === true) printResult(parsed, toJson(GetConflictCaseResponseSchema, response));
     else {
       const c = response.conflictCase;
       if (c !== undefined)
@@ -78,16 +62,14 @@ export async function repairsCLI(
       profile: values.profile ?? "",
       requestId: values["request-id"] ?? "",
     });
-    if (values.json === true)
-      printResult(parsed, toJson(RequestRebaseResponseSchema, response));
+    if (values.json === true) printResult(parsed, toJson(RequestRebaseResponseSchema, response));
     else
       console.log(
         `Rebase requested for ${label(values.url ?? "PR")}. Follow progress in Tracking or with octo-manager repairs.`,
       );
   } else {
     const response = await client.listRepairs({});
-    if (values.json === true)
-      printResult(parsed, toJson(ListRepairsResponseSchema, response));
+    if (values.json === true) printResult(parsed, toJson(ListRepairsResponseSchema, response));
     else {
       for (const repair of response.repairs)
         console.log(

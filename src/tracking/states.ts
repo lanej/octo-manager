@@ -13,16 +13,12 @@ export enum ReviewState {
 }
 export type ReviewStateValue = `${ReviewState}`;
 export function prLifecycle(value: unknown): PRLifecycle {
-  const state = Object.values(PRLifecycle).find(
-    (candidate) => candidate === value,
-  );
+  const state = Object.values(PRLifecycle).find((candidate) => candidate === value);
   if (state === undefined) throw new Error("Invalid PR lifecycle");
   return state;
 }
 export function reviewState(value: unknown): ReviewState {
-  const state = Object.values(ReviewState).find(
-    (candidate) => candidate === value,
-  );
+  const state = Object.values(ReviewState).find((candidate) => candidate === value);
   if (state === undefined) throw new Error("Invalid review state");
   return state;
 }

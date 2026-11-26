@@ -114,15 +114,8 @@ function inbox(store: Store, agentId: string) {
 test("complete source observations fan out only selected events and retain frozen bounded evidence", () => {
   const f = setup();
   try {
-    f.store.issues.subscriptions.set(f.value, f.owner.id, [
-      Kind.Title,
-      Kind.Description,
-      Kind.Comment,
-    ]);
-    f.store.issues.subscriptions.set(f.value, f.observer.id, [
-      Kind.Closed,
-      Kind.Reopened,
-    ]);
+    f.store.issues.subscriptions.set(f.value, f.owner.id, [Kind.Title, Kind.Description, Kind.Comment]);
+    f.store.issues.subscriptions.set(f.value, f.observer.id, [Kind.Closed, Kind.Reopened]);
     const first = observation();
     f.store.issues.subscriptions.observe(f.value, first);
     expect(inbox(f.store, f.owner.id)).toHaveLength(0);
@@ -145,40 +138,24 @@ test("complete source observations fan out only selected events and retain froze
     f.store.issues.atomic(() => {
       f.store.issues.subscriptions.observe(f.value, changed);
     });
-    expect(
-      inbox(f.store, f.owner.id).map((m) => m.notice?.issueEventKind),
-    ).toEqual([Kind.Title, Kind.Description, Kind.Comment]);
-    expect(
-      inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind),
-    ).toEqual([Kind.Closed]);
+    expect(inbox(f.store, f.owner.id).map((m) => m.notice?.issueEventKind)).toEqual([
+      Kind.Title,
+      Kind.Description,
+      Kind.Comment,
+    ]);
+    expect(inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind)).toEqual([Kind.Closed]);
     f.store.issues.subscriptions.observe(f.value, changed);
-    f.store.issues.save(
-      { ...f.value, detail: "Another coordinator state" },
-      "paused",
-      "Another coordinator state",
-    );
+    f.store.issues.save({ ...f.value, detail: "Another coordinator state" }, "paused", "Another coordinator state");
     expect(inbox(f.store, f.owner.id)).toHaveLength(3);
     const messages = inbox(f.store, f.owner.id);
-    const digest = renderDigest(
-      messages,
-      f.directory,
-      "12345678-1111-1111-1111-111111111111",
-    );
+    const digest = renderDigest(messages, f.directory, "12345678-1111-1111-1111-111111111111");
     expect(digest.body).not.toContain("UNTRUSTED");
-    for (const message of inbox(f.store, f.owner.id))
-      expect(message.notice?.issueRevision).toMatch(/^[a-f0-9]{64}$/u);
+    for (const message of inbox(f.store, f.owner.id)) expect(message.notice?.issueRevision).toMatch(/^[a-f0-9]{64}$/u);
     expect(digest.body).not.toContain("Edited title");
-    const message = messages.find(
-      (m) => m.notice?.issueEventKind === Kind.Comment,
-    );
-    if (message === undefined)
-      throw new Error("Selected comment notice missing");
+    const message = messages.find((m) => m.notice?.issueEventKind === Kind.Comment);
+    if (message === undefined) throw new Error("Selected comment notice missing");
     const before = f.store.issues.get(f.value.id);
-    f.store.issues.save(
-      { ...before, title: "Later title" },
-      "changed",
-      "Later title",
-    );
+    f.store.issues.save({ ...before, title: "Later title" }, "changed", "Later title");
     const read = inspectMessage(
       f.store,
       {
@@ -193,8 +170,7 @@ test("complete source observations fan out only selected events and retain froze
     );
     const item = read.items[0];
     expect(item?.source.case).toBe("issue");
-    if (item?.source.case !== "issue")
-      throw new Error("Missing issue evidence");
+    if (item?.source.case !== "issue") throw new Error("Missing issue evidence");
     expect(item.source.value.evidence).toMatchObject({
       kind: WireKind.COMMENT,
       commentId: "comment-1",
@@ -214,18 +190,14 @@ test("complete source observations fan out only selected events and retain froze
       (m) => m.applicable,
     );
     expect(
-      JSON.stringify(filtered, (_key, value: unknown) =>
-        typeof value === "bigint" ? String(value) : value,
-      ),
+      JSON.stringify(filtered, (_key, value: unknown) => (typeof value === "bigint" ? String(value) : value)),
     ).not.toContain("UNTRUSTED");
     f.store.issues.subscriptions.observe(f.value, {
       ...changed,
       closed: false,
       revision: "3",
     });
-    expect(
-      inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind),
-    ).toEqual([Kind.Closed, Kind.Reopened]);
+    expect(inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind)).toEqual([Kind.Closed, Kind.Reopened]);
     f.store.issues.subscriptions.observe(f.value, {
       ...changed,
       revision: "4",
@@ -237,11 +209,7 @@ test("complete source observations fan out only selected events and retain froze
         },
       ],
     });
-    expect(
-      inbox(f.store, f.owner.id).filter(
-        (m) => m.notice?.issueEventKind === Kind.Comment,
-      ),
-    ).toHaveLength(2);
+    expect(inbox(f.store, f.owner.id).filter((m) => m.notice?.issueEventKind === Kind.Comment)).toHaveLength(2);
   } finally {
     f.close();
   }
@@ -258,10 +226,7 @@ test("legacy defaults, explicit mute and pending mixed selection changes preserv
       },
     ]);
     f.store.issues.subscriptions.set(f.value, f.owner.id, []);
-    f.store.issues.subscriptions.set(f.value, f.observer.id, [
-      Kind.Title,
-      Kind.Comment,
-    ]);
+    f.store.issues.subscriptions.set(f.value, f.observer.id, [Kind.Title, Kind.Comment]);
     f.store.issues.subscriptions.observe(f.value, observation());
     const changed = {
       ...observation("2"),
@@ -279,21 +244,11 @@ test("legacy defaults, explicit mute and pending mixed selection changes preserv
     f.store.issues.subscriptions.observe(f.value, changed);
     const pending = inbox(f.store, f.observer.id);
     expect(pending).toHaveLength(2);
-    const frozen = renderDigest(
-      pending,
-      f.directory,
-      "12345678-1111-1111-1111-111111111111",
-    );
-    f.store.issues.atomic(() =>
-      f.store.issues.subscriptions.set(f.value, f.observer.id, [Kind.Comment]),
-    );
-    expect(
-      inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind),
-    ).toEqual([Kind.Comment]);
+    const frozen = renderDigest(pending, f.directory, "12345678-1111-1111-1111-111111111111");
+    f.store.issues.atomic(() => f.store.issues.subscriptions.set(f.value, f.observer.id, [Kind.Comment]));
+    expect(inbox(f.store, f.observer.id).map((m) => m.notice?.issueEventKind)).toEqual([Kind.Comment]);
     expect(frozen.messageIds).toHaveLength(2);
-    expect(
-      f.store.tracking.inbox.get(required(pending[0]).id)?.applicable,
-    ).toBe(false);
+    expect(f.store.tracking.inbox.get(required(pending[0]).id)?.applicable).toBe(false);
     expect(inbox(f.store, f.owner.id)).toHaveLength(0);
     expect(f.store.issues.get(f.value.id)).toEqual(f.value);
     f.store.close();
@@ -335,15 +290,16 @@ test("incomplete observations and refresh failures cannot advance the content ba
       ...observation("3"),
       title: "Complete",
     });
-    expect(
-      inbox(f.store, f.owner.id).map((m) => m.notice?.issueEventKind),
-    ).toEqual([Kind.RefreshFailure, Kind.Title, Kind.RefreshRecovery]);
-    const title = inbox(f.store, f.owner.id).find(
-      (m) => m.notice?.issueEventKind === Kind.Title,
-    );
-    expect(
-      f.store.issues.subscriptions.evidence(title?.notice?.issueEventId ?? ""),
-    ).toMatchObject({ before: "Title", after: "Complete" });
+    expect(inbox(f.store, f.owner.id).map((m) => m.notice?.issueEventKind)).toEqual([
+      Kind.RefreshFailure,
+      Kind.Title,
+      Kind.RefreshRecovery,
+    ]);
+    const title = inbox(f.store, f.owner.id).find((m) => m.notice?.issueEventKind === Kind.Title);
+    expect(f.store.issues.subscriptions.evidence(title?.notice?.issueEventId ?? "")).toMatchObject({
+      before: "Title",
+      after: "Complete",
+    });
   } finally {
     f.close();
   }
@@ -375,13 +331,9 @@ test("generated RPC and native CLI update a paused closed issue without dispatch
           }),
         ),
       ).toContain("Issue ID required");
-      expect(
-        await rejection(client.listIssueSubscriptions({ issueId })),
-      ).toContain("Issue ID required");
+      expect(await rejection(client.listIssueSubscriptions({ issueId }))).toContain("Issue ID required");
     }
-    expect(await client.listIssueSubscriptions({ issueId: value.id })).toEqual(
-      originalSelection,
-    );
+    expect(await client.listIssueSubscriptions({ issueId: value.id })).toEqual(originalSelection);
     const selected = await client.setIssueSubscription({
       issueId: value.id,
       agentId: owner.id,
@@ -419,16 +371,10 @@ test("generated RPC and native CLI update a paused closed issue without dispatch
     ]);
     expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
     expect(stdout).toContain('"mode":"selected"');
-    expect(
-      (await client.listIssueSubscriptions({ issueId: value.id }))
-        .subscriptions[0]?.events,
-    ).toEqual([]);
+    expect((await client.listIssueSubscriptions({ issueId: value.id })).subscriptions[0]?.events).toEqual([]);
     expect(coordinator.store.issues.get(value.id)).toEqual(value);
     await client.setIssueSubscription({ issueId: value.id, agentId: owner.id });
-    expect(
-      (await client.listIssueSubscriptions({ issueId: value.id }))
-        .subscriptions[0]?.mode,
-    ).toBe("legacy");
+    expect((await client.listIssueSubscriptions({ issueId: value.id })).subscriptions[0]?.mode).toBe("legacy");
     expect(coordinator.store.issues.assignments(value.id)).toEqual([]);
   } finally {
     await coordinator.close();
@@ -441,10 +387,7 @@ test("service observation reconciles queued mixed digests while terminal source 
   const config = defaultTrackingConfig();
   config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
   const directory = mkdtempSync(join(tmpdir(), "octo-source-digest-"));
-  const slots = new Map<
-    string,
-    { queueId: string; clientId: string; body: string }
-  >();
+  const slots = new Map<string, { queueId: string; clientId: string; body: string }>();
   let serial = 0;
   let reads = 0;
   let current = { ...observation(), closed: true };
@@ -462,9 +405,7 @@ test("service observation reconciles queued mixed digests while terminal source 
         },
         observe: () => {
           reads++;
-          return failure
-            ? Promise.reject(new Error(failureDetail))
-            : Promise.resolve(current);
+          return failure ? Promise.reject(new Error(failureDetail)) : Promise.resolve(current);
         },
         post: () => Promise.reject(new Error("Unexpected post")),
         findPost: () => Promise.resolve(undefined),
@@ -496,10 +437,7 @@ test("service observation reconciles queued mixed digests while terminal source 
       intervalMs: 10,
       connect: (agent) => ({
         prepare: () => Promise.resolve({ busy: true }),
-        queued: () =>
-          Promise.resolve(
-            slots.has(agent.id) ? [required(slots.get(agent.id))] : [],
-          ),
+        queued: () => Promise.resolve(slots.has(agent.id) ? [required(slots.get(agent.id))] : []),
         enqueueQueued: (_agent, clientId, body) => {
           const item = { queueId: `q-${String(++serial)}`, clientId, body };
           slots.set(agent.id, item);
@@ -574,10 +512,7 @@ test("service observation reconciles queued mixed digests while terminal source 
       await Bun.sleep(10);
     }
     const active = required(coordinator.store.digests.active(owner.id));
-    const original = coordinator.store.digests.version(
-      active.id,
-      active.revision,
-    );
+    const original = coordinator.store.digests.version(active.id, active.revision);
     expect(original.messageIds).toHaveLength(2);
     expect(slots.get(owner.id)?.body).not.toContain("Private producer text");
     await client.setIssueSubscription({
@@ -596,9 +531,7 @@ test("service observation reconciles queued mixed digests while terminal source 
     }
     expect(slots.get(owner.id)?.body).not.toContain("Issue title");
     expect(slots.get(owner.id)?.body).toContain("Issue comment");
-    expect(
-      coordinator.store.digests.version(active.id, active.revision),
-    ).toEqual(original);
+    expect(coordinator.store.digests.version(active.id, active.revision)).toEqual(original);
     expect(coordinator.store.digests.receipts(active.id)).toEqual([]);
     const observed = coordinator.store.issues.get(value.id);
     expect(observed).toMatchObject({
@@ -636,9 +569,7 @@ test("service observation reconciles queued mixed digests while terminal source 
       waiting: value.waiting,
       epoch: value.epoch,
     });
-    expect(coordinator.store.issues.get(value.id).nextAt).toBeGreaterThan(
-      Date.now(),
-    );
+    expect(coordinator.store.issues.get(value.id).nextAt).toBeGreaterThan(Date.now());
     await client.setIssueSubscription({
       issueId: value.id,
       agentId: owner.id,
@@ -666,20 +597,14 @@ test("service observation reconciles queued mixed digests while terminal source 
       issueId: value.id,
       agentId: owner.id,
       filter: {
-        events: [
-          WireKind.COMMENT,
-          WireKind.REFRESH_FAILURE,
-          WireKind.REFRESH_RECOVERY,
-        ],
+        events: [WireKind.COMMENT, WireKind.REFRESH_FAILURE, WireKind.REFRESH_RECOVERY],
       },
     });
     await service.tick();
     expect(reads).toBe(before + 1);
-    expect(
-      inbox(coordinator.store, owner.id).map(
-        (message) => message.notice?.issueEventKind,
-      ),
-    ).toContain(Kind.RefreshFailure);
+    expect(inbox(coordinator.store, owner.id).map((message) => message.notice?.issueEventKind)).toContain(
+      Kind.RefreshFailure,
+    );
     expect(coordinator.store.issues.get(value.id)).toMatchObject({
       stage: IssueStage.Cancelled,
       waiting: Waiting.None,
@@ -690,11 +615,9 @@ test("service observation reconciles queued mixed digests while terminal source 
     current = { ...current, complete: true, revision: "4" };
     due();
     await service.tick();
-    expect(
-      inbox(coordinator.store, owner.id).map(
-        (message) => message.notice?.issueEventKind,
-      ),
-    ).toContain(Kind.RefreshRecovery);
+    expect(inbox(coordinator.store, owner.id).map((message) => message.notice?.issueEventKind)).toContain(
+      Kind.RefreshRecovery,
+    );
     expect(coordinator.store.issues.get(value.id)).toMatchObject({
       stage: IssueStage.Cancelled,
       waiting: Waiting.None,
@@ -720,36 +643,19 @@ test("status deactivation preserves content and muted unchanged saves do not acc
       title: "Selected",
     });
     expect(inbox(f.store, f.owner.id)).toHaveLength(1);
-    f.store.issues.save(
-      { ...f.value, waiting: Waiting.None },
-      "resumed",
-      "Resumed",
-    );
+    f.store.issues.save({ ...f.value, waiting: Waiting.None }, "resumed", "Resumed");
     expect(inbox(f.store, f.owner.id)).toHaveLength(0);
     expect(inbox(f.store, f.observer.id)).toHaveLength(1);
     f.store.issues.subscriptions.set(f.value, f.owner.id, []);
-    f.store.issues.save(
-      { ...f.value, detail: "Muted status" },
-      "paused",
-      "Muted status",
-    );
+    f.store.issues.save({ ...f.value, detail: "Muted status" }, "paused", "Muted status");
     const db = new DatabaseSync(join(f.directory, "jobs.sqlite"), {
       readOnly: true,
     });
     try {
       const count = () =>
-        Number(
-          db
-            .prepare("SELECT COUNT(*) AS count FROM issue_notification_events")
-            .get()?.["count"],
-        );
+        Number(db.prepare("SELECT COUNT(*) AS count FROM issue_notification_events").get()?.["count"]);
       const before = count();
-      for (let i = 0; i < 3; i++)
-        f.store.issues.save(
-          { ...f.value, detail: "Muted status" },
-          "paused",
-          "Muted status",
-        );
+      for (let i = 0; i < 3; i++) f.store.issues.save({ ...f.value, detail: "Muted status" }, "paused", "Muted status");
       expect(count()).toBe(before);
     } finally {
       db.close();
@@ -763,44 +669,24 @@ test("refresh episodes preserve long-error provenance and do not reclassify an o
   const { createHash } = await import("node:crypto");
   const f = setup();
   try {
-    f.store.issues.subscriptions.set(f.value, f.observer.id, [
-      Kind.Coordinator,
-    ]);
+    f.store.issues.subscriptions.set(f.value, f.observer.id, [Kind.Coordinator]);
     f.store.issues.subscriptions.observe(f.value, observation());
     const detail = "x".repeat(16000) + "last error bytes";
     f.store.issues.subscriptions.failure(f.value, detail);
     const failure = required(
-      inbox(f.store, f.owner.id).find(
-        (message) => message.notice?.issueEventKind === Kind.RefreshFailure,
-      ),
+      inbox(f.store, f.owner.id).find((message) => message.notice?.issueEventKind === Kind.RefreshFailure),
     );
-    expect(
-      f.store.issues.subscriptions.evidence(failure.notice?.issueEventId ?? ""),
-    ).toMatchObject({
+    expect(f.store.issues.subscriptions.evidence(failure.notice?.issueEventId ?? "")).toMatchObject({
       afterTruncated: true,
       afterDigest: createHash("sha256").update(detail).digest("hex"),
     });
-    f.store.issues.save(
-      { ...f.value, detail: "Paused by operator" },
-      "pause",
-      "Paused by operator",
-    );
-    expect(
-      inbox(f.store, f.observer.id).map(
-        (message) => message.notice?.issueEventKind,
-      ),
-    ).toEqual([Kind.Coordinator]);
+    f.store.issues.save({ ...f.value, detail: "Paused by operator" }, "pause", "Paused by operator");
+    expect(inbox(f.store, f.observer.id).map((message) => message.notice?.issueEventKind)).toEqual([Kind.Coordinator]);
     f.store.issues.subscriptions.observe(f.value, observation("2"));
     const recovery = required(
-      inbox(f.store, f.owner.id).find(
-        (message) => message.notice?.issueEventKind === Kind.RefreshRecovery,
-      ),
+      inbox(f.store, f.owner.id).find((message) => message.notice?.issueEventKind === Kind.RefreshRecovery),
     );
-    expect(
-      f.store.issues.subscriptions.evidence(
-        recovery.notice?.issueEventId ?? "",
-      ),
-    ).toMatchObject({
+    expect(f.store.issues.subscriptions.evidence(recovery.notice?.issueEventId ?? "")).toMatchObject({
       beforeTruncated: true,
       beforeDigest: createHash("sha256").update(detail).digest("hex"),
     });
@@ -823,14 +709,7 @@ test("first unchanged save seeds status identity from a retained legacy notice w
       );
       const id = randomUUID();
       const revision = createHash("sha256")
-        .update(
-          JSON.stringify([
-            f.value.stage,
-            f.value.waiting,
-            f.value.brief?.version,
-            f.value.detail,
-          ]),
-        )
+        .update(JSON.stringify([f.value.stage, f.value.waiting, f.value.brief?.version, f.value.detail]))
         .digest("hex");
       const notice = {
         version: 1 as const,
@@ -852,16 +731,8 @@ test("first unchanged save seeds status identity from a retained legacy notice w
         1,
       );
       f.store.issues.save({ ...f.value }, "observed", "Unchanged observation");
-      expect(inbox(f.store, f.owner.id).map((message) => message.id)).toEqual([
-        id,
-      ]);
-      expect(
-        Number(
-          db.prepare("SELECT COUNT(*) AS count FROM issue_notices").get()?.[
-            "count"
-          ],
-        ),
-      ).toBe(1);
+      expect(inbox(f.store, f.owner.id).map((message) => message.id)).toEqual([id]);
+      expect(Number(db.prepare("SELECT COUNT(*) AS count FROM issue_notices").get()?.["count"])).toBe(1);
     } finally {
       db.close();
     }
@@ -870,9 +741,7 @@ test("first unchanged save seeds status identity from a retained legacy notice w
   }
 });
 
-function observerOptions(
-  observe: IssueOptions["trackers"][number]["observe"],
-): IssueOptions {
+function observerOptions(observe: IssueOptions["trackers"][number]["observe"]): IssueOptions {
   return {
     trackers: [
       {
@@ -931,12 +800,7 @@ function controlledPolicy(): ReturnType<IssueOptions["policy"]> {
 }
 
 test("in-flight cancellation or subscription removal cannot restore terminal execution input", async () => {
-  for (const outcome of [
-    "success",
-    "failure",
-    "incomplete",
-    "unsubscribed",
-  ] as const) {
+  for (const outcome of ["success", "failure", "incomplete", "unsubscribed"] as const) {
     const f = setup();
     const pending = Promise.withResolvers<TrackerObservation>();
     const started = Promise.withResolvers<undefined>();
@@ -948,20 +812,14 @@ test("in-flight cancellation or subscription removal cannot restore terminal exe
       }),
     );
     try {
-      f.store.issues.subscriptions.set(f.value, f.owner.id, [
-        Kind.Title,
-        Kind.RefreshFailure,
-        Kind.RefreshRecovery,
-      ]);
+      f.store.issues.subscriptions.set(f.value, f.owner.id, [Kind.Title, Kind.RefreshFailure, Kind.RefreshRecovery]);
       f.store.issues.save({ ...f.value, nextAt: 0 }, "due", "Due");
       const work = service.tick();
       await started.promise;
       service.command(f.value.id, "cancel", "", 0, `cancel-${outcome}`);
       const cancelled = f.store.issues.get(f.value.id);
-      if (outcome === "unsubscribed")
-        f.store.issues.subscriptions.set(cancelled, f.owner.id, []);
-      if (outcome === "failure")
-        pending.reject(new Error("Deferred source failure"));
+      if (outcome === "unsubscribed") f.store.issues.subscriptions.set(cancelled, f.owner.id, []);
+      if (outcome === "failure") pending.reject(new Error("Deferred source failure"));
       else
         pending.resolve({
           ...observation("2"),
@@ -978,11 +836,9 @@ test("in-flight cancellation or subscription removal cannot restore terminal exe
       }).toEqual(cancelled);
       expect(f.store.issues.assignments(f.value.id)).toEqual([]);
       if (outcome === "failure" || outcome === "incomplete")
-        expect(
-          inbox(f.store, f.owner.id).map(
-            (message) => message.notice?.issueEventKind,
-          ),
-        ).toContain(Kind.RefreshFailure);
+        expect(inbox(f.store, f.owner.id).map((message) => message.notice?.issueEventKind)).toContain(
+          Kind.RefreshFailure,
+        );
     } finally {
       await service.close();
       f.close();
@@ -1086,10 +942,7 @@ test("terminal assigned work reconciles before any new subscription source read"
       detail: "Retained assignment",
     });
     f.store.issues.save(value, "cancelled", "Retained cancellation");
-    f.store.issues.subscriptions.set(value, f.owner.id, [
-      Kind.Comment,
-      Kind.RefreshFailure,
-    ]);
+    f.store.issues.subscriptions.set(value, f.owner.id, [Kind.Comment, Kind.RefreshFailure]);
     await service.tick();
     expect(reads).toBe(0);
     expect(cancellations).toBe(1);
@@ -1130,10 +983,7 @@ test("service shutdown is not reported as a provider refresh failure", async () 
   try {
     const done = { ...f.value, stage: IssueStage.Done, nextAt: 0 };
     f.store.issues.save(done, "done", "Done");
-    f.store.issues.subscriptions.set(done, f.owner.id, [
-      Kind.Comment,
-      Kind.RefreshFailure,
-    ]);
+    f.store.issues.subscriptions.set(done, f.owner.id, [Kind.Comment, Kind.RefreshFailure]);
     const work = service.tick();
     await started.promise;
     await service.close();
@@ -1178,20 +1028,15 @@ test("selected source comments include reconciled Octo posts without adding work
         },
       ],
     };
-    f.store.issues.save(
-      { ...f.store.issues.get(f.value.id), nextAt: 0 },
-      "due",
-      "Due",
-    );
+    f.store.issues.save({ ...f.store.issues.get(f.value.id), nextAt: 0 }, "due", "Due");
     await service.tick();
     const comment = required(
-      inbox(f.store, f.owner.id).find(
-        (message) => message.notice?.issueEventKind === Kind.Comment,
-      ),
+      inbox(f.store, f.owner.id).find((message) => message.notice?.issueEventKind === Kind.Comment),
     );
-    expect(
-      f.store.issues.subscriptions.evidence(comment.notice?.issueEventId ?? ""),
-    ).toMatchObject({ commentId: "own", after: ownBody });
+    expect(f.store.issues.subscriptions.evidence(comment.notice?.issueEventId ?? "")).toMatchObject({
+      commentId: "own",
+      after: ownBody,
+    });
     expect(f.store.issues.get(f.value.id)).toMatchObject({
       pendingComments: [],
       comments: [],
@@ -1221,9 +1066,7 @@ test("scheduled issue source changes wake reconciliation without polling SQLite"
     expect(changes).toBeGreaterThan(0);
     expect(
       inbox(f.store, f.owner.id).some(
-        (message) =>
-          message.notice?.kind === "issue" &&
-          message.notice.issueEventKind === Kind.Title,
+        (message) => message.notice?.kind === "issue" && message.notice.issueEventKind === Kind.Title,
       ),
     ).toBe(true);
     changes = 0;
@@ -1251,8 +1094,7 @@ test("terminal source monitoring sleeps until its real observation deadline", as
           observe,
           post: () => Promise.reject(new Error("Unexpected post")),
           findPost: () => Promise.resolve(undefined),
-          createFollowUp: () =>
-            Promise.reject(new Error("Unexpected follow-up")),
+          createFollowUp: () => Promise.reject(new Error("Unexpected follow-up")),
           findFollowUp: () => Promise.resolve(undefined),
           close: () => Promise.reject(new Error("Unexpected close")),
         },

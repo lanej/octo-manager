@@ -24,9 +24,7 @@ const snapshot = Type.Object({
   body: Type.String(),
   closed: Type.Boolean(),
   revision: Type.String(),
-  comments: Type.Array(
-    Type.Object({ id: Type.String(), revision: Type.String() }),
-  ),
+  comments: Type.Array(Type.Object({ id: Type.String(), revision: Type.String() })),
 });
 const failureEvidence = Type.Object({
   detail: Type.String(),
@@ -59,15 +57,13 @@ export interface IssueSubscription {
   events: IssueNotificationKind[];
 }
 function parsed(value: unknown): unknown {
-  if (typeof value !== "string")
-    throw new Error("Invalid stored issue subscription");
+  if (typeof value !== "string") throw new Error("Invalid stored issue subscription");
   const decoded: unknown = JSON.parse(value);
   return decoded;
 }
 function events(value: unknown): IssueNotificationKind[] {
   const decoded = parsed(value);
-  if (!Check(selection, decoded))
-    throw new Error("Invalid stored issue event selection");
+  if (!Check(selection, decoded)) throw new Error("Invalid stored issue event selection");
   return decoded;
 }
 function fingerprint(value: unknown): string {
@@ -92,26 +88,20 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
   }
   list(issue: IssueRecord): IssueSubscription[] {
     const rows = this.db
-      .prepare(
-        "SELECT agent_id,events FROM issue_subscriptions WHERE issue_id=? ORDER BY agent_id",
-      )
+      .prepare("SELECT agent_id,events FROM issue_subscriptions WHERE issue_id=? ORDER BY agent_id")
       .all(issue.id);
-    return [
-      issue.ownerId,
-      ...rows
-        .map((row) => String(row["agent_id"]))
-        .filter((id) => id !== issue.ownerId),
-    ].map((agentId) => {
-      const row = rows.find((item) => item["agent_id"] === agentId);
-      return {
-        issueId: issue.id,
-        agentId,
-        explicit: row?.["events"] != null,
-        mode:
-          row?.["events"] == null ? ("legacy" as const) : ("selected" as const),
-        events: row?.["events"] == null ? [...defaults] : events(row["events"]),
-      };
-    });
+    return [issue.ownerId, ...rows.map((row) => String(row["agent_id"])).filter((id) => id !== issue.ownerId)].map(
+      (agentId) => {
+        const row = rows.find((item) => item["agent_id"] === agentId);
+        return {
+          issueId: issue.id,
+          agentId,
+          explicit: row?.["events"] != null,
+          mode: row?.["events"] == null ? ("legacy" as const) : ("selected" as const),
+          events: row?.["events"] == null ? [...defaults] : events(row["events"]),
+        };
+      },
+    );
   }
   private atomic<T>(work: () => T): T {
     this.db.exec("SAVEPOINT issue_notifications");
@@ -120,17 +110,11 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       this.db.exec("RELEASE issue_notifications");
       return value;
     } catch (error) {
-      this.db.exec(
-        "ROLLBACK TO issue_notifications; RELEASE issue_notifications",
-      );
+      this.db.exec("ROLLBACK TO issue_notifications; RELEASE issue_notifications");
       throw error;
     }
   }
-  set(
-    issue: IssueRecord,
-    agentId: string,
-    selected: IssueNotificationKind[] | undefined,
-  ): IssueSubscription[] {
+  set(issue: IssueRecord, agentId: string, selected: IssueNotificationKind[] | undefined): IssueSubscription[] {
     return this.atomic(() => this.setInside(issue, agentId, selected));
   }
   private setInside(
@@ -138,23 +122,14 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
     agentId: string,
     selected: IssueNotificationKind[] | undefined,
   ): IssueSubscription[] {
-    if (
-      agentId.length === 0 ||
-      this.db.prepare("SELECT id FROM agent_refs WHERE id=?").get(agentId) ===
-        undefined
-    )
+    if (agentId.length === 0 || this.db.prepare("SELECT id FROM agent_refs WHERE id=?").get(agentId) === undefined)
       throw new Error("Registered subscriber agent required");
-    if (selected !== undefined && !Check(selection, selected))
-      throw new Error("Invalid issue event selection");
+    if (selected !== undefined && !Check(selection, selected)) throw new Error("Invalid issue event selection");
     this.db
       .prepare(
         "INSERT INTO issue_subscriptions VALUES(?,?,?) ON CONFLICT(issue_id,agent_id) DO UPDATE SET events=excluded.events",
       )
-      .run(
-        issue.id,
-        agentId,
-        selected === undefined ? null : JSON.stringify(selected),
-      );
+      .run(issue.id, agentId, selected === undefined ? null : JSON.stringify(selected));
     const effective = selected ?? defaults;
     // Historical digests and receipts stay immutable; current applicability fences future delivery.
     for (const row of this.db
@@ -162,28 +137,19 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         "SELECT n.id,m.kind FROM issue_notices n LEFT JOIN issue_notification_members m ON m.message_id=n.id WHERE n.issue_id=? AND n.recipient_agent_id=? AND n.applicable=1",
       )
       .all(issue.id, agentId)) {
-      const kind =
-        row["kind"] == null
-          ? IssueNotificationKind.Coordinator
-          : String(row["kind"]);
-      if (!Check(kindSchema, kind))
-        throw new Error("Invalid stored issue event kind");
+      const kind = row["kind"] == null ? IssueNotificationKind.Coordinator : String(row["kind"]);
+      if (!Check(kindSchema, kind)) throw new Error("Invalid stored issue event kind");
       if (!effective.includes(kind))
-        this.db
-          .prepare("UPDATE issue_notices SET applicable=0 WHERE id=?")
-          .run(String(row["id"]));
+        this.db.prepare("UPDATE issue_notices SET applicable=0 WHERE id=?").run(String(row["id"]));
     }
     this.changed?.();
     return this.list(issue);
   }
   evidence(id: string): IssueNotificationEvidence | undefined {
-    const row = this.db
-      .prepare("SELECT data FROM issue_notification_events WHERE id=?")
-      .get(id);
+    const row = this.db.prepare("SELECT data FROM issue_notification_events WHERE id=?").get(id);
     if (row === undefined) return undefined;
     const value = parsed(row["data"]);
-    if (!Check(evidence, value))
-      throw new Error("Invalid stored issue event evidence");
+    if (!Check(evidence, value)) throw new Error("Invalid stored issue event evidence");
     return value;
   }
   private emit(
@@ -207,24 +173,16 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       after: after.slice(0, 16000),
       beforeTruncated: retainedBefore?.truncated ?? before.length > 16000,
       afterTruncated: after.length > 16000,
-      beforeDigest:
-        retainedBefore?.digest ??
-        createHash("sha256").update(before).digest("hex"),
+      beforeDigest: retainedBefore?.digest ?? createHash("sha256").update(before).digest("hex"),
       afterDigest: createHash("sha256").update(after).digest("hex"),
       commentId,
       commentRevision,
       url,
       at: this.now(),
     };
-    this.db
-      .prepare("INSERT INTO issue_notification_events VALUES(?,?,?)")
-      .run(id, issue.id, JSON.stringify(event));
+    this.db.prepare("INSERT INTO issue_notification_events VALUES(?,?,?)").run(id, issue.id, JSON.stringify(event));
     if (
-      this.db
-        .prepare(
-          "SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'",
-        )
-        .get() === undefined
+      this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get() === undefined
     )
       return;
     this.changed?.();
@@ -250,26 +208,20 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
           messageId,
           issue.id,
           subscription.agentId,
-          this.notifications?.render(messageId, notice) ??
-            renderDirectNotice(notice, messageId),
+          this.notifications?.render(messageId, notice) ?? renderDirectNotice(notice, messageId),
           this.now(),
           this.now(),
         );
-      this.db
-        .prepare("INSERT INTO issue_notification_members VALUES(?,?,?)")
-        .run(messageId, id, kind);
+      this.db.prepare("INSERT INTO issue_notification_members VALUES(?,?,?)").run(messageId, id, kind);
     }
   }
   failure(issue: IssueRecord, detail: string): void {
     this.atomic(() => {
       const digest = createHash("sha256").update(detail).digest("hex");
-      const previous = this.db
-        .prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?")
-        .get(issue.id);
+      const previous = this.db.prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?").get(issue.id);
       if (previous !== undefined) {
         const value = parsed(previous["data"]);
-        if (!Check(failureEvidence, value))
-          throw new Error("Invalid stored issue refresh failure");
+        if (!Check(failureEvidence, value)) throw new Error("Invalid stored issue refresh failure");
         if (value.digest === digest) return;
       }
       const value = {
@@ -283,32 +235,19 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
           "INSERT INTO issue_refresh_failures VALUES(?,?) ON CONFLICT(issue_id) DO UPDATE SET data=excluded.data",
         )
         .run(issue.id, JSON.stringify(value));
-      this.emit(
-        issue,
-        IssueNotificationKind.RefreshFailure,
-        value.revision,
-        "",
-        detail,
-      );
+      this.emit(issue, IssueNotificationKind.RefreshFailure, value.revision, "", detail);
     });
   }
   status(issue: IssueRecord, revision: string, emit = true): void {
     if (
-      this.db
-        .prepare(
-          "SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'",
-        )
-        .get() === undefined
+      this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get() === undefined
     )
       return;
     const kind = IssueNotificationKind.Coordinator;
-    const actionable =
-      issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
+    const actionable = issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
     const effectiveRevision = actionable ? revision : "inactive";
     const previous = this.db
-      .prepare(
-        "SELECT kind,revision FROM issue_notification_status WHERE issue_id=?",
-      )
+      .prepare("SELECT kind,revision FROM issue_notification_status WHERE issue_id=?")
       .get(issue.id);
     if (previous === undefined && actionable) {
       const legacy = this.db
@@ -316,10 +255,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
           "SELECT n.id FROM issue_notices n LEFT JOIN issue_notification_members m ON m.message_id=n.id WHERE n.issue_id=? AND n.applicable=1 AND m.message_id IS NULL ORDER BY n.sequence DESC LIMIT 1",
         )
         .get(issue.id);
-      const prior =
-        typeof legacy?.["id"] === "string"
-          ? this.notifications?.notice(legacy["id"])
-          : undefined;
+      const prior = typeof legacy?.["id"] === "string" ? this.notifications?.notice(legacy["id"]) : undefined;
       if (
         prior?.kind === "issue" &&
         prior.subject?.kind === "issue" &&
@@ -327,17 +263,11 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         prior.issueEventKind === undefined &&
         prior.issueRevision === revision
       ) {
-        this.db
-          .prepare("INSERT INTO issue_notification_status VALUES(?,?,?)")
-          .run(issue.id, kind, effectiveRevision);
+        this.db.prepare("INSERT INTO issue_notification_status VALUES(?,?,?)").run(issue.id, kind, effectiveRevision);
         return;
       }
     }
-    if (
-      previous?.["revision"] === effectiveRevision &&
-      previous["kind"] === kind
-    )
-      return;
+    if (previous?.["revision"] === effectiveRevision && previous["kind"] === kind) return;
     this.db
       .prepare(
         "INSERT INTO issue_notification_status VALUES(?,?,?) ON CONFLICT(issue_id) DO UPDATE SET kind=excluded.kind,revision=excluded.revision",
@@ -389,10 +319,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       this.observeInside(issue, observed);
     });
   }
-  private observeInside(
-    issue: IssueRecord,
-    observed: TrackerObservation,
-  ): void {
+  private observeInside(issue: IssueRecord, observed: TrackerObservation): void {
     if (!observed.complete) return;
     const current = {
       title: observed.title,
@@ -404,48 +331,27 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         revision: comment.revision,
       })),
     };
-    const row = this.db
-      .prepare("SELECT data FROM issue_source_observations WHERE issue_id=?")
-      .get(issue.id);
+    const row = this.db.prepare("SELECT data FROM issue_source_observations WHERE issue_id=?").get(issue.id);
     if (row !== undefined) {
       const previous = parsed(row["data"]);
-      if (!Check(snapshot, previous))
-        throw new Error("Invalid stored issue source observation");
+      if (!Check(snapshot, previous)) throw new Error("Invalid stored issue source observation");
       if (previous.title !== current.title)
-        this.emit(
-          issue,
-          IssueNotificationKind.Title,
-          observed.revision,
-          previous.title,
-          current.title,
-        );
+        this.emit(issue, IssueNotificationKind.Title, observed.revision, previous.title, current.title);
       if (previous.body !== current.body)
-        this.emit(
-          issue,
-          IssueNotificationKind.Description,
-          observed.revision,
-          previous.body,
-          current.body,
-        );
+        this.emit(issue, IssueNotificationKind.Description, observed.revision, previous.body, current.body);
       if (previous.closed !== current.closed)
         this.emit(
           issue,
-          current.closed
-            ? IssueNotificationKind.Closed
-            : IssueNotificationKind.Reopened,
+          current.closed ? IssueNotificationKind.Closed : IssueNotificationKind.Reopened,
           observed.revision,
           String(previous.closed),
           String(current.closed),
         );
       const previousComments = new Set(
-        previous.comments.map((comment) =>
-          JSON.stringify([comment.id, comment.revision]),
-        ),
+        previous.comments.map((comment) => JSON.stringify([comment.id, comment.revision])),
       );
       for (const comment of observed.comments)
-        if (
-          !previousComments.has(JSON.stringify([comment.id, comment.revision]))
-        )
+        if (!previousComments.has(JSON.stringify([comment.id, comment.revision])))
           this.emit(
             issue,
             IssueNotificationKind.Comment,
@@ -462,13 +368,10 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         "INSERT INTO issue_source_observations VALUES(?,?) ON CONFLICT(issue_id) DO UPDATE SET data=excluded.data",
       )
       .run(issue.id, JSON.stringify(current));
-    const failure = this.db
-      .prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?")
-      .get(issue.id);
+    const failure = this.db.prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?").get(issue.id);
     if (failure !== undefined) {
       const value = parsed(failure["data"]);
-      if (!Check(failureEvidence, value))
-        throw new Error("Invalid stored issue refresh failure");
+      if (!Check(failureEvidence, value)) throw new Error("Invalid stored issue refresh failure");
       this.emit(
         issue,
         IssueNotificationKind.RefreshRecovery,
@@ -480,9 +383,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         issue.ref.url,
         { digest: value.digest, truncated: value.truncated },
       );
-      this.db
-        .prepare("DELETE FROM issue_refresh_failures WHERE issue_id=?")
-        .run(issue.id);
+      this.db.prepare("DELETE FROM issue_refresh_failures WHERE issue_id=?").run(issue.id);
     }
   }
 }

@@ -2,15 +2,7 @@ import { revision } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
 export function migrateDigests(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (
-    version === 15 ||
-    version === 14 ||
-    version === 13 ||
-    version === 12 ||
-    version === 11 ||
-    version === 10
-  )
-    return;
+  if (version === 15 || version === 14 || version === 13 || version === 12 || version === 11 || version === 10) return;
   if (version !== 9) throw new Error("Unsupported digest database version");
   try {
     db.exec(`BEGIN IMMEDIATE;
@@ -93,13 +85,7 @@ export function migrateNotificationEvidence(db: DatabaseSync): void {
 
 // rationale: Membership is a derived index; immutable revisions retain the audit authority and ordering.
 export function migrateDigestMembership(db: DatabaseSync): void {
-  if (
-    db
-      .prepare(
-        "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='agent_digest_members'",
-      )
-      .get() !== undefined
-  )
+  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='agent_digest_members'").get() !== undefined)
     return;
   try {
     db.exec(`BEGIN IMMEDIATE;
@@ -112,17 +98,11 @@ export function migrateDigestMembership(db: DatabaseSync): void {
       CREATE INDEX IF NOT EXISTS digests_by_agent ON agent_digests(agent_id);
     `);
     const insert = db.prepare("INSERT INTO agent_digest_members VALUES(?,?,?)");
-    for (const row of db
-      .prepare("SELECT digest_id,revision,data FROM agent_digest_revisions")
-      .all()) {
+    for (const row of db.prepare("SELECT digest_id,revision,data FROM agent_digest_revisions").all()) {
       const value = revision(JSON.parse(String(row["data"])));
-      if (
-        value.digestId !== row["digest_id"] ||
-        value.revision !== row["revision"]
-      )
+      if (value.digestId !== row["digest_id"] || value.revision !== row["revision"])
         throw new Error("Digest revision identity mismatch");
-      for (const id of value.messageIds)
-        insert.run(value.digestId, value.revision, id);
+      for (const id of value.messageIds) insert.run(value.digestId, value.revision, id);
     }
     db.exec(`CREATE TRIGGER index_digest_members AFTER INSERT ON agent_digest_revisions BEGIN
       SELECT CASE WHEN json_type(NEW.data,'$.messageIds') IS NOT 'array' OR json_array_length(NEW.data,'$.messageIds') NOT BETWEEN 1 AND 20 OR EXISTS(SELECT 1 FROM json_each(NEW.data,'$.messageIds') WHERE type!='text' OR length(value)=0) THEN RAISE(ABORT,'Invalid digest membership') END;

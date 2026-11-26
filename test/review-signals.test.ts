@@ -5,23 +5,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
-import {
-  actionableFeedback,
-  feedbackExcerpt,
-} from "../src/tracking/review-signals.js";
+import { actionableFeedback, feedbackExcerpt } from "../src/tracking/review-signals.js";
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  ActionState,
-  DeliveryState,
-  type ObservationInput,
-  type ReviewFeedback,
-} from "../src/tracking/types.js";
+import { ActionState, DeliveryState, type ObservationInput, type ReviewFeedback } from "../src/tracking/types.js";
 const url = "https://github.com/owner/repo/pull/1";
-function codex(
-  status: string,
-  findings: boolean | null = null,
-): ReviewFeedback {
+function codex(status: string, findings: boolean | null = null): ReviewFeedback {
   return feedbackRevision({
     source: "conversation",
     id: "summary",
@@ -65,26 +54,18 @@ test("known review lifecycle and no-findings summaries stay quiet while real and
     false,
   );
   assert.equal(
-    actionableFeedback(
-      copilot(
-        "Copilot reviewed 10 out of 10 changed files and generated 0 comments.",
-      ),
-    ),
+    actionableFeedback(copilot("Copilot reviewed 10 out of 10 changed files and generated 0 comments.")),
     false,
   );
   assert.equal(
     actionableFeedback(
-      copilot(
-        "Copilot reviewed 10 out of 10 changed files and generated 0 comments.\nP1: fix the data-loss race.",
-      ),
+      copilot("Copilot reviewed 10 out of 10 changed files and generated 0 comments.\nP1: fix the data-loss race."),
     ),
     true,
   );
   assert.equal(
     actionableFeedback(
-      copilot(
-        "<!-- ccr-overview-v2 -->\n### 🟢 Approval recommended\n**No open issues**\nP1: fix the data-loss race.",
-      ),
+      copilot("<!-- ccr-overview-v2 -->\n### 🟢 Approval recommended\n**No open issues**\nP1: fix the data-loss race."),
     ),
     true,
   );
@@ -97,29 +78,12 @@ test("known review lifecycle and no-findings summaries stay quiet while real and
     true,
   );
   assert.equal(
-    actionableFeedback(
-      copilot(
-        "Copilot reviewed 10 out of 10 changed files and generated 2 comments.",
-      ),
-    ),
+    actionableFeedback(copilot("Copilot reviewed 10 out of 10 changed files and generated 2 comments.")),
     true,
   );
-  assert.equal(
-    actionableFeedback(
-      copilot(
-        "<!-- ccr-overview-v2 -->\n### Changes requested\n**2 open issues**",
-      ),
-    ),
-    true,
-  );
-  assert.equal(
-    actionableFeedback({ ...codex("running"), author: "human" }),
-    true,
-  );
-  assert.equal(
-    actionableFeedback({ ...codex("running"), source: "inline" }),
-    true,
-  );
+  assert.equal(actionableFeedback(copilot("<!-- ccr-overview-v2 -->\n### Changes requested\n**2 open issues**")), true);
+  assert.equal(actionableFeedback({ ...codex("running"), author: "human" }), true);
+  assert.equal(actionableFeedback({ ...codex("running"), source: "inline" }), true);
   assert.equal(
     actionableFeedback({
       ...codex("running"),
@@ -148,17 +112,10 @@ test("status edits remain raw observations without actions, and later findings c
   });
   try {
     for (const status of ["running", "inconclusive", "completed"])
-      store.tracking.observe(
-        pr.id,
-        observation([codex(status, false)]),
-        config,
-      );
+      store.tracking.observe(pr.id, observation([codex(status, false)]), config);
     assert.equal(store.tracking.actions().length, 0);
     assert.equal(store.tracking.deliveries().length, 0);
-    assert.equal(
-      store.tracking.pr(pr.id).observation?.feedback?.state,
-      "complete",
-    );
+    assert.equal(store.tracking.pr(pr.id).observation?.feedback?.state, "complete");
     const findings = feedbackRevision({
       ...codex("completed", true),
       source: "inline",
@@ -174,15 +131,8 @@ test("status edits remain raw observations without actions, and later findings c
     assert.equal(store.tracking.actions().length, 1);
     const action = store.tracking.actions()[0];
     assert(action !== undefined);
-    store.tracking.observe(
-      pr.id,
-      observation([codex("completed", false)]),
-      config,
-    );
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Open,
-    );
+    store.tracking.observe(pr.id, observation([codex("completed", false)]), config);
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Open);
     assert.equal(store.tracking.actions().length, 1);
   } finally {
     store.close();
@@ -209,9 +159,7 @@ for (const noise of [
       sessionId: "owner",
     });
     try {
-      const legacy = spyOn(reviewSignals, "actionableFeedback").mockReturnValue(
-        true,
-      );
+      const legacy = spyOn(reviewSignals, "actionableFeedback").mockReturnValue(true);
       try {
         store.tracking.observe(pr.id, observation([noise]), config);
       } finally {
@@ -223,23 +171,11 @@ for (const noise of [
       store.tracking.inbox.record(delivery.id, "Historical lifecycle message");
       store.close();
       store = new Store(directory);
-      assert.equal(
-        store.tracking.action(action.id).progress.state,
-        ActionState.Superseded,
-      );
-      assert.equal(
-        store.tracking.deliveries()[0]?.progress.state,
-        DeliveryState.Cancelled,
-      );
-      assert.equal(
-        store.tracking.inbox.get(delivery.id)?.body,
-        "Historical lifecycle message",
-      );
+      assert.equal(store.tracking.action(action.id).progress.state, ActionState.Superseded);
+      assert.equal(store.tracking.deliveries()[0]?.progress.state, DeliveryState.Cancelled);
+      assert.equal(store.tracking.inbox.get(delivery.id)?.body, "Historical lifecycle message");
       assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
-      assert.equal(
-        store.tracking.pr(pr.id).observation?.feedback?.state,
-        "complete",
-      );
+      assert.equal(store.tracking.pr(pr.id).observation?.feedback?.state, "complete");
     } finally {
       store.close();
       await rm(directory, { recursive: true, force: true });
@@ -257,9 +193,7 @@ test("Codex receipts suppress boilerplate but preserve extra findings and other 
   assert.equal(
     actionableFeedback({
       ...receipt,
-      body:
-        receipt.body +
-        "\n<details><summary>P1 finding</summary>Fix data loss.</details>",
+      body: receipt.body + "\n<details><summary>P1 finding</summary>Fix data loss.</details>",
     }),
     true,
   );
@@ -275,9 +209,7 @@ test("Codex receipts suppress boilerplate but preserve extra findings and other 
   assert.equal(
     actionableFeedback({
       ...codex("completed", true),
-      body:
-        codex("completed", true).body +
-        "\n<!-- codex-code-review-finding:v1 --> Fix the race.",
+      body: codex("completed", true).body + "\n<!-- codex-code-review-finding:v1 --> Fix the race.",
     }),
     true,
   );

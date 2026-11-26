@@ -1,7 +1,4 @@
-import {
-  defaultTrackingConfig,
-  loadTrackingConfig,
-} from "../src/tracking/config.js";
+import { defaultTrackingConfig, loadTrackingConfig } from "../src/tracking/config.js";
 import { WorkScheduler } from "../src/scheduling/work.js";
 import { GitHubRequestCancelledError } from "../src/github/errors.js";
 import { sdkTransport } from "../src/github/sdk.js";
@@ -13,16 +10,9 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
-import {
-  defaultSchedulerPolicy,
-  RefreshKind,
-  ScheduleState,
-} from "../src/scheduling/contracts.js";
+import { defaultSchedulerPolicy, RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
 import { GitHubReads } from "../src/github/reads.js";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import type { WatchDashboardResponse } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
@@ -37,13 +27,7 @@ const details = {
   mayHaveMoreMessages: false,
 };
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
-async function fixture(
-  run: (
-    store: Store,
-    scheduler: GitHubScheduler,
-    time: (at: number) => void,
-  ) => Promise<void>,
-) {
+async function fixture(run: (store: Store, scheduler: GitHubScheduler, time: (at: number) => void) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "octo-scheduler-"));
   let at = 0;
   const store = new Store(directory, () => at);
@@ -120,12 +104,7 @@ test("interactive work alternates fairly with background work and resource coold
         });
       return interactive ? scheduler.interactive(work) : work();
     };
-    const pending = [
-      enqueue("i1", true),
-      enqueue("i2", true),
-      enqueue("b1", false),
-      enqueue("b2", false),
-    ];
+    const pending = [enqueue("i1", true), enqueue("i2", true), enqueue("b1", false), enqueue("b2", false)];
     for (const at of [0, 2000, 4000, 6000]) {
       time(at);
       scheduler.tick();
@@ -227,19 +206,16 @@ test("dashboard frames update automatically and cached refresh RPCs share reques
     tickMs: 100,
     requestSpacingMs: 100,
   };
-  const coordinator: ApplicationFixture = await createApplicationFixture(
-    directory,
-    {
-      trackingConfig: config,
-      reviewReader: () =>
-        coordinator.githubScheduler.dispatch("core", () => {
-          calls++;
-          return new Promise<typeof details>((resolve) => {
-            finish = resolve;
-          });
-        }),
-    },
-  );
+  const coordinator: ApplicationFixture = await createApplicationFixture(directory, {
+    trackingConfig: config,
+    reviewReader: () =>
+      coordinator.githubScheduler.dispatch("core", () => {
+        calls++;
+        return new Promise<typeof details>((resolve) => {
+          finish = resolve;
+        });
+      }),
+  });
   const controller = new AbortController();
   try {
     coordinator.store.schedules.saveDispatch({
@@ -252,11 +228,7 @@ test("dashboard frames update automatically and cached refresh RPCs share reques
     assert.equal(initial.pullRequest, undefined);
     assert.equal(calls, 0);
     const queuedDeadline = Date.now() + 1000;
-    while (
-      coordinator.githubScheduler.status().queuedRequests === 0 &&
-      Date.now() < queuedDeadline
-    )
-      await Bun.sleep(5);
+    while (coordinator.githubScheduler.status().queuedRequests === 0 && Date.now() < queuedDeadline) await Bun.sleep(5);
     assert.equal(coordinator.githubScheduler.status().queuedRequests, 1);
     for (let i = 0; i < 3; i++) {
       const response = await client.getPullRequest({ url, refresh: true });
@@ -280,14 +252,10 @@ test("dashboard frames update automatically and cached refresh RPCs share reques
     const deadline = Date.now() + 1000;
     while (finish === undefined && Date.now() < deadline) await Bun.sleep(5);
     assert.equal(calls, 1);
-    assert(
-      finish !== undefined,
-      "shared dispatcher did not admit the queued request",
-    );
+    assert(finish !== undefined, "shared dispatcher did not admit the queued request");
     finish(details);
     let frame = await stream.next();
-    while (frame.done !== true && frame.value.pullRequest === undefined)
-      frame = await stream.next();
+    while (frame.done !== true && frame.value.pullRequest === undefined) frame = await stream.next();
     assert.equal(frame.done, false);
     assert.equal(frame.value.pullRequest?.title, "Stored review");
     assert((frame.value.snapshot?.githubScheduler?.tickSequence ?? 0n) > 0n);
@@ -339,10 +307,7 @@ test("opening an evicted view queues a fresh read without enrolling the PR", () 
       state: ScheduleState.Deferred,
     });
     const release = scheduler.interest(url);
-    assert.equal(
-      store.schedules.get(`reviews:${url}`)?.state,
-      ScheduleState.Queued,
-    );
+    assert.equal(store.schedules.get(`reviews:${url}`)?.state, ScheduleState.Queued);
     scheduler.tick();
     await settle();
     assert.equal(store.schedules.view(url)?.title, "Stored review");
@@ -394,10 +359,7 @@ test("reopening a failed uncached view preserves its retry deadline; explicit re
     assert.equal(store.schedules.get(`reviews:${url}`)?.dueAtMs, 60000);
     assert.equal(store.schedules.view(url), undefined);
     scheduler.ensureReviews(url, true);
-    assert.equal(
-      store.schedules.get(`reviews:${url}`)?.state,
-      ScheduleState.Queued,
-    );
+    assert.equal(store.schedules.get(`reviews:${url}`)?.state, ScheduleState.Queued);
     release();
   }));
 test("completed refresh records its latest attempt and retains old content on the next failure", async () => {
@@ -409,8 +371,7 @@ test("completed refresh records its latest attempt and retains old content on th
     store.schedules,
     defaultSchedulerPolicy,
     () => at,
-    () =>
-      fail ? Promise.reject(new Error("Offline")) : Promise.resolve(details),
+    () => (fail ? Promise.reject(new Error("Offline")) : Promise.resolve(details)),
     () => {},
   );
   try {
@@ -490,13 +451,8 @@ test("review ticks isolate tracking history and run newly queued work without da
           intervalMs: 60000,
           state: ScheduleState.Deferred,
         });
-      db.prepare(
-        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE kind='tracking'",
-      ).run();
-      assert.throws(
-        () => store.schedules.list(),
-        /Invalid stored GitHub schedule data/,
-      );
+      db.prepare("UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE kind='tracking'").run();
+      assert.throws(() => store.schedules.list(), /Invalid stored GitHub schedule data/);
       assert.deepEqual(store.schedules.reviews(), []);
       scheduler.tick();
       await settle();
@@ -506,9 +462,7 @@ test("review ticks isolate tracking history and run newly queued work without da
       assert.equal(store.schedules.view(url)?.title, "Stored review");
       assert.equal(store.schedules.reviews().length, 1);
       const key = `reviews:${url}`;
-      db.prepare(
-        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?",
-      ).run(key);
+      db.prepare("UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?").run(key);
       assert.throws(() => {
         scheduler.tick();
       }, /Invalid stored GitHub schedule data/);
@@ -523,17 +477,13 @@ test("review selection preserves payload kind authority across mismatched normal
     const key = `reviews:${url}`;
     try {
       scheduler.ensureReviews(url);
-      db.prepare("UPDATE github_schedules SET kind='tracking' WHERE key=?").run(
-        key,
-      );
+      db.prepare("UPDATE github_schedules SET kind='tracking' WHERE key=?").run(key);
       assert.equal(store.schedules.reviews()[0]?.kind, RefreshKind.Reviews);
       scheduler.tick();
       await settle();
       assert.equal(store.schedules.view(url)?.title, "Stored review");
       assert.equal(store.schedules.get(key)?.state, ScheduleState.Deferred);
-      db.prepare(
-        "UPDATE github_schedules SET kind='reviews',data=json_remove(data,'$.kind') WHERE key=?",
-      ).run(key);
+      db.prepare("UPDATE github_schedules SET kind='reviews',data=json_remove(data,'$.kind') WHERE key=?").run(key);
       assert.throws(() => {
         scheduler.tick();
       }, /Invalid stored GitHub schedule data/);
@@ -585,17 +535,11 @@ test("heartbeat defaults to five seconds independently of request pacing", async
     await writeFile(path, JSON.stringify({ polling: {} }));
     assert.equal(loadTrackingConfig(path).polling?.tickMs, 5000);
     assert.equal(loadTrackingConfig(path).polling?.requestSpacingMs, 2000);
-    await writeFile(
-      path,
-      JSON.stringify({ polling: { tickMs: 100, requestSpacingMs: 200 } }),
-    );
+    await writeFile(path, JSON.stringify({ polling: { tickMs: 100, requestSpacingMs: 200 } }));
     assert.equal(loadTrackingConfig(path).polling?.tickMs, 100);
     for (const requestSpacingMs of [-1, 0, 99]) {
       await writeFile(path, JSON.stringify({ polling: { requestSpacingMs } }));
-      assert.throws(
-        () => loadTrackingConfig(path),
-        /Invalid scheduler cadence/,
-      );
+      assert.throws(() => loadTrackingConfig(path), /Invalid scheduler cadence/);
     }
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -620,8 +564,7 @@ test(
     const controller = new AbortController();
     const nextFrame = async (stream: AsyncIterator<WatchDashboardResponse>) => {
       const result = await stream.next();
-      if (result.done === true)
-        throw new Error("Dashboard stream ended before its next frame");
+      if (result.done === true) throw new Error("Dashboard stream ended before its next frame");
       return result.value;
     };
     try {
@@ -635,63 +578,29 @@ test(
         return original();
       };
       const client = schedulerClient(directory);
-      const firstUpdates = client.watchDashboard(
-        {},
-        { signal: controller.signal },
-      );
-      const secondUpdates = client.watchDashboard(
-        {},
-        { signal: controller.signal },
-      );
+      const firstUpdates = client.watchDashboard({}, { signal: controller.signal });
+      const secondUpdates = client.watchDashboard({}, { signal: controller.signal });
       const first = firstUpdates[Symbol.asyncIterator]();
       const second = secondUpdates[Symbol.asyncIterator]();
       await nextFrame(first);
       await nextFrame(second);
-      assert.equal(
-        reads,
-        1,
-        "a second subscriber must reuse the full projection",
-      );
+      assert.equal(reads, 1, "a second subscriber must reuse the full projection");
       const frame = await nextFrame(first);
       await nextFrame(second);
-      assert.equal(
-        reads,
-        1,
-        "liveness frames must not reread full dashboard state",
-      );
+      assert.equal(reads, 1, "liveness frames must not reread full dashboard state");
       assert((frame.snapshot?.githubScheduler?.tickSequence ?? 0n) > 0n);
-      application.store.event(
-        "",
-        "dashboard_event",
-        "invalidate the retained projection",
-      );
+      application.store.event("", "dashboard_event", "invalidate the retained projection");
       let changed = await nextFrame(first);
-      while (
-        changed.snapshot?.recentEvents.every(
-          (event) => event.kind !== "dashboard_event",
-        ) === true
-      )
+      while (changed.snapshot?.recentEvents.every((event) => event.kind !== "dashboard_event") === true)
         changed = await nextFrame(first);
       const secondChanged = await nextFrame(second);
-      assert(
-        secondChanged.snapshot?.recentEvents.some(
-          (event) => event.kind === "dashboard_event",
-        ) === true,
-      );
-      assert.equal(
-        reads,
-        2,
-        "one committed change needs one shared projection rebuild",
-      );
+      assert(secondChanged.snapshot?.recentEvents.some((event) => event.kind === "dashboard_event") === true);
+      assert.equal(reads, 2, "one committed change needs one shared projection rebuild");
       controller.abort();
       await first.return?.();
       await second.return?.();
       const deadline = Date.now() + 1000;
-      while (
-        application.githubScheduler.status().nextTickAtMs !== 0 &&
-        Date.now() < deadline
-      )
-        await Bun.sleep(5);
+      while (application.githubScheduler.status().nextTickAtMs !== 0 && Date.now() < deadline) await Bun.sleep(5);
       assert.equal(application.githubScheduler.status().nextTickAtMs, 0);
       const sequence = application.githubScheduler.status().tickSequence;
       await Bun.sleep(75);

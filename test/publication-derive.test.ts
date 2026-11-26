@@ -26,10 +26,7 @@ test("bounded derivation uses the chosen remote and caches advisory proposals wi
       expect(command.exitCode).toBe(0);
     }
     initialize(root);
-    await writeFile(
-      join(root, "CONTRIBUTING.md"),
-      "Explain outcomes. Historical word counts are not requirements.",
-    );
+    await writeFile(join(root, "CONTRIBUTING.md"), "Explain outcomes. Historical word counts are not requirements.");
     const before = readContract(root);
     let invocations = 0,
       requestPath = "";
@@ -74,12 +71,7 @@ test("bounded derivation uses the chosen remote and caches advisory proposals wi
         ]),
       });
     };
-    const first = await deriveGuidance(
-      root,
-      { remote: "upstream", count: 20, model: "fixture" },
-      run,
-      transport,
-    );
+    const first = await deriveGuidance(root, { remote: "upstream", count: 20, model: "fixture" }, run, transport);
     expect(first.sampleCount).toBe(2);
     expect(first.cached).toBe(false);
     expect(requestPath).toContain("repos/upstream/project/pulls?");
@@ -88,12 +80,7 @@ test("bounded derivation uses the chosen remote and caches advisory proposals wi
     expect(output).toContain('"advisory": true');
     expect(output).toContain('"medianBodyWords": 3');
     expect(output).not.toContain("untrusted-template.md");
-    const second = await deriveGuidance(
-      root,
-      { remote: "upstream", count: 20, model: "fixture" },
-      run,
-      transport,
-    );
+    const second = await deriveGuidance(root, { remote: "upstream", count: 20, model: "fixture" }, run, transport);
     expect(second.cached).toBe(true);
     expect(invocations).toBe(1);
     const changedModel = await deriveGuidance(
@@ -113,12 +100,9 @@ test("default service retires queued legacy analysis and rejects new model reque
   const directory = await mkdtemp(join(tmpdir(), "octo-legacy-cutover-"));
   await mkdir(join(directory, "state"));
   const store = new Store(join(directory, "state"));
-  const tracking = new TrackingService(
-    store.tracking,
-    defaultTrackingConfig(),
-    Date.now,
-    { read: () => Promise.reject(new Error("Offline")) },
-  );
+  const tracking = new TrackingService(store.tracking, defaultTrackingConfig(), Date.now, {
+    read: () => Promise.reject(new Error("Offline")),
+  });
   const request = {
     requestId: "legacy",
     repository: "owner/repo",
@@ -146,9 +130,7 @@ test("default service retires queued legacy analysis and rejects new model reque
     const legacy = store.submissions.request(request);
     service.start(scheduler);
     scheduler.start();
-    expect(store.submissions.get(legacy.id).state).toBe(
-      SubmissionState.NeedsInput,
-    );
+    expect(store.submissions.get(legacy.id).state).toBe(SubmissionState.NeedsInput);
     expect(() => service.submit(request)).toThrow("Legacy drafting retired");
     expect(calls).toBe(0);
     for (let i = 0; i < 40; i++)

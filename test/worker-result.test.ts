@@ -8,7 +8,5 @@ test("structured worker results preserve complete JSON beyond the prose limit", 
   const decoded: unknown = JSON.parse(wire);
   expect(decoded).toEqual(payload);
   expect(wire).toBe(json);
-  expect(() => workerResultText("structured", "終".repeat(22000))).toThrow(
-    "exceeds limit",
-  );
+  expect(() => workerResultText("structured", "終".repeat(22000))).toThrow("exceeds limit");
 });

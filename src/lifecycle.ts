@@ -29,37 +29,26 @@ function files(directory: string): string[] {
 
 function loadedHost(): string | null {
   requireBun(process.versions["bun"]);
-  const image =
-    process.platform === "linux"
-      ? `/proc/${String(process.pid)}/exe`
-      : realpathSync(process.execPath);
+  const image = process.platform === "linux" ? `/proc/${String(process.pid)}/exe` : realpathSync(process.execPath);
   const descriptor = openSync(image, "r");
   try {
     const selected = fstatSync(descriptor, { bigint: true });
     if (!selected.isFile()) return null;
     if (process.platform === "darwin") {
-      const output = execFileSync(
-        "/usr/sbin/lsof",
-        ["-a", "-p", String(process.pid), "-d", "txt", "-F", "Dfin"],
-        { encoding: "utf8" },
-      );
+      const output = execFileSync("/usr/sbin/lsof", ["-a", "-p", String(process.pid), "-d", "txt", "-F", "Dfin"], {
+        encoding: "utf8",
+      });
       let device: bigint | undefined;
       let matched = false;
       for (const line of output.split("\n")) {
         if (line.startsWith("f")) device = undefined;
         else if (line.startsWith("D")) device = BigInt(line.slice(1));
-        else if (
-          line.startsWith("i") &&
-          device === selected.dev &&
-          BigInt(line.slice(1)) === selected.ino
-        )
+        else if (line.startsWith("i") && device === selected.dev && BigInt(line.slice(1)) === selected.ino)
           matched = true;
       }
       if (!matched) return null;
     } else if (process.platform !== "linux") return null;
-    const digest = createHash("sha256")
-      .update(readFileSync(descriptor))
-      .digest("hex");
+    const digest = createHash("sha256").update(readFileSync(descriptor)).digest("hex");
     const current = fstatSync(descriptor, { bigint: true });
     return current.dev === selected.dev &&
       current.ino === selected.ino &&
@@ -79,9 +68,7 @@ export function artifactIdentity(): string | null {
   let host: string | null;
   try {
     if (nativeAot) {
-      const metadata: unknown = JSON.parse(
-        readFileSync(join(root, "release.json"), "utf8"),
-      );
+      const metadata: unknown = JSON.parse(readFileSync(join(root, "release.json"), "utf8"));
       if (
         typeof metadata !== "object" ||
         metadata === null ||
@@ -106,13 +93,10 @@ export function artifactIdentity(): string | null {
   ];
   for (const path of names) {
     const info = lstatSync(path);
-    if (info.isSymbolicLink() && !realpathSync(path).startsWith(root + "/"))
-      return null;
+    if (info.isSymbolicLink() && !realpathSync(path).startsWith(root + "/")) return null;
     hash.update(path.slice(root.length));
     hash.update("\0");
-    hash.update(
-      info.isSymbolicLink() ? readlinkSync(path) : readFileSync(path),
-    );
+    hash.update(info.isSymbolicLink() ? readlinkSync(path) : readFileSync(path));
     hash.update("\0");
   }
   return hash.digest("hex");
@@ -150,8 +134,7 @@ export class Activation {
   private readonly restored = new Set<string>();
   readonly identity = artifactIdentity();
   private readonly retirement =
-    this.identity !== null &&
-    process.env["PROJECT_UPDATE_RETIREMENT_POLICY"] === "successful-exit";
+    this.identity !== null && process.env["PROJECT_UPDATE_RETIREMENT_POLICY"] === "successful-exit";
 
   report(ready: boolean, paused: boolean): ActivationReport {
     const target: ActivationTarget = {
@@ -183,9 +166,7 @@ export class Activation {
       this.stopped ||
       this.restored.has(operation) ||
       incarnation !== this.incarnation ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(
-        operation,
-      ) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(operation) ||
       (this.operation !== undefined && this.operation !== operation)
     )
       throw new Error("Checkpoint process incarnation or owner differs");
@@ -193,13 +174,10 @@ export class Activation {
   }
 
   restore(incarnation: string, operation: string): boolean {
-    if (this.stopped)
-      throw new Error("Retirement is irreversible; preserve closed admission");
+    if (this.stopped) throw new Error("Retirement is irreversible; preserve closed admission");
     if (
       incarnation !== this.incarnation ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(
-        operation,
-      )
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(operation)
     )
       throw new Error("Restore process incarnation or operation differs");
     if (this.restored.has(operation)) return false;
@@ -215,9 +193,7 @@ export class Activation {
       this.identity === null ||
       !this.retirement
     )
-      throw new Error(
-        "Native retirement policy, checkpoint, or process owner differs",
-      );
+      throw new Error("Native retirement policy, checkpoint, or process owner differs");
     if (this.stopped) return false;
     this.stopped = true;
     return true;

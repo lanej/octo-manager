@@ -68,8 +68,7 @@ export class Recorder implements ScopeObserver {
     directory = resolve(directory);
     this.directory = directory;
     this.database = resolve(realpathSync(directory), "jobs.sqlite");
-    if (observers.has(directory))
-      throw new Error("Capture already active for this directory");
+    if (observers.has(directory)) throw new Error("Capture already active for this directory");
     observers.set(directory, this);
     subscribe(channel, this.receive);
   }
@@ -91,8 +90,7 @@ export class Recorder implements ScopeObserver {
     const scope = this.scopes.get(cycle.name);
     if (scope === undefined) return;
     scope.cycles++;
-    if (cycle.writes === 0 && cycle.unknown === 0)
-      scope.cyclesWithoutObservedWrites++;
+    if (cycle.writes === 0 && cycle.unknown === 0) scope.cyclesWithoutObservedWrites++;
     scope.elapsedMs += elapsedMs;
     scope.maxElapsedMs = Math.max(scope.maxElapsedMs, elapsedMs);
   }
@@ -147,10 +145,7 @@ export class Recorder implements ScopeObserver {
       let group = this.groups.get(key);
       if (group === undefined) {
         const retainedShape = shape.slice(0, 2048);
-        if (
-          this.groups.size >= 256 ||
-          this.retained + retainedShape.length > 524288
-        ) {
+        if (this.groups.size >= 256 || this.retained + retainedShape.length > 524288) {
           this.report.droppedEvents++;
           return;
         }
@@ -169,16 +164,10 @@ export class Recorder implements ScopeObserver {
       group.maxRuntimeMs = Math.max(group.maxRuntimeMs, ns / 1e6);
       if (ns === 0) group.zeroDurationCount++;
       if (group.count === 1 || group.count % 100 === 0) {
-        const stack = (
-          new Error().stack?.split("\n").slice(1, 13).join("\n") ??
-          "unavailable"
-        ).slice(0, 2048);
+        const stack = (new Error().stack?.split("\n").slice(1, 13).join("\n") ?? "unavailable").slice(0, 2048);
         const existing = group.stacks.find((sample) => sample.stack === stack);
         if (existing !== undefined) existing.observations++;
-        else if (
-          group.stacks.length < 4 &&
-          this.retained + stack.length <= 524288
-        ) {
+        else if (group.stacks.length < 4 && this.retained + stack.length <= 524288) {
           group.stacks.push({
             $typeName: "octomanager.v2.PerformanceStackSample",
             stack,
@@ -198,8 +187,7 @@ export class Recorder implements ScopeObserver {
     if (!this.closed) {
       this.closed = true;
       unsubscribe(channel, this.receive);
-      if (observers.get(this.directory) === this)
-        observers.delete(this.directory);
+      if (observers.get(this.directory) === this) observers.delete(this.directory);
       this.report.elapsedMs = performance.now() - this.started;
       this.report.queries.sort((a, b) => b.count - a.count);
     }

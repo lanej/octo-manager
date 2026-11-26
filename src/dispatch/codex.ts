@@ -7,12 +7,7 @@ import type { ThreadStartParams } from "../agents/protocol/v2/ThreadStartParams.
 import type { ThreadResumeParams } from "../agents/protocol/v2/ThreadResumeParams.js";
 import type { TurnStartParams } from "../agents/protocol/v2/TurnStartParams.js";
 import { checked } from "../merging/contracts.js";
-import {
-  result,
-  ResultSchema,
-  Role,
-  type Assignment,
-} from "../issues/contracts.js";
+import { result, ResultSchema, Role, type Assignment } from "../issues/contracts.js";
 import type { AgentDispatcher, DispatchStatus } from "../issues/ports.js";
 const turnSchema = Type.Object({
   id: Type.String(),
@@ -37,19 +32,12 @@ const threadResponse = Type.Object({
 });
 const turnsResponse = Type.Object({ data: Type.Array(turnSchema) });
 function jsonValue(value: unknown): JsonValue {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean" ||
-    typeof value === "number"
-  )
+  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number")
     return value;
-  if (Array.isArray(value))
-    return value.map((item: unknown) => jsonValue(item));
+  if (Array.isArray(value)) return value.map((item: unknown) => jsonValue(item));
   if (typeof value === "object") {
     const output: { [key: string]: JsonValue } = {};
-    for (const [key, item] of Object.entries(value))
-      output[key] = jsonValue(item);
+    for (const [key, item] of Object.entries(value)) output[key] = jsonValue(item);
     return output;
   }
   throw new Error("Invalid output schema value");
@@ -58,20 +46,12 @@ function strictSchema(value: JsonValue): JsonValue {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(strictSchema);
   const output: { [key: string]: JsonValue } = {};
-  for (const [key, item] of Object.entries(value))
-    if (item !== undefined) output[key] = strictSchema(item);
+  for (const [key, item] of Object.entries(value)) if (item !== undefined) output[key] = strictSchema(item);
   const properties = output["properties"];
-  if (
-    properties !== null &&
-    typeof properties === "object" &&
-    !Array.isArray(properties)
-  ) {
-    const required = Array.isArray(output["required"])
-      ? output["required"]
-      : [];
+  if (properties !== null && typeof properties === "object" && !Array.isArray(properties)) {
+    const required = Array.isArray(output["required"]) ? output["required"] : [];
     for (const [key, property] of Object.entries(properties))
-      if (!required.includes(key))
-        properties[key] = { anyOf: [property ?? null, { type: "null" }] };
+      if (!required.includes(key)) properties[key] = { anyOf: [property ?? null, { type: "null" }] };
     output["additionalProperties"] = false;
     output["required"] = Object.keys(properties);
   }
@@ -79,13 +59,8 @@ function strictSchema(value: JsonValue): JsonValue {
 }
 function completedResult(text: string) {
   const value: unknown = JSON.parse(text);
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    throw new Error("Invalid structured result");
-  return result(
-    Object.fromEntries(
-      Object.entries(value).filter(([, item]) => item !== null),
-    ),
-  );
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid structured result");
+  return result(Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null)));
 }
 export class CodexDispatcher implements AgentDispatcher {
   readonly harness = "codex";
@@ -109,10 +84,7 @@ export class CodexDispatcher implements AgentDispatcher {
           ephemeral: false,
           developerInstructions: assignment.profile.instructions,
         };
-        const response = checked(
-          threadResponse,
-          await connection.dispatch("thread/start", params),
-        );
+        const response = checked(threadResponse, await connection.dispatch("thread/start", params));
         sessionId = response.thread.id;
         checkpoint(sessionId);
       } else {
@@ -149,9 +121,7 @@ export class CodexDispatcher implements AgentDispatcher {
         ],
         model: assignment.profile.model,
         approvalPolicy: "never",
-        outputSchema: strictSchema(
-          jsonValue(JSON.parse(JSON.stringify(ResultSchema))),
-        ),
+        outputSchema: strictSchema(jsonValue(JSON.parse(JSON.stringify(ResultSchema)))),
         sandboxPolicy: writable
           ? {
               type: "workspaceWrite",
@@ -176,10 +146,7 @@ export class CodexDispatcher implements AgentDispatcher {
       connection.close();
     }
   }
-  async inspect(
-    assignment: Assignment,
-    signal: AbortSignal,
-  ): Promise<DispatchStatus> {
+  async inspect(assignment: Assignment, signal: AbortSignal): Promise<DispatchStatus> {
     if (assignment.sessionId.length === 0)
       return {
         state: "uncertain",
@@ -196,20 +163,14 @@ export class CodexDispatcher implements AgentDispatcher {
         sortDirection: "desc",
         itemsView: "full",
       };
-      const response = checked(
-        turnsResponse,
-        await connection.dispatch("thread/turns/list", params),
-      );
+      const response = checked(turnsResponse, await connection.dispatch("thread/turns/list", params));
       const turn = response.data.find((value) =>
         assignment.turnId.length > 0
           ? value.id === assignment.turnId
           : value.items.some(
               (item) =>
-                item.content?.some(
-                  (part) =>
-                    part.text?.includes(`[octo-assignment:${assignment.id}]`) ??
-                    false,
-                ) ?? false,
+                item.content?.some((part) => part.text?.includes(`[octo-assignment:${assignment.id}]`) ?? false) ??
+                false,
             ),
       );
       if (turn == null)
@@ -233,11 +194,8 @@ export class CodexDispatcher implements AgentDispatcher {
           turnId: turn.id,
           detail: `Codex turn ${turn.status}`,
         };
-      const output = turn.items
-        .filter((item) => item.type === "agentMessage")
-        .at(-1)?.text;
-      if (output == null)
-        throw new Error("Completed Codex turn omitted structured result");
+      const output = turn.items.filter((item) => item.type === "agentMessage").at(-1)?.text;
+      if (output == null) throw new Error("Completed Codex turn omitted structured result");
       return {
         state: "completed",
         sessionId: assignment.sessionId,
@@ -251,15 +209,10 @@ export class CodexDispatcher implements AgentDispatcher {
   }
   async cancel(assignment: Assignment, signal: AbortSignal): Promise<boolean> {
     if (assignment.sessionId.length === 0)
-      throw new Error(
-        "Cannot confirm cancellation without session and turn identities",
-      );
+      throw new Error("Cannot confirm cancellation without session and turn identities");
     const status = await this.inspect(assignment, signal);
     if (status.state === "completed" || status.state === "failed") return true;
-    if (status.state !== "running")
-      throw new Error(
-        "Cancellation remains uncertain; assignment turn not confirmed",
-      );
+    if (status.state !== "running") throw new Error("Cancellation remains uncertain; assignment turn not confirmed");
     const connection = new CodexConnection(this.socket);
     try {
       signal.throwIfAborted();
@@ -267,10 +220,7 @@ export class CodexDispatcher implements AgentDispatcher {
         threadId: assignment.sessionId,
         turnId: status.turnId,
       });
-      const settled = await this.inspect(
-        { ...assignment, turnId: status.turnId },
-        signal,
-      );
+      const settled = await this.inspect({ ...assignment, turnId: status.turnId }, signal);
       return settled.state === "completed" || settled.state === "failed";
     } finally {
       connection.close();

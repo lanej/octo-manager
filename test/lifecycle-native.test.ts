@@ -21,8 +21,7 @@ test("native v2 checkpoint preserves pending work and fences all RPC admission b
     outdir: join(release, "dist"),
   });
   expect(build.success).toBe(true);
-  for (const name of ["package.json", "bun.lock"])
-    await copyFile(resolve(name), join(release, name));
+  for (const name of ["package.json", "bun.lock"]) await copyFile(resolve(name), join(release, name));
   const executable = join(release, "dist", "cli.js"),
     environment = {
       ...process.env,
@@ -39,22 +38,16 @@ test("native v2 checkpoint preserves pending work and fences all RPC admission b
   });
   const client = schedulerClient(state),
     operation = randomUUID();
-  async function cli(
-    action: string,
-    nativeId = "",
-  ): Promise<{ code: number; report: unknown }> {
-    const invocation = Bun.spawn(
-      [process.execPath, executable, "lifecycle", action],
-      {
-        env: {
-          ...environment,
-          PROJECT_UPDATE_RUN_ID: operation,
-          PROJECT_UPDATE_INSTANCE_ID: nativeId,
-        },
-        stdout: "pipe",
-        stderr: "pipe",
+  async function cli(action: string, nativeId = ""): Promise<{ code: number; report: unknown }> {
+    const invocation = Bun.spawn([process.execPath, executable, "lifecycle", action], {
+      env: {
+        ...environment,
+        PROJECT_UPDATE_RUN_ID: operation,
+        PROJECT_UPDATE_INSTANCE_ID: nativeId,
       },
-    );
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const output = await new Response(invocation.stdout).text();
     return { code: await invocation.exited, report: JSON.parse(output) };
   }
@@ -63,14 +56,10 @@ test("native v2 checkpoint preserves pending work and fences all RPC admission b
     let report;
     for (;;) {
       try {
-        report = readLifecycle(
-          (await client.runtimeLifecycle({ action: LifecycleAction.INVENTORY }))
-            .report,
-        );
+        report = readLifecycle((await client.runtimeLifecycle({ action: LifecycleAction.INVENTORY })).report);
         break;
       } catch {
-        if (Date.now() >= deadline)
-          throw new Error("Disposable native coordinator did not start");
+        if (Date.now() >= deadline) throw new Error("Disposable native coordinator did not start");
         await Bun.sleep(20);
       }
     }
@@ -89,8 +78,7 @@ test("native v2 checkpoint preserves pending work and fences all RPC admission b
         },
       },
     });
-    if (submitted.job === undefined)
-      throw new Error("Fixture job not retained");
+    if (submitted.job === undefined) throw new Error("Fixture job not retained");
     expect((await cli("checkpoint", target.process.native_id)).code).toBe(3);
     const retained = await client.getJob({ id: submitted.job.id });
     expect(retained.job?.status).toBe(JobStatus.QUEUED);
@@ -101,10 +89,7 @@ test("native v2 checkpoint preserves pending work and fences all RPC admission b
     for (;;) {
       checkpoint = await cli("checkpoint", target.process.native_id);
       if (checkpoint.code === 0) break;
-      if (Date.now() >= idleDeadline)
-        throw new Error(
-          "Disposable native owner could not checkpoint idle services",
-        );
+      if (Date.now() >= idleDeadline) throw new Error("Disposable native owner could not checkpoint idle services");
       await Bun.sleep(20);
     }
     expect((await cli("checkpoint", target.process.native_id)).code).toBe(0);

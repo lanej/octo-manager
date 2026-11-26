@@ -56,14 +56,7 @@ export function buildNative(
   } finally {
     rmSync(probe, { recursive: true, force: true });
   }
-  run([
-    "compile",
-    entrypoint,
-    "--define=OCTO_NATIVE_AOT=true",
-    "--sourcemap=external",
-    "--outfile",
-    outfile,
-  ]);
+  run(["compile", entrypoint, "--define=OCTO_NATIVE_AOT=true", "--sourcemap=external", "--outfile", outfile]);
   return {
     revision: compilerRevision,
     source: compilerSource,
@@ -76,12 +69,6 @@ if (import.meta.main) {
     throw new Error(
       "Set OCTO_AOT_BUN to the explicitly selected native AOT compiler; no interpreted fallback is installed.",
     );
-  const metadata = buildNative(
-    compiler,
-    join(sourceRoot, "build/octo-manager"),
-  );
-  writeFileSync(
-    join(sourceRoot, "build/native-compiler.json"),
-    JSON.stringify(metadata) + "\n",
-  );
+  const metadata = buildNative(compiler, join(sourceRoot, "build/octo-manager"));
+  writeFileSync(join(sourceRoot, "build/native-compiler.json"), JSON.stringify(metadata) + "\n");
 }

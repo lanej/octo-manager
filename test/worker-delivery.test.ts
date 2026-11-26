@@ -13,27 +13,20 @@ import { fileURLToPath } from "node:url";
 
 for (const type of ["done", "failure"])
   test(`worker ${type} waits for the matching receipt before exiting`, async () => {
-    const child = fork(
-      fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-      [],
-      {
-        execArgv: [],
-        stdio: ["ignore", "ignore", "ignore", "ipc"],
-      },
-    );
+    const child = fork(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)), [], {
+      execArgv: [],
+      stdio: ["ignore", "ignore", "ignore", "ipc"],
+    });
     try {
       const received = once(child, "message");
       const payload = "x".repeat(64000);
       child.send({
         attempt: 7,
-        result:
-          type === "done" ? { type, text: payload } : { type, error: payload },
+        result: type === "done" ? { type, text: payload } : { type, error: payload },
       });
       const message: unknown = (await received)[0];
       assert.deepEqual(message, {
-        ...(type === "done"
-          ? { type, text: payload }
-          : { type, error: payload }),
+        ...(type === "done" ? { type, text: payload } : { type, error: payload }),
         attempt: 7,
       });
       child.send({ type: "result_ack", attempt: 8 });
@@ -53,14 +46,10 @@ for (const type of ["done", "failure"])
   });
 
 test("worker exits with failure when the coordinator disconnects before receipt", async () => {
-  const child = fork(
-    fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-    [],
-    {
-      execArgv: [],
-      stdio: ["ignore", "ignore", "ignore", "ipc"],
-    },
-  );
+  const child = fork(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)), [], {
+    execArgv: [],
+    stdio: ["ignore", "ignore", "ignore", "ipc"],
+  });
   try {
     const received = once(child, "message");
     child.send({ attempt: 1, result: { type: "done", text: "result" } });
@@ -78,14 +67,10 @@ test("worker exits with failure when the coordinator disconnects before receipt"
 });
 
 test("worker exits with failure when no receipt arrives", async () => {
-  const child = fork(
-    fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-    [],
-    {
-      execArgv: [],
-      stdio: ["ignore", "ignore", "ignore", "ipc"],
-    },
-  );
+  const child = fork(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)), [], {
+    execArgv: [],
+    stdio: ["ignore", "ignore", "ignore", "ipc"],
+  });
   let deadline: ReturnType<typeof setTimeout> | undefined;
   try {
     const exited = once(child, "exit");
@@ -110,9 +95,7 @@ test("worker exits with failure when no receipt arrives", async () => {
 });
 
 test("stage coordinator acknowledges a complete result before worker exit", async () => {
-  const runner = createStageRunner(
-    fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-  );
+  const runner = createStageRunner(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)));
   const active: boolean[] = [];
   const value = "x".repeat(64000);
   const result = await runner(
@@ -129,9 +112,7 @@ test("stage coordinator acknowledges a complete result before worker exit", asyn
 });
 
 test("stage coordinator cancellation rejects and releases its worker", async () => {
-  const runner = createStageRunner(
-    fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-  );
+  const runner = createStageRunner(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)));
   const controller = new AbortController();
   const active: boolean[] = [];
   await assert.rejects(
@@ -166,9 +147,7 @@ test("repair coordinator acknowledges completion before worker exit", async () =
     },
     signal,
   );
-  const resolver = createConflictResolver(
-    fileURLToPath(new URL("./result-worker.mjs", import.meta.url)),
-  );
+  const resolver = createConflictResolver(fileURLToPath(new URL("./result-worker.mjs", import.meta.url)));
   try {
     await resolver(
       workspace,

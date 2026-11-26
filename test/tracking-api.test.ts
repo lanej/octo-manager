@@ -36,18 +36,7 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
   try {
     await coordinator.start();
     const cli = Bun.spawn(
-      [
-        process.execPath,
-        "src/cli.ts",
-        "track",
-        "--url",
-        url,
-        "--thread-id",
-        "test-thread",
-        "--state",
-        dir,
-        "--json",
-      ],
+      [process.execPath, "src/cli.ts", "track", "--url", url, "--thread-id", "test-thread", "--state", dir, "--json"],
       {
         cwd: process.cwd(),
         env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
@@ -85,11 +74,7 @@ test("CLI enrollment, typed API progress and replay work without a summary worke
     const db = new DatabaseSync(join(dir, "jobs.sqlite"));
     db.exec("PRAGMA foreign_keys=ON");
     try {
-      assert.throws(() =>
-        db
-          .prepare("UPDATE actions SET state='invented' WHERE id=?")
-          .run(action.id),
-      );
+      assert.throws(() => db.prepare("UPDATE actions SET state='invented' WHERE id=?").run(action.id));
       const second = store.track("https://github.com/owner/private/pull/2", {
         harness: "codex",
         endpoint: "local",
@@ -177,32 +162,17 @@ test("routing selects exact-check profiles and rejects invalid configuration", a
       delivery: "queue",
       socket: "/tmp/codex.sock",
     });
-    assert.equal(
-      config.workerModel,
-      "amazon-bedrock/us.anthropic.claude-sonnet-5-5",
-    );
-    for (const workerModel of [
-      "amazon-bedrock/",
-      "unknown/model",
-      12,
-      " ".repeat(201),
-    ]) {
+    assert.equal(config.workerModel, "amazon-bedrock/us.anthropic.claude-sonnet-5-5");
+    for (const workerModel of ["amazon-bedrock/", "unknown/model", 12, " ".repeat(201)]) {
       await writeFile(path, JSON.stringify({ workerModel }));
       assert.throws(() => loadTrackingConfig(path), /worker (model|provider)/u);
     }
-    for (const endpoint of [
-      { delivery: "shell" },
-      { command: "codex" },
-      { socket: "relative" },
-    ]) {
+    for (const endpoint of [{ delivery: "shell" }, { command: "codex" }, { socket: "relative" }]) {
       await writeFile(path, JSON.stringify({ endpoints: { local: endpoint } }));
       assert.throws(() => loadTrackingConfig(path), /Invalid endpoint/);
     }
     assert.equal(selectProfile(blocker, config).model, "cheap-model");
-    assert.equal(
-      selectProfile({ ...blocker, checkName: "build" }, config).name,
-      "check_failed",
-    );
+    assert.equal(selectProfile({ ...blocker, checkName: "build" }, config).name, "check_failed");
     await writeFile(
       path,
       JSON.stringify({
@@ -234,11 +204,7 @@ test("additive migration preserves a pre-tracking database, event cursor, and id
   db.exec(
     "CREATE TABLE jobs(id TEXT PRIMARY KEY,request_id TEXT UNIQUE NOT NULL,data TEXT NOT NULL);CREATE TABLE events(seq INTEGER PRIMARY KEY AUTOINCREMENT,job_id TEXT NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,detail TEXT NOT NULL);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)",
   );
-  db.prepare("INSERT INTO jobs VALUES(?,?,?)").run(
-    job.id,
-    job.requestId,
-    JSON.stringify(job),
-  );
+  db.prepare("INSERT INTO jobs VALUES(?,?,?)").run(job.id, job.requestId, JSON.stringify(job));
   db.exec(
     "INSERT INTO events(job_id,at,kind,detail) VALUES('legacy',123,'queued','fixture');INSERT INTO settings VALUES('instance_id','legacy-instance')",
   );

@@ -8,12 +8,7 @@ import { create } from "@bufbuild/protobuf";
 import { Store } from "../../src/coordinator/store.js";
 import { TrackingService } from "../../src/tracking/service.js";
 import { defaultTrackingConfig } from "../../src/tracking/config.js";
-import {
-  ActionState,
-  DeliveryState,
-  type ObservationInput,
-  type Action,
-} from "../../src/tracking/types.js";
+import { ActionState, DeliveryState, type ObservationInput, type Action } from "../../src/tracking/types.js";
 import { AssessmentService } from "../../src/assessments/service.js";
 import { assessmentRunner, type Assess } from "../../src/assessments/runner.js";
 import { renderDigest } from "../../src/notifications/render.js";
@@ -57,9 +52,7 @@ export function snapshot(body: string): ObservationInput {
   };
 }
 function serialized(value: unknown): string {
-  return JSON.stringify(value, (_, item: unknown) =>
-    typeof item === "bigint" ? String(item) : item,
-  );
+  return JSON.stringify(value, (_, item: unknown) => (typeof item === "bigint" ? String(item) : item));
 }
 function exposed(text: string): boolean {
   return text.includes(attackMarker);
@@ -117,18 +110,8 @@ async function current(body: string, assess: Assess) {
       close: () => {},
     }),
   });
-  const assessments = new AssessmentService(
-    store.assessments,
-    tracking,
-    "controlled-worker",
-    assess,
-  );
-  const digests = new DigestService(
-    store.digests,
-    tracking,
-    store.submissions,
-    directory,
-  );
+  const assessments = new AssessmentService(store.assessments, tracking, "controlled-worker", assess);
+  const digests = new DigestService(store.digests, tracking, store.submissions, directory);
   try {
     store.tracking.observe(pr.id, observation, config);
     const action: Action | undefined = store.tracking.actions()[0];
@@ -142,25 +125,12 @@ async function current(body: string, assess: Assess) {
         applicableOnly: true,
       }),
     );
-    const record = store.digests.create(
-      pr.ownerAgentId,
-      { kind: "codex_queue", socket: "/synthetic-unused" },
-      (id) => renderDigest(messages, directory, id),
+    const record = store.digests.create(pr.ownerAgentId, { kind: "codex_queue", socket: "/synthetic-unused" }, (id) =>
+      renderDigest(messages, directory, id),
     );
     const digest = store.digests.version(record.id, record.revision);
-    const members = digests.acknowledge(
-      record.id,
-      record.revision,
-      pr.ownerAgentId,
-      digest.body,
-    );
-    const receipt = digestReceipt(
-      digests,
-      store.tracking,
-      record.id,
-      record.revision,
-      members,
-    );
+    const members = digests.acknowledge(record.id, record.revision, pr.ownerAgentId, digest.body);
+    const receipt = digestReceipt(digests, store.tracking, record.id, record.revision, members);
     const assessment = store.assessments.latest(action.id);
     return {
       action,
@@ -193,11 +163,8 @@ async function current(body: string, assess: Assess) {
         assessmentState: assessment?.state ?? "missing",
         evidencePreserved: assessment?.input.evidence.includes(body) === true,
         maliciousAnalysisPreserved: assessment?.result?.analysis === analysis,
-        actionStateAfterReceipt: store.tracking.action(action.id).progress
-          .state,
-        receiptCount: members.filter(
-          (item) => item.acknowledgedAt !== undefined,
-        ).length,
+        actionStateAfterReceipt: store.tracking.action(action.id).progress.state,
+        receiptCount: members.filter((item) => item.acknowledgedAt !== undefined).length,
       },
     };
   } finally {
@@ -208,13 +175,11 @@ async function current(body: string, assess: Assess) {
     await rm(directory, { recursive: true, force: true });
   }
 }
-function sourceFingerprint(
-  directory = new URL("../../src/", import.meta.url),
-): string {
+function sourceFingerprint(directory = new URL("../../src/", import.meta.url)): string {
   const hash = createHash("sha256");
   function visit(root: URL): void {
-    for (const entry of readdirSync(root, { withFileTypes: true }).sort(
-      (left, right) => left.name.localeCompare(right.name),
+    for (const entry of readdirSync(root, { withFileTypes: true }).sort((left, right) =>
+      left.name.localeCompare(right.name),
     )) {
       const path = new URL(entry.name + (entry.isDirectory() ? "/" : ""), root);
       if (entry.isDirectory()) visit(path);
@@ -228,27 +193,16 @@ function sourceFingerprint(
   return hash.digest("hex");
 }
 export async function runBeforeAfter() {
-  const hostile = await current(attack, () =>
-    Promise.resolve({ disposition: "no_change_suggested", analysis }),
-  );
+  const hostile = await current(attack, () => Promise.resolve({ disposition: "no_change_suggested", analysis }));
   const forbiddenTool = await current(
     attack,
-    assessmentRunner(
-      fileURLToPath(
-        new URL(
-          "../fixtures/adversarial-assessment-worker.mjs",
-          import.meta.url,
-        ),
-      ),
-    ),
+    assessmentRunner(fileURLToPath(new URL("../fixtures/adversarial-assessment-worker.mjs", import.meta.url))),
   );
-  const benign = await current(
-    "Please preserve the existing parser boundary.",
-    () =>
-      Promise.resolve({
-        disposition: "potential_change",
-        analysis: "Review the parser boundary.",
-      }),
+  const benign = await current("Please preserve the existing parser boundary.", () =>
+    Promise.resolve({
+      disposition: "potential_change",
+      analysis: "Review the parser boundary.",
+    }),
   );
   const beforeDirect = obedientOwner(hostile.before.direct),
     beforeDigest = obedientOwner(hostile.before.digest);

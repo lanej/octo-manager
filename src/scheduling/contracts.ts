@@ -55,8 +55,7 @@ export const DispatchSchema = Type.Object({
 export function decode<T extends TSchema>(schema: T, data: string): Static<T>;
 export function decode(schema: TSchema, data: string): unknown {
   const value: unknown = JSON.parse(data);
-  if (!Check(schema, value))
-    throw new Error("Invalid stored GitHub schedule data");
+  if (!Check(schema, value)) throw new Error("Invalid stored GitHub schedule data");
   return value;
 }
 export interface SchedulerPolicy {

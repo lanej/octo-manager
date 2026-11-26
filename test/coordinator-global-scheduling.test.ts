@@ -13,10 +13,7 @@ test("one coordinator clock leaves passive assessment and repair history asleep 
   try {
     await coordinator.start();
     await sleep(25);
-    const assessments = spyOn(
-      coordinator.store.assessments,
-      "reconciliationCandidates",
-    );
+    const assessments = spyOn(coordinator.store.assessments, "reconciliationCandidates");
     const repairs = spyOn(coordinator.store.repairs, "list");
     try {
       await sleep(1100);
@@ -46,9 +43,7 @@ test("the shared coordinator scheduler completes assessments from provider intak
   const seen: string[] = [];
   let active = 0;
   let maximum = 0;
-  const observation = (
-    url: string,
-  ): import("../src/tracking/types.js").ObservationInput => ({
+  const observation = (url: string): import("../src/tracking/types.js").ObservationInput => ({
     observedAt: 1000,
     headSha: "a".repeat(40),
     baseSha: "b".repeat(40),
@@ -92,8 +87,7 @@ test("the shared coordinator scheduler completes assessments from provider intak
       failureExcerpt: () => Promise.resolve(undefined),
       connect: () => ({
         prepare: () => Promise.resolve({ busy: true }),
-        send: () =>
-          Promise.reject(new Error("Unexpected synthetic agent send")),
+        send: () => Promise.reject(new Error("Unexpected synthetic agent send")),
         find: () => Promise.resolve({ found: false }),
         close() {},
       }),
@@ -117,29 +111,18 @@ test("the shared coordinator scheduler completes assessments from provider intak
     const first = await client.trackPullRequest({ url: firstUrl, owner });
     if (first.pr === undefined) throw new Error("Missing first tracked PR");
     await sleep(20);
-    coordinator.store.tracking.observe(
-      first.pr.id,
-      observation(firstUrl),
-      coordinator.tracking.config,
-    );
+    coordinator.store.tracking.observe(first.pr.id, observation(firstUrl), coordinator.tracking.config);
     await until(() => seen.length === 1);
     const second = await client.trackPullRequest({ url: secondUrl, owner });
     if (second.pr === undefined) throw new Error("Missing second tracked PR");
-    coordinator.store.tracking.observe(
-      second.pr.id,
-      observation(secondUrl),
-      coordinator.tracking.config,
-    );
+    coordinator.store.tracking.observe(second.pr.id, observation(secondUrl), coordinator.tracking.config);
     await sleep(20);
     expect(seen).toEqual([firstUrl]);
     releaseFirst();
     await until(
       () =>
-        coordinator.store.assessments
-          .list()
-          .filter(
-            (item) => item.state === "completed" && item.completionNotified,
-          ).length === 2,
+        coordinator.store.assessments.list().filter((item) => item.state === "completed" && item.completionNotified)
+          .length === 2,
     );
     const completed = coordinator.store.assessments.list();
     expect(completed.map((item) => item.result)).toEqual([
@@ -154,11 +137,7 @@ test("the shared coordinator scheduler completes assessments from provider intak
     ]);
     expect(seen).toEqual([firstUrl, secondUrl]);
     expect(maximum).toBe(1);
-    expect(
-      completed.every((item) =>
-        item.history.some((entry) => entry.state === "running"),
-      ),
-    ).toBe(true);
+    expect(completed.every((item) => item.history.some((entry) => entry.state === "running"))).toBe(true);
   } finally {
     releaseFirst();
     await coordinator.close();

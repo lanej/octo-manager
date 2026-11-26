@@ -1,10 +1,6 @@
 import { canonicalPR } from "../github/pr-identity.js";
 import { PRLifecycle, pendingReview, prLifecycle } from "./states.js";
-import {
-  commentFeedback,
-  feedbackRevision,
-  reviewObservation,
-} from "./feedback.js";
+import { commentFeedback, feedbackRevision, reviewObservation } from "./feedback.js";
 import {
   checkRunObservation,
   workflowObservation,
@@ -13,17 +9,9 @@ import {
   type CheckReconciliationContext,
 } from "./checks.js";
 import { trackingPR } from "./evidence.js";
-import {
-  ghRead,
-  GitHubRateLimitError,
-  type ReadGitHub,
-} from "../github/reads.js";
+import { ghRead, GitHubRateLimitError, type ReadGitHub } from "../github/reads.js";
 import { githubMetadata } from "./metadata.js";
-import type {
-  ObservationInput,
-  ObservationPart,
-  CheckObservation,
-} from "./types.js";
+import type { ObservationInput, ObservationPart, CheckObservation } from "./types.js";
 import { GitHubRequestCancelledError } from "../github/errors.js";
 export class GitHubObservationChangedError extends Error {
   constructor() {
@@ -43,12 +31,8 @@ async function collection<T>(
   try {
     // WHY: Bounded pagination exposes incomplete evidence instead of clearing blockers from a truncated read.
     for (let page = 1; page <= 10; page++) {
-      const raw = await read(
-        `${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`,
-        signal,
-      );
-      const values =
-        field === undefined ? raw : record(raw) ? raw[field] : undefined;
+      const raw = await read(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`, signal);
+      const values = field === undefined ? raw : record(raw) ? raw[field] : undefined;
       if (!Array.isArray(values)) throw new Error("Invalid GitHub collection");
       items.push(...values.map(map));
       if (values.length < 100) return { state: "complete", value: items };
@@ -102,26 +86,19 @@ async function reconcileCheck(
   } catch {
     return undefined;
   }
-  const job =
-    /^\/([^/]+)\/([^/]+)\/actions\/runs\/([1-9][0-9]*)\/job\/([1-9][0-9]*)$/.exec(
-      address.pathname,
-    );
+  const job = /^\/([^/]+)\/([^/]+)\/actions\/runs\/([1-9][0-9]*)\/job\/([1-9][0-9]*)$/.exec(address.pathname);
   if (
     address.protocol !== "https:" ||
     address.hostname !== "github.com" ||
     job === null ||
-    `repos/${job[1]?.toLowerCase() ?? ""}/${job[2]?.toLowerCase() ?? ""}` !==
-      root
+    `repos/${job[1]?.toLowerCase() ?? ""}/${job[2]?.toLowerCase() ?? ""}` !== root
   )
     return undefined;
   const runId = Number(job[3]),
     jobId = Number(job[4]);
   if (!positive(runId) || !positive(jobId)) return undefined;
   try {
-    const raw: unknown = await read(
-      `${root}/actions/jobs/${String(jobId)}`,
-      signal,
-    );
+    const raw: unknown = await read(`${root}/actions/jobs/${String(jobId)}`, signal);
     if (
       !record(raw) ||
       raw["id"] !== jobId ||
@@ -142,11 +119,7 @@ async function reconcileCheck(
       conclusion: raw["conclusion"] ?? "",
     };
   } catch (error) {
-    if (
-      error instanceof GitHubRateLimitError ||
-      error instanceof GitHubRequestCancelledError
-    )
-      throw error;
+    if (error instanceof GitHubRateLimitError || error instanceof GitHubRequestCancelledError) throw error;
     if (signal?.aborted === true) throw error;
     return undefined;
   }
@@ -161,18 +134,11 @@ export async function readObservation(
     : undefined,
   reconciliation: CheckReconciliationContext = { checks: [] },
 ): Promise<ObservationInput> {
-  const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
-    "/",
-  );
-  if (owner === undefined || repo === undefined || number === undefined)
-    throw new Error("Invalid GitHub PR URL");
+  const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split("/");
+  if (owner === undefined || repo === undefined || number === undefined) throw new Error("Invalid GitHub PR URL");
   const root = `repos/${owner}/${repo}`;
-  const initial =
-    readMetadata !== undefined
-      ? await readMetadata(canonicalPR(url), signal)
-      : undefined;
-  const pr =
-    initial?.pr ?? trackingPR(await read(`${root}/pulls/${number}`, signal));
+  const initial = readMetadata !== undefined ? await readMetadata(canonicalPR(url), signal) : undefined;
+  const pr = initial?.pr ?? trackingPR(await read(`${root}/pulls/${number}`, signal));
   // rationale: The PR payload can retain an ancestor base SHA after the target branch advances.
   const refPath = `${root}/git/ref/heads/${encodeURIComponent(pr.base.ref)}`;
   const readTarget = async () => {
@@ -191,90 +157,68 @@ export async function readObservation(
     return { ref: pr.base.ref, sha: raw.object.sha };
   };
   const target =
-    initial !== undefined
-      ? initial.target
-      : pr.state === "open" && !pr.merged
-        ? await readTarget()
-        : undefined;
+    initial !== undefined ? initial.target : pr.state === "open" && !pr.merged ? await readTarget() : undefined;
   const observedAt = now();
-  const [runs, statuses, reviews, inline, conversation, workflows] =
-    await Promise.all([
-      collection(
-        `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
-        "check_runs",
-        (value: unknown) => checkRunObservation(value, url),
-        read,
-        signal,
-      ),
-      collection(
-        `${root}/commits/${pr.head.sha}/statuses`,
-        undefined,
-        (c: any) => ({
-          id: `status:${c.id}`,
-          key: `status:${c.context}`,
-          name: String(c.context),
-          headSha: pr.head.sha,
-          status: String(c.state),
-          conclusion: String(c.state),
-          at: Date.parse(c.created_at ?? "") || 0,
-          url: String(c.target_url ?? url),
-        }),
-        read,
-        signal,
-      ),
-      collection(
-        `${root}/pulls/${number}/reviews`,
-        undefined,
-        (r: unknown) => reviewObservation(r, url),
-        read,
-        signal,
-      ),
-      collection(
-        `${root}/pulls/${number}/comments`,
-        undefined,
-        (value: unknown) => commentFeedback(value, "inline", url),
-        read,
-        signal,
-      ),
-      collection(
-        `${root}/issues/${number}/comments`,
-        undefined,
-        (value: unknown) => commentFeedback(value, "conversation", url),
-        read,
-        signal,
-      ),
-      collection(
-        `${root}/actions/runs?head_sha=${encodeURIComponent(pr.head.sha)}`,
-        "workflow_runs",
-        workflowObservation,
-        read,
-        signal,
-      ),
-    ]);
-  const retainedContext =
-    reconciliation.forHead?.(pr.head.sha) ?? reconciliation;
-  const observedIds = new Set(
-    runs.state === "unavailable" ? [] : runs.value.map((check) => check.id),
-  );
+  const [runs, statuses, reviews, inline, conversation, workflows] = await Promise.all([
+    collection(
+      `${root}/commits/${pr.head.sha}/check-runs?filter=latest`,
+      "check_runs",
+      (value: unknown) => checkRunObservation(value, url),
+      read,
+      signal,
+    ),
+    collection(
+      `${root}/commits/${pr.head.sha}/statuses`,
+      undefined,
+      (c: any) => ({
+        id: `status:${c.id}`,
+        key: `status:${c.context}`,
+        name: String(c.context),
+        headSha: pr.head.sha,
+        status: String(c.state),
+        conclusion: String(c.state),
+        at: Date.parse(c.created_at ?? "") || 0,
+        url: String(c.target_url ?? url),
+      }),
+      read,
+      signal,
+    ),
+    collection(`${root}/pulls/${number}/reviews`, undefined, (r: unknown) => reviewObservation(r, url), read, signal),
+    collection(
+      `${root}/pulls/${number}/comments`,
+      undefined,
+      (value: unknown) => commentFeedback(value, "inline", url),
+      read,
+      signal,
+    ),
+    collection(
+      `${root}/issues/${number}/comments`,
+      undefined,
+      (value: unknown) => commentFeedback(value, "conversation", url),
+      read,
+      signal,
+    ),
+    collection(
+      `${root}/actions/runs?head_sha=${encodeURIComponent(pr.head.sha)}`,
+      "workflow_runs",
+      workflowObservation,
+      read,
+      signal,
+    ),
+  ]);
+  const retainedContext = reconciliation.forHead?.(pr.head.sha) ?? reconciliation;
+  const observedIds = new Set(runs.state === "unavailable" ? [] : runs.value.map((check) => check.id));
   const missing = [
     ...new Map(
       retainedContext.checks
-        .filter(
-          (check) =>
-            check.headSha === pr.head.sha && !observedIds.has(check.id),
-        )
+        .filter((check) => check.headSha === pr.head.sha && !observedIds.has(check.id))
         .map((check) => [check.id, check]),
     ).values(),
   ];
   missing.sort((a, b) => a.id.localeCompare(b.id));
-  const next = missing.findIndex(
-    (check) => check.id.localeCompare(retainedContext.after ?? "") > 0,
-  );
+  const next = missing.findIndex((check) => check.id.localeCompare(retainedContext.after ?? "") > 0);
   const offset = next < 0 ? 0 : next;
-  const selected = [
-    ...missing.slice(offset),
-    ...missing.slice(0, offset),
-  ].slice(0, 10);
+  const selected = [...missing.slice(offset), ...missing.slice(0, offset)].slice(0, 10);
   const last = selected.at(-1);
   if (last !== undefined) retainedContext.selected?.(last.id);
   const reconciled = new Map<string, CheckObservation>();
@@ -283,8 +227,7 @@ export async function readObservation(
     if (result !== undefined) reconciled.set(check.id, result);
   }
   const retained = missing.map((check) => reconciled.get(check.id) ?? check);
-  const workflowEvidence =
-    workflows.state === "unavailable" ? [] : workflows.value;
+  const workflowEvidence = workflows.state === "unavailable" ? [] : workflows.value;
   const unconfirmed = retained.some(
     (check) =>
       !checksFinished({ state: "complete", value: [check] }) &&
@@ -294,12 +237,7 @@ export async function readObservation(
     ...(reviews.state === "unavailable"
       ? []
       : reviews.value
-          .filter(
-            (r) =>
-              !pendingReview(r.state) &&
-              r.body !== undefined &&
-              r.body.trim() !== "",
-          )
+          .filter((r) => !pendingReview(r.state) && r.body !== undefined && r.body.trim() !== "")
           .map((r) =>
             feedbackRevision({
               source: "review",
@@ -315,17 +253,11 @@ export async function readObservation(
       : inline.value.filter(
           (c) =>
             reviews.state !== "unavailable" &&
-            reviews.value.some(
-              (r) => r.id === c.reviewId && !pendingReview(r.state),
-            ),
+            reviews.value.some((r) => r.id === c.reviewId && !pendingReview(r.state)),
         )),
     ...(conversation.state === "unavailable" ? [] : conversation.value),
   ].filter((f) => f.body.trim() !== "");
-  const completeFeedback = [
-    reviews.state,
-    inline.state,
-    conversation.state,
-  ].every((state) => state === "complete");
+  const completeFeedback = [reviews.state, inline.state, conversation.state].every((state) => state === "complete");
   const feedback: NonNullable<ObservationInput["feedback"]> = completeFeedback
     ? { state: "complete", value: feedbackItems }
     : {
@@ -352,10 +284,7 @@ export async function readObservation(
               ? "Waiting for terminal evidence for retained executions"
               : "Some check sources are incomplete",
           };
-  const latest =
-    readMetadata === undefined
-      ? undefined
-      : await readMetadata(canonicalPR(url), signal);
+  const latest = readMetadata === undefined ? undefined : await readMetadata(canonicalPR(url), signal);
   const [latestPR, latestTarget] =
     latest === undefined
       ? await Promise.all([
@@ -377,16 +306,9 @@ export async function readObservation(
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
     ...(target === undefined ? {} : { targetBase: target }),
-    ...(initial?.description === undefined
-      ? {}
-      : { description: initial.description }),
+    ...(initial?.description === undefined ? {} : { description: initial.description }),
     lifecycle: pr.merged ? PRLifecycle.Merged : prLifecycle(pr.state),
-    mergeability:
-      pr.mergeable === true
-        ? "mergeable"
-        : pr.mergeable === false
-          ? "conflicting"
-          : "unknown",
+    mergeability: pr.mergeable === true ? "mergeable" : pr.mergeable === false ? "conflicting" : "unknown",
     checks,
     reviews,
     feedback,

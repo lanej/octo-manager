@@ -11,22 +11,11 @@ import { commands as activityCommands } from "../activity/activity-commands.js";
 import { commands as historyCommands } from "../submissions/history-commands.js";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import {
-  Command,
-  Option,
-  CommanderError,
-  InvalidArgumentError,
-} from "commander";
+import { Command, Option, CommanderError, InvalidArgumentError } from "commander";
 import { agentMode, readOnlyCommand } from "./mode.js";
 import type { CommandSpec, ParsedCommand, Options } from "./contracts.js";
 export type { ParsedCommand } from "./contracts.js";
-const identity = [
-  "--agent-id <id>",
-  "--thread-id <id>",
-  "--harness <name>",
-  "--endpoint <name>",
-  "--label <topic>",
-];
+const identity = ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"];
 const request = ["--request-id <id>"];
 const publication = [
   "--title <title>",
@@ -116,53 +105,34 @@ export function commandTree(
     .option("--cwd <directory>", "Caller working directory")
     .option("--json", "Structured output")
     .option("--agent", "Concise JSON with complete result pages")
-    .option(
-      "--full",
-      "Full read-only inspection; retain all page/filter arguments",
-    );
+    .option("--full", "Full read-only inspection; retain all page/filter arguments");
   const groups = new Map<string, Command>();
-  for (const spec of [
-    ...commandSpecs,
-    ...compatibility.map((s) => ({ ...s, hidden: true })),
-  ]) {
+  for (const spec of [...commandSpecs, ...compatibility.map((s) => ({ ...s, hidden: true }))]) {
     const words = spec.path.split(" ");
     let parent = root;
     for (
       let i = 0;
-      i < words.length - 1 &&
-      !(words[i + 1] ?? "").startsWith("<") &&
-      !(words[i + 1] ?? "").startsWith("[");
+      i < words.length - 1 && !(words[i + 1] ?? "").startsWith("<") && !(words[i + 1] ?? "").startsWith("[");
       i++
     ) {
       const prefix = words.slice(0, i + 1).join(" ");
       let group = groups.get(prefix);
       if (group === undefined) {
-        group = parent
-          .command(words[i] ?? "")
-          .description(`${prefix} commands`);
+        group = parent.command(words[i] ?? "").description(`${prefix} commands`);
         groups.set(prefix, group);
       }
       parent = group;
     }
     const consumed = parent === root ? 0 : parent.name().split(" ").length;
-    const groupDepth =
-      [...groups].find(([, c]) => c === parent)?.[0].split(" ").length ??
-      consumed;
+    const groupDepth = [...groups].find(([, c]) => c === parent)?.[0].split(" ").length ?? consumed;
     const command = parent
       .command(words.slice(groupDepth).join(" "), {
         hidden: spec.hidden ?? false,
       })
       .description(spec.description);
     for (const flags of spec.options ?? []) {
-      const option = new Option(
-        flags,
-        flags.split(" ")[0]?.replace(/^--/u, "").replaceAll("-", " "),
-      );
-      if (
-        /--(?:after|revision|version|policy-version|sample-count|github-hours)\b/u.test(
-          flags,
-        )
-      )
+      const option = new Option(flags, flags.split(" ")[0]?.replace(/^--/u, "").replaceAll("-", " "));
+      if (/--(?:after|revision|version|policy-version|sample-count|github-hours)\b/u.test(flags))
         option.argParser(integer);
       if (flags === "--on") option.conflicts("off");
       if (flags === "--off") option.conflicts("on");
@@ -173,73 +143,40 @@ export function commandTree(
         "merge-ready": ["head"],
         "queue-chain": ["intent-file"],
         "dependency-confirm": ["pr", "prerequisite", "reason"],
-        "record-activity": [
-          "name",
-          "outcome",
-          "operation-id",
-          "request-id",
-          "detail",
-        ],
+        "record-activity": ["name", "outcome", "operation-id", "request-id", "detail"],
       };
-      if (
-        required[spec.route]?.includes(flags.split(" ")[0]?.slice(2) ?? "") ===
-        true
-      )
-        option.makeOptionMandatory();
-      if (flags === "--theme <theme>")
-        option.choices(["terminal", "dark", "light", "contrast", "mono"]);
-      if (flags === "--outcome <outcome>")
-        option.choices(["attempted", "succeeded", "failed", "uncertain"]);
-      if (flags === "--tier <tier>")
-        option.choices(["routine", "standard", "complex"]);
+      if (required[spec.route]?.includes(flags.split(" ")[0]?.slice(2) ?? "") === true) option.makeOptionMandatory();
+      if (flags === "--theme <theme>") option.choices(["terminal", "dark", "light", "contrast", "mono"]);
+      if (flags === "--outcome <outcome>") option.choices(["attempted", "succeeded", "failed", "uncertain"]);
+      if (flags === "--tier <tier>") option.choices(["routine", "standard", "complex"]);
       command.addOption(option);
     }
     command.action((...args: unknown[]) => {
       const values: Options = {};
       const options: unknown = command.optsWithGlobals();
-      if (typeof options !== "object" || options === null)
-        throw new Error("Invalid command options");
+      if (typeof options !== "object" || options === null) throw new Error("Invalid command options");
       const entries: [string, unknown][] = Object.entries(options);
       for (const [key, value] of entries) {
-        if (
-          typeof value !== "string" &&
-          typeof value !== "boolean" &&
-          value !== undefined
-        )
+        if (typeof value !== "string" && typeof value !== "boolean" && value !== undefined)
           throw new Error("Invalid option value");
         values[key.replace(/[A-Z]/gu, (c) => "-" + c.toLowerCase())] = value;
       }
       const positionals = [
         ...spec.route.split(" "),
-        ...args
-          .slice(0, command.registeredArguments.length)
-          .filter((v): v is string => typeof v === "string"),
+        ...args.slice(0, command.registeredArguments.length).filter((v): v is string => typeof v === "string"),
       ];
       const agent = agentMode(values.agent === true, env),
         full = values.full === true;
       if (full && !readOnlyCommand(positionals))
-        throw new Error(
-          "--full is available only for read-only inspection commands",
-        );
+        throw new Error("--full is available only for read-only inspection commands");
       if (agent && !full && values.watch === true)
-        throw new Error(
-          "Agent mode uses bounded responses; inspect events without --watch or explicitly use --full",
-        );
+        throw new Error("Agent mode uses bounded responses; inspect events without --watch or explicitly use --full");
       const json = values.json === true || agent || full;
-      values.state = resolve(
-        values.state ??
-          env["OCTO_MANAGER_STATE"] ??
-          join(homedir(), ".local/state/octo-manager"),
-      );
+      values.state = resolve(values.state ?? env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local/state/octo-manager"));
       const environmentThread = env["CODEX_THREAD_ID"],
         environmentAgent = env["OCTO_MANAGER_AGENT_ID"];
-      if (values["thread-id"] === undefined && environmentThread !== undefined)
-        values["thread-id"] = environmentThread;
-      if (
-        values["agent-id"] === undefined &&
-        environmentAgent !== undefined &&
-        environmentAgent.trim() !== ""
-      )
+      if (values["thread-id"] === undefined && environmentThread !== undefined) values["thread-id"] = environmentThread;
+      if (values["agent-id"] === undefined && environmentAgent !== undefined && environmentAgent.trim() !== "")
         values["agent-id"] = environmentAgent;
       values.json = json;
       return execute({

@@ -13,8 +13,7 @@ export function migrateChecks(db: DatabaseSync): void {
     version === 10
   )
     return;
-  if (version !== 7)
-    throw new Error("Unsupported check-watch database version");
+  if (version !== 7) throw new Error("Unsupported check-watch database version");
   db.exec("PRAGMA foreign_keys=OFF");
   try {
     db.exec(`BEGIN IMMEDIATE;

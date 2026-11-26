@@ -23,10 +23,11 @@ This summary lists the installed skill pins.
 | library-code-comments | 1.0.1 |
 | protobuf | 1.0.3 |
 | pull-request | 1.0.0 |
+| python | 1.1.3 |
 | ship | 1.0.0 |
 | source-code-lifecycle | 1.2.6 |
 | testing | 1.1.3 |
-| typescript | 1.1.4 |
+| typescript | 1.1.5 |
 
 Read the installed project policy at `.agents/skills/source-code-lifecycle/SKILL.md` first, then load the installed skills relevant to the task. Preserve existing repository instructions and required gates.
 

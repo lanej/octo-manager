@@ -1,8 +1,4 @@
-import {
-  ActionState,
-  type ActionEventContext,
-  type TargetBase,
-} from "./types.js";
+import { ActionState, type ActionEventContext, type TargetBase } from "./types.js";
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -26,23 +22,14 @@ export function targetBase(value: unknown): TargetBase | undefined {
 export function actionContext(value: unknown): ActionEventContext | undefined {
   if (value === null || value === undefined) return undefined;
   const raw = json(value);
-  if (!object(raw) || typeof raw["prUrl"] !== "string")
-    throw new Error("Invalid action event context");
-  const state = Object.values(ActionState).find(
-    (state) => state === raw["state"],
-  );
+  if (!object(raw) || typeof raw["prUrl"] !== "string") throw new Error("Invalid action event context");
+  const state = Object.values(ActionState).find((state) => state === raw["state"]);
   if (state === undefined) throw new Error("Invalid action event state");
   const result: ActionEventContext = { state, prUrl: raw["prUrl"] };
-  for (const key of [
-    "actorAgentId",
-    "actorHarness",
-    "actorSessionId",
-    "actorLabel",
-  ] as const) {
+  for (const key of ["actorAgentId", "actorHarness", "actorSessionId", "actorLabel"] as const) {
     const field = raw[key];
     if (field !== undefined) {
-      if (typeof field !== "string")
-        throw new Error("Invalid action event actor");
+      if (typeof field !== "string") throw new Error("Invalid action event actor");
       result[key] = field;
     }
   }

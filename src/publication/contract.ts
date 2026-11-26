@@ -1,14 +1,7 @@
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 import { createHash } from "node:crypto";
-import {
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  writeFileSync,
-} from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 const strings = Type.Array(Type.String({ minLength: 1, maxLength: 200 }), {
@@ -36,9 +29,7 @@ export const ContractSchema = Type.Object(
         { additionalProperties: false },
       ),
     ),
-    guidance: Type.Optional(
-      Type.Array(Type.String({ maxLength: 500 }), { maxItems: 12 }),
-    ),
+    guidance: Type.Optional(Type.Array(Type.String({ maxLength: 500 }), { maxItems: 12 })),
   },
   { additionalProperties: false },
 );
@@ -61,8 +52,7 @@ export class PublicationError extends Error {
 }
 export const contractPath = ".octo/pr-contract.json";
 export const skillPath = ".agents/skills/pr-description/SKILL.md";
-export const stockTemplate =
-  "<!-- octo:describe-change -->\n\n<!-- octo:explain-why -->\n";
+export const stockTemplate = "<!-- octo:describe-change -->\n\n<!-- octo:explain-why -->\n";
 export const skill = `---
 name: pr-description
 description: Use when preparing or revising a pull request title and description under the repository's Octo format contract.
@@ -82,9 +72,7 @@ For title/body revisions, apply these same writing and validation instructions t
 `;
 
 export function githubRepository(remote: string): string | undefined {
-  const scp = /^git@github\.com:([\w.-]+\/[\w.-]+?)(?:\.git)?$/u.exec(
-    remote,
-  )?.[1];
+  const scp = /^git@github\.com:([\w.-]+\/[\w.-]+?)(?:\.git)?$/u.exec(remote)?.[1];
   if (scp !== undefined) return scp;
   let url: URL;
   try {
@@ -108,30 +96,16 @@ export function digest(value: unknown): string {
 export function safePath(root: string, path: string): string {
   const target = resolve(root, path);
   const offset = relative(root, target);
-  if (
-    isAbsolute(path) ||
-    offset === ".." ||
-    offset.startsWith("../") ||
-    offset === ""
-  ) {
-    throw new PublicationError(
-      "invalid_path",
-      "Use a repository-relative file path.",
-    );
+  if (isAbsolute(path) || offset === ".." || offset.startsWith("../") || offset === "") {
+    throw new PublicationError("invalid_path", "Use a repository-relative file path.");
   }
   let cursor = target;
   while (cursor !== root) {
     try {
       if (lstatSync(cursor).isSymbolicLink())
-        throw new PublicationError(
-          "linked_path",
-          "Preserve linked files; use an ordinary repository-local path.",
-        );
+        throw new PublicationError("linked_path", "Preserve linked files; use an ordinary repository-local path.");
     } catch (error) {
-      if (
-        !(error instanceof Error && "code" in error && error.code === "ENOENT")
-      )
-        throw error;
+      if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
     }
     cursor = dirname(cursor);
   }
@@ -146,19 +120,13 @@ export function readContract(root: string): {
     raw = readFileSync(safePath(root, contractPath), "utf8");
   } catch (error) {
     if (error instanceof PublicationError) throw error;
-    throw new PublicationError(
-      "contract_missing",
-      "Run octo-manager pr init, then inspect .octo/pr-contract.json.",
-    );
+    throw new PublicationError("contract_missing", "Run octo-manager pr init, then inspect .octo/pr-contract.json.");
   }
   let value: unknown;
   try {
     value = JSON.parse(raw);
   } catch {
-    throw new PublicationError(
-      "invalid_contract",
-      "Fix the JSON syntax in .octo/pr-contract.json.",
-    );
+    throw new PublicationError("invalid_contract", "Fix the JSON syntax in .octo/pr-contract.json.");
   }
   if (!Check(ContractSchema, value))
     throw new PublicationError(
@@ -173,27 +141,18 @@ export function validateDraft(draft: Draft, contract: Contract): Finding[] {
   const add = (code: string, fix: string) => {
     findings.push({ code, fix });
   };
-  if (draft.title.trim() === "")
-    add("title_empty", "Provide a nonempty PR title.");
+  if (draft.title.trim() === "") add("title_empty", "Provide a nonempty PR title.");
   if (
-    Array.from(draft.title).some(
-      (character) =>
-        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    ) ||
+    Array.from(draft.title).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127) ||
     draft.title.trimStart().startsWith("#")
   )
     add("title_format", "Use a single plain-text title line.");
-  if (draft.body.trim() === "")
-    add("body_empty", "Provide a nonempty PR description.");
+  if (draft.body.trim() === "") add("body_empty", "Provide a nonempty PR description.");
   const maximum = contract.title?.maxLength;
   if (maximum !== undefined && Array.from(draft.title).length > maximum)
     add("title_length", `Shorten the title to ${String(maximum)} characters.`);
   const prefixes = contract.title?.prefixes;
-  if (
-    prefixes !== undefined &&
-    prefixes.length > 0 &&
-    !prefixes.some((prefix) => draft.title.startsWith(prefix))
-  )
+  if (prefixes !== undefined && prefixes.length > 0 && !prefixes.some((prefix) => draft.title.startsWith(prefix)))
     add("title_prefix", `Start the title with one of: ${prefixes.join(", ")}.`);
   const headings = new Set<string>();
   let fence: string | undefined;
@@ -203,12 +162,7 @@ export function validateDraft(draft: Draft, contract: Contract): Finding[] {
     const suffix = fenceMatch?.[2] ?? "";
     if (marker !== undefined) {
       if (fence === undefined) fence = marker;
-      else if (
-        marker[0] === fence[0] &&
-        marker.length >= fence.length &&
-        suffix.trim() === ""
-      )
-        fence = undefined;
+      else if (marker[0] === fence[0] && marker.length >= fence.length && suffix.trim() === "") fence = undefined;
       continue;
     }
     if (fence !== undefined) continue;
@@ -216,18 +170,12 @@ export function validateDraft(draft: Draft, contract: Contract): Finding[] {
     if (heading !== undefined) headings.add(heading.trim().toLowerCase());
   }
   for (const heading of contract.body?.requiredHeadings ?? [])
-    if (!headings.has(heading.trim().toLowerCase()))
-      add("heading_missing", `Add the required heading: ${heading}.`);
+    if (!headings.has(heading.trim().toLowerCase())) add("heading_missing", `Add the required heading: ${heading}.`);
   for (const text of contract.body?.requiredText ?? [])
-    if (!draft.body.includes(text))
-      add("text_missing", `Include the required text: ${text}.`);
+    if (!draft.body.includes(text)) add("text_missing", `Include the required text: ${text}.`);
   if (/<!--\s*octo:[^>]*-->/u.test(draft.body))
-    add(
-      "template_unfilled",
-      "Replace the Octo template prompts with the actual description.",
-    );
-  if (Buffer.byteLength(draft.body) > 65536)
-    add("body_size", "Keep the description within GitHub's 64 KiB limit.");
+    add("template_unfilled", "Replace the Octo template prompts with the actual description.");
+  if (Buffer.byteLength(draft.body) > 65536) add("body_size", "Keep the description within GitHub's 64 KiB limit.");
   return findings;
 }
 function install(root: string, path: string, text: string): void {
@@ -236,8 +184,7 @@ function install(root: string, path: string, text: string): void {
   try {
     writeFileSync(target, text, { flag: "wx" });
   } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "EEXIST"))
-      throw error;
+    if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) throw error;
   }
 }
 export function initialize(
@@ -246,13 +193,7 @@ export function initialize(
 ): { contract: string; instructions: string; template: string } {
   root = realpathSync(root);
   const templates: string[] = [];
-  for (const directory of [
-    "",
-    ".github",
-    "docs",
-    ".github/PULL_REQUEST_TEMPLATE",
-    ".github/pull_request_template",
-  ]) {
+  for (const directory of ["", ".github", "docs", ".github/PULL_REQUEST_TEMPLATE", ".github/pull_request_template"]) {
     let names: string[];
     try {
       names = readdirSync(join(root, directory));
@@ -262,8 +203,7 @@ export function initialize(
     for (const name of names) {
       if (
         /^pull_request_template\.md$/iu.test(name) ||
-        (directory.toLowerCase().endsWith("/pull_request_template") &&
-          /\.md$/iu.test(name))
+        (directory.toLowerCase().endsWith("/pull_request_template") && /\.md$/iu.test(name))
       )
         templates.push(join(directory, name));
     }
@@ -272,32 +212,14 @@ export function initialize(
   try {
     configured = readContract(root).contract.template;
   } catch (error) {
-    if (
-      !(error instanceof PublicationError && error.code === "contract_missing")
-    )
-      throw error;
+    if (!(error instanceof PublicationError && error.code === "contract_missing")) throw error;
   }
-  if (
-    configured === undefined &&
-    selected === undefined &&
-    templates.length > 1
-  )
-    throw new PublicationError(
-      "template_selection",
-      "Multiple PR templates exist; rerun pr init --template PATH.",
-    );
-  const template =
-    configured ??
-    selected ??
-    templates[0] ??
-    ".github/pull_request_template.md";
+  if (configured === undefined && selected === undefined && templates.length > 1)
+    throw new PublicationError("template_selection", "Multiple PR templates exist; rerun pr init --template PATH.");
+  const template = configured ?? selected ?? templates[0] ?? ".github/pull_request_template.md";
   safePath(root, template);
   install(root, template, stockTemplate);
-  install(
-    root,
-    contractPath,
-    JSON.stringify({ schemaVersion: 1, template }, null, 2) + "\n",
-  );
+  install(root, contractPath, JSON.stringify({ schemaVersion: 1, template }, null, 2) + "\n");
   install(root, skillPath, skill);
   readContract(root);
   return { contract: contractPath, instructions: skillPath, template };

@@ -8,10 +8,8 @@ export function cleanText(value: string, limit = 16000): string {
 // Subprocess and provider errors can contain unbounded output; retain the bounded diagnosis.
 export function errorText(error: unknown): string {
   if (typeof error === "object" && error !== null) {
-    if ("name" in error && error.name === "AbortError")
-      return "Operation aborted";
-    if ("message" in error && typeof error.message === "string")
-      return cleanText(error.message, 2000);
+    if ("name" in error && error.name === "AbortError") return "Operation aborted";
+    if ("message" in error && typeof error.message === "string") return cleanText(error.message, 2000);
   }
   return cleanText(String(error), 2000);
 }

@@ -1,11 +1,5 @@
 import { type WorkScheduler, type ScheduledTask } from "../scheduling/work.js";
-import {
-  inputLimit,
-  policyVersion,
-  result,
-  type Assessment,
-  type AssessmentInput,
-} from "./contracts.js";
+import { inputLimit, policyVersion, result, type Assessment, type AssessmentInput } from "./contracts.js";
 import { AssessmentStore } from "./store.js";
 import { assessmentRunner, type Assess } from "./runner.js";
 import type { TrackingService } from "../tracking/service.js";
@@ -16,8 +10,7 @@ function eligible(action: Action): boolean {
   return (
     b.kind === "review_feedback" ||
     b.kind === "check_failed" ||
-    (b.kind === "check_results" &&
-      b.checks.some((check) => !successfulCheck(check)))
+    (b.kind === "check_results" && b.checks.some((check) => !successfulCheck(check)))
   );
 }
 export function boundedInput(
@@ -45,8 +38,7 @@ export function boundedInput(
     evidence = evidence.slice(0, Math.floor(evidence.length * 0.8));
     input.evidence = evidence;
     input.truncated = true;
-    if (evidence.length === 0)
-      throw new Error("Assessment metadata exceeds input bound");
+    if (evidence.length === 0) throw new Error("Assessment metadata exceeds input bound");
   }
   return input;
 }
@@ -73,9 +65,7 @@ export class AssessmentService {
     if (this.stopped) return Promise.resolve();
     this.synchronize();
     if (this.work !== undefined) return this.work;
-    const item = this.store
-      .reconciliationCandidates()
-      .find((item) => item.state === "pending");
+    const item = this.store.reconciliationCandidates().find((item) => item.state === "pending");
     if (item === undefined) return Promise.resolve();
     this.work = this.run(item).finally(() => {
       this.work = undefined;
@@ -112,13 +102,7 @@ export class AssessmentService {
       const pr = this.tracking.store.pr(action.prId);
       if (pr.enabled && pr.observation !== undefined)
         this.store.ensure(
-          boundedInput(
-            action,
-            pr.url,
-            pr.observation.headSha,
-            undefined,
-            pr.trackingEpoch,
-          ),
+          boundedInput(action, pr.url, pr.observation.headSha, undefined, pr.trackingEpoch),
           this.model,
         );
     }
@@ -126,9 +110,7 @@ export class AssessmentService {
       if (
         item.completionNotified ||
         !this.current(item) ||
-        (item.state !== "completed" &&
-          item.state !== "failed" &&
-          item.state !== "interrupted")
+        (item.state !== "completed" && item.state !== "failed" && item.state !== "interrupted")
       )
         continue;
       this.tracking.store.transaction(() => {
@@ -151,13 +133,7 @@ export class AssessmentService {
           item.input.prUrl,
           AbortSignal.any([this.abort.signal, AbortSignal.timeout(5000)]),
         );
-        input = boundedInput(
-          action,
-          item.input.prUrl,
-          item.input.headSha,
-          excerpt,
-          item.input.epoch,
-        );
+        input = boundedInput(action, item.input.prUrl, item.input.headSha, excerpt, item.input.epoch);
       }
       if (this.stopped || !this.current(item)) return;
       this.store.save({
@@ -166,9 +142,7 @@ export class AssessmentService {
         state: "running",
         updatedAt: this.now(),
       });
-      const output = result(
-        await this.assess(input, item.model, this.abort.signal),
-      );
+      const output = result(await this.assess(input, item.model, this.abort.signal));
       if (!this.abort.signal.aborted && this.current(item))
         this.store.save({
           ...this.store.get(item.id),
@@ -193,20 +167,17 @@ export class AssessmentService {
     if (this.stopped) throw new Error("Coordinator is stopping");
     return this.tracking.store.transaction(() => {
       const next = this.store.retry(id);
-      this.tracking.store.notifyAssessment(
-        this.tracking.store.action(item.input.actionId),
-        "pending",
-        { id: item.id, head: item.input.headSha },
-      );
+      this.tracking.store.notifyAssessment(this.tracking.store.action(item.input.actionId), "pending", {
+        id: item.id,
+        head: item.input.headSha,
+      });
       return next;
     });
   }
   checkpointable(): boolean {
     return (
       this.work === undefined &&
-      !this.store
-        .reconciliationCandidates()
-        .some((item) => item.state === "pending" || item.state === "running")
+      !this.store.reconciliationCandidates().some((item) => item.state === "pending" || item.state === "running")
     );
   }
   async close(): Promise<void> {

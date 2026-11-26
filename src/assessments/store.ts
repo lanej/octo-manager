@@ -1,11 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID, createHash } from "node:crypto";
-import {
-  assessment,
-  policyVersion,
-  type Assessment,
-  type AssessmentInput,
-} from "./contracts.js";
+import { assessment, policyVersion, type Assessment, type AssessmentInput } from "./contracts.js";
 import { resolveId } from "../tracking/identifiers.js";
 export class AssessmentStore {
   constructor(
@@ -18,8 +13,7 @@ export class AssessmentStore {
   }
   recoverInterrupted(): void {
     for (const item of this.list())
-      if (item.state === "running")
-        this.save({ ...item, state: "interrupted", updatedAt: this.now() });
+      if (item.state === "running") this.save({ ...item, state: "interrupted", updatedAt: this.now() });
   }
   list(): Assessment[] {
     return this.db
@@ -48,13 +42,9 @@ export class AssessmentStore {
   }
   latest(actionId: string): Assessment | undefined {
     const row = this.db
-      .prepare(
-        "SELECT data FROM evidence_assessments WHERE action_id=? ORDER BY rowid DESC LIMIT 1",
-      )
+      .prepare("SELECT data FROM evidence_assessments WHERE action_id=? ORDER BY rowid DESC LIMIT 1")
       .get(actionId);
-    return row === undefined
-      ? undefined
-      : assessment(JSON.parse(String(row["data"])));
+    return row === undefined ? undefined : assessment(JSON.parse(String(row["data"])));
   }
   ensure(input: AssessmentInput, model: string): Assessment {
     const row = this.db
@@ -91,33 +81,20 @@ export class AssessmentStore {
   }
   save(item: Assessment): void {
     assessment(item);
-    const row = this.db
-      .prepare("SELECT data FROM evidence_assessments WHERE id=?")
-      .get(item.id);
-    const previous =
-      row === undefined
-        ? undefined
-        : assessment(JSON.parse(String(row["data"])));
+    const row = this.db.prepare("SELECT data FROM evidence_assessments WHERE id=?").get(item.id);
+    const previous = row === undefined ? undefined : assessment(JSON.parse(String(row["data"])));
     const next = {
       ...item,
       history:
         previous?.state === item.state
           ? previous.history
-          : [
-              ...(previous?.history ?? []),
-              { state: item.state, at: this.now() },
-            ],
+          : [...(previous?.history ?? []), { state: item.state, at: this.now() }],
     };
     this.db
       .prepare(
         "INSERT INTO evidence_assessments(id,action_id,fingerprint,data) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data",
       )
-      .run(
-        item.id,
-        item.input.actionId,
-        item.fingerprint,
-        JSON.stringify(next),
-      );
+      .run(item.id, item.input.actionId, item.fingerprint, JSON.stringify(next));
   }
   retry(id: string): Assessment {
     const item = this.get(id);

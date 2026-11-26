@@ -1,10 +1,7 @@
 import type { AssessmentStore } from "../assessments/store.js";
 import type { NotificationRepository } from "../notifications/repository.js";
 import { actionNotice, type SafeNotice } from "../security/notifications.js";
-import {
-  SQLiteObservationRepository,
-  type ObservationRepository,
-} from "./observations.js";
+import { SQLiteObservationRepository, type ObservationRepository } from "./observations.js";
 import { PRLifecycle, terminalPR, prLifecycle } from "./states.js";
 import { compact } from "./messages.js";
 import { Subscriptions } from "./subscriptions.js";
@@ -35,12 +32,7 @@ import {
 import type { TrackingConfig } from "./config.js";
 import { selectProfile } from "./config.js";
 import { canonicalPR } from "../github/pr-identity.js";
-import {
-  alreadyReported,
-  checkWatchFindings,
-  closeProgress,
-  findings,
-} from "./policy.js";
+import { alreadyReported, checkWatchFindings, closeProgress, findings } from "./policy.js";
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
 export class TrackingStore {
@@ -64,46 +56,29 @@ export class TrackingStore {
     notificationRepository: NotificationRepository,
     private assessments: AssessmentStore,
   ) {
-    db.exec(
-      "CREATE INDEX IF NOT EXISTS deliveries_by_recipient ON deliveries(recipient_agent_id,id,action_id,state)",
-    );
+    db.exec("CREATE INDEX IF NOT EXISTS deliveries_by_recipient ON deliveries(recipient_agent_id,id,action_id,state)");
     this.observations = new SQLiteObservationRepository(db);
-    this.subscriptions = new Subscriptions(
-      db,
-      now,
-      (id) => this.agent(id),
-      notificationRepository,
-    );
+    this.subscriptions = new Subscriptions(db, now, (id) => this.agent(id), notificationRepository);
     this.inbox = new AgentInbox(notificationRepository);
     this.checks = new CheckWatches(db, now);
     this.retirement = new RetirementStore(db, now, this.checks, event);
     this.transaction(() => {
-      const observations = new Map(
-        this.prs().map((pr) => [pr.id, pr.observation]),
-      );
+      const observations = new Map(this.prs().map((pr) => [pr.id, pr.observation]));
       for (const action of this.actions()) {
         if (!unfinished(action)) continue;
         const observation = observations.get(action.prId);
-        if (
-          observation !== undefined &&
-          prLifecycle(observation.lifecycle) === PRLifecycle.Merged
-        ) {
+        if (observation !== undefined && prLifecycle(observation.lifecycle) === PRLifecycle.Merged) {
           const progress = this.closeProgress(action, observation);
           if (progress !== undefined) {
-            this.saveAction(
-              { ...action, progress, updatedAt: this.now() },
-              `action_${progress.state}`,
-            );
+            this.saveAction({ ...action, progress, updatedAt: this.now() }, `action_${progress.state}`);
             this.cancelDeliveries(action.id, "PR merged");
           }
           continue;
         }
         if (
           unfinished(action) &&
-          ((action.blocker.kind === "check_results" &&
-            action.blocker.state === CheckWatchState.Superseded) ||
-            (action.blocker.kind === "review_feedback" &&
-              !actionableFeedback(action.blocker.feedback)))
+          ((action.blocker.kind === "check_results" && action.blocker.state === CheckWatchState.Superseded) ||
+            (action.blocker.kind === "review_feedback" && !actionableFeedback(action.blocker.feedback)))
         ) {
           this.saveAction(
             {
@@ -141,36 +116,31 @@ export class TrackingStore {
   }
   private agentRow(r: Row): AgentRef {
     return {
-      id: r.id,
-      harness: r.harness,
-      endpoint: r.endpoint,
-      sessionId: r.session_id,
-      ...(r.label === null ? {} : { label: r.label }),
-      ...(r.harness_version === null
+      id: r["id"],
+      harness: r["harness"],
+      endpoint: r["endpoint"],
+      sessionId: r["session_id"],
+      ...(r["label"] === null ? {} : { label: r["label"] }),
+      ...(r["harness_version"] === null
         ? {}
         : {
             lastObservedRuntime: {
-              version: r.harness_version,
-              observedAt: r.version_observed_at_ms,
+              version: r["harness_version"],
+              observedAt: r["version_observed_at_ms"],
             },
           }),
     };
   }
   agent(id: string): AgentRef {
-    const row = (this.agentById ??= this.db.prepare(
-      "SELECT * FROM agent_refs WHERE id=?",
-    )).get(id);
+    const row = (this.agentById ??= this.db.prepare("SELECT * FROM agent_refs WHERE id=?")).get(id);
     if (row === undefined) throw new Error("Agent not found");
     return this.agentRow(row);
   }
 
   sessionAgent(harness: string, sessionId: string, endpoint?: string): string {
-    if (harness === "" || sessionId === "")
-      throw new Error("Invalid agent session context");
+    if (harness === "" || sessionId === "") throw new Error("Invalid agent session context");
     const rows = this.db
-      .prepare(
-        "SELECT id FROM agent_refs WHERE harness=? AND session_id=? AND (? IS NULL OR endpoint=?) LIMIT 2",
-      )
+      .prepare("SELECT id FROM agent_refs WHERE harness=? AND session_id=? AND (? IS NULL OR endpoint=?) LIMIT 2")
       .all(harness, sessionId, endpoint ?? null, endpoint ?? null);
     if (rows.length !== 1)
       throw new Error(
@@ -199,27 +169,18 @@ export class TrackingStore {
       )
       .run(randomUUID(), t.harness, t.endpoint, t.sessionId, t.label ?? null);
     return this.agents().find(
-      (a) =>
-        a.harness === t.harness &&
-        a.endpoint === t.endpoint &&
-        a.sessionId === t.sessionId,
+      (a) => a.harness === t.harness && a.endpoint === t.endpoint && a.sessionId === t.sessionId,
     )!;
   }
   runtime(id: string, version: string): void {
     this.db
-      .prepare(
-        "UPDATE agent_refs SET harness_version=?,version_observed_at_ms=? WHERE id=?",
-      )
+      .prepare("UPDATE agent_refs SET harness_version=?,version_observed_at_ms=? WHERE id=?")
       .run(version, this.now(), id);
   }
   reconcileCachedRetirement(): void {
     this.transaction(() => {
       for (const pr of this.prs())
-        if (
-          pr.enabled &&
-          pr.observation !== undefined &&
-          prLifecycle(pr.observation.lifecycle) === PRLifecycle.Merged
-        )
+        if (pr.enabled && pr.observation !== undefined && prLifecycle(pr.observation.lifecycle) === PRLifecycle.Merged)
           this.retirement.cachedMergedInside(pr.id, pr.observation);
     });
   }
@@ -250,20 +211,20 @@ export class TrackingStore {
   }
   private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
-      id: r.id,
-      url: r.url,
-      originAgentId: r.origin_agent_id,
-      ownerAgentId: r.owner_agent_id,
-      enabled: !!r.enabled,
+      id: r["id"],
+      url: r["url"],
+      originAgentId: r["origin_agent_id"],
+      ownerAgentId: r["owner_agent_id"],
+      enabled: !!r["enabled"],
       ...lifecycle(r),
-      createdAt: r.created_at_ms,
-      updatedAt: r.updated_at_ms,
-      ...(r.last_refresh_error === null
+      createdAt: r["created_at_ms"],
+      updatedAt: r["updated_at_ms"],
+      ...(r["last_refresh_error"] === null
         ? {}
         : {
             lastRefreshError: {
-              at: r.last_refresh_error_at_ms,
-              message: r.last_refresh_error,
+              at: r["last_refresh_error_at_ms"],
+              message: r["last_refresh_error"],
             },
           }),
     };
@@ -287,15 +248,11 @@ export class TrackingStore {
       const agent = this.register(target);
       const existing = this.prs().find((p) => p.url === url);
       if (existing) {
-        if (existing.ownerAgentId !== agent.id)
-          throw new Error("PR already has another owner; use assign");
+        if (existing.ownerAgentId !== agent.id) throw new Error("PR already has another owner; use assign");
         if (!existing.enabled || existing.state === TrackingState.Archived) {
           this.retirement.resumeInside(existing.id);
           this.event("pr_retracked", "Tracking resumed", existing.id);
-          for (const a of this.actions().filter(
-            (a) =>
-              a.prId === existing.id && a.progress.state === ActionState.Open,
-          ))
+          for (const a of this.actions().filter((a) => a.prId === existing.id && a.progress.state === ActionState.Open))
             this.enqueue(a);
         }
         return this.pr(existing.id);
@@ -315,33 +272,29 @@ export class TrackingStore {
     const rows =
       prId === undefined
         ? this.db.prepare("SELECT * FROM actions ORDER BY rowid").all()
-        : this.db
-            .prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid")
-            .all(prId);
+        : this.db.prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid").all(prId);
     return rows.map((row) => this.trackedAction(row));
   }
   unfinishedActions(): Action[] {
     return this.db
-      .prepare(
-        "SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid",
-      )
+      .prepare("SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid")
       .all()
       .map((row) => this.trackedAction(row));
   }
   private trackedAction(r: Row): Action {
     return {
-      id: r.id,
-      prId: r.pr_id,
-      openedObservationId: r.opened_observation_id,
-      ownerAgentId: r.owner_agent_id,
-      sourceKey: r.source_key,
-      blocker: parse(r.blocker_json),
-      summary: r.summary,
-      evidenceUrl: r.evidence_url,
-      profile: parse(r.profile_json),
-      progress: parse(r.progress_json),
-      createdAt: r.created_at_ms,
-      updatedAt: r.updated_at_ms,
+      id: r["id"],
+      prId: r["pr_id"],
+      openedObservationId: r["opened_observation_id"],
+      ownerAgentId: r["owner_agent_id"],
+      sourceKey: r["source_key"],
+      blocker: parse(r["blocker_json"]),
+      summary: r["summary"],
+      evidenceUrl: r["evidence_url"],
+      profile: parse(r["profile_json"]),
+      progress: parse(r["progress_json"]),
+      createdAt: r["created_at_ms"],
+      updatedAt: r["updated_at_ms"],
     };
   }
   action(id: string): Action {
@@ -378,16 +331,11 @@ export class TrackingStore {
         JSON.stringify(a.profile),
         a.progress.state,
         JSON.stringify(a.progress),
-        a.progress.state === ActionState.Resolved
-          ? a.progress.observationId
-          : null,
+        a.progress.state === ActionState.Resolved ? a.progress.observationId : null,
         a.createdAt,
         a.updatedAt,
       );
-    const actor =
-      kind === "action_progress" && "agentId" in a.progress
-        ? this.agent(a.progress.agentId)
-        : undefined;
+    const actor = kind === "action_progress" && "agentId" in a.progress ? this.agent(a.progress.agentId) : undefined;
     const context = actionContext({
       state: a.progress.state,
       prUrl: this.pr(a.prId).url,
@@ -421,13 +369,13 @@ export class TrackingStore {
   }
   private deliveryRow(r: Row): Delivery {
     return {
-      id: r.id,
-      actionId: r.action_id,
-      recipientAgentId: r.recipient_agent_id,
-      retryCount: r.retry_count,
-      progress: parse(r.progress_json),
-      createdAt: r.created_at_ms,
-      updatedAt: r.updated_at_ms,
+      id: r["id"],
+      actionId: r["action_id"],
+      recipientAgentId: r["recipient_agent_id"],
+      retryCount: r["retry_count"],
+      progress: parse(r["progress_json"]),
+      createdAt: r["created_at_ms"],
+      updatedAt: r["updated_at_ms"],
     };
   }
 
@@ -436,13 +384,11 @@ export class TrackingStore {
       .prepare("SELECT * FROM delivery_attempts ORDER BY rowid")
       .all()
       .map((r: Row) => ({
-        deliveryId: r.delivery_id,
-        number: r.number,
-        startedAt: r.started_at_ms,
-        ...(r.harness_version === null
-          ? {}
-          : { harnessVersion: r.harness_version }),
-        outcome: parse(r.outcome_json),
+        deliveryId: r["delivery_id"],
+        number: r["number"],
+        startedAt: r["started_at_ms"],
+        ...(r["harness_version"] === null ? {} : { harnessVersion: r["harness_version"] }),
+        outcome: parse(r["outcome_json"]),
       }));
   }
   saveDelivery(d: Delivery, kind: string): void {
@@ -456,9 +402,7 @@ export class TrackingStore {
         d.recipientAgentId,
         d.progress.state,
         JSON.stringify(d.progress),
-        d.progress.state === DeliveryState.Pending
-          ? d.progress.nextAttemptAt
-          : null,
+        d.progress.state === DeliveryState.Pending ? d.progress.nextAttemptAt : null,
         d.createdAt,
         d.updatedAt,
         d.retryCount ?? 0,
@@ -471,18 +415,10 @@ export class TrackingStore {
       .prepare(
         "INSERT INTO delivery_attempts(delivery_id,number,started_at_ms,harness_version,outcome,outcome_json) VALUES(?,?,?,?,?,?) ON CONFLICT(delivery_id,number) DO UPDATE SET harness_version=excluded.harness_version,outcome=excluded.outcome,outcome_json=excluded.outcome_json",
       )
-      .run(
-        a.deliveryId,
-        a.number,
-        a.startedAt,
-        a.harnessVersion ?? null,
-        a.outcome.state,
-        JSON.stringify(a.outcome),
-      );
+      .run(a.deliveryId, a.number, a.startedAt, a.harnessVersion ?? null, a.outcome.state, JSON.stringify(a.outcome));
   }
   private enqueue(a: Action): void {
-    for (const participant of this.subscriptions.list(this.pr(a.prId)))
-      this.enqueueFor(a, participant.agentId);
+    for (const participant of this.subscriptions.list(this.pr(a.prId))) this.enqueueFor(a, participant.agentId);
   }
   private enqueueFor(a: Action, recipientAgentId: string): void {
     if (
@@ -532,11 +468,7 @@ export class TrackingStore {
   prepareSafeRecovery(): void {
     this.transaction(() => {
       this.inbox.recoverWorkflows();
-      const messages = new Map(
-        this.inbox
-          .legacyActionMessages()
-          .map((message) => [message.id, message]),
-      );
+      const messages = new Map(this.inbox.legacyActionMessages().map((message) => [message.id, message]));
       if (messages.size === 0) return;
       for (const delivery of this.deliveries()) {
         const message = messages.get(delivery.id);
@@ -581,10 +513,7 @@ export class TrackingStore {
         );
         const notice = {
           ...actionNotice(action, pr.url),
-          role:
-            delivery.recipientAgentId === action.ownerAgentId
-              ? ("owner" as const)
-              : ("observer" as const),
+          role: delivery.recipientAgentId === action.ownerAgentId ? ("owner" as const) : ("observer" as const),
         };
         this.inbox.freezeNotice(id, notice);
         this.inbox.record(id, this.inbox.render(id, notice));
@@ -592,21 +521,12 @@ export class TrackingStore {
       }
     });
   }
-  notifyAssessment(
-    action: Action,
-    status: SafeNotice["assessment"],
-    assessment: { id: string; head: string },
-  ): void {
-    const deliveries = this.deliveries().filter(
-      (delivery) => delivery.actionId === action.id,
-    );
+  notifyAssessment(action: Action, status: SafeNotice["assessment"], assessment: { id: string; head: string }): void {
+    const deliveries = this.deliveries().filter((delivery) => delivery.actionId === action.id);
     const pr = this.pr(action.prId);
     for (const participant of this.subscriptions.list(pr)) {
-      const role =
-        participant.agentId === action.ownerAgentId ? "owner" : "observer";
-      const previous = deliveries.filter(
-        (delivery) => delivery.recipientAgentId === participant.agentId,
-      );
+      const role = participant.agentId === action.ownerAgentId ? "owner" : "observer";
+      const previous = deliveries.filter((delivery) => delivery.recipientAgentId === participant.agentId);
       // A fresh head can invalidate the assessment while the comment revision stays the same.
       if (
         action.blocker.kind === "review_feedback" &&
@@ -622,10 +542,7 @@ export class TrackingStore {
             notice.role === role
           );
         }) &&
-        !previous.some(
-          (delivery) =>
-            this.inbox.notice(delivery.id)?.assessmentId === assessment.id,
-        )
+        !previous.some((delivery) => this.inbox.notice(delivery.id)?.assessmentId === assessment.id)
       )
         continue;
 
@@ -645,9 +562,7 @@ export class TrackingStore {
       const notice: SafeNotice = {
         ...actionNotice(action, pr.url, status),
         assessmentId: assessment.id,
-        ...(/^[a-f0-9]{40,64}$/u.test(assessment.head)
-          ? { head: assessment.head }
-          : {}),
+        ...(/^[a-f0-9]{40,64}$/u.test(assessment.head) ? { head: assessment.head } : {}),
         role,
       };
       this.inbox.freezeNotice(id, notice);
@@ -687,16 +602,10 @@ export class TrackingStore {
       const pr = this.pr(id),
         agent = this.register(target);
       if (this.subscriptions.addInside(pr, agent.id)) {
-        for (const action of this.actions().filter(
-          (a) => a.prId === pr.id && unfinished(a),
-        ))
+        for (const action of this.actions().filter((a) => a.prId === pr.id && unfinished(a)))
           this.enqueueFor(action, agent.id);
         this.subscriptions.publishInside(pr);
-        this.event(
-          "pr_subscribed",
-          `${compact(agent.label ?? agent.harness, 120)} joined as observer`,
-          pr.id,
-        );
+        this.event("pr_subscribed", `${compact(agent.label ?? agent.harness, 120)} joined as observer`, pr.id);
       }
       return this.participants(pr.id);
     });
@@ -738,10 +647,7 @@ export class TrackingStore {
       return this.participants(pr.id);
     });
   }
-  replaceCompletionNotifications(
-    actionId: string,
-    recipients: readonly string[],
-  ): void {
+  replaceCompletionNotifications(actionId: string, recipients: readonly string[]): void {
     if (!this.db.isTransaction) {
       this.transaction(() => {
         this.replaceCompletionNotifications(actionId, recipients);
@@ -755,12 +661,7 @@ export class TrackingStore {
       !action.blocker.checks.every(successfulCheck)
     )
       throw new Error("Invalid completion replacement");
-    this.cancelDeliveries(
-      actionId,
-      "Replaced by an immutable readiness notice",
-      true,
-      recipients,
-    );
+    this.cancelDeliveries(actionId, "Replaced by an immutable readiness notice", true, recipients);
   }
   private cancelDeliveries(
     actionId: string,
@@ -795,13 +696,9 @@ export class TrackingStore {
         agent = this.register(target);
       if (p.ownerAgentId === agent.id) return p;
       this.db
-        .prepare(
-          "UPDATE tracked_prs SET owner_agent_id=?,updated_at_ms=? WHERE id=?",
-        )
+        .prepare("UPDATE tracked_prs SET owner_agent_id=?,updated_at_ms=? WHERE id=?")
         .run(agent.id, this.now(), p.id);
-      for (const a of this.actions().filter(
-        (a) => a.prId === p.id && unfinished(a),
-      )) {
+      for (const a of this.actions().filter((a) => a.prId === p.id && unfinished(a))) {
         this.cancelDeliveries(a.id, "Ownership reassigned", true);
         const next = {
           ...a,
@@ -821,26 +718,16 @@ export class TrackingStore {
     return this.transaction(() => {
       const p = this.pr(id);
       this.retirement.disableInside(p.id);
-      for (const a of this.actions().filter((a) => a.prId === p.id))
-        this.cancelDeliveries(a.id, "PR untracked");
+      for (const a of this.actions().filter((a) => a.prId === p.id)) this.cancelDeliveries(a.id, "PR untracked");
       this.checks.cancel(p.id);
       this.event("pr_untracked", "Tracking disabled", p.id);
       return this.pr(p.id);
     });
   }
-  observe(
-    id: string,
-    input: ObservationInput,
-    config: TrackingConfig,
-    expectedEpoch?: number,
-  ): TrackedPR {
+  observe(id: string, input: ObservationInput, config: TrackingConfig, expectedEpoch?: number): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
-      if (
-        !p.enabled ||
-        (expectedEpoch !== undefined && p.trackingEpoch !== expectedEpoch)
-      )
-        return p;
+      if (!p.enabled || (expectedEpoch !== undefined && p.trackingEpoch !== expectedEpoch)) return p;
       const o = this.observations.append(p.id, input);
       this.db
         .prepare(
@@ -851,24 +738,18 @@ export class TrackingStore {
       for (const a of this.actions(p.id).filter(unfinished)) {
         const progress = this.closeProgress(a, o);
         if (progress) {
-          this.saveAction(
-            { ...a, progress, updatedAt: this.now() },
-            `action_${progress.state}`,
-          );
+          this.saveAction({ ...a, progress, updatedAt: this.now() }, `action_${progress.state}`);
           this.cancelDeliveries(a.id, "Action no longer outstanding");
         }
       }
       const observedFindings = findings(o, p.url);
       const watches = this.checks.observe(
         o,
-        p.state === TrackingState.Archived ||
-          (p.state === TrackingState.Draining && !terminalPR(o.lifecycle)),
+        p.state === TrackingState.Archived || (p.state === TrackingState.Draining && !terminalPR(o.lifecycle)),
       );
       const existing = this.actions(p.id);
       const reported = [...existing, ...observedFindings];
-      const checkResults = watches.flatMap((watch) =>
-        checkWatchFindings(watch, o, p.url, reported),
-      );
+      const checkResults = watches.flatMap((watch) => checkWatchFindings(watch, o, p.url, reported));
       for (const f of [...observedFindings, ...checkResults]) {
         if (alreadyReported(f, existing)) continue;
         const at = this.now(),
@@ -893,41 +774,22 @@ export class TrackingStore {
   }
   private closeProgress(action: Action, observation: PRObservation) {
     const openedOnTerminalPR =
-      action.blocker.kind === "review_feedback" &&
-      terminalPR(this.observations.lifecycle(action.openedObservationId));
-    return closeProgress(
-      action,
-      observation,
-      this.now(),
-      openedOnTerminalPR,
-      () =>
-        action.blocker.kind === "check_failed"
-          ? this.observations.check(
-              action.openedObservationId,
-              action.blocker.sourceId,
-            )
-          : undefined,
+      action.blocker.kind === "review_feedback" && terminalPR(this.observations.lifecycle(action.openedObservationId));
+    return closeProgress(action, observation, this.now(), openedOnTerminalPR, () =>
+      action.blocker.kind === "check_failed"
+        ? this.observations.check(action.openedObservationId, action.blocker.sourceId)
+        : undefined,
     );
   }
 
-  refreshOutcome(
-    id: string,
-    outcome: "cancelled" | "retry_scheduled" | "recovered",
-    message: string,
-  ): void {
-    this.event(
-      `pr_refresh_${outcome}`,
-      message.slice(0, 1000),
-      this.prContext(id).id,
-    );
+  refreshOutcome(id: string, outcome: "cancelled" | "retry_scheduled" | "recovered", message: string): void {
+    this.event(`pr_refresh_${outcome}`, message.slice(0, 1000), this.prContext(id).id);
   }
   refreshError(id: string, message: string): void {
     this.transaction(() => {
       const p = this.pr(id);
       this.db
-        .prepare(
-          "UPDATE tracked_prs SET last_refresh_error=?,last_refresh_error_at_ms=? WHERE id=?",
-        )
+        .prepare("UPDATE tracked_prs SET last_refresh_error=?,last_refresh_error_at_ms=? WHERE id=?")
         .run(message, this.now(), p.id);
       this.event("pr_refresh_failed", message, p.id);
     });
@@ -936,14 +798,9 @@ export class TrackingStore {
     return this.transaction(() => {
       const a = this.action(id);
       if (!unfinished(a)) throw new Error("Action is closed");
-      if (a.ownerAgentId !== agentId)
-        throw new Error("Action belongs to another agent");
-      if (working && a.progress.state === ActionState.Open)
-        throw new Error("Acknowledge action before starting work");
-      if (
-        a.progress.state === ActionState.Working ||
-        (!working && a.progress.state === ActionState.Acknowledged)
-      )
+      if (a.ownerAgentId !== agentId) throw new Error("Action belongs to another agent");
+      if (working && a.progress.state === ActionState.Open) throw new Error("Acknowledge action before starting work");
+      if (a.progress.state === ActionState.Working || (!working && a.progress.state === ActionState.Acknowledged))
         return a;
       const next: Action = {
         ...a,
@@ -963,8 +820,7 @@ export class TrackingStore {
     return this.transaction(() => this.acknowledgeMessageInside(id, agentId));
   }
   acknowledgeMessageInside(id: string, agentId: string) {
-    if (!this.db.isTransaction)
-      throw new Error("Receipt requires a coordinator transaction");
+    if (!this.db.isTransaction) throw new Error("Receipt requires a coordinator transaction");
     const before = this.inbox.get(id),
       message = this.inbox.acknowledge(id, agentId);
     if (before?.acknowledgedAt === undefined) {
@@ -972,10 +828,7 @@ export class TrackingStore {
         this.event("message_acknowledged", message.id, message.workflowPRId);
       } else if (message.participantPRId !== undefined) {
         this.event("message_acknowledged", message.id, message.participantPRId);
-      } else if (
-        message.submissionId === undefined &&
-        message.issueId === undefined
-      ) {
+      } else if (message.submissionId === undefined && message.issueId === undefined) {
         const action = this.action(message.actionId);
         this.event("message_acknowledged", message.id, action.prId, action.id);
       } else this.event("message_acknowledged", message.id, "");
@@ -987,22 +840,11 @@ export class TrackingStore {
       const d = this.deliveries().find((d) => d.id === id);
       if (!d) throw new Error("Delivery not found");
       const a = this.action(d.actionId);
-      if (this.inbox.get(id)?.acknowledgedAt !== undefined)
-        throw new Error("Message already acknowledged");
-      if (
-        !this.pr(a.prId).enabled ||
-        !unfinished(a) ||
-        !this.subscriptions.includes(a.prId, d.recipientAgentId)
-      )
+      if (this.inbox.get(id)?.acknowledgedAt !== undefined) throw new Error("Message already acknowledged");
+      if (!this.pr(a.prId).enabled || !unfinished(a) || !this.subscriptions.includes(a.prId, d.recipientAgentId))
         throw new Error("Delivery no longer applicable");
-      if (
-        ![DeliveryState.Unavailable, DeliveryState.Uncertain].includes(
-          d.progress.state,
-        )
-      )
-        throw new Error(
-          "Only unavailable or uncertain deliveries can be retried",
-        );
+      if (![DeliveryState.Unavailable, DeliveryState.Uncertain].includes(d.progress.state))
+        throw new Error("Only unavailable or uncertain deliveries can be retried");
       const next = {
         ...d,
         retryCount: 0,

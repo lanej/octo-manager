@@ -1,9 +1,6 @@
 export type Projection = (value: unknown) => unknown;
 
-export function fields(
-  keys: readonly string[],
-  children: Readonly<Record<string, Projection>> = {},
-): Projection {
+export function fields(keys: readonly string[], children: Readonly<Record<string, Projection>> = {}): Projection {
   return (value) => {
     if (typeof value !== "object" || value === null || Array.isArray(value))
       throw new Error("Expected an object in CLI response");

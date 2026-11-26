@@ -40,18 +40,13 @@ export const ConfigSchema = Type.Object(
     merging: Type.Optional(
       Type.Object(
         {
-          auto_merge: Type.Optional(
-            Type.Union([Type.Boolean(), Type.Literal("project_stage")]),
-          ),
+          auto_merge: Type.Optional(Type.Union([Type.Boolean(), Type.Literal("project_stage")])),
         },
         { additionalProperties: false },
       ),
     ),
     notifications: Type.Optional(
-      Type.Object(
-        { instructions: Type.Optional(InstructionsSchema) },
-        { additionalProperties: false },
-      ),
+      Type.Object({ instructions: Type.Optional(InstructionsSchema) }, { additionalProperties: false }),
     ),
   },
   { additionalProperties: false },
@@ -62,11 +57,7 @@ export const AutomationPolicySchema = Type.Object(
     root: Type.String(),
     ownerId: Type.String(),
     epoch: Type.Integer(),
-    status: Type.Union([
-      Type.Literal("valid"),
-      Type.Literal("missing"),
-      Type.Literal("invalid"),
-    ]),
+    status: Type.Union([Type.Literal("valid"), Type.Literal("missing"), Type.Literal("invalid")]),
     hash: Type.String(),
     stage: Type.Optional(StageSchema),
     autoMerge: Type.Boolean(),
@@ -78,17 +69,12 @@ export const AutomationPolicySchema = Type.Object(
 export type AutomationPolicy = Static<typeof AutomationPolicySchema>;
 export type Instructions = Static<typeof InstructionsSchema>;
 export const defaults: Record<NotificationState, string> = {
-  review_feedback:
-    "Inspect and address actionable review findings using the installed project guidance.",
-  checks_failed:
-    "Inspect the failed run and address the cause using the installed project checks.",
-  merge_conflict:
-    "Inspect and resolve the merge conflict using the installed project guidance.",
+  review_feedback: "Inspect and address actionable review findings using the installed project guidance.",
+  checks_failed: "Inspect the failed run and address the cause using the installed project checks.",
+  merge_conflict: "Inspect and resolve the merge conflict using the installed project guidance.",
   dependencies_pending: "Inspect and report the remaining prerequisites.",
-  owner_review_required:
-    "Review the current head and record readiness when satisfied.",
-  ready:
-    "Review the current head and proceed with the requested merge workflow.",
+  owner_review_required: "Review the current head and record readiness when satisfied.",
+  ready: "Review the current head and proceed with the requested merge workflow.",
   merged: "Report completion and perform the configured post-merge follow-up.",
   merge_uncertain: "Inspect reconciliation evidence before retrying the merge.",
   merge_blocked: "Inspect and address the reported merge blocker.",

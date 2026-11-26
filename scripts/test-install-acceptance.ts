@@ -1,11 +1,4 @@
-import {
-  mkdtemp,
-  mkdir,
-  writeFile,
-  readFile,
-  lstat,
-  rm,
-} from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, lstat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { Type, type Static } from "typebox";
@@ -21,11 +14,7 @@ const ResultSchema = Type.Object(
   {
     installed: Type.Literal(true),
     started: Type.Boolean(),
-    serviceManager: Type.Union([
-      Type.Literal("launchd"),
-      Type.Literal("systemd"),
-      Type.Literal("manual"),
-    ]),
+    serviceManager: Type.Union([Type.Literal("launchd"), Type.Literal("systemd"), Type.Literal("manual")]),
     service: Type.String(),
     servicePath: Type.String(),
     manualCommand: Type.Optional(Type.String()),
@@ -64,8 +53,7 @@ delete env["PROJECT_UPDATE_RUN_ID"];
 const start = values.start === true;
 if (!start && process.platform === "linux") {
   env["XDG_RUNTIME_DIR"] = join(home, "absent-runtime");
-  env["DBUS_SESSION_BUS_ADDRESS"] =
-    "unix:path=" + join(home, "absent-user-bus");
+  env["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=" + join(home, "absent-user-bus");
 }
 let foreground: ReturnType<typeof Bun.spawn> | undefined,
   installed: Result | undefined,
@@ -110,34 +98,15 @@ async function ready(): Promise<void> {
 }
 try {
   if (!start && process.platform === "linux") {
-    const probe = await command(
-      ["systemctl", "--user", "show-environment"],
-      env,
-    );
-    assert(
-      probe.code !== 0,
-      "Unavailable-manager fixture unexpectedly reached a user manager",
-    );
+    const probe = await command(["systemctl", "--user", "show-environment"], env);
+    assert(probe.code !== 0, "Unavailable-manager fixture unexpectedly reached a user manager");
   }
   if (start) {
     const preflight =
       process.platform === "linux"
-        ? await command(
-            ["systemctl", "--user", "cat", "octo-manager.service"],
-            env,
-          )
-        : await command(
-            [
-              "/bin/launchctl",
-              "print",
-              `gui/${String(process.getuid?.())}/com.lanej.octo-manager`,
-            ],
-            env,
-          );
-    assert(
-      preflight.code !== 0,
-      "Preserve the existing Octo user service; acceptance requires a disposable user",
-    );
+        ? await command(["systemctl", "--user", "cat", "octo-manager.service"], env)
+        : await command(["/bin/launchctl", "print", `gui/${String(process.getuid?.())}/com.lanej.octo-manager`], env);
+    assert(preflight.code !== 0, "Preserve the existing Octo user service; acceptance requires a disposable user");
   }
   await mkdir(codex, { recursive: true });
   const hooks = join(codex, "hooks.json");
@@ -145,9 +114,7 @@ try {
     hooks,
     JSON.stringify({
       hooks: {
-        SessionStart: [
-          { hooks: [{ type: "command", command: "echo unrelated-fixture" }] },
-        ],
+        SessionStart: [{ hooks: [{ type: "command", command: "echo unrelated-fixture" }] }],
       },
     }),
   );
@@ -158,12 +125,7 @@ try {
     await lstat(join(home, ".local/share/octo-manager/runtime"));
     privateRuntime = true;
   } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      error.code !== "ENOENT"
-    )
-      throw error;
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
   }
   assert(!privateRuntime, "Installer copied a private Bun runtime");
   const launcher = join(home, ".local/bin/octo-manager");
@@ -173,45 +135,28 @@ try {
     ...env,
     PATH: join(home, "absent-bin"),
   });
-  assert(
-    missing.code !== 0 && missing.stderr.includes("requires Bun"),
-    "Launcher did not require environment Bun",
-  );
+  assert(missing.code !== 0 && missing.stderr.includes("requires Bun"), "Launcher did not require environment Bun");
   if (start && process.platform === "linux")
-    assert(
-      installed.started,
-      "Linux user-manager acceptance did not start a service",
-    );
+    assert(installed.started, "Linux user-manager acceptance did not start a service");
   if (!installed.started) {
-    assert(
-      installed.manualCommand !== undefined,
-      "No runnable manual startup command",
-    );
-    foreground = Bun.spawn(
-      ["/bin/sh", "-c", "exec " + installed.manualCommand],
-      { env, stdout: "pipe", stderr: "pipe" },
-    );
+    assert(installed.manualCommand !== undefined, "No runnable manual startup command");
+    foreground = Bun.spawn(["/bin/sh", "-c", "exec " + installed.manualCommand], {
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
   }
   await ready();
   const first = await readFile(hooks, "utf8");
   assert(first.includes("echo unrelated-fixture"), "Unrelated hook lost");
   const refused = await invokeInstaller();
-  assert(
-    refused.code === 3,
-    `Unbound live-owner install was not refused: ${refused.stderr}`,
-  );
+  assert(refused.code === 3, `Unbound live-owner install was not refused: ${refused.stderr}`);
   await ready();
-  assert(
-    (await readFile(hooks, "utf8")) === first,
-    "Refused install changed hook definitions",
-  );
+  assert((await readFile(hooks, "utf8")) === first, "Refused install changed hook definitions");
   if (foreground !== undefined) {
     foreground.kill("SIGTERM");
     const code = await foreground.exited;
-    assert(
-      code === 0 || code === 143,
-      "Owned foreground coordinator did not retire",
-    );
+    assert(code === 0 || code === 143, "Owned foreground coordinator did not retire");
     foreground = undefined;
   } else {
     const original = await runtimeLifecycle(state, { action: "inventory" });
@@ -223,30 +168,21 @@ try {
       expectedNativeId: target.process.native_id,
       runId: operation,
     });
-    assert(
-      checkpoint.targets[0].checkpoint?.state === "confirmed",
-      "Owned managed coordinator refused checkpoint",
-    );
+    assert(checkpoint.targets[0].checkpoint?.state === "confirmed", "Owned managed coordinator refused checkpoint");
     const directory = join(home, "operation");
     await mkdir(directory, { mode: 0o700 });
-    await writeFile(
-      join(directory, "octo-manager-inventory.json"),
-      JSON.stringify(original),
-      { mode: 0o600 },
-    );
+    await writeFile(join(directory, "octo-manager-inventory.json"), JSON.stringify(original), { mode: 0o600 });
     env["PROJECT_UPDATE_OPERATION_DIR"] = directory;
     env["PROJECT_UPDATE_RUN_ID"] = operation;
   }
   installed = await install();
   if (!installed.started) {
-    assert(
-      installed.manualCommand !== undefined,
-      "Rerun has no manual startup command",
-    );
-    foreground = Bun.spawn(
-      ["/bin/sh", "-c", "exec " + installed.manualCommand],
-      { env, stdout: "pipe", stderr: "pipe" },
-    );
+    assert(installed.manualCommand !== undefined, "Rerun has no manual startup command");
+    foreground = Bun.spawn(["/bin/sh", "-c", "exec " + installed.manualCommand], {
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
   }
   await ready();
   if (env["PROJECT_UPDATE_RUN_ID"] !== undefined) {
@@ -261,15 +197,11 @@ try {
       restorePaused,
     });
     assert(
-      result.targets[0].ready &&
-        result.targets[0].scheduler_paused === restorePaused,
+      result.targets[0].ready && result.targets[0].scheduler_paused === restorePaused,
       "Owned managed coordinator did not restore scheduler state",
     );
   }
-  assert(
-    (await readFile(hooks, "utf8")) === first,
-    "Rerun duplicated or changed hook definitions",
-  );
+  assert((await readFile(hooks, "utf8")) === first, "Rerun duplicated or changed hook definitions");
   console.log(
     JSON.stringify({
       platform: process.platform,
@@ -288,22 +220,9 @@ try {
     } else if (startupAttempted || installed?.started === true) {
       const stop =
         process.platform === "linux"
-          ? await command(
-              [
-                "systemctl",
-                "--user",
-                "disable",
-                "--now",
-                "octo-manager.service",
-              ],
-              env,
-            )
+          ? await command(["systemctl", "--user", "disable", "--now", "octo-manager.service"], env)
           : await command(
-              [
-                "/bin/launchctl",
-                "bootout",
-                `gui/${String(process.getuid?.())}/com.lanej.octo-manager`,
-              ],
+              ["/bin/launchctl", "bootout", `gui/${String(process.getuid?.())}/com.lanej.octo-manager`],
               env,
             );
       stopped = stop.code === 0;

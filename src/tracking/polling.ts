@@ -24,22 +24,13 @@ function signature(observation: ObservationInput): string {
     ...value,
     checks: part(observation.checks),
     reviews: part(observation.reviews),
-    feedback:
-      observation.feedback === undefined
-        ? undefined
-        : part(observation.feedback),
-    workflows:
-      observation.workflows === undefined
-        ? undefined
-        : part(observation.workflows),
+    feedback: observation.feedback === undefined ? undefined : part(observation.feedback),
+    workflows: observation.workflows === undefined ? undefined : part(observation.workflows),
   };
   return createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
 }
 function part(
-  value:
-    | ObservationInput["checks"]
-    | ObservationInput["reviews"]
-    | NonNullable<ObservationInput["feedback"]>,
+  value: ObservationInput["checks"] | ObservationInput["reviews"] | NonNullable<ObservationInput["feedback"]>,
 ): unknown {
   return value.state === "unavailable"
     ? value
@@ -53,10 +44,7 @@ function pending(observation: ObservationInput): boolean {
     (value) =>
       value === undefined ||
       value.state !== "complete" ||
-      value.value.some(
-        (check) =>
-          !["completed", "success", "failure", "error"].includes(check.status),
-      ),
+      value.value.some((check) => !["completed", "success", "failure", "error"].includes(check.status)),
   );
 }
 export function schedulePoll(
@@ -69,16 +57,9 @@ export function schedulePoll(
   retryAt: number,
 ): PollState {
   const prior = previous?.epoch === epoch ? previous : undefined;
-  const nextSignature =
-    observation === undefined ? prior?.signature : signature(observation);
-  const unchanged =
-    prior !== undefined &&
-    nextSignature !== undefined &&
-    prior.signature === nextSignature;
-  const doubled =
-    prior === undefined
-      ? policy.minimumMs
-      : Math.min(policy.maximumMs, prior.intervalMs * 2);
+  const nextSignature = observation === undefined ? prior?.signature : signature(observation);
+  const unchanged = prior !== undefined && nextSignature !== undefined && prior.signature === nextSignature;
+  const doubled = prior === undefined ? policy.minimumMs : Math.min(policy.maximumMs, prior.intervalMs * 2);
   let intervalMs =
     trigger === "manual"
       ? policy.minimumMs
@@ -87,8 +68,7 @@ export function schedulePoll(
         : unchanged
           ? doubled
           : policy.minimumMs;
-  const active =
-    observation === undefined ? (prior?.active ?? false) : pending(observation);
+  const active = observation === undefined ? (prior?.active ?? false) : pending(observation);
   if (active) intervalMs = Math.min(intervalMs, policy.activeMaximumMs);
   return {
     epoch,

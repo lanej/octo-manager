@@ -19,30 +19,17 @@ const issueSchema = Type.Object({
   pull_request: Type.Optional(Type.Object({ url: Type.String() })),
 });
 function base(ref: IssueReference): string {
-  if (
-    ref.provider !== "github" ||
-    !/^[\w.-]+\/[\w.-]+$/u.test(ref.project) ||
-    !/^[1-9]\d*$/u.test(ref.externalId)
-  )
+  if (ref.provider !== "github" || !/^[\w.-]+\/[\w.-]+$/u.test(ref.project) || !/^[1-9]\d*$/u.test(ref.externalId))
     throw new Error("Invalid GitHub issue identity");
   return `repos/${ref.project}/issues`;
 }
 const marker = (key: string) => `<!-- octo-issue:${key} -->`;
 export class GitHubIssueTracker implements IssueTracker {
   readonly provider = "github";
-  constructor(
-    private reads: Pick<
-      typeof githubReads,
-      "read" | "post" | "patch"
-    > = githubReads,
-  ) {}
+  constructor(private reads: Pick<typeof githubReads, "read" | "post" | "patch"> = githubReads) {}
   identify(url: string): IssueReference {
-    const match =
-      /^https:\/\/github.com\/([\w.-]+\/[\w.-]+)\/issues\/([1-9]\d*)\/?$/u.exec(
-        url,
-      );
-    if (match?.[1] == null || match[2] == null)
-      throw new Error("Expected a github.com issue URL");
+    const match = /^https:\/\/github.com\/([\w.-]+\/[\w.-]+)\/issues\/([1-9]\d*)\/?$/u.exec(url);
+    if (match?.[1] == null || match[2] == null) throw new Error("Expected a github.com issue URL");
     return {
       provider: this.provider,
       project: match[1],
@@ -58,33 +45,20 @@ export class GitHubIssueTracker implements IssueTracker {
     }).trim();
     const expected = ref.project.toLowerCase();
     const project = remote
-      .replace(
-        /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)/u,
-        "",
-      )
+      .replace(/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)/u, "")
       .replace(/\.git$/u, "")
       .toLowerCase();
-    if (project !== expected)
-      throw new Error(
-        "Issue does not belong to the selected repository checkout",
-      );
+    if (project !== expected) throw new Error("Issue does not belong to the selected repository checkout");
   }
   async observe(ref: IssueReference, signal: AbortSignal) {
-    const value = checked(
-      issueSchema,
-      await this.reads.read(`${base(ref)}/${ref.externalId}`, signal),
-    );
-    if (value.pull_request != null)
-      throw new Error("Use PR tracking for pull requests");
+    const value = checked(issueSchema, await this.reads.read(`${base(ref)}/${ref.externalId}`, signal));
+    if (value.pull_request != null) throw new Error("Use PR tracking for pull requests");
     const comments: IssueComment[] = [];
     let complete = false;
     for (let page = 1; page <= 10; page++) {
       const values = checked(
         Type.Array(item),
-        await this.reads.read(
-          `${base(ref)}/${ref.externalId}/comments?per_page=100&page=${String(page)}`,
-          signal,
-        ),
+        await this.reads.read(`${base(ref)}/${ref.externalId}/comments?per_page=100&page=${String(page)}`, signal),
       );
       for (const comment of values)
         comments.push({
@@ -110,13 +84,8 @@ export class GitHubIssueTracker implements IssueTracker {
   }
   async findPost(ref: IssueReference, key: string, signal: AbortSignal) {
     const observation = await this.observe(ref, signal);
-    if (!observation.complete)
-      throw new Error(
-        "Incomplete comment evidence prevents write reconciliation",
-      );
-    return observation.comments.find((comment) =>
-      comment.body.includes(marker(key)),
-    )?.url;
+    if (!observation.complete) throw new Error("Incomplete comment evidence prevents write reconciliation");
+    return observation.comments.find((comment) => comment.body.includes(marker(key)))?.url;
   }
   async post(
     ref: IssueReference,
@@ -145,20 +114,13 @@ export class GitHubIssueTracker implements IssueTracker {
             body: Type.Union([Type.String(), Type.Null()]),
           }),
         ),
-        await this.reads.read(
-          `${base(ref)}?state=all&per_page=100&page=${String(page)}`,
-          signal,
-        ),
+        await this.reads.read(`${base(ref)}?state=all&per_page=100&page=${String(page)}`, signal),
       );
-      const found = values.find(
-        (value) => value.body?.includes(marker(key)) ?? false,
-      );
+      const found = values.find((value) => value.body?.includes(marker(key)) ?? false);
       if (found != null) return found.html_url;
       if (values.length < 100) return undefined;
     }
-    throw new Error(
-      "Incomplete issue inventory prevents follow-up reconciliation",
-    );
+    throw new Error("Incomplete issue inventory prevents follow-up reconciliation");
   }
   async createFollowUp(
     ref: IssueReference,
@@ -179,11 +141,7 @@ export class GitHubIssueTracker implements IssueTracker {
     );
     return response.html_url;
   }
-  async close(
-    ref: IssueReference,
-    signal: AbortSignal,
-    authorize: () => void,
-  ): Promise<void> {
+  async close(ref: IssueReference, signal: AbortSignal, authorize: () => void): Promise<void> {
     await this.reads.patch(
       `${base(ref)}/${ref.externalId}`,
       { state: "closed", state_reason: "completed" },

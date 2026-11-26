@@ -1,15 +1,8 @@
 import { checkReplaces } from "../tracking/checks.js";
-import type {
-  CheckObservation,
-  PRObservation,
-  ObservationInput,
-} from "../tracking/types.js";
-export function currentMergeChecks(
-  observation: ObservationInput | PRObservation,
-): CheckObservation[] {
+import type { CheckObservation, PRObservation, ObservationInput } from "../tracking/types.js";
+export function currentMergeChecks(observation: ObservationInput | PRObservation): CheckObservation[] {
   const workflows =
-    observation.workflows !== undefined &&
-    observation.workflows.state !== "unavailable"
+    observation.workflows !== undefined && observation.workflows.state !== "unavailable"
       ? observation.workflows.value
       : [];
   const superseded = workflows.filter(
@@ -17,9 +10,7 @@ export function currentMergeChecks(
       old.conclusion === "cancelled" &&
       old.workflowId !== undefined &&
       old.suiteId !== undefined &&
-      ["push", "pull_request", "pull_request_target"].includes(
-        old.event ?? "",
-      ) &&
+      ["push", "pull_request", "pull_request_target"].includes(old.event ?? "") &&
       workflows.some(
         (current) =>
           current.suiteId !== undefined &&
@@ -35,17 +26,11 @@ export function currentMergeChecks(
       ),
   );
   const suites = new Set(superseded.map((run) => run.suiteId));
-  const runs =
-    observation.checks.state !== "unavailable" ? observation.checks.value : [];
+  const runs = observation.checks.state !== "unavailable" ? observation.checks.value : [];
   const values = [...runs, ...workflows];
   return values
     .filter(
-      (check) =>
-        !values.some(
-          (candidate) =>
-            candidate.headSha === check.headSha &&
-            checkReplaces(check, candidate),
-        ),
+      (check) => !values.some((candidate) => candidate.headSha === check.headSha && checkReplaces(check, candidate)),
     )
     .filter(
       (check) =>

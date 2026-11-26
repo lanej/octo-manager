@@ -46,15 +46,12 @@ export class ApplicationRuntime implements Application {
     return this.stopping || this.stopped;
   }
   start(): Promise<void> {
-    if (this.isStopping())
-      return Promise.reject(new Error("Coordinator is stopping"));
+    if (this.isStopping()) return Promise.reject(new Error("Coordinator is stopping"));
     return (this.startWork ??= (async () => {
       try {
         await this.transport.listen();
         if (this.isStopping()) throw new Error("Coordinator is stopping");
-        this.releaseDispatch = githubReads.setDispatcher(
-          this.services.githubScheduler,
-        );
+        this.releaseDispatch = githubReads.setDispatcher(this.services.githubScheduler);
         this.services.start(this.workScheduler);
         this.jobs.wake();
         this.policyWork.wake();
@@ -67,8 +64,7 @@ export class ApplicationRuntime implements Application {
     })());
   }
   nativeAdmission(method: string): () => void {
-    if (method === "RuntimeLifecycle" || method === "GetServerInfo")
-      return () => {};
+    if (method === "RuntimeLifecycle" || method === "GetServerInfo") return () => {};
     if (this.stopping) throw new Error("Coordinator is stopping");
     this.nativeCalls++;
     return () => {
@@ -82,21 +78,13 @@ export class ApplicationRuntime implements Application {
     expected: string,
     restorePaused?: boolean,
   ): Promise<ActivationReport> {
-    const report = () =>
-      this.activation.report(
-        this.transport.listening && !this.stopping,
-        this.store.paused(),
-      );
+    const report = () => this.activation.report(this.transport.listening && !this.stopping, this.store.paused());
     if (action === "inventory") return report();
     if (action === "verify") {
       const value = report();
-      if (
-        this.activation.identity === null ||
-        expected !== this.activation.identity
-      ) {
+      if (this.activation.identity === null || expected !== this.activation.identity) {
         value.targets[0].ready = false;
-        value.targets[0].reason =
-          "native-loaded-image-unavailable-or-selection-differs";
+        value.targets[0].reason = "native-loaded-image-unavailable-or-selection-differs";
       }
       return value;
     }
@@ -118,39 +106,26 @@ export class ApplicationRuntime implements Application {
         return value;
       } catch (error) {
         const value = report();
-        value.targets[0].reason =
-          error instanceof Error ? error.message : "Native retirement refused";
+        value.targets[0].reason = error instanceof Error ? error.message : "Native retirement refused";
         value.targets[0].stop_accepted = false;
         return value;
       }
     }
 
     if (action === "restore") {
-      if (
-        this.stopping ||
-        this.activation.identity === null ||
-        expected !== this.activation.identity
-      ) {
+      if (this.stopping || this.activation.identity === null || expected !== this.activation.identity) {
         const value = report();
-        value.targets[0].reason =
-          "original-octo-drain-cannot-be-reversed-or-image-differs";
+        value.targets[0].reason = "original-octo-drain-cannot-be-reversed-or-image-differs";
         return value;
       }
-      if (
-        this.activation.restore(incarnation, operation) &&
-        restorePaused !== undefined
-      )
+      if (this.activation.restore(incarnation, operation) && restorePaused !== undefined)
         this.store.setPaused(restorePaused);
       return report();
     }
-    if (action !== "checkpoint")
-      throw new Error("Unsupported lifecycle action");
+    if (action !== "checkpoint") throw new Error("Unsupported lifecycle action");
     if (this.checkpointWork !== undefined) {
       const current = report().targets[0];
-      if (
-        current.process.native_id === incarnation &&
-        current.checkpoint?.run_id === operation
-      ) {
+      if (current.process.native_id === incarnation && current.checkpoint?.run_id === operation) {
         await this.checkpointWork;
         return report();
       }
@@ -164,8 +139,7 @@ export class ApplicationRuntime implements Application {
     ) {
       const value = report();
       value.targets[0].checkpoint = { state: "refused", run_id: operation };
-      value.targets[0].reason =
-        "active-octo-work-has-no-confirmed-native-checkpoint-or-image-is-unmanaged";
+      value.targets[0].reason = "active-octo-work-has-no-confirmed-native-checkpoint-or-image-is-unmanaged";
       return value;
     }
     try {
@@ -173,8 +147,7 @@ export class ApplicationRuntime implements Application {
     } catch (error) {
       const value = report();
       value.targets[0].checkpoint = { state: "refused", run_id: operation };
-      value.targets[0].reason =
-        error instanceof Error ? error.message : "Native checkpoint refused";
+      value.targets[0].reason = error instanceof Error ? error.message : "Native checkpoint refused";
       return value;
     }
     this.stopping = true;

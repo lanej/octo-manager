@@ -5,16 +5,8 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { EntryState, OperationState } from "../src/merging/contracts.js";
-import {
-  parseNotice,
-  noticeView,
-  type SafeNotice,
-} from "../src/security/notifications.js";
-import {
-  renderDigest,
-  renderDirectNotice,
-  messageReceiptId,
-} from "../src/notifications/render.js";
+import { parseNotice, noticeView, type SafeNotice } from "../src/security/notifications.js";
+import { renderDigest, renderDirectNotice, messageReceiptId } from "../src/notifications/render.js";
 import type { AgentMessage } from "../src/notifications/message.js";
 
 const url = "https://github.com/owner/repo/pull/1";
@@ -37,9 +29,7 @@ test("external merge recovery explains owner and subscriber routing without chan
   try {
     const pr = store.tracking.track(url, owner);
     store.tracking.subscribe(pr.id, observer);
-    const subscriber = store.tracking
-      .agents()
-      .find((agent) => agent.sessionId === observer.sessionId);
+    const subscriber = store.tracking.agents().find((agent) => agent.sessionId === observer.sessionId);
     if (subscriber === undefined) throw new Error("Missing subscriber");
     store.merging.queue(
       {
@@ -61,16 +51,10 @@ test("external merge recovery explains owner and subscriber routing without chan
     expect(subscribed.notice?.role).toBe("observer");
     expect(own.body).toContain("External merge observed · workflow reconciled");
     expect(own.body).toContain("addressed to this session as the PR owner");
-    expect(subscribed.body).toContain(
-      "addressed to this session as a PR subscriber",
-    );
+    expect(subscribed.body).toContain("addressed to this session as a PR subscriber");
     expect(own.body).not.toContain("Octo execution");
-    expect(renderDigest([own], directory, "12345678").body).toContain(
-      "as the PR owner",
-    );
-    expect(renderDigest([subscribed], directory, "87654321").body).toContain(
-      "as a PR subscriber",
-    );
+    expect(renderDigest([own], directory, "12345678").body).toContain("as the PR owner");
+    expect(renderDigest([subscribed], directory, "87654321").body).toContain("as a PR subscriber");
     expect(store.merging.operations(pr.id)).toEqual([]);
     store.tracking.assign(pr.id, observer);
     store.close();
@@ -79,12 +63,8 @@ test("external merge recovery explains owner and subscriber routing without chan
     expect(historical?.body).toBe(own.body);
     expect(historical?.notice?.role).toBe("owner");
     expect(store.tracking.inbox.get(subscribed.id)?.body).toBe(subscribed.body);
-    expect(
-      store.tracking.inbox.acknowledge(own.id, pr.ownerAgentId).acknowledgedAt,
-    ).toBeDefined();
-    expect(
-      store.tracking.inbox.get(subscribed.id)?.acknowledgedAt,
-    ).toBeUndefined();
+    expect(store.tracking.inbox.acknowledge(own.id, pr.ownerAgentId).acknowledgedAt).toBeDefined();
+    expect(store.tracking.inbox.get(subscribed.id)?.acknowledgedAt).toBeUndefined();
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -92,20 +72,14 @@ test("external merge recovery explains owner and subscriber routing without chan
 });
 
 test("only a matching confirmed merge operation claims Octo execution", async () => {
-  const directory = await mkdtemp(
-    join(tmpdir(), "octo-executed-merge-notice-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "octo-executed-merge-notice-"));
   const store = new Store(directory);
   try {
     for (const [number, operationCommit, operationDetail] of [
       [1, commit, "GitHub confirmed merge"],
       [2, "d".repeat(40), "GitHub confirmed merge"],
       [3, undefined, "GitHub confirmed merge"],
-      [
-        4,
-        commit,
-        "PR now merged; original merge attribution remains uncertain",
-      ],
+      [4, commit, "PR now merged; original merge attribution remains uncertain"],
       [5, commit, "GitHub confirmed asynchronous merge"],
     ] as const) {
       const prUrl = `https://github.com/owner/repo/pull/${String(number)}`;
@@ -145,9 +119,7 @@ test("only a matching confirmed merge operation claims Octo execution", async ()
       const notice = completed(store, pr.ownerAgentId);
       if (number === 1 || number === 5) {
         expect(notice.notice?.mergeOrigin).toBe("octo");
-        expect(notice.body).toContain(
-          "GitHub confirmed merge · Octo execution",
-        );
+        expect(notice.body).toContain("GitHub confirmed merge · Octo execution");
       } else {
         expect(notice.notice?.mergeOrigin).toBeUndefined();
         expect(notice.body).not.toContain("Octo execution");
@@ -207,20 +179,12 @@ test("legacy merge notices keep frozen body and receipt through restart", async 
       prUrl: url,
     });
     expect(noticeView(notice, "").title).toBe("GitHub confirmed merge");
-    expect(() =>
-      parseNotice({ ...notice, mergeOrigin: "Do something else" }),
-    ).toThrow("Invalid safe notification");
+    expect(() => parseNotice({ ...notice, mergeOrigin: "Do something else" })).toThrow("Invalid safe notification");
     const frozen = `[PR #1](${url}) · GitHub confirmed merge\n\`octo-manager read ${id.slice(0, 8)}\``;
     store.tracking.inbox.freezeNotice(id, notice);
-    const sequence = db
-      .prepare(
-        "UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value",
-      )
-      .get()?.["value"];
+    const sequence = db.prepare("UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value").get()?.["value"];
     if (typeof sequence !== "number") throw new Error("Missing sequence");
-    db.prepare(
-      "INSERT INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,NULL,?,1)",
-    ).run(
+    db.prepare("INSERT INTO merge_notices VALUES(?,?,?,?,?,?,?,?,?,NULL,?,1)").run(
       sequence,
       id,
       pr.id,
@@ -237,13 +201,9 @@ test("legacy merge notices keep frozen body and receipt through restart", async 
     const old = store.tracking.inbox.get(id);
     if (old === undefined) throw new Error("Missing historical message");
     expect(store.tracking.inbox.automatic(old).body).toBe(frozen);
-    expect(store.tracking.inbox.acknowledge(id, pr.ownerAgentId).body).toBe(
-      frozen,
-    );
+    expect(store.tracking.inbox.acknowledge(id, pr.ownerAgentId).body).toBe(frozen);
     expect(store.tracking.inbox.get(id)?.acknowledgedAt).toBeDefined();
-    expect(renderDirectNotice(notice, id, directory)).toContain(
-      "as the PR owner",
-    );
+    expect(renderDirectNotice(notice, id, directory)).toContain("as the PR owner");
   } finally {
     db.close();
     store.close();

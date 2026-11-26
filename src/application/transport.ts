@@ -15,8 +15,7 @@ export class ApiTransport {
     return this.server?.listening === true;
   }
   configure(routes: (router: ConnectRouter) => void): void {
-    if (this.routes !== undefined)
-      throw new Error("API routes already configured");
+    if (this.routes !== undefined) throw new Error("API routes already configured");
     this.routes = routes;
   }
   async listen(): Promise<void> {
@@ -24,8 +23,7 @@ export class ApiTransport {
     if (routes === undefined) throw new Error("API routes not configured");
     // The store's ownership lock must already be held before touching the control path.
     if (existsSync(this.socketPath)) {
-      if (!lstatSync(this.socketPath).isSocket())
-        throw new Error("Refusing to replace a non-socket control path");
+      if (!lstatSync(this.socketPath).isSocket()) throw new Error("Refusing to replace a non-socket control path");
       unlinkSync(this.socketPath);
     }
     const server = createServer(
@@ -64,8 +62,7 @@ export class ApiTransport {
           else resolve();
         }),
       );
-    if (this.ownsSocket && existsSync(this.socketPath))
-      unlinkSync(this.socketPath);
+    if (this.ownsSocket && existsSync(this.socketPath)) unlinkSync(this.socketPath);
     this.ownsSocket = false;
   }
 }

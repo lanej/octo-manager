@@ -73,9 +73,7 @@ test("publisher launch failure keeps agent stdout empty and preserves the failed
       const receipt = store.list(Number.MAX_SAFE_INTEGER).items[0];
       if (receipt === undefined) throw new Error("Missing failed receipt");
       expect(receipt.state).toBe("failed");
-      const failure: unknown = JSON.parse(
-        String(writeError.mock.calls[0]?.[0]),
-      );
+      const failure: unknown = JSON.parse(String(writeError.mock.calls[0]?.[0]));
       expect(failure).toHaveProperty("error.code", "publication_failed");
       expect(failure).toHaveProperty(
         "error.fix",

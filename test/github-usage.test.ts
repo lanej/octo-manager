@@ -28,10 +28,7 @@ test("traffic history fills observed idle minutes, stays bounded, and preserves 
   assert.equal(later.minutes.length, 60);
   assert.equal(later.minutes[0]?.startedAtMs, 2700000);
   assert.equal(
-    later.minutes.reduce(
-      (sum, minute) => sum + minute.rest + minute.graphql,
-      0,
-    ),
+    later.minutes.reduce((sum, minute) => sum + minute.rest + minute.graphql, 0),
     0,
   );
   assert.equal(later.requests, 3);
@@ -50,14 +47,8 @@ test("quota observations keep missing and invalid data distinct from exhausted b
   usage.observe("core", headers);
   at = 5000;
   usage.observe("core", new Map([["x-ratelimit-remaining", "not a count"]]));
-  usage.observe(
-    "core",
-    new Map([...headers, ["x-ratelimit-remaining", "5001"]]),
-  );
-  usage.observe(
-    "core",
-    new Map([...headers, ["x-ratelimit-resource", "search"]]),
-  );
+  usage.observe("core", new Map([...headers, ["x-ratelimit-remaining", "5001"]]));
+  usage.observe("core", new Map([...headers, ["x-ratelimit-resource", "search"]]));
   const value = usage.snapshot({ core: 101000, graphql: 0 });
   assert.deepEqual(value.rest, {
     limit: 5000,
@@ -112,19 +103,14 @@ test("only executed reads count; cache reuse and rate-limit responses remain sep
   await assert.rejects(reader.read("aborted", aborted.signal));
   await reader.read("one");
   await reader.read("one");
-  await assert.rejects(
-    reader.query("query { viewer { login } }"),
-    GitHubRateLimitError,
-  );
+  await assert.rejects(reader.query("query { viewer { login } }"), GitHubRateLimitError);
   await assert.rejects(reader.read("paused"), GitHubRateLimitError);
   const value = reader.usage();
   assert.equal(calls, 3);
   assert.equal(value.requests, 3);
   assert.equal(value.cacheReuses, 1);
   assert.equal(value.rateLimits, 1);
-  assert.deepEqual(value.minutes, [
-    { startedAtMs: 0, rest: 2, graphql: 1, cacheReuses: 1 },
-  ]);
+  assert.deepEqual(value.minutes, [{ startedAtMs: 0, rest: 2, graphql: 1, cacheReuses: 1 }]);
   at = 91000;
   assert.equal(reader.usage().minutes.length, 2);
 });
@@ -189,10 +175,7 @@ test("hourly traffic survives hour and day rollover independently of minute and 
   assert.equal(bounded.hours.length, 168);
   assert.equal(bounded.hours[0]?.startedAtMs, at - 167 * hour);
   assert.equal(
-    bounded.hours.reduce(
-      (sum, bucket) => sum + bucket.rest + bucket.graphql,
-      0,
-    ),
+    bounded.hours.reduce((sum, bucket) => sum + bucket.rest + bucket.graphql, 0),
     0,
   );
   assert.equal(bounded.requests, 2);

@@ -5,16 +5,10 @@ import { checked } from "../merging/contracts.js";
 import type { IssueWorkspace } from "../issues/ports.js";
 const exec = promisify(execFile);
 export class ManagedIssueWorkspace implements IssueWorkspace {
-  async allocate(
-    root: string,
-    ownerId: string,
-    issueId: string,
-  ): Promise<string> {
-    const { stdout: remote } = await exec(
-      "git",
-      ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
-      { cwd: root },
-    );
+  async allocate(root: string, ownerId: string, issueId: string): Promise<string> {
+    const { stdout: remote } = await exec("git", ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], {
+      cwd: root,
+    });
     const branch = remote.trim();
     await exec("git", ["fetch", "origin", branch.replace(/^origin\//u, "")], {
       cwd: root,
@@ -22,16 +16,7 @@ export class ManagedIssueWorkspace implements IssueWorkspace {
     });
     const { stdout } = await exec(
       "worktree",
-      [
-        "create",
-        "--agent",
-        "codex",
-        "--owner-id",
-        ownerId,
-        "--base",
-        branch,
-        "--json",
-      ],
+      ["create", "--agent", "codex", "--owner-id", ownerId, "--base", branch, "--json"],
       { cwd: root, timeout: 30000, maxBuffer: 1048576 },
     );
     const response = checked(
@@ -44,8 +29,7 @@ export class ManagedIssueWorkspace implements IssueWorkspace {
       }),
       JSON.parse(stdout),
     );
-    if (response.result.state !== "active")
-      throw new Error(`Issue ${issueId} workspace is not active`);
+    if (response.result.state !== "active") throw new Error(`Issue ${issueId} workspace is not active`);
     return response.result.path;
   }
 }

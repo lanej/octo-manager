@@ -1,10 +1,7 @@
 import { basename } from "node:path";
 import { commandTree, type ParsedCommand } from "./command-tree.js";
 export type { ParsedCommand } from "./command-tree.js";
-export function parseCommand(
-  args: string[],
-  env: NodeJS.ProcessEnv = process.env,
-): ParsedCommand {
+export function parseCommand(args: string[], env: NodeJS.ProcessEnv = process.env): ParsedCommand {
   let parsed: ParsedCommand | undefined;
   commandTree(env, (value) => {
     parsed = value;

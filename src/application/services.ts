@@ -35,21 +35,14 @@ export function createServices(
   const now = options.now ?? Date.now;
   const trackingConfig = options.trackingConfig ?? defaultTrackingConfig();
   const scopedDigestInputs =
-    options.digestOptions?.presentation === undefined &&
-    options.digestOptions?.ownerFeedbackCovered === undefined;
-  const queue = managedQueuePolicy(
-    store.tracking,
-    store.digests,
-    trackingConfig,
-  );
+    options.digestOptions?.presentation === undefined && options.digestOptions?.ownerFeedbackCovered === undefined;
+  const queue = managedQueuePolicy(store.tracking, store.digests, trackingConfig);
   const githubScheduler = register(
     new GitHubScheduler(
       store.schedules,
       {
         tickMs: trackingConfig.polling?.tickMs ?? defaultSchedulerPolicy.tickMs,
-        requestSpacingMs:
-          trackingConfig.polling?.requestSpacingMs ??
-          defaultSchedulerPolicy.requestSpacingMs,
+        requestSpacingMs: trackingConfig.polling?.requestSpacingMs ?? defaultSchedulerPolicy.requestSpacingMs,
       },
       now,
       options.reviewReader ?? readPullRequestDetails,
@@ -72,15 +65,7 @@ export function createServices(
       },
     }),
   );
-  const assessments = register(
-    new AssessmentService(
-      store.assessments,
-      tracking,
-      options.model,
-      options.assess,
-      now,
-    ),
-  );
+  const assessments = register(new AssessmentService(store.assessments, tracking, options.model, options.assess, now));
   const issues = register(
     new IssueService(
       store.issues,
@@ -95,21 +80,12 @@ export function createServices(
     ),
   );
   const merging = register(
-    new MergeService(
-      store.merging,
-      tracking,
-      trackingConfig.merging ?? {},
-      directory,
-      store.mergeConflicts,
-      now,
-      {
-        referenceInputRevision: inputs.referenceRevision,
-        ...options.mergeOptions,
-        issueGate: (url) => issues.mergeAllowed(url),
-        repositoryInstructions: (message) =>
-          store.repositories.forMessage(message),
-      },
-    ),
+    new MergeService(store.merging, tracking, trackingConfig.merging ?? {}, directory, store.mergeConflicts, now, {
+      referenceInputRevision: inputs.referenceRevision,
+      ...options.mergeOptions,
+      issueGate: (url) => issues.mergeAllowed(url),
+      repositoryInstructions: (message) => store.repositories.forMessage(message),
+    }),
   );
   const repairs = register(
     new RepairService(
@@ -124,43 +100,23 @@ export function createServices(
   );
   const submissions = register(
     new SubmissionService(store.submissions, tracking, {
-      ...(trackingConfig.submissionModels === undefined
-        ? {}
-        : { models: trackingConfig.submissionModels }),
+      ...(trackingConfig.submissionModels === undefined ? {} : { models: trackingConfig.submissionModels }),
       ...options.submissionOptions,
     }),
   );
   const digests = register(
-    new DigestService(
-      store.digests,
-      tracking,
-      store.submissions,
-      directory,
-      now,
-      {
-        ...(scopedDigestInputs ? { inputRevision: inputs.broadRevision } : {}),
-        presentation: merging.receipts.presentation,
-        ownerFeedbackCovered: (message) =>
-          store.merging.ownerFeedbackCovered(message),
-        ...options.digestOptions,
-      },
-    ),
+    new DigestService(store.digests, tracking, store.submissions, directory, now, {
+      ...(scopedDigestInputs ? { inputRevision: inputs.broadRevision } : {}),
+      presentation: merging.receipts.presentation,
+      ownerFeedbackCovered: (message) => store.merging.ownerFeedbackCovered(message),
+      ...options.digestOptions,
+    }),
   );
   const submissionNotifications = register(
-    new SubmissionNotifications(
-      store.submissions,
-      tracking,
-      options.trackingOptions?.connect,
-      digests.managed,
-    ),
+    new SubmissionNotifications(store.submissions, tracking, options.trackingOptions?.connect, digests.managed),
   );
   const notifications = register(
-    new NotificationService(
-      store.notifications,
-      tracking,
-      now,
-      options.notificationReader,
-    ),
+    new NotificationService(store.notifications, tracking, now, options.notificationReader),
   );
   const startup = [
     assessments,
@@ -202,9 +158,7 @@ export function createServices(
       for (const service of startup) service.start(scheduler);
     },
     close() {
-      return (closing ??= Promise.all(
-        shutdown.map((service) => service.close()),
-      ).then(() => {}));
+      return (closing ??= Promise.all(shutdown.map((service) => service.close())).then(() => {}));
     },
     stopIntake() {
       notifications.stop();
@@ -224,16 +178,9 @@ export function createServices(
     },
     changed(scope?: InputScope) {
       // Unknown scoped changes retain conservative intake invalidation; known observations do not.
-      if (
-        scope !== undefined &&
-        (scope.source === undefined || scope.notificationEligibility === true)
-      )
+      if (scope !== undefined && (scope.source === undefined || scope.notificationEligibility === true))
         notifications.wake();
-      digests.wake(
-        scopedDigestInputs && scope?.recipients !== "all"
-          ? scope?.prId
-          : undefined,
-      );
+      digests.wake(scopedDigestInputs && scope?.recipients !== "all" ? scope?.prId : undefined);
       if (scope === undefined) {
         assessments.wake();
         repairs.wake();
@@ -247,8 +194,7 @@ export function createServices(
         assessments.wake();
         tracking.inputsChanged(scope.prId);
         if (scope.prId === undefined) issues.wake();
-        else
-          issues.wakeForPullRequest(store.tracking.prContext(scope.prId).url);
+        else issues.wakeForPullRequest(store.tracking.prContext(scope.prId).url);
       } else if (scope.source === "issues") {
         issues.wake();
         tracking.wake();

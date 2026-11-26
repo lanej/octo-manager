@@ -3,16 +3,9 @@ import { storedCheckEvidence } from "./checks.js";
 import { storedFeedback, storedReviews } from "./feedback.js";
 import { targetBase } from "./evidence.js";
 import { prLifecycle, type PRLifecycle } from "./states.js";
-import type {
-  CheckObservation,
-  ObservationInput,
-  PRObservation,
-} from "./types.js";
+import type { CheckObservation, ObservationInput, PRObservation } from "./types.js";
 
-export type ReferenceObservation = Pick<
-  PRObservation,
-  "description" | "feedback"
->;
+export type ReferenceObservation = Pick<PRObservation, "description" | "feedback">;
 
 export interface ObservationRepository {
   reference(prId: string): ReferenceObservation | undefined;
@@ -47,9 +40,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
         JSON.stringify(input.checks),
         reviews.state,
         JSON.stringify(reviews),
-        input.targetBase === undefined
-          ? null
-          : JSON.stringify(input.targetBase),
+        input.targetBase === undefined ? null : JSON.stringify(input.targetBase),
         input.feedback === undefined ? null : JSON.stringify(input.feedback),
         input.workflows === undefined ? null : JSON.stringify(input.workflows),
         input.description ?? null,
@@ -81,16 +72,12 @@ export class SQLiteObservationRepository implements ObservationRepository {
     if (row === undefined) return undefined;
     const feedback = storedFeedback(row["feedback_json"]);
     return {
-      ...(typeof row["description"] === "string"
-        ? { description: row["description"] }
-        : {}),
+      ...(typeof row["description"] === "string" ? { description: row["description"] } : {}),
       ...(feedback === undefined ? {} : { feedback }),
     };
   }
   check(id: number, sourceId: string): CheckObservation | undefined {
-    const row = this.db
-      .prepare("SELECT checks_json FROM pr_observations WHERE id=?")
-      .get(id);
+    const row = this.db.prepare("SELECT checks_json FROM pr_observations WHERE id=?").get(id);
     if (row === undefined) return undefined;
     const checks = storedCheckEvidence(row["checks_json"]);
     return checks === undefined || checks.state === "unavailable"
@@ -98,9 +85,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
       : checks.value.find((check) => check.id === sourceId);
   }
   lifecycle(id: number): PRLifecycle {
-    const row = this.db
-      .prepare("SELECT lifecycle FROM pr_observations WHERE id=?")
-      .get(id);
+    const row = this.db.prepare("SELECT lifecycle FROM pr_observations WHERE id=?").get(id);
     if (row === undefined) throw new Error("Opening PR observation not found");
     return prLifecycle(row["lifecycle"]);
   }
@@ -123,20 +108,16 @@ export class SQLiteObservationRepository implements ObservationRepository {
       ...(target === undefined ? {} : { targetBase: target }),
       ...(feedback === undefined ? {} : { feedback }),
       ...(workflows === undefined ? {} : { workflows }),
-      ...(typeof row["description"] === "string"
-        ? { description: row["description"] }
-        : {}),
+      ...(typeof row["description"] === "string" ? { description: row["description"] } : {}),
     };
   }
 }
 function text(value: unknown): string {
-  if (typeof value !== "string")
-    throw new Error("Invalid stored observation text");
+  if (typeof value !== "string") throw new Error("Invalid stored observation text");
   return value;
 }
 function integer(value: unknown): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value))
-    throw new Error("Invalid stored observation number");
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) throw new Error("Invalid stored observation number");
   return value;
 }
 function mergeability(value: unknown): PRObservation["mergeability"] {

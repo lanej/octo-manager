@@ -1,12 +1,5 @@
 import { test, expect } from "bun:test";
-import {
-  mkdtemp,
-  rm,
-  writeFile,
-  readFile,
-  mkdir,
-  chmod,
-} from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile, mkdir, chmod } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { existsSync } from "node:fs";
@@ -18,17 +11,8 @@ import {
   type Contract,
   githubRepository,
 } from "../src/publication/contract.js";
-import {
-  PublicationStore,
-  receipt,
-  type PublicationInput,
-} from "../src/publication/store.js";
-import {
-  GitHubPublisher,
-  publishRequest,
-  type PublisherGitHub,
-  type RemotePR,
-} from "../src/publication/publisher.js";
+import { PublicationStore, receipt, type PublicationInput } from "../src/publication/store.js";
+import { GitHubPublisher, publishRequest, type PublisherGitHub, type RemotePR } from "../src/publication/publisher.js";
 import type { GitHubTransport } from "../src/github/sdk.js";
 
 async function fixture() {
@@ -94,17 +78,9 @@ test("local contract initialization preserves authored templates and validates e
   try {
     await mkdir(join(directory, ".github"));
     const authored = "## Outcome\n\nExplain the outcome.\n";
-    await writeFile(
-      join(directory, ".github/pull_request_template.md"),
-      authored,
-    );
+    await writeFile(join(directory, ".github/pull_request_template.md"), authored);
     initialize(directory);
-    expect(
-      await readFile(
-        join(directory, ".github/pull_request_template.md"),
-        "utf8",
-      ),
-    ).toBe(authored);
+    expect(await readFile(join(directory, ".github/pull_request_template.md"), "utf8")).toBe(authored);
     const contract: Contract = {
       schemaVersion: 1,
       template: ".github/pull_request_template.md",
@@ -112,26 +88,18 @@ test("local contract initialization preserves authored templates and validates e
       body: { requiredHeadings: ["Outcome"], requiredText: ["migration"] },
     };
     expect(
-      validateDraft(
-        { title: "fix: change", body: "```md\n## Outcome\n```" },
-        contract,
-      ).map((item) => item.code),
+      validateDraft({ title: "fix: change", body: "```md\n## Outcome\n```" }, contract).map((item) => item.code),
     ).toEqual(["title_prefix", "heading_missing", "text_missing"]);
-    expect(
-      validateDraft(
-        { title: "feat: change", body: "## Outcome\n\nA migration is needed." },
-        contract,
-      ),
-    ).toEqual([]);
+    expect(validateDraft({ title: "feat: change", body: "## Outcome\n\nA migration is needed." }, contract)).toEqual(
+      [],
+    );
     expect(
       validateDraft(
         { title: "anything", body: "A short factual description." },
         { schemaVersion: 1, template: "template.md" },
       ),
     ).toEqual([]);
-    expect(
-      validateDraft({ title: "", body: "" }, contract).length,
-    ).toBeGreaterThan(0);
+    expect(validateDraft({ title: "", body: "" }, contract).length).toBeGreaterThan(0);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -149,9 +117,7 @@ test("initialization reuses a saved choice among multiple authored templates", a
     const saved = await readFile(join(directory, contractPath), "utf8");
     expect(initialize(directory).template).toBe(selected);
     expect(await readFile(join(directory, contractPath), "utf8")).toBe(saved);
-    expect(await readFile(join(directory, selected), "utf8")).toBe(
-      "## Feature\n",
-    );
+    expect(await readFile(join(directory, selected), "utf8")).toBe("## Feature\n");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -175,25 +141,17 @@ test("launch failure cannot erase another worker's attempted or published state;
       state: "published",
       url: "https://github.com/owner/repo/pull/1",
     });
-    expect(duplicate.launchFailure(accepted.id).url).toBe(
-      "https://github.com/owner/repo/pull/1",
-    );
+    expect(duplicate.launchFailure(accepted.id).url).toBe("https://github.com/owner/repo/pull/1");
   } finally {
     duplicate.close();
     await h.close();
   }
 });
 test("repository inference accepts only real GitHub hosts and uncertain launch failure stays uncertain", async () => {
-  expect(
-    githubRepository("https://notgithub.com/owner/repo.git"),
-  ).toBeUndefined();
-  expect(
-    githubRepository("https://github.com.attacker.invalid/owner/repo"),
-  ).toBeUndefined();
+  expect(githubRepository("https://notgithub.com/owner/repo.git")).toBeUndefined();
+  expect(githubRepository("https://github.com.attacker.invalid/owner/repo")).toBeUndefined();
   expect(githubRepository("git@github.com:owner/repo.git")).toBe("owner/repo");
-  expect(githubRepository("https://github.com/owner/repo.git")).toBe(
-    "owner/repo",
-  );
+  expect(githubRepository("https://github.com/owner/repo.git")).toBe("owner/repo");
   const h = await fixture();
   try {
     const value = h.store.accept(h.input);
@@ -214,10 +172,7 @@ test("a non-closing fence cannot satisfy a required heading", () => {
     body: { requiredHeadings: ["Required"] },
   };
   expect(
-    validateDraft(
-      { title: "Valid", body: "```\n```not-a-close\n## Required" },
-      configured,
-    ).map((item) => item.code),
+    validateDraft({ title: "Valid", body: "```\n```not-a-close\n## Required" }, configured).map((item) => item.code),
   ).toContain("heading_missing");
 });
 test("pending receipts are idempotent and concurrent publishers create one exact caller-written PR", async () => {
@@ -228,20 +183,13 @@ test("pending receipts are idempotent and concurrent publishers create one exact
       b = second.accept(h.input, "one");
     expect(a.id).toBe(b.id);
     expect(receipt(a)).toEqual({ id: a.id, state: "pending" });
-    expect(() =>
-      second.accept({ ...h.input, body: "Different" }, "one"),
-    ).toThrow();
+    expect(() => second.accept({ ...h.input, body: "Different" }, "one")).toThrow();
     const github = new GitHub();
-    await Promise.all([
-      publishRequest(h.store, a.id, github),
-      publishRequest(second, a.id, github),
-    ]);
+    await Promise.all([publishRequest(h.store, a.id, github), publishRequest(second, a.id, github)]);
     expect(github.writes).toBe(1);
     expect(h.store.get(a.id).state).toBe("published");
     expect(github.found?.title).toBe(h.input.title);
-    expect(github.found?.body).toBe(
-      h.input.body + "\n\n<!-- octo-submission:" + a.id + " -->",
-    );
+    expect(github.found?.body).toBe(h.input.body + "\n\n<!-- octo-submission:" + a.id + " -->");
   } finally {
     second.close();
     await h.close();
@@ -296,17 +244,11 @@ test("contract and pushed revision changes prevent publication; absent confirmat
   try {
     const accepted = h.store.accept(h.input),
       github = new GitHub();
-    await writeFile(
-      join(h.root, contractPath),
-      JSON.stringify({ ...h.input.contract, title: { maxLength: 10 } }),
-    );
+    await writeFile(join(h.root, contractPath), JSON.stringify({ ...h.input.contract, title: { maxLength: 10 } }));
     await publishRequest(h.store, accepted.id, github);
     expect(h.store.get(accepted.id).error?.code).toBe("contract_changed");
     expect(github.writes).toBe(0);
-    await writeFile(
-      join(h.root, contractPath),
-      JSON.stringify(h.input.contract),
-    );
+    await writeFile(join(h.root, contractPath), JSON.stringify(h.input.contract));
     const changed = h.store.accept({ ...h.input, headSha: "c".repeat(40) });
     await publishRequest(h.store, changed.id, github);
     expect(h.store.get(changed.id).error?.code).toBe("head_changed");
@@ -336,27 +278,17 @@ test("GitHub rejection and transport uncertainty differ, while tracking failure 
             ? "[]"
             : JSON.stringify({
                 object: {
-                  sha: request.path.endsWith("main")
-                    ? "b".repeat(40)
-                    : "a".repeat(40),
+                  sha: request.path.endsWith("main") ? "b".repeat(40) : "a".repeat(40),
                 },
               }),
         });
       };
     const rejected = h.store.accept(h.input, "rejected");
-    await publishRequest(
-      h.store,
-      rejected.id,
-      new GitHubPublisher(transport(422)),
-    );
+    await publishRequest(h.store, rejected.id, new GitHubPublisher(transport(422)));
     expect(h.store.get(rejected.id).state).toBe("failed");
     expect(h.store.get(rejected.id).error?.code).toBe("github_rejected");
     const unknown = h.store.accept(h.input, "unknown");
-    await publishRequest(
-      h.store,
-      unknown.id,
-      new GitHubPublisher(transport(503)),
-    );
+    await publishRequest(h.store, unknown.id, new GitHubPublisher(transport(503)));
     expect(h.store.get(unknown.id).state).toBe("uncertain");
     const tracked = h.store.accept({
       ...h.input,
@@ -367,9 +299,7 @@ test("GitHub rejection and transport uncertainty differ, while tracking failure 
       tracking: "pending",
     });
     const github = new GitHub();
-    await publishRequest(h.store, tracked.id, github, () =>
-      Promise.reject(new Error("Daemon unavailable")),
-    );
+    await publishRequest(h.store, tracked.id, github, () => Promise.reject(new Error("Daemon unavailable")));
     expect(h.store.get(tracked.id).state).toBe("published");
     expect(h.store.get(tracked.id).tracking).toBe("unavailable");
     await publishRequest(h.store, tracked.id, github, (publication) => {
@@ -403,23 +333,9 @@ test("recovered publication must match the exact draft, repository and branch id
     await h.close();
   }
 });
-async function run(
-  args: string[],
-  cwd: string,
-  state: string,
-  extra: Record<string, string> = {},
-) {
+async function run(args: string[], cwd: string, state: string, extra: Record<string, string> = {}) {
   const child = Bun.spawn(
-    [
-      process.execPath,
-      resolve("src/cli.ts"),
-      ...args,
-      "--json",
-      "--state",
-      state,
-      "--cwd",
-      cwd,
-    ],
+    [process.execPath, resolve("src/cli.ts"), ...args, "--json", "--state", state, "--cwd", cwd],
     {
       cwd,
       env: { ...process.env, ...extra },
@@ -466,25 +382,14 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     await mkdir(bin);
     const gh = join(bin, "gh"),
       called = join(h.directory, "gh-called");
-    await writeFile(
-      gh,
-      "#!/bin/sh\nprintf called > '" + called + "'\nexit 1\n",
-    );
+    await writeFile(gh, "#!/bin/sh\nprintf called > '" + called + "'\nexit 1\n");
     await chmod(gh, 0o700);
     const env = {
       PATH: bin + ":" + (process.env["PATH"] ?? ""),
       CODEX_THREAD_ID: "",
     };
     const invalid = await run(
-      [
-        "submit-pr",
-        "--title",
-        "",
-        "--body-file",
-        description,
-        "--base",
-        "main",
-      ],
+      ["submit-pr", "--title", "", "--body-file", description, "--base", "main"],
       h.root,
       h.directory,
       env,
@@ -493,41 +398,27 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     expect(JSON.stringify(invalid.value)).toContain("title_empty");
     expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
     expect(existsSync(called)).toBe(false);
-    const agentInvalid = await run(
-      ["pr", "validate", "--title", "", "--body", ""],
-      h.root,
-      h.directory,
-      { ...env, OCTO_MANAGER_AGENT: "1" },
-    );
+    const agentInvalid = await run(["pr", "validate", "--title", "", "--body", ""], h.root, h.directory, {
+      ...env,
+      OCTO_MANAGER_AGENT: "1",
+    });
     expect(agentInvalid.code).toBe(1);
     expect(agentInvalid.stdout).toBe("");
     expect(agentInvalid.stderr.trim().split("\n")).toHaveLength(1);
     expect(agentInvalid.value).toMatchObject({
       error: { code: "validation_failed" },
     });
-    expect(agentInvalid.value).toHaveProperty(
-      "error.message",
-      expect.stringContaining("title_empty"),
-    );
-    const agentFailure = await run(
-      ["publication", "show", "missing"],
-      h.root,
-      h.directory,
-      { ...env, OCTO_MANAGER_AGENT: "1" },
-    );
+    expect(agentInvalid.value).toHaveProperty("error.message", expect.stringContaining("title_empty"));
+    const agentFailure = await run(["publication", "show", "missing"], h.root, h.directory, {
+      ...env,
+      OCTO_MANAGER_AGENT: "1",
+    });
     expect(agentFailure.code).toBe(1);
     expect(agentFailure.stdout).toBe("");
     expect(agentFailure.value).toMatchObject({ error: { code: "not_found" } });
     expect(agentFailure.value).toHaveProperty("error.message");
     const valid = await run(
-      [
-        "pr",
-        "validate",
-        "--title",
-        "feat: explain",
-        "--body-file",
-        description,
-      ],
+      ["pr", "validate", "--title", "feat: explain", "--body-file", description],
       h.root,
       h.directory,
       env,
@@ -578,15 +469,7 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     expect(JSON.stringify(moved.value)).toContain("head_changed");
     expect(h.store.list(Number.MAX_SAFE_INTEGER).items).toHaveLength(0);
     const accepted = await run(
-      [
-        "submit-pr",
-        "--title",
-        "feat: explain",
-        "--body-file",
-        description,
-        "--base",
-        "main",
-      ],
+      ["submit-pr", "--title", "feat: explain", "--body-file", description, "--base", "main"],
       h.root,
       h.directory,
       env,
@@ -597,58 +480,30 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     if (pending === undefined) throw new Error("Missing durable receipt");
     expect(JSON.stringify(accepted.value)).toContain("pending");
     const deadline = Date.now() + 5000;
-    while (h.store.get(pending.id).state === "pending" && Date.now() < deadline)
-      await Bun.sleep(20);
+    while (h.store.get(pending.id).state === "pending" && Date.now() < deadline) await Bun.sleep(20);
     expect(h.store.get(pending.id).state).toBe("failed");
     expect(existsSync(called)).toBe(true);
-    const publish = [
-      "pr",
-      "publish",
-      "--title",
-      "feat: explain",
-      "--body-file",
-      description,
-      "--base",
-      "main",
-    ];
-    const missing = await run(
-      [...publish, "--track"],
-      h.root,
-      h.directory,
-      env,
-    );
+    const publish = ["pr", "publish", "--title", "feat: explain", "--body-file", description, "--base", "main"];
+    const missing = await run([...publish, "--track"], h.root, h.directory, env);
     expect(missing.code).toBe(1);
     expect(JSON.stringify(missing.value)).toContain("tracking_owner");
     for (const [request, flags, thread, expected] of [
       ["inferred", [], "current-session", "current-session"],
-      [
-        "explicit",
-        ["--thread-id", "selected-session"],
-        "current-session",
-        "selected-session",
-      ],
+      ["explicit", ["--thread-id", "selected-session"], "current-session", "selected-session"],
       ["opt-out", ["--no-track"], "current-session", undefined],
       ["other-harness", ["--harness", "claude"], "current-session", undefined],
       ["pi-opt-in-only", ["--harness", "pi"], "current-session", undefined],
       [
         "explicit-pi",
-        [
-          "--track",
-          "--harness",
-          "pi",
-          "--thread-id",
-          "00000000-0000-4000-8000-000000000211",
-        ],
+        ["--track", "--harness", "pi", "--thread-id", "00000000-0000-4000-8000-000000000211"],
         "current-session",
         "00000000-0000-4000-8000-000000000211",
       ],
     ] as const) {
-      const response = await run(
-        [...publish, ...flags, "--request-id", request],
-        h.root,
-        h.directory,
-        { ...env, CODEX_THREAD_ID: thread },
-      );
+      const response = await run([...publish, ...flags, "--request-id", request], h.root, h.directory, {
+        ...env,
+        CODEX_THREAD_ID: thread,
+      });
       expect(response.code).toBe(0);
       const item = h.store.list(Number.MAX_SAFE_INTEGER).items[0];
       if (item === undefined) throw new Error("Missing durable receipt");
@@ -662,11 +517,9 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
               ...(request === "explicit-pi" ? { harness: "pi" } : {}),
             },
       );
-      if (expected !== undefined)
-        expect(response.value).toMatchObject({ tracking: "pending" });
+      if (expected !== undefined) expect(response.value).toMatchObject({ tracking: "pending" });
       const until = Date.now() + 5000;
-      while (h.store.get(item.id).state === "pending" && Date.now() < until)
-        await Bun.sleep(20);
+      while (h.store.get(item.id).state === "pending" && Date.now() < until) await Bun.sleep(20);
       expect(h.store.get(item.id).state).toBe("failed");
     }
     for (let i = 0; i < 12; i++)
@@ -694,23 +547,15 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     );
     expect(targeted.code).toBe(0);
     const targetedRequest = h.store.list(Number.MAX_SAFE_INTEGER).items[0];
-    if (targetedRequest === undefined)
-      throw new Error("Missing explicit-target receipt");
-    while (
-      h.store.get(targetedRequest.id).state === "pending" &&
-      Date.now() < deadline + 5000
-    )
-      await Bun.sleep(20);
+    if (targetedRequest === undefined) throw new Error("Missing explicit-target receipt");
+    while (h.store.get(targetedRequest.id).state === "pending" && Date.now() < deadline + 5000) await Bun.sleep(20);
     await writeFile(
       join(h.root, contractPath),
       JSON.stringify({
         schemaVersion: 1,
         template: ".github/pull_request_template.md",
         body: {
-          requiredText: Array.from(
-            { length: 20 },
-            (_, i) => '\\"\u0000'.repeat(15) + String(i),
-          ),
+          requiredText: Array.from({ length: 20 }, (_, i) => '\\"\u0000'.repeat(15) + String(i)),
         },
       }),
     );
@@ -722,18 +567,10 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     );
     expect(escaped.code).toBe(1);
     expect(Buffer.byteLength(escaped.stdout)).toBeLessThanOrEqual(1025);
-    const page = await run(
-      ["history", "submissions"],
-      h.root,
-      h.directory,
-      env,
-    );
+    const page = await run(["history", "submissions"], h.root, h.directory, env);
     expect(Buffer.byteLength(page.stdout)).toBeLessThan(4096);
     expect(page.stdout).not.toContain("large ");
-    await writeFile(
-      join(h.root, contractPath),
-      JSON.stringify(h.input.contract),
-    );
+    await writeFile(join(h.root, contractPath), JSON.stringify(h.input.contract));
     const nativeGit = Bun.which("git");
     if (nativeGit === null) throw new Error("Missing fixture Git");
     const strict = JSON.stringify({
@@ -751,9 +588,7 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
         '\' "$@"\n',
     );
     await chmod(join(bin, "git"), 0o700);
-    const beforeRace = h.store
-      .list(Number.MAX_SAFE_INTEGER)
-      .items.map((item) => item.id);
+    const beforeRace = h.store.list(Number.MAX_SAFE_INTEGER).items.map((item) => item.id);
     const changedContract = await run(
       [
         "submit-pr",
@@ -772,9 +607,7 @@ test("real CLI validates offline and rejects invalid drafts before storing a rec
     );
     expect(changedContract.code).toBe(1);
     expect(JSON.stringify(changedContract.value)).toContain("text_missing");
-    expect(
-      h.store.list(Number.MAX_SAFE_INTEGER).items.map((item) => item.id),
-    ).toEqual(beforeRace);
+    expect(h.store.list(Number.MAX_SAFE_INTEGER).items.map((item) => item.id)).toEqual(beforeRace);
   } finally {
     await h.close();
   }

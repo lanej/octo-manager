@@ -40,11 +40,7 @@ const text = (maxLength = 200) => Type.String({ minLength: 1, maxLength });
 const object = <T extends Record<string, TSchema>>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
 export const Sha = Type.String({ pattern: "^[a-f0-9]{40}([a-f0-9]{24})?$" });
-export const Method = Type.Union([
-  Type.Literal("squash"),
-  Type.Literal("merge"),
-  Type.Literal("rebase"),
-]);
+export const Method = Type.Union([Type.Literal("squash"), Type.Literal("merge"), Type.Literal("rebase")]);
 export const PreparationProfileSchema = object({
   kind: Type.Union([Type.Literal("rebase"), Type.Literal("toml_revision")]),
   repository: Type.String({
@@ -108,9 +104,7 @@ export const ReadySchema = object({
 export const EntryInputSchema = object({
   prUrl: text(2000),
   method: Type.Optional(Method),
-  checks: Type.Optional(
-    Type.Array(text(300), { maxItems: 50, uniqueItems: true }),
-  ),
+  checks: Type.Optional(Type.Array(text(300), { maxItems: 50, uniqueItems: true })),
   noCi: Type.Optional(Type.Boolean()),
 });
 export const QueueInputSchema = object({
@@ -133,14 +127,10 @@ export const EntrySchema = object({
   receiptId: Type.Optional(text()),
   receiptContext: Type.Optional(text()),
   autoMerge: Type.Boolean(),
-  autoMergeSource: Type.Optional(
-    Type.Union([Type.Literal("explicit"), Type.Literal("inherited")]),
-  ),
+  autoMergeSource: Type.Optional(Type.Union([Type.Literal("explicit"), Type.Literal("inherited")])),
   autoMergeStage: Type.Optional(Type.String()),
   trackingEpoch: Type.Optional(Type.Integer()),
-  agentInstructions: Type.Optional(
-    object({ agentId: text(), epoch: Type.Integer(), text: text(1000) }),
-  ),
+  agentInstructions: Type.Optional(object({ agentId: text(), epoch: Type.Integer(), text: text(1000) })),
   id: text(),
   chainId: text(),
   prId: text(),
@@ -167,11 +157,7 @@ export const OperationSchema = object({
   prId: text(),
   kind: Type.Union([Type.Literal("prepare"), Type.Literal("merge")]),
   state: Type.Enum(OperationState),
-  phase: Type.Union([
-    Type.Literal("local"),
-    Type.Literal("pushing"),
-    Type.Literal("merging"),
-  ]),
+  phase: Type.Union([Type.Literal("local"), Type.Literal("pushing"), Type.Literal("merging")]),
   head: Sha,
   baseRef: text(300),
   baseSha: Sha,
@@ -234,23 +220,14 @@ export const CommandSchema = Type.Union([
 ]);
 export type MergeCommand = Static<typeof CommandSchema>;
 const recordValidators = new Map<TSchema, { Check(value: unknown): boolean }>(
-  [
-    EntrySchema,
-    ChainSchema,
-    OperationSchema,
-    ReferenceSchema,
-    DependencySchema,
-  ].map((schema) => [schema, Compile(schema)] as const),
+  [EntrySchema, ChainSchema, OperationSchema, ReferenceSchema, DependencySchema].map(
+    (schema) => [schema, Compile(schema)] as const,
+  ),
 );
-export function checked<T extends TSchema>(
-  schema: T,
-  value: unknown,
-): Static<T>;
+export function checked<T extends TSchema>(schema: T, value: unknown): Static<T>;
 export function checked(schema: TSchema, value: unknown): unknown {
   const validator = recordValidators.get(schema);
-  if (
-    !(validator === undefined ? Check(schema, value) : validator.Check(value))
-  )
+  if (!(validator === undefined ? Check(schema, value) : validator.Check(value)))
     throw new Error("Invalid merge-chain data");
   return value;
 }

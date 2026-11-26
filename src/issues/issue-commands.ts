@@ -14,8 +14,7 @@ export const commands: CommandSpec[] = [
     path: "issue subscribe <id>",
     route: "issue-subscribe",
     capability: "issues",
-    description:
-      "Set one agent's issue event selection (omitted events resets legacy default)",
+    description: "Set one agent's issue event selection (omitted events resets legacy default)",
     options: [
       "--agent-id <id>",
       "--events <title,description,comment,closed,reopened,coordinator,refresh_failure,refresh_recovery|none>",
@@ -53,10 +52,6 @@ export const commands: CommandSpec[] = [
     route: `issue-${action}`,
     capability: "issues" as const,
     description: `${action} issue work`,
-    options: [
-      "--text <text>",
-      "--brief-version <version>",
-      "--request-id <id>",
-    ],
+    options: ["--text <text>", "--brief-version <version>", "--request-id <id>"],
   })),
 ];

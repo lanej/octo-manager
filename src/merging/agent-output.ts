@@ -31,15 +31,7 @@ const operation = fields([
   "baseSha",
   "mergeCommit",
 ]);
-const dependency = fields([
-  "id",
-  "dependentId",
-  "prerequisiteId",
-  "active",
-  "reason",
-  "referenceId",
-  "preparation",
-]);
+const dependency = fields(["id", "dependentId", "prerequisiteId", "active", "reason", "referenceId", "preparation"]);
 const reference = fields([
   "id",
   "targetUrl",

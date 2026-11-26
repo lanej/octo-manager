@@ -57,9 +57,7 @@ const RulesSchema = Type.Array(
     type: Type.String(),
     parameters: Type.Optional(
       Type.Object({
-        required_status_checks: Type.Optional(
-          Type.Array(Type.Object({ context: Type.String() })),
-        ),
+        required_status_checks: Type.Optional(Type.Array(Type.Object({ context: Type.String() }))),
       }),
     ),
   }),
@@ -76,11 +74,7 @@ export interface MergeSnapshot {
   nativePrerequisites?: string[];
 }
 export interface MergeProvider {
-  readiness?(
-    url: string,
-    observation: ObservationInput,
-    signal: AbortSignal,
-  ): Promise<MergeSnapshot>;
+  readiness?(url: string, observation: ObservationInput, signal: AbortSignal): Promise<MergeSnapshot>;
   inspect(url: string, signal: AbortSignal): Promise<MergeSnapshot>;
   merge(
     url: string,
@@ -89,18 +83,11 @@ export interface MergeProvider {
     signal: AbortSignal,
     beforeSend: () => void,
   ): Promise<string | MergeProgress>;
-  result?(
-    url: string,
-    requestId: string,
-    signal: AbortSignal,
-  ): Promise<MergeProgress>;
+  result?(url: string, requestId: string, signal: AbortSignal): Promise<MergeProgress>;
 }
 function location(url: string) {
-  const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split(
-    "/",
-  );
-  if (owner === undefined || repo === undefined || number === undefined)
-    throw new Error("Invalid PR location");
+  const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split("/");
+  if (owner === undefined || repo === undefined || number === undefined) throw new Error("Invalid PR location");
   return { owner, repo, number, root: `repos/${owner}/${repo}` };
 }
 export async function readMergeReadiness(
@@ -112,21 +99,12 @@ export async function readMergeReadiness(
   const { owner, repo, number, root } = location(url);
   const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
   const result = await reads.query(query, signal);
-  if (result.errors.length > 0)
-    throw new Error("Merge eligibility unavailable");
+  if (result.errors.length > 0) throw new Error("Merge eligibility unavailable");
   const repository = checked(RepoSchema, result.data["repository"]),
     pr = repository.pullRequest;
-  const lifecycle = pr.merged
-    ? "merged"
-    : pr.state === "OPEN"
-      ? "open"
-      : "closed";
+  const lifecycle = pr.merged ? "merged" : pr.state === "OPEN" ? "open" : "closed";
   const mergeability =
-    pr.mergeable === "MERGEABLE"
-      ? "mergeable"
-      : pr.mergeable === "CONFLICTING"
-        ? "conflicting"
-        : "unknown";
+    pr.mergeable === "MERGEABLE" ? "mergeable" : pr.mergeable === "CONFLICTING" ? "conflicting" : "unknown";
   if (
     !["OPEN", "CLOSED", "MERGED"].includes(pr.state) ||
     !["MERGEABLE", "CONFLICTING", "UNKNOWN"].includes(pr.mergeable)
@@ -136,43 +114,28 @@ export async function readMergeReadiness(
     lifecycle !== observation.lifecycle ||
     (lifecycle === "open" && mergeability !== observation.mergeability) ||
     pr.headRefOid !== observation.headSha ||
-    (pr.baseRefName !== observation.targetBase?.ref &&
-      observation.lifecycle === "open") ||
-    (pr.baseRef?.target.oid !== observation.targetBase?.sha &&
-      observation.lifecycle === "open")
+    (pr.baseRefName !== observation.targetBase?.ref && observation.lifecycle === "open") ||
+    (pr.baseRef?.target.oid !== observation.targetBase?.sha && observation.lifecycle === "open")
   )
     throw new Error("PR changed during eligibility inspection");
   const rules =
     lifecycle === "open"
-      ? checked(
-          RulesSchema,
-          await reads.read(
-            `${root}/rules/branches/${encodeURIComponent(pr.baseRefName)}`,
-            signal,
-          ),
-        )
+      ? checked(RulesSchema, await reads.read(`${root}/rules/branches/${encodeURIComponent(pr.baseRefName)}`, signal))
       : [];
   const nativePrerequisites: string[] = [];
   if (lifecycle === "open" && pr.stack !== undefined && pr.stack !== null) {
     if (pr.stack.entries.pageInfo.hasNextPage)
-      throw new Error(
-        "Native stack exceeds bounded inspection; owner intervention required",
-      );
+      throw new Error("Native stack exceeds bounded inspection; owner intervention required");
     let found = false;
     for (const entry of pr.stack.entries.nodes) {
       if (entry.pullRequest.url === canonicalPR(url)) {
         found = true;
         break;
       }
-      if (entry.pullRequest.state === "OPEN")
-        nativePrerequisites.push(entry.pullRequest.url);
+      if (entry.pullRequest.state === "OPEN") nativePrerequisites.push(entry.pullRequest.url);
     }
-    if (!found)
-      throw new Error("Current PR missing from native stack evidence");
-    if (
-      nativePrerequisites.length === 0 &&
-      pr.baseRefName !== pr.stack.baseRefName
-    )
+    if (!found) throw new Error("Current PR missing from native stack evidence");
+    if (nativePrerequisites.length === 0 && pr.baseRefName !== pr.stack.baseRefName)
       throw new Error("Native stack target branch has not settled");
   }
   const methods: MergeEntry["method"][] = [];
@@ -187,22 +150,17 @@ export async function readMergeReadiness(
     review: pr.reviewDecision,
     required: [
       ...new Set([
-        ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ??
-          []),
+        ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ?? []),
         ...rules.flatMap((rule) =>
           rule.type === "required_status_checks"
-            ? (rule.parameters?.required_status_checks?.map(
-                (check) => check.context,
-              ) ?? [])
+            ? (rule.parameters?.required_status_checks?.map((check) => check.context) ?? [])
             : [],
         ),
       ]),
     ],
     queueRequired: rules.some((rule) => rule.type === "merge_queue"),
     methods,
-    ...(pr.merged && pr.mergeCommit !== null
-      ? { mergeCommit: pr.mergeCommit.oid }
-      : {}),
+    ...(pr.merged && pr.mergeCommit !== null ? { mergeCommit: pr.mergeCommit.oid } : {}),
   };
 }
 export const mergeProvider: MergeProvider = {
@@ -229,10 +187,7 @@ export const mergeProvider: MergeProvider = {
   async result(url, requestId, signal) {
     const { root, number } = location(url);
     return mergeProgress(
-      await githubReads.read(
-        `${root}/pulls/${number}/merge-async/${encodeURIComponent(requestId)}`,
-        signal,
-      ),
+      await githubReads.read(`${root}/pulls/${number}/merge-async/${encodeURIComponent(requestId)}`, signal),
       requestId,
     );
   },

@@ -1,33 +1,20 @@
 import { codexAuthor, codexHeuristic } from "./heuristics/codex.js";
 import { copilotHeuristic } from "./heuristics/copilot.js";
-import {
-  MessageCategory,
-  type Categorization,
-  type GitHubMessage,
-  type HeuristicClassifier,
-} from "./types.js";
+import { MessageCategory, type Categorization, type GitHubMessage, type HeuristicClassifier } from "./types.js";
 const githubAuthors: ReadonlyMap<string, HeuristicClassifier> = new Map([
   [codexAuthor, codexHeuristic],
   ["copilot-pull-request-reviewer[bot]", copilotHeuristic],
   ["copilot", copilotHeuristic],
 ]);
 export class CategorizationEngine {
-  constructor(
-    private readonly authors: ReadonlyMap<
-      string,
-      HeuristicClassifier
-    > = githubAuthors,
-  ) {}
+  constructor(private readonly authors: ReadonlyMap<string, HeuristicClassifier> = githubAuthors) {}
   categorize(message: GitHubMessage): Categorization {
     const classifier = this.authors.get(message.author.toLowerCase());
     if (classifier === undefined || message.source === "inline")
       return {
         author: message.author,
         category: MessageCategory.Unknown,
-        rule:
-          message.source === "inline"
-            ? "inline-feedback"
-            : "unrecognized-author",
+        rule: message.source === "inline" ? "inline-feedback" : "unrecognized-author",
         reason:
           message.source === "inline"
             ? "Inline feedback remains eligible for assessment"

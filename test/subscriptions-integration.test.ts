@@ -34,9 +34,7 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
           queued: () =>
             Promise.resolve(
               slots.has(agent.id)
-                ? [slots.get(agent.id)].filter(
-                    (value): value is QueuedMessage => value !== undefined,
-                  )
+                ? [slots.get(agent.id)].filter((value): value is QueuedMessage => value !== undefined)
                 : [],
             ),
           enqueueQueued: (_agent, clientId, body) => {
@@ -74,23 +72,13 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
       id: tracked.pr.id,
       agent: listener,
     });
-    expect(participants.participants.map((item) => item.role)).toEqual([
-      "owner",
-      "observer",
-    ]);
-    const observer = participants.participants.find(
-      (item) => item.role === "observer",
-    );
+    expect(participants.participants.map((item) => item.role)).toEqual(["owner", "observer"]);
+    const observer = participants.participants.find((item) => item.role === "observer");
     if (observer === undefined) throw new Error("Missing observer");
     for (let attempt = 0; attempt < 150; attempt++) {
       coordinator.tracking.tick();
       await coordinator.digests.flush();
-      const unread = coordinator.store.tracking.inbox.list(
-        observer.agentId,
-        0,
-        false,
-        true,
-      ).messages;
+      const unread = coordinator.store.tracking.inbox.list(observer.agentId, 0, false, true).messages;
       if (
         unread.some((item) => item.actionId !== "") &&
         slots.get(observer.agentId)?.body?.includes("Merge conflict") === true
@@ -139,12 +127,7 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
     expect(output).not.toContain('"body"');
     expect(output).toContain('"role":"observer"');
     expect(output).toContain('"receipt"');
-    const ownerMessages = coordinator.store.tracking.inbox.list(
-      tracked.pr.ownerAgentId,
-      0,
-      false,
-      true,
-    ).messages;
+    const ownerMessages = coordinator.store.tracking.inbox.list(tracked.pr.ownerAgentId, 0, false, true).messages;
     expect(ownerMessages.length).toBeGreaterThan(0);
     const ownerNotice = ownerMessages[0];
     if (ownerNotice === undefined) throw new Error("Missing owner notice");
@@ -177,13 +160,8 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
       id: tracked.pr.id,
       agentId: observer.agentId,
     });
-    expect((await client.listPRParticipants({ id: tracked.pr.id })).total).toBe(
-      1,
-    );
-    expect(
-      coordinator.store.tracking.inbox.list(observer.agentId, 0, false, true)
-        .messages,
-    ).toHaveLength(0);
+    expect((await client.listPRParticipants({ id: tracked.pr.id })).total).toBe(1);
+    expect(coordinator.store.tracking.inbox.list(observer.agentId, 0, false, true).messages).toHaveLength(0);
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });

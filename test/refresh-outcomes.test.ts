@@ -36,55 +36,29 @@ test("refresh deferrals retain genuine failures and recover once, including afte
   const createService = () =>
     new TrackingService(store.tracking, config, () => now, {
       schedules: store.schedules,
-      read: () =>
-        failure === undefined
-          ? Promise.resolve({ ...input, observedAt: now })
-          : Promise.reject(failure),
+      read: () => (failure === undefined ? Promise.resolve({ ...input, observedAt: now }) : Promise.reject(failure)),
     });
   let service = createService();
-  const outcomes = () =>
-    store.events().filter((event) => event.kind.startsWith("pr_refresh_"));
+  const outcomes = () => store.events().filter((event) => event.kind.startsWith("pr_refresh_"));
   try {
     await service.refresh(pr.id, "poll");
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Access denied",
-    );
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Access denied");
     assert.equal(store.schedules.get(`tracking:${pr.id}`)?.intervalMs, 60000);
     failure = new GitHubObservationChangedError();
     now += 1000;
     await service.refresh(pr.id, "poll");
     assert.equal(store.schedules.get(`tracking:${pr.id}`)?.intervalMs, 120000);
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.deferredReason,
-      failure.message,
-    );
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.lastError,
-      "Access denied",
-    );
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Access denied",
-    );
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.deferredReason, failure.message);
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.lastError, "Access denied");
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Access denied");
     assert.deepEqual(store.tracking.pr(pr.id).observation, original);
     failure = new GitHubRequestCancelledError();
     await service.refresh(pr.id, "poll");
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.deferredReason,
-      failure.message,
-    );
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Access denied",
-    );
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.deferredReason, failure.message);
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Access denied");
     assert.deepEqual(
       outcomes().map((event) => event.kind),
-      [
-        "pr_refresh_failed",
-        "pr_refresh_retry_scheduled",
-        "pr_refresh_cancelled",
-      ],
+      ["pr_refresh_failed", "pr_refresh_retry_scheduled", "pr_refresh_cancelled"],
     );
     await service.close();
     store.close();
@@ -94,21 +68,11 @@ test("refresh deferrals retain genuine failures and recover once, including afte
     now += 1000;
     await service.refresh(pr.id);
     assert.equal(store.tracking.pr(pr.id).lastRefreshError, undefined);
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.deferredReason,
-      undefined,
-    );
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.lastError,
-      undefined,
-    );
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.deferredReason, undefined);
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.lastError, undefined);
     assert.equal(outcomes().at(-1)?.kind, "pr_refresh_recovered");
     await service.refresh(pr.id);
-    assert.equal(
-      outcomes().filter((event) => event.kind === "pr_refresh_recovered")
-        .length,
-      1,
-    );
+    assert.equal(outcomes().filter((event) => event.kind === "pr_refresh_recovered").length, 1);
   } finally {
     await service.close();
     store.close();
@@ -140,22 +104,14 @@ test("shutdown cancellation is recorded without replacing a prior failure or cla
     const work = service.refresh(pr.id);
     await service.close();
     await work;
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Earlier failure",
-    );
-    const events = store
-      .events()
-      .filter((event) => event.kind.startsWith("pr_refresh_"));
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Earlier failure");
+    const events = store.events().filter((event) => event.kind.startsWith("pr_refresh_"));
     assert.deepEqual(
       events.map((event) => event.kind),
       ["pr_refresh_failed", "pr_refresh_cancelled"],
     );
     assert.equal(events.at(-1)?.detail, "Aborted read");
-    assert.equal(
-      store.schedules.get(`tracking:${pr.id}`)?.deferredReason,
-      "Interrupted refresh queued after restart",
-    );
+    assert.equal(store.schedules.get(`tracking:${pr.id}`)?.deferredReason, "Interrupted refresh queued after restart");
   } finally {
     await service.close();
     store.close();
@@ -187,15 +143,8 @@ test("a read completing after shutdown is discarded rather than reported as reco
     await service.close();
     await work;
     assert.equal(store.tracking.pr(pr.id).observation?.headSha, "head");
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Earlier failure",
-    );
-    assert.equal(
-      store.events().filter((event) => event.kind === "pr_refresh_recovered")
-        .length,
-      0,
-    );
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Earlier failure");
+    assert.equal(store.events().filter((event) => event.kind === "pr_refresh_recovered").length, 0);
   } finally {
     await service.close();
     store.close();
@@ -224,15 +173,8 @@ test("discarded observations from an old epoch cannot produce recovery", async (
     finish({ ...input, headSha: "discarded" });
     await work;
     assert.equal(store.tracking.pr(pr.id).observation?.headSha, "head");
-    assert.equal(
-      store.tracking.pr(pr.id).lastRefreshError?.message,
-      "Earlier failure",
-    );
-    assert.equal(
-      store.events().filter((event) => event.kind === "pr_refresh_recovered")
-        .length,
-      0,
-    );
+    assert.equal(store.tracking.pr(pr.id).lastRefreshError?.message, "Earlier failure");
+    assert.equal(store.events().filter((event) => event.kind === "pr_refresh_recovered").length, 0);
   } finally {
     await service.close();
     store.close();

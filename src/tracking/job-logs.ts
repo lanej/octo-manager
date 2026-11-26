@@ -12,20 +12,12 @@ const job = Type.Object({
     }),
   ),
 });
-export function failedStepLogs(
-  log: string,
-  metadata: unknown,
-  expected: { job: string; run: string },
-): string {
+export function failedStepLogs(log: string, metadata: unknown, expected: { job: string; run: string }): string {
   if (!Check(job, metadata)) throw new Error("Invalid GitHub job metadata");
-  if (
-    String(metadata.id) !== expected.job ||
-    String(metadata.run_id) !== expected.run
-  )
+  if (String(metadata.id) !== expected.job || String(metadata.run_id) !== expected.run)
     throw new Error("Job metadata does not match the failed-run evidence");
   const windows = metadata.steps.flatMap((step, index) => {
-    if (step.conclusion !== "failure" && step.conclusion !== "timed_out")
-      return [];
+    if (step.conclusion !== "failure" && step.conclusion !== "timed_out") return [];
     const start = Date.parse(step.started_at ?? ""),
       end = Date.parse(step.completed_at ?? "");
     if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
@@ -35,8 +27,7 @@ export function failedStepLogs(
       .slice(index + 1)
       .map((candidate) => Date.parse(candidate.started_at ?? ""))
       .find(Number.isFinite);
-    if (next !== undefined && next < start)
-      throw new Error("Job step timings are out of order");
+    if (next !== undefined && next < start) throw new Error("Job step timings are out of order");
     return [{ start, end: Math.min(end + 1000, next ?? Infinity) }];
   });
   if (windows.length === 0) throw new Error("Failed step evidence unavailable");

@@ -26,10 +26,7 @@ export function wireRefresh(value: ScheduledRefresh | undefined) {
   return {
     state: states[value.state],
     dueAtMs: BigInt(value.dueAtMs),
-    lastAttemptAtMs:
-      value.lastAttemptAtMs === undefined
-        ? undefined
-        : BigInt(value.lastAttemptAtMs),
+    lastAttemptAtMs: value.lastAttemptAtMs === undefined ? undefined : BigInt(value.lastAttemptAtMs),
     lastError: value.lastError ?? "",
   };
 }

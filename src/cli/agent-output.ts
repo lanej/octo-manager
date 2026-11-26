@@ -22,22 +22,20 @@ const outputs: Record<Capability, Readonly<Record<string, Projection>>> = {
   repairs: repairOutputs,
   activity: activityOutputs,
   diagnostics: Object.fromEntries(
-    ["diagnostics-capture", "diagnostics-show", "diagnostics-stop"].map(
-      (command) => [
-        command,
-        fields([
-          "id",
-          "requestId",
-          "state",
-          "startedAtMs",
-          "endedAtMs",
-          "durationMs",
-          "artifactPath",
-          "detail",
-          "report",
-        ]),
-      ],
-    ),
+    ["diagnostics-capture", "diagnostics-show", "diagnostics-stop"].map((command) => [
+      command,
+      fields([
+        "id",
+        "requestId",
+        "state",
+        "startedAtMs",
+        "endedAtMs",
+        "durationMs",
+        "artifactPath",
+        "detail",
+        "report",
+      ]),
+    ]),
   ),
   history: historyOutputs,
   publication: publicationOutputs,
@@ -56,9 +54,7 @@ export const agentOutputExceptions: Readonly<Record<string, string>> = {
   "pr validate": "Draft validation result and findings",
 };
 
-export function agentProjection(
-  parsed: Pick<ParsedCommand, "capability" | "positionals">,
-): Projection | undefined {
+export function agentProjection(parsed: Pick<ParsedCommand, "capability" | "positionals">): Projection | undefined {
   const command = parsed.positionals[0] ?? "";
   if (parsed.capability === "publication" && command === "pr") return undefined;
   return outputs[parsed.capability][command];

@@ -71,27 +71,20 @@ async function fixture(intervalMs?: number) {
     received: () => Promise.resolve({ bodies: [...history], complete: true }),
     close() {},
   };
-  const digests = (service = new DigestService(
-    store.digests,
-    tracking,
-    store.submissions,
-    directory,
-    () => now,
-    {
-      inputRevision: () => String(revision),
-      connect: (_agent, socket) =>
-        socket === "/controlled"
-          ? queue
-          : {
-              ...queue,
-              queued: () => {
-                inspections++;
-                return Promise.resolve([]);
-              },
+  const digests = (service = new DigestService(store.digests, tracking, store.submissions, directory, () => now, {
+    inputRevision: () => String(revision),
+    connect: (_agent, socket) =>
+      socket === "/controlled"
+        ? queue
+        : {
+            ...queue,
+            queued: () => {
+              inspections++;
+              return Promise.resolve([]);
             },
-      ...(intervalMs === undefined ? {} : { intervalMs }),
-    },
-  ));
+          },
+    ...(intervalMs === undefined ? {} : { intervalMs }),
+  }));
   let serial = 0;
   return {
     store,
@@ -118,8 +111,7 @@ async function fixture(intervalMs?: number) {
     },
     consume() {
       for (const item of slots) {
-        if (item.body === undefined)
-          throw new Error("Queued fixture message has no body");
+        if (item.body === undefined) throw new Error("Queued fixture message has no body");
         history.push(item.body);
       }
       slots = [];
@@ -196,11 +188,7 @@ test("new notices and receipts wake confirmed queues before their housekeeping d
     if (first === undefined) throw new Error("Missing admitted digest");
     expect(first.nextCheckAt).toBe(f.now + 60000);
     f.notice();
-    await until(
-      () =>
-        (f.store.digests.active(f.actor.id)?.revision ?? 0) > first.revision &&
-        f.admissions === 2,
-    );
+    await until(() => (f.store.digests.active(f.actor.id)?.revision ?? 0) > first.revision && f.admissions === 2);
     const current = f.store.digests.active(f.actor.id);
     if (current === undefined) throw new Error("Missing revised digest");
     f.digests.acknowledge(current.id, current.revision, f.actor.id);
@@ -218,9 +206,7 @@ test("uncertain admission retries after five seconds instead of the confirmed qu
     f.notice();
     f.loseAdmission();
     await f.digests.flush();
-    expect(f.store.digests.active(f.actor.id)?.state).toBe(
-      DigestState.Uncertain,
-    );
+    expect(f.store.digests.active(f.actor.id)?.state).toBe(DigestState.Uncertain);
     expect(f.store.digests.active(f.actor.id)?.nextCheckAt).toBe(6000);
     await f.advance(4999);
     expect(f.inspections).toBe(1);
@@ -253,23 +239,15 @@ test("queued housekeeping does not delay cleanup on other transport routes", asy
   try {
     const messageId = f.notice();
     const history = ["/old-route-one", "/old-route-two"].map((socket) => {
-      const value = f.store.digests.create(
-        f.actor.id,
-        { kind: "codex_queue", socket },
-        () => ({ body: "Historical fixture", messageIds: [messageId] }),
-      );
-      return f.store.digests.save(
-        { ...value, state: DigestState.Cancelled, cleanupPending: false },
-        "fixture_settled",
-      );
+      const value = f.store.digests.create(f.actor.id, { kind: "codex_queue", socket }, () => ({
+        body: "Historical fixture",
+        messageIds: [messageId],
+      }));
+      return f.store.digests.save({ ...value, state: DigestState.Cancelled, cleanupPending: false }, "fixture_settled");
     });
     await f.digests.flush();
     expect(f.store.digests.active(f.actor.id)?.state).toBe(DigestState.Queued);
-    for (const value of history)
-      f.store.digests.save(
-        { ...value, cleanupPending: true },
-        "fixture_cleanup_required",
-      );
+    for (const value of history) f.store.digests.save({ ...value, cleanupPending: true }, "fixture_cleanup_required");
     f.notice();
     await f.digests.flush();
     expect(f.store.digests.cleanup(f.actor.id)).toHaveLength(1);

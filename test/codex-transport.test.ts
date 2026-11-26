@@ -31,21 +31,11 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
           ? new TextDecoder().decode(data)
           : data.toString();
       const raw: unknown = JSON.parse(content);
-      assert(
-        typeof raw === "object" &&
-          raw !== null &&
-          "method" in raw &&
-          typeof raw.method === "string",
-      );
+      assert(typeof raw === "object" && raw !== null && "method" in raw && typeof raw.method === "string");
       const m = {
         method: raw.method,
         id: "id" in raw && typeof raw.id === "number" ? raw.id : undefined,
-        params:
-          "params" in raw &&
-          typeof raw.params === "object" &&
-          raw.params !== null
-            ? raw.params
-            : {},
+        params: "params" in raw && typeof raw.params === "object" && raw.params !== null ? raw.params : {},
       };
       methods.push(m.method);
       if (m.id === undefined) return;
@@ -63,9 +53,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       if (m.method === "initialize") {
         assert.deepEqual(
           "capabilities" in m.params ? m.params.capabilities : undefined,
-          queueMode
-            ? { experimentalApi: true, requestAttestation: false }
-            : null,
+          queueMode ? { experimentalApi: true, requestAttestation: false } : null,
         );
         result = {
           userAgent: "codex-tui/0.167.0 (test)",
@@ -74,8 +62,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
           platformOs: "test",
         };
       }
-      if (m.method === "thread/queue/list")
-        result = { data: queue, nextCursor: null };
+      if (m.method === "thread/queue/list") result = { data: queue, nextCursor: null };
       if (m.method === "thread/queue/add") {
         assert.deepEqual(m.params, {
           threadId: "thread",
@@ -88,19 +75,13 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
           return;
         }
         result = {
-          queuedSubmission: badReceipt
-            ? { id: "wrong", clientUserMessageId: "other" }
-            : queue[0],
+          queuedSubmission: badReceipt ? { id: "wrong", clientUserMessageId: "other" } : queue[0],
         };
       }
-      if (m.method === "thread/read")
-        result = { thread: { id: "thread", status: { type: readState } } };
+      if (m.method === "thread/read") result = { thread: { id: "thread", status: { type: readState } } };
       if (m.method === "thread/resume") readState = "idle";
       if (m.method === "thread/turns/list") {
-        assert.equal(
-          "itemsView" in m.params ? m.params.itemsView : undefined,
-          "summary",
-        );
+        assert.equal("itemsView" in m.params ? m.params.itemsView : undefined, "summary");
         result = {
           data: [
             {
@@ -117,17 +98,8 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
         };
       }
       if (m.method === "turn/start") {
-        assert.deepEqual(Object.keys(m.params).sort(), [
-          "clientUserMessageId",
-          "input",
-          "threadId",
-        ]);
-        assert.equal(
-          "clientUserMessageId" in m.params
-            ? m.params.clientUserMessageId
-            : undefined,
-          "delivery",
-        );
+        assert.deepEqual(Object.keys(m.params).sort(), ["clientUserMessageId", "input", "threadId"]);
+        assert.equal("clientUserMessageId" in m.params ? m.params.clientUserMessageId : undefined, "delivery");
         if (lose) {
           socket.terminate();
           return;
@@ -150,10 +122,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       busy: false,
       version: "0.167.0",
     });
-    assert.deepEqual(
-      await connection.send(agent, "delivery", "[octo-delivery:delivery]"),
-      { turnId: "turn" },
-    );
+    assert.deepEqual(await connection.send(agent, "delivery", "[octo-delivery:delivery]"), { turnId: "turn" });
     assert.deepEqual(await connection.find(agent, "delivery"), {
       found: true,
       turnId: "turn",
@@ -164,24 +133,18 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       received: true,
     });
     historyText = "[octo-delivery:12345678]\nCompact notice";
-    assert.deepEqual(
-      await connection.find(
-        agent,
-        "12345678-abcd-4abc-9abc-123456789abc",
-        historyText,
-      ),
-      { found: true, turnId: "turn", received: true },
-    );
+    assert.deepEqual(await connection.find(agent, "12345678-abcd-4abc-9abc-123456789abc", historyText), {
+      found: true,
+      turnId: "turn",
+      received: true,
+    });
     historyType = "agentMessage";
     assert.deepEqual(await connection.find(agent, "delivery", historyText), {
       found: false,
     });
     historyType = "userMessage";
     historyText += " altered";
-    assert.deepEqual(
-      await connection.find(agent, "delivery", "[octo-delivery:delivery]"),
-      { found: false },
-    );
+    assert.deepEqual(await connection.find(agent, "delivery", "[octo-delivery:delivery]"), { found: false });
     historyText = "[octo-delivery:delivery]";
     connection.close();
     methods.length = 0;
@@ -208,9 +171,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       connection = new CodexConnection(path);
       if (method === "turn/start") await connection.prepare(agent);
       await assert.rejects(
-        method === "thread/resume"
-          ? connection.prepare(agent)
-          : connection.send(agent, "delivery", "notification"),
+        method === "thread/resume" ? connection.prepare(agent) : connection.send(agent, "delivery", "notification"),
         (error) =>
           error instanceof DeliveryError &&
           error.permanent &&
@@ -240,10 +201,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       queueId: "queued",
       note: "Accepted by the Codex queue; agent receipt is pending.",
     };
-    assert.deepEqual(
-      await connection.send(agent, "delivery", "notification"),
-      accepted,
-    );
+    assert.deepEqual(await connection.send(agent, "delivery", "notification"), accepted);
     assert.deepEqual(await connection.find(agent, "delivery"), {
       found: true,
       ...accepted,
@@ -259,23 +217,17 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       await connection.prepare(agent);
       await assert.rejects(
         connection.send(agent, "delivery", "notification"),
-        (error) =>
-          error instanceof DeliveryError && error.uncertain && !error.permanent,
+        (error) => error instanceof DeliveryError && error.uncertain && !error.permanent,
       );
       connection.close();
       connection = new CodexConnection(path, "queue");
       await connection.prepare(agent);
-      const adds = methods.filter(
-        (method) => method === "thread/queue/add",
-      ).length;
+      const adds = methods.filter((method) => method === "thread/queue/add").length;
       assert.deepEqual(await connection.find(agent, "delivery"), {
         found: true,
         ...accepted,
       });
-      assert.equal(
-        methods.filter((method) => method === "thread/queue/add").length,
-        adds,
-      );
+      assert.equal(methods.filter((method) => method === "thread/queue/add").length, adds);
       connection.close();
     }
     lose = false;
@@ -283,8 +235,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
     connection = new CodexConnection(path, "queue");
     await assert.rejects(
       connection.prepare(agent),
-      (error) =>
-        error instanceof DeliveryError && error.permanent && !error.uncertain,
+      (error) => error instanceof DeliveryError && error.permanent && !error.uncertain,
     );
     connection.close();
     for (const [code, message, archived] of [
@@ -297,11 +248,7 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
       connection = new CodexConnection(path, "queue");
       await assert.rejects(
         connection.prepare(agent),
-        (error) =>
-          error instanceof DeliveryError &&
-          error.archived === archived &&
-          error.permanent &&
-          !error.uncertain,
+        (error) => error instanceof DeliveryError && error.archived === archived && error.permanent && !error.uncertain,
       );
       connection.close();
     }
@@ -310,8 +257,16 @@ test("Codex Unix WebSocket transport preserves settings and treats lost acceptan
   } finally {
     connection.close();
     for (const socket of ws.clients) socket.terminate();
-    await new Promise<void>((resolve) => ws.close(() => resolve()));
-    await new Promise<void>((resolve) => http.close(() => resolve()));
+    await new Promise<void>((resolve) => {
+      ws.close(() => {
+        resolve();
+      });
+    });
+    await new Promise<void>((resolve) =>
+      http.close(() => {
+        resolve();
+      }),
+    );
     await rm(dir, { recursive: true, force: true });
   }
 });

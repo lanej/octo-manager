@@ -3,22 +3,14 @@ import { create } from "@bufbuild/protobuf";
 import { createTestRenderer } from "@opentui/core/testing";
 import { dashboardLink } from "../src/dashboard/links.js";
 import { dashboardView } from "../src/dashboard/view.js";
-import {
-  activityRecords,
-  records,
-  reviewDetail,
-} from "../src/dashboard/records.js";
+import { activityRecords, records, reviewDetail } from "../src/dashboard/records.js";
 import {
   ListActivityResponseSchema,
   SnapshotSchema,
   WatchDashboardResponseSchema,
 } from "../src/gen/octomanager/v2/scheduler_pb.js";
 import { RepairState } from "../src/gen/octomanager/v2/repairs_pb.js";
-import {
-  ActionState,
-  DeliveryState,
-  TrackingState,
-} from "../src/gen/octomanager/v2/tracking_pb.js";
+import { ActionState, DeliveryState, TrackingState } from "../src/gen/octomanager/v2/tracking_pb.js";
 
 test("Tracking retains the selected PR and inspection when observations reorder", async () => {
   await using terminal = await createTestRenderer({
@@ -78,9 +70,7 @@ test("Tracking retains the selected PR and inspection when observations reorder"
   terminal.mockInput.pressEscape();
   await terminal.waitForFrame((frame) => frame.includes("› owner/repo #2"));
   terminal.mockInput.pressEscape();
-  await terminal.waitForFrame((frame) =>
-    frame.includes("OCTO MANAGER  / Attention"),
-  );
+  await terminal.waitForFrame((frame) => frame.includes("OCTO MANAGER  / Attention"));
   expect(terminal.captureCharFrame()).toContain("Merge outcome unknown");
 });
 
@@ -105,12 +95,8 @@ test("Attention excludes closed PRs with historical uncertain merge operations",
       { prId: "open", state: "uncertain" },
     ],
   });
-  expect(
-    records("Attention", snapshot, () => "Unknown", 24).map((row) => row.prId),
-  ).toEqual(["open"]);
-  expect(
-    records("Deliveries", snapshot, () => "Unknown", 24).map((row) => row.prId),
-  ).toEqual(["open", "closed"]);
+  expect(records("Attention", snapshot, () => "Unknown", 24).map((row) => row.prId)).toEqual(["open"]);
+  expect(records("Deliveries", snapshot, () => "Unknown", 24).map((row) => row.prId)).toEqual(["open", "closed"]);
 });
 
 test("wide Attention keeps long subjects inside the list and shows delivery evidence beside it", async () => {
@@ -119,8 +105,7 @@ test("wide Attention keeps long subjects inside the list and shows delivery evid
     height: 21,
     kittyKeyboard: true,
   });
-  const subject =
-    "an-intentionally-long-organization-name/a-long-repository-name";
+  const subject = "an-intentionally-long-organization-name/a-long-repository-name";
   const snapshot = create(SnapshotSchema, {
     tracking: {
       prs: [
@@ -220,8 +205,7 @@ test("delivery evidence retains its exact link target and distinct categorical p
   expect(text).not.toContain("https://github.com/");
   expect(text).toContain("Target branch:  main");
   const spans = terminal.captureSpans().lines.flatMap((line) => line.spans);
-  const color = (value: string) =>
-    spans.find((span) => span.text.trim() === value)?.fg.toInts();
+  const color = (value: string) => spans.find((span) => span.text.trim() === value)?.fg.toInts();
   expect(color("watching")).toEqual([143, 210, 166, 255]);
   expect(color("uncertain")).toEqual([240, 198, 120, 255]);
   expect(color("Unavailable")).toEqual([170, 184, 199, 255]);
@@ -240,12 +224,8 @@ test("compact links retain external hosts and decline unsafe terminal URLs", () 
     label: "build.example.org/runs/812?step=3",
     url: "https://build.example.org/runs/812?step=3",
   });
-  expect(
-    dashboardLink("https://github.com@external.example/project"),
-  ).toBeUndefined();
-  expect(
-    dashboardLink("https://github.com/owner/repo/pull/42\u001b]8;;"),
-  ).toBeUndefined();
+  expect(dashboardLink("https://github.com@external.example/project")).toBeUndefined();
+  expect(dashboardLink("https://github.com/owner/repo/pull/42\u001b]8;;")).toBeUndefined();
   expect(dashboardLink("file:///tmp/report")).toBeUndefined();
 });
 
@@ -262,9 +242,7 @@ test("Reviews warns when cached evidence is for a different revision and links t
       url,
       headSha: "previous-head",
       mayHaveMoreMessages: true,
-      messages: [
-        { url: evidence, bodyMarkdown: "[local](file:///tmp/report)" },
-      ],
+      messages: [{ url: evidence, bodyMarkdown: "[local](file:///tmp/report)" }],
     },
   });
   const time = () => "Unknown";
@@ -296,17 +274,10 @@ test("Reviews warns when cached evidence is for a different revision and links t
   expect(rendered).not.toContain(evidence);
   const lines = rendered.split("\n");
   const source = lines.findIndex((line) => line.includes("Source: owner/repo"));
-  expect(
-    terminal.renderer.getLinkAt(
-      lines[source]?.indexOf("owner/repo") ?? -1,
-      source,
-    ),
-  ).toBe(evidence);
+  expect(terminal.renderer.getLinkAt(lines[source]?.indexOf("owner/repo") ?? -1, source)).toBe(evidence);
   const local = lines.findIndex((line) => line.includes("local"));
   expect(local).toBeGreaterThanOrEqual(0);
-  expect(
-    terminal.renderer.getLinkAt(lines[local]?.indexOf("local") ?? -1, local),
-  ).toBeNull();
+  expect(terminal.renderer.getLinkAt(lines[local]?.indexOf("local") ?? -1, local)).toBeNull();
 });
 
 test("Activity exposes the caller report PR and compact evidence links", async () => {
@@ -314,9 +285,7 @@ test("Activity exposes the caller report PR and compact evidence links", async (
   const url = "https://github.com/owner/repo/pull/42";
   const evidence = url + "?view=changes#discussion_r712";
   const page = create(ListActivityResponseSchema, {
-    activities: [
-      { sequence: 1n, report: { prUrl: url, evidenceUrl: evidence } },
-    ],
+    activities: [{ sequence: 1n, report: { prUrl: url, evidenceUrl: evidence } }],
   });
   const view = dashboardView(terminal.renderer, {
     changed() {
@@ -336,15 +305,8 @@ test("Activity exposes the caller report PR and compact evidence links", async (
   expect(rendered).toContain("Evidence: owner/repo #42 · thread 712");
   expect(rendered).not.toContain(evidence);
   const lines = rendered.split("\n");
-  const source = lines.findIndex((line) =>
-    line.includes("Evidence: owner/repo"),
-  );
-  expect(
-    terminal.renderer.getLinkAt(
-      lines[source]?.indexOf("owner/repo") ?? -1,
-      source,
-    ),
-  ).toBe(evidence);
+  const source = lines.findIndex((line) => line.includes("Evidence: owner/repo"));
+  expect(terminal.renderer.getLinkAt(lines[source]?.indexOf("owner/repo") ?? -1, source)).toBe(evidence);
 });
 
 test("Attention keeps uncertain repairs and scopes failed repairs to the tracked target", () => {
@@ -378,8 +340,7 @@ test("Attention keeps uncertain repairs and scopes failed repairs to the tracked
   });
   const repair = snapshot.repairs[0];
   if (repair === undefined) throw new Error("Missing repair fixture");
-  const condition = () =>
-    records("Attention", snapshot, () => "Unknown", 24)[0]?.delivery?.condition;
+  const condition = () => records("Attention", snapshot, () => "Unknown", 24)[0]?.delivery?.condition;
   expect(condition()).toBe("Repair needs attention");
   repair.targetSha = "previous-target";
   expect(condition()).not.toBe("Repair needs attention");

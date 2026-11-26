@@ -77,8 +77,7 @@ async function fixture() {
   const owner = tracking.registerAgent(target("owner"));
   const observer = tracking.registerAgent(target("observer"));
   const unrelated = tracking.registerAgent(target("unrelated"));
-  for (let index = 0; index < 8; index++)
-    tracking.registerAgent(target(`idle-${String(index)}`));
+  for (let index = 0; index < 8; index++) tracking.registerAgent(target(`idle-${String(index)}`));
   const prs = [
     tracking.track("https://github.com/owner/repo/pull/1", target("owner")),
     tracking.track("https://github.com/owner/repo/pull/2", target("owner")),
@@ -87,26 +86,17 @@ async function fixture() {
   const selected = prs[0];
   if (selected === undefined) throw new Error("Missing scoped PR");
   store.tracking.subscribe(selected.id, target("observer"));
-  const queues = new Map(
-    [owner, observer, unrelated].map((agent) => [agent.id, new Queue()]),
-  );
+  const queues = new Map([owner, observer, unrelated].map((agent) => [agent.id, new Queue()]));
   let broadRevision = 0;
   const scheduler = new WorkScheduler(() => 1000);
-  const service = new DigestService(
-    store.digests,
-    tracking,
-    store.submissions,
-    directory,
-    () => 1000,
-    {
-      inputRevision: () => String(broadRevision),
-      connect: (agent) => {
-        const queue = queues.get(agent.id);
-        if (queue === undefined) throw new Error("Unexpected recipient queue");
-        return queue;
-      },
+  const service = new DigestService(store.digests, tracking, store.submissions, directory, () => 1000, {
+    inputRevision: () => String(broadRevision),
+    connect: (agent) => {
+      const queue = queues.get(agent.id);
+      if (queue === undefined) throw new Error("Unexpected recipient queue");
+      return queue;
     },
-  );
+  });
   const queue = (id: string) => {
     const value = queues.get(id);
     if (value === undefined) throw new Error("Missing recipient queue");
@@ -123,14 +113,10 @@ async function fixture() {
     queue,
     members(agentId: string) {
       const digest = store.digests.active(agentId);
-      return digest === undefined
-        ? []
-        : store.digests.version(digest.id, digest.revision).messageIds;
+      return digest === undefined ? [] : store.digests.version(digest.id, digest.revision).messageIds;
     },
     pendingIds(agentId: string) {
-      return store.tracking.inbox
-        .list(agentId, 0, false, true)
-        .messages.map((message) => message.id);
+      return store.tracking.inbox.list(agentId, 0, false, true).messages.map((message) => message.id);
     },
     observe(index: number, comments = 1) {
       const pr = prs[index];
@@ -159,20 +145,10 @@ async function fixture() {
       store.tracking.observe(pr.id, input, config);
       for (const delivery of store.tracking.deliveries()) {
         const action = store.tracking.action(delivery.actionId);
-        if (
-          action.prId !== pr.id ||
-          store.tracking.inbox.get(delivery.id) !== undefined
-        )
-          continue;
-        const notice = store.tracking.noticeForAction(
-          action,
-          delivery.recipientAgentId,
-        );
+        if (action.prId !== pr.id || store.tracking.inbox.get(delivery.id) !== undefined) continue;
+        const notice = store.tracking.noticeForAction(action, delivery.recipientAgentId);
         store.tracking.inbox.freezeNotice(delivery.id, notice);
-        store.tracking.inbox.record(
-          delivery.id,
-          store.tracking.inbox.render(delivery.id, notice),
-        );
+        store.tracking.inbox.record(delivery.id, store.tracking.inbox.render(delivery.id, notice));
       }
     },
     async start() {
@@ -206,10 +182,7 @@ test("a PR input wakes its owner and observer without roster or unrelated histor
     if (sibling === undefined) throw new Error("Missing sibling PR");
     const siblingIds = f.store.tracking
       .deliveries()
-      .filter(
-        (delivery) =>
-          f.store.tracking.action(delivery.actionId).prId === sibling.id,
-      )
+      .filter((delivery) => f.store.tracking.action(delivery.actionId).prId === sibling.id)
       .map((delivery) => delivery.id);
     const roster = spyOn(f.store.tracking, "agents");
     const recovery = spyOn(f.store.tracking, "prepareSafeRecovery");
@@ -220,26 +193,17 @@ test("a PR input wakes its owner and observer without roster or unrelated histor
       f.service.wake(f.selected.id);
       f.service.wake(f.selected.id);
       await until(
-        () =>
-          f.queue(f.observer.id).slots.length === 1 &&
-          (f.store.digests.active(f.owner.id)?.revision ?? 0) > 1,
+        () => f.queue(f.observer.id).slots.length === 1 && (f.store.digests.active(f.owner.id)?.revision ?? 0) > 1,
       );
       await setImmediate();
       await setImmediate();
       expect(roster).not.toHaveBeenCalled();
       expect(recovery).not.toHaveBeenCalled();
       expect(contexts).toHaveBeenCalledTimes(1);
-      expect(
-        history.mock.calls.every(
-          ([id]) => id === f.owner.id || id === f.observer.id,
-        ),
-      ).toBe(true);
+      expect(history.mock.calls.every(([id]) => id === f.owner.id || id === f.observer.id)).toBe(true);
       const digest = f.store.digests.active(f.owner.id);
       if (digest === undefined) throw new Error("Missing current owner digest");
-      const members = f.store.digests.version(
-        digest.id,
-        digest.revision,
-      ).messageIds;
+      const members = f.store.digests.version(digest.id, digest.revision).messageIds;
       expect(siblingIds.length).toBeGreaterThan(0);
       for (const id of siblingIds) expect(members).toContain(id);
       expect(f.queue(f.unrelated.id).slots).toHaveLength(1);
@@ -301,28 +265,16 @@ test("an unscoped roster change still cleans a removed observer without receipti
     await f.start();
     const ownerDigest = f.store.digests.active(f.owner.id);
     const observerDigest = f.store.digests.active(f.observer.id);
-    if (ownerDigest === undefined || observerDigest === undefined)
-      throw new Error("Missing participant digests");
-    const ownerIds = f.store.digests.version(
-      ownerDigest.id,
-      ownerDigest.revision,
-    ).messageIds;
-    f.service.acknowledge(
-      observerDigest.id,
-      observerDigest.revision,
-      f.observer.id,
-    );
+    if (ownerDigest === undefined || observerDigest === undefined) throw new Error("Missing participant digests");
+    const ownerIds = f.store.digests.version(ownerDigest.id, ownerDigest.revision).messageIds;
+    f.service.acknowledge(observerDigest.id, observerDigest.revision, f.observer.id);
     f.store.tracking.unsubscribe(f.selected.id, f.observer.id);
     const roster = spyOn(f.store.tracking, "agents");
     try {
       f.fullWake();
       await until(() => f.queue(f.observer.id).slots.length === 0);
       expect(roster).toHaveBeenCalled();
-      expect(
-        ownerIds.every(
-          (id) => f.store.tracking.inbox.get(id)?.acknowledgedAt === undefined,
-        ),
-      ).toBe(true);
+      expect(ownerIds.every((id) => f.store.tracking.inbox.get(id)?.acknowledgedAt === undefined)).toBe(true);
       expect(f.queue(f.owner.id).slots).toHaveLength(1);
     } finally {
       roster.mockRestore();
@@ -355,10 +307,7 @@ test("a recipient input follows admission in flight without PR or roster discove
       await setImmediate();
       expect(queue.maximum).toBe(1);
       queue.release.release();
-      await until(
-        () =>
-          (f.store.digests.active(f.owner.id)?.revision ?? 0) > held.revision,
-      );
+      await until(() => (f.store.digests.active(f.owner.id)?.revision ?? 0) > held.revision);
       expect(f.members(f.owner.id)).toEqual(expectedOwner);
       expect(queue.maximum).toBe(1);
       expect(queue.slots).toHaveLength(1);

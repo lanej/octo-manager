@@ -7,11 +7,7 @@ import { DatabaseSync, StatementSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  defaultPollPolicy,
-  schedulePoll,
-  type PollState,
-} from "../src/tracking/polling.js";
+import { defaultPollPolicy, schedulePoll, type PollState } from "../src/tracking/polling.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 import { RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
 import { TrackingState } from "../src/tracking/retirement.js";
@@ -27,14 +23,9 @@ test("tracking arms the rate-limit deadline without a periodic upkeep timer", as
     endpoint: "local",
     sessionId: "cooldown-owner",
   });
-  const service = new TrackingService(
-    store.tracking,
-    defaultTrackingConfig(),
-    () => now,
-    {
-      read: () => Promise.reject(new GitHubRateLimitError(retryAt)),
-    },
-  );
+  const service = new TrackingService(store.tracking, defaultTrackingConfig(), () => now, {
+    read: () => Promise.reject(new GitHubRateLimitError(retryAt)),
+  });
   try {
     await service.refresh(pr.id);
     assert.equal(service.tick(), retryAt);
@@ -61,46 +52,14 @@ function observation(head = "head"): ObservationInput {
 test("idle polling doubles to a bounded ceiling and resets on meaningful changes", () => {
   let state: PollState | undefined;
   for (const expected of [60000, 120000, 240000, 480000, 900000, 900000]) {
-    state = schedulePoll(
-      state,
-      0,
-      observation(),
-      0,
-      defaultPollPolicy,
-      "poll",
-      0,
-    );
+    state = schedulePoll(state, 0, observation(), 0, defaultPollPolicy, "poll", 0);
     assert.equal(state.intervalMs, expected);
   }
-  state = schedulePoll(
-    state,
-    0,
-    { ...observation(), observedAt: 99 },
-    0,
-    defaultPollPolicy,
-    "poll",
-    0,
-  );
+  state = schedulePoll(state, 0, { ...observation(), observedAt: 99 }, 0, defaultPollPolicy, "poll", 0);
   assert.equal(state.intervalMs, 900000);
-  state = schedulePoll(
-    state,
-    0,
-    observation("new-head"),
-    0,
-    defaultPollPolicy,
-    "poll",
-    0,
-  );
+  state = schedulePoll(state, 0, observation("new-head"), 0, defaultPollPolicy, "poll", 0);
   assert.equal(state.intervalMs, 60000);
-  state = schedulePoll(
-    state,
-    1,
-    observation("new-head"),
-    0,
-    defaultPollPolicy,
-    "poll",
-    0,
-  );
+  state = schedulePoll(state, 1, observation("new-head"), 0, defaultPollPolicy, "poll", 0);
   assert.equal(state.intervalMs, 60000);
 });
 test("pending checks cap backoff while manual refresh and hard rate cooldown remain distinct", () => {
@@ -121,8 +80,7 @@ test("pending checks cap backoff while manual refresh and hard rate cooldown rem
     ],
   };
   let state: PollState | undefined;
-  for (let i = 0; i < 8; i++)
-    state = schedulePoll(state, 0, input, 0, defaultPollPolicy, "poll", 0);
+  for (let i = 0; i < 8; i++) state = schedulePoll(state, 0, input, 0, defaultPollPolicy, "poll", 0);
   assert.equal(state?.intervalMs, 120000);
   state = schedulePoll(state, 0, input, 0, defaultPollPolicy, "manual", 999999);
   assert.equal(state.intervalMs, 60000);
@@ -214,10 +172,7 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
   const get = spyOn(StatementSync.prototype, "get");
   try {
     for (let number = 1; number <= 96; number++) {
-      const pr = store.tracking.track(
-        `https://github.com/owner/repo/pull/${String(number)}`,
-        owner,
-      );
+      const pr = store.tracking.track(`https://github.com/owner/repo/pull/${String(number)}`, owner);
       const closed = { ...observation(), lifecycle: "closed" } as const;
       store.tracking.observe(pr.id, closed, config);
       store.tracking.observe(pr.id, closed, config);
@@ -242,18 +197,14 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
       assert.equal(
         contexts.filter(
           (statement) =>
-            statement instanceof StatementSync &&
-            /SELECT .* FROM github_schedules/.test(statement.sourceSQL),
+            statement instanceof StatementSync && /SELECT .* FROM github_schedules/.test(statement.sourceSQL),
         ).length,
         expected,
       );
     };
     await idleReads(1);
     assert.equal(reads, 0);
-    const active = store.tracking.track(
-      "https://github.com/owner/repo/pull/97",
-      owner,
-    );
+    const active = store.tracking.track("https://github.com/owner/repo/pull/97", owner);
     store.schedules.save({
       key: `tracking:${active.id}`,
       kind: RefreshKind.Tracking,
@@ -275,16 +226,11 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
     service.tick();
     await settle();
     assert.equal(reads, 1);
-    assert.equal(
-      store.schedules.get(`tracking:${id}`)?.state,
-      ScheduleState.Deferred,
-    );
+    assert.equal(store.schedules.get(`tracking:${id}`)?.state, ScheduleState.Deferred);
     await idleReads(2);
     assert.equal(reads, 1);
     external
-      .prepare(
-        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?",
-      )
+      .prepare("UPDATE github_schedules SET data=json_remove(data,'$.intervalMs') WHERE key=?")
       .run(`tracking:${active.id}`);
     assert.throws(() => {
       service.tick();
@@ -299,9 +245,7 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
       service.tick();
     }, /Invalid stored GitHub schedule data/);
     assert.equal(
-      external
-        .prepare("SELECT state FROM github_schedules WHERE key=?")
-        .get(`tracking:${id}`)?.["state"],
+      external.prepare("SELECT state FROM github_schedules WHERE key=?").get(`tracking:${id}`)?.["state"],
       ScheduleState.Queued,
     );
     external
@@ -310,9 +254,7 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
       )
       .run(`tracking:${id}`);
     external
-      .prepare(
-        "UPDATE github_schedules SET state='queued',data=json_set(data,'$.state','queued') WHERE key=?",
-      )
+      .prepare("UPDATE github_schedules SET state='queued',data=json_set(data,'$.state','queued') WHERE key=?")
       .run(`tracking:${active.id}`);
     await idleReads(1);
     assert.equal(reads, 1);

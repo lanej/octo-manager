@@ -9,11 +9,7 @@ import { GitHubHTTPError, GitHubRateLimitError } from "../github/reads.js";
 import type { TrackingService } from "../tracking/service.js";
 import type { ConflictStore } from "../repairs/cases.js";
 import { resolveId } from "../tracking/identifiers.js";
-import {
-  mergeProvider,
-  type MergeProvider,
-  type MergeSnapshot,
-} from "./github.js";
+import { mergeProvider, type MergeProvider, type MergeSnapshot } from "./github.js";
 import { preparer, type Preparer } from "./preparation.js";
 import { MergeStore } from "./store.js";
 import {
@@ -33,9 +29,7 @@ import {
 import { checkGate, fingerprint, graphKey, readyFor } from "./policy.js";
 export interface MergeOptions {
   issueGate?: (url: string) => boolean;
-  repositoryInstructions?: (
-    message: import("../tracking/inbox.js").AgentMessage,
-  ) => string | undefined;
+  repositoryInstructions?: (message: import("../tracking/inbox.js").AgentMessage) => string | undefined;
   provider?: MergeProvider;
   prepare?: Preparer;
   // No argument identifies roster-wide input; a PR argument identifies only that PR's reference input.
@@ -71,11 +65,7 @@ export class MergeService {
       store,
       tracking,
       (id, observation) =>
-        this.snapshot(
-          id,
-          AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]),
-          observation,
-        ),
+        this.snapshot(id, AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]), observation),
       now,
       options.repositoryInstructions,
     );
@@ -90,12 +80,7 @@ export class MergeService {
       const entries = this.store.unfinishedEntries();
       const operations = this.store.unfinishedOperations();
       const readiness = this.store.readinessCandidates();
-      if (
-        entries.length === 0 &&
-        operations.length === 0 &&
-        readiness.size === 0
-      )
-        return undefined;
+      if (entries.length === 0 && operations.length === 0 && readiness.size === 0) return undefined;
       const deadlines: number[] = [];
       for (const entry of entries)
         if (
@@ -130,11 +115,7 @@ export class MergeService {
       this.store.entries().every((entry) => terminal(entry.state)) &&
       this.store
         .operations()
-        .every(
-          (operation) =>
-            operation.state === OperationState.Succeeded ||
-            operation.state === OperationState.Failed,
-        )
+        .every((operation) => operation.state === OperationState.Succeeded || operation.state === OperationState.Failed)
     );
   }
   async close(): Promise<void> {
@@ -151,19 +132,8 @@ export class MergeService {
     switch (input.op) {
       case "auto_merge":
         if (input.inherit === true)
-          return this.store.useDefault(
-            input.pr,
-            input.actorId,
-            input.requestId,
-            input.instructions,
-          );
-        return this.store.autoMerge(
-          input.pr,
-          input.actorId,
-          input.enabled,
-          input.requestId,
-          input.instructions,
-        );
+          return this.store.useDefault(input.pr, input.actorId, input.requestId, input.instructions);
+        return this.store.autoMerge(input.pr, input.actorId, input.enabled, input.requestId, input.instructions);
       case "queue":
         return this.store.queue(input.input);
       case "inspect":
@@ -172,27 +142,16 @@ export class MergeService {
         return {
           references: this.store
             .refs()
-            .filter(
-              (ref) =>
-                input.pr === undefined ||
-                ref.prId === this.store.tracking.pr(input.pr).id,
-            ),
+            .filter((ref) => input.pr === undefined || ref.prId === this.store.tracking.pr(input.pr).id),
         };
       case "dependencies":
         return {
           dependencies: this.store
             .dependencies()
-            .filter(
-              (edge) =>
-                input.pr === undefined ||
-                edge.dependentId === this.store.tracking.pr(input.pr).id,
-            ),
+            .filter((edge) => input.pr === undefined || edge.dependentId === this.store.tracking.pr(input.pr).id),
         };
       case "confirm": {
-        const profile =
-          input.profile === undefined
-            ? undefined
-            : this.profiles[input.profile];
+        const profile = input.profile === undefined ? undefined : this.profiles[input.profile];
         if (input.profile !== undefined && profile === undefined)
           throw new Error("Unknown configured preparation profile");
         return this.store.confirm(
@@ -209,12 +168,7 @@ export class MergeService {
       case "decide":
         return this.store.decide(input.id, input.actorId, input.decision);
       case "policy":
-        return this.store.configure(
-          input.pr,
-          input.actorId,
-          input.checks,
-          input.noCi,
-        );
+        return this.store.configure(input.pr, input.actorId, input.checks, input.noCi);
       case "ready":
         return this.store.ready(input.pr, input.actorId, input.head);
       case "pause":
@@ -227,10 +181,7 @@ export class MergeService {
         const ids = this.store.operations().map((op) => op.id),
           id = resolveId(input.id, ids),
           operation = this.store.operations().find((op) => op.id === id);
-        if (
-          operation === undefined ||
-          operation.state !== OperationState.Uncertain
-        )
+        if (operation === undefined || operation.state !== OperationState.Uncertain)
           throw new Error("Uncertain operation not found");
         this.store.saveOperation({
           ...operation,
@@ -268,8 +219,7 @@ export class MergeService {
         value.receiptId,
         value.receiptContext,
       ]);
-    if (current === undefined || authority(current) !== authority(entry))
-      return false;
+    if (current === undefined || authority(current) !== authority(entry)) return false;
     const pr = this.store.tracking.pr(entry.prId);
     return (
       this.issueGate(pr.url) &&
@@ -278,8 +228,7 @@ export class MergeService {
       (entry.autoMerge || entry.receiptId !== undefined) &&
       this.store.chain(entry.chainId).state === ChainState.Active &&
       (op === undefined ||
-        ((entry.receiptId === undefined ||
-          receiptContext(this.store, pr) === entry.receiptContext) &&
+        ((entry.receiptId === undefined || receiptContext(this.store, pr) === entry.receiptContext) &&
           pr.trackingEpoch === op.epoch &&
           pr.ownerAgentId === op.ownerId &&
           pr.observation?.headSha === op.head &&
@@ -293,37 +242,26 @@ export class MergeService {
     if (
       revision === undefined ||
       revision !== this.scannedRevision ||
-      [...this.scannedInputs].some(
-        ([id, previous]) => this.referenceInputRevision?.(id) !== previous,
-      )
+      [...this.scannedInputs].some(([id, previous]) => this.referenceInputRevision?.(id) !== previous)
     ) {
       const prs = this.store.tracking.prContexts();
       const enabled = prs.filter((pr) => pr.enabled);
       const ids = new Set(enabled.map((pr) => pr.id));
-      for (const id of this.scannedInputs.keys())
-        if (!ids.has(id)) this.scannedInputs.delete(id);
+      for (const id of this.scannedInputs.keys()) if (!ids.has(id)) this.scannedInputs.delete(id);
       for (const pr of enabled) {
         const input = this.referenceInputRevision?.(pr.id);
-        if (input !== undefined && input === this.scannedInputs.get(pr.id))
-          continue;
+        if (input !== undefined && input === this.scannedInputs.get(pr.id)) continue;
         await setImmediate();
         if (this.abort.signal.aborted) return;
         const observation = this.store.tracking.referenceObservation(pr.id);
-        this.store.scan(
-          { ...pr, ...(observation === undefined ? {} : { observation }) },
-          prs,
-        );
+        this.store.scan({ ...pr, ...(observation === undefined ? {} : { observation }) }, prs);
         if (input !== undefined) this.scannedInputs.set(pr.id, input);
       }
       this.scannedRevision = revision;
     }
     for (const operation of this.store
       .unfinishedOperations()
-      .filter(
-        (op) =>
-          op.state === OperationState.Uncertain &&
-          this.reconcileRequested.has(op.id),
-      )) {
+      .filter((op) => op.state === OperationState.Uncertain && this.reconcileRequested.has(op.id))) {
       this.reconcileRequested.delete(operation.id);
       await this.reconcile(operation);
     }
@@ -331,19 +269,12 @@ export class MergeService {
       .unfinishedOperations()
       .filter(
         (op) =>
-          op.state === OperationState.Running &&
-          op.requestId !== undefined &&
-          (op.nextCheckAt ?? 0) <= this.now(),
+          op.state === OperationState.Running && op.requestId !== undefined && (op.nextCheckAt ?? 0) <= this.now(),
       ))
       await this.pollMerge(operation);
     for (const entry of this.store
       .unfinishedEntries()
-      .filter(
-        (entry) =>
-          !terminal(entry.state) &&
-          entry.nextAt <= this.now() &&
-          !this.store.busy(entry.prId),
-      )) {
+      .filter((entry) => !terminal(entry.state) && entry.nextAt <= this.now() && !this.store.busy(entry.prId))) {
       if (await this.reconcileManualClosure(entry)) continue;
       if (!this.active(entry)) continue;
       try {
@@ -352,18 +283,13 @@ export class MergeService {
         const fresh = this.store.entryById(entry.id);
         if (fresh === undefined || this.store.busy(entry.prId)) continue;
         const delay =
-          error instanceof GitHubRateLimitError
-            ? Math.max(this.now() + 60000, error.retryAtMs)
-            : this.now() + 60000;
+          error instanceof GitHubRateLimitError ? Math.max(this.now() + 60000, error.retryAtMs) : this.now() + 60000;
         this.store.state(
           fresh,
           EntryState.Blocked,
-          error instanceof Error
-            ? error.message
-            : "Merge evaluation unavailable",
+          error instanceof Error ? error.message : "Merge evaluation unavailable",
           {
-            nextAt:
-              entry.receiptId === undefined ? delay : Number.MAX_SAFE_INTEGER,
+            nextAt: entry.receiptId === undefined ? delay : Number.MAX_SAFE_INTEGER,
           },
         );
       }
@@ -383,8 +309,7 @@ export class MergeService {
     )
       return undefined;
     const current = this.store.entryById(entry.id);
-    if (current === undefined || fingerprint(current) !== fingerprint(entry))
-      return undefined;
+    if (current === undefined || fingerprint(current) !== fingerprint(entry)) return undefined;
     const pr = this.store.tracking.pr(entry.prId);
     if (
       !pr.enabled ||
@@ -412,34 +337,23 @@ export class MergeService {
       );
     };
     if (!unchanged()) return true;
-    const signal = AbortSignal.any([
-      this.abort.signal,
-      AbortSignal.timeout(15000),
-    ]);
+    const signal = AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]);
     try {
       // Observing an external outcome does not grant authority to prepare, push or merge.
       const snapshot =
         this.provider.readiness === undefined
           ? await this.provider.inspect(pr.url, signal)
           : await this.provider.readiness(pr.url, observation, signal);
-      if (signal.aborted)
-        throw new Error("External merge inspection cancelled");
+      if (signal.aborted) throw new Error("External merge inspection cancelled");
       if (!unchanged()) return true;
       const observed = snapshot.observation;
-      if (
-        observed.headSha !== observation.headSha ||
-        observed.lifecycle === "open"
-      )
+      if (observed.headSha !== observation.headSha || observed.lifecycle === "open")
         throw new Error("PR changed during external merge inspection");
       checked(Sha, observed.headSha);
       if (observed.lifecycle === "merged") {
-        if (snapshot.mergeCommit === undefined)
-          throw new Error("External merge commit is unconfirmed");
+        if (snapshot.mergeCommit === undefined) throw new Error("External merge commit is unconfirmed");
         checked(Sha, snapshot.mergeCommit);
-        if (
-          observed.headSha === ready.head &&
-          pr.ownerAgentId === ready.ownerId
-        )
+        if (observed.headSha === ready.head && pr.ownerAgentId === ready.ownerId)
           this.store.state(entry, EntryState.Merged, "PR merged externally", {
             mergeCommit: snapshot.mergeCommit,
             nextAt: 0,
@@ -452,12 +366,7 @@ export class MergeService {
             { nextAt: 0 },
           );
       } else if (snapshot.mergeCommit === undefined)
-        this.store.state(
-          entry,
-          EntryState.Cancelled,
-          "PR closed without merging; entry cancelled",
-          { nextAt: 0 },
-        );
+        this.store.state(entry, EntryState.Cancelled, "PR closed without merging; entry cancelled", { nextAt: 0 });
       else throw new Error("External closure evidence is inconsistent");
     } catch (error) {
       if (unchanged())
@@ -496,12 +405,7 @@ export class MergeService {
         throw new Error("PR changed during readiness inspection");
       return result;
     }
-    this.store.tracking.observe(
-      pr.id,
-      result.observation,
-      this.tracking.config,
-      epoch,
-    );
+    this.store.tracking.observe(pr.id, result.observation, this.tracking.config, epoch);
     return result;
   }
   private async advance(entry: MergeEntry): Promise<void> {
@@ -511,48 +415,32 @@ export class MergeService {
     if (
       entry.receiptId !== undefined &&
       (receiptContext(this.store, pr) !== entry.receiptContext ||
-        this.store
-          .dependencies()
-          .some((d) => d.dependentId === pr.id && d.preparation !== undefined))
+        this.store.dependencies().some((d) => d.dependentId === pr.id && d.preparation !== undefined))
     ) {
-      this.store.state(
-        entry,
-        EntryState.Blocked,
-        "PR or dependency context changed since the merge notice",
-        { nextAt: Number.MAX_SAFE_INTEGER },
-      );
+      this.store.state(entry, EntryState.Blocked, "PR or dependency context changed since the merge notice", {
+        nextAt: Number.MAX_SAFE_INTEGER,
+      });
       return;
     }
     if (observation === undefined) {
-      this.store.state(
-        entry,
-        EntryState.Waiting,
-        "Waiting for initial tracking evidence",
-        { nextAt: this.now() + 60000 },
-      );
+      this.store.state(entry, EntryState.Waiting, "Waiting for initial tracking evidence", {
+        nextAt: this.now() + 60000,
+      });
       return;
     }
     if (observation.lifecycle !== "open") {
       const snapshot = await this.snapshot(pr.id);
-      if (
-        snapshot.observation.lifecycle === "merged" &&
-        snapshot.mergeCommit !== undefined
-      )
+      if (snapshot.observation.lifecycle === "merged" && snapshot.mergeCommit !== undefined)
         this.store.state(entry, EntryState.Merged, "PR merged externally", {
           mergeCommit: snapshot.mergeCommit,
         });
       else
-        this.store.state(
-          entry,
-          EntryState.Blocked,
-          "PR closed without a confirmed merge",
-          { nextAt: this.now() + 60000 },
-        );
+        this.store.state(entry, EntryState.Blocked, "PR closed without a confirmed merge", {
+          nextAt: this.now() + 60000,
+        });
       return;
     }
-    const dependencies = this.store
-      .dependencies()
-      .filter((edge) => edge.dependentId === pr.id);
+    const dependencies = this.store.dependencies().filter((edge) => edge.dependentId === pr.id);
     const preparations: {
       profile: PreparationProfile;
       commit: string;
@@ -561,36 +449,23 @@ export class MergeService {
     for (const dependency of dependencies) {
       const upstream = this.store.tracking.pr(dependency.prerequisiteId);
       if (upstream.observation?.lifecycle !== "merged") {
-        this.store.state(
-          entry,
-          EntryState.Waiting,
-          `Waiting for prerequisite ${upstream.url} to merge`,
-          { nextAt: this.now() + 60000 },
-        );
+        this.store.state(entry, EntryState.Waiting, `Waiting for prerequisite ${upstream.url} to merge`, {
+          nextAt: this.now() + 60000,
+        });
         return;
       }
       const snapshot = await this.snapshot(upstream.id);
-      if (
-        snapshot.observation.lifecycle !== "merged" ||
-        snapshot.mergeCommit === undefined
-      ) {
-        this.store.state(
-          entry,
-          EntryState.Blocked,
-          `Prerequisite has no confirmed merge commit: ${upstream.url}`,
-          { nextAt: this.now() + 60000 },
-        );
+      if (snapshot.observation.lifecycle !== "merged" || snapshot.mergeCommit === undefined) {
+        this.store.state(entry, EntryState.Blocked, `Prerequisite has no confirmed merge commit: ${upstream.url}`, {
+          nextAt: this.now() + 60000,
+        });
         return;
       }
       if (dependency.preparation !== undefined)
         preparations.push({
           profile: dependency.preparation,
           commit: snapshot.mergeCommit,
-          key: fingerprint([
-            dependency.id,
-            dependency.preparation,
-            snapshot.mergeCommit,
-          ]),
+          key: fingerprint([dependency.id, dependency.preparation, snapshot.mergeCommit]),
         });
     }
     if (!this.active(entry)) return;
@@ -612,10 +487,7 @@ export class MergeService {
       if (entry.preparationHold === true) return;
       const snapshot = await this.snapshot(pr.id);
       if (!this.active(entry)) return;
-      const key = fingerprint([
-        preparation.key,
-        snapshot.observation.targetBase,
-      ]);
+      const key = fingerprint([preparation.key, snapshot.observation.targetBase]);
       await this.execute(entry, snapshot, expectedGraph, {
         profile: preparation.profile,
         commit: preparation.commit,
@@ -632,49 +504,27 @@ export class MergeService {
         this.store.saveEntry(fresh);
         entry = fresh;
       }
-      this.store.state(
-        entry,
-        EntryState.WaitingOwner,
-        "Owner review assessment required for current head",
-        patch,
-      );
+      this.store.state(entry, EntryState.WaitingOwner, "Owner review assessment required for current head", patch);
       return;
     }
     if (entry.state === EntryState.WaitingChecks && entry.nextAt === 0)
-      entry = this.store.state(
-        entry,
-        EntryState.WaitingChecks,
-        "Inspecting current GitHub merge eligibility",
-      );
+      entry = this.store.state(entry, EntryState.WaitingChecks, "Inspecting current GitHub merge eligibility");
     const snapshot = await this.snapshot(pr.id);
     pr = this.store.tracking.pr(pr.id);
     if (!this.active(entry)) return;
     if (!readyFor(entry, pr, this.store.dependencies())) {
       const fresh = { ...entry };
       delete fresh.ready;
-      this.store.state(
-        fresh,
-        EntryState.WaitingOwner,
-        "Head, target, ownership, or review feedback changed",
-        { nextAt: this.now() + 60000 },
-      );
+      this.store.state(fresh, EntryState.WaitingOwner, "Head, target, ownership, or review feedback changed", {
+        nextAt: this.now() + 60000,
+      });
       return;
     }
     const gate = checkGate(entry, snapshot);
     if (gate !== undefined) {
-      this.store.state(
-        entry,
-        entry.receiptId === undefined
-          ? EntryState.WaitingChecks
-          : EntryState.Blocked,
-        gate,
-        {
-          nextAt:
-            entry.receiptId === undefined
-              ? this.now() + 60000
-              : Number.MAX_SAFE_INTEGER,
-        },
-      );
+      this.store.state(entry, entry.receiptId === undefined ? EntryState.WaitingChecks : EntryState.Blocked, gate, {
+        nextAt: entry.receiptId === undefined ? this.now() + 60000 : Number.MAX_SAFE_INTEGER,
+      });
       return;
     }
     await this.execute(entry, snapshot, expectedGraph);
@@ -714,20 +564,16 @@ export class MergeService {
           }),
     };
     this.store.transaction(() => {
-      if (!this.active(entry, operation))
-        throw new Error("Merge context changed before operation");
+      if (!this.active(entry, operation)) throw new Error("Merge context changed before operation");
       this.store.saveOperation(operation);
       this.store.state(
         entry,
         preparation === undefined ? EntryState.Merging : EntryState.Preparing,
-        preparation === undefined
-          ? "Head-pinned merge in flight"
-          : "Running deterministic preparation",
+        preparation === undefined ? "Head-pinned merge in flight" : "Running deterministic preparation",
       );
     });
     try {
-      if (!this.active(entry, operation))
-        throw new Error("Merge chain paused, cancelled, or context changed");
+      if (!this.active(entry, operation)) throw new Error("Merge chain paused, cancelled, or context changed");
       operation = { ...operation, state: OperationState.Running };
       this.store.saveOperation(operation);
       if (preparation !== undefined) {
@@ -737,9 +583,7 @@ export class MergeService {
           signal: this.abort.signal,
           beforePush: (head, workspace) => {
             if (!this.active(entry, operation))
-              throw new Error(
-                "Merge chain paused, cancelled, or context changed before push",
-              );
+              throw new Error("Merge chain paused, cancelled, or context changed before push");
             operation = {
               ...operation,
               phase: "pushing",
@@ -773,25 +617,13 @@ export class MergeService {
           },
         );
       } else {
-        const result = await this.provider.merge(
-          pr.url,
-          operation.head,
-          entry.method,
-          this.abort.signal,
-          () => {
-            if (
-              !this.active(entry, operation) ||
-              !readyFor(
-                entry,
-                this.store.tracking.pr(pr.id),
-                this.store.dependencies(),
-              )
-            )
-              throw new EffectNotStarted(
-                "Merge context changed before GitHub dispatch",
-              );
-          },
-        );
+        const result = await this.provider.merge(pr.url, operation.head, entry.method, this.abort.signal, () => {
+          if (
+            !this.active(entry, operation) ||
+            !readyFor(entry, this.store.tracking.pr(pr.id), this.store.dependencies())
+          )
+            throw new EffectNotStarted("Merge context changed before GitHub dispatch");
+        });
         if (typeof result !== "string") {
           if (result.state === "pending") {
             this.store.saveOperation({
@@ -820,16 +652,12 @@ export class MergeService {
         });
       }
     } catch (error) {
-      const detail =
-        error instanceof Error ? error.message : "Operation failed";
+      const detail = error instanceof Error ? error.message : "Operation failed";
       const definite =
         operation.phase === "local" ||
         error instanceof EffectNotStarted ||
         error instanceof MergeDeclined ||
-        (error instanceof GitHubHTTPError &&
-          error.status >= 400 &&
-          error.status < 500 &&
-          error.status !== 409) ||
+        (error instanceof GitHubHTTPError && error.status >= 400 && error.status < 500 && error.status !== 409) ||
         error instanceof GitHubRateLimitError;
       operation = {
         ...operation,
@@ -850,19 +678,14 @@ export class MergeService {
         detail,
         {
           nextAt: this.now() + 60000,
-          ...(operation.kind === "prepare" && definite
-            ? { preparationHold: true }
-            : {}),
+          ...(operation.kind === "prepare" && definite ? { preparationHold: true } : {}),
         },
       );
     }
   }
   private async pollMerge(operation: MergeOperation): Promise<void> {
-    if (operation.requestId === undefined || this.provider.result === undefined)
-      return;
-    const entry = this.store
-      .entries()
-      .find((value) => value.id === operation.entryId);
+    if (operation.requestId === undefined || this.provider.result === undefined) return;
+    const entry = this.store.entries().find((value) => value.id === operation.entryId);
     if (entry === undefined) return;
     try {
       const result = await this.provider.result(
@@ -917,14 +740,9 @@ export class MergeService {
       this.store.saveOperation({
         ...operation,
         state: missing ? OperationState.Uncertain : OperationState.Running,
-        detail:
-          error instanceof Error
-            ? error.message.slice(0, 2000)
-            : "Merge result unavailable",
+        detail: error instanceof Error ? error.message.slice(0, 2000) : "Merge result unavailable",
         nextCheckAt:
-          error instanceof GitHubRateLimitError
-            ? Math.max(this.now() + 60000, error.retryAtMs)
-            : this.now() + 60000,
+          error instanceof GitHubRateLimitError ? Math.max(this.now() + 60000, error.retryAtMs) : this.now() + 60000,
         updatedAt: this.now(),
       });
       if (missing)
@@ -936,9 +754,7 @@ export class MergeService {
     }
   }
   private async reconcile(operation: MergeOperation): Promise<void> {
-    const entry = this.store
-      .entries()
-      .find((entry) => entry.id === operation.entryId);
+    const entry = this.store.entries().find((entry) => entry.id === operation.entryId);
     if (entry === undefined) return;
     try {
       const snapshot = await this.snapshot(operation.prId);
@@ -954,12 +770,9 @@ export class MergeService {
           updatedAt: this.now(),
           detail: "PR now merged; original merge attribution remains uncertain",
         });
-        this.store.state(
-          entry,
-          EntryState.Merged,
-          "Merged state confirmed after uncertain attempt",
-          { mergeCommit: snapshot.mergeCommit },
-        );
+        this.store.state(entry, EntryState.Merged, "Merged state confirmed after uncertain attempt", {
+          mergeCommit: snapshot.mergeCommit,
+        });
       } else if (
         operation.kind === "prepare" &&
         operation.resultHead !== undefined &&
@@ -981,9 +794,7 @@ export class MergeService {
           "Prepared head confirmed; owner readiness required",
           {
             preparedHead: operation.resultHead,
-            ...(operation.preparationKey === undefined
-              ? {}
-              : { preparedKey: operation.preparationKey }),
+            ...(operation.preparationKey === undefined ? {} : { preparedKey: operation.preparationKey }),
             nextAt: this.now() + 60000,
           },
         );

@@ -8,12 +8,10 @@ import { autoMergeForStage } from "./policy.js";
 function read(path: string): string | undefined {
   try {
     const info = lstatSync(path);
-    if (!info.isFile() || info.size > 65536)
-      throw new Error("Policy files must be regular files of at most 64 KiB");
+    if (!info.isFile() || info.size > 65536) throw new Error("Policy files must be regular files of at most 64 KiB");
     return readFileSync(path, "utf8");
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
-      return undefined;
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
     throw error;
   }
 }
@@ -27,14 +25,11 @@ export function loadRepositoryConfig(root: string) {
       instructions: {},
     };
   const config: unknown = Bun.TOML.parse(toml);
-  if (!Check(ConfigSchema, config))
-    throw new Error("Invalid octo-manager.toml configuration");
+  if (!Check(ConfigSchema, config)) throw new Error("Invalid octo-manager.toml configuration");
   for (const text of Object.values(config.notifications?.instructions ?? {}))
-    if (Buffer.byteLength(text) > 1000)
-      throw new Error("Instruction text exceeds 1000 UTF-8 bytes");
+    if (Buffer.byteLength(text) > 1000) throw new Error("Instruction text exceeds 1000 UTF-8 bytes");
   const manifest = read(join(root, ".source-code.json"));
-  const installed: unknown =
-    manifest === undefined ? undefined : JSON.parse(manifest);
+  const installed: unknown = manifest === undefined ? undefined : JSON.parse(manifest);
   const stage =
     typeof installed === "object" &&
     installed !== null &&

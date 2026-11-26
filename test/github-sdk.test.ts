@@ -21,8 +21,7 @@ test("official SDK caches credentials and preserves conditional responses and ty
             headers: { etag: '"one"', "content-type": "application/json" },
           }),
         );
-      if (calls.length === 2)
-        return Promise.resolve(new Response(null, { status: 304 }));
+      if (calls.length === 2) return Promise.resolve(new Response(null, { status: 304 }));
       return Promise.resolve(
         new Response('{"uuid":"accepted"}', {
           headers: { "content-type": "application/json" },
@@ -66,14 +65,8 @@ test("SDK HTTP errors retain quota headers without hidden retries", async () => 
     ),
     () => 1000,
   );
-  await assert.rejects(
-    reads.read("user"),
-    (e) => e instanceof GitHubRateLimitError && e.retryAtMs === 91000,
-  );
-  await assert.rejects(
-    reads.query("query { viewer { login } }"),
-    GitHubRateLimitError,
-  );
+  await assert.rejects(reads.read("user"), (e) => e instanceof GitHubRateLimitError && e.retryAtMs === 91000);
+  await assert.rejects(reads.query("query { viewer { login } }"), GitHubRateLimitError);
   assert.equal(calls, 1);
 });
 test("dispatch authority is rechecked after credential acquisition, and secrets stay out of network errors", async () => {
@@ -90,13 +83,9 @@ test("dispatch authority is rechecked after credential acquisition, and secrets 
       return Promise.reject(new Error("fixture-secret"));
     },
   );
-  const work = transport(
-    { method: "PUT", path: "repos/o/r/pulls/1/merge-async" },
-    undefined,
-    () => {
-      if (!allowed) throw new Error("Authority withdrawn");
-    },
-  );
+  const work = transport({ method: "PUT", path: "repos/o/r/pulls/1/merge-async" }, undefined, () => {
+    if (!allowed) throw new Error("Authority withdrawn");
+  });
   allowed = false;
   assert(release !== undefined);
   release("fixture-secret");
@@ -106,10 +95,7 @@ test("dispatch authority is rechecked after credential acquisition, and secrets 
     transport({ method: "GET", path: "user" }),
     (e) => e instanceof Error && !e.message.includes("fixture-secret"),
   );
-  await assert.rejects(
-    transport({ method: "GET", path: "https://example.invalid/" }),
-    /relative/,
-  );
+  await assert.rejects(transport({ method: "GET", path: "https://example.invalid/" }), /relative/);
 });
 
 test("SDK responses stop at the streaming size limit", async () => {
@@ -147,18 +133,12 @@ test("SDK cancellations are typed without exposing the failed request or credent
       return Promise.reject(new Error("fixture-secret"));
     },
   );
-  await assert.rejects(
-    transport({ method: "GET", path: "user" }, controller.signal),
-    (error) => {
-      assert(error instanceof GitHubRequestCancelledError);
-      assert.equal(error.message, "GitHub request cancelled");
-      assert.equal(error.cause, undefined);
-      assert(!JSON.stringify(error).includes("fixture-secret"));
-      return true;
-    },
-  );
-  await assert.rejects(
-    transport({ method: "GET", path: "user" }, controller.signal),
-    GitHubRequestCancelledError,
-  );
+  await assert.rejects(transport({ method: "GET", path: "user" }, controller.signal), (error) => {
+    assert(error instanceof GitHubRequestCancelledError);
+    assert.equal(error.message, "GitHub request cancelled");
+    assert.equal(error.cause, undefined);
+    assert(!JSON.stringify(error).includes("fixture-secret"));
+    return true;
+  });
+  await assert.rejects(transport({ method: "GET", path: "user" }, controller.signal), GitHubRequestCancelledError);
 });

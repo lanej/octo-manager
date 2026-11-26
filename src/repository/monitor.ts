@@ -1,10 +1,4 @@
-import {
-  lstatSync,
-  realpathSync,
-  watch,
-  type FSWatcher,
-  type Stats,
-} from "node:fs";
+import { lstatSync, realpathSync, watch, type FSWatcher, type Stats } from "node:fs";
 import { basename, dirname } from "node:path";
 import { loadRepositoryConfig } from "./config.js";
 
@@ -15,10 +9,7 @@ interface Root {
   failed: boolean;
   generation: number;
 }
-type Observe = (
-  path: string,
-  listener: (event: string, filename: string | null) => void,
-) => FSWatcher;
+type Observe = (path: string, listener: (event: string, filename: string | null) => void) => FSWatcher;
 
 // Directory watches survive atomic config replacement; the parent watch detects root replacement.
 export class RepositoryPolicyMonitor {
@@ -78,26 +69,12 @@ export class RepositoryPolicyMonitor {
           try {
             identity = lstatSync(path);
           } catch (error) {
-            if (
-              !(
-                error instanceof Error &&
-                "code" in error &&
-                error.code === "ENOENT"
-              )
-            )
-              throw error;
+            if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
           }
           // An absent checkout is stable while its parent can notify us of recreation.
           if (identity?.isDirectory() === true && realpathSync(path) === path) {
             const directory = this.observe(path, (_event, filename) => {
-              if (
-                filename === null ||
-                [
-                  "octo-manager.toml",
-                  ".source-code.json",
-                  basename(path),
-                ].includes(filename)
-              )
+              if (filename === null || ["octo-manager.toml", ".source-code.json", basename(path)].includes(filename))
                 invalidated();
             });
             root.watchers.push(directory);
@@ -109,14 +86,10 @@ export class RepositoryPolicyMonitor {
           throw error;
         }
       }
-      if (realpathSync(path) !== path)
-        throw new Error("Repository root changed");
+      if (realpathSync(path) !== path) throw new Error("Repository root changed");
       root.value = this.load(path);
     } catch (error) {
-      root.value =
-        error instanceof Error
-          ? error
-          : new Error("Repository policy unavailable");
+      root.value = error instanceof Error ? error : new Error("Repository policy unavailable");
     }
     return root.value;
   }
@@ -139,14 +112,10 @@ export class RepositoryPolicyMonitor {
     }
   }
   retryNeeded(): boolean {
-    return (
-      this.changed !== undefined &&
-      [...this.roots.values()].some((root) => root.failed)
-    );
+    return this.changed !== undefined && [...this.roots.values()].some((root) => root.failed);
   }
   retryUnavailable(): void {
-    for (const [path, root] of this.roots)
-      if (root.failed) this.invalidate(path);
+    for (const [path, root] of this.roots) if (root.failed) this.invalidate(path);
   }
   close(): void {
     this.changed = undefined;

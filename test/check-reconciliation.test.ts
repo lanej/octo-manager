@@ -6,10 +6,7 @@ import { tmpdir } from "node:os";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  readObservation,
-  GitHubObservationChangedError,
-} from "../src/tracking/github.js";
+import { readObservation, GitHubObservationChangedError } from "../src/tracking/github.js";
 import {
   checkReplaces,
   checkEvidence,
@@ -23,10 +20,7 @@ import { wire, unwire } from "../src/api/codec.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
 import { DomainCheckEvidenceSchema } from "../src/gen/octomanager/v2/domain_pb.js";
 import { ActionState } from "../src/tracking/types.js";
-import type {
-  CheckObservation,
-  ObservationInput,
-} from "../src/tracking/types.js";
+import type { CheckObservation, ObservationInput } from "../src/tracking/types.js";
 
 const url = "https://github.com/owner/repo/pull/1";
 const target = { harness: "codex", endpoint: "local", sessionId: "reconcile" };
@@ -59,10 +53,7 @@ const workflow: CheckObservation = {
   at: 2000,
   url,
 };
-function observation(
-  checks: CheckObservation[],
-  workflows: CheckObservation[] = [],
-): ObservationInput {
+function observation(checks: CheckObservation[], workflows: CheckObservation[] = []): ObservationInput {
   return {
     observedAt: 1000,
     headSha: "head",
@@ -75,11 +66,7 @@ function observation(
     feedback: { state: "complete", value: [] },
   };
 }
-function source(
-  job: (id: number) => unknown,
-  requested: number[] = [],
-  present: readonly CheckObservation[] = [],
-) {
+function source(job: (id: number) => unknown, requested: number[] = [], present: readonly CheckObservation[] = []) {
   return async (path: string): Promise<unknown> => {
     const id = /\/actions\/jobs\/(\d+)$/u.exec(path)?.[1];
     if (id !== undefined) {
@@ -138,11 +125,7 @@ test("ordinary refresh repairs a persisted old-attempt watch and retains raw fai
   const config = defaultTrackingConfig();
   const tracked = store.tracking.track(url, target);
   try {
-    store.tracking.observe(
-      tracked.id,
-      observation([old(1, "failure"), old(2)]),
-      config,
-    );
+    store.tracking.observe(tracked.id, observation([old(1, "failure"), old(2)]), config);
     const original = store.tracking.checks.list(tracked.id)[0];
     expect(original?.state).toBe(CheckWatchState.Waiting);
     store.tracking.observe(tracked.id, observation([], [workflow]), config);
@@ -151,14 +134,7 @@ test("ordinary refresh repairs a persisted old-attempt watch and retains raw fai
     const requests: number[] = [];
     const service = new TrackingService(store.tracking, config, Date.now, {
       read: (address, signal, _read, now, _metadata, retained) =>
-        readObservation(
-          address,
-          signal,
-          source(job, requests),
-          now,
-          undefined,
-          retained,
-        ),
+        readObservation(address, signal, source(job, requests), now, undefined, retained),
     });
     try {
       await service.refresh(tracked.id);
@@ -173,12 +149,9 @@ test("ordinary refresh repairs a persisted old-attempt watch and retains raw fai
     const latest = store.tracking.pr(tracked.id).observation;
     expect(latest).toBeDefined();
     if (latest === undefined) throw new Error("Missing observation");
-    expect(currentMergeChecks(latest).map((c) => c.id)).toEqual([
-      "workflow:9:2",
-    ]);
+    expect(currentMergeChecks(latest).map((c) => c.id)).toEqual(["workflow:9:2"]);
     expect(latest.checks.state).toBe("complete");
-    if (latest.checks.state === "unavailable")
-      throw new Error("Missing checks");
+    if (latest.checks.state === "unavailable") throw new Error("Missing checks");
     expect(latest.checks.value.find((c) => c.id === "run:1")).toMatchObject({
       conclusion: "failure",
       workflowRunId: 9,
@@ -186,9 +159,7 @@ test("ordinary refresh repairs a persisted old-attempt watch and retains raw fai
     });
     store.close();
     store = new Store(directory);
-    expect(store.tracking.pr(tracked.id).observation?.checks).toEqual(
-      latest.checks,
-    );
+    expect(store.tracking.pr(tracked.id).observation?.checks).toEqual(latest.checks);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -213,11 +184,7 @@ test("unknown and mismatched execution lookups remain visible and fail closed", 
       { checks: [old(2)] },
     );
     expect(result.checks.state).toBe("partial");
-    expect(
-      currentMergeChecks(result).some(
-        (c) => c.id === "run:2" && c.status === "in_progress",
-      ),
-    ).toBe(true);
+    expect(currentMergeChecks(result).some((c) => c.id === "run:2" && c.status === "in_progress")).toBe(true);
   }
   const unavailable = await readObservation(
     url,
@@ -229,18 +196,9 @@ test("unknown and mismatched execution lookups remain visible and fail closed", 
   );
   expect(unavailable.checks.state).toBe("partial");
   const requests: number[] = [];
-  await readObservation(
-    url,
-    undefined,
-    source(job, requests),
-    Date.now,
-    undefined,
-    {
-      checks: [
-        { ...old(2), url: "https://other.example/actions/runs/9/job/1002" },
-      ],
-    },
-  );
+  await readObservation(url, undefined, source(job, requests), Date.now, undefined, {
+    checks: [{ ...old(2), url: "https://other.example/actions/runs/9/job/1002" }],
+  });
   expect(requests).toEqual([]);
 });
 
@@ -270,17 +228,12 @@ test("ten-lookup budget skips a large present set and progresses beyond a failin
         ),
         Date.now,
         undefined,
-        store.tracking.checks.reconciliationChecks(
-          tracked.id,
-          current.observation,
-        ),
+        store.tracking.checks.reconciliationChecks(tracked.id, current.observation),
       );
       expect(requests.length).toBeLessThanOrEqual(10);
       for (const id of requests) seen.add(id);
       expect(result.checks.state).toBe("partial");
-      expect(
-        currentMergeChecks(result).some((c) => c.status === "in_progress"),
-      ).toBe(true);
+      expect(currentMergeChecks(result).some((c) => c.status === "in_progress")).toBe(true);
       store.tracking.observe(tracked.id, result, config);
       if (round === 0) {
         store.close();
@@ -289,9 +242,7 @@ test("ten-lookup budget skips a large present set and progresses beyond a failin
     }
     expect(seen.has(1025)).toBe(true);
     expect(seen.size).toBe(25);
-    expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(
-      CheckWatchState.Waiting,
-    );
+    expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(CheckWatchState.Waiting);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -301,32 +252,18 @@ test("ten-lookup budget skips a large present set and progresses beyond a failin
 test("lineage survives wire/storage roundtrips and only proves same-run later-attempt replacement", () => {
   const enriched = { ...old(1), workflowRunId: 9, workflowRunAttempt: 1 };
   const evidence = { state: "complete" as const, value: [enriched] };
-  expect(
-    unwire(
-      DomainCheckEvidenceSchema,
-      wire(DomainCheckEvidenceSchema, evidence),
-    ),
-  ).toEqual(evidence);
+  expect(unwire(DomainCheckEvidenceSchema, wire(DomainCheckEvidenceSchema, evidence))).toEqual(evidence);
   expect(storedCheckEvidence(evidence)).toEqual(evidence);
   const legacy = { state: "complete", value: [old(1)] };
-  expect(
-    unwire(DomainCheckEvidenceSchema, wire(DomainCheckEvidenceSchema, legacy)),
-  ).toEqual(legacy);
+  expect(unwire(DomainCheckEvidenceSchema, wire(DomainCheckEvidenceSchema, legacy))).toEqual(legacy);
   const halfPair = {
     state: "complete",
     value: [{ ...old(1), workflowRunId: 9 }],
   };
   expect(() =>
-    storedCheckEvidence(
-      unwire(
-        DomainCheckEvidenceSchema,
-        wire(DomainCheckEvidenceSchema, halfPair),
-      ),
-    ),
+    storedCheckEvidence(unwire(DomainCheckEvidenceSchema, wire(DomainCheckEvidenceSchema, halfPair))),
   ).toThrow("Invalid");
-  expect(
-    storedCheckEvidence({ state: "complete", value: [old(1)] })?.state,
-  ).toBe("complete");
+  expect(storedCheckEvidence({ state: "complete", value: [old(1)] })?.state).toBe("complete");
   expect(checkReplaces(enriched, workflow)).toBe(true);
   for (const candidate of [
     { ...workflow, id: "workflow:10:2" },
@@ -341,9 +278,7 @@ test("lineage survives wire/storage roundtrips and only proves same-run later-at
     { ...enriched, workflowRunAttempt: 0 },
     { ...enriched, workflowRunId: NaN },
   ]) {
-    expect(() =>
-      storedCheckEvidence({ state: "complete", value: [invalid] }),
-    ).toThrow("Invalid");
+    expect(() => storedCheckEvidence({ state: "complete", value: [invalid] })).toThrow("Invalid");
     expect(checkReplaces(invalid, workflow)).toBe(false);
   }
 });
@@ -410,34 +345,22 @@ test("auxiliary rate limits propagate and later failed workflows remain failed",
     undefined,
     { checks: [old(1, "failure")] },
   );
-  expect(
-    currentMergeChecks(result).map((check) => [check.id, check.conclusion]),
-  ).toEqual([["workflow:9:2", "failure"]]);
+  expect(currentMergeChecks(result).map((check) => [check.id, check.conclusion])).toEqual([
+    ["workflow:9:2", "failure"],
+  ]);
 });
 
 test("same-named current checks cannot hide unknown execution from another run", async () => {
-  const checks = [
-    old(2),
-    { ...old(3, "success"), key: old(2).key, name: old(2).name, at: 2000 },
-  ];
+  const checks = [old(2), { ...old(3, "success"), key: old(2).key, name: old(2).name, at: 2000 }];
   const directory = await mkdtemp(join(tmpdir(), "octo-check-same-name-"));
   const store = new Store(directory);
   try {
     const tracked = store.tracking.track(url, target);
-    store.tracking.observe(
-      tracked.id,
-      observation(checks, [workflow]),
-      defaultTrackingConfig(),
-    );
+    store.tracking.observe(tracked.id, observation(checks, [workflow]), defaultTrackingConfig());
     const observed = store.tracking.pr(tracked.id).observation;
     if (observed === undefined) throw new Error("Missing observation");
-    expect(currentChecks(observed).map((check) => check.id)).toEqual([
-      "run:2",
-      "run:3",
-    ]);
-    expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(
-      CheckWatchState.Waiting,
-    );
+    expect(currentChecks(observed).map((check) => check.id)).toEqual(["run:2", "run:3"]);
+    expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(CheckWatchState.Waiting);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -451,14 +374,8 @@ test("refresh reconciles a returning head against its superseded watch before re
   const tracked = store.tracking.track(url, target);
   try {
     store.tracking.observe(tracked.id, observation([old(1)]), config);
-    store.tracking.observe(
-      tracked.id,
-      { ...observation([]), headSha: "other-head" },
-      config,
-    );
-    expect(store.tracking.checks.list(tracked.id)[0]?.state).toBe(
-      CheckWatchState.Superseded,
-    );
+    store.tracking.observe(tracked.id, { ...observation([]), headSha: "other-head" }, config);
+    expect(store.tracking.checks.list(tracked.id)[0]?.state).toBe(CheckWatchState.Superseded);
     const requests: number[] = [];
     let resolved = false;
     const service = new TrackingService(store.tracking, config, Date.now, {
@@ -481,26 +398,18 @@ test("refresh reconciles a returning head against its superseded watch before re
       if (first === undefined) throw new Error("Missing observation");
       expect(first.headSha).toBe("head");
       expect(first.checks.state).toBe("partial");
-      expect(
-        currentMergeChecks(first).some(
-          (check) => check.id === "run:1" && check.status === "in_progress",
-        ),
-      ).toBe(true);
-      expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(
-        CheckWatchState.Waiting,
+      expect(currentMergeChecks(first).some((check) => check.id === "run:1" && check.status === "in_progress")).toBe(
+        true,
       );
+      expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(CheckWatchState.Waiting);
       expect(requests).toEqual([1001]);
       resolved = true;
       await service.refresh(tracked.id);
       const repaired = store.tracking.pr(tracked.id).observation;
       if (repaired === undefined) throw new Error("Missing observation");
       expect(repaired.checks.state).toBe("complete");
-      expect(currentMergeChecks(repaired).map((check) => check.id)).toEqual([
-        workflow.id,
-      ]);
-      expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(
-        CheckWatchState.Completed,
-      );
+      expect(currentMergeChecks(repaired).map((check) => check.id)).toEqual([workflow.id]);
+      expect(store.tracking.checks.list(tracked.id).at(-1)?.state).toBe(CheckWatchState.Completed);
     } finally {
       await service.close();
     }
@@ -527,12 +436,9 @@ test("verified old jobs do not complete a pending or partially observed later at
       undefined,
       async (path) => {
         if (path.includes("/actions/runs")) {
-          if (partial && path.includes("page=2"))
-            throw new Error("later page unavailable");
+          if (partial && path.includes("page=2")) throw new Error("later page unavailable");
           return {
-            workflow_runs: partial
-              ? Array.from({ length: 100 }, () => latest)
-              : [latest],
+            workflow_runs: partial ? Array.from({ length: 100 }, () => latest) : [latest],
           };
         }
         return read(path);
@@ -543,19 +449,13 @@ test("verified old jobs do not complete a pending or partially observed later at
     );
     expect(result.workflows?.state).toBe(partial ? "partial" : "complete");
     const evidence = checkEvidence({ ...result, id: 1, prId: "test" });
-    expect(
-      evidence.state === "unavailable"
-        ? []
-        : evidence.value.map((check) => check.id),
-    ).toEqual([workflow.id]);
+    expect(evidence.state === "unavailable" ? [] : evidence.value.map((check) => check.id)).toEqual([workflow.id]);
     expect(checksFinished(evidence)).toBe(false);
   }
 });
 
 test("unchanged same-key failed jobs preserve action and delivery identities across refreshes", async () => {
-  const directory = await mkdtemp(
-    join(tmpdir(), "octo-check-failure-actions-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "octo-check-failure-actions-"));
   const store = new Store(directory);
   const config = defaultTrackingConfig();
   const tracked = store.tracking.track(url, target);
@@ -587,9 +487,7 @@ test("unchanged same-key failed jobs preserve action and delivery identities acr
     await service.refresh(tracked.id);
     const actions = store.tracking.actions();
     const deliveries = store.tracking.deliveries();
-    expect(
-      actions.filter((action) => action.blocker.kind === "check_failed"),
-    ).toHaveLength(2);
+    expect(actions.filter((action) => action.blocker.kind === "check_failed")).toHaveLength(2);
     for (let refresh = 0; refresh < 3; refresh++) {
       await service.refresh(tracked.id);
       expect(store.tracking.actions()).toEqual(actions);
@@ -603,16 +501,8 @@ test("unchanged same-key failed jobs preserve action and delivery identities acr
 });
 
 test("failure actions require exact success or verified replacement using opening evidence", async () => {
-  for (const kind of [
-    "status",
-    "workflow",
-    "unrelated",
-    "exact",
-    "partial",
-  ] as const) {
-    const directory = await mkdtemp(
-      join(tmpdir(), "octo-check-action-replacement-"),
-    );
+  for (const kind of ["status", "workflow", "unrelated", "exact", "partial"] as const) {
+    const directory = await mkdtemp(join(tmpdir(), "octo-check-action-replacement-"));
     const store = new Store(directory);
     const config = defaultTrackingConfig();
     const tracked = store.tracking.track(url, target);
@@ -627,9 +517,7 @@ test("failure actions require exact success or verified replacement using openin
         : { ...old(1, "failure"), workflowRunId: 9, workflowRunAttempt: 1 };
     try {
       store.tracking.observe(tracked.id, observation([failed]), config);
-      const action = store.tracking
-        .actions()
-        .find((value) => value.blocker.kind === "check_failed");
+      const action = store.tracking.actions().find((value) => value.blocker.kind === "check_failed");
       if (action === undefined) throw new Error("Missing failure action");
       const replacement =
         kind === "status"

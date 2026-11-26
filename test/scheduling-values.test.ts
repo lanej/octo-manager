@@ -5,12 +5,7 @@ import { join } from "node:path";
 import { DatabaseSync, StatementSync } from "node:sqlite";
 import * as values from "typebox/value";
 import { ScheduleStore } from "../src/scheduling/store.js";
-import {
-  RefreshKind,
-  ScheduleSchema,
-  ScheduleState,
-  type ScheduledRefresh,
-} from "../src/scheduling/contracts.js";
+import { RefreshKind, ScheduleSchema, ScheduleState, type ScheduledRefresh } from "../src/scheduling/contracts.js";
 
 function database(path = ":memory:"): DatabaseSync {
   const db = new DatabaseSync(path);
@@ -89,8 +84,7 @@ test("retained scheduling values isolate saved inputs, returned graphs, rollback
     const list = store.list();
     const extra: unknown = Reflect.get(list[0] ?? {}, "extra");
     expect(extra).toEqual({ labels: ["original"] });
-    if (typeof extra !== "object" || extra === null)
-      throw new Error("Missing retained extra data");
+    if (typeof extra !== "object" || extra === null) throw new Error("Missing retained extra data");
     Reflect.set(extra, "labels", ["nested mutation"]);
     const retained: unknown = store.get(input.key);
     expect(retained).toEqual({
@@ -131,26 +125,12 @@ test("external writes remain authoritative including payload kind and corrupt va
     const store = new ScheduleStore(db, () => 0);
     store.save(schedule());
     expect(store.reviews().length).toBe(1);
-    external
-      .prepare(
-        "UPDATE github_schedules SET kind='tracking',data=json_set(data,'$.dueAtMs',456)",
-      )
-      .run();
+    external.prepare("UPDATE github_schedules SET kind='tracking',data=json_set(data,'$.dueAtMs',456)").run();
     expect(store.reviews()[0]?.dueAtMs).toBe(456);
-    external
-      .prepare(
-        "UPDATE github_schedules SET data=json_remove(data,'$.intervalMs')",
-      )
-      .run();
-    expect(() => store.reviews()).toThrow(
-      "Invalid stored GitHub schedule data",
-    );
-    external
-      .prepare("UPDATE settings SET value='{}' WHERE key='github_dispatch'")
-      .run();
-    expect(() => store.dispatch()).toThrow(
-      "Invalid stored GitHub schedule data",
-    );
+    external.prepare("UPDATE github_schedules SET data=json_remove(data,'$.intervalMs')").run();
+    expect(() => store.reviews()).toThrow("Invalid stored GitHub schedule data");
+    external.prepare("UPDATE settings SET value='{}' WHERE key='github_dispatch'").run();
+    expect(() => store.dispatch()).toThrow("Invalid stored GitHub schedule data");
   } finally {
     external.close();
     db.close();

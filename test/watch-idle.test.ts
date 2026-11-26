@@ -11,8 +11,7 @@ import type { WatchResponse } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
 async function nextEvent(stream: AsyncIterator<WatchResponse>) {
   const result = await stream.next();
-  if (result.done === true)
-    throw new Error("Watch stream ended before its next event");
+  if (result.done === true) throw new Error("Watch stream ended before its next event");
   return result.value;
 }
 
@@ -34,8 +33,7 @@ test(
       const client = schedulerClient(directory);
       await assert.rejects(
         client.getSnapshot({}),
-        (error: unknown) =>
-          error instanceof ConnectError && error.code === Code.Internal,
+        (error: unknown) => error instanceof ConnectError && error.code === Code.Internal,
       );
       const cursor = BigInt(coordinator.store.sequence());
       const events = client.watch(
@@ -58,9 +56,7 @@ test(
     } finally {
       if (timer !== undefined) clearTimeout(timer);
       abort.abort();
-      database
-        ?.prepare("DELETE FROM jobs WHERE id=?")
-        .run("unrelated-unreadable-job");
+      database?.prepare("DELETE FROM jobs WHERE id=?").run("unrelated-unreadable-job");
       database?.close();
       await coordinator.close();
       await rm(directory, { recursive: true, force: true });
@@ -83,11 +79,7 @@ test(
       const events = read(...args);
       if (appendDuringRead) {
         appendDuringRead = false;
-        application.store.event(
-          "",
-          "racing_append",
-          "committed after cursor read",
-        );
+        application.store.event("", "racing_append", "committed after cursor read");
       }
       return events;
     };
@@ -151,8 +143,7 @@ test(
       await application.start();
       application.command({ op: "pause" });
       const cursor = BigInt(application.store.sequence());
-      for (let index = 0; index < 205; index++)
-        application.store.event("first-job", "page_probe", String(index));
+      for (let index = 0; index < 205; index++) application.store.event("first-job", "page_probe", String(index));
       application.store.event("other-job", "other_probe", "independent filter");
       const client = schedulerClient(directory);
       const firstUpdates = client.watch(

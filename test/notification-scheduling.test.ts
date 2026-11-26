@@ -61,36 +61,28 @@ test("first PR archived by drain expiry wakes the sleeping notification monitor"
   try {
     application.services.start(scheduler);
     scheduler.start();
-    const pr = coordinator.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      { harness: "codex", endpoint: "local", sessionId: "controlled" },
-    );
-    coordinator.store.tracking.observe(
-      pr.id,
-      observation,
-      coordinator.tracking.config,
-    );
+    const pr = coordinator.tracking.track("https://github.com/owner/repo/pull/1", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "controlled",
+    });
+    coordinator.store.tracking.observe(pr.id, observation, coordinator.tracking.config);
     await sleep(30);
-    expect(coordinator.store.tracking.pr(pr.id).state).toBe(
-      TrackingState.Draining,
-    );
+    expect(coordinator.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
     expect(identities).toBe(0);
     expect(plans.at(-1)).toBeUndefined();
     now += 86400001;
     coordinator.tracking.tick();
     const deadline = Date.now() + 1000;
     while (identities === 0 && Date.now() < deadline) await sleep(5);
-    expect(coordinator.store.tracking.pr(pr.id).state).toBe(
-      TrackingState.Archived,
-    );
+    expect(coordinator.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
     expect(identities).toBe(1);
     await sleep(10);
     expect(plans.at(-1)).toBe(now + 60000);
     const beforeDisable = plans.length;
     coordinator.store.tracking.untrack(pr.id);
     const parkedDeadline = Date.now() + 1000;
-    while (plans.length === beforeDisable && Date.now() < parkedDeadline)
-      await sleep(5);
+    while (plans.length === beforeDisable && Date.now() < parkedDeadline) await sleep(5);
     expect(plans.length).toBeGreaterThan(beforeDisable);
     expect(plans.at(-1)).toBeUndefined();
     expect(identities).toBe(1);

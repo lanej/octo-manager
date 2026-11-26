@@ -1,25 +1,7 @@
 import { fields, rows } from "./projection.js";
 
-const job = fields([
-  "id",
-  "requestId",
-  "task",
-  "status",
-  "retryCount",
-  "availableAt",
-  "result",
-  "error",
-]);
-const event = fields([
-  "seq",
-  "jobId",
-  "at",
-  "kind",
-  "detail",
-  "prId",
-  "actionId",
-  "actionContext",
-]);
+const job = fields(["id", "requestId", "task", "status", "retryCount", "availableAt", "result", "error"]);
+const event = fields(["seq", "jobId", "at", "kind", "detail", "prId", "actionId", "actionContext"]);
 export const applicationOutputs = {
   submit: job,
   get: job,

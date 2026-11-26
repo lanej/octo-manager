@@ -29,23 +29,16 @@ export type QuotaForecast = ForecastEvidence &
 const windowMs = 600000,
   minimumWindowMs = 120000,
   freshnessMs = 180000;
-export function forecastQuota(
-  budget: GitHubBudget,
-  samples: GitHubBudget[],
-  at: number,
-): QuotaForecast {
+export function forecastQuota(budget: GitHubBudget, samples: GitHubBudget[], at: number): QuotaForecast {
   const unknown = (reason: string): QuotaForecast => ({
     state: ForecastState.Unknown,
     reason,
     windowMs: 0,
     sampledAtMs: budget.observedAtMs,
   });
-  if (at < budget.observedAtMs)
-    return unknown("Clock moved before the last quota observation");
-  if (at >= budget.resetAtMs)
-    return unknown("Waiting for a quota observation after reset");
-  if (at - budget.observedAtMs > freshnessMs)
-    return unknown("Quota observation is stale");
+  if (at < budget.observedAtMs) return unknown("Clock moved before the last quota observation");
+  if (at >= budget.resetAtMs) return unknown("Waiting for a quota observation after reset");
+  if (at - budget.observedAtMs > freshnessMs) return unknown("Quota observation is stale");
   if (budget.remaining === 0)
     return {
       state: ForecastState.Exhausted,
@@ -65,25 +58,18 @@ export function forecastQuota(
   const first = current[0];
   if (first === undefined) return unknown("Waiting for quota history");
   const duration = budget.observedAtMs - first.observedAtMs;
-  if (duration < minimumWindowMs || current.length < 2)
-    return unknown("Need at least two minutes of quota history");
+  if (duration < minimumWindowMs || current.length < 2) return unknown("Need at least two minutes of quota history");
   const used = first.remaining - budget.remaining;
-  if (used < 0)
-    return unknown("Quota balance increased within the current window");
+  if (used < 0) return unknown("Quota balance increased within the current window");
   const unitsPerMs = used / duration,
     unitsPerHour = unitsPerMs * 3600000;
   const projectedRemainingAtReset = Math.max(
     0,
     budget.remaining - unitsPerMs * (budget.resetAtMs - budget.observedAtMs),
   );
-  const exhaustAtMs =
-    unitsPerMs > 0
-      ? Math.ceil(budget.observedAtMs + budget.remaining / unitsPerMs)
-      : undefined;
+  const exhaustAtMs = unitsPerMs > 0 ? Math.ceil(budget.observedAtMs + budget.remaining / unitsPerMs) : undefined;
   const state =
-    exhaustAtMs !== undefined && exhaustAtMs < budget.resetAtMs
-      ? ForecastState.AtRisk
-      : ForecastState.OnTrack;
+    exhaustAtMs !== undefined && exhaustAtMs < budget.resetAtMs ? ForecastState.AtRisk : ForecastState.OnTrack;
   return {
     state,
     reason: "At the recent shared-budget consumption rate",
@@ -107,23 +93,13 @@ export class QuotaHistory {
         budget.observedAtMs < previous.observedAtMs)
     )
       history = [];
-    if (
-      previous !== undefined &&
-      Math.floor(previous.observedAtMs / 60000) ===
-        Math.floor(budget.observedAtMs / 60000)
-    )
+    if (previous !== undefined && Math.floor(previous.observedAtMs / 60000) === Math.floor(budget.observedAtMs / 60000))
       history = history.slice(0, -1);
-    history = history.filter(
-      (sample) => sample.observedAtMs >= budget.observedAtMs - windowMs,
-    );
+    history = history.filter((sample) => sample.observedAtMs >= budget.observedAtMs - windowMs);
     history.push({ ...budget });
     this.samples[resource] = history;
   }
-  forecast(
-    resource: GitHubResource,
-    budget: GitHubBudget,
-    at: number,
-  ): QuotaForecast {
+  forecast(resource: GitHubResource, budget: GitHubBudget, at: number): QuotaForecast {
     return forecastQuota(budget, this.samples[resource] ?? [], at);
   }
 }

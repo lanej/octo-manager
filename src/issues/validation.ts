@@ -58,11 +58,7 @@ const assignment = Type.Object({
   id: text,
   issueId: text,
   role: Type.Enum(Role),
-  purpose: Type.Union([
-    Type.Literal("stage"),
-    Type.Literal("comments"),
-    Type.Literal("timeout"),
-  ]),
+  purpose: Type.Union([Type.Literal("stage"), Type.Literal("comments"), Type.Literal("timeout")]),
   briefVersion: number,
   epoch: number,
   state: Type.Enum(AttemptState),
@@ -94,14 +90,12 @@ export function decodeIssue(value: unknown): IssueRecord {
 }
 export function decodeAssignment(value: unknown): Assignment {
   const parsed = stored(value);
-  if (!isAssignment(parsed))
-    throw new Error("Stored assignment failed validation");
+  if (!isAssignment(parsed)) throw new Error("Stored assignment failed validation");
   return parsed;
 }
 
 export function decodeIssueBrief(value: unknown): Brief {
   const parsed = stored(value);
-  if (!Check(BriefSchema, parsed))
-    throw new Error("Stored brief failed validation");
+  if (!Check(BriefSchema, parsed)) throw new Error("Stored brief failed validation");
   return parsed;
 }

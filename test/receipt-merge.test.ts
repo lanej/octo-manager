@@ -2,10 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ReviewState } from "../src/tracking/states.js";
 import { unwire } from "../src/api/codec.js";
-import {
-  DomainMergeReceiptResultSchema,
-  DomainMergeReceiptResultState,
-} from "../src/gen/octomanager/v2/domain_pb.js";
+import { DomainMergeReceiptResultSchema, DomainMergeReceiptResultState } from "../src/gen/octomanager/v2/domain_pb.js";
 import { linkPRReferences } from "../src/notifications/links.js";
 import { DeliveryState } from "../src/tracking/types.js";
 import assert from "node:assert/strict";
@@ -18,10 +15,7 @@ import { schedulerClient } from "../src/client.js";
 import { codexHook } from "../src/integrations/codex.js";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
 import type { MergeProvider, MergeSnapshot } from "../src/merging/github.js";
-import {
-  EntryState,
-  ReviewAssessmentSource,
-} from "../src/merging/contracts.js";
+import { EntryState, ReviewAssessmentSource } from "../src/merging/contracts.js";
 import { references } from "../src/merging/policy.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { agentMessage } from "../src/tracking/messages.js";
@@ -107,8 +101,7 @@ async function fixture(initialReview: string | null = null) {
       beforeSend();
       expect(pinned).toBe(current.observation.headSha);
       writes++;
-      if (uncertain)
-        return Promise.reject(new Error("Response lost after send"));
+      if (uncertain) return Promise.reject(new Error("Response lost after send"));
       current.observation.lifecycle = "merged";
       current.mergeCommit = "c".repeat(40);
       return Promise.resolve(current.mergeCommit);
@@ -131,29 +124,19 @@ async function fixture(initialReview: string | null = null) {
     .filter((action) => action.prId === pr.id)
     .find((a) => a.blocker.kind === "check_results");
   if (action === undefined) throw new Error("No completion action");
-  const delivery = coordinator.store.tracking
-    .deliveries()
-    .find((d) => d.actionId === action.id);
+  const delivery = coordinator.store.tracking.deliveries().find((d) => d.actionId === action.id);
   if (delivery === undefined) throw new Error("No completion delivery");
-  coordinator.store.tracking.inbox.record(
-    delivery.id,
-    agentMessage(action, url, delivery.id),
-  );
+  coordinator.store.tracking.inbox.record(delivery.id, agentMessage(action, url, delivery.id));
   await coordinator.merging.tick();
   await coordinator.digests.flush();
   const envelope = coordinator.store.digests.active(pr.ownerAgentId);
   if (envelope === undefined) throw new Error("No notice");
-  const notice = coordinator.store.digests.version(
-    envelope.id,
-    envelope.revision,
-  );
+  const notice = coordinator.store.digests.version(envelope.id, envelope.revision);
   const id = messageReceiptId(notice.body);
   if (id === undefined) throw new Error("No receipt command");
   const start = async () => {
     // These policy cases advance merge reconciliation explicitly; the Pi case below exercises automatic dispatch.
-    const automatic = spyOn(coordinator.merging, "start").mockImplementation(
-      () => {},
-    );
+    const automatic = spyOn(coordinator.merging, "start").mockImplementation(() => {});
     try {
       await coordinator.start();
     } finally {
@@ -194,9 +177,7 @@ async function fixture(initialReview: string | null = null) {
       });
       assert(response.result !== undefined);
       return {
-        resultText: JSON.stringify(
-          unwire(DomainMergeReceiptResultSchema, response.result),
-        ),
+        resultText: JSON.stringify(unwire(DomainMergeReceiptResultSchema, response.result)),
       };
     },
     observe() {
@@ -236,16 +217,7 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
     );
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     const inspect = Bun.spawn(
-      [
-        process.execPath,
-        resolve("src/cli.ts"),
-        "message",
-        f.id,
-        "--state",
-        f.directory,
-        "--full",
-        "--json",
-      ],
+      [process.execPath, resolve("src/cli.ts"), "message", f.id, "--state", f.directory, "--full", "--json"],
       { stdout: "pipe", stderr: "pipe" },
     );
     const [inspection, inspectionCode, inspectionError] = await Promise.all([
@@ -259,15 +231,7 @@ test("Ready offers one read command; hook receipt alone cannot merge; explicit C
       merge: { pr: url, head, method: "squash" },
     });
     const child = Bun.spawn(
-      [
-        process.execPath,
-        resolve("src/cli.ts"),
-        "merge",
-        f.id,
-        "--state",
-        f.directory,
-        "--json",
-      ],
+      [process.execPath, resolve("src/cli.ts"), "merge", f.id, "--state", f.directory, "--json"],
       {
         env: {
           ...process.env,
@@ -313,18 +277,14 @@ test("another recipient cannot use the merge receipt and stale head requests ack
       }),
       /another agent/u,
     );
-    expect(
-      f.coordinator.store.digests.receipts(f.notice.digestId),
-    ).toHaveLength(0);
+    expect(f.coordinator.store.digests.receipts(f.notice.digestId)).toHaveLength(0);
     f.current = {
       ...f.current,
       observation: { ...f.current.observation, headSha: "d".repeat(40) },
     };
     f.observe();
     expect((await f.merge()).resultText).toContain('"blocked"');
-    expect(
-      f.coordinator.store.digests.receipts(f.notice.digestId),
-    ).toHaveLength(1);
+    expect(f.coordinator.store.digests.receipts(f.notice.digestId)).toHaveLength(1);
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     expect(f.writes).toBe(0);
   } finally {
@@ -338,9 +298,7 @@ test("fresh review gates stop a one-shot request and clearing the gate cannot tr
     f.current.review = "REVIEW_REQUIRED";
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(0);
-    expect(f.coordinator.store.merging.entries()[0]?.state).toBe(
-      EntryState.Blocked,
-    );
+    expect(f.coordinator.store.merging.entries()[0]?.state).toBe(EntryState.Blocked);
     f.current.review = "APPROVED";
     f.advance();
     await f.coordinator.merging.tick();
@@ -383,15 +341,9 @@ test("reference discovery ignores examples and link labels while keeping cross-r
     const notices = f.coordinator.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
       .messages.filter((m) => m.workflowPRId !== undefined);
-    expect(notices.some((m) => m.notice?.subject?.kind === "reference")).toBe(
-      false,
-    );
+    expect(notices.some((m) => m.notice?.subject?.kind === "reference")).toBe(false);
     expect(
-      f.coordinator.store.merging
-        .refs()
-        .some(
-          (ref) => ref.targetUrl === "https://github.com/another/repo/pull/13",
-        ),
+      f.coordinator.store.merging.refs().some((ref) => ref.targetUrl === "https://github.com/another/repo/pull/13"),
     ).toBe(true);
   } finally {
     await f.close();
@@ -417,22 +369,12 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
     });
     await f.coordinator.merging.tick();
     expect((await f.merge()).resultText).toContain("changed since this notice");
-    const unread = f.coordinator.store.tracking.inbox.list(
-      f.pr.ownerAgentId,
-      0,
-      false,
-      true,
-    ).messages;
-    expect(
-      unread.some((message) => !f.notice.messageIds.includes(message.id)),
-    ).toBe(true);
+    const unread = f.coordinator.store.tracking.inbox.list(f.pr.ownerAgentId, 0, false, true).messages;
+    expect(unread.some((message) => !f.notice.messageIds.includes(message.id))).toBe(true);
     await f.coordinator.digests.flush();
     const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (envelope === undefined) throw new Error("No policy-bound offer");
-    const current = f.coordinator.store.digests.version(
-      envelope.id,
-      envelope.revision,
-    );
+    const current = f.coordinator.store.digests.version(envelope.id, envelope.revision);
     const token = messageReceiptId(current.body);
     if (token === undefined) throw new Error("No policy receipt");
     expect(token).not.toBe(f.id);
@@ -459,9 +401,7 @@ test("manual merge preserves the automatic switch while a paused chain blocks re
     await f.coordinator.merging.tick();
     const paused = f.coordinator.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
-      .messages.map((message) =>
-        f.coordinator.merging.receipts.presentation(message),
-      )
+      .messages.map((message) => f.coordinator.merging.receipts.presentation(message))
       .find((view) => view.summary?.includes("paused") === true);
     expect(paused?.summary).toContain("paused");
     expect(paused?.mergeTarget).toBeUndefined();
@@ -496,10 +436,7 @@ test("approval after check receipt produces one fresh linked Ready notice and ol
     await f.coordinator.digests.flush();
     const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (envelope === undefined) throw new Error("No new Ready notice");
-    const ready = f.coordinator.store.digests.version(
-      envelope.id,
-      envelope.revision,
-    );
+    const ready = f.coordinator.store.digests.version(envelope.id, envelope.revision);
     expect(ready.body).toContain(`[PR #38](${url}) · Ready`);
     const token = messageReceiptId(ready.body);
     if (token === undefined) throw new Error("No merge receipt");
@@ -514,9 +451,7 @@ test("approval after check receipt produces one fresh linked Ready notice and ol
       agentTarget: owner,
     });
     expect((await f.merge()).resultText).toContain("no merge target");
-    expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBe(
-      ready.dispatchId,
-    );
+    expect(f.coordinator.store.merging.entries()[0]?.receiptId).toBe(ready.dispatchId);
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
   } finally {
@@ -530,11 +465,12 @@ test("a new ordinary owner assessment retires obsolete receipt authority without
     await f.merge();
     const newer = "e".repeat(40);
     f.current.observation.headSha = newer;
-    if (f.current.observation.checks.state !== "complete")
-      throw new Error("Missing check coverage");
-    f.current.observation.checks.value = f.current.observation.checks.value.map(
-      (check) => ({ ...check, id: "run:2", headSha: newer }),
-    );
+    if (f.current.observation.checks.state !== "complete") throw new Error("Missing check coverage");
+    f.current.observation.checks.value = f.current.observation.checks.value.map((check) => ({
+      ...check,
+      id: "run:2",
+      headSha: newer,
+    }));
     f.observe();
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(0);
@@ -583,23 +519,14 @@ test("an older offer receipt cannot consume a newer policy-bound Ready decision"
     await f.coordinator.digests.flush();
     const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (envelope === undefined) throw new Error("No replacement offer");
-    const newer = f.coordinator.store.digests.version(
-      envelope.id,
-      envelope.revision,
-    );
-    expect(
-      newer.messageIds.some((id) => !f.notice.messageIds.includes(id)),
-    ).toBe(true);
+    const newer = f.coordinator.store.digests.version(envelope.id, envelope.revision);
+    expect(newer.messageIds.some((id) => !f.notice.messageIds.includes(id))).toBe(true);
     await schedulerClient(f.directory).acknowledgeAgentDigest({
       receiptId: f.id,
       agentTarget: owner,
     });
-    for (const id of newer.messageIds.filter(
-      (id) => !f.notice.messageIds.includes(id),
-    ))
-      expect(
-        f.coordinator.store.tracking.inbox.get(id)?.acknowledgedAt,
-      ).toBeUndefined();
+    for (const id of newer.messageIds.filter((id) => !f.notice.messageIds.includes(id)))
+      expect(f.coordinator.store.tracking.inbox.get(id)?.acknowledgedAt).toBeUndefined();
     expect(f.writes).toBe(0);
   } finally {
     await f.close();
@@ -608,38 +535,25 @@ test("an older offer receipt cannot consume a newer policy-bound Ready decision"
 test("a collapsed message keeps one read command and only one unambiguous merge target", async () => {
   const f = await fixture();
   try {
-    const message = f.coordinator.store.tracking.inbox.get(
-      f.notice.messageIds[0] ?? "",
-    );
+    const message = f.coordinator.store.tracking.inbox.get(f.notice.messageIds[0] ?? "");
     const target = f.notice.mergeTarget;
-    if (message === undefined || target === undefined)
-      throw new Error("No Ready fixture");
+    if (message === undefined || target === undefined) throw new Error("No Ready fixture");
     const extra = {
       ...message,
       id: "extra",
       actionId: "",
       body: "[PR #40](https://github.com/owner/repo/pull/40) · Needs input",
     };
-    const single = renderDigest(
-      [message, extra],
-      f.directory,
-      "12345678-1234-4123-8123-123456789abc",
-      (row) =>
-        row.id === message.id ? { summary: "Ready", mergeTarget: target } : {},
+    const single = renderDigest([message, extra], f.directory, "12345678-1234-4123-8123-123456789abc", (row) =>
+      row.id === message.id ? { summary: "Ready", mergeTarget: target } : {},
     );
     expect(single.body).toContain("octo-manager read 12345678");
     expect(single.mergeTarget).toEqual(target);
     expect(single.messageIds).toHaveLength(2);
-    const multiple = renderDigest(
-      [message, extra],
-      f.directory,
-      "12345678-1234-4123-8123-123456789abc",
-      (row) => ({
-        summary: "Ready",
-        mergeTarget:
-          row.id === message.id ? target : { ...target, prId: "another-pr" },
-      }),
-    );
+    const multiple = renderDigest([message, extra], f.directory, "12345678-1234-4123-8123-123456789abc", (row) => ({
+      summary: "Ready",
+      mergeTarget: row.id === message.id ? target : { ...target, prId: "another-pr" },
+    }));
     expect(multiple.body).toContain("octo-manager read 12345678");
     expect(multiple.mergeTarget).toBeUndefined();
   } finally {
@@ -692,42 +606,25 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
       sessionId: "queue-observer",
     });
     coordinator.store.tracking.observe(pr.id, current.observation, config);
-    const completion = coordinator.store.tracking
-      .actions()
-      .find((action) => action.blocker.kind === "check_results");
+    const completion = coordinator.store.tracking.actions().find((action) => action.blocker.kind === "check_results");
     if (completion === undefined) throw new Error("No completion");
-    const deliveries = coordinator.store.tracking
-      .deliveries()
-      .filter((d) => d.actionId === completion.id);
+    const deliveries = coordinator.store.tracking.deliveries().filter((d) => d.actionId === completion.id);
     for (const delivery of deliveries) {
       coordinator.store.tracking.inbox.freezeNotice(
         delivery.id,
-        coordinator.store.tracking.noticeForAction(
-          completion,
-          delivery.recipientAgentId,
-        ),
+        coordinator.store.tracking.noticeForAction(completion, delivery.recipientAgentId),
       );
-      coordinator.store.tracking.inbox.record(
-        delivery.id,
-        agentMessage(completion, url, delivery.id),
-      );
+      coordinator.store.tracking.inbox.record(delivery.id, agentMessage(completion, url, delivery.id));
     }
     await coordinator.merging.tick();
     const ownerDelivery = coordinator.store.tracking
       .deliveries()
-      .find(
-        (d) =>
-          d.actionId === completion.id &&
-          d.recipientAgentId === pr.ownerAgentId,
-      );
+      .find((d) => d.actionId === completion.id && d.recipientAgentId === pr.ownerAgentId);
     expect(ownerDelivery?.progress.state).not.toBe(DeliveryState.Cancelled);
     expect(
       coordinator.store.tracking
         .deliveries()
-        .find(
-          (d) =>
-            d.actionId === completion.id && d.recipientAgentId === observer.id,
-        )?.progress.state,
+        .find((d) => d.actionId === completion.id && d.recipientAgentId === observer.id)?.progress.state,
     ).toBe(DeliveryState.Cancelled);
     const queuedReady = coordinator.store.tracking.inbox
       .list(observer.id, 0, false, true)
@@ -735,14 +632,8 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
     if (queuedReady === undefined) throw new Error("No observer Ready notice");
     expect(queuedReady.body).toContain("octo-manager read");
     expect(queuedReady.notice?.role).toBe("observer");
-    expect(
-      coordinator.merging.receipts.presentation(queuedReady).mergeTarget,
-    ).toBeUndefined();
-    for (
-      let attempt = 0;
-      attempt < 50 && !sent.includes(pr.ownerAgentId);
-      attempt++
-    ) {
+    expect(coordinator.merging.receipts.presentation(queuedReady).mergeTarget).toBeUndefined();
+    for (let attempt = 0; attempt < 50 && !sent.includes(pr.ownerAgentId); attempt++) {
       coordinator.tracking.tick();
       await new Promise<void>((resolve) => setImmediate(resolve));
     }
@@ -756,51 +647,33 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
 test("a same-head rerun first observed completed replaces all older queue completion copies", async () => {
   const f = await fixture();
   try {
-    if (f.current.observation.checks.state !== "complete")
-      throw new Error("Missing checks");
-    f.current.observation.checks.value = f.current.observation.checks.value.map(
-      (check) => ({ ...check, id: "run:2", at: 2000 }),
-    );
+    if (f.current.observation.checks.state !== "complete") throw new Error("Missing checks");
+    f.current.observation.checks.value = f.current.observation.checks.value.map((check) => ({
+      ...check,
+      id: "run:2",
+      at: 2000,
+    }));
     f.observe();
     const latest = f.coordinator.store.tracking
       .actions()
       .filter((a) => a.blocker.kind === "check_results")
       .at(-1);
     if (latest === undefined) throw new Error("No latest generation");
-    const delivery = f.coordinator.store.tracking
-      .deliveries()
-      .find((d) => d.actionId === latest.id);
+    const delivery = f.coordinator.store.tracking.deliveries().find((d) => d.actionId === latest.id);
     if (delivery === undefined) throw new Error("No latest delivery");
     if (f.coordinator.store.tracking.inbox.get(delivery.id) === undefined)
-      f.coordinator.store.tracking.inbox.record(
-        delivery.id,
-        agentMessage(latest, url, delivery.id),
-      );
+      f.coordinator.store.tracking.inbox.record(delivery.id, agentMessage(latest, url, delivery.id));
     await f.coordinator.merging.tick();
     await f.coordinator.digests.flush();
-    expect(
-      f.coordinator.store.merging.noticeReadiness(f.pr.id)?.target.actionId,
-    ).toBe(latest.id);
-    const unread = f.coordinator.store.tracking.inbox.list(
-      f.pr.ownerAgentId,
-      0,
-      false,
-      true,
-    ).messages;
+    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.target.actionId).toBe(latest.id);
+    const unread = f.coordinator.store.tracking.inbox.list(f.pr.ownerAgentId, 0, false, true).messages;
     expect(unread.some((m) => m.actionId !== "")).toBe(false);
     const ready = unread.filter((m) => m.workflowPRId === f.pr.id);
     expect(ready).toHaveLength(1);
-    expect(
-      ready.every(
-        (m) => f.coordinator.merging.receipts.presentation(m).defer !== true,
-      ),
-    ).toBe(true);
-    expect(
-      f.notice.messageIds.every(
-        (id) =>
-          f.coordinator.store.tracking.inbox.get(id)?.applicable === false,
-      ),
-    ).toBe(true);
+    expect(ready.every((m) => f.coordinator.merging.receipts.presentation(m).defer !== true)).toBe(true);
+    expect(f.notice.messageIds.every((id) => f.coordinator.store.tracking.inbox.get(id)?.applicable === false)).toBe(
+      true,
+    );
   } finally {
     await f.close();
   }
@@ -819,10 +692,7 @@ test("readiness returning to an earlier state creates a fresh decision instead o
     await f.coordinator.digests.flush();
     const blocked = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (blocked === undefined) throw new Error("No blocked decision");
-    const blockedVersion = f.coordinator.store.digests.version(
-      blocked.id,
-      blocked.revision,
-    );
+    const blockedVersion = f.coordinator.store.digests.version(blocked.id, blocked.revision);
     const blockedId = messageReceiptId(blockedVersion.body);
     if (blockedId === undefined) throw new Error("No blocked receipt");
     await schedulerClient(f.directory).acknowledgeAgentDigest({
@@ -835,24 +705,13 @@ test("readiness returning to an earlier state creates a fresh decision instead o
     await f.coordinator.digests.flush();
     const ready = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (ready === undefined) throw new Error("No renewed Ready decision");
-    const version = f.coordinator.store.digests.version(
-      ready.id,
-      ready.revision,
-    );
+    const version = f.coordinator.store.digests.version(ready.id, ready.revision);
     expect(version.body).toContain(" · Ready");
+    expect(version.messageIds.some((id) => !f.notice.messageIds.includes(id))).toBe(true);
     expect(
-      version.messageIds.some((id) => !f.notice.messageIds.includes(id)),
+      version.messageIds.every((id) => f.coordinator.store.tracking.inbox.get(id)?.acknowledgedAt === undefined),
     ).toBe(true);
-    expect(
-      version.messageIds.every(
-        (id) =>
-          f.coordinator.store.tracking.inbox.get(id)?.acknowledgedAt ===
-          undefined,
-      ),
-    ).toBe(true);
-    expect(
-      f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation,
-    ).toBe(3);
+    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation).toBe(3);
   } finally {
     await f.close();
   }
@@ -865,12 +724,8 @@ test("agent presentation links native GitHub references while preserving existin
     url,
     parent,
   );
-  expect(text).toContain(
-    "PR [owner/repo#13](https://github.com/owner/repo/pull/13)",
-  );
-  expect(text).toContain(
-    "[other/repo#14](https://github.com/other/repo/issues/14)",
-  );
+  expect(text).toContain("PR [owner/repo#13](https://github.com/owner/repo/pull/13)");
+  expect(text).toContain("[other/repo#14](https://github.com/other/repo/issues/14)");
   expect(text).toContain("`#15`");
   expect(text).toContain("[PR #16](https://github.com/owner/repo/pull/16)");
   const bounded = linkPRReferences(
@@ -887,9 +742,7 @@ test("agent presentation links native GitHub references while preserving existin
 test("automatic digest excludes raw excerpts while explicit link rendering preserves links", async () => {
   const f = await fixture();
   try {
-    const message = f.coordinator.store.tracking.inbox.get(
-      f.notice.messageIds[0] ?? "",
-    );
+    const message = f.coordinator.store.tracking.inbox.get(f.notice.messageIds[0] ?? "");
     if (message === undefined) throw new Error("No source message");
     const target = `https://github.com/owner/${"repository".repeat(6)}/pull/13?diff=split#discussion_r123`;
     const link = `[parent review](${target})`;
@@ -920,24 +773,16 @@ test("read failures and recovery do not repeat a receipted Ready decision, inclu
       receiptId: f.id,
       agentTarget: owner,
     });
-    const generation = f.coordinator.store.merging.noticeReadiness(
-      f.pr.id,
-    )?.generation;
+    const generation = f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation;
     for (let cycle = 0; cycle < 3; cycle++) {
       f.failReads("Synthetic GitHub timeout");
       f.advance();
       await f.coordinator.merging.tick();
       await f.coordinator.digests.flush();
-      expect(
-        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError,
-      ).toBe("Synthetic GitHub timeout");
-      const source = f.coordinator.store.tracking.inbox.get(
-        f.notice.messageIds[0] ?? "",
-      );
+      expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError).toBe("Synthetic GitHub timeout");
+      const source = f.coordinator.store.tracking.inbox.get(f.notice.messageIds[0] ?? "");
       assert(source !== undefined);
-      expect(f.coordinator.merging.receipts.presentation(source).defer).toBe(
-        true,
-      );
+      expect(f.coordinator.merging.receipts.presentation(source).defer).toBe(true);
       const reads = f.reads;
       await f.coordinator.merging.tick();
       expect(f.reads).toBe(reads);
@@ -946,22 +791,14 @@ test("read failures and recovery do not repeat a receipted Ready decision, inclu
         expect((await f.merge()).resultText).toContain('"blocked"');
         expect(f.coordinator.store.merging.entries()).toHaveLength(0);
       }
-      expect(
-        f.coordinator.store.digests.active(f.pr.ownerAgentId),
-      ).toBeUndefined();
+      expect(f.coordinator.store.digests.active(f.pr.ownerAgentId)).toBeUndefined();
       f.failReads();
       f.advance();
       await f.coordinator.merging.tick();
       await f.coordinator.digests.flush();
-      expect(
-        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError,
-      ).toBeUndefined();
-      expect(
-        f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation,
-      ).toBe(generation);
-      expect(
-        f.coordinator.store.digests.active(f.pr.ownerAgentId),
-      ).toBeUndefined();
+      expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.inspectionError).toBeUndefined();
+      expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.generation).toBe(generation);
+      expect(f.coordinator.store.digests.active(f.pr.ownerAgentId)).toBeUndefined();
     }
     expect(f.writes).toBe(0);
   } finally {
@@ -972,10 +809,7 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
   const f = await fixture();
   try {
     await f.coordinator.tracking.close();
-    const parent = f.coordinator.store.tracking.track(
-      "https://github.com/owner/repo/pull/37",
-      owner,
-    );
+    const parent = f.coordinator.store.tracking.track("https://github.com/owner/repo/pull/37", owner);
     f.coordinator.store.tracking.observe(
       parent.id,
       {
@@ -984,12 +818,7 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
       },
       defaultTrackingConfig(),
     );
-    f.coordinator.store.merging.confirm(
-      f.pr.id,
-      parent.id,
-      f.pr.ownerAgentId,
-      "Parent must merge first",
-    );
+    f.coordinator.store.merging.confirm(f.pr.id, parent.id, f.pr.ownerAgentId, "Parent must merge first");
     const reads = f.reads;
     f.failReads("GitHub unavailable");
     await f.coordinator.merging.tick();
@@ -997,10 +826,7 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
     expect(f.reads).toBe(reads);
     const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     assert(digest !== undefined);
-    const version = f.coordinator.store.digests.version(
-      digest.id,
-      digest.revision,
-    );
+    const version = f.coordinator.store.digests.version(digest.id, digest.revision);
     expect(version.body).toContain("merge prerequisites not met");
     const id = messageReceiptId(version.body);
     assert(id !== undefined);
@@ -1013,26 +839,18 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
       await f.coordinator.merging.tick();
       await f.coordinator.digests.flush();
       expect(f.reads).toBe(reads);
-      expect(
-        f.coordinator.store.digests.active(f.pr.ownerAgentId),
-      ).toBeUndefined();
+      expect(f.coordinator.store.digests.active(f.pr.ownerAgentId)).toBeUndefined();
     }
     f.failReads();
     f.current.observation.lifecycle = "merged";
-    f.coordinator.store.tracking.observe(
-      parent.id,
-      f.current.observation,
-      defaultTrackingConfig(),
-    );
+    f.coordinator.store.tracking.observe(parent.id, f.current.observation, defaultTrackingConfig());
     f.current.observation.lifecycle = "open";
     f.advance();
     await f.coordinator.merging.tick();
     await f.coordinator.digests.flush();
     const ready = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     assert(ready !== undefined);
-    expect(
-      f.coordinator.store.digests.version(ready.id, ready.revision).body,
-    ).toContain(" · Ready");
+    expect(f.coordinator.store.digests.version(ready.id, ready.revision).body).toContain(" · Ready");
     expect(f.writes).toBe(0);
   } finally {
     await f.close();
@@ -1041,8 +859,7 @@ test("known dependency blockers avoid eligibility reads and repeat notices", asy
 
 test("caller instructions survive restart and accompany only its PR updates and confirmed merge", async () => {
   const f = await fixture();
-  const instructions =
-    "Fix review findings; after merge pull latest and reinstall.";
+  const instructions = "Fix review findings; after merge pull latest and reinstall.";
   try {
     const observer = f.coordinator.tracking.registerAgent({
       ...owner,
@@ -1076,34 +893,15 @@ test("caller instructions survive restart and accompany only its PR updates and 
       new Response(child.stderr).text(),
     ]);
     expect(code, error + output).toBe(0);
-    expect(
-      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
-    ).toBe(instructions);
-    expect(
-      f.coordinator.store.merging.agentInstructions(f.pr.id, observer.id),
-    ).toBeUndefined();
-    const frozen = f.coordinator.store.digests.version(
-      f.notice.digestId,
-      f.notice.revision,
-    ).body;
+    expect(f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBe(instructions);
+    expect(f.coordinator.store.merging.agentInstructions(f.pr.id, observer.id)).toBeUndefined();
+    const frozen = f.coordinator.store.digests.version(f.notice.digestId, f.notice.revision).body;
     expect(frozen).not.toContain(instructions);
     await f.reopen();
-    expect(
-      f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId),
-    ).toBe(instructions);
+    expect(f.coordinator.store.merging.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBe(instructions);
     await f.coordinator.merging.tick();
-    const pending = f.coordinator.store.tracking.inbox.list(
-      f.pr.ownerAgentId,
-      0,
-      false,
-      true,
-    ).messages;
-    const body = renderDigest(
-      pending,
-      f.directory,
-      "12345678",
-      f.coordinator.merging.receipts.presentation,
-    ).body;
+    const pending = f.coordinator.store.tracking.inbox.list(f.pr.ownerAgentId, 0, false, true).messages;
+    const body = renderDigest(pending, f.directory, "12345678", f.coordinator.merging.receipts.presentation).body;
     expect(body).not.toContain(instructions);
     f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head);
     await f.coordinator.merging.tick();
@@ -1111,22 +909,14 @@ test("caller instructions survive restart and accompany only its PR updates and 
     await f.coordinator.digests.flush();
     const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     assert(digest !== undefined);
-    const delivered = f.coordinator.store.digests.version(
-      digest.id,
-      digest.revision,
-    ).body;
+    const delivered = f.coordinator.store.digests.version(digest.id, digest.revision).body;
     expect(delivered).toContain("GitHub confirmed merge");
     expect(delivered).not.toContain(instructions);
     const read = await schedulerClient(f.directory).readNotificationMessage({
-      id: f.coordinator.store.digests.version(digest.id, digest.revision)
-        .dispatchId,
+      id: f.coordinator.store.digests.version(digest.id, digest.revision).dispatchId,
       agentId: f.pr.ownerAgentId,
     });
-    expect(
-      read.instructions.some((item) =>
-        item.instructions.includes(instructions),
-      ),
-    ).toBe(true);
+    expect(read.instructions.some((item) => item.instructions.includes(instructions))).toBe(true);
   } finally {
     await f.close();
   }
@@ -1136,56 +926,26 @@ test("instruction updates and clearing do not change readiness, and invalid or n
   const f = await fixture();
   try {
     const store = f.coordinator.store.merging;
-    store.autoMerge(
-      url,
-      f.pr.ownerAgentId,
-      true,
-      "instructions",
-      "Review and repair actionable feedback.",
-    );
+    store.autoMerge(url, f.pr.ownerAgentId, true, "instructions", "Review and repair actionable feedback.");
     store.ready(url, f.pr.ownerAgentId, head);
     const before = store.entry(url).ready;
-    store.autoMerge(
-      url,
-      f.pr.ownerAgentId,
-      true,
-      "replace",
-      "After merge update the local install.",
-    );
+    store.autoMerge(url, f.pr.ownerAgentId, true, "replace", "After merge update the local install.");
     expect(store.entry(url).ready).toEqual(before);
     const observer = f.coordinator.tracking.registerAgent({
       ...owner,
       sessionId: "instruction-observer",
     });
-    expect(() =>
-      store.autoMerge(url, observer.id, true, "unauthorized", "Do work"),
-    ).toThrow();
-    expect(() =>
-      store.autoMerge(
-        url,
-        f.pr.ownerAgentId,
-        true,
-        "oversize",
-        "x".repeat(1001),
-      ),
-    ).toThrow();
+    expect(() => store.autoMerge(url, observer.id, true, "unauthorized", "Do work")).toThrow();
+    expect(() => store.autoMerge(url, f.pr.ownerAgentId, true, "oversize", "x".repeat(1001))).toThrow();
     store.autoMerge(url, f.pr.ownerAgentId, true, "clear", "");
     expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
     expect(store.entry(url).ready).toEqual(before);
-    store.autoMerge(
-      url,
-      f.pr.ownerAgentId,
-      true,
-      "restore",
-      "After merge reinstall.",
-    );
+    store.autoMerge(url, f.pr.ownerAgentId, true, "restore", "After merge reinstall.");
     const assigned = f.coordinator.store.tracking.assign(f.pr.id, {
       ...owner,
       sessionId: "new-owner",
     });
-    expect(
-      store.agentInstructions(f.pr.id, assigned.ownerAgentId),
-    ).toBeUndefined();
+    expect(store.agentInstructions(f.pr.id, assigned.ownerAgentId)).toBeUndefined();
     expect(store.agentInstructions(f.pr.id, f.pr.ownerAgentId)).toBeUndefined();
   } finally {
     await f.close();
@@ -1250,10 +1010,7 @@ async function refreshedReceipt(f: Awaited<ReturnType<typeof fixture>>) {
   await f.coordinator.digests.flush();
   const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
   if (digest === undefined) throw new Error("Missing current readiness digest");
-  const body = f.coordinator.store.digests.version(
-    digest.id,
-    digest.revision,
-  ).body;
+  const body = f.coordinator.store.digests.version(digest.id, digest.revision).body;
   const id = messageReceiptId(body);
   if (id === undefined) throw new Error("Missing current readiness command");
   return { id, body };
@@ -1276,14 +1033,10 @@ test("pending provider reviews withdraw Ready, reject old receipts and cannot be
     };
     f.observe();
     expect((await f.merge()).resultText).toContain('"blocked"');
-    expect(() =>
-      f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head),
-    ).toThrow("pending review");
+    expect(() => f.coordinator.store.merging.ready(url, f.pr.ownerAgentId, head)).toThrow("pending review");
     await f.coordinator.merging.receipts.refresh();
     await f.coordinator.digests.flush();
-    expect(
-      f.coordinator.store.digests.active(f.pr.ownerAgentId),
-    ).toBeUndefined();
+    expect(f.coordinator.store.digests.active(f.pr.ownerAgentId)).toBeUndefined();
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     expect(f.writes).toBe(0);
   } finally {
@@ -1299,19 +1052,12 @@ test("delivery receipt and working state cannot authorize feedback; explicit CLI
     };
     f.observe();
     expect((await f.merge()).resultText).toContain('"blocked"');
-    const action = f.coordinator.store.tracking
-      .actions()
-      .find((item) => item.blocker.kind === "review_feedback");
+    const action = f.coordinator.store.tracking.actions().find((item) => item.blocker.kind === "review_feedback");
     if (action === undefined) throw new Error("Missing actionable review");
-    const delivery = f.coordinator.store.tracking
-      .deliveries()
-      .find((item) => item.actionId === action.id);
+    const delivery = f.coordinator.store.tracking.deliveries().find((item) => item.actionId === action.id);
     if (delivery === undefined) throw new Error("Missing review delivery");
     f.coordinator.store.tracking.inbox.record(delivery.id, "Actionable review");
-    f.coordinator.store.tracking.acknowledgeMessage(
-      delivery.id,
-      f.pr.ownerAgentId,
-    );
+    f.coordinator.store.tracking.acknowledgeMessage(delivery.id, f.pr.ownerAgentId);
     f.coordinator.store.tracking.progress(action.id, f.pr.ownerAgentId, false);
     f.coordinator.store.tracking.progress(action.id, f.pr.ownerAgentId, true);
     const blocked = await refreshedReceipt(f);
@@ -1322,11 +1068,7 @@ test("delivery receipt and working state cannot authorize feedback; explicit CLI
       agentId: f.pr.ownerAgentId,
     });
     expect(
-      read.instructions.some((item) =>
-        item.instructions.includes(
-          `octo-manager pr ready ${url} --head ${head}`,
-        ),
-      ),
+      read.instructions.some((item) => item.instructions.includes(`octo-manager pr ready ${url} --head ${head}`)),
     ).toBe(true);
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     await ownerAssessment(f);
@@ -1352,9 +1094,7 @@ test("delivery receipt and working state cannot authorize feedback; explicit CLI
       agentTarget: owner,
     });
     expect(result.result).toBeDefined();
-    expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(
-      ReviewAssessmentSource.Owner,
-    );
+    expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(ReviewAssessmentSource.Owner);
     expect(f.coordinator.store.merging.entry(url).autoMerge).toBe(false);
     await f.coordinator.merging.tick();
     expect(f.writes).toBe(1);
@@ -1397,17 +1137,9 @@ test("edited feedback invalidates owner assessment and its previous Ready receip
       agentTarget: owner,
     });
     assert(response.result !== undefined);
-    expect(
-      JSON.stringify(unwire(DomainMergeReceiptResultSchema, response.result)),
-    ).toContain('"blocked"');
-    expect(
-      f.coordinator.store.merging.ownerAssessment(
-        f.coordinator.store.tracking.pr(f.pr.id),
-      ),
-    ).toBeUndefined();
-    expect((await refreshedReceipt(f)).body).toContain(
-      "Review feedback requires owner assessment",
-    );
+    expect(JSON.stringify(unwire(DomainMergeReceiptResultSchema, response.result))).toContain('"blocked"');
+    expect(f.coordinator.store.merging.ownerAssessment(f.coordinator.store.tracking.pr(f.pr.id))).toBeUndefined();
+    expect((await refreshedReceipt(f)).body).toContain("Review feedback requires owner assessment");
     expect(f.writes).toBe(0);
   } finally {
     await f.close();
@@ -1418,9 +1150,7 @@ test("fresh review evidence blocks a queued receipt before merge and cannot be a
     const f = await fixture();
     try {
       await f.merge();
-      expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(
-        ReviewAssessmentSource.Receipt,
-      );
+      expect(f.coordinator.store.merging.entry(url).ready?.source).toBe(ReviewAssessmentSource.Receipt);
       if (evidence === "pending")
         f.current.observation.reviews = {
           state: "complete",
@@ -1442,14 +1172,8 @@ test("fresh review evidence blocks a queued receipt before merge and cannot be a
         };
       await f.coordinator.merging.tick();
       expect(f.writes).toBe(0);
-      expect(f.coordinator.store.merging.entry(url).state).not.toBe(
-        EntryState.Merged,
-      );
-      expect(
-        f.coordinator.store.merging.ownerAssessment(
-          f.coordinator.store.tracking.pr(f.pr.id),
-        ),
-      ).toBeUndefined();
+      expect(f.coordinator.store.merging.entry(url).state).not.toBe(EntryState.Merged);
+      expect(f.coordinator.store.merging.ownerAssessment(f.coordinator.store.tracking.pr(f.pr.id))).toBeUndefined();
     } finally {
       await f.close();
     }
@@ -1462,23 +1186,14 @@ test("a readiness-only receipt inspects its underlying action through the one pu
     const ready = f.coordinator.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
       .messages.find((message) => message.notice?.subject?.kind === "action");
-    if (ready === undefined || ready.notice?.subject === undefined)
-      throw new Error("Missing readiness notice");
+    if (ready === undefined || ready.notice?.subject === undefined) throw new Error("Missing readiness notice");
     expect(ready.actionId).toBe("");
     const envelope = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     if (envelope === undefined) throw new Error("Missing envelope");
     const digest = f.coordinator.store.digests.revise(envelope, (id) =>
-      renderDigest(
-        [ready],
-        f.directory,
-        id,
-        f.coordinator.merging.receipts.presentation,
-      ),
+      renderDigest([ready], f.directory, id, f.coordinator.merging.receipts.presentation),
     );
-    const version = f.coordinator.store.digests.version(
-      digest.id,
-      digest.revision,
-    );
+    const version = f.coordinator.store.digests.version(digest.id, digest.revision);
     expect(version.messageIds).toEqual([ready.id]);
     const response = await schedulerClient(f.directory).getNotificationMessage({
       id: version.dispatchId,
@@ -1486,13 +1201,10 @@ test("a readiness-only receipt inspects its underlying action through the one pu
     });
     expect(response.message?.items).toHaveLength(1);
     const item = response.message?.items[0];
-    if (item?.source.case !== "action")
-      throw new Error("Missing readiness action");
+    if (item?.source.case !== "action") throw new Error("Missing readiness action");
     expect(item.source.value.action?.id).toBe(ready.notice.subject.id);
     expect(item.source.value.action?.blocker.case).toBe("checkResults");
-    expect(
-      f.coordinator.store.tracking.inbox.get(ready.id)?.acknowledgedAt,
-    ).toBeUndefined();
+    expect(f.coordinator.store.tracking.inbox.get(ready.id)?.acknowledgedAt).toBeUndefined();
     expect(f.writes).toBe(0);
   } finally {
     await f.close();
@@ -1538,21 +1250,11 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
     },
   });
   const cli = async (...args: string[]) => {
-    const child = Bun.spawn(
-      [
-        process.execPath,
-        resolve("src/cli.ts"),
-        ...args,
-        "--state",
-        directory,
-        "--json",
-      ],
-      {
-        stdout: "pipe",
-        stderr: "pipe",
-        env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
-      },
-    );
+    const child = Bun.spawn([process.execPath, resolve("src/cli.ts"), ...args, "--state", directory, "--json"], {
+      stdout: "pipe",
+      stderr: "pipe",
+      env: { ...process.env, OCTO_MANAGER_AGENT: "0" },
+    });
     const [stdout, code, stderr] = await Promise.all([
       new Response(child.stdout).text(),
       child.exited,
@@ -1563,11 +1265,7 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
   };
   try {
     const registered = coordinator.store.tracking.track(url, pi);
-    coordinator.store.tracking.observe(
-      registered.id,
-      state.observation,
-      config,
-    );
+    coordinator.store.tracking.observe(registered.id, state.observation, config);
     await coordinator.merging.tick();
     await coordinator.start();
     const client = schedulerClient(directory);
@@ -1575,26 +1273,13 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
       agentId: registered.ownerAgentId,
       applicableOnly: true,
     });
-    const ready = notices.messages.find(
-      (message) => message.readyHead === head,
-    );
+    const ready = notices.messages.find((message) => message.readyHead === head);
     assert(ready !== undefined);
     expect(ready.workflowPrId).toBe(registered.id);
-    const inbox = await cli(
-      "agent",
-      "inbox",
-      "--agent-id",
-      registered.ownerAgentId,
-      "--applicable-only",
-    );
+    const inbox = await cli("agent", "inbox", "--agent-id", registered.ownerAgentId, "--applicable-only");
     expect(inbox).toContain(ready.id);
     expect(inbox).toContain(head);
-    await cli(
-      "acknowledge-message",
-      ready.id,
-      "--agent-id",
-      registered.ownerAgentId,
-    );
+    await cli("acknowledge-message", ready.id, "--agent-id", registered.ownerAgentId);
     await coordinator.digests.flush();
     expect(writes).toBe(0);
     expect(queueConnections).toBe(0);
@@ -1628,9 +1313,7 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
         typeof merged.chain === "string",
     );
     expect(merged.state).toBe("merged");
-    const archiveEvidence: unknown = JSON.parse(
-      await cli("chain", "show", merged.chain),
-    );
+    const archiveEvidence: unknown = JSON.parse(await cli("chain", "show", merged.chain));
     assert(
       typeof archiveEvidence === "object" &&
         archiveEvidence !== null &&
@@ -1654,19 +1337,10 @@ test("readiness candidates retain an offer until retirement even after its last 
   const f = await fixture();
   const db = new DatabaseSync(join(f.directory, "jobs.sqlite"));
   try {
-    const other = f.coordinator.tracking.track(
-      "https://github.com/owner/repo/pull/99",
-      owner,
-    );
-    expect(
-      f.coordinator.store.merging.readinessCandidates().has(other.id),
-    ).toBe(false);
-    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
-      true,
-    );
-    db.prepare(
-      "UPDATE actions SET state='superseded',progress_json=?,resolved_observation_id=NULL WHERE pr_id=?",
-    ).run(
+    const other = f.coordinator.tracking.track("https://github.com/owner/repo/pull/99", owner);
+    expect(f.coordinator.store.merging.readinessCandidates().has(other.id)).toBe(false);
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(true);
+    db.prepare("UPDATE actions SET state='superseded',progress_json=?,resolved_observation_id=NULL WHERE pr_id=?").run(
       JSON.stringify({
         state: "superseded",
         at: 1000,
@@ -1674,14 +1348,10 @@ test("readiness candidates retain an offer until retirement even after its last 
       }),
       f.pr.id,
     );
-    expect(
-      f.coordinator.store.tracking
-        .unfinishedActions()
-        .filter((action) => action.prId === f.pr.id),
-    ).toHaveLength(0);
-    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
-      true,
+    expect(f.coordinator.store.tracking.unfinishedActions().filter((action) => action.prId === f.pr.id)).toHaveLength(
+      0,
     );
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(true);
     await f.coordinator.merging.receipts.refresh();
     expect(
       db
@@ -1690,9 +1360,7 @@ test("readiness candidates retain an offer until retirement even after its last 
         )
         .get(f.pr.id)?.["n"],
     ).toBe(0);
-    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(
-      false,
-    );
+    expect(f.coordinator.store.merging.readinessCandidates().has(f.pr.id)).toBe(false);
     expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)).toBeDefined();
   } finally {
     db.close();
@@ -1710,40 +1378,23 @@ test("cached readiness changes wake a recipient after the previous Ready offer w
       agentTarget: owner,
     });
     await f.coordinator.digests.flush();
-    expect(
-      f.coordinator.store.digests.active(f.pr.ownerAgentId),
-    ).toBeUndefined();
-    const observations = f.coordinator.store
-      .events()
-      .filter((event) => event.kind === "pr_observed").length;
+    expect(f.coordinator.store.digests.active(f.pr.ownerAgentId)).toBeUndefined();
+    const observations = f.coordinator.store.events().filter((event) => event.kind === "pr_observed").length;
     f.current.review = "REVIEW_REQUIRED";
     f.advance();
     await f.coordinator.merging.receipts.refresh();
     const end = Date.now() + 1000;
-    while (
-      f.coordinator.store.digests.active(f.pr.ownerAgentId) === undefined &&
-      Date.now() < end
-    )
+    while (f.coordinator.store.digests.active(f.pr.ownerAgentId) === undefined && Date.now() < end)
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 5);
       });
     const digest = f.coordinator.store.digests.active(f.pr.ownerAgentId);
     expect(digest).toBeDefined();
-    if (digest === undefined)
-      throw new Error("Changed readiness did not wake notification delivery");
-    const body = f.coordinator.store.digests.version(
-      digest.id,
-      digest.revision,
-    ).body;
+    if (digest === undefined) throw new Error("Changed readiness did not wake notification delivery");
+    const body = f.coordinator.store.digests.version(digest.id, digest.revision).body;
     expect(body).toContain("Checks complete · merge prerequisites not met");
-    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.eligible).toBe(
-      false,
-    );
-    expect(
-      f.coordinator.store
-        .events()
-        .filter((event) => event.kind === "pr_observed"),
-    ).toHaveLength(observations);
+    expect(f.coordinator.store.merging.noticeReadiness(f.pr.id)?.eligible).toBe(false);
+    expect(f.coordinator.store.events().filter((event) => event.kind === "pr_observed")).toHaveLength(observations);
     expect(f.coordinator.store.merging.entries()).toHaveLength(0);
     expect(f.writes).toBe(0);
   } finally {
@@ -1759,9 +1410,7 @@ test("readiness input signals ignore refreshed timestamps and preserve failure a
     f.advance();
     await f.coordinator.merging.receipts.refresh();
     const signals = () =>
-      f.coordinator.store
-        .eventsSince(sequence)
-        .filter((event) => event.kind === "merge_notification_updated");
+      f.coordinator.store.eventsSince(sequence).filter((event) => event.kind === "merge_notification_updated");
     expect(signals()).toHaveLength(0);
     f.failReads("Synthetic readiness failure");
     f.advance();

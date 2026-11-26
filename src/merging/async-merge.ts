@@ -7,12 +7,7 @@ export type MergeProgress =
 const uuid = Type.String({ pattern: "^[a-fA-F0-9-]{36}$" });
 const response = Type.Object({
   status: Type.Optional(
-    Type.Union([
-      Type.Literal("pending"),
-      Type.Literal("merged"),
-      Type.Literal("failed"),
-      Type.Literal("enqueued"),
-    ]),
+    Type.Union([Type.Literal("pending"), Type.Literal("merged"), Type.Literal("failed"), Type.Literal("enqueued")]),
   ),
   uuid: Type.Optional(uuid),
   details: Type.Optional(
@@ -23,15 +18,11 @@ const response = Type.Object({
     }),
   ),
 });
-export function mergeProgress(
-  value: unknown,
-  requestId?: string,
-): MergeProgress {
+export function mergeProgress(value: unknown, requestId?: string): MergeProgress {
   const parsed = checked(response, value);
   switch (parsed.status) {
     case "merged":
-      if (parsed.details?.sha === undefined)
-        throw new Error("Merge result omitted its revision");
+      if (parsed.details?.sha === undefined) throw new Error("Merge result omitted its revision");
       return { state: "merged", sha: parsed.details.sha };
     case "failed":
     case "enqueued":
@@ -42,8 +33,7 @@ export function mergeProgress(
     case "pending":
     case undefined: {
       const id = parsed.uuid ?? parsed.details?.uuid ?? requestId;
-      if (id === undefined)
-        throw new Error("Merge request omitted its identity");
+      if (id === undefined) throw new Error("Merge request omitted its identity");
       return { state: "pending", requestId: id };
     }
   }

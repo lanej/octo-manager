@@ -1,9 +1,6 @@
 import { expect, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
 import type { MergeOptions } from "../src/merging/service.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
@@ -32,15 +29,12 @@ async function fixture(mergeOptions: MergeOptions = {}) {
     mergeOptions,
   });
   const prs = [1, 2, 3].map((number) => {
-    const pr = coordinator.store.tracking.track(
-      `https://github.com/owner/repo/pull/${String(number)}`,
-      { harness: "codex", endpoint: "local", sessionId: "reference-scope" },
-    );
-    coordinator.store.tracking.observe(
-      pr.id,
-      observation,
-      coordinator.tracking.config,
-    );
+    const pr = coordinator.store.tracking.track(`https://github.com/owner/repo/pull/${String(number)}`, {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "reference-scope",
+    });
+    coordinator.store.tracking.observe(pr.id, observation, coordinator.tracking.config);
     return pr;
   });
   await coordinator.merging.tick();
@@ -81,9 +75,7 @@ test("one provider observation rescans only its PR and retains broad invalidatio
     expect(roster).not.toHaveBeenCalled();
     f.coordinator.inputs.changed();
     await f.coordinator.merging.tick();
-    expect(reads.mock.calls.map(([id]) => id).sort()).toEqual(
-      f.prs.map((value) => value.id).sort(),
-    );
+    expect(reads.mock.calls.map(([id]) => id).sort()).toEqual(f.prs.map((value) => value.id).sort());
   } finally {
     reads.mockRestore();
     roster.mockRestore();
@@ -95,16 +87,10 @@ test("a PR invalidated after its position in an active scan is visited on the ne
   const f = await fixture();
   const first = f.prs[0],
     second = f.prs[1];
-  if (first === undefined || second === undefined)
-    throw new Error("Missing fixture PRs");
-  const original = f.coordinator.store.tracking.referenceObservation.bind(
-    f.coordinator.store.tracking,
-  );
+  if (first === undefined || second === undefined) throw new Error("Missing fixture PRs");
+  const original = f.coordinator.store.tracking.referenceObservation.bind(f.coordinator.store.tracking);
   let changed = false;
-  const reads = spyOn(
-    f.coordinator.store.tracking,
-    "referenceObservation",
-  ).mockImplementation((id) => {
+  const reads = spyOn(f.coordinator.store.tracking, "referenceObservation").mockImplementation((id) => {
     if (id === second.id && !changed) {
       changed = true;
       f.coordinator.store.tracking.observe(
@@ -140,9 +126,7 @@ test("existing roster-wide reference revision callbacks still invalidate every P
     expect(reads).not.toHaveBeenCalled();
     revision = "two";
     await f.coordinator.merging.tick();
-    expect(reads.mock.calls.map(([id]) => id).sort()).toEqual(
-      f.prs.map((pr) => pr.id).sort(),
-    );
+    expect(reads.mock.calls.map(([id]) => id).sort()).toEqual(f.prs.map((pr) => pr.id).sort());
   } finally {
     reads.mockRestore();
     await f.close();
@@ -160,13 +144,12 @@ test("internal enrollment and retracking invalidate the reference roster without
       f.coordinator.tracking.config,
     );
     await f.coordinator.merging.tick();
-    expect(
-      activeReferences(f.coordinator, first.id).map((ref) => ref.targetKind),
-    ).toContain("issue_or_pr");
-    const fourth = f.coordinator.tracking.track(
-      "https://github.com/owner/repo/pull/4",
-      { harness: "codex", endpoint: "local", sessionId: "reference-scope" },
-    );
+    expect(activeReferences(f.coordinator, first.id).map((ref) => ref.targetKind)).toContain("issue_or_pr");
+    const fourth = f.coordinator.tracking.track("https://github.com/owner/repo/pull/4", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "reference-scope",
+    });
     f.coordinator.store.tracking.observe(
       fourth.id,
       { ...observation, description: "Depends on #1" },

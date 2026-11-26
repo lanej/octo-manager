@@ -28,8 +28,7 @@ export function diagnosticsRoutes(diagnostics: PerformanceDiagnostics) {
       operation(() => ({
         capture: diagnostics.start(r.requestId, r.durationMs),
       })),
-    getPerformanceCapture: (r: GetPerformanceCaptureRequest) =>
-      operation(() => ({ capture: diagnostics.get(r.id) })),
+    getPerformanceCapture: (r: GetPerformanceCaptureRequest) => operation(() => ({ capture: diagnostics.get(r.id) })),
     stopPerformanceCapture: (r: StopPerformanceCaptureRequest) =>
       operation(() => ({ capture: diagnostics.stop(r.id) })),
   };

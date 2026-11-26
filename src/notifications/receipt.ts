@@ -23,8 +23,7 @@ export function digestReceipt(
       receivedAtMs: receipt.at,
     }),
     messages: messages.map((message) => {
-      const action =
-        message.actionId === "" ? undefined : tracking.action(message.actionId);
+      const action = message.actionId === "" ? undefined : tracking.action(message.actionId);
       const pr =
         action === undefined
           ? message.workflowPRId !== undefined
@@ -38,10 +37,7 @@ export function digestReceipt(
         actionId: message.actionId,
         submissionId: message.submissionId,
         applicable: service.applicable(message),
-        acknowledgedAtMs:
-          message.acknowledgedAt === undefined
-            ? undefined
-            : BigInt(message.acknowledgedAt),
+        acknowledgedAtMs: message.acknowledgedAt === undefined ? undefined : BigInt(message.acknowledgedAt),
         summary: noticeLabel(
           tracking.inbox.automatic(message).notice ?? {
             version: 1,
@@ -50,12 +46,7 @@ export function digestReceipt(
           },
         ),
         prUrl: pr?.url ?? "",
-        recipientRole:
-          pr === undefined
-            ? ""
-            : pr.ownerAgentId === message.recipientAgentId
-              ? "owner"
-              : "observer",
+        recipientRole: pr === undefined ? "" : pr.ownerAgentId === message.recipientAgentId ? "owner" : "observer",
         ownerAgentId: pr?.ownerAgentId ?? "",
       };
     }),

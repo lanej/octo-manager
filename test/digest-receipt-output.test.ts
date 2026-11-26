@@ -3,10 +3,7 @@ import { DomainDigestReceiptSchema } from "../src/gen/octomanager/v2/domain_pb.j
 import { test, expect } from "bun:test";
 import { create } from "@bufbuild/protobuf";
 import { AcknowledgeAgentDigestResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
-import {
-  receiptOutput,
-  agentReceiptOutput,
-} from "../src/notifications/receipt-output.js";
+import { receiptOutput, agentReceiptOutput } from "../src/notifications/receipt-output.js";
 test("receipt output bounds dense revision metadata and exposes omitted item retrieval without history", () => {
   const response = create(AcknowledgeAgentDigestResponseSchema, {
     receipt: wire(DomainDigestReceiptSchema, {
@@ -39,10 +36,7 @@ test("receipt output bounds dense revision metadata and exposes omitted item ret
   expect(Buffer.byteLength(JSON.stringify(quoted))).toBeLessThanOrEqual(6000);
   expect(quoted.inspectState).toBe("Reuse the same --state argument");
   expect(quoted.inspect).not.toContain("--state");
-  const controls = receiptOutput(
-    response,
-    "/" + Array.from({ length: 4 }, () => "\u0001".repeat(200)).join("/"),
-  );
+  const controls = receiptOutput(response, "/" + Array.from({ length: 4 }, () => "\u0001".repeat(200)).join("/"));
   expect(Buffer.byteLength(JSON.stringify(controls))).toBeLessThanOrEqual(6000);
   expect(controls.inspectState).toBe("Reuse the same --state argument");
   expect(result.items.length + result.omittedItems).toBe(20);
@@ -50,7 +44,5 @@ test("receipt output bounds dense revision metadata and exposes omitted item ret
   expect(result.receipt.currentRevision).toBe(4);
   expect(result.items.some((item) => !item.applicable)).toBe(true);
   expect(result.inspect).toContain("--revision 2 --state");
-  expect(() => receiptOutput({ ...response, receipt: undefined })).toThrow(
-    "Missing digest receipt",
-  );
+  expect(() => receiptOutput({ ...response, receipt: undefined })).toThrow("Missing digest receipt");
 });

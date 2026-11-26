@@ -46,10 +46,7 @@ function text(value: unknown, field: string, limit = 200): string {
     typeof value !== "string" ||
     value.trim().length === 0 ||
     value.length > limit ||
-    Array.from(value).some(
-      (character) =>
-        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    )
+    Array.from(value).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   ) {
     throw new Error(`Invalid activity ${field}`);
   }
@@ -60,26 +57,15 @@ function optionalText(value: unknown, field: string): string | undefined {
 }
 export function activityInput(value: unknown): ActivityInput {
   const input = object(value);
-  const name = Object.values(ActivityName).find(
-    (item) => item === input["name"],
-  );
-  const outcome = Object.values(ActivityOutcome).find(
-    (item) => item === input["outcome"],
-  );
-  if (name === undefined || outcome === undefined)
-    throw new Error("Invalid activity name or outcome");
+  const name = Object.values(ActivityName).find((item) => item === input["name"]);
+  const outcome = Object.values(ActivityOutcome).find((item) => item === input["outcome"]);
+  if (name === undefined || outcome === undefined) throw new Error("Invalid activity name or outcome");
   const rawActor = object(input["actor"]);
   const version = optionalText(rawActor["version"], "version");
   const model = optionalText(rawActor["model"], "model");
   const label = optionalText(rawActor["label"], "label");
-  const cwd =
-    rawActor["cwd"] === undefined
-      ? undefined
-      : text(rawActor["cwd"], "working directory", 4000);
-  const prUrl =
-    input["prUrl"] === undefined
-      ? undefined
-      : canonicalPR(text(input["prUrl"], "PR URL", 2000));
+  const cwd = rawActor["cwd"] === undefined ? undefined : text(rawActor["cwd"], "working directory", 4000);
+  const prUrl = input["prUrl"] === undefined ? undefined : canonicalPR(text(input["prUrl"], "PR URL", 2000));
   let evidenceUrl: string | undefined;
   if (input["evidenceUrl"] !== undefined) {
     evidenceUrl = text(input["evidenceUrl"], "evidence URL", 2000);

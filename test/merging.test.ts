@@ -1,10 +1,7 @@
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ReviewState } from "../src/tracking/states.js";
 import { mergeRequest } from "../src/api/merge-client.js";
-import {
-  checkRunObservation,
-  workflowObservation,
-} from "../src/tracking/checks.js";
+import { checkRunObservation, workflowObservation } from "../src/tracking/checks.js";
 import { mergeProgress } from "../src/merging/async-merge.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -17,10 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { GitHubHTTPError } from "../src/github/reads.js";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -140,18 +134,12 @@ async function fixture(
       writes.push(`${url}@${head}`);
       const value = snapshots.get(url);
       assert(value !== undefined);
-      if (options.authMerge === true)
-        return Promise.reject(
-          new GitHubHTTPError(401, "Authentication required"),
-        );
-      if (options.conflictMerge === true)
-        return Promise.reject(new GitHubHTTPError(409));
-      if (options.failMerge === true)
-        return Promise.reject(new GitHubHTTPError(405));
+      if (options.authMerge === true) return Promise.reject(new GitHubHTTPError(401, "Authentication required"));
+      if (options.conflictMerge === true) return Promise.reject(new GitHubHTTPError(409));
+      if (options.failMerge === true) return Promise.reject(new GitHubHTTPError(405));
       value.observation.lifecycle = "merged";
       value.mergeCommit = url === first ? d : e;
-      if (options.unknownMerge === true)
-        return Promise.reject(new Error("Connection lost after request"));
+      if (options.unknownMerge === true) return Promise.reject(new Error("Connection lost after request"));
       if (options.asyncMerge === true)
         return Promise.resolve({
           state: "pending" as const,
@@ -186,8 +174,7 @@ async function fixture(
         const value = snapshots.get(second);
         assert(value !== undefined);
         value.observation = observation(e);
-        if (options.unknownPush === true)
-          return Promise.reject(new Error("Push outcome unknown"));
+        if (options.unknownPush === true) return Promise.reject(new Error("Push outcome unknown"));
         return Promise.resolve(e);
       },
     },
@@ -246,11 +233,7 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
       head: a,
     });
     await c.merging.tick();
-    assert.deepEqual(
-      writes,
-      [`${first}@${a}`],
-      JSON.stringify(c.store.merging.inspect()),
-    );
+    assert.deepEqual(writes, [`${first}@${a}`], JSON.stringify(c.store.merging.inspect()));
     assert.equal(c.store.merging.entry(second).state, EntryState.Waiting);
     const value = snapshots.get(first);
     assert(value !== undefined);
@@ -260,11 +243,7 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
     assert.deepEqual(writes, [`${first}@${a}`, "prepare"]);
     const prepared = snapshots.get(second);
     assert(prepared !== undefined);
-    c.store.tracking.observe(
-      downstream.id,
-      prepared.observation,
-      c.tracking.config,
-    );
+    c.store.tracking.observe(downstream.id, prepared.observation, c.tracking.config);
     advance();
     await c.merging.tick();
     assert.equal(writes.length, 2);
@@ -283,10 +262,7 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
     assert(messages.length > 0);
     const message = messages[0];
     assert(message !== undefined);
-    const receipt = c.store.tracking.acknowledgeMessage(
-      message.id,
-      upstream.ownerAgentId,
-    );
+    const receipt = c.store.tracking.acknowledgeMessage(message.id, upstream.ownerAgentId);
     assert(receipt.acknowledgedAt !== undefined);
     const wire = (await client.getSnapshot({})).snapshot;
     assert(wire !== undefined);
@@ -315,31 +291,14 @@ test("reference suggestions do not enroll, arm, or lose confirmed edges when sou
     assert.equal(store.refs().length, 2);
     const notice = coordinator.store.tracking.inbox
       .list(downstream.ownerAgentId, 0, false, true)
-      .messages.find(
-        (message) => message.notice?.subject?.kind === "reference",
-      );
+      .messages.find((message) => message.notice?.subject?.kind === "reference");
     assert.equal(notice, undefined);
     const ref = store.refs().find((ref) => ref.targetUrl === first);
     assert(ref !== undefined);
-    store.confirm(
-      second,
-      first,
-      downstream.ownerAgentId,
-      "Required library",
-      ref.id,
-    );
-    assert.equal(
-      store.refs().find((item) => item.id === ref.id)?.decision,
-      ReferenceDecision.Confirmed,
-    );
-    assert.throws(
-      () => store.confirm(first, second, upstream.ownerAgentId, "Cycle"),
-      /cycle/,
-    );
-    assert.throws(
-      () => store.confirm(first, first, upstream.ownerAgentId, "Self"),
-      /Self/,
-    );
+    store.confirm(second, first, downstream.ownerAgentId, "Required library", ref.id);
+    assert.equal(store.refs().find((item) => item.id === ref.id)?.decision, ReferenceDecision.Confirmed);
+    assert.throws(() => store.confirm(first, second, upstream.ownerAgentId, "Cycle"), /cycle/);
+    assert.throws(() => store.confirm(first, first, upstream.ownerAgentId, "Self"), /Self/);
     coordinator.store.tracking.observe(
       downstream.id,
       { ...observation(c), description: "No links now" },
@@ -366,30 +325,17 @@ test("reference discovery skips unchanged facts but observes enrollment, changed
       });
       await coordinator.merging.tick();
       assert.equal(scan.mock.calls.length, 0);
-      store.tracking.observe(
-        pr.id,
-        { ...observation(a), description: "Depends on #44" },
-        coordinator.tracking.config,
-      );
+      store.tracking.observe(pr.id, { ...observation(a), description: "Depends on #44" }, coordinator.tracking.config);
       await coordinator.merging.tick();
-      assert(
-        store.merging
-          .refs(pr.id)
-          .some((ref) => ref.active && ref.targetKind === "issue_or_pr"),
-      );
+      assert(store.merging.refs(pr.id).some((ref) => ref.active && ref.targetKind === "issue_or_pr"));
       enroll(coordinator, "https://github.com/owner/library/pull/44");
       await coordinator.merging.tick();
       const refs = store.merging.refs(pr.id);
       assert(refs.some((ref) => ref.active && ref.targetKind === "pr"));
-      assert(
-        refs.some((ref) => !ref.active && ref.targetKind === "issue_or_pr"),
-      );
+      assert(refs.some((ref) => !ref.active && ref.targetKind === "issue_or_pr"));
       const read = store.tracking.referenceObservation.bind(store.tracking);
       let injected = false;
-      const during = spyOn(
-        store.tracking,
-        "referenceObservation",
-      ).mockImplementation((id) => {
+      const during = spyOn(store.tracking, "referenceObservation").mockImplementation((id) => {
         const result = read(id);
         if (id === pr.id && !injected) {
           injected = true;
@@ -410,10 +356,7 @@ test("reference discovery skips unchanged facts but observes enrollment, changed
         await coordinator.merging.tick();
         assert(injected);
         await coordinator.merging.tick();
-        assert.equal(
-          store.merging.refs(pr.id).filter((ref) => ref.active).length,
-          0,
-        );
+        assert.equal(store.merging.refs(pr.id).filter((ref) => ref.active).length, 0);
       } finally {
         during.mockRestore();
       }
@@ -450,10 +393,7 @@ test("uncertain merge survives restart and only reconciles, never repeats the ef
       c.merging.command({ op: "reconcile", id: op.id });
       await c.merging.tick();
       assert.equal(writes.length, 1);
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Succeeded,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Succeeded);
     },
     { unknownMerge: true },
   ));
@@ -466,11 +406,7 @@ test("pause before preparation push fences the write and keeps graph policy froz
       assert(value !== undefined);
       value.observation.lifecycle = "merged";
       value.mergeCommit = d;
-      c.store.tracking.observe(
-        upstream.id,
-        value.observation,
-        c.tracking.config,
-      );
+      c.store.tracking.observe(upstream.id, value.observation, c.tracking.config);
       c.merging.command({
         op: "confirm",
         pr: second,
@@ -490,10 +426,7 @@ test("pause before preparation push fences the write and keeps graph policy froz
       advance();
       await c.merging.tick();
       assert.deepEqual(writes, ["prepare"]);
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Failed,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Failed);
       assert.equal(c.store.merging.chains()[0]?.state, ChainState.Paused);
     },
     { pausedPush: true },
@@ -518,11 +451,7 @@ test("owner assessment is invalidated by actionable feedback and missing check p
     await c.merging.tick();
     assert.equal(writes.length, 0);
     assert.match(c.store.merging.entry(first).detail, /declare/);
-    c.store.tracking.observe(
-      pr.id,
-      { ...observation(), headSha: cValue() },
-      c.tracking.config,
-    );
+    c.store.tracking.observe(pr.id, { ...observation(), headSha: cValue() }, c.tracking.config);
     advance();
     await c.merging.tick();
     assert.equal(c.store.merging.entry(first).ready, undefined);
@@ -552,10 +481,7 @@ test("TOML pin recipe preserves formatting, checks expected value, and rejects a
   assert.equal(repin(source, profile, d), source.replace(a, d));
   assert.equal(repin(source.replace(a, d), profile, d), source.replace(a, d));
   assert.throws(() => repin(source.replace(a, c), profile, d), /changed/);
-  assert.throws(
-    () => repin(`[tools.library]\nrevision = """${a}"""\n`, profile, d),
-    /unambiguous/,
-  );
+  assert.throws(() => repin(`[tools.library]\nrevision = """${a}"""\n`, profile, d), /unambiguous/);
 });
 test("schema upgrade preserves records and operation leases block policy edits across restart", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-merge-restart-"));
@@ -590,21 +516,12 @@ test("schema upgrade preserves records and operation leases block policy edits a
     store.close();
     store = new Store(directory);
     store.merging.recover();
-    assert.equal(
-      store.merging.operations()[0]?.state,
-      OperationState.Uncertain,
-    );
-    assert.throws(
-      () => store.merging.configure(first, pr.ownerAgentId, ["CI"], false),
-      /Reconcile/,
-    );
+    assert.equal(store.merging.operations()[0]?.state, OperationState.Uncertain);
+    assert.throws(() => store.merging.configure(first, pr.ownerAgentId, ["CI"], false), /Reconcile/);
     assert.equal(store.merging.chain(chain.id).requestId, "restart");
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
     try {
-      assert.equal(
-        db.prepare("PRAGMA user_version").get()?.["user_version"],
-        15,
-      );
+      assert.equal(db.prepare("PRAGMA user_version").get()?.["user_version"], 15);
     } finally {
       db.close();
     }
@@ -640,12 +557,7 @@ test("policy changes during GitHub inspection revoke the earlier assessment", ()
       inspect(c, url) {
         if (url !== first) return;
         const pr = c.store.tracking.pr(first);
-        c.store.merging.configure(
-          first,
-          pr.ownerAgentId,
-          ["Stricter CI"],
-          false,
-        );
+        c.store.merging.configure(first, pr.ownerAgentId, ["Stricter CI"], false);
       },
     },
   ));
@@ -672,10 +584,7 @@ test("definite merge failure requires renewed owner assessment before another wr
       await c.merging.tick();
       assert.equal(writes.length, 1);
       assert.equal(c.store.merging.entry(first).ready, undefined);
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Failed,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Failed);
     },
     { failMerge: true },
   ));
@@ -692,10 +601,7 @@ test("pause at GitHub dispatch prevents the queued write", () =>
       await c.merging.tick();
       assert.deepEqual(writes, []);
       assert.equal(c.store.merging.chain(chain.id).state, ChainState.Paused);
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Failed,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Failed);
     },
     {
       beforeSend(c) {
@@ -722,10 +628,7 @@ test("resume republishes the current owner handoff once while preserving withdra
     const old = pending()[0];
     assert(old !== undefined);
     assert.equal(old.notice?.subject?.kind, "merge_entry");
-    assert.equal(
-      old.notice.subject.id,
-      c.store.merging.entries().find((entry) => entry.chainId === chain.id)?.id,
-    );
+    assert.equal(old.notice.subject.id, c.store.merging.entries().find((entry) => entry.chainId === chain.id)?.id);
     c.store.merging.control(chain.id, ChainState.Paused);
     assert.equal(pending().length, 0);
     c.store.merging.control(chain.id, ChainState.Active);
@@ -765,10 +668,7 @@ test("real local Git preparation rebases, repins and pushes under the original s
   const store = new Store(join(directory, "state"));
   try {
     await git(["init", "-b", "main"]);
-    await writeFile(
-      join(seed, "versions.toml"),
-      `[tools.library]\nrevision = "${a}"\n`,
-    );
+    await writeFile(join(seed, "versions.toml"), `[tools.library]\nrevision = "${a}"\n`);
     await git(["add", "."]);
     await git(["commit", "-m", "Base"]);
     await git(["checkout", "-b", "feature"]);
@@ -824,8 +724,7 @@ test("real local Git preparation rebases, repins and pushes under the original s
     let recorded = "";
     const prepare = preparer(work, store.mergeConflicts, {
       source: () => Promise.resolve(source),
-      workspace: (path, value, signal) =>
-        new RebaseWorkspace(path, value, signal, remote),
+      workspace: (path, value, signal) => new RebaseWorkspace(path, value, signal, remote),
     });
     const result = await prepare({
       url: second,
@@ -838,21 +737,12 @@ test("real local Git preparation rebases, repins and pushes under the original s
     });
     assert.equal(recorded, result);
     assert.notEqual(result, head);
+    assert.equal(await git(["--git-dir", remote, "rev-parse", "feature"], directory), result);
     assert.equal(
-      await git(["--git-dir", remote, "rev-parse", "feature"], directory),
-      result,
-    );
-    assert.equal(
-      await git(
-        ["--git-dir", remote, "show", "feature:versions.toml"],
-        directory,
-      ),
+      await git(["--git-dir", remote, "show", "feature:versions.toml"], directory),
       `[tools.library]\nrevision = "${d}"`,
     );
-    assert.equal(
-      await git(["--git-dir", remote, "merge-base", target, result], directory),
-      target,
-    );
+    assert.equal(await git(["--git-dir", remote, "merge-base", target, result], directory), target);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -895,11 +785,7 @@ test("cancelled uncertain preparation reconciles its result and releases the PR 
       assert(value !== undefined);
       value.observation.lifecycle = "merged";
       value.mergeCommit = d;
-      c.store.tracking.observe(
-        upstream.id,
-        value.observation,
-        c.tracking.config,
-      );
+      c.store.tracking.observe(upstream.id, value.observation, c.tracking.config);
       c.merging.command({
         op: "confirm",
         pr: second,
@@ -933,15 +819,12 @@ test("cancelled uncertain preparation reconciles its result and releases the PR 
     { unknownPush: true },
   ));
 test("live acceptance runner refuses provider effects without explicit opt-in", async () => {
-  const child = Bun.spawn(
-    [process.execPath, "scripts/test-merge-acceptance.ts"],
-    {
-      cwd: process.cwd(),
-      env: { ...process.env, OCTO_LIVE_MERGE_ACCEPTANCE: "0" },
-      stdout: "pipe",
-      stderr: "pipe",
-    },
-  );
+  const child = Bun.spawn([process.execPath, "scripts/test-merge-acceptance.ts"], {
+    cwd: process.cwd(),
+    env: { ...process.env, OCTO_LIVE_MERGE_ACCEPTANCE: "0" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   const [code, output, error] = await Promise.all([
     child.exited,
     new Response(child.stdout).text(),
@@ -966,10 +849,7 @@ test("auto-merge is opt-in, owner-controlled and can be turned off before dispat
       requestId: "switch-on",
     });
     assert.equal(c.store.merging.entry(first).autoMerge, true);
-    assert.equal(
-      (await client.getSnapshot({})).snapshot?.mergeStatuses[0]?.autoMerge,
-      true,
-    );
+    assert.equal((await client.getSnapshot({})).snapshot?.mergeStatuses[0]?.autoMerge, true);
     await c.merging.tick();
     const chainId = c.store.merging.entry(first).chainId;
     c.store.merging.control(chainId, ChainState.Paused);
@@ -998,14 +878,8 @@ test("accepted asynchronous merges retain their identity and reconcile even afte
       c.store.merging.autoMerge(first, pr.ownerAgentId, true, "async-on");
       c.store.merging.ready(first, pr.ownerAgentId, a);
       await c.merging.tick();
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Running,
-      );
-      assert.equal(
-        c.store.merging.operations()[0]?.requestId,
-        "11111111-1111-4111-8111-111111111111",
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Running);
+      assert.equal(c.store.merging.operations()[0]?.requestId, "11111111-1111-4111-8111-111111111111");
       c.store.merging.autoMerge(first, pr.ownerAgentId, false, "async-off");
       advance();
       await c.merging.tick();
@@ -1027,10 +901,7 @@ test("native stack prerequisites block unintended downstack merges", () =>
   }));
 test("asynchronous result decoding preserves pending identity and final failures", () => {
   const id = "11111111-1111-4111-8111-111111111111";
-  assert.deepEqual(
-    mergeProgress({ status: "pending", details: { uuid: id } }),
-    { state: "pending", requestId: id },
-  );
+  assert.deepEqual(mergeProgress({ status: "pending", details: { uuid: id } }), { state: "pending", requestId: id });
   assert.deepEqual(mergeProgress({ uuid: id }), {
     state: "pending",
     requestId: id,
@@ -1082,9 +953,7 @@ test("schema13 upgrades preserve explicit queue intent and known async requests 
     store.merging.saveOperation(operation);
     store.close();
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
-    db.exec(
-      "UPDATE merge_entries SET data=json_remove(data,'$.autoMerge'); PRAGMA user_version=13",
-    );
+    db.exec("UPDATE merge_entries SET data=json_remove(data,'$.autoMerge'); PRAGMA user_version=13");
     db.close();
     store = new Store(directory);
     store.merging.recover();
@@ -1233,10 +1102,7 @@ test("an existing remote async merge keeps its uncertainty lease", () =>
       c.store.merging.autoMerge(first, pr.ownerAgentId, true, "conflict");
       c.store.merging.ready(first, pr.ownerAgentId, a);
       await c.merging.tick();
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Uncertain,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Uncertain);
       advance();
       await c.merging.tick();
       assert.equal(writes.length, 1);
@@ -1293,19 +1159,8 @@ test("dependency edits during prerequisite inspection cannot execute a captured 
       assert(value !== undefined);
       value.observation.lifecycle = "merged";
       value.mergeCommit = d;
-      c.store.tracking.observe(
-        upstream.id,
-        value.observation,
-        c.tracking.config,
-      );
-      c.store.merging.confirm(
-        second,
-        first,
-        pr.ownerAgentId,
-        "Initial recipe",
-        undefined,
-        profile,
-      );
+      c.store.tracking.observe(upstream.id, value.observation, c.tracking.config);
+      c.store.merging.confirm(second, first, pr.ownerAgentId, "Initial recipe", undefined, profile);
       c.store.merging.autoMerge(second, pr.ownerAgentId, true, "graph-race");
       await c.merging.tick();
       assert.deepEqual(writes, []);
@@ -1315,11 +1170,7 @@ test("dependency edits during prerequisite inspection cannot execute a captured 
       inspect(c, url) {
         if (url !== first) return;
         const edge = c.store.merging.dependencies()[0];
-        if (edge !== undefined)
-          c.store.merging.removeDependency(
-            edge.id,
-            c.store.tracking.pr(second).ownerAgentId,
-          );
+        if (edge !== undefined) c.store.merging.removeDependency(edge.id, c.store.tracking.pr(second).ownerAgentId);
       },
     },
   ));
@@ -1331,10 +1182,7 @@ test("authentication rejection is a definite failure and releases the operation 
       c.store.merging.ready(first, pr.ownerAgentId, a);
       await c.merging.tick();
       assert.equal(writes.length, 1);
-      assert.equal(
-        c.store.merging.operations()[0]?.state,
-        OperationState.Failed,
-      );
+      assert.equal(c.store.merging.operations()[0]?.state, OperationState.Failed);
       assert.equal(c.store.merging.busy(pr.id), false);
       assert.equal(c.store.merging.entry(first).ready, undefined);
     },
@@ -1427,10 +1275,7 @@ for (const kind of ["pending", "submitted"] as const)
         coordinator.store.merging.ready(first, pr.ownerAgentId, a);
         await coordinator.merging.tick();
         assert.deepEqual(writes, []);
-        assert.notEqual(
-          coordinator.store.merging.entry(first).state,
-          EntryState.Merged,
-        );
+        assert.notEqual(coordinator.store.merging.entry(first).state, EntryState.Merged);
       },
       {
         beforeSend(coordinator) {
@@ -1464,11 +1309,7 @@ for (const kind of ["pending", "submitted"] as const)
                 }),
               ],
             };
-          coordinator.store.tracking.observe(
-            pr.id,
-            value,
-            coordinator.tracking.config,
-          );
+          coordinator.store.tracking.observe(pr.id, value, coordinator.tracking.config);
         },
       },
     ));

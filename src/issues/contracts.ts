@@ -164,8 +164,7 @@ export interface IssueEvent {
   detail: string;
 }
 export function result(value: unknown): StageResult {
-  if (!Check(ResultSchema, value))
-    throw new Error("Invalid issue stage result");
+  if (!Check(ResultSchema, value)) throw new Error("Invalid issue stage result");
   return value;
 }
 export function validateBrief(brief: Brief): void {

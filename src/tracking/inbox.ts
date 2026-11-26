@@ -38,18 +38,8 @@ export class AgentInbox {
   record(id: string, body: string): AgentMessage {
     return this.repository.record(id, body);
   }
-  list(
-    agentId: string,
-    after = 0,
-    includeAcknowledged = false,
-    applicableOnly = false,
-  ) {
-    return this.repository.list(
-      agentId,
-      after,
-      includeAcknowledged,
-      applicableOnly,
-    );
+  list(agentId: string, after = 0, includeAcknowledged = false, applicableOnly = false) {
+    return this.repository.list(agentId, after, includeAcknowledged, applicableOnly);
   }
   uncovered(agentId: string, after = 0) {
     return this.repository.uncovered(agentId, after);
@@ -77,9 +67,7 @@ export class AgentInbox {
                   ? "merge"
                   : "update",
         assessment: "not_required",
-        ...(message.issueId !== undefined
-          ? { subject: { kind: "issue" as const, id: message.issueId } }
-          : {}),
+        ...(message.issueId !== undefined ? { subject: { kind: "issue" as const, id: message.issueId } } : {}),
         ...(message.submissionId === undefined
           ? {}
           : {
@@ -93,8 +81,7 @@ export class AgentInbox {
     return {
       ...message,
       notice,
-      body:
-        stored === undefined ? this.render(message.id, notice) : message.body,
+      body: stored === undefined ? this.render(message.id, notice) : message.body,
     };
   }
 }

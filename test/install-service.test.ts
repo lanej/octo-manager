@@ -7,12 +7,7 @@ import { createServer } from "node:http";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { SchedulerService } from "../src/gen/octomanager/v2/scheduler_pb.js";
 import { test, expect } from "bun:test";
-import {
-  serviceDefinition,
-  startService,
-  managerAvailable,
-  type ServiceInput,
-} from "../src/install/service.js";
+import { serviceDefinition, startService, managerAvailable, type ServiceInput } from "../src/install/service.js";
 const input: ServiceInput = {
   home: "/fixture/home",
   release: "/fixture/release",
@@ -22,9 +17,7 @@ const input: ServiceInput = {
   codexHome: "/fixture/codex",
 };
 const image = "a".repeat(64);
-async function nativeFixture<T>(
-  action: (selected: ServiceInput, launch: () => void) => Promise<T>,
-): Promise<T> {
+async function nativeFixture<T>(action: (selected: ServiceInput, launch: () => void) => Promise<T>): Promise<T> {
   const state = await mkdtemp("/tmp/octo-service-proof-");
   const server = createServer(
     connectNodeAdapter({
@@ -34,8 +27,7 @@ async function nativeFixture<T>(
             return { apiVersion: 2 };
           },
           runtimeLifecycle(request) {
-            if (request.action !== LifecycleAction.INVENTORY)
-              throw new Error("start proof attempted mutation");
+            if (request.action !== LifecycleAction.INVENTORY) throw new Error("start proof attempted mutation");
             return {
               report: wireLifecycle({
                 schema_version: 1,
@@ -94,8 +86,7 @@ test("Linux service activation starts a stopped installed unit and verifies the 
     let started = false;
     const run = (command: string, args: string[]) => {
       calls.push([command, ...args]);
-      if (command === "/usr/bin/env")
-        return JSON.stringify({ expected_identity: image });
+      if (command === "/usr/bin/env") return JSON.stringify({ expected_identity: image });
       if (args[1] === "start") {
         launch();
         started = true;
@@ -107,41 +98,18 @@ test("Linux service activation starts a stopped installed unit and verifies the 
         : "";
     };
     expect(definition.text).toContain("WorkingDirectory=/fixture/release\n");
-    expect(definition.text).toContain(
-      'ExecStart="/usr/bin/env" "bun" "/fixture/release/dist/cli.js" "serve"',
-    );
-    expect(definition.text).toContain(
-      'Environment="CODEX_HOME=/fixture/codex"',
-    );
-    const manual = await startService(
-      definition,
-      selected,
-      false,
-      run,
-      false,
-      image,
-    );
+    expect(definition.text).toContain('ExecStart="/usr/bin/env" "bun" "/fixture/release/dist/cli.js" "serve"');
+    expect(definition.text).toContain('Environment="CODEX_HOME=/fixture/codex"');
+    const manual = await startService(definition, selected, false, run, false, image);
     expect(manual.started).toBe(false);
     expect(manual.serviceManager).toBe("manual");
     expect(manual.manualCommand).toContain("serve");
     expect(calls).toHaveLength(0);
-    const noStart = await startService(
-      definition,
-      selected,
-      true,
-      run,
-      true,
-      image,
-    );
+    const noStart = await startService(definition, selected, true, run, true, image);
     expect(noStart.started).toBe(false);
     expect(calls).toHaveLength(0);
-    expect(
-      (await startService(definition, selected, false, run, true, image))
-        .started,
-    ).toBe(true);
-    expect(
-      calls.filter((args) => args[0] === "systemctl").map((args) => args[2]),
-    ).toEqual([
+    expect((await startService(definition, selected, false, run, true, image)).started).toBe(true);
+    expect(calls.filter((args) => args[0] === "systemctl").map((args) => args[2])).toEqual([
       "show",
       "daemon-reload",
       "enable",
@@ -181,9 +149,7 @@ test("service escaping preserves literal environment values and quoted executabl
   );
   expect(definition.text).toContain('space $HOME%%\\"/bin');
   expect(definition.text).toContain('Environment="HOME=/fixture/$HOME%%\\""');
-  expect(() =>
-    serviceDefinition("linux", { ...input, state: "bad\nvalue" }, 1000),
-  ).toThrow();
+  expect(() => serviceDefinition("linux", { ...input, state: "bad\nvalue" }, 1000)).toThrow();
 });
 test("launchd starts only an authoritatively absent service and confirms the exact native image", async () => {
   await nativeFixture(async (selected, launch) => {
@@ -196,8 +162,7 @@ test("launchd starts only an authoritatively absent service and confirms the exa
       false,
       (command, args) => {
         calls.push([command, ...args]);
-        if (command === "/usr/bin/env")
-          return JSON.stringify({ expected_identity: image });
+        if (command === "/usr/bin/env") return JSON.stringify({ expected_identity: image });
         if (args[0] === "print" && !started)
           throw Object.assign(new Error("owned fixture job absent"), {
             status: 113,
@@ -212,11 +177,7 @@ test("launchd starts only an authoritatively absent service and confirms the exa
       image,
     );
     expect(result.started).toBe(true);
-    expect(
-      calls
-        .filter((args) => args[0] === "/bin/launchctl")
-        .map((args) => args[1]),
-    ).toEqual([
+    expect(calls.filter((args) => args[0] === "/bin/launchctl").map((args) => args[1])).toEqual([
       "print",
       "bootstrap",
       "enable",
@@ -253,8 +214,7 @@ test("manual startup preserves the exact alternate installation environment", as
       false,
       image,
     );
-    if (result.manualCommand === undefined)
-      throw new Error("No manual command");
+    if (result.manualCommand === undefined) throw new Error("No manual command");
     const child = Bun.spawn(["/bin/sh", "-c", result.manualCommand], {
       stdout: "pipe",
       stderr: "pipe",

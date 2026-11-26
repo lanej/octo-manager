@@ -6,8 +6,7 @@ function text(value: unknown): string {
   return value;
 }
 function integer(value: unknown): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value))
-    throw new Error("Invalid stored event number");
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) throw new Error("Invalid stored event number");
   return value;
 }
 export function storedEvent(row: Record<string, unknown>): JobEvent {
@@ -18,12 +17,8 @@ export function storedEvent(row: Record<string, unknown>): JobEvent {
     at: integer(row["at"]),
     kind: text(row["kind"]),
     detail: text(row["detail"]),
-    ...(row["pr_id"] === null || row["pr_id"] === undefined
-      ? {}
-      : { prId: text(row["pr_id"]) }),
-    ...(row["action_id"] === null || row["action_id"] === undefined
-      ? {}
-      : { actionId: text(row["action_id"]) }),
+    ...(row["pr_id"] === null || row["pr_id"] === undefined ? {} : { prId: text(row["pr_id"]) }),
+    ...(row["action_id"] === null || row["action_id"] === undefined ? {} : { actionId: text(row["action_id"]) }),
     ...(context === undefined ? {} : { actionContext: context }),
   };
 }

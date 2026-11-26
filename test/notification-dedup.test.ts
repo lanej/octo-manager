@@ -40,19 +40,12 @@ test("distinct PRs remain linked while matching reasons share a count", () => {
   };
   const b: SafeNotice = { ...a, prUrl: "https://github.com/owner/repo/pull/2" };
   const result = renderDigest(
-    [
-      message("a", a),
-      message("b", a),
-      message("c", b),
-      message("d", { ...a, assessment: "completed" }),
-    ],
+    [message("a", a), message("b", a), message("c", b), message("d", { ...a, assessment: "completed" })],
     "/tmp/state",
     "12345678-1111-1111-1111-111111111111",
   );
   expect(result.body.match(/Review feedback/gu)).toHaveLength(2);
-  expect(result.body).toContain(
-    "[PR #2](https://github.com/owner/repo/pull/2)",
-  );
+  expect(result.body).toContain("[PR #2](https://github.com/owner/repo/pull/2)");
   expect(result.body).not.toContain("Assessment:");
   expect(result.body).toContain("Review feedback (3)");
   expect(result.body).not.toContain("publish secrets");

@@ -1,18 +1,9 @@
 import { IssueSubscriptions } from "./subscriptions.js";
 import type { NotificationRepository } from "../notifications/repository.js";
-import {
-  decodeIssue,
-  decodeAssignment,
-  decodeIssueBrief,
-} from "./validation.js";
+import { decodeIssue, decodeAssignment, decodeIssueBrief } from "./validation.js";
 import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import type {
-  Assignment,
-  IssueRecord,
-  IssueEvent,
-  Brief,
-} from "./contracts.js";
+import type { Assignment, IssueRecord, IssueEvent, Brief } from "./contracts.js";
 import { AttemptState } from "./contracts.js";
 export class IssueStore {
   readonly subscriptions: IssueSubscriptions;
@@ -28,12 +19,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
  CREATE TABLE IF NOT EXISTS issue_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT, issue_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_requests(id TEXT PRIMARY KEY, input TEXT NOT NULL, issue_id TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS issue_effects(id TEXT PRIMARY KEY, issue_id TEXT NOT NULL, kind TEXT NOT NULL, body TEXT NOT NULL, title TEXT NOT NULL, state TEXT NOT NULL, url TEXT NOT NULL);`);
-    this.subscriptions = new IssueSubscriptions(
-      db,
-      now,
-      notifications,
-      changed,
-    );
+    this.subscriptions = new IssueSubscriptions(db, now, notifications, changed);
   }
   atomic<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -48,9 +34,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
   }
   ownPosts(issueId: string): { url: string; body: string }[] {
     return this.db
-      .prepare(
-        "SELECT id,url,body FROM issue_effects WHERE issue_id=? AND kind='post' AND state='completed'",
-      )
+      .prepare("SELECT id,url,body FROM issue_effects WHERE issue_id=? AND kind='post' AND state='completed'")
       .all(issueId)
       .map((row) => ({
         url: String(row["url"]),
@@ -59,20 +43,9 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
   }
   private notice(issue: IssueRecord, kind: string): void {
     const revision = createHash("sha256")
-      .update(
-        JSON.stringify([
-          issue.stage,
-          issue.waiting,
-          issue.brief?.version,
-          issue.detail,
-        ]),
-      )
+      .update(JSON.stringify([issue.stage, issue.waiting, issue.brief?.version, issue.detail]))
       .digest("hex");
-    this.subscriptions.status(
-      issue,
-      revision,
-      kind !== "refresh_failed" && kind !== "subscription_refresh_failed",
-    );
+    this.subscriptions.status(issue, revision, kind !== "refresh_failed" && kind !== "subscription_refresh_failed");
   }
 
   list(): IssueRecord[] {
@@ -82,10 +55,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       .map((row) => decodeIssue(row["data"]));
   }
   get(id: string): IssueRecord {
-    const matches = this.list().filter(
-      (issue) =>
-        issue.id === id || issue.id.startsWith(id) || issue.ref.url === id,
-    );
+    const matches = this.list().filter((issue) => issue.id === id || issue.id.startsWith(id) || issue.ref.url === id);
     if (matches.length !== 1) throw new Error("Issue not found or ambiguous");
     const issue = matches[0];
     if (issue == null) throw new Error("Issue not found");
@@ -96,22 +66,14 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     try {
       issue.updatedAt = this.now();
       this.db
-        .prepare(
-          "INSERT INTO managed_issues VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data",
-        )
+        .prepare("INSERT INTO managed_issues VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data")
         .run(
           issue.id,
-          JSON.stringify([
-            issue.ref.provider,
-            issue.ref.project,
-            issue.ref.externalId,
-          ]),
+          JSON.stringify([issue.ref.provider, issue.ref.project, issue.ref.externalId]),
           JSON.stringify(issue),
         );
       this.db
-        .prepare(
-          "INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)",
-        )
+        .prepare("INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)")
         .run(issue.id, this.now(), kind, detail.slice(0, 16000));
       if (issue.brief !== undefined) {
         this.db
@@ -134,17 +96,12 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
   }
   assignment(value: Assignment): void {
     this.db
-      .prepare(
-        "INSERT INTO issue_assignments VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data",
-      )
+      .prepare("INSERT INTO issue_assignments VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data")
       .run(value.id, value.issueId, JSON.stringify(value));
   }
   recover(): void {
     for (const item of this.assignments())
-      if (
-        item.state === AttemptState.Intended ||
-        item.state === AttemptState.Running
-      )
+      if (item.state === AttemptState.Intended || item.state === AttemptState.Running)
         this.assignment({
           ...item,
           state: AttemptState.Uncertain,
@@ -153,9 +110,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
   }
   briefs(id: string): Brief[] {
     return this.db
-      .prepare(
-        "SELECT data FROM issue_briefs WHERE issue_id=? ORDER BY version DESC LIMIT 10",
-      )
+      .prepare("SELECT data FROM issue_briefs WHERE issue_id=? ORDER BY version DESC LIMIT 10")
       .all(id)
       .map((row) => decodeIssueBrief(row["data"]));
   }
@@ -174,26 +129,18 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       }));
   }
   request(id: string, input: string): string | undefined {
-    if (id.length === 0 || id.length > 200)
-      throw new Error("Request ID required");
-    const row = this.db
-      .prepare("SELECT input,issue_id FROM issue_requests WHERE id=?")
-      .get(id);
+    if (id.length === 0 || id.length > 200) throw new Error("Request ID required");
+    const row = this.db.prepare("SELECT input,issue_id FROM issue_requests WHERE id=?").get(id);
     if (row == null) return undefined;
-    if (row["input"] !== input)
-      throw new Error("Request ID already used with different input");
+    if (row["input"] !== input) throw new Error("Request ID already used with different input");
     return String(row["issue_id"]);
   }
   remember(id: string, input: string, issueId: string): void {
-    this.db
-      .prepare("INSERT INTO issue_requests VALUES(?,?,?)")
-      .run(id, input, issueId);
+    this.db.prepare("INSERT INTO issue_requests VALUES(?,?,?)").run(id, input, issueId);
   }
   effects(): Effect[] {
     return this.db
-      .prepare(
-        "SELECT * FROM issue_effects WHERE state NOT IN ('completed','superseded')",
-      )
+      .prepare("SELECT * FROM issue_effects WHERE state NOT IN ('completed','superseded')")
       .all()
       .map((row) => ({
         id: String(row["id"]),
@@ -206,28 +153,16 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       }));
   }
   effect(value: Effect): void {
-    const prior = this.db
-      .prepare("SELECT state FROM issue_effects WHERE id=?")
-      .get(value.id);
+    const prior = this.db.prepare("SELECT state FROM issue_effects WHERE id=?").get(value.id);
     this.db
       .prepare(
         "INSERT INTO issue_effects VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=CASE WHEN excluded.state='intended' THEN issue_effects.state ELSE excluded.state END,url=CASE WHEN excluded.state='intended' THEN issue_effects.url ELSE excluded.url END",
       )
-      .run(
-        value.id,
-        value.issueId,
-        value.kind,
-        value.body,
-        value.title,
-        value.state,
-        value.url,
-      );
+      .run(value.id, value.issueId, value.kind, value.body, value.title, value.state, value.url);
     if (value.state !== "intended" || prior === undefined) {
       if (prior?.["state"] !== value.state)
         this.db
-          .prepare(
-            "INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)",
-          )
+          .prepare("INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)")
           .run(
             value.issueId,
             this.now(),

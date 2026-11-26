@@ -1,8 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 export function migrateSubmissions(db: DatabaseSync): void {
-  const version = Number(
-    db.prepare("PRAGMA user_version").get()?.["user_version"],
-  );
+  const version = Number(db.prepare("PRAGMA user_version").get()?.["user_version"]);
   if (
     version === 9 ||
     version === 15 ||
@@ -43,12 +41,7 @@ export function migrateSubmissions(db: DatabaseSync): void {
     PRAGMA user_version=9; COMMIT;`);
 }
 export function nextInboxSequence(db: DatabaseSync): number {
-  const row = db
-    .prepare(
-      "UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value",
-    )
-    .get();
-  if (typeof row?.["value"] !== "number")
-    throw new Error("Inbox sequence unavailable");
+  const row = db.prepare("UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value").get();
+  if (typeof row?.["value"] !== "number") throw new Error("Inbox sequence unavailable");
   return row["value"];
 }

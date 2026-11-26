@@ -78,10 +78,7 @@ class Queue implements QueueConnection {
     this.unblock.release();
   }
 }
-async function fixture(
-  count: number,
-  options: { now?: () => number; intervalMs?: number } = {},
-) {
+async function fixture(count: number, options: { now?: () => number; intervalMs?: number } = {}) {
   const now = options.now ?? (() => 1000);
   const scheduler = new WorkScheduler(now);
   const directory = await mkdtemp("/tmp/octo-notification-latency-"),
@@ -115,26 +112,18 @@ async function fixture(
       ),
   );
   let revisionReads = 0;
-  const service = new DigestService(
-    store.digests,
-    tracking,
-    store.submissions,
-    directory,
-    now,
-    {
-      intervalMs: options.intervalMs ?? 60000,
-      inputRevision: () => {
-        revisionReads++;
-        return JSON.stringify([store.inputRevision(), config.endpoints]);
-      },
-      connect: (agent) => {
-        const queue =
-          queues[agents.findIndex((value) => value.id === agent.id)];
-        if (queue === undefined) throw new Error("Unexpected recipient");
-        return queue;
-      },
+  const service = new DigestService(store.digests, tracking, store.submissions, directory, now, {
+    intervalMs: options.intervalMs ?? 60000,
+    inputRevision: () => {
+      revisionReads++;
+      return JSON.stringify([store.inputRevision(), config.endpoints]);
     },
-  );
+    connect: (agent) => {
+      const queue = queues[agents.findIndex((value) => value.id === agent.id)];
+      if (queue === undefined) throw new Error("Unexpected recipient");
+      return queue;
+    },
+  });
   return {
     store,
     service,
@@ -194,8 +183,7 @@ test("a new recipient progresses while another recipient's queue is stalled", as
   const f = await fixture(2);
   try {
     const [slow, fast] = f.queues;
-    if (slow === undefined || fast === undefined)
-      throw new Error("Missing queues");
+    if (slow === undefined || fast === undefined) throw new Error("Missing queues");
     slow.blocked = true;
     f.notice(0);
     f.start();
@@ -226,18 +214,12 @@ test("recipient concurrency stays bounded and shutdown drains active work withou
       f.notice(index);
     }
     const flush = f.service.flush();
-    await within(
-      Promise.all(f.queues.slice(0, 4).map((queue) => queue.started.promise)),
-    );
+    await within(Promise.all(f.queues.slice(0, 4).map((queue) => queue.started.promise)));
     expect(f.maximum).toBe(4);
-    expect(
-      f.queues.reduce((total, queue) => total + queue.preparations, 0),
-    ).toBe(4);
+    expect(f.queues.reduce((total, queue) => total + queue.preparations, 0)).toBe(4);
     await within(f.service.close());
     await within(flush);
-    expect(
-      f.queues.reduce((total, queue) => total + queue.preparations, 0),
-    ).toBe(4);
+    expect(f.queues.reduce((total, queue) => total + queue.preparations, 0)).toBe(4);
     expect(f.queues.every((queue) => queue.slots.length === 0)).toBe(true);
   } finally {
     await f.close();
@@ -271,36 +253,27 @@ test("legacy messages arriving during queue I/O wait for an independent recovery
     const flush = f.service.flush();
     await within(queue.started.promise);
     const late = f.notice(0);
-    db.prepare("DELETE FROM safe_agent_notices WHERE message_id=?").run(
-      late.id,
-    );
+    db.prepare("DELETE FROM safe_agent_notices WHERE message_id=?").run(late.id);
     queue.unblock.release();
     await within(flush);
     const active = f.store.digests.active(first.agentId);
     if (active === undefined) throw new Error("Missing first digest");
-    expect(
-      f.store.digests.revisions(active.id).flatMap((value) => value.messageIds),
-    ).not.toContain(late.id);
+    expect(f.store.digests.revisions(active.id).flatMap((value) => value.messageIds)).not.toContain(late.id);
     f.service.acknowledge(active.id, active.revision, first.agentId);
     expect(f.store.tracking.inbox.get(late.id)?.acknowledgedAt).toBeUndefined();
     await within(f.service.flush());
     const replacement = f.store.tracking.inbox
       .list(first.agentId, 0, false, true)
       .messages.find((value) => value.id !== late.id);
-    if (replacement === undefined)
-      throw new Error("Missing independent recovery message");
+    if (replacement === undefined) throw new Error("Missing independent recovery message");
     expect(replacement.notice).toBeDefined();
     const next = f.store.digests.active(first.agentId);
     if (next === undefined) throw new Error("Missing recovery digest");
-    const members = f.store.digests
-      .revisions(next.id)
-      .flatMap((value) => value.messageIds);
+    const members = f.store.digests.revisions(next.id).flatMap((value) => value.messageIds);
     expect(members).toContain(replacement.id);
     expect(members).not.toContain(late.id);
     f.service.acknowledge(next.id, next.revision, first.agentId);
-    expect(f.store.tracking.inbox.get(replacement.id)?.acknowledgedAt).toBe(
-      1000,
-    );
+    expect(f.store.tracking.inbox.get(replacement.id)?.acknowledgedAt).toBe(1000);
     expect(f.store.tracking.inbox.get(late.id)?.acknowledgedAt).toBeUndefined();
   } finally {
     db.close();
@@ -314,15 +287,11 @@ test("prepared inbox lookups avoid recompilation while observing fresh receipts"
     const notice = f.notice(0);
     prepare.mockClear();
     for (let index = 0; index < 20; index++) {
-      expect(
-        f.store.tracking.inbox.get(notice.id)?.acknowledgedAt,
-      ).toBeUndefined();
+      expect(f.store.tracking.inbox.get(notice.id)?.acknowledgedAt).toBeUndefined();
     }
     f.store.tracking.acknowledgeMessage(notice.id, notice.agentId);
     expect(f.store.tracking.inbox.get(notice.id)?.acknowledgedAt).toBe(1000);
-    const lookupCompilations = prepare.mock.calls.filter(([sql]) =>
-      sql.endsWith("WHERE delivery_id=?"),
-    );
+    const lookupCompilations = prepare.mock.calls.filter(([sql]) => sql.endsWith("WHERE delivery_id=?"));
     expect(lookupCompilations).toHaveLength(1);
   } finally {
     prepare.mockRestore();
@@ -342,11 +311,7 @@ test("idle discovery reads one revision across a retained cohort and still obser
     await f.service.flush();
     expect(f.revisionReads - before).toBeLessThanOrEqual(2);
     expect(history).not.toHaveBeenCalled();
-    external
-      .prepare(
-        "INSERT INTO settings(key,value) VALUES('fixture-external-input','changed')",
-      )
-      .run();
+    external.prepare("INSERT INTO settings(key,value) VALUES('fixture-external-input','changed')").run();
     await f.service.flush();
     expect(history).toHaveBeenCalled();
     f.notice(0);
@@ -402,13 +367,9 @@ test("queue inspection deadlines reconcile only the due recipient", async () => 
     await new Promise((resolve) => setTimeout(resolve, 35));
     expect(agents).not.toHaveBeenCalled();
     expect(queue.preparations).toBeGreaterThan(before);
-    const actor = f.store.tracking
-      .agents()
-      .find((agent) => agent.sessionId === "latency-1");
+    const actor = f.store.tracking.agents().find((agent) => agent.sessionId === "latency-1");
     if (actor === undefined) throw new Error("Missing idle recipient");
-    expect(active.mock.calls.some(([agentId]) => agentId === actor.id)).toBe(
-      false,
-    );
+    expect(active.mock.calls.some(([agentId]) => agentId === actor.id)).toBe(false);
   } finally {
     agents.mockRestore();
     active.mockRestore();
@@ -427,13 +388,10 @@ test("digest queries reuse prepared statements while returning current rows", as
     await f.service.flush();
     const digest = f.store.digests.active(actor.id);
     if (digest === undefined) throw new Error("Missing digest");
-    for (let index = 0; index < 20; index++)
-      expect(f.store.digests.active(actor.id)?.id).toBe(digest.id);
+    for (let index = 0; index < 20; index++) expect(f.store.digests.active(actor.id)?.id).toBe(digest.id);
     expect(
       prepare.mock.calls.filter(([sql]) =>
-        sql.startsWith(
-          "SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN",
-        ),
+        sql.startsWith("SELECT data FROM agent_digests WHERE agent_id=? AND state NOT IN"),
       ),
     ).toHaveLength(1);
   } finally {
@@ -473,23 +431,21 @@ test("an intake during final queue admission coalesces a follow-up without waiti
   let admissions = 0;
   let active = 0;
   let maximum = 0;
-  const admission = spyOn(queue, "enqueueQueued").mockImplementation(
-    async (...args) => {
-      const number = ++admissions;
-      active++;
-      maximum = Math.max(maximum, active);
-      try {
-        const item = await enqueue(...args);
-        if (number === 1) {
-          entered.release();
-          await release.promise;
-        } else followedUp.release();
-        return item;
-      } finally {
-        active--;
-      }
-    },
-  );
+  const admission = spyOn(queue, "enqueueQueued").mockImplementation(async (...args) => {
+    const number = ++admissions;
+    active++;
+    maximum = Math.max(maximum, active);
+    try {
+      const item = await enqueue(...args);
+      if (number === 1) {
+        entered.release();
+        await release.promise;
+      } else followedUp.release();
+      return item;
+    } finally {
+      active--;
+    }
+  });
   const close = spyOn(queue, "close").mockImplementation(() => {});
   const discovery = spyOn(f.store.tracking, "agents");
   try {
@@ -514,9 +470,7 @@ test("an intake during final queue admission coalesces a follow-up without waiti
     const digest = f.store.digests.active(first.agentId);
     if (digest === undefined) throw new Error("Missing follow-up digest");
     expect(digest.revision).toBe(2);
-    expect(
-      f.store.digests.version(digest.id, digest.revision).messageIds,
-    ).toEqual([first.id, second.id]);
+    expect(f.store.digests.version(digest.id, digest.revision).messageIds).toEqual([first.id, second.id]);
     expect(queue.slots).toHaveLength(1);
   } finally {
     release.release();

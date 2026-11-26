@@ -1,10 +1,5 @@
 import { join } from "node:path";
-import {
-  launchAgent,
-  serviceLabel,
-  shellQuote,
-  serviceCommand,
-} from "./config.js";
+import { launchAgent, serviceLabel, shellQuote, serviceCommand } from "./config.js";
 import {
   guardServiceReplacement,
   retireService,
@@ -36,25 +31,13 @@ export interface ServiceResult {
 }
 export type ServiceRunner = (command: string, args: string[]) => string;
 function quote(value: string): string {
-  if (/[\r\n]/u.test(value) || value.includes(String.fromCharCode(0)))
-    throw new Error("Invalid service value");
-  return (
-    '"' +
-    value
-      .replaceAll("\\", "\\\\")
-      .replaceAll('"', '\\"')
-      .replaceAll("%", "%%") +
-    '"'
-  );
+  if (/[\r\n]/u.test(value) || value.includes(String.fromCharCode(0))) throw new Error("Invalid service value");
+  return '"' + value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("%", "%%") + '"';
 }
 function execQuote(value: string): string {
   return quote(value.replaceAll("$", () => "$$"));
 }
-export function serviceDefinition(
-  platform: string,
-  input: ServiceInput,
-  uid: number,
-): ServiceDefinition {
+export function serviceDefinition(platform: string, input: ServiceInput, uid: number): ServiceDefinition {
   if (platform === "darwin")
     return {
       kind: "launchd",
@@ -69,17 +52,13 @@ export function serviceDefinition(
         input.codexHome,
         input.executable,
       )
-        .replace(
-          "<key>KeepAlive</key><true/>",
-          "<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>",
-        )
+        .replace("<key>KeepAlive</key><true/>", "<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>")
         .replace(
           "<key>EnvironmentVariables</key><dict>",
           "<key>EnvironmentVariables</key><dict><key>PROJECT_UPDATE_RETIREMENT_POLICY</key><string>successful-exit</string>",
         ),
     };
-  if (platform !== "linux")
-    throw new Error("Local installation supports macOS and Linux");
+  if (platform !== "linux") throw new Error("Local installation supports macOS and Linux");
   const environment = {
     PROJECT_UPDATE_RETIREMENT_POLICY: "successful-exit",
     HOME: input.home,
@@ -96,9 +75,7 @@ export function serviceDefinition(
       environment,
     )
       .map(([key, value]) => `Environment=${quote(key + "=" + value)}`)
-      .join(
-        "\n",
-      )}\nRestart=on-failure\nRestartSec=2\nTimeoutStopSec=15\n\n[Install]\nWantedBy=default.target\n`,
+      .join("\n")}\nRestart=on-failure\nRestartSec=2\nTimeoutStopSec=15\n\n[Install]\nWantedBy=default.target\n`,
   };
 }
 export async function startService(
@@ -139,22 +116,13 @@ export async function startService(
       ...result,
       serviceManager: "manual",
       manualCommand,
-      reason:
-        "No user service manager is available; launcher and hooks are installed",
+      reason: "No user service manager is available; launcher and hooks are installed",
     };
-  const activation = await guardServiceReplacement(
-    definition,
-    input,
-    run,
-    binding,
-  );
+  const activation = await guardServiceReplacement(definition, input, run, binding);
   if (selectedServiceIdentity(input, run) !== expectedIdentity)
-    throw new IncompleteActivation(
-      "native-selected-artifact-identity-changed-before-retirement",
-    );
+    throw new IncompleteActivation("native-selected-artifact-identity-changed-before-retirement");
   if (activation === "checkpointed") {
-    if (binding === undefined)
-      throw new Error("Checkpoint binding missing after owner guard");
+    if (binding === undefined) throw new Error("Checkpoint binding missing after owner guard");
     await retireService(definition, input, run, binding);
   }
   try {
@@ -165,8 +133,7 @@ export async function startService(
       run("systemctl", ["--user", "is-active", "--quiet", definition.target]);
     } else {
       if (activation === "checkpointed") {
-        if (binding === undefined)
-          throw new Error("Missing retired owner binding");
+        if (binding === undefined) throw new Error("Missing retired owner binding");
         confirmRetiredService(definition, run, binding);
         run("/bin/launchctl", ["bootout", definition.target]);
       }
@@ -179,13 +146,7 @@ export async function startService(
           ]);
           break;
         } catch (error) {
-          if (
-            typeof error !== "object" ||
-            error === null ||
-            !("status" in error) ||
-            error.status !== 5 ||
-            attempt >= 5
-          )
+          if (typeof error !== "object" || error === null || !("status" in error) || error.status !== 5 || attempt >= 5)
             throw error;
           await new Promise<void>((resolve) => {
             setTimeout(resolve, Math.min(200 * 2 ** attempt, 1000));
@@ -195,14 +156,8 @@ export async function startService(
       run("/bin/launchctl", ["enable", definition.target]);
       run("/bin/launchctl", ["kickstart", definition.target]);
       for (let attempt = 0; ; attempt++) {
-        if (
-          /state = running/u.test(
-            run("/bin/launchctl", ["print", definition.target]),
-          )
-        )
-          break;
-        if (attempt >= 49)
-          throw new Error("Octo service did not report running");
+        if (/state = running/u.test(run("/bin/launchctl", ["print", definition.target]))) break;
+        if (attempt >= 49) throw new Error("Octo service did not report running");
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 100);
         });
@@ -210,32 +165,21 @@ export async function startService(
     }
   } catch (error) {
     if (error instanceof IncompleteActivation) throw error;
-    throw new IncompleteActivation(
-      "native-service-manager-start-outcome-unconfirmed",
-    );
+    throw new IncompleteActivation("native-service-manager-start-outcome-unconfirmed");
   }
   await verifyStartedService(definition, input, run, expectedIdentity, binding);
   return { ...result, started: true };
 }
-export function managerAvailable(
-  definition: ServiceDefinition,
-  run: ServiceRunner,
-): boolean {
+export function managerAvailable(definition: ServiceDefinition, run: ServiceRunner): boolean {
   try {
-    if (definition.kind === "systemd")
-      run("systemctl", ["--user", "show-environment"]);
-    else
-      run("/bin/launchctl", [
-        "print",
-        definition.target.slice(0, definition.target.lastIndexOf("/")),
-      ]);
+    if (definition.kind === "systemd") run("systemctl", ["--user", "show-environment"]);
+    else run("/bin/launchctl", ["print", definition.target.slice(0, definition.target.lastIndexOf("/"))]);
     return true;
   } catch (error) {
     if (
       typeof error === "object" &&
       error !== null &&
-      (("code" in error && error.code === "ENOENT") ||
-        ("status" in error && typeof error.status === "number"))
+      (("code" in error && error.code === "ENOENT") || ("status" in error && typeof error.status === "number"))
     )
       return false;
     throw error;

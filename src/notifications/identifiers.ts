@@ -11,15 +11,9 @@ const sources = [
   ["safe_agent_notices", "message_id"],
 ] as const;
 // Public prefixes are shared by direct deliveries and grouped dispatches.
-export function allocateMessageId(
-  db: DatabaseSync,
-  generate: () => string = randomUUID,
-): string {
+export function allocateMessageId(db: DatabaseSync, generate: () => string = randomUUID): string {
   const present = sources.filter(
-    ([table]) =>
-      db
-        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")
-        .get(table) !== undefined,
+    ([table]) => db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table) !== undefined,
   );
   for (let attempt = 0; attempt < 32; attempt++) {
     const id = generate(),

@@ -11,10 +11,8 @@ import {
 } from "../src/gen/octomanager/v2/domain_pb.js";
 import { fromBinary, toBinary } from "@bufbuild/protobuf";
 import { readFileSync, readdirSync } from "node:fs";
-const roundtrip = (
-  schema: import("@bufbuild/protobuf").DescMessage,
-  value: unknown,
-) => unwire(schema, fromBinary(schema, toBinary(schema, wire(schema, value))));
+const roundtrip = (schema: import("@bufbuild/protobuf").DescMessage, value: unknown) =>
+  unwire(schema, fromBinary(schema, toBinary(schema, wire(schema, value))));
 test("typed API preserves uncertain reference kinds, literal policy versions, and evidence coverage", () => {
   const reference = {
     id: "ref",
@@ -57,14 +55,10 @@ test("typed API preserves uncertain reference kinds, literal policy versions, an
       state: "queued",
     }),
   ).toEqual({ receipt: "id", state: "queued" });
-  expect(() =>
-    wire(DomainRepositoryPolicySchema, { schemaVersion: 2 }),
-  ).toThrow();
+  expect(() => wire(DomainRepositoryPolicySchema, { schemaVersion: 2 })).toThrow();
 });
 test("v2 contract has no serialized-document or dynamic payload escape hatches", () => {
-  for (const file of readdirSync("proto/octomanager/v2").filter((name) =>
-    name.endsWith(".proto"),
-  )) {
+  for (const file of readdirSync("proto/octomanager/v2").filter((name) => name.endsWith(".proto"))) {
     const source = readFileSync("proto/octomanager/v2/" + file, "utf8");
     expect(source).not.toMatch(/\b(?:string|bytes)\s+\w*_json\b/u);
     expect(source).not.toMatch(/google\.protobuf\.(?:Struct|Value|Any)/u);
@@ -83,14 +77,9 @@ test("regeneration retains committed wire IDs when domain property order changes
       stdout: "pipe",
       stderr: "pipe",
     });
-    const [code, error] = await Promise.all([
-      child.exited,
-      new Response(child.stderr).text(),
-    ]);
+    const [code, error] = await Promise.all([child.exited, new Response(child.stderr).text()]);
     expect(code, error).toBe(0);
-    expect(
-      await readFile(join(directory, "proto/api-wire-tags.json"), "utf8"),
-    ).toBe(manifest);
+    expect(await readFile(join(directory, "proto/api-wire-tags.json"), "utf8")).toBe(manifest);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

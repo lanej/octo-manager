@@ -18,11 +18,7 @@ import { IssueNotificationKind } from "./contracts.js";
 import { wireIssueNotificationKind } from "./subscription-wire.js";
 function integer(value: string | boolean | undefined): number {
   if (value === undefined) return 0;
-  if (
-    typeof value !== "string" ||
-    !/^\d+$/u.test(value) ||
-    !Number.isSafeInteger(Number(value))
-  )
+  if (typeof value !== "string" || !/^\d+$/u.test(value) || !Number.isSafeInteger(Number(value)))
     throw new Error("Expected a nonnegative integer");
   return Number(value);
 }
@@ -31,37 +27,23 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
   const command = positionals[0];
   const id = positionals[1] ?? "";
   const client = schedulerClient(
-    resolve(
-      values.state ??
-        process.env["OCTO_MANAGER_STATE"] ??
-        join(homedir(), ".local", "state", "octo-manager"),
-    ),
+    resolve(values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local", "state", "octo-manager")),
   );
   const requestId = values["request-id"] ?? randomUUID();
   if (command === "issue-subscribe" || command === "issue-subscriptions") {
     const selected = values["events"];
-    const eventNames =
-      selected === "none"
-        ? []
-        : typeof selected === "string"
-          ? selected.split(",")
-          : undefined;
+    const eventNames = selected === "none" ? [] : typeof selected === "string" ? selected.split(",") : undefined;
     const kinds = eventNames?.map((name) => {
-      const kind = Object.values(IssueNotificationKind).find(
-        (value) => value.localeCompare(name) === 0,
-      );
-      if (kind === undefined)
-        throw new Error(`Unsupported issue event: ${name}`);
+      const kind = Object.values(IssueNotificationKind).find((value) => value.localeCompare(name) === 0);
+      if (kind === undefined) throw new Error(`Unsupported issue event: ${name}`);
       return wireIssueNotificationKind(kind);
     });
     if (command === "issue-subscriptions")
       printResult(
         parsed,
-        toJson(
-          ListIssueSubscriptionsResponseSchema,
-          await client.listIssueSubscriptions({ issueId: id }),
-          { alwaysEmitImplicit: true },
-        ),
+        toJson(ListIssueSubscriptionsResponseSchema, await client.listIssueSubscriptions({ issueId: id }), {
+          alwaysEmitImplicit: true,
+        }),
       );
     else
       printResult(
@@ -70,8 +52,7 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
           SetIssueSubscriptionResponseSchema,
           await client.setIssueSubscription({
             issueId: id,
-            agentId:
-              values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"] ?? "",
+            agentId: values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"] ?? "",
             ...(kinds === undefined ? {} : { filter: { events: kinds } }),
           }),
           { alwaysEmitImplicit: true },
@@ -81,19 +62,13 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
   }
   if (command === "issue-track") {
     const owner = values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"];
-    if (owner == null)
-      throw new Error(
-        "Set OCTO_MANAGER_AGENT_ID or --agent-id to a registered agent",
-      );
+    if (owner == null) throw new Error("Set OCTO_MANAGER_AGENT_ID or --agent-id to a registered agent");
     printResult(
       parsed,
       toJson(
         EnrollIssueResponseSchema,
         await client.enrollIssue({
-          provider:
-            typeof values["provider"] === "string"
-              ? values["provider"]
-              : "github",
+          provider: typeof values["provider"] === "string" ? values["provider"] : "github",
           url: id,
           root: resolve(values.cwd ?? process.cwd()),
           ownerAgentId: owner,
@@ -106,10 +81,7 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
   if (command === "issue-list") {
     printResult(
       parsed,
-      toJson(
-        ListIssuesResponseSchema,
-        await client.listIssues({ offset: integer(values["offset"]) }),
-      ),
+      toJson(ListIssuesResponseSchema, await client.listIssues({ offset: integer(values["offset"]) })),
     );
     return;
   }

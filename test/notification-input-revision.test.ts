@@ -24,9 +24,7 @@ test("notification revisions isolate bookkeeping and follow all other local muta
       db.prepare(`DELETE FROM ${table}`).run();
     }
     db.prepare("INSERT INTO settings VALUES('github_dispatch','one')").run();
-    db.prepare(
-      "UPDATE settings SET value='two' WHERE key='github_dispatch'",
-    ).run();
+    db.prepare("UPDATE settings SET value='two' WHERE key='github_dispatch'").run();
     db.prepare("DELETE FROM settings WHERE key='github_dispatch'").run();
     expect(revision.current()).toBe(initial);
     let previous = initial;
@@ -96,22 +94,12 @@ test("agent identity and every other column still invalidate local notification 
     );
     const revision = new NotificationInputRevision(db);
     let previous = revision.current();
-    db.prepare(
-      "INSERT INTO agent_refs VALUES('id','codex','local','session',NULL,'1',1000,NULL)",
-    ).run();
+    db.prepare("INSERT INTO agent_refs VALUES('id','codex','local','session',NULL,'1',1000,NULL)").run();
     expect(revision.current()).not.toBe(previous);
     previous = revision.current();
     db.prepare("UPDATE agent_refs SET version_observed_at_ms=2000").run();
     expect(revision.current()).toBe(previous);
-    for (const column of [
-      "id",
-      "harness",
-      "endpoint",
-      "session_id",
-      "label",
-      "harness_version",
-      "future_fact",
-    ]) {
+    for (const column of ["id", "harness", "endpoint", "session_id", "label", "harness_version", "future_fact"]) {
       db.prepare(`UPDATE agent_refs SET ${column}='changed'`).run();
       expect(revision.current()).not.toBe(previous);
       previous = revision.current();
@@ -131,9 +119,7 @@ test("notification revisions observe external bookkeeping writes and fall back a
     schema(db);
     const revision = new NotificationInputRevision(db);
     let previous = revision.current();
-    external
-      .prepare("INSERT INTO github_views VALUES('external','fixture')")
-      .run();
+    external.prepare("INSERT INTO github_views VALUES('external','fixture')").run();
     expect(revision.current()).not.toBe(previous);
     previous = revision.current();
     db.exec("CREATE TABLE future_input(id TEXT PRIMARY KEY,value TEXT)");

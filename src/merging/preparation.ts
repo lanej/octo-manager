@@ -9,31 +9,18 @@ import { fingerprint } from "./policy.js";
 function atKey(value: unknown, key: string[]): unknown {
   let current = value;
   for (const part of key) {
-    if (
-      typeof current !== "object" ||
-      current === null ||
-      Array.isArray(current)
-    )
+    if (typeof current !== "object" || current === null || Array.isArray(current))
       throw new Error("TOML key is not a scalar path");
     current = Object.fromEntries(Object.entries(current))[part];
   }
   return current;
 }
-export function repin(
-  source: string,
-  profile: PreparationProfile,
-  sha: string,
-): string {
-  if (
-    profile.kind !== "toml_revision" ||
-    profile.key === undefined ||
-    profile.expectedValue === undefined
-  )
+export function repin(source: string, profile: PreparationProfile, sha: string): string {
+  if (profile.kind !== "toml_revision" || profile.key === undefined || profile.expectedValue === undefined)
     throw new Error("TOML preparation needs an exact key and expected value");
   const current = atKey(Bun.TOML.parse(source), profile.key);
   if (current === sha) return source;
-  if (current !== profile.expectedValue)
-    throw new Error("TOML revision changed; owner assessment required");
+  if (current !== profile.expectedValue) throw new Error("TOML revision changed; owner assessment required");
   const table = profile.key.slice(0, -1).join("."),
     key = profile.key.at(-1);
   let section = "",
@@ -44,20 +31,16 @@ export function repin(
       const header = /^\s*\[([A-Za-z0-9_.-]+)\]\s*(?:#.*)?\r?\n?$/u.exec(line);
       if (header !== null) section = header[1] ?? "";
       if (section !== table) return line;
-      const match =
-        /^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(["'])([a-f0-9]{40}(?:[a-f0-9]{24})?)\4(\s*(?:#.*)?\r?\n?)$/u.exec(
-          line,
-        );
-      if (match === null || match[2] !== key || match[5] !== current)
-        return line;
+      const match = /^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(["'])([a-f0-9]{40}(?:[a-f0-9]{24})?)\4(\s*(?:#.*)?\r?\n?)$/u.exec(
+        line,
+      );
+      if (match === null || match[2] !== key || match[5] !== current) return line;
       changes++;
       return `${match[1] ?? ""}${key ?? ""}${match[3] ?? ""}${match[4] ?? ""}${sha}${match[4] ?? ""}${match[6] ?? ""}`;
     })
     .join("");
   if (changes !== 1 || atKey(Bun.TOML.parse(result), profile.key) !== sha)
-    throw new Error(
-      "TOML recipe requires one unambiguous bare key with a quoted revision",
-    );
+    throw new Error("TOML recipe requires one unambiguous bare key with a quoted revision");
   return result;
 }
 export interface PrepareRequest {
@@ -91,9 +74,7 @@ export function preparer(
     )
       throw new Error("Preparation inputs moved");
     const directory = await mkdtemp(join(root, "merge-")),
-      workspace =
-        options.workspace?.(directory, source, signal) ??
-        new RebaseWorkspace(directory, source, signal);
+      workspace = options.workspace?.(directory, source, signal) ?? new RebaseWorkspace(directory, source, signal);
     await workspace.prepare();
     await workspace.git(["config", "user.name", "Octo Manager"]);
     await workspace.git(["config", "user.email", "octo-manager@localhost"]);
@@ -101,30 +82,15 @@ export function preparer(
     await workspace.git(["config", "core.hooksPath", "/dev/null"]);
     let paths = await workspace.rebase();
     for (let round = 1; paths.length > 0; round++) {
-      if (round > 32)
-        throw new Error("Rebase exceeded deterministic repair limit");
-      const result = await mechanicalConflicts(
-        workspace,
-        paths,
-        cases,
-        operation.id,
-        round,
-      );
-      if (result.remaining.length > 0)
-        throw new Error(
-          `Owner repair required: ${result.remaining.join(", ")}`,
-        );
+      if (round > 32) throw new Error("Rebase exceeded deterministic repair limit");
+      const result = await mechanicalConflicts(workspace, paths, cases, operation.id, round);
+      if (result.remaining.length > 0) throw new Error(`Owner repair required: ${result.remaining.join(", ")}`);
       await workspace.stage(paths);
       paths = await workspace.rebase(true);
     }
     if (profile.kind === "toml_revision") {
-      if (
-        profile.path === undefined ||
-        operation.prerequisiteCommit === undefined
-      )
-        throw new Error(
-          "TOML preparation needs path and merged prerequisite revision",
-        );
+      if (profile.path === undefined || operation.prerequisiteCommit === undefined)
+        throw new Error("TOML preparation needs path and merged prerequisite revision");
       const content = await workspace.read(profile.path),
         updated = repin(content, profile, operation.prerequisiteCommit);
       if (updated !== content) {
@@ -143,8 +109,7 @@ export function preparer(
     }
     const head = await workspace.validate(profile.checks, profile.timeoutMs);
     const latest = await readSource(url, signal);
-    if (fingerprint(latest) !== fingerprint(source))
-      throw new Error("Preparation source or target moved before push");
+    if (fingerprint(latest) !== fingerprint(source)) throw new Error("Preparation source or target moved before push");
     if (head !== source.headSha) {
       await workspace.push(head, () => {
         beforePush(head, directory);

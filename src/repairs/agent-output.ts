@@ -14,16 +14,7 @@ const repair = fields([
   "usedAgent",
   "mechanicalRepairs",
 ]);
-const conflict = fields([
-  "id",
-  "repairId",
-  "prUrl",
-  "round",
-  "path",
-  "recipe",
-  "decision",
-  "reason",
-]);
+const conflict = fields(["id", "repairId", "prUrl", "round", "path", "recipe", "decision", "reason"]);
 export const repairOutputs = {
   rebase: fields([], { repair }),
   repairs: fields([], { repairs: rows(repair) }),

@@ -25,21 +25,14 @@ test("coordinator commits cannot execute agent-edited hooks or content filters",
   git("config", "user.email", "issue-test@example.invalid");
   git("remote", "add", "origin", "https://github.com/owner/repo.git");
   await mkdir(join(root, ".githooks"));
-  await writeFile(
-    join(root, ".githooks", "pre-commit"),
-    "#!/bin/sh\nexit 0\n",
-    { mode: 0o755 },
-  );
+  await writeFile(join(root, ".githooks", "pre-commit"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   await writeFile(join(root, ".gitignore"), ".worktrees/\n");
   await writeFile(join(root, "answer.txt"), "before\n");
   await writeFile(
     join(root, "octo-manager.toml"),
     "schema_version = 1\n" +
       ["investigation", "implementation", "verification"]
-        .map(
-          (role) =>
-            `[issues.profiles.${role}]\nharness = "codex"\nmodel = "controlled"\n`,
-        )
+        .map((role) => `[issues.profiles.${role}]\nharness = "codex"\nmodel = "controlled"\n`)
         .join("\n"),
   );
   git("add", ".");
@@ -56,23 +49,14 @@ test("coordinator commits cannot execute agent-edited hooks or content filters",
       "fixture-enroll",
     );
     issue.workspace = workspace;
-    await writeFile(
-      join(workspace, ".githooks", "pre-commit"),
-      `#!/bin/sh\ntouch '${escaped}'\n`,
-      { mode: 0o755 },
-    );
+    await writeFile(join(workspace, ".githooks", "pre-commit"), `#!/bin/sh\ntouch '${escaped}'\n`, { mode: 0o755 });
     await writeFile(join(workspace, "answer.txt"), "after\n");
     const host = trackedCodeHost(coordinator.tracking, state);
     const signal = new AbortController().signal;
-    expect(await host.commit(issue, signal, () => {})).toMatch(
-      /^[a-f0-9]{40}$/u,
-    );
+    expect(await host.commit(issue, signal, () => {})).toMatch(/^[a-f0-9]{40}$/u);
     expect(existsSync(escaped)).toBe(false);
     git("config", "filter.evil.clean", `touch '${escaped}'; cat`);
-    await writeFile(
-      join(workspace, ".gitattributes"),
-      "answer.txt filter=evil\n",
-    );
+    await writeFile(join(workspace, ".gitattributes"), "answer.txt filter=evil\n");
     await writeFile(join(workspace, "answer.txt"), "another change\n");
     await assert.rejects(
       host.commit(issue, signal, () => {}),
@@ -108,10 +92,7 @@ test("the code-host adapter reconciles a linked remediation PR without opening a
     join(root, "octo-manager.toml"),
     "schema_version = 1\n" +
       ["investigation", "implementation", "verification"]
-        .map(
-          (role) =>
-            `[issues.profiles.${role}]\nharness = "codex"\nmodel = "controlled"\n`,
-        )
+        .map((role) => `[issues.profiles.${role}]\nharness = "codex"\nmodel = "controlled"\n`)
         .join("\n"),
   );
   git("add", ".");

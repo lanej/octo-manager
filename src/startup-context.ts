@@ -8,9 +8,7 @@ export type ReleaseIdentity =
       reason: "missing" | "invalid" | "unreadable";
     };
 
-export function releaseIdentity(
-  moduleUrl: string = releaseModule(import.meta.url),
-): ReleaseIdentity {
+export function releaseIdentity(moduleUrl: string = releaseModule(import.meta.url)): ReleaseIdentity {
   let descriptor: number | undefined;
   try {
     // The running module identifies its release; the caller's working directory may be another checkout.
@@ -18,9 +16,7 @@ export function releaseIdentity(
     const buffer = Buffer.alloc(4097);
     const length = readSync(descriptor, buffer, 0, buffer.length, 0);
     if (length > 4096) return { status: "unavailable", reason: "invalid" };
-    const metadata: unknown = JSON.parse(
-      buffer.subarray(0, length).toString("utf8"),
-    );
+    const metadata: unknown = JSON.parse(buffer.subarray(0, length).toString("utf8"));
     if (
       typeof metadata === "object" &&
       metadata !== null &&
@@ -45,13 +41,9 @@ export function releaseIdentity(
   }
 }
 
-function runtimeIdentity(
-  versions: Readonly<Record<string, string | undefined>>,
-) {
+function runtimeIdentity(versions: Readonly<Record<string, string | undefined>>) {
   const bun = versions["bun"];
-  return bun === undefined
-    ? { name: "node", version: versions["node"] ?? "unknown" }
-    : { name: "bun", version: bun };
+  return bun === undefined ? { name: "node", version: versions["node"] ?? "unknown" } : { name: "bun", version: bun };
 }
 
 export function startupRecord(state: string) {

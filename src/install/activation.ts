@@ -6,11 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { runtimeLifecycle } from "../lifecycle-rpc.js";
 import { schedulerClient } from "../client.js";
 import type { ActivationProcess } from "../lifecycle.js";
-import type {
-  ServiceDefinition,
-  ServiceInput,
-  ServiceRunner,
-} from "./service.js";
+import type { ServiceDefinition, ServiceInput, ServiceRunner } from "./service.js";
 
 /** The installer stops only a confirmed, exact native owner incarnation. */
 export class IncompleteActivation extends Error {}
@@ -39,10 +35,7 @@ function processIdentity(value: unknown): value is ActivationProcess {
   );
 }
 
-function sameProcess(
-  first: ActivationProcess,
-  second: ActivationProcess,
-): boolean {
+function sameProcess(first: ActivationProcess, second: ActivationProcess): boolean {
   return (
     first.pid === second.pid &&
     first.start_identity === second.start_identity &&
@@ -56,22 +49,16 @@ function missing(error: unknown): boolean {
 }
 
 /** Frozen inventory contains no credentials and is read without following links. */
-export async function readCheckpointBinding(
-  environment: NodeJS.ProcessEnv,
-): Promise<CheckpointBinding | undefined> {
+export async function readCheckpointBinding(environment: NodeJS.ProcessEnv): Promise<CheckpointBinding | undefined> {
   const directory = environment["PROJECT_UPDATE_OPERATION_DIR"],
     runID = environment["PROJECT_UPDATE_RUN_ID"];
   if (directory === undefined && runID === undefined) return undefined;
   if (
     directory === undefined ||
     runID === undefined ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(
-      runID,
-    )
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(runID)
   )
-    throw new IncompleteActivation(
-      "native-checkpoint-operation-binding-unavailable",
-    );
+    throw new IncompleteActivation("native-checkpoint-operation-binding-unavailable");
   const file = await open(
     join(directory, "octo-manager-inventory.json"),
     constants.O_RDONLY | constants.O_NOFOLLOW,
@@ -80,15 +67,8 @@ export async function readCheckpointBinding(
   });
   try {
     const info = await file.stat();
-    if (
-      !info.isFile() ||
-      info.uid !== process.getuid?.() ||
-      (info.mode & 0o077) !== 0 ||
-      info.size > 1024 * 1024
-    )
-      throw new IncompleteActivation(
-        "native-checkpoint-inventory-is-not-private-and-owned",
-      );
+    if (!info.isFile() || info.uid !== process.getuid?.() || (info.mode & 0o077) !== 0 || info.size > 1024 * 1024)
+      throw new IncompleteActivation("native-checkpoint-inventory-is-not-private-and-owned");
     let value: unknown;
     try {
       value = JSON.parse(await file.readFile("utf8"));
@@ -109,9 +89,7 @@ export async function readCheckpointBinding(
       typeof target["running_identity"] !== "string" ||
       target["running_identity"] === ""
     )
-      throw new IncompleteActivation(
-        "native-checkpoint-process-or-image-is-unavailable",
-      );
+      throw new IncompleteActivation("native-checkpoint-process-or-image-is-unavailable");
     return {
       process: target["process"],
       runID,
@@ -122,29 +100,19 @@ export async function readCheckpointBinding(
   }
 }
 
-function managerPID(
-  definition: ServiceDefinition,
-  run: ServiceRunner,
-): number | null {
+function managerPID(definition: ServiceDefinition, run: ServiceRunner): number | null {
   if (definition.kind === "launchd") {
     let output: string;
     try {
       output = run("/bin/launchctl", ["print", definition.target]);
     } catch (error) {
-      if (object(error) && (error["status"] === 3 || error["status"] === 113))
-        return null;
-      throw new IncompleteActivation(
-        "native-service-manager-inspection-unavailable",
-      );
+      if (object(error) && (error["status"] === 3 || error["status"] === 113)) return null;
+      throw new IncompleteActivation("native-service-manager-inspection-unavailable");
     }
     const match = /\bpid = ([1-9][0-9]*)\b/u.exec(output);
-    if (match?.[1] === undefined)
-      throw new IncompleteActivation(
-        "native-service-process-identity-unavailable",
-      );
+    if (match?.[1] === undefined) throw new IncompleteActivation("native-service-process-identity-unavailable");
     const pid = Number(match[1]);
-    if (!Number.isSafeInteger(pid))
-      throw new IncompleteActivation("native-service-process-identity-invalid");
+    if (!Number.isSafeInteger(pid)) throw new IncompleteActivation("native-service-process-identity-invalid");
     return pid;
   }
   let output: string;
@@ -158,9 +126,7 @@ function managerPID(
       "--property=MainPID",
     ]);
   } catch {
-    throw new IncompleteActivation(
-      "native-service-manager-inspection-unavailable",
-    );
+    throw new IncompleteActivation("native-service-manager-inspection-unavailable");
   }
   const values = new Map(
     output
@@ -172,31 +138,22 @@ function managerPID(
       }),
   );
   if (
-    (values.get("LoadState") === "not-found" ||
-      values.get("LoadState") === "loaded") &&
+    (values.get("LoadState") === "not-found" || values.get("LoadState") === "loaded") &&
     values.get("ActiveState") === "inactive" &&
     values.get("MainPID") === "0"
   )
     return null;
   const pid = Number(values.get("MainPID"));
   if (!Number.isSafeInteger(pid) || pid <= 0)
-    throw new IncompleteActivation(
-      "native-service-process-identity-unavailable",
-    );
+    throw new IncompleteActivation("native-service-process-identity-unavailable");
   return pid;
 }
 
 async function ownedSocket(state: string): Promise<boolean> {
   try {
     const info = await lstat(join(state, "run.sock"));
-    if (
-      !info.isSocket() ||
-      info.uid !== process.getuid?.() ||
-      (info.mode & 0o077) !== 0
-    )
-      throw new IncompleteActivation(
-        "native-owner-socket-is-not-private-and-owned",
-      );
+    if (!info.isSocket() || info.uid !== process.getuid?.() || (info.mode & 0o077) !== 0)
+      throw new IncompleteActivation("native-owner-socket-is-not-private-and-owned");
     return true;
   } catch (error) {
     if (missing(error)) return false;
@@ -208,14 +165,8 @@ async function coldOwnerAbsent(state: string): Promise<void> {
   const path = join(state, "coordinator-lock.sqlite");
   try {
     const info = await lstat(path);
-    if (
-      !info.isFile() ||
-      info.uid !== process.getuid?.() ||
-      (info.mode & 0o077) !== 0
-    )
-      throw new IncompleteActivation(
-        "native-owner-lock-is-not-private-and-owned",
-      );
+    if (!info.isFile() || info.uid !== process.getuid?.() || (info.mode & 0o077) !== 0)
+      throw new IncompleteActivation("native-owner-lock-is-not-private-and-owned");
   } catch (error) {
     if (missing(error)) return;
     throw error;
@@ -224,9 +175,7 @@ async function coldOwnerAbsent(state: string): Promise<void> {
   try {
     lock.exec("PRAGMA busy_timeout=0; BEGIN EXCLUSIVE; ROLLBACK");
   } catch {
-    throw new IncompleteActivation(
-      "native-owner-remains-present-without-checkpoint-control",
-    );
+    throw new IncompleteActivation("native-owner-remains-present-without-checkpoint-control");
   } finally {
     lock.close();
   }
@@ -246,9 +195,7 @@ export async function guardServiceReplacement(
     return "cold";
   }
   if (pid === null || !socket || binding === undefined)
-    throw new IncompleteActivation(
-      "native-service-checkpoint-binding-required",
-    );
+    throw new IncompleteActivation("native-service-checkpoint-binding-required");
   let value: unknown;
   try {
     const response = await runtimeLifecycle(input.state, {
@@ -256,9 +203,7 @@ export async function guardServiceReplacement(
     });
     value = response;
   } catch {
-    throw new IncompleteActivation(
-      "native-service-checkpoint-control-unavailable",
-    );
+    throw new IncompleteActivation("native-service-checkpoint-control-unavailable");
   }
   if (
     !object(value) ||
@@ -278,13 +223,9 @@ export async function guardServiceReplacement(
     target["checkpoint"]["state"] !== "confirmed" ||
     target["checkpoint"]["run_id"] !== binding.runID
   )
-    throw new IncompleteActivation(
-      "native-service-checkpoint-or-process-incarnation-differs",
-    );
+    throw new IncompleteActivation("native-service-checkpoint-or-process-incarnation-differs");
   if (target["retirement_policy"] !== "successful-exit")
-    throw new IncompleteActivation(
-      "native-successful-exit-retirement-policy-unavailable",
-    );
+    throw new IncompleteActivation("native-successful-exit-retirement-policy-unavailable");
   return "checkpointed";
 }
 
@@ -299,20 +240,12 @@ export async function guardClientPromotion(
   const socket = await ownedSocket(input.state);
   if (socket) {
     try {
-      const server = await schedulerClient(input.state).getServerInfo(
-        {},
-        { timeoutMs: 1000 },
-      );
+      const server = await schedulerClient(input.state).getServerInfo({}, { timeoutMs: 1000 });
       if (server.apiVersion !== 2) throw new Error("Incompatible native API");
     } catch {
-      throw new IncompleteActivation(
-        "native-client-promotion-api-incompatible-or-unavailable",
-      );
+      throw new IncompleteActivation("native-client-promotion-api-incompatible-or-unavailable");
     }
-    if (!available)
-      throw new IncompleteActivation(
-        "native-client-promotion-manager-binding-unavailable",
-      );
+    if (!available) throw new IncompleteActivation("native-client-promotion-manager-binding-unavailable");
   }
   if (available) await guardServiceReplacement(definition, input, run, binding);
   else await coldOwnerAbsent(input.state);
@@ -362,10 +295,7 @@ export async function retireService(
       process.kill(binding.process.pid, 0);
     } catch (error) {
       if (object(error) && error["code"] === "ESRCH") alive = false;
-      else
-        throw new IncompleteActivation(
-          "native-retired-process-identity-unavailable",
-        );
+      else throw new IncompleteActivation("native-retired-process-identity-unavailable");
     }
     let managerGone = false;
     if (definition.kind === "launchd") {
@@ -373,18 +303,12 @@ export async function retireService(
         const output = run("/bin/launchctl", ["print", definition.target]);
         const match = /\bpid = ([1-9][0-9]*)\b/u.exec(output);
         if (match?.[1] === undefined) {
-          if (!/\bstate = /u.test(output))
-            throw new IncompleteActivation(
-              "native-retired-manager-state-unavailable",
-            );
+          if (!/\bstate = /u.test(output)) throw new IncompleteActivation("native-retired-manager-state-unavailable");
           managerGone = true;
         } else if (Number(match[1]) !== binding.process.pid)
-          throw new IncompleteActivation(
-            "native-service-respawned-before-retirement",
-          );
+          throw new IncompleteActivation("native-service-respawned-before-retirement");
       } catch (error) {
-        if (object(error) && (error["status"] === 3 || error["status"] === 113))
-          managerGone = true;
+        if (object(error) && (error["status"] === 3 || error["status"] === 113)) managerGone = true;
         else throw error;
       }
     } else {
@@ -396,24 +320,15 @@ export async function retireService(
         "--property=MainPID",
       ]);
       const pid = /^MainPID=([0-9]+)$/mu.exec(output)?.[1];
-      if (
-        pid !== undefined &&
-        Number(pid) !== 0 &&
-        Number(pid) !== binding.process.pid
-      )
-        throw new IncompleteActivation(
-          "native-service-respawned-before-retirement",
-        );
+      if (pid !== undefined && Number(pid) !== 0 && Number(pid) !== binding.process.pid)
+        throw new IncompleteActivation("native-service-respawned-before-retirement");
       managerGone = pid === "0" && /^ActiveState=inactive$/mu.test(output);
     }
     if (!alive && managerGone) {
       await coldOwnerAbsent(input.state);
       return;
     }
-    if (Date.now() >= deadline)
-      throw new IncompleteActivation(
-        "native-retirement-deadline-process-preserved",
-      );
+    if (Date.now() >= deadline) throw new IncompleteActivation("native-retirement-deadline-process-preserved");
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 50);
     });
@@ -436,12 +351,9 @@ export function confirmRetiredService(
     try {
       const output = run("/bin/launchctl", ["print", definition.target]);
       if (/\bpid = [1-9][0-9]*\b/u.test(output) || !/\bstate = /u.test(output))
-        throw new IncompleteActivation(
-          "native-owner-appeared-before-service-control",
-        );
+        throw new IncompleteActivation("native-owner-appeared-before-service-control");
     } catch (error) {
-      if (!object(error) || (error["status"] !== 3 && error["status"] !== 113))
-        throw error;
+      if (!object(error) || (error["status"] !== 3 && error["status"] !== 113)) throw error;
     }
   } else {
     const output = run("systemctl", [
@@ -451,44 +363,25 @@ export function confirmRetiredService(
       "--property=ActiveState",
       "--property=MainPID",
     ]);
-    if (
-      !/^MainPID=0$/mu.test(output) ||
-      !/^ActiveState=inactive$/mu.test(output)
-    )
-      throw new IncompleteActivation(
-        "native-owner-appeared-before-service-control",
-      );
+    if (!/^MainPID=0$/mu.test(output) || !/^ActiveState=inactive$/mu.test(output))
+      throw new IncompleteActivation("native-owner-appeared-before-service-control");
   }
 }
 
 /** Freeze the owner-selected immutable bundle and host identity before stopping. */
-export function selectedServiceIdentity(
-  input: ServiceInput,
-  run: ServiceRunner,
-): string {
+export function selectedServiceIdentity(input: ServiceInput, run: ServiceRunner): string {
   let value: unknown;
   try {
-    value = JSON.parse(
-      run("/usr/bin/env", [
-        "PATH=" + input.path,
-        ...serviceCommand(input),
-        "lifecycle",
-        "artifact",
-      ]),
-    );
+    value = JSON.parse(run("/usr/bin/env", ["PATH=" + input.path, ...serviceCommand(input), "lifecycle", "artifact"]));
   } catch {
-    throw new IncompleteActivation(
-      "native-selected-artifact-inspection-unavailable",
-    );
+    throw new IncompleteActivation("native-selected-artifact-inspection-unavailable");
   }
   if (
     !object(value) ||
     typeof value["expected_identity"] !== "string" ||
     !/^[0-9a-f]{64}$/u.test(value["expected_identity"])
   )
-    throw new IncompleteActivation(
-      "native-selected-artifact-identity-unavailable",
-    );
+    throw new IncompleteActivation("native-selected-artifact-identity-unavailable");
   return value["expected_identity"];
 }
 
@@ -515,10 +408,7 @@ export async function verifyStartedService(
         value = response;
       }
     } catch (error) {
-      if (
-        error instanceof IncompleteActivation &&
-        error.message === "native-owner-socket-is-not-private-and-owned"
-      )
+      if (error instanceof IncompleteActivation && error.message === "native-owner-socket-is-not-private-and-owned")
         throw error;
     }
     if (value !== undefined) {
@@ -538,24 +428,16 @@ export async function verifyStartedService(
         target["expected_identity"] !== expectedIdentity ||
         target["retirement_policy"] !== "successful-exit" ||
         target["stop_accepted"] !== false ||
-        (original !== undefined &&
-          sameProcess(target["process"], original.process))
+        (original !== undefined && sameProcess(target["process"], original.process))
       )
-        throw new IncompleteActivation(
-          "native-started-service-image-or-process-differs",
-        );
+        throw new IncompleteActivation("native-started-service-image-or-process-differs");
       if (target["ready"] === true) {
         if (managerPID(definition, run) !== target["process"].pid)
-          throw new IncompleteActivation(
-            "native-started-service-manager-owner-changed",
-          );
+          throw new IncompleteActivation("native-started-service-manager-owner-changed");
         return;
       }
     }
-    if (Date.now() >= deadline)
-      throw new IncompleteActivation(
-        "native-started-service-readiness-unconfirmed",
-      );
+    if (Date.now() >= deadline) throw new IncompleteActivation("native-started-service-readiness-unconfirmed");
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 50);
     });

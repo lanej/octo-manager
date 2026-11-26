@@ -18,10 +18,7 @@ import {
   selectedServiceIdentity,
   type CheckpointBinding,
 } from "../src/install/activation.js";
-import {
-  serviceDefinition,
-  type ServiceInput,
-} from "../src/install/service.js";
+import { serviceDefinition, type ServiceInput } from "../src/install/service.js";
 
 function input(state: string): ServiceInput {
   return {
@@ -67,9 +64,7 @@ test("stopped installed unit requires a private available owner lock", async () 
   lock.close();
   await chmod(lockPath, 0o600);
   try {
-    expect(await guardServiceReplacement(definition, selected, manager)).toBe(
-      "cold",
-    );
+    expect(await guardServiceReplacement(definition, selected, manager)).toBe("cold");
     await guardClientPromotion(definition, selected, manager, true);
     await chmod(lockPath, 0o644);
     await assert.rejects(
@@ -127,11 +122,7 @@ test.each([
   const directory = await mkdtemp("/tmp/octo-install-cold-state-");
   try {
     await assert.rejects(
-      guardServiceReplacement(
-        serviceDefinition("linux", input(directory), 1000),
-        input(directory),
-        () => report,
-      ),
+      guardServiceReplacement(serviceDefinition("linux", input(directory), 1000), input(directory), () => report),
       IncompleteActivation,
     );
   } finally {
@@ -174,8 +165,7 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
             return { apiVersion: 2 };
           },
           runtimeLifecycle(request) {
-            if (request.action !== LifecycleAction.INVENTORY)
-              throw new Error("guard attempted native mutation");
+            if (request.action !== LifecycleAction.INVENTORY) throw new Error("guard attempted native mutation");
             inspections++;
             return {
               report: wireLifecycle({
@@ -196,32 +186,12 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
     });
   });
   await chmod(join(directory, "run.sock"), 0o600);
-  const manager = () =>
-    `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid)}\n`;
+  const manager = () => `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid)}\n`;
   try {
-    await assert.rejects(
-      guardServiceReplacement(definition, selectedInput, manager),
-      IncompleteActivation,
-    );
-    expect(
-      await guardServiceReplacement(
-        definition,
-        selectedInput,
-        manager,
-        binding,
-      ),
-    ).toBe("checkpointed");
-    await assert.rejects(
-      guardClientPromotion(definition, selectedInput, manager, true),
-      IncompleteActivation,
-    );
-    await guardClientPromotion(
-      definition,
-      selectedInput,
-      manager,
-      true,
-      binding,
-    );
+    await assert.rejects(guardServiceReplacement(definition, selectedInput, manager), IncompleteActivation);
+    expect(await guardServiceReplacement(definition, selectedInput, manager, binding)).toBe("checkpointed");
+    await assert.rejects(guardClientPromotion(definition, selectedInput, manager, true), IncompleteActivation);
+    await guardClientPromotion(definition, selectedInput, manager, true, binding);
     target = {
       ...target,
       process: { ...binding.process, native_id: "different-owner" },
@@ -262,23 +232,18 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
       guardServiceReplacement(
         definition,
         selectedInput,
-        () =>
-          `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid + 1)}\n`,
+        () => `LoadState=loaded\nActiveState=active\nMainPID=${String(process.pid + 1)}\n`,
         binding,
       ),
       /native-service-checkpoint-or-process-incarnation-differs/u,
     );
     expect(inspections).toBe(7);
-    expect(() =>
-      selectedServiceIdentity(selectedInput, () =>
-        JSON.stringify({ expected_identity: null }),
-      ),
-    ).toThrow(IncompleteActivation);
-    expect(
-      selectedServiceIdentity(selectedInput, () =>
-        JSON.stringify({ expected_identity: "a".repeat(64) }),
-      ),
-    ).toBe("a".repeat(64));
+    expect(() => selectedServiceIdentity(selectedInput, () => JSON.stringify({ expected_identity: null }))).toThrow(
+      IncompleteActivation,
+    );
+    expect(selectedServiceIdentity(selectedInput, () => JSON.stringify({ expected_identity: "a".repeat(64) }))).toBe(
+      "a".repeat(64),
+    );
     target = {
       ...target,
       ready: true,
@@ -286,32 +251,14 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
       running_identity: "new-selected-image",
       process: { ...binding.process, native_id: "new-native-owner" },
     };
-    await verifyStartedService(
-      definition,
-      selectedInput,
-      manager,
-      "new-selected-image",
-      binding,
-    );
+    await verifyStartedService(definition, selectedInput, manager, "new-selected-image", binding);
     await assert.rejects(
-      verifyStartedService(
-        definition,
-        selectedInput,
-        manager,
-        "different-selected-image",
-        binding,
-      ),
+      verifyStartedService(definition, selectedInput, manager, "different-selected-image", binding),
       /native-started-service-image-or-process-differs/u,
     );
     target = { ...target, process: binding.process };
     await assert.rejects(
-      verifyStartedService(
-        definition,
-        selectedInput,
-        manager,
-        "new-selected-image",
-        binding,
-      ),
+      verifyStartedService(definition, selectedInput, manager, "new-selected-image", binding),
       /native-started-service-image-or-process-differs/u,
     );
     target = {
@@ -339,11 +286,7 @@ test("installer binds a confirmed checkpoint to real native RPC, run UUID and ma
       process: binding.process,
     };
     const inventory = join(directory, "octo-manager-inventory.json");
-    await writeFile(
-      inventory,
-      JSON.stringify({ schema_version: 1, targets: [target] }),
-      { mode: 0o600 },
-    );
+    await writeFile(inventory, JSON.stringify({ schema_version: 1, targets: [target] }), { mode: 0o600 });
     expect(
       await readCheckpointBinding({
         PROJECT_UPDATE_OPERATION_DIR: directory,

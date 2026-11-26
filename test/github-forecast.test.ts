@@ -1,16 +1,13 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  forecastQuota,
-  ForecastState,
-  QuotaHistory,
-} from "../src/github/forecast.js";
+import { forecastQuota, ForecastState, QuotaHistory } from "../src/github/forecast.js";
 import type { GitHubBudget } from "../src/github/usage.js";
-const budget = (
-  remaining: number,
-  observedAtMs: number,
-  resetAtMs = 3600000,
-): GitHubBudget => ({ limit: 5000, remaining, resetAtMs, observedAtMs });
+const budget = (remaining: number, observedAtMs: number, resetAtMs = 3600000): GitHubBudget => ({
+  limit: 5000,
+  remaining,
+  resetAtMs,
+  observedAtMs,
+});
 test("forecasts use observed quota units and time to the actual reset", () => {
   const first = budget(5000, 0),
     fast = budget(4000, 120000),
@@ -26,11 +23,7 @@ test("forecasts use observed quota units and time to the actual reset", () => {
   assert.equal(safe.projectedRemainingAtReset, 4400);
   const almostReset = budget(4000, 120000, 180000);
   assert.equal(
-    forecastQuota(
-      almostReset,
-      [{ ...first, resetAtMs: 180000 }, almostReset],
-      120000,
-    ).state,
+    forecastQuota(almostReset, [{ ...first, resetAtMs: 180000 }, almostReset], 120000).state,
     ForecastState.OnTrack,
   );
 });
@@ -43,10 +36,7 @@ test("unknown and stale evidence never claims an adequate budget", () => {
     [[budget(5000, 0), current], 400001],
     [[budget(5000, 0), current], 3600000],
   ] satisfies [GitHubBudget[], number][]) {
-    assert.equal(
-      forecastQuota(current, samples, at).state,
-      ForecastState.Unknown,
-    );
+    assert.equal(forecastQuota(current, samples, at).state, ForecastState.Unknown);
   }
 });
 test("resource histories stay separate and reset/increasing balances invalidate the old trend", () => {
@@ -55,25 +45,13 @@ test("resource histories stay separate and reset/increasing balances invalidate 
   history.observe("graphql", budget(5000, 0));
   history.observe("core", budget(4000, 120000));
   history.observe("graphql", budget(4980, 120000));
-  assert.equal(
-    history.forecast("core", budget(4000, 120000), 120000).state,
-    ForecastState.AtRisk,
-  );
-  assert.equal(
-    history.forecast("graphql", budget(4980, 120000), 120000).state,
-    ForecastState.OnTrack,
-  );
+  assert.equal(history.forecast("core", budget(4000, 120000), 120000).state, ForecastState.AtRisk);
+  assert.equal(history.forecast("graphql", budget(4980, 120000), 120000).state, ForecastState.OnTrack);
   const reset = budget(5000, 180000, 7200000);
   history.observe("core", reset);
-  assert.equal(
-    history.forecast("core", reset, 180000).state,
-    ForecastState.Unknown,
-  );
+  assert.equal(history.forecast("core", reset, 180000).state, ForecastState.Unknown);
   history.observe("graphql", budget(4990, 180000));
-  assert.equal(
-    history.forecast("graphql", budget(4990, 180000), 180000).state,
-    ForecastState.Unknown,
-  );
+  assert.equal(history.forecast("graphql", budget(4990, 180000), 180000).state, ForecastState.Unknown);
 });
 
 test("an observed empty quota is exhausted even before a trend is available", () => {

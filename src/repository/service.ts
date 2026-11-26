@@ -12,11 +12,7 @@ import { CheckWatchState } from "../tracking/checks.js";
 import { EntryState, terminal } from "../merging/contracts.js";
 import { NotificationState } from "./contracts.js";
 import type { MergeStore } from "../merging/store.js";
-import {
-  defaults,
-  type AutomationPolicy,
-  type Instructions,
-} from "./contracts.js";
+import { defaults, type AutomationPolicy, type Instructions } from "./contracts.js";
 export class RepositoryPolicies {
   private monitor = new RepositoryPolicyMonitor();
   private reconcileAt: number | undefined;
@@ -59,8 +55,7 @@ export class RepositoryPolicies {
     return this.store.get(prId);
   }
   bind(prId: string, agentId: string, cwd?: string): void {
-    if (cwd === undefined || this.tracking.pr(prId).ownerAgentId !== agentId)
-      return;
+    if (cwd === undefined || this.tracking.pr(prId).ownerAgentId !== agentId) return;
     const git = (...args: string[]) =>
       execFileSync("git", ["-C", cwd, ...args], {
         encoding: "utf8",
@@ -71,24 +66,9 @@ export class RepositoryPolicies {
     let root: string;
     try {
       root = realpathSync(git("rev-parse", "--show-toplevel"));
-      const repository = new URL(this.tracking.pr(prId).url).pathname
-        .split("/")
-        .slice(1, 3)
-        .join("/")
-        .toLowerCase();
-      const remotes = git(
-        "config",
-        "--get-regexp",
-        "^remote\\..*\\.url$",
-      ).split("\n");
-      if (
-        !remotes.some(
-          (line) =>
-            githubRepository(
-              line.slice(line.indexOf(" ") + 1),
-            )?.toLowerCase() === repository,
-        )
-      )
+      const repository = new URL(this.tracking.pr(prId).url).pathname.split("/").slice(1, 3).join("/").toLowerCase();
+      const remotes = git("config", "--get-regexp", "^remote\\..*\\.url$").split("\n");
+      if (!remotes.some((line) => githubRepository(line.slice(line.indexOf(" ") + 1))?.toLowerCase() === repository))
         return;
     } catch {
       return;
@@ -103,10 +83,7 @@ export class RepositoryPolicies {
       status: "missing",
       hash: "",
       autoMerge: false,
-      instructions:
-        prior?.ownerId === agentId && prior.epoch === pr.trackingEpoch
-          ? prior.instructions
-          : {},
+      instructions: prior?.ownerId === agentId && prior.epoch === pr.trackingEpoch ? prior.instructions : {},
     });
     this.tick();
   }
@@ -121,16 +98,13 @@ export class RepositoryPolicies {
       const prior = policies.get(pr.id);
       return pr.enabled && prior !== undefined && !matchesBinding(prior, pr);
     });
-    const disable = this.merging.inheritedDisableCandidates(
-      stale.map((pr) => pr.id),
-    );
+    const disable = this.merging.inheritedDisableCandidates(stale.map((pr) => pr.id));
     for (const pr of contexts) {
       const prior = policies.get(pr.id);
       if (prior === undefined || !pr.enabled) continue;
       if (!matchesBinding(prior, pr)) {
         if (disable.has(pr.id)) this.merging.disableInherited(pr.id);
-        const error =
-          "Repository policy requires enrollment by the current owner and tracking epoch";
+        const error = "Repository policy requires enrollment by the current owner and tracking epoch";
         if (prior.error !== error) {
           this.store.save({
             ...prior,
@@ -173,31 +147,19 @@ export class RepositoryPolicies {
         this.store.save(next);
         this.event(
           "repository_policy_updated",
-          next.error ??
-            `Repository policy ${next.status}${next.stage === undefined ? "" : ` (${next.stage})`}`,
+          next.error ?? `Repository policy ${next.status}${next.stage === undefined ? "" : ` (${next.stage})`}`,
           pr.id,
         );
       }
       const entries = this.merging.entries(pr.id);
       let checksComplete: boolean | undefined;
-      let decision = inheritedAutomation(
-        next,
-        entries,
-        undefined,
-        checksComplete,
-      );
+      let decision = inheritedAutomation(next, entries, undefined, checksComplete);
       if (decision === "inspect_checks") {
         const observation = this.tracking.pr(pr.id).observation;
         checksComplete =
           observation?.checks.state === "complete" &&
-          (observation.workflows === undefined ||
-            observation.workflows.state === "complete");
-        decision = inheritedAutomation(
-          next,
-          entries,
-          undefined,
-          checksComplete,
-        );
+          (observation.workflows === undefined || observation.workflows.state === "complete");
+        decision = inheritedAutomation(next, entries, undefined, checksComplete);
       }
       if (decision === "inspect_setting") {
         const explicit = this.merging.settingSource(pr.id) === "explicit";
@@ -219,23 +181,16 @@ export class RepositoryPolicies {
     return { monitorFiles };
   }
   forMessage(message: AgentMessage): string | undefined {
-    const actionId =
-      message.actionId === ""
-        ? this.merging.readinessAction(message.id)
-        : message.actionId;
-    const action =
-      actionId === undefined ? undefined : this.tracking.action(actionId);
+    const actionId = message.actionId === "" ? this.merging.readinessAction(message.id) : message.actionId;
+    const action = actionId === undefined ? undefined : this.tracking.action(actionId);
     const prId = action?.prId ?? message.workflowPRId;
     if (prId === undefined) return undefined;
     const noticeEntry = this.merging.noticeEntry(message.id);
-    const entry =
-      noticeEntry ??
-      this.merging.entries(prId).find((value) => !terminal(value.state));
+    const entry = noticeEntry ?? this.merging.entries(prId).find((value) => !terminal(value.state));
     let state: NotificationState | undefined;
     if (entry !== undefined && noticeEntry !== undefined) {
       if (entry.state === EntryState.Merged) state = NotificationState.Merged;
-      else if (entry.state === EntryState.Uncertain)
-        state = NotificationState.MergeUncertain;
+      else if (entry.state === EntryState.Uncertain) state = NotificationState.MergeUncertain;
       else if (entry.state === EntryState.WaitingOwner) {
         const pr = this.tracking.pr(prId);
         const failed = this.merging
@@ -248,11 +203,8 @@ export class RepositoryPolicies {
               operation.state === OperationState.Failed,
           );
         state =
-          failed && entry.ready === undefined
-            ? NotificationState.MergeBlocked
-            : NotificationState.OwnerReviewRequired;
-      } else if (entry.state === EntryState.Blocked)
-        state = NotificationState.MergeBlocked;
+          failed && entry.ready === undefined ? NotificationState.MergeBlocked : NotificationState.OwnerReviewRequired;
+      } else if (entry.state === EntryState.Blocked) state = NotificationState.MergeBlocked;
     } else if (action !== undefined) {
       switch (action.blocker.kind) {
         case "review_feedback":
@@ -268,20 +220,10 @@ export class RepositoryPolicies {
         case "check_results": {
           const blocker = action.blocker;
           const pr = this.tracking.pr(prId);
-          if (
-            blocker.state !== CheckWatchState.Completed ||
-            blocker.headSha !== pr.observation?.headSha
-          )
-            break;
+          if (blocker.state !== CheckWatchState.Completed || blocker.headSha !== pr.observation?.headSha) break;
           if (
             blocker.checks.some((check) =>
-              [
-                "failure",
-                "timed_out",
-                "cancelled",
-                "action_required",
-                "startup_failure",
-              ].includes(check.conclusion),
+              ["failure", "timed_out", "cancelled", "action_required", "startup_failure"].includes(check.conclusion),
             )
           ) {
             state = NotificationState.ChecksFailed;
@@ -291,9 +233,7 @@ export class RepositoryPolicies {
             .dependencies()
             .some(
               (edge) =>
-                edge.dependentId === prId &&
-                this.tracking.pr(edge.prerequisiteId).observation?.lifecycle !==
-                  "merged",
+                edge.dependentId === prId && this.tracking.pr(edge.prerequisiteId).observation?.lifecycle !== "merged",
             );
           const cached = this.merging.noticeReadiness(prId);
           state = dependencies
@@ -309,25 +249,15 @@ export class RepositoryPolicies {
         }
       }
     }
-    return state === undefined
-      ? undefined
-      : this.instructions(prId, message.recipientAgentId, [state]);
+    return state === undefined ? undefined : this.instructions(prId, message.recipientAgentId, [state]);
   }
-  instructions(
-    prId: string,
-    agentId: string,
-    states: NotificationState[],
-  ): string | undefined {
+  instructions(prId: string, agentId: string, states: NotificationState[]): string | undefined {
     const pr = this.tracking.pr(prId),
       policy = this.get(prId);
     if (agentId !== pr.ownerAgentId) return undefined;
     const configured: Instructions =
-      policy?.ownerId === agentId && policy.epoch === pr.trackingEpoch
-        ? policy.instructions
-        : {};
-    const text = [
-      ...new Set(states.map((state) => configured[state] ?? defaults[state])),
-    ]
+      policy?.ownerId === agentId && policy.epoch === pr.trackingEpoch ? policy.instructions : {};
+    const text = [...new Set(states.map((state) => configured[state] ?? defaults[state]))]
       .filter((value) => value !== "")
       .join("\n");
     return text === "" ? undefined : text;

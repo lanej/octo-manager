@@ -4,15 +4,8 @@ import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, writeFile, rm, symlink, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
-import {
-  EntryState,
-  ChainState,
-  OperationState,
-} from "../src/merging/contracts.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
+import { EntryState, ChainState, OperationState } from "../src/merging/contracts.js";
 import { loadRepositoryConfig as load } from "../src/repository/config.js";
 import { NotificationState } from "../src/repository/contracts.js";
 import { schedulerClient } from "../src/client.js";
@@ -31,20 +24,9 @@ async function fixture() {
   const root = join(await realpath(directory), "repo");
   const git = Bun.spawnSync(["git", "init", "-q", root]);
   if (git.exitCode !== 0) throw new Error(git.stderr.toString());
-  Bun.spawnSync([
-    "git",
-    "-C",
-    root,
-    "remote",
-    "add",
-    "origin",
-    "git@github.com:owner/repo.git",
-  ]);
+  Bun.spawnSync(["git", "-C", root, "remote", "add", "origin", "git@github.com:owner/repo.git"]);
   await writeFile(join(root, "octo-manager.toml"), config);
-  await writeFile(
-    join(root, ".source-code.json"),
-    JSON.stringify({ schema_version: 1, stage: "alpha" }),
-  );
+  await writeFile(join(root, ".source-code.json"), JSON.stringify({ schema_version: 1, stage: "alpha" }));
   let writes = 0,
     decline = false;
   const options = {
@@ -89,28 +71,17 @@ async function fixture() {
             queueRequired: false,
             methods: ["squash" as const],
           }),
-        merge: (
-          _url: string,
-          _head: string,
-          _method: string,
-          _signal: AbortSignal,
-          beforeSend: () => void,
-        ) => {
+        merge: (_url: string, _head: string, _method: string, _signal: AbortSignal, beforeSend: () => void) => {
           beforeSend();
           writes++;
           return decline
-            ? Promise.reject(
-                new MergeDeclined("Branch policy rejected the merge"),
-              )
+            ? Promise.reject(new MergeDeclined("Branch policy rejected the merge"))
             : Promise.resolve("c".repeat(40));
         },
       },
     },
   };
-  let coordinator: ApplicationFixture = await createApplicationFixture(
-    join(directory, "state"),
-    options,
-  );
+  let coordinator: ApplicationFixture = await createApplicationFixture(join(directory, "state"), options);
   const pr = coordinator.tracking.track(url, owner, root);
   coordinator.store.tracking.observe(
     pr.id,
@@ -144,10 +115,7 @@ async function fixture() {
   );
   coordinator.store.repositories.tick();
   const stage = async (value: string) => {
-    await writeFile(
-      join(root, ".source-code.json"),
-      JSON.stringify({ schema_version: 1, stage: value }),
-    );
+    await writeFile(join(root, ".source-code.json"), JSON.stringify({ schema_version: 1, stage: value }));
     coordinator.store.repositories.tick();
   };
   return {
@@ -166,10 +134,7 @@ async function fixture() {
     },
     async reopen() {
       await coordinator.close();
-      coordinator = await createApplicationFixture(
-        join(directory, "state"),
-        options,
-      );
+      coordinator = await createApplicationFixture(join(directory, "state"), options);
     },
     async close() {
       await coordinator.close();
@@ -217,9 +182,7 @@ test("invalid or removed policy suspends inheritance, retains last valid instruc
   const f = await fixture();
   try {
     const instructions = () =>
-      f.c.store.repositories.instructions(f.pr.id, f.pr.ownerAgentId, [
-        NotificationState.ReviewFeedback,
-      ]);
+      f.c.store.repositories.instructions(f.pr.id, f.pr.ownerAgentId, [NotificationState.ReviewFeedback]);
     expect(instructions()).toBe("Repair the review findings.");
     await writeFile(join(f.root, "octo-manager.toml"), "invalid [[[");
     f.c.store.repositories.tick();
@@ -245,21 +208,12 @@ test("invalid or removed policy suspends inheritance, retains last valid instruc
 test("enrollment verifies repository identity and typed inspection exposes policy provenance", async () => {
   const f = await fixture();
   try {
-    const other = f.c.tracking.track(
-      "https://github.com/other/repo/pull/2",
-      owner,
-      f.root,
-    );
+    const other = f.c.tracking.track("https://github.com/other/repo/pull/2", owner, f.root);
     expect(f.c.store.repositories.get(other.id)).toBeUndefined();
     await f.c.start();
-    const response = await schedulerClient(
-      join(f.directory, "state"),
-    ).getTrackedPullRequest({ id: f.pr.id });
-    if (response.repositoryPolicy === undefined)
-      throw new Error("Missing typed policy");
-    expect(
-      unwire(DomainRepositoryAutomationPolicySchema, response.repositoryPolicy),
-    ).toMatchObject({
+    const response = await schedulerClient(join(f.directory, "state")).getTrackedPullRequest({ id: f.pr.id });
+    if (response.repositoryPolicy === undefined) throw new Error("Missing typed policy");
+    expect(unwire(DomainRepositoryAutomationPolicySchema, response.repositoryPolicy)).toMatchObject({
       instructions: { review_feedback: "Repair the review findings." },
       status: "valid",
       root: f.root,
@@ -267,10 +221,7 @@ test("enrollment verifies repository identity and typed inspection exposes polic
       autoMerge: true,
     });
     await rm(join(f.root, "octo-manager.toml"));
-    await symlink(
-      join(f.directory, "elsewhere"),
-      join(f.root, "octo-manager.toml"),
-    );
+    await symlink(join(f.directory, "elsewhere"), join(f.root, "octo-manager.toml"));
     expect(() => load(f.root)).toThrow();
   } finally {
     await f.close();
@@ -312,10 +263,7 @@ test("explicit chain queue overrides a previous inherited default", async () => 
   const f = await fixture();
   try {
     await f.stage("beta");
-    f.c.store.merging.control(
-      f.c.store.merging.entry(url).chainId,
-      ChainState.Cancelled,
-    );
+    f.c.store.merging.control(f.c.store.merging.entry(url).chainId, ChainState.Cancelled);
     f.c.store.merging.queue({
       requestId: "explicit-chain",
       actorId: f.pr.ownerAgentId,
@@ -339,16 +287,10 @@ test("definitive merge failures retain blocker instructions rather than requesti
     expect(entry.state).toBe(EntryState.WaitingOwner);
     const notice = f.c.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
-      .messages.find(
-        (message) => f.c.store.merging.noticeEntry(message.id)?.id === entry.id,
-      );
+      .messages.find((message) => f.c.store.merging.noticeEntry(message.id)?.id === entry.id);
     if (notice === undefined) throw new Error("Missing failure notice");
-    expect(f.c.store.repositories.forMessage(notice)).toContain(
-      "merge blocker",
-    );
-    expect(f.c.store.repositories.forMessage(notice)).not.toContain(
-      "record readiness",
-    );
+    expect(f.c.store.repositories.forMessage(notice)).toContain("merge blocker");
+    expect(f.c.store.repositories.forMessage(notice)).not.toContain("record readiness");
   } finally {
     await f.close();
   }
@@ -367,9 +309,7 @@ test("invalid policy on owner transfer cannot reuse the previous owner's overrid
     expect(f.c.store.merging.entry(url).ready).toBeUndefined();
     f.c.store.repositories.bind(f.pr.id, next.ownerAgentId, f.root);
     expect(
-      f.c.store.repositories.instructions(f.pr.id, next.ownerAgentId, [
-        NotificationState.ReviewFeedback,
-      ]),
+      f.c.store.repositories.instructions(f.pr.id, next.ownerAgentId, [NotificationState.ReviewFeedback]),
     ).not.toBe("Repair the review findings.");
   } finally {
     await f.close();
@@ -380,11 +320,8 @@ test("a failed same-head check rerun cannot inherit cached Ready instructions", 
   const f = await fixture();
   try {
     await f.c.merging.tick();
-    const action = f.c.store.tracking
-      .actions()
-      .find((value) => value.blocker.kind === "check_results");
-    if (action === undefined || action.blocker.kind !== "check_results")
-      throw new Error("Missing completion action");
+    const action = f.c.store.tracking.actions().find((value) => value.blocker.kind === "check_results");
+    if (action === undefined || action.blocker.kind !== "check_results") throw new Error("Missing completion action");
     const failed = {
       ...action,
       blocker: {
@@ -425,18 +362,11 @@ test("a resumed tracking epoch suspends inherited authority until it is rebound"
     expect(resumed.trackingEpoch).toBeGreaterThan(f.pr.trackingEpoch);
     f.c.store.repositories.tick();
     expect(f.c.store.merging.entry(url).autoMerge).toBe(false);
-    expect(f.c.store.repositories.get(f.pr.id)?.error).toContain(
-      "tracking epoch",
-    );
+    expect(f.c.store.repositories.get(f.pr.id)?.error).toContain("tracking epoch");
     f.c.store.repositories.bind(f.pr.id, resumed.ownerAgentId, f.root);
     expect(f.c.store.merging.entry(url).autoMerge).toBe(true);
-    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(
-      resumed.trackingEpoch,
-    );
-    f.c.store.merging.control(
-      f.c.store.merging.entry(url).chainId,
-      ChainState.Cancelled,
-    );
+    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(resumed.trackingEpoch);
+    f.c.store.merging.control(f.c.store.merging.entry(url).chainId, ChainState.Cancelled);
     f.c.store.repositories.tick();
     expect(f.c.store.merging.entries()).toHaveLength(1);
   } finally {
@@ -459,29 +389,15 @@ test("invalid inherited contexts stay disabled without replaying revocation, and
     expect(revoke).not.toHaveBeenCalled();
     expect(full).not.toHaveBeenCalled();
     expect(f.c.store.inputRevision()).toBe(revision);
-    f.c.store.merging.autoMerge(
-      f.pr.id,
-      current.ownerAgentId,
-      true,
-      "re-arm-inherited",
-      undefined,
-      "inherited",
-    );
+    f.c.store.merging.autoMerge(f.pr.id, current.ownerAgentId, true, "re-arm-inherited", undefined, "inherited");
     f.c.store.merging.policyStage(f.pr.id, "alpha");
     revoke.mockClear();
     f.c.store.repositories.tick();
     expect(revoke).toHaveBeenCalledTimes(1);
     expect(f.c.store.merging.entry(url).autoMerge).toBe(false);
     expect(f.c.store.merging.entry(url).autoMergeStage).toBeUndefined();
-    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(
-      current.trackingEpoch,
-    );
-    f.c.store.merging.autoMerge(
-      f.pr.id,
-      current.ownerAgentId,
-      true,
-      "explicit-override",
-    );
+    expect(f.c.store.merging.entry(url).trackingEpoch).toBe(current.trackingEpoch);
+    f.c.store.merging.autoMerge(f.pr.id, current.ownerAgentId, true, "explicit-override");
     revoke.mockClear();
     f.c.store.repositories.tick();
     expect(revoke).not.toHaveBeenCalled();
@@ -501,24 +417,14 @@ test("current notification instructions isolate unrelated entry and operation hi
     f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
     await f.c.merging.tick();
     const selected = f.c.store.merging.entry(url);
-    const failed = f.c.store.merging
-      .operations(f.pr.id)
-      .find((operation) => operation.state === OperationState.Failed);
-    const action = f.c.store.tracking
-      .actions(f.pr.id)
-      .find((value) => value.blocker.kind === "check_results");
+    const failed = f.c.store.merging.operations(f.pr.id).find((operation) => operation.state === OperationState.Failed);
+    const action = f.c.store.tracking.actions(f.pr.id).find((value) => value.blocker.kind === "check_results");
     const notice = f.c.store.tracking.inbox
       .list(f.pr.ownerAgentId, 0, false, true)
-      .messages.find(
-        (message) =>
-          f.c.store.merging.noticeEntry(message.id)?.id === selected.id,
-      );
+      .messages.find((message) => f.c.store.merging.noticeEntry(message.id)?.id === selected.id);
     if (failed === undefined || action === undefined || notice === undefined)
       throw new Error("Missing failed merge fixture");
-    const other = f.c.tracking.track(
-      "https://github.com/owner/repo/pull/99",
-      owner,
-    );
+    const other = f.c.tracking.track("https://github.com/owner/repo/pull/99", owner);
     f.c.store.merging.queue({
       requestId: "other-history",
       actorId: other.ownerAgentId,
@@ -531,12 +437,8 @@ test("current notification instructions isolate unrelated entry and operation hi
       entryId: otherEntry.id,
       prId: other.id,
     });
-    db.prepare("UPDATE merge_entries SET data='{}' WHERE pr_id=?").run(
-      other.id,
-    );
-    db.prepare("UPDATE merge_operations SET data='{}' WHERE pr_id=?").run(
-      other.id,
-    );
+    db.prepare("UPDATE merge_entries SET data='{}' WHERE pr_id=?").run(other.id);
+    db.prepare("UPDATE merge_operations SET data='{}' WHERE pr_id=?").run(other.id);
     expect(
       f.c.store.repositories.forMessage({
         sequence: 1,
@@ -548,20 +450,10 @@ test("current notification instructions isolate unrelated entry and operation hi
         nextCheckAt: 1000,
         applicable: true,
       }),
-    ).toBe(
-      f.c.store.repositories.instructions(f.pr.id, f.pr.ownerAgentId, [
-        NotificationState.OwnerReviewRequired,
-      ]),
-    );
-    expect(f.c.store.repositories.forMessage(notice)).toContain(
-      "merge blocker",
-    );
-    expect(() => f.c.store.merging.entries()).toThrow(
-      "Invalid merge-chain data",
-    );
-    expect(() => f.c.store.merging.operations()).toThrow(
-      "Invalid merge-chain data",
-    );
+    ).toBe(f.c.store.repositories.instructions(f.pr.id, f.pr.ownerAgentId, [NotificationState.OwnerReviewRequired]));
+    expect(f.c.store.repositories.forMessage(notice)).toContain("merge blocker");
+    expect(() => f.c.store.merging.entries()).toThrow("Invalid merge-chain data");
+    expect(() => f.c.store.merging.operations()).toThrow("Invalid merge-chain data");
   } finally {
     db.close();
     await f.close();
@@ -579,13 +471,9 @@ test("compiled policy reads retain fresh rows, independent values and invalid-da
     const original = f.c.store.repositories.get(f.pr.id);
     if (original === undefined) throw new Error("Missing stored policy");
     const save = (value: unknown) =>
-      db
-        .prepare("UPDATE settings SET value=? WHERE key=?")
-        .run(JSON.stringify(value), `repository-policy:${f.pr.id}`);
+      db.prepare("UPDATE settings SET value=? WHERE key=?").run(JSON.stringify(value), `repository-policy:${f.pr.id}`);
     save({ ...original, autoMerge: !original.autoMerge });
-    expect(f.c.store.repositories.get(f.pr.id)?.autoMerge).toBe(
-      !original.autoMerge,
-    );
+    expect(f.c.store.repositories.get(f.pr.id)?.autoMerge).toBe(!original.autoMerge);
     for (const invalid of [
       { ...original, status: "unknown" },
       { ...original, autoMerge: "true" },
@@ -593,9 +481,7 @@ test("compiled policy reads retain fresh rows, independent values and invalid-da
       { ...original, instructions: { unexpected: "instruction" } },
     ]) {
       save(invalid);
-      expect(() => f.c.store.repositories.get(f.pr.id)).toThrow(
-        "Invalid merge-chain data",
-      );
+      expect(() => f.c.store.repositories.get(f.pr.id)).toThrow("Invalid merge-chain data");
     }
     save(original);
     expect(f.c.store.repositories.get(f.pr.id)).toEqual(original);
@@ -614,10 +500,7 @@ test("idle policy enforcement batches stale historical contexts while retaining 
     const policy = f.c.store.repositories.get(f.pr.id);
     if (policy === undefined) throw new Error("Missing fixture policy");
     const historical = Array.from({ length: 100 }, (_, index) => {
-      const pr = f.c.store.tracking.track(
-        `https://github.com/owner/repo/pull/${String(index + 100)}`,
-        owner,
-      );
+      const pr = f.c.store.tracking.track(`https://github.com/owner/repo/pull/${String(index + 100)}`, owner);
       db.prepare("INSERT INTO settings(key,value) VALUES(?,?)").run(
         `repository-policy:${pr.id}`,
         JSON.stringify({ ...policy, prId: pr.id, epoch: pr.trackingEpoch + 1 }),
@@ -649,39 +532,22 @@ test("idle policy enforcement batches stale historical contexts while retaining 
       `merge-setting:${selected.id}`,
     );
     f.c.store.repositories.tick();
-    expect(
-      db
-        .prepare("SELECT value FROM settings WHERE key=?")
-        .get(`merge-setting:${selected.id}`)?.["value"],
-    ).toBe(
+    expect(db.prepare("SELECT value FROM settings WHERE key=?").get(`merge-setting:${selected.id}`)?.["value"]).toBe(
       JSON.stringify({ source: "inherited", epoch: selected.trackingEpoch }),
     );
     const normalized = f.c.store.merging.entry(f.pr.id);
-    db.prepare(
-      "UPDATE merge_entries SET data=json_set(data,'$.prId',?) WHERE pr_id=?",
-    ).run(selected.id, f.pr.id);
+    db.prepare("UPDATE merge_entries SET data=json_set(data,'$.prId',?) WHERE pr_id=?").run(selected.id, f.pr.id);
     expect(() => {
       f.c.store.repositories.tick();
     }).toThrow("PR identity mismatch");
-    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
-      JSON.stringify(normalized),
-      normalized.id,
-    );
-    f.c.store.merging.autoMerge(
-      f.pr.id,
-      f.pr.ownerAgentId,
-      true,
-      "explicit-historical-override",
-    );
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(JSON.stringify(normalized), normalized.id);
+    f.c.store.merging.autoMerge(f.pr.id, f.pr.ownerAgentId, true, "explicit-historical-override");
     const entry = f.c.store.merging.entry(f.pr.id);
     db.prepare("UPDATE merge_entries SET data='{}' WHERE pr_id=?").run(f.pr.id);
     expect(() => {
       f.c.store.repositories.tick();
     }).not.toThrow();
-    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(
-      JSON.stringify(entry),
-      entry.id,
-    );
+    db.prepare("UPDATE merge_entries SET data=? WHERE id=?").run(JSON.stringify(entry), entry.id);
     expect(f.c.store.merging.entry(f.pr.id).autoMerge).toBe(true);
   } finally {
     contexts.mockRestore();
@@ -698,15 +564,12 @@ test("policy file instruction changes invalidate notification inputs independent
     const before = f.c.store.merging.entry(url);
     await writeFile(
       join(f.root, "octo-manager.toml"),
-      config.replace(
-        "Repair the review findings.",
-        "Inspect the new policy instructions.",
-      ),
+      config.replace("Repair the review findings.", "Inspect the new policy instructions."),
     );
     expect(f.c.store.repositories.tick()).toEqual({ monitorFiles: true });
-    expect(
-      f.c.store.repositories.get(f.pr.id)?.instructions.review_feedback,
-    ).toBe("Inspect the new policy instructions.");
+    expect(f.c.store.repositories.get(f.pr.id)?.instructions.review_feedback).toBe(
+      "Inspect the new policy instructions.",
+    );
     expect(f.c.store.merging.entry(url)).toEqual(before);
     const changedRevision = f.c.inputs.broadRevision();
     expect(changedRevision).not.toBe(beforeRevision);

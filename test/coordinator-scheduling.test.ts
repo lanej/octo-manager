@@ -5,8 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApplicationFixture } from "./support/application.js";
 
-const sleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const workerPath = fileURLToPath(new URL("./fake-worker.mjs", import.meta.url));
 
 test("idle coordinator does not repeatedly read the jobs table", async () => {
@@ -39,19 +38,12 @@ test("job writes and resume wake dispatch, with retry availability scheduled at 
     coordinator.store.setPaused(true);
     const job = coordinator.store.submit({ kind: "resolve_conflict" }, "due");
     const availableAt = Date.now() + 150;
-    coordinator.store.save(
-      { ...job, status: "retry_wait", availableAt },
-      "fixture",
-    );
+    coordinator.store.save({ ...job, status: "retry_wait", availableAt }, "fixture");
     coordinator.store.setPaused(false);
     await sleep(60);
     expect(coordinator.store.get(job.id).attempts).toHaveLength(0);
     const end = Date.now() + 3000;
-    while (
-      coordinator.store.get(job.id).status !== "succeeded" &&
-      Date.now() < end
-    )
-      await sleep(20);
+    while (coordinator.store.get(job.id).status !== "succeeded" && Date.now() < end) await sleep(20);
     const result = coordinator.store.get(job.id);
     expect(result.status).toBe("succeeded");
     expect(result.attempts[0]?.startedAt).toBeGreaterThanOrEqual(availableAt);

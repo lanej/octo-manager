@@ -8,10 +8,7 @@ import { Type } from "typebox";
 import { Check } from "typebox/value";
 const Result = Type.Object(
   {
-    pr: Type.Object(
-      { id: Type.String(), url: Type.String() },
-      { additionalProperties: true },
-    ),
+    pr: Type.Object({ id: Type.String(), url: Type.String() }, { additionalProperties: true }),
   },
   { additionalProperties: true },
 );
@@ -30,27 +27,22 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     coordinator = await createApplicationFixture(directory, {
       trackingOptions: {
         read: () =>
-          offline
-            ? Promise.reject(new Error("GitHub temporarily unavailable"))
-            : Promise.resolve(observation),
+          offline ? Promise.reject(new Error("GitHub temporarily unavailable")) : Promise.resolve(observation),
         connect: () => {
           throw new Error("Unexpected delivery");
         },
       },
     });
   async function run(args: string[], agent: boolean) {
-    const child = Bun.spawn(
-      [process.execPath, "src/cli.ts", ...args, "--state", directory],
-      {
-        env: {
-          ...process.env,
-          CODEX_THREAD_ID: agent ? "controlled-thread" : "",
-          OCTO_MANAGER_AGENT: agent ? "" : "0",
-        },
-        stdout: "pipe",
-        stderr: "pipe",
+    const child = Bun.spawn([process.execPath, "src/cli.ts", ...args, "--state", directory], {
+      env: {
+        ...process.env,
+        CODEX_THREAD_ID: agent ? "controlled-thread" : "",
+        OCTO_MANAGER_AGENT: agent ? "" : "0",
       },
-    );
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const [output, error, code] = await Promise.all([
       new Response(child.stdout).text(),
       new Response(child.stderr).text(),
@@ -60,16 +52,7 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
   }
   try {
     await coordinator.start();
-    const tracked = await run(
-      [
-        "track",
-        "--url",
-        "https://github.com/o/r/pull/1",
-        "--thread-id",
-        "owner",
-      ],
-      true,
-    );
+    const tracked = await run(["track", "--url", "https://github.com/o/r/pull/1", "--thread-id", "owner"], true);
     expect(tracked.code).toBe(0);
     expect(tracked.error).toBe("");
     expect(tracked.output.trim().split("\n")).toHaveLength(1);
@@ -101,14 +84,7 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     const humanResult: unknown = JSON.parse(human.output);
     expect(humanResult).not.toHaveProperty("ok");
     const rejected = await run(
-      [
-        "track",
-        "--url",
-        "https://github.com/o/r/pull/2",
-        "--thread-id",
-        "owner",
-        "--full",
-      ],
+      ["track", "--url", "https://github.com/o/r/pull/2", "--thread-id", "owner", "--full"],
       true,
     );
     expect(rejected.code).toBe(1);
@@ -140,16 +116,9 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     });
     expect(erroredResult).toHaveProperty("pr.refreshErrorAtMs");
     await client.setPaused({ paused: true });
-    const job = coordinator.store.submit(
-      { kind: "resolve_conflict" },
-      "events-fixture",
-    );
+    const job = coordinator.store.submit({ kind: "resolve_conflict" }, "events-fixture");
     for (let index = 0; index < 30; index++)
-      coordinator.store.event(
-        job.id,
-        "fixture_event",
-        `Event ${String(index)} ` + "details ".repeat(100),
-      );
+      coordinator.store.event(job.id, "fixture_event", `Event ${String(index)} ` + "details ".repeat(100));
     const events = await run(["job", "events", job.id, "--after", "0"], true);
     expect(events.code).toBe(0);
     expect(events.output.trim().split("\n")).toHaveLength(1);
@@ -182,46 +151,20 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
         blockers: [],
       },
     );
-    const template = await run(
-      [
-        "history",
-        "policy",
-        "o/r",
-        "--policy-version",
-        "1",
-        "--tier",
-        "routine",
-      ],
-      true,
-    );
+    const template = await run(["history", "policy", "o/r", "--policy-version", "1", "--tier", "routine"], true);
     expect(template.code).toBe(0);
     expect(template.output.trim().split("\n")).toHaveLength(1);
     const policy: unknown = JSON.parse(template.output);
     expect(policy).toHaveProperty("policy.version", 1);
     expect(policy).not.toHaveProperty("template");
     const recovery = await run(
-      [
-        "history",
-        "policy",
-        "o/r",
-        "--policy-version",
-        "1",
-        "--tier",
-        "routine",
-        "--full",
-      ],
+      ["history", "policy", "o/r", "--policy-version", "1", "--tier", "routine", "--full"],
       true,
     );
     expect(recovery.code).toBe(0);
     const recovered: unknown = JSON.parse(recovery.output);
-    expect(recovered).toHaveProperty(
-      "template",
-      expect.stringContaining("Advisory"),
-    );
-    const huge = await run(
-      ["history", "policy", "o/r", "--policy-version", "2"],
-      true,
-    );
+    expect(recovered).toHaveProperty("template", expect.stringContaining("Advisory"));
+    const huge = await run(["history", "policy", "o/r", "--policy-version", "2"], true);
     expect(huge.code).toBe(0);
     const hugeResult: unknown = JSON.parse(huge.output);
     expect(hugeResult).not.toHaveProperty("template");
@@ -233,38 +176,22 @@ test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection an
     const delivery = coordinator.store.tracking.deliveries()[0];
     if (delivery === undefined) throw new Error("Missing read fixture");
     coordinator.store.tracking.inbox.record(delivery.id, "Conflict notice");
-    const read = await run(
-      ["read", delivery.id, "--agent-id", delivery.recipientAgentId],
-      true,
-    );
+    const read = await run(["read", delivery.id, "--agent-id", delivery.recipientAgentId], true);
     expect(read.code, read.error).toBe(0);
     expect(read.output.trim().split("\n")).toHaveLength(1);
     const readResult: unknown = JSON.parse(read.output);
     expect(readResult).toHaveProperty("evidenceWarning");
     expect(readResult).toHaveProperty("message.items.0.acknowledgedAtMs");
-    expect(readResult).toHaveProperty(
-      "message.items.0.action.action.conflict.headSha",
-      observation.headSha,
-    );
+    expect(readResult).toHaveProperty("message.items.0.action.action.conflict.headSha", observation.headSha);
     expect(readResult).not.toHaveProperty("message.recipientAgentId");
-    expect(readResult).not.toHaveProperty(
-      "message.items.0.action.action.profile",
-    );
+    expect(readResult).not.toHaveProperty("message.items.0.action.action.profile");
     expect(readResult).not.toHaveProperty("message.createdAtMs");
     expect(readResult).not.toHaveProperty("data");
-    const fullRead = await run(
-      ["read", delivery.id, "--agent-id", delivery.recipientAgentId, "--json"],
-      false,
-    );
+    const fullRead = await run(["read", delivery.id, "--agent-id", delivery.recipientAgentId, "--json"], false);
     expect(fullRead.code, fullRead.error).toBe(0);
     const fullReadResult: unknown = JSON.parse(fullRead.output);
-    expect(fullReadResult).toHaveProperty(
-      "message.recipientAgentId",
-      delivery.recipientAgentId,
-    );
-    expect(fullReadResult).toHaveProperty(
-      "message.items.0.action.action.profile",
-    );
+    expect(fullReadResult).toHaveProperty("message.recipientAgentId", delivery.recipientAgentId);
+    expect(fullReadResult).toHaveProperty("message.items.0.action.action.profile");
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });

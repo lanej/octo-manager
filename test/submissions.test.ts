@@ -24,10 +24,7 @@ import {
   type RepositorySnapshot,
   type SubmissionInput,
 } from "../src/submissions/contracts.js";
-import type {
-  SubmissionGitHub,
-  PublishedPR,
-} from "../src/submissions/github.js";
+import type { SubmissionGitHub, PublishedPR } from "../src/submissions/github.js";
 import type { RunStage } from "../src/submissions/worker.js";
 import type { AgentConnection } from "../src/agents/codex.js";
 const owner = {
@@ -43,9 +40,7 @@ const request = (id: string): SubmissionInput => ({
   headSha: "a".repeat(40),
   baseRef: "main",
   purpose: "Make the example explain its behavior.",
-  validation: [
-    { command: "check", result: "passed", note: "Caller observed local check" },
-  ],
+  validation: [{ command: "check", result: "passed", note: "Caller observed local check" }],
   draft: false,
   owner,
 });
@@ -88,11 +83,7 @@ class GitHub implements SubmissionGitHub {
   find(input: SubmissionInput): Promise<PublishedPR | undefined> {
     return Promise.resolve(this.published.get(input.requestId));
   }
-  publish(
-    input: SubmissionInput,
-    draft: { body: string },
-    marker: string,
-  ): Promise<PublishedPR> {
+  publish(input: SubmissionInput, draft: { body: string }, marker: string): Promise<PublishedPR> {
     this.writes++;
     const value = {
       url: `https://github.com/owner/repo/pull/${String(this.writes)}`,
@@ -101,16 +92,10 @@ class GitHub implements SubmissionGitHub {
       state: "open",
     };
     this.published.set(input.requestId, value);
-    return this.loseResponse
-      ? Promise.reject(new Error("Connection closed after create"))
-      : Promise.resolve(value);
+    return this.loseResponse ? Promise.reject(new Error("Connection closed after create")) : Promise.resolve(value);
   }
 }
-function runner(
-  roles: Role[],
-  block = false,
-  draft: { title?: string; body?: string } = {},
-): RunStage {
+function runner(roles: Role[], block = false, draft: { title?: string; body?: string } = {}): RunStage {
   return (role, _input, _schema, instructions, model) => {
     roles.push(role);
     const result: unknown =
@@ -141,8 +126,7 @@ function runner(
               claims: [
                 {
                   statement: "Example describes behavior",
-                  falsification:
-                    "Read the changed example and find no behavior explanation",
+                  falsification: "Read the changed example and find no behavior explanation",
                   evidenceRefs: ["diff"],
                   basis: "observed",
                 },
@@ -172,12 +156,9 @@ function runner(
 async function harness(run: RunStage, github = new GitHub()) {
   const directory = await mkdtemp(join(tmpdir(), "octo-submission-test-"));
   let store = new Store(directory),
-    tracking = new TrackingService(
-      store.tracking,
-      defaultTrackingConfig(),
-      Date.now,
-      { read: () => Promise.reject(new Error("Offline test")) },
-    );
+    tracking = new TrackingService(store.tracking, defaultTrackingConfig(), Date.now, {
+      read: () => Promise.reject(new Error("Offline test")),
+    });
   let service = new SubmissionService(store.submissions, tracking, {
     allowLegacyExecution: true,
     github,
@@ -208,12 +189,9 @@ async function harness(run: RunStage, github = new GitHub()) {
       await tracking.close();
       store.close();
       store = new Store(directory);
-      tracking = new TrackingService(
-        store.tracking,
-        defaultTrackingConfig(),
-        Date.now,
-        { read: () => Promise.reject(new Error("Offline test")) },
-      );
+      tracking = new TrackingService(store.tracking, defaultTrackingConfig(), Date.now, {
+        read: () => Promise.reject(new Error("Offline test")),
+      });
       service = new SubmissionService(store.submissions, tracking, {
         allowLegacyExecution: true,
         github,
@@ -241,9 +219,7 @@ test("publishes once, enrolls, reuses policy, and keeps private submissions supp
     const input = request("first"),
       value = h.service.submit(input);
     expect(h.service.submit(input).id).toBe(value.id);
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     expect(h.github.writes).toBe(1);
     expect(roles.sort()).toEqual(["change", "policy", "writer"]);
     const agent = h.store.tracking.agents()[0];
@@ -253,14 +229,10 @@ test("publishes once, enrolls, reuses policy, and keeps private submissions supp
     const notice = page.messages[0];
     if (notice === undefined) throw new Error("Missing notice");
     expect(notice.submissionId).toBe(value.id);
-    expect(
-      h.store.tracking.acknowledgeMessage(notice.id, agent.id).acknowledgedAt,
-    ).toBeDefined();
+    expect(h.store.tracking.acknowledgeMessage(notice.id, agent.id).acknowledgedAt).toBeDefined();
     h.github.private = true;
     const second = h.service.submit(request("private"));
-    await until(
-      () => h.store.submissions.get(second.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(second.id).state === State.Succeeded);
     expect(roles.filter((role) => role === "policy")).toHaveLength(1);
     expect(h.store.submissions.get(second.id).snapshot?.private).toBe(true);
     await h.reopen();
@@ -274,13 +246,9 @@ test("blocks missing repository requirements and preserves falsifiable brief", a
   const h = await harness(runner([], true));
   try {
     const value = h.service.submit(request("blocked"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.NeedsInput,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.NeedsInput);
     expect(h.github.writes).toBe(0);
-    expect(
-      h.store.submissions.get(value.id).brief?.change.claims[0]?.falsification,
-    ).toContain("Read");
+    expect(h.store.submissions.get(value.id).brief?.change.claims[0]?.falsification).toContain("Read");
   } finally {
     await h.close();
   }
@@ -312,9 +280,7 @@ test("policy analysis receives complete template discovery without change-specif
     const h = await harness(run, github);
     try {
       const value = h.service.submit(request("template-context"));
-      await until(
-        () => h.store.submissions.get(value.id).state === State.Succeeded,
-      );
+      await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
       expect(inputs).toHaveLength(1);
       expect(inputs[0]).toMatchObject({
         repository: "owner/repo",
@@ -350,16 +316,12 @@ test("caller validation stays reported while raw analysis and invalid references
     try {
       const value = h.service.submit(request("reported-evidence"));
       await until(() =>
-        [State.Succeeded, State.NeedsInput, State.Failed].includes(
-          h.store.submissions.get(value.id).state,
-        ),
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(h.store.submissions.get(value.id).state),
       );
       const saved = h.store.submissions.get(value.id),
         stage = saved.stages.find((item) => item.role === "change");
       expect(saved.brief?.change.claims[0]?.basis).toBe("reported");
-      expect(parse(ChangeAnalysisSchema, stage?.result).claims[0]?.basis).toBe(
-        "observed",
-      );
+      expect(parse(ChangeAnalysisSchema, stage?.result).claims[0]?.basis).toBe("observed");
       if (reference === "validation:0") {
         expect(saved.state).toBe(State.Succeeded);
         expect(h.github.writes).toBe(1);
@@ -374,11 +336,7 @@ test("caller validation stays reported while raw analysis and invalid references
   }
 });
 test("conditional requirements need source-backed not-applicable assessments", async () => {
-  for (const condition of [
-    "When changing keybindings:",
-    undefined,
-    "When changing deployment:",
-  ]) {
+  for (const condition of ["When changing keybindings:", undefined, "When changing deployment:"]) {
     const github = new GitHub(),
       snapshot = github.snapshot.bind(github),
       base = runner([]);
@@ -435,23 +393,17 @@ test("conditional requirements need source-backed not-applicable assessments", a
     try {
       const value = h.service.submit(request("conditional-check"));
       await until(() =>
-        [State.Succeeded, State.NeedsInput, State.Failed].includes(
-          h.store.submissions.get(value.id).state,
-        ),
+        [State.Succeeded, State.NeedsInput, State.Failed].includes(h.store.submissions.get(value.id).state),
       );
       const saved = h.store.submissions.get(value.id);
       if (condition === "When changing keybindings:") {
         expect(saved.state).toBe(State.Succeeded);
-        expect(saved.brief?.draft.requirementChecks[0]?.status).toBe(
-          "not_applicable",
-        );
+        expect(saved.brief?.draft.requirementChecks[0]?.status).toBe("not_applicable");
         expect(h.github.writes).toBe(1);
       } else {
         expect(saved.state).toBe(State.NeedsInput);
         expect(saved.detail).toContain(
-          condition === undefined
-            ? "verified source condition"
-            : "Unverified applicability condition",
+          condition === undefined ? "verified source condition" : "Unverified applicability condition",
         );
         expect(h.github.writes).toBe(0);
       }
@@ -477,15 +429,11 @@ test("blocks local-only writer output before publication or enrollment", async (
     "[audit](file:///audit.pdf)",
     "[audit](vscode://file/audit.pdf)",
   ]) {
-    const h = await harness(
-      runner([], false, { body: `Explains behavior. See ${reference}` }),
-    );
+    const h = await harness(runner([], false, { body: `Explains behavior. See ${reference}` }));
     try {
       const value = h.service.submit(request("local-evidence"));
       await until(() =>
-        [State.NeedsInput, State.Succeeded, State.Failed].includes(
-          h.store.submissions.get(value.id).state,
-        ),
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(h.store.submissions.get(value.id).state),
       );
       expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
       expect(h.store.submissions.get(value.id).detail).toContain("local-only");
@@ -508,9 +456,7 @@ test("retains description title and nonblank content checks at publication", asy
     try {
       const value = h.service.submit(request("invalid-description"));
       await until(() =>
-        [State.NeedsInput, State.Succeeded, State.Failed].includes(
-          h.store.submissions.get(value.id).state,
-        ),
+        [State.NeedsInput, State.Succeeded, State.Failed].includes(h.store.submissions.get(value.id).state),
       );
       expect(h.store.submissions.get(value.id).state).toBe(State.NeedsInput);
       expect(h.github.writes).toBe(0);
@@ -529,9 +475,7 @@ test("permits file labels and loopback prose with repository-specific title limi
   );
   try {
     const value = h.service.submit(request("file-label"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     expect(h.github.writes).toBe(1);
     const brief = h.store.submissions.get(value.id).brief,
       policy = h.store.submissions.policy("owner/repo"),
@@ -560,18 +504,12 @@ test("permits file labels and loopback prose with repository-specific title limi
         ],
       },
     };
+    expect(publicationBlockers(longer, longerTitlePolicy, ["example.md"])).toEqual([]);
     expect(
-      publicationBlockers(longer, longerTitlePolicy, ["example.md"]),
-    ).toEqual([]);
-    expect(
-      publicationBlockers(
-        { ...longer, draft: { ...longer.draft, title: "a".repeat(101) } },
-        longerTitlePolicy,
-        ["example.md"],
-      ),
-    ).toContain(
-      "Required title-length: PR title must be at most 100 characters",
-    );
+      publicationBlockers({ ...longer, draft: { ...longer.draft, title: "a".repeat(101) } }, longerTitlePolicy, [
+        "example.md",
+      ]),
+    ).toContain("Required title-length: PR title must be at most 100 characters");
   } finally {
     await h.close();
   }
@@ -582,9 +520,7 @@ test("recovers uncertain publication without repeating workers or creating anoth
   try {
     h.github.loseResponse = true;
     const value = h.service.submit(request("lost-response"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Uncertain,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Uncertain);
     const agent = h.store.tracking.agents()[0];
     if (agent === undefined) throw new Error("No agent");
     const old = h.store.tracking.inbox.list(agent.id).messages[0];
@@ -592,9 +528,7 @@ test("recovers uncertain publication without repeating workers or creating anoth
     h.store.tracking.acknowledgeMessage(old.id, agent.id);
     await h.reopen();
     h.service.retry(value.id);
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     expect(h.github.writes).toBe(1);
     expect(roles).toHaveLength(3);
     const messages = h.store.tracking.inbox.list(agent.id, 0, true).messages;
@@ -609,22 +543,16 @@ test("recovers a terminal callback gap exactly once after restart", async () => 
   const h = await harness(runner([]));
   try {
     const value = h.service.submit(request("callback-gap"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     h.store.submissions.invalidateNotices(value.id);
     const completed = h.store.submissions.get(value.id);
     h.store.submissions.save({ ...completed, notificationRevision: 0 });
     await h.reopen();
     const agent = h.store.tracking.agents()[0];
     if (agent === undefined) throw new Error("No agent");
-    expect(
-      h.store.tracking.inbox.list(agent.id, 0, false, true).messages,
-    ).toHaveLength(1);
+    expect(h.store.tracking.inbox.list(agent.id, 0, false, true).messages).toHaveLength(1);
     await h.reopen();
-    expect(
-      h.store.tracking.inbox.list(agent.id, 0, false, true).messages,
-    ).toHaveLength(1);
+    expect(h.store.tracking.inbox.list(agent.id, 0, false, true).messages).toHaveLength(1);
     expect(h.github.writes).toBe(1);
   } finally {
     await h.close();
@@ -635,9 +563,7 @@ test("notification defers a busy owner then replays an absent accepted message w
   let delivery: SubmissionNotifications | undefined;
   try {
     const value = h.service.submit(request("delivery"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     let busy = true;
     const sent: string[] = [];
     const connection: AgentConnection = {
@@ -649,11 +575,7 @@ test("notification defers a busy owner then replays an absent accepted message w
       },
       close() {},
     };
-    delivery = new SubmissionNotifications(
-      h.store.submissions,
-      h.tracking,
-      () => connection,
-    );
+    delivery = new SubmissionNotifications(h.store.submissions, h.tracking, () => connection);
     delivery.start(h.scheduler);
     await until(() => h.store.submissions.notices()[0]?.attempts.length === 1);
     expect(sent).toHaveLength(0);
@@ -665,12 +587,7 @@ test("notification defers a busy owner then replays an absent accepted message w
     await until(() => sent.length === 1);
     notice = h.store.submissions.notices()[0];
     if (notice === undefined) throw new Error("No notice");
-    h.store.submissions.saveNotice(
-      notice,
-      "accepted",
-      "Test absent queue recovery",
-      0,
-    );
+    h.store.submissions.saveNotice(notice, "accepted", "Test absent queue recovery", 0);
     delivery.wake();
     await until(() => sent.length === 2);
     expect(sent[0]).toBe(sent[1]);
@@ -685,9 +602,7 @@ test("receipt during send retains accepted transport evidence", async () => {
   let delivery: SubmissionNotifications | undefined;
   try {
     const value = h.service.submit(request("receipt-race"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     let finish: ((value: { queueId: string }) => void) | undefined;
     const connection: AgentConnection = {
       prepare: () => Promise.resolve({ busy: false }),
@@ -698,21 +613,14 @@ test("receipt during send retains accepted transport evidence", async () => {
         }),
       close() {},
     };
-    delivery = new SubmissionNotifications(
-      h.store.submissions,
-      h.tracking,
-      () => connection,
-    );
+    delivery = new SubmissionNotifications(h.store.submissions, h.tracking, () => connection);
     delivery.start(h.scheduler);
     await until(() => finish !== undefined);
     const notice = h.store.submissions.notices()[0];
-    if (notice === undefined || finish === undefined)
-      throw new Error("No pending notice");
+    if (notice === undefined || finish === undefined) throw new Error("No pending notice");
     h.store.tracking.acknowledgeMessage(notice.id, notice.recipient);
     finish({ queueId: "accepted-after-receipt" });
-    await until(
-      () => h.store.submissions.notices(true)[0]?.state === "accepted",
-    );
+    await until(() => h.store.submissions.notices(true)[0]?.state === "accepted");
     await delivery.close();
     delivery = undefined;
     await h.reopen();
@@ -728,19 +636,13 @@ test("a changed policy source invalidates the cache and unverified citations blo
     h = await harness(runner(roles));
   try {
     const first = h.service.submit(request("original-policy"));
-    await until(
-      () => h.store.submissions.get(first.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(first.id).state === State.Succeeded);
     h.github.revision = "policy-v2";
     const second = h.service.submit(request("changed-policy"));
-    await until(
-      () => h.store.submissions.get(second.id).state === State.NeedsInput,
-    );
+    await until(() => h.store.submissions.get(second.id).state === State.NeedsInput);
     expect(roles.filter((role) => role === "policy")).toHaveLength(2);
     expect(h.github.writes).toBe(1);
-    expect(h.store.submissions.get(second.id).detail).toContain(
-      "Unverified requirement citation",
-    );
+    expect(h.store.submissions.get(second.id).detail).toContain("Unverified requirement citation");
   } finally {
     await h.close();
   }
@@ -748,14 +650,7 @@ test("a changed policy source invalidates the cache and unverified citations blo
 test("cancelling parallel analysis prevents writer and publication", async () => {
   const roles: Role[] = [];
   let entered = false;
-  const blocked: RunStage = (
-    role,
-    _input,
-    _schema,
-    _instructions,
-    _model,
-    signal,
-  ) => {
+  const blocked: RunStage = (role, _input, _schema, _instructions, _model, signal) => {
     roles.push(role);
     entered = true;
     return new Promise((_resolve, reject) => {
@@ -785,24 +680,8 @@ test("cancelling parallel analysis prevents writer and publication", async () =>
 test("unique exact quotations repair model line numbers with retained correction evidence", async () => {
   const roles: Role[] = [],
     base = runner(roles);
-  const wrongLine: RunStage = async (
-    role,
-    input,
-    schema,
-    instructions,
-    model,
-    signal,
-    pid,
-  ) => {
-    const stage = await base(
-      role,
-      input,
-      schema,
-      instructions,
-      model,
-      signal,
-      pid,
-    );
+  const wrongLine: RunStage = async (role, input, schema, instructions, model, signal, pid) => {
+    const stage = await base(role, input, schema, instructions, model, signal, pid);
     if (role !== "policy") return stage;
     const result = {
       requirements: [
@@ -827,17 +706,11 @@ test("unique exact quotations repair model line numbers with retained correction
   const h = await harness(wrongLine);
   try {
     const value = h.service.submit(request("anchor"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     const policy = h.store.submissions.policy("owner/repo");
     expect(policy?.analysis.requirements[0]?.line).toBe(1);
-    expect(policy?.citationCorrections).toEqual([
-      { ruleId: "behavior", reportedLine: 42, verifiedLine: 1 },
-    ]);
-    const raw = h.store.submissions
-      .get(value.id)
-      .stages.find((stage) => stage.role === "policy")?.raw;
+    expect(policy?.citationCorrections).toEqual([{ ruleId: "behavior", reportedLine: 42, verifiedLine: 1 }]);
+    const raw = h.store.submissions.get(value.id).stages.find((stage) => stage.role === "policy")?.raw;
     expect(raw).toContain('"line":42');
   } finally {
     await h.close();
@@ -868,9 +741,7 @@ test("ambiguous exact quotes cannot repair an invalid citation anchor", async ()
   ];
   const anchored = anchorPolicy(invalid, sources);
   expect(anchored.corrections).toEqual([]);
-  expect(policyBlockers(anchored.analysis, sources)).toContain(
-    "Unverified requirement citation: behavior",
-  );
+  expect(policyBlockers(anchored.analysis, sources)).toContain("Unverified requirement citation: behavior");
 });
 
 test("policy citations preserve literal Markdown instead of rendered link text", async () => {
@@ -886,8 +757,7 @@ test("policy citations preserve literal Markdown instead of rendered link text",
   const analysis = parse(PolicyAnalysisSchema, stage.result);
   const rule = analysis.requirements[0];
   if (rule === undefined) throw new Error("Missing fixture requirement");
-  const suffix =
-    "Start with what changes and the resulting behavior, then explain why it matters.";
+  const suffix = "Start with what changes and the resulting behavior, then explain why it matters.";
   const source = {
     path: "CONTRIBUTING.md",
     sha: "policy-v1",
@@ -895,13 +765,11 @@ test("policy citations preserve literal Markdown instead of rendered link text",
   };
   const rendered = {
     ...analysis,
-    requirements: [
-      { ...rule, line: 1, quote: `Explain what changes and why. ${suffix}` },
-    ],
+    requirements: [{ ...rule, line: 1, quote: `Explain what changes and why. ${suffix}` }],
   };
-  expect(
-    policyBlockers(anchorPolicy(rendered, [source]).analysis, [source]),
-  ).toContain("Unverified requirement citation: behavior");
+  expect(policyBlockers(anchorPolicy(rendered, [source]).analysis, [source])).toContain(
+    "Unverified requirement citation: behavior",
+  );
   const literal = {
     ...analysis,
     requirements: [{ ...rule, line: 1, quote: suffix }],
@@ -914,24 +782,8 @@ test("retry reruns invalid worker results without discarding failed output or re
     const roles: Role[] = [],
       good = runner(roles);
     let fail = true;
-    const run: RunStage = async (
-      role,
-      input,
-      schema,
-      instructions,
-      model,
-      signal,
-      pid,
-    ) => {
-      const value = await good(
-        role,
-        input,
-        schema,
-        instructions,
-        model,
-        signal,
-        pid,
-      );
+    const run: RunStage = async (role, input, schema, instructions, model, signal, pid) => {
+      const value = await good(role, input, schema, instructions, model, signal, pid);
       if (role === "writer" && fail) {
         fail = false;
         return {
@@ -945,19 +797,13 @@ test("retry reruns invalid worker results without discarding failed output or re
     const h = await harness(run);
     try {
       const value = h.service.submit(request("invalid-writer"));
-      await until(
-        () => h.store.submissions.get(value.id).state === State.Failed,
-      );
+      await until(() => h.store.submissions.get(value.id).state === State.Failed);
       h.service.retry(value.id);
-      await until(
-        () => h.store.submissions.get(value.id).state === State.Succeeded,
-      );
+      await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
       expect(roles.filter((role) => role === "policy")).toHaveLength(1);
       expect(roles.filter((role) => role === "change")).toHaveLength(1);
       expect(roles.filter((role) => role === "writer")).toHaveLength(2);
-      const attempts = h.store.submissions
-        .get(value.id)
-        .stages.filter((stage) => stage.role === "writer");
+      const attempts = h.store.submissions.get(value.id).stages.filter((stage) => stage.role === "writer");
       expect(attempts).toHaveLength(2);
       expect(attempts[0]?.result).toEqual(invalid);
       expect(h.github.writes).toBe(1);
@@ -975,18 +821,14 @@ test("removed endpoint does not block recovery of a terminal callback", async ()
       ...request("removed-endpoint"),
       owner: { ...owner, endpoint: "retired" },
     });
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     h.store.submissions.invalidateNotices(value.id);
     h.store.submissions.save({
       ...h.store.submissions.get(value.id),
       notificationRevision: 0,
     });
     await h.reopen();
-    const agent = h.store.tracking
-      .agents()
-      .find((agent) => agent.endpoint === "retired");
+    const agent = h.store.tracking.agents().find((agent) => agent.endpoint === "retired");
     if (agent === undefined) throw new Error("Missing historical recipient");
     const page = h.store.tracking.inbox.list(agent.id, 0, false, true);
     expect(page.messages).toHaveLength(1);
@@ -1022,11 +864,7 @@ test("a removed endpoint cannot starve healthy submission recipients", async () 
       },
       close() {},
     };
-    delivery = new SubmissionNotifications(
-      h.store.submissions,
-      h.tracking,
-      () => connection,
-    );
+    delivery = new SubmissionNotifications(h.store.submissions, h.tracking, () => connection);
     delivery.start(h.scheduler);
     await until(() => sent.length === 1);
     expect(sent).toEqual(["local"]);
@@ -1044,9 +882,7 @@ test("stale inapplicable notification projections stay idle until new input", as
   let delivery: SubmissionNotifications | undefined;
   try {
     const value = h.service.submit(request("stale-notice-projection"));
-    await until(
-      () => h.store.submissions.get(value.id).state === State.Succeeded,
-    );
+    await until(() => h.store.submissions.get(value.id).state === State.Succeeded);
     const stale = h.store.submissions.notices()[0];
     if (stale === undefined) throw new Error("No notice");
     h.store.submissions.invalidateNotices(value.id);
@@ -1057,14 +893,10 @@ test("stale inapplicable notification projections stay idle until new input", as
       return [stale];
     };
     let sends = 0;
-    delivery = new SubmissionNotifications(
-      h.store.submissions,
-      h.tracking,
-      () => {
-        sends++;
-        throw new Error("Stale notice must not connect");
-      },
-    );
+    delivery = new SubmissionNotifications(h.store.submissions, h.tracking, () => {
+      sends++;
+      throw new Error("Stale notice must not connect");
+    });
     delivery.start(h.scheduler);
     await until(() => reads >= 2);
     const settledReads = reads;

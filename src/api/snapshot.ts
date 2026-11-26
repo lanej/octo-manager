@@ -12,12 +12,7 @@ import {
 } from "../gen/octomanager/v2/scheduler_pb.js";
 import { githubReads } from "../github/reads.js";
 import { wireIssue } from "../issues/rpc.js";
-import {
-  jobTransitions,
-  type Job,
-  type JobEvent,
-  type Status,
-} from "../jobs/domain.js";
+import { jobTransitions, type Job, type JobEvent, type Status } from "../jobs/domain.js";
 import { wireRepair } from "../repairs/rpc.js";
 import { wireScheduler } from "../scheduling/projection.js";
 import { actionStates, wireTracking } from "../tracking/rpc.js";
@@ -57,8 +52,7 @@ export function wireJob(job: Job) {
         startedAtMs: BigInt(a.startedAt),
         endedAtMs: a.endedAt === undefined ? undefined : BigInt(a.endedAt),
         workerPid: a.pid === undefined ? undefined : BigInt(a.pid),
-        exitObservedAtMs:
-          a.exitObservedAt === undefined ? undefined : BigInt(a.exitObservedAt),
+        exitObservedAtMs: a.exitObservedAt === undefined ? undefined : BigInt(a.exitObservedAt),
         error: a.error,
       }),
     ),
@@ -105,9 +99,7 @@ export function wireSnapshot(application: SnapshotSource) {
     issues: application.store.issues
       .list()
       .slice(0, 50)
-      .map((issue) =>
-        wireIssue(issue, application.store.issues.assignments(issue.id).at(-1)),
-      ),
+      .map((issue) => wireIssue(issue, application.store.issues.assignments(issue.id).at(-1))),
     tracking: wireTracking(application.services.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
     githubScheduler: wireScheduler(application.services.githubScheduler),
@@ -128,16 +120,12 @@ export function wireSnapshot(application: SnapshotSource) {
     repairs: application.services.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob),
     recentEvents: snapshot.events.map(wireEvent),
-    recoveryPid:
-      snapshot.recoveryPid === undefined
-        ? undefined
-        : BigInt(snapshot.recoveryPid),
-    allowedTransitions: Object.entries(jobTransitions).flatMap(
-      ([from, targets]) =>
-        targets.map((to) => ({
-          from: statusByName.get(from) ?? JobStatus.UNSPECIFIED,
-          to: statuses[to],
-        })),
+    recoveryPid: snapshot.recoveryPid === undefined ? undefined : BigInt(snapshot.recoveryPid),
+    allowedTransitions: Object.entries(jobTransitions).flatMap(([from, targets]) =>
+      targets.map((to) => ({
+        from: statusByName.get(from) ?? JobStatus.UNSPECIFIED,
+        to: statuses[to],
+      })),
     ),
   });
 }
@@ -155,11 +143,7 @@ export function retainedDashboardSnapshot(application: SnapshotSource) {
     },
     read: () => {
       const current = application.store.inputRevision();
-      if (
-        snapshot === undefined ||
-        inputRevision !== current ||
-        projectedRevision !== revision
-      ) {
+      if (snapshot === undefined || inputRevision !== current || projectedRevision !== revision) {
         snapshot = wireSnapshot(application);
         inputRevision = current;
         projectedRevision = revision;
@@ -167,10 +151,7 @@ export function retainedDashboardSnapshot(application: SnapshotSource) {
       return {
         ...snapshot,
         githubUsage: wireGitHubUsage(githubReads.usage()),
-        githubScheduler: create(
-          GitHubSchedulerStatusSchema,
-          wireScheduler(application.services.githubScheduler),
-        ),
+        githubScheduler: create(GitHubSchedulerStatusSchema, wireScheduler(application.services.githubScheduler)),
       };
     },
   };

@@ -23,12 +23,10 @@ export function dashboardRoutes(
           application.services.githubScheduler.emit("change");
         });
       }
-      const releaseHeartbeat =
-        application.services.githubScheduler.dashboardInterest();
+      const releaseHeartbeat = application.services.githubScheduler.dashboardInterest();
       let release = () => {};
       try {
-        if (request.reviews && request.url !== "")
-          release = application.services.githubScheduler.interest(request.url);
+        if (request.reviews && request.url !== "") release = application.services.githubScheduler.interest(request.url);
         while (!context.signal.aborted) {
           const view =
             request.reviews && request.url !== ""

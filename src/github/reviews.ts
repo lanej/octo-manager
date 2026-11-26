@@ -29,8 +29,7 @@ export interface PullRequestDetails {
 
 function providerText(value: unknown, fallback = ""): string {
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
   return fallback;
 }
 
@@ -58,8 +57,7 @@ export async function readPullRequestDetails(
   const collections = await Promise.all(
     sources.map(async ({ kind, path }) => {
       const items = await read(path, signal);
-      if (!Array.isArray(items))
-        throw new Error("GitHub returned an invalid message list");
+      if (!Array.isArray(items)) throw new Error("GitHub returned an invalid message list");
       const records: unknown[] = items;
       return { kind, items: records };
     }),
@@ -71,41 +69,28 @@ export async function readPullRequestDetails(
           throw new Error("GitHub returned an invalid review or comment");
         const item = githubRecord(value);
         const body = providerText(item["body"]);
-        const time = Date.parse(
-          providerText(item["submitted_at"] ?? item["created_at"]),
-        );
+        const time = Date.parse(providerText(item["submitted_at"] ?? item["created_at"]));
         const line = item["line"];
         return {
           id: `${kind}:${providerText(item["id"], "undefined")}`,
           url: cleanText(providerText(item["html_url"], prUrl), 2000),
-          author: cleanText(
-            providerText(githubRecord(item["user"])["login"], "unknown"),
-            200,
-          ),
+          author: cleanText(providerText(githubRecord(item["user"])["login"], "unknown"), 200),
           kind,
           state: cleanText(providerText(item["state"]), 100),
           bodyMarkdown: cleanText(body, 4000),
           atMs: Number.isFinite(time) ? time : 0,
           path: cleanText(providerText(item["path"]), 1000),
-          line:
-            typeof line === "number" && Number.isSafeInteger(line) && line > 0
-              ? line
-              : undefined,
+          line: typeof line === "number" && Number.isSafeInteger(line) && line > 0 ? line : undefined,
           commitSha: cleanText(providerText(item["commit_id"]), 100),
           bodyTruncated: body.length > 4000,
         };
       }),
     )
-    .sort((a, b) =>
-      a.atMs === b.atMs ? a.id.localeCompare(b.id) : a.atMs - b.atMs,
-    );
+    .sort((a, b) => (a.atMs === b.atMs ? a.id.localeCompare(b.id) : a.atMs - b.atMs));
   return {
     url: prUrl,
     title: cleanText(providerText(pr["title"]), 2000),
-    state:
-      pr["merged"] === true
-        ? "merged"
-        : cleanText(providerText(pr["state"], "unknown"), 100),
+    state: pr["merged"] === true ? "merged" : cleanText(providerText(pr["state"], "unknown"), 100),
     headSha: cleanText(providerText(githubRecord(pr["head"])["sha"]), 100),
     observedAtMs,
     messages,

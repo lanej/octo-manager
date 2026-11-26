@@ -6,17 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
 import { DatabaseSync } from "node:sqlite";
-import {
-  ActionState,
-  DeliveryState,
-  type ObservationInput,
-} from "../src/tracking/types.js";
+import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 const target = { harness: "codex", endpoint: "local", sessionId: "thread-one" };
 const url = "https://github.com/owner/repo/pull/1";
-const observation = (
-  patch: Partial<ObservationInput> = {},
-): ObservationInput => ({
+const observation = (patch: Partial<ObservationInput> = {}): ObservationInput => ({
   observedAt: 1234,
   headSha: "head1",
   baseSha: "base1",
@@ -33,45 +27,24 @@ test("PR point reads retain fresh observations without decoding unrelated histor
   const db = new DatabaseSync(join(dir, "jobs.sqlite"));
   try {
     const selected = store.tracking.track(url, target);
-    const other = store.tracking.track(
-      "https://github.com/owner/repo/pull/2",
-      target,
-    );
+    const other = store.tracking.track("https://github.com/owner/repo/pull/2", target);
     assert.equal(store.tracking.pr(selected.id).observation, undefined);
     store.tracking.observe(selected.id, observation(), config);
     assert.equal(store.tracking.pr(url).observation?.headSha, "head1");
     assert.equal(store.tracking.observationHead(selected.id), "head1");
-    store.tracking.observe(
-      selected.id,
-      observation({ headSha: "head2" }),
-      config,
-    );
-    store.tracking.observe(
-      other.id,
-      observation({ description: "Related to #1" }),
-      config,
-    );
+    store.tracking.observe(selected.id, observation({ headSha: "head2" }), config);
+    store.tracking.observe(other.id, observation({ description: "Related to #1" }), config);
     assert.equal(store.tracking.actions(selected.id).length, 2);
     assert.equal(store.tracking.actions(other.id).length, 1);
     const action = store.tracking
       .actions(selected.id)
-      .find(
-        (value) =>
-          value.prId === selected.id &&
-          value.progress.state === ActionState.Open,
-      );
+      .find((value) => value.prId === selected.id && value.progress.state === ActionState.Open);
     assert(action !== undefined);
     const prefix = action.id.replaceAll("-", "").slice(0, 8).toUpperCase();
     assert.deepEqual(store.tracking.action(prefix), action);
     store.tracking.progress(action.id, selected.ownerAgentId, false);
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Acknowledged,
-    );
-    assert.equal(
-      store.tracking.action(prefix).progress.state,
-      ActionState.Acknowledged,
-    );
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Acknowledged);
+    assert.equal(store.tracking.action(prefix).progress.state, ActionState.Acknowledged);
     assert.throws(() => store.tracking.action("missing"), /Action not found/);
     db.prepare("UPDATE pr_observations SET checks_json=? WHERE pr_id=?").run(
       JSON.stringify({ state: "complete", value: false }),
@@ -82,10 +55,7 @@ test("PR point reads retain fresh observations without decoding unrelated histor
     assert.deepEqual(store.tracking.pr(url), store.tracking.pr(selected.id));
     assert.throws(() => store.tracking.pr("missing"), /Tracked PR not found/);
     assert.throws(() => store.tracking.pr(other.id));
-    assert.equal(
-      store.tracking.referenceObservation(other.id)?.description,
-      "Related to #1",
-    );
+    assert.equal(store.tracking.referenceObservation(other.id)?.description, "Related to #1");
     assert.deepEqual(
       store.tracking.unfinishedActions().map((value) => value.progress.state),
       [ActionState.Acknowledged, ActionState.Open],
@@ -96,9 +66,9 @@ test("PR point reads retain fresh observations without decoding unrelated histor
     );
     assert.throws(() => store.tracking.referenceObservation(other.id));
 
-    db.prepare(
-      "UPDATE tracked_prs SET tracking_state='archived',tracking_epoch=tracking_epoch+1 WHERE id=?",
-    ).run(other.id);
+    db.prepare("UPDATE tracked_prs SET tracking_state='archived',tracking_epoch=tracking_epoch+1 WHERE id=?").run(
+      other.id,
+    );
     const contexts = store.tracking.prContexts();
     const context = contexts.find((value) => value.id === other.id);
     assert(context !== undefined);
@@ -115,10 +85,7 @@ test("PR point reads retain fresh observations without decoding unrelated histor
       store.tracking.prContext(url),
       contexts.find((value) => value.id === selected.id),
     );
-    assert.throws(
-      () => store.tracking.prContext("missing"),
-      /Tracked PR not found/,
-    );
+    assert.throws(() => store.tracking.prContext("missing"), /Tracked PR not found/);
     assert.throws(() => store.tracking.prs());
   } finally {
     db.close();
@@ -132,22 +99,13 @@ test("PR identity lookup preserves earliest-row matches across ID and URL", asyn
   const db = new DatabaseSync(join(dir, "jobs.sqlite"));
   try {
     const first = store.tracking.track(url, target);
-    const second = store.tracking.track(
-      "https://github.com/owner/repo/pull/2",
-      target,
-    );
-    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(
-      second.id,
-      first.id,
-    );
+    const second = store.tracking.track("https://github.com/owner/repo/pull/2", target);
+    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(second.id, first.id);
     assert.equal(store.tracking.pr(second.id).id, first.id);
     assert.equal(store.tracking.prContext(second.id).id, first.id);
     db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(url, first.id);
     assert.equal(store.tracking.pr(second.id).id, second.id);
-    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(
-      first.id,
-      second.id,
-    );
+    db.prepare("UPDATE tracked_prs SET url=? WHERE id=?").run(first.id, second.id);
     assert.equal(store.tracking.pr(first.id).id, first.id);
     assert.equal(store.tracking.prContext(first.id).id, first.id);
   } finally {
@@ -164,33 +122,21 @@ test("tracking preserves jobs across migration and restart, blocker episodes and
     const job = store.submit({ kind: "resolve_conflict" }, "old-job");
     const p = store.tracking.track(url, target);
     assert.equal(store.tracking.track(url, target).id, p.id);
-    assert.throws(
-      () => store.tracking.track(url, { ...target, sessionId: "other" }),
-      /another owner/,
-    );
+    assert.throws(() => store.tracking.track(url, { ...target, sessionId: "other" }), /another owner/);
     store.tracking.observe(p.id, observation(), config);
     store.tracking.observe(p.id, observation(), config);
     assert.equal(store.tracking.actions().length, 1);
     assert.equal(store.tracking.deliveries().length, 1);
     const action = store.tracking.actions()[0]!;
-    assert.throws(
-      () => store.tracking.progress(action.id, "wrong", false),
-      /another agent/,
-    );
-    assert.throws(
-      () => store.tracking.progress(action.id, p.ownerAgentId, true),
-      /Acknowledge/,
-    );
+    assert.throws(() => store.tracking.progress(action.id, "wrong", false), /another agent/);
+    assert.throws(() => store.tracking.progress(action.id, p.ownerAgentId, true), /Acknowledge/);
     store.tracking.progress(action.id, p.ownerAgentId, false);
     store.tracking.progress(action.id, p.ownerAgentId, true);
     const owner = store.tracking.assign(p.id, {
       ...target,
       sessionId: "thread-two",
     });
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Open);
     assert.notEqual(owner.ownerAgentId, p.ownerAgentId);
     store.tracking.observe(
       p.id,
@@ -200,19 +146,9 @@ test("tracking preserves jobs across migration and restart, blocker episodes and
       }),
       config,
     );
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Open,
-    );
-    store.tracking.observe(
-      p.id,
-      observation({ mergeability: "mergeable" }),
-      config,
-    );
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Resolved,
-    );
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Open);
+    store.tracking.observe(p.id, observation({ mergeability: "mergeable" }), config);
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Resolved);
     store.tracking.observe(p.id, observation(), config);
     assert.equal(store.tracking.actions().length, 2);
     store.close();
@@ -221,20 +157,9 @@ test("tracking preserves jobs across migration and restart, blocker episodes and
     assert.equal(store.tracking.actions().length, 2);
     assert.equal(store.tracking.pr(p.id).originAgentId, p.ownerAgentId);
     store.tracking.untrack(p.id);
-    assert(
-      store.tracking
-        .deliveries()
-        .every((d) => d.progress.state === DeliveryState.Cancelled),
-    );
-    assert.equal(
-      store.tracking.track(url, { ...target, sessionId: "thread-two" }).enabled,
-      true,
-    );
-    assert(
-      store
-        .eventsSince(0)
-        .some((e) => e.prId === p.id && e.kind === "action_opened"),
-    );
+    assert(store.tracking.deliveries().every((d) => d.progress.state === DeliveryState.Cancelled));
+    assert.equal(store.tracking.track(url, { ...target, sessionId: "thread-two" }).enabled, true);
+    assert(store.eventsSince(0).some((e) => e.prId === p.id && e.kind === "action_opened"));
   } finally {
     store.close();
     await rm(dir, { recursive: true, force: true });
@@ -287,11 +212,7 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
       }),
       config,
     );
-    assert(
-      store.tracking
-        .actions()
-        .every((a) => a.progress.state === ActionState.Open),
-    );
+    assert(store.tracking.actions().every((a) => a.progress.state === ActionState.Open));
     store.tracking.observe(
       p.id,
       observation({
@@ -302,14 +223,11 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
       config,
     );
     assert.equal(
-      store.tracking.actions().find((a) => a.blocker.kind === "check_failed")!
-        .progress.state,
+      store.tracking.actions().find((a) => a.blocker.kind === "check_failed")!.progress.state,
       ActionState.Superseded,
     );
     assert.equal(
-      store.tracking
-        .actions()
-        .find((a) => a.blocker.kind === "changes_requested")!.progress.state,
+      store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")!.progress.state,
       ActionState.Open,
     );
     store.tracking.observe(
@@ -319,18 +237,13 @@ test("check reruns and effective reviews retain uncertainty and do not resolve o
         mergeability: "mergeable",
         reviews: {
           state: "complete",
-          value: [
-            review,
-            { ...review, id: "r2", state: ReviewState.Approved, at: 20 },
-          ],
+          value: [review, { ...review, id: "r2", state: ReviewState.Approved, at: 20 }],
         },
       }),
       config,
     );
     assert.equal(
-      store.tracking
-        .actions()
-        .find((a) => a.blocker.kind === "changes_requested")!.progress.state,
+      store.tracking.actions().find((a) => a.blocker.kind === "changes_requested")!.progress.state,
       ActionState.Resolved,
     );
   } finally {

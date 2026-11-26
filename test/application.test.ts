@@ -4,10 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  assembleApplication,
-  createApplication,
-} from "../src/application/composition.js";
+import { assembleApplication, createApplication } from "../src/application/composition.js";
 import { ApplicationInputs } from "../src/application/inputs.js";
 import { Store, type InputScope } from "../src/coordinator/store.js";
 
@@ -98,17 +95,7 @@ test("PR observations wake evidence consumers without unrelated capability scans
     submission = spyOn(services.submissions, "wake"),
     submissionNotice = spyOn(services.submissionNotifications, "wake"),
     notifications = spyOn(services.notifications, "wake");
-  const spies = [
-    assessment,
-    merge,
-    digest,
-    tracking,
-    repair,
-    issue,
-    submission,
-    submissionNotice,
-    notifications,
-  ];
+  const spies = [assessment, merge, digest, tracking, repair, issue, submission, submissionNotice, notifications];
   try {
     store.tracking.observe(
       pr.id,
@@ -127,14 +114,7 @@ test("PR observations wake evidence consumers without unrelated capability scans
     expect(merge).toHaveBeenCalledTimes(1);
     expect(digest).toHaveBeenCalledWith(pr.id);
     expect(tracking).toHaveBeenCalledWith(pr.id);
-    for (const spy of [
-      repair,
-      issue,
-      submission,
-      submissionNotice,
-      notifications,
-    ])
-      expect(spy).not.toHaveBeenCalled();
+    for (const spy of [repair, issue, submission, submissionNotice, notifications]) expect(spy).not.toHaveBeenCalled();
     for (const spy of spies) spy.mockClear();
     assembly.inputs.changed({ source: "submissions", recipients: "all" });
     expect(submission).toHaveBeenCalledTimes(1);
@@ -158,12 +138,10 @@ test("close during startup shares work, prevents dispatch and releases ownership
     release = resolve;
   });
   const original = assembly.transport.listen.bind(assembly.transport);
-  const listen = spyOn(assembly.transport, "listen").mockImplementation(
-    async () => {
-      await held;
-      await original();
-    },
-  );
+  const listen = spyOn(assembly.transport, "listen").mockImplementation(async () => {
+    await held;
+    await original();
+  });
   try {
     const starting = assembly.runtime.start();
     expect(assembly.runtime.start()).toBe(starting);
@@ -192,9 +170,7 @@ test("failed startup retains a non-socket control file and releases the store", 
   try {
     await writeFile(join(path, "run.sock"), "Retain this control path");
     await assert.rejects(app.start(), { message: /non-socket control path/u });
-    expect(await readFile(join(path, "run.sock"), "utf8")).toBe(
-      "Retain this control path",
-    );
+    expect(await readFile(join(path, "run.sock"), "utf8")).toBe("Retain this control path");
     const replacement = new Store(path);
     replacement.close();
     await app.close();
@@ -207,15 +183,10 @@ test("failed startup retains a non-socket control file and releases the store", 
 test("failed job recovery closes constructed services and releases state ownership", async () => {
   const path = await directory();
   const store = new Store(path);
-  const job = store.submit(
-    { kind: "resolve_conflict" },
-    "retained-malformed-job",
-  );
+  const job = store.submit({ kind: "resolve_conflict" }, "retained-malformed-job");
   store.close();
   const db = new DatabaseSync(join(path, "jobs.sqlite"));
-  db.prepare(
-    "UPDATE jobs SET data=json_remove(data,'$.attempts') WHERE id=?",
-  ).run(job.id);
+  db.prepare("UPDATE jobs SET data=json_remove(data,'$.attempts') WHERE id=?").run(job.id);
   db.close();
   try {
     await assert.rejects(createApplication(path));

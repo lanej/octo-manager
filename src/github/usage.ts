@@ -53,8 +53,7 @@ export class GitHubUsage {
     capacity: number,
   ): GitHubTrafficBucket {
     const start = Math.floor(at / span) * span;
-    for (const key of buckets.keys())
-      if (key < start - (capacity - 1) * span) buckets.delete(key);
+    for (const key of buckets.keys()) if (key < start - (capacity - 1) * span) buckets.delete(key);
     let bucket = buckets.get(start);
     if (bucket === undefined) {
       bucket = { startedAtMs: start, rest: 0, graphql: 0, cacheReuses: 0 };
@@ -69,10 +68,7 @@ export class GitHubUsage {
     capacity: number,
   ): GitHubTrafficBucket[] {
     const latest = Math.floor(at / span) * span;
-    const earliest = Math.max(
-      latest - (capacity - 1) * span,
-      Math.floor(this.startedAtMs / span) * span,
-    );
+    const earliest = Math.max(latest - (capacity - 1) * span, Math.floor(this.startedAtMs / span) * span);
     for (const key of buckets.keys()) if (key < earliest) buckets.delete(key);
     const result: GitHubTrafficBucket[] = [];
     for (let start = earliest; start <= latest; start += span)
@@ -89,10 +85,7 @@ export class GitHubUsage {
   attempt(resource: GitHubResource): void {
     this.requests++;
     const at = this.now();
-    for (const bucket of [
-      this.bucket(this.minutes, at, 60000, 60),
-      this.bucket(this.hours, at, 3600000, 168),
-    ]) {
+    for (const bucket of [this.bucket(this.minutes, at, 60000, 60), this.bucket(this.hours, at, 3600000, 168)]) {
       if (resource === "core") bucket.rest++;
       else bucket.graphql++;
     }
@@ -148,11 +141,7 @@ export class GitHubUsage {
         : {
             rest: {
               ...this.budgets.core,
-              forecast: this.quotaHistory.forecast(
-                "core",
-                this.budgets.core,
-                at,
-              ),
+              forecast: this.quotaHistory.forecast("core", this.budgets.core, at),
             },
           }),
       ...(this.budgets.graphql === undefined
@@ -160,11 +149,7 @@ export class GitHubUsage {
         : {
             graphql: {
               ...this.budgets.graphql,
-              forecast: this.quotaHistory.forecast(
-                "graphql",
-                this.budgets.graphql,
-                at,
-              ),
+              forecast: this.quotaHistory.forecast("graphql", this.budgets.graphql, at),
             },
           }),
       restRetryAtMs: retryAtMs.core,
