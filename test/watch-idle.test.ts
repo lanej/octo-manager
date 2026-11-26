@@ -129,7 +129,7 @@ test(
       assert.equal(first.event?.kind, "first_append");
       const racing = await nextEvent(stream);
       assert.equal(racing.event?.kind, "racing_append");
-      assert.equal(racing.event?.sequence, cursor + 2n);
+      assert.equal(racing.event.sequence, cursor + 2n);
       abort.abort();
       await stream.return?.();
     } finally {
@@ -176,11 +176,11 @@ test(
       for (let index = 0; index < 205; index++) {
         const result = await nextEvent(first);
         assert.equal(result.event?.detail, String(index));
-        assert.equal(result.event?.sequence, cursor + BigInt(index + 1));
+        assert.equal(result.event.sequence, cursor + BigInt(index + 1));
       }
       const result = await nextEvent(other);
       assert.equal(result.event?.kind, "other_probe");
-      assert.equal(result.event?.sequence, cursor + 206n);
+      assert.equal(result.event.sequence, cursor + 206n);
       abort.abort();
       await first.return?.();
       await other.return?.();
