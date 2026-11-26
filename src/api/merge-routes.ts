@@ -1,4 +1,4 @@
-import type { Coordinator } from "../coordinator.js";
+import type { MergeService } from "../merging/service.js";
 import { wire, unwire, record } from "./codec.js";
 import { trackingOperation } from "../tracking/rpc.js";
 import * as api from "../gen/octomanager/v2/domain_pb.js";
@@ -11,13 +11,13 @@ function text(value: unknown): string {
   if (typeof value !== "string") throw new Error("Expected merge result text");
   return value;
 }
-export function mergeRoutes(coordinator: Coordinator) {
+export function mergeRoutes(merging: MergeService) {
   return {
     setAutoMerge(
       r: import("../gen/octomanager/v2/domain_pb.js").SetAutoMergeRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "auto_merge",
             ...record(unwire(api.SetAutoMergeRequestSchema, r)),
@@ -39,7 +39,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").QueueMergeChainRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "queue",
             ...record(unwire(api.QueueMergeChainRequestSchema, r)),
@@ -52,7 +52,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").InspectMergeChainsRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "inspect",
             ...record(unwire(api.InspectMergeChainsRequestSchema, r)),
@@ -65,7 +65,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").ListPRReferencesRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "references",
             ...record(unwire(api.ListPRReferencesRequestSchema, r)),
@@ -82,7 +82,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").ListPRDependenciesRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "dependencies",
             ...record(unwire(api.ListPRDependenciesRequestSchema, r)),
@@ -99,7 +99,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").ConfirmPRDependencyRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "confirm",
             ...record(unwire(api.ConfirmPRDependencyRequestSchema, r)),
@@ -112,7 +112,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").RemovePRDependencyRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "remove",
             ...record(unwire(api.RemovePRDependencyRequestSchema, r)),
@@ -125,7 +125,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").DecidePRReferenceRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "decide",
             ...record(unwire(api.DecidePRReferenceRequestSchema, r)),
@@ -138,7 +138,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").SetMergePolicyRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "policy",
             ...record(unwire(api.SetMergePolicyRequestSchema, r)),
@@ -151,7 +151,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").SetMergeReadyRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "ready",
             ...record(unwire(api.SetMergeReadyRequestSchema, r)),
@@ -164,7 +164,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").PauseMergeChainRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "pause",
             ...record(unwire(api.PauseMergeChainRequestSchema, r)),
@@ -177,7 +177,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").ResumeMergeChainRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "resume",
             ...record(unwire(api.ResumeMergeChainRequestSchema, r)),
@@ -190,7 +190,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").CancelMergeChainRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "cancel",
             ...record(unwire(api.CancelMergeChainRequestSchema, r)),
@@ -203,7 +203,7 @@ export function mergeRoutes(coordinator: Coordinator) {
       r: import("../gen/octomanager/v2/domain_pb.js").ReconcileMergeOperationRequest,
     ) {
       return trackingOperation(() => {
-        const result = coordinator.merging.command(
+        const result = merging.command(
           checked(CommandSchema, {
             op: "reconcile",
             ...record(unwire(api.ReconcileMergeOperationRequestSchema, r)),

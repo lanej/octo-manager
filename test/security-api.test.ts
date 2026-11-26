@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { AssessmentState } from "../src/gen/octomanager/v2/tracking_pb.js";
 import { renderDigest } from "../src/notifications/render.js";
@@ -31,7 +31,7 @@ test("versioned API keeps untrusted evidence behind full inspection and assessme
       })),
     },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     model: "synthetic",
     assess: () =>
       Promise.resolve({ disposition: "no_change_suggested", analysis: text }),

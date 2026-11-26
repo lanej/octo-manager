@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import type { Coordinator } from "../coordinator.js";
+import type { SnapshotSource } from "../application/api.js";
 import {
   AttemptSchema,
   JobEventSchema,
@@ -84,12 +84,12 @@ export function wireEvent(event: JobEvent) {
         : undefined,
   });
 }
-export function wireSnapshot(coordinator: Coordinator) {
+export function wireSnapshot(application: SnapshotSource) {
   // WHY: A single owner executes these synchronous reads without yielding; the cursor covers exactly the state returned.
-  const snapshot = coordinator.snapshot();
+  const snapshot = application.jobs.snapshot();
   return create(SnapshotSchema, {
-    instanceId: coordinator.store.instanceId(),
-    sequence: BigInt(coordinator.store.sequence()),
+    instanceId: application.store.instanceId(),
+    sequence: BigInt(application.store.sequence()),
     scheduler: {
       running: SchedulerState.RUNNING,
       paused: SchedulerState.PAUSED,
@@ -101,30 +101,30 @@ export function wireSnapshot(coordinator: Coordinator) {
       busy: WorkerState.BUSY,
       recovering: WorkerState.RECOVERING,
     }[snapshot.worker],
-    issues: coordinator.store.issues
+    issues: application.store.issues
       .list()
       .slice(0, 50)
       .map((issue) =>
-        wireIssue(issue, coordinator.store.issues.assignments(issue.id).at(-1)),
+        wireIssue(issue, application.store.issues.assignments(issue.id).at(-1)),
       ),
-    tracking: wireTracking(coordinator.tracking),
+    tracking: wireTracking(application.services.tracking),
     githubUsage: wireGitHubUsage(githubReads.usage()),
-    githubScheduler: wireScheduler(coordinator.githubScheduler),
-    mergeStatuses: coordinator.store.merging.entries().map((entry) => ({
+    githubScheduler: wireScheduler(application.services.githubScheduler),
+    mergeStatuses: application.store.merging.entries().map((entry) => ({
       prId: entry.prId,
       chainId: entry.chainId,
-      chainState: coordinator.store.merging.chain(entry.chainId).state,
+      chainState: application.store.merging.chain(entry.chainId).state,
       autoMerge: entry.autoMerge,
       autoMergeSource: entry.autoMergeSource ?? "explicit",
       autoMergeStage: entry.autoMergeStage ?? "",
       state: entry.state,
       detail: entry.detail,
-      prerequisiteUrls: coordinator.store.merging
+      prerequisiteUrls: application.store.merging
         .dependencies()
         .filter((edge) => edge.dependentId === entry.prId)
-        .map((edge) => coordinator.store.tracking.pr(edge.prerequisiteId).url),
+        .map((edge) => application.store.tracking.pr(edge.prerequisiteId).url),
     })),
-    repairs: coordinator.repairs.store.list().map(wireRepair),
+    repairs: application.services.repairs.store.list().map(wireRepair),
     jobs: snapshot.jobs.map(wireJob),
     recentEvents: snapshot.events.map(wireEvent),
     recoveryPid:

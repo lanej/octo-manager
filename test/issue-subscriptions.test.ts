@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
 import { IssueService, type IssueOptions } from "../src/issues/service.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import {
   IssueNotificationKind as Kind,
@@ -350,7 +350,7 @@ test("incomplete observations and refresh failures cannot advance the content ba
 
 test("generated RPC and native CLI update a paused closed issue without dispatch profiles", async () => {
   const directory = mkdtempSync(join(tmpdir(), "octo-issue-subscription-api-"));
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     const owner = coordinator.tracking.registerAgent({
@@ -488,7 +488,7 @@ test("service observation reconciles queued mixed digests while terminal source 
       throw new Error("Terminal subscription must not load dispatch profiles");
     },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingConfig: config,
     issueOptions,
     digestOptions: {

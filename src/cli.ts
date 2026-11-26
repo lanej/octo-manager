@@ -109,13 +109,13 @@ async function execute(parsed: ParsedCommand): Promise<void> {
     return;
   }
   if (command === "serve") {
-    const { Coordinator } = await import("./coordinator.js");
+    const { createApplication } = await import("./application/composition.js");
     const trackingConfig = loadTrackingConfig(values.config);
     const model = values.model ?? trackingConfig.workerModel;
-    const coordinator = new Coordinator(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
+    const coordinator = await createApplication(directory, { ...(model === undefined ? {} : { model }), trackingConfig });
     await coordinator.start();
     console.log(JSON.stringify(startupRecord(directory)));
-    await new Promise<void>((resolve, reject) => { const stop = () => { void coordinator.close().then(resolve, reject); }; coordinator.once("retired", resolve); process.once("SIGINT", stop); process.once("SIGTERM", stop); });
+    await new Promise<void>((resolve, reject) => { const stop = () => { void coordinator.close().then(resolve, reject); }; coordinator.onRetired(resolve); process.once("SIGINT", stop); process.once("SIGTERM", stop); });
     return;
   }
   const id = argument;

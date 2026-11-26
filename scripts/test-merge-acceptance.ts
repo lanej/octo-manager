@@ -5,7 +5,10 @@ import { setTimeout as delay } from "node:timers/promises";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "../test/support/application.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ChainState, EntryState } from "../src/merging/contracts.js";
 import { githubReads } from "../src/github/reads.js";
@@ -26,7 +29,7 @@ const repositories = [
   `${owner}/octo-merge-application-${stamp}`,
 ];
 const created: string[] = [];
-let coordinator: Coordinator | undefined;
+let coordinator: ApplicationFixture | undefined;
 let passed = false;
 async function command(
   binary: string,
@@ -131,7 +134,7 @@ try {
       timeoutMs: 10000,
     },
   };
-  coordinator = new Coordinator(join(directory, "state"), {
+  coordinator = await createApplicationFixture(join(directory, "state"), {
     trackingConfig: config,
   });
   const tracking = coordinator.store.tracking,

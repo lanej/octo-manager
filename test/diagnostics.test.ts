@@ -17,7 +17,7 @@ import { queryEventsSupported } from "../src/diagnostics/recorder.js";
 import { performanceScope, observers } from "../src/diagnostics/scope.js";
 import { sqlShape, statementKind } from "../src/diagnostics/sql.js";
 import { PerformanceCaptureState as State } from "../src/gen/octomanager/v2/diagnostics_pb.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { parseCommand } from "../src/cli/arguments.js";
 
@@ -170,7 +170,7 @@ test.if(queryEventsSupported())(
   "live typed RPC and actual CLI capture/show/stop work without starting another daemon",
   async () => {
     const dir = directory();
-    const coordinator = new Coordinator(dir);
+    const coordinator = await createApplicationFixture(dir);
     try {
       await coordinator.start();
       coordinator.command({ op: "pause" });

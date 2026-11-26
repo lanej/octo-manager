@@ -13,7 +13,7 @@ import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { codexHook } from "../src/integrations/codex.js";
 import type { QueueConnection, QueuedMessage } from "../src/agents/codex.js";
@@ -123,7 +123,7 @@ async function fixture(initialReview: string | null = null) {
     mergeOptions: { provider },
     digestOptions: { connect: () => queue },
   };
-  let coordinator = new Coordinator(directory, options);
+  let coordinator = await createApplicationFixture(directory, options);
   const pr = coordinator.store.tracking.track(url, owner);
   coordinator.store.tracking.observe(pr.id, current.observation, config);
   const action = coordinator.store.tracking
@@ -204,7 +204,7 @@ async function fixture(initialReview: string | null = null) {
     },
     async reopen() {
       await coordinator.close();
-      coordinator = new Coordinator(directory, options);
+      coordinator = await createApplicationFixture(directory, options);
       await start();
     },
     advance() {
@@ -657,7 +657,7 @@ test("a queue observer cannot cancel the direct-turn owner's check delivery", as
   };
   const current = snapshot(),
     sent: string[] = [];
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => 1000,
     trackingConfig: config,
     trackingOptions: {
@@ -1511,7 +1511,7 @@ test("local Pi pulls a Ready notice and queues only its verified head through th
   const state = snapshot();
   let writes = 0;
   let queueConnections = 0;
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => 1000,
     trackingConfig: config,
     trackingOptions: {

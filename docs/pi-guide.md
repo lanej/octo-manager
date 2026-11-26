@@ -17,7 +17,7 @@ The installed package's `docs/sdk.md` and `examples/sdk/12-full-control.ts` desc
 
 ## The working path
 
-Read [worker.ts](../src/worker.ts) alongside [coordinator.ts](../src/coordinator.ts). The coordinator forks a worker, persists its PID, then grants permission to start. The worker creates its restricted session, subscribes to turn/tool/text events, and calls `session.prompt`. Tool callbacks send typed requests back to the coordinator; they do not execute Git or GitHub operations themselves. The coordinator validates each request and returns a result as tool content.
+Read [worker.ts](../src/worker.ts) alongside [the job runtime](../src/jobs/runtime.ts). The job runtime forks a worker, persists its PID, then grants permission to start. The worker creates its restricted session, subscribes to turn/tool/text events, and calls `session.prompt`. Tool callbacks send typed requests back to the coordinator; they do not execute Git or GitHub operations themselves. The job runtime validates each request and returns a result as tool content.
 
 A PR-summary session has `read_pull_request`, bound to the exact public URL in its job. A conflict session has `read_conflict`, `write_resolution`, and `validate_resolution`, bound to a generated repository. The model cannot select another repository, launch a shell, or load project extensions through these tools. This restricts the application interface; Pi and its dependencies are still trusted host code.
 

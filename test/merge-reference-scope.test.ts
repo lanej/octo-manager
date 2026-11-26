@@ -1,6 +1,9 @@
 import { expect, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import type { MergeOptions } from "../src/merging/service.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
@@ -16,7 +19,7 @@ const observation: ObservationInput = {
   description: "",
 };
 
-function activeReferences(coordinator: Coordinator, prId: string) {
+function activeReferences(coordinator: ApplicationFixture, prId: string) {
   return coordinator.store.merging
     .refs(prId)
     .filter((ref) => ref.active)
@@ -25,7 +28,9 @@ function activeReferences(coordinator: Coordinator, prId: string) {
 
 async function fixture(mergeOptions: MergeOptions = {}) {
   const directory = await mkdtemp("/tmp/octo-reference-scope-");
-  const coordinator = new Coordinator(directory, { mergeOptions });
+  const coordinator = await createApplicationFixture(directory, {
+    mergeOptions,
+  });
   const prs = [1, 2, 3].map((number) => {
     const pr = coordinator.store.tracking.track(
       `https://github.com/owner/repo/pull/${String(number)}`,
@@ -74,7 +79,7 @@ test("one provider observation rescans only its PR and retains broad invalidatio
     await f.coordinator.merging.tick();
     expect(reads).not.toHaveBeenCalled();
     expect(roster).not.toHaveBeenCalled();
-    f.coordinator.inputsChanged();
+    f.coordinator.inputs.changed();
     await f.coordinator.merging.tick();
     expect(reads.mock.calls.map(([id]) => id).sort()).toEqual(
       f.prs.map((value) => value.id).sort(),
@@ -111,7 +116,7 @@ test("a PR invalidated after its position in an active scan is visited on the ne
     return original(id);
   });
   try {
-    f.coordinator.inputsChanged({ prId: second.id });
+    f.coordinator.inputs.changed({ prId: second.id });
     await f.coordinator.merging.tick();
     expect(reads.mock.calls.map(([id]) => id)).toEqual([second.id]);
     await f.coordinator.merging.tick();

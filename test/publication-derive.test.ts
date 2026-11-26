@@ -1,5 +1,5 @@
 import { WorkScheduler } from "../src/scheduling/work.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
@@ -177,7 +177,7 @@ test("default service retires queued legacy analysis and rejects new model reque
 
 test("v2 removes legacy execution RPCs while preserving saved history", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-legacy-rpc-"));
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     expect("submitPullRequest" in schedulerClient(directory)).toBe(false);

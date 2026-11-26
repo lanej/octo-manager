@@ -1,3 +1,4 @@
+import { managedQueuePolicy } from "./managed.js";
 import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { performanceScope } from "../diagnostics/scope.js";
 import { createHash } from "node:crypto";
@@ -83,29 +84,17 @@ export class DigestService {
     private now: () => number = Date.now,
     private options: DigestOptions = {},
   ) {
+    this.queuePolicy = managedQueuePolicy(
+      tracking.store,
+      store,
+      tracking.config,
+    );
     store.recover();
   }
-  managed = (agentId: string): boolean => {
-    const agent = this.tracking.store.agent(agentId);
-    if (agent.harness === "pi") return false;
-    return (
-      this.tracking.config.endpoints[agent.endpoint]?.delivery === "queue" ||
-      this.store
-        .list(agentId)
-        .some((value) => !terminal(value) || value.cleanupPending)
-    );
-  };
-  managedBatch = (agentIds: readonly string[]): ReadonlySet<string> => {
-    const managed = new Set<string>();
-    for (const agentId of new Set(agentIds)) {
-      try {
-        if (this.managed(agentId)) managed.add(agentId);
-      } catch {
-        // Omission retains the original per-row check if selection reaches this recipient.
-      }
-    }
-    return managed;
-  };
+  private readonly queuePolicy: ReturnType<typeof managedQueuePolicy>;
+  managed = (agentId: string): boolean => this.queuePolicy.managed(agentId);
+  managedBatch = (agentIds: readonly string[]): ReadonlySet<string> =>
+    this.queuePolicy.managedBatch(agentIds);
   start(scheduler: WorkScheduler): void {
     if (this.started || this.stopped) return;
     this.scheduled = scheduler.task("digest-scheduling", () => {

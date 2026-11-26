@@ -6,7 +6,8 @@ import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Coordinator, processAlive } from '../src/coordinator.js';
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
+import { processAlive } from "../src/jobs/runtime.js";
 import { request } from '../src/client.js';
 import { Store } from '../src/coordinator/store.js';
 const fake = fileURLToPath(new URL('./fake-worker.mjs', import.meta.url));
@@ -14,12 +15,12 @@ async function waitFor<T>(read: () => T, predicate: (value: T) => boolean, timeo
   const end = Date.now() + timeout;
   while (true) { const value = read(); if (predicate(value)) return value; if (Date.now() > end) throw new Error(`Timed out: ${JSON.stringify(value)}`); await new Promise(r => setTimeout(r, 20)); }
 }
-async function withCoordinator(mode: string, run: (c: Coordinator, directory: string) => Promise<void>, clock?: () => number) {
+async function withCoordinator(mode: string, run: (c: ApplicationFixture, directory: string) => Promise<void>, clock?: () => number) {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
-  const c = new Coordinator(directory, { workerPath: fake, workerEnv: { PG_TEST_MODE: mode }, now: clock });
+  const c = await createApplicationFixture(directory, { workerPath: fake, workerEnv: { PG_TEST_MODE: mode }, ...(clock === undefined ? {} : { now: clock }) });
   try { await c.start(); await run(c, directory); } finally { await c.close(); await rm(directory, { recursive: true, force: true }); }
 }
-function submit(c: Coordinator, requestId: string) { return c.command({ op: 'submit', requestId, task: { kind: 'resolve_conflict' } }); }
+function submit(c: ApplicationFixture, requestId: string) { return c.command({ op: 'submit', requestId, task: { kind: 'resolve_conflict' } }); }
 test('real IPC submissions deduplicate, pause, dispatch FIFO and record conflict states', async () => {
   await withCoordinator('resolve', async (c, directory) => {
     c.command({ op: 'pause' });
@@ -81,7 +82,7 @@ test('transient retry waits for injected clock; auth failure does not auto-retry
 });
 test('shutdown preserves queued jobs and marks active work interrupted', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
-  const c = new Coordinator(directory, { workerPath: fake, workerEnv: { PG_TEST_MODE: 'hang' } });
+  const c = await createApplicationFixture(directory, { workerPath: fake, workerEnv: { PG_TEST_MODE: 'hang' } });
   try {
     await c.start(); const active = submit(c, 'active'); const queued = submit(c, 'queued');
     await waitFor(() => c.store.events(0, active.id), e => e.some(x => x.kind === 'progress'));
@@ -93,13 +94,13 @@ test('shutdown preserves queued jobs and marks active work interrupted', async (
 test('recovery blocks replacement dispatch while the previous PID remains alive', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
   const survivor = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { stdio: 'ignore' });
-  let c: Coordinator | undefined;
+  let c: ApplicationFixture | undefined;
   try {
     const store = new Store(directory); const job = store.submit({ kind: 'resolve_conflict' }, 'old');
     store.save({ ...job, status: 'resolving', attempts: [{ number: 1, startedAt: Date.now(), pid: survivor.pid }] }, 'resolving'); store.close();
-    c = new Coordinator(directory, { workerPath: fake }); await c.start();
+    c = await createApplicationFixture(directory, { workerPath: fake }); await c.start();
     assert.equal(c.store.get(job.id).status, 'interrupted'); assert.equal(c.snapshot().worker, 'recovering');
-    await c.close(); c = new Coordinator(directory, { workerPath: fake }); await c.start();
+    await c.close(); c = await createApplicationFixture(directory, { workerPath: fake }); await c.start();
     assert.equal(c.snapshot().worker, 'recovering');
     assert.throws(() => c!.command({ op: 'retry', id: job.id }), /previous worker/);
     const waiting = submit(c, 'waiting'); c.tick(); assert.equal(c.store.get(waiting.id).status, 'queued');
@@ -108,7 +109,7 @@ test('recovery blocks replacement dispatch while the previous PID remains alive'
   } finally { survivor.kill(); await c?.close(); await rm(directory, { recursive: true, force: true }); }
 });
 test('a killed coordinator releases ownership and its child stops on disconnect', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'pg-')); let old: ChildProcess | undefined; let replacement: Coordinator | undefined;
+  const directory = await mkdtemp(join(tmpdir(), 'pg-')); let old: ChildProcess | undefined; let replacement: ApplicationFixture | undefined;
   try {
     old = spawn(process.execPath, [fileURLToPath(new URL('./coordinator-process.mjs', import.meta.url)), directory], { stdio: ['ignore', 'pipe', 'pipe'] });
     await Promise.race([once(old.stdout!, 'data'), once(old, 'exit').then(() => { throw new Error('Test coordinator exited before readiness'); })]);
@@ -117,7 +118,7 @@ test('a killed coordinator releases ownership and its child stops on disconnect'
     for (let i = 0; i < 200; i++) { const j = await request(directory, { op: 'get', id: job.id }); pid = j.attempts[0]?.pid; if (pid) break; await new Promise(r => setTimeout(r, 20)); }
     assert.ok(pid);
     const exit = once(old, 'exit'); old.kill('SIGKILL'); await exit;
-    replacement = new Coordinator(directory, { workerPath: fake }); await replacement.start();
+    replacement = await createApplicationFixture(directory, { workerPath: fake }); await replacement.start();
     assert.equal(replacement.store.get(job.id).status, 'interrupted');
     await waitFor(() => processAlive(pid!), alive => !alive);
     replacement.tick(); replacement.command({ op: 'retry', id: job.id }); replacement.tick();
@@ -143,13 +144,13 @@ test('simultaneous coordinator startup admits exactly one owner', async () => {
 for (const boundary of ['crash-before-pid', 'crash-after-pid']) test(`worker performs no tools when coordinator dies at ${boundary}`, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
   const old = spawn(process.execPath, [fileURLToPath(new URL('./coordinator-process.mjs', import.meta.url)), directory, boundary], { stdio: ['ignore', 'pipe', 'pipe'] });
-  let replacement: Coordinator | undefined;
+  let replacement: ApplicationFixture | undefined;
   try {
     await Promise.race([once(old.stdout!, 'data'), once(old, 'exit').then(() => { throw new Error('Coordinator failed before readiness'); })]);
     const exit = once(old, 'exit');
     const job = await request(directory, { op: 'submit', requestId: 'boundary', task: { kind: 'resolve_conflict' } });
     await exit;
-    replacement = new Coordinator(directory, { workerPath: fake }); await replacement.start();
+    replacement = await createApplicationFixture(directory, { workerPath: fake }); await replacement.start();
     assert.equal(replacement.store.get(job.id).status, 'interrupted');
     assert.equal(replacement.store.events(0, job.id).filter(e => e.kind === 'tool' || e.kind === 'progress').length, 0);
     await waitFor(() => { replacement!.tick(); return replacement!.snapshot().worker; }, worker => worker === 'idle');
@@ -159,7 +160,7 @@ for (const boundary of ['crash-before-pid', 'crash-after-pid']) test(`worker per
 });
 test('production Pi worker fails cleanly without login and releases its slot', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pg-'));
-  const c = new Coordinator(directory, { workerPath: fileURLToPath(new URL('../dist/worker.js', import.meta.url)), workerEnv: { PI_CODING_AGENT_DIR: join(directory, 'no-auth'), CODEX_HOME: join(directory, 'no-codex-auth') } });
+  const c = await createApplicationFixture(directory, { workerPath: fileURLToPath(new URL('../dist/worker.js', import.meta.url)), workerEnv: { PI_CODING_AGENT_DIR: join(directory, 'no-auth'), CODEX_HOME: join(directory, 'no-codex-auth') } });
   try {
     await c.start(); const job = submit(c, 'real-worker-no-auth');
     await waitFor(() => c.store.get(job.id), j => j.status === 'failed');

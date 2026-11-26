@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {
@@ -9,7 +9,7 @@ const sleep = (ms: number) =>
 
 test("one coordinator clock leaves passive assessment and repair history asleep until intake", async () => {
   const directory = await mkdtemp("/tmp/octo-global-work-");
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     await sleep(25);
@@ -22,7 +22,7 @@ test("one coordinator clock leaves passive assessment and repair history asleep 
       await sleep(1100);
       expect(assessments).not.toHaveBeenCalled();
       expect(repairs).not.toHaveBeenCalled();
-      coordinator.inputsChanged();
+      coordinator.inputs.changed();
       await sleep(30);
       expect(assessments).toHaveBeenCalled();
       expect(repairs).toHaveBeenCalled();
@@ -71,7 +71,7 @@ test("the shared coordinator scheduler completes assessments from provider intak
       ],
     },
   });
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     model: "synthetic",
     assess: async (input) => {
       seen.push(input.prUrl);

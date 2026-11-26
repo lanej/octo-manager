@@ -403,11 +403,13 @@ test("additional scope becomes a linked follow-up only when repository policy pe
 test("issue CLI traverses the generated socket API and exposes bounded persisted evidence", async () => {
   const { mkdtemp, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
-  const { Coordinator } = await import("../src/coordinator.js");
+  const { createApplicationFixture } = await import("./support/application.js");
   const { schedulerClient } = await import("../src/client.js");
   const directory = await mkdtemp(join(tmpdir(), "octo-issues-api-"));
   const f = fixture();
-  const coordinator = new Coordinator(directory, { issueOptions: f.options });
+  const coordinator = await createApplicationFixture(directory, {
+    issueOptions: f.options,
+  });
   try {
     await coordinator.start();
     const owner = coordinator.tracking.registerAgent({

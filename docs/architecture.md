@@ -39,7 +39,8 @@ Octo groups code by capability. Start in the folder named for the behavior you a
 | --- | --- |
 | `src/<capability>/` | Capability-owned contracts, decisions, orchestration, persistence, and local CLI, RPC, or provider adapters. |
 | `src/cli/` and `src/api/` | Shared command parsing and output, Connect route registration, and wire projections. |
-| [Coordinator](../src/coordinator.ts) and `src/coordinator/` | Compose the daemon and own its socket, process lifecycle, state lock, shared database, and migration ordering. |
+| [Application assembly](../src/application/composition.ts) and `src/application/` | Construct and connect capabilities, route scoped inputs, and own HTTP transport and native process lifecycle. |
+| `src/coordinator/` | Own the state lock, shared database, migration ordering, and committed input callbacks. |
 | `src/github/` and `src/jobs/` | Shared GitHub identity, transport, errors, and quota accounting. Pi job state, retry policy, worker support, and demo fixtures belong to jobs. The shared [GitHub review reader](../src/github/reviews.ts) supplies dashboard evidence. The Pi model summary stays with jobs. |
 | `proto/`, `src/gen/`, and `gen/` | Versioned API definitions and generated bindings. Public CLI and worker entry points stay at the source root for the packaged runtime. |
 | `cmd/octo-manager-tui/`, `internal/client/`, and `internal/tui/` | Terminal entry point, Connect client, and dashboard composition respectively. |
@@ -48,6 +49,10 @@ Octo groups code by capability. Start in the folder named for the behavior you a
 - **Application operations own workflow sequencing.** Capability RPC and CLI adapters validate and map boundary data, then invoke the operation. The [receipt merge request](../src/merging/receipt-request.ts) owns recipient resolution, digest acknowledgment, and scheduling. Acknowledgment and scheduling retain separate outcomes.
 - **Storage owns SQL and atomic writes.** Concrete stores are appropriate where SQLite is the implementation and a transaction protects a shared invariant. [Tracking ingestion](../src/tracking/store.ts) applies rules from [tracking policy](../src/tracking/policy.ts) and commits observations, actions, deliveries, and retirement together. Keep unrelated consumers behind narrow reads or operations. Snapshot projections can compose synchronous reads under the daemon's single-owner execution model.
 - **Ports belong to the consuming application.** Add one when it isolates a consequential effect or a real substitution boundary. The [issue ports](../src/issues/ports.ts) express tracker and dispatcher effects in issue terms, with implementations in [issue trackers](../src/issue-trackers/github.ts) and [dispatch](../src/dispatch/codex.ts). Use direct concrete calls when their contracts already fit. Preserve provider evidence and unknown outcomes across translation.
+
+Application creation returns a lifecycle handle with `start`, `close`, and `onRetired`. The CLI uses that handle; RPC routes receive explicit service, job, input, and lifecycle dependencies. Job execution owns worker attempts, recovery PIDs, cancellation, and retry deadlines. Input routing owns revisions and buffers construction-time wakeups until the assembled graph is bound. Queue ownership is a store-backed notification policy shared by tracking and digests.
+
+Startup acquires the state lock and recovers jobs before listening, starts services on the shared scheduler, then starts its clock. Shutdown closes admission, joins service and worker activity, closes the transport, and releases the database last. Concurrent startup and shutdown share lifecycle work; cleanup after failed startup retains foreign non-socket control files. Native checkpoint and retirement retain distinct confirmation and ownership fences.
 
 ### Dashboard and UI components
 

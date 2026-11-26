@@ -235,9 +235,11 @@ test("a later classification error cannot starve an earlier direct recipient", a
   const f = await fixture([owner("first"), owner("broken")]);
   const direct = f.ownerId(0),
     broken = f.ownerId(1);
-  const classify = spyOn(f.digests, "managed").mockImplementation((id) => {
+  f.config.endpoints["local"] = { delivery: "turn", socket: "/synthetic" };
+  const original = f.store.tracking.agent.bind(f.store.tracking);
+  const classify = spyOn(f.store.tracking, "agent").mockImplementation((id) => {
     if (id === broken) throw new Error("Later recipient unavailable");
-    return false;
+    return original(id);
   });
   try {
     await f.pass();

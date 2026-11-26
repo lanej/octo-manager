@@ -3,14 +3,16 @@ import { rejects } from "node:assert/strict";
 import { expect, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { schedulerClient } from "../src/client.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 
 test("API mutations invalidate reconciliation inputs while inspection stays quiet", async () => {
   const directory = await mkdtemp("/tmp/octo-api-intake-");
-  const coordinator = new Coordinator(directory, { now: () => 1000 });
+  const coordinator = await createApplicationFixture(directory, {
+    now: () => 1000,
+  });
   await coordinator.start();
   const client = schedulerClient(directory);
-  const changed = spyOn(coordinator, "inputsChanged");
+  const changed = spyOn(coordinator.inputs, "changed");
   try {
     await client.getSnapshot({});
     await client.listTrackedPullRequests({});
