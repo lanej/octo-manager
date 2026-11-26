@@ -35,7 +35,7 @@ export const InstructionsSchema = Type.Object(
   { additionalProperties: false },
 );
 const checkNames = Type.Array(Type.String({ minLength: 1, maxLength: 100 }), { minItems: 1, maxItems: 16 });
-const CheckSubstitutionsSchema = Type.Array(
+export const CheckSubstitutionsSchema = Type.Array(
   Type.Object(
     {
       replace: checkNames,

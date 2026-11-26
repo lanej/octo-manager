@@ -78,7 +78,7 @@ export class ReceiptMerges {
     return fingerprint([
       entry.id,
       entry.method,
-      entry.checks,
+      this.store.expectedChecks(entry, pr),
       entry.noCi,
       entry.autoMerge,
       entry.state,
@@ -231,12 +231,12 @@ export class ReceiptMerges {
         eligible = false;
       try {
         if (!dependencyBlocked) {
-          const expectedChecks =
-            authorized?.checks ??
-            this.store.inferredChecks(
-              pr,
-              currentMergeChecks(selected.pr.observation).map((check) => check.name),
-            );
+          const expectedChecks = authorized
+            ? this.store.expectedChecks(authorized, pr)
+            : this.store.inferredChecks(
+                pr,
+                currentMergeChecks(selected.pr.observation).map((check) => check.name),
+              );
           const snapshot = await this.inspect(pr.id, selected.pr.observation, expectedChecks);
           const fresh = this.tracking.store.pr(pr.id);
           const existing = this.store.entries(pr.id).find((e) => !terminal(e.state));
@@ -244,12 +244,12 @@ export class ReceiptMerges {
           const assessment = this.store.ownerAssessment(fresh);
           const policy = {
             method: target.method,
-            checks:
-              existing?.checks ??
-              this.store.inferredChecks(
-                fresh,
-                currentMergeChecks(snapshot.observation).map((check) => check.name),
-              ),
+            checks: existing
+              ? this.store.expectedChecks(existing, fresh)
+              : this.store.inferredChecks(
+                  fresh,
+                  currentMergeChecks(snapshot.observation).map((check) => check.name),
+                ),
             noCi: existing?.noCi ?? false,
             ...(!assessment ? {} : { ready: assessment }),
           };
@@ -412,20 +412,21 @@ export class ReceiptMerges {
       };
     if (!entry) {
       const o = pr.observation;
-      this.store.queue({
-        requestId: `receipt:${dispatchId}`,
-        actorId: agentId,
-        entries: [
-          {
-            prUrl: pr.url,
-            method: target.method,
-            checks: this.store.inferredChecks(
-              pr,
-              currentMergeChecks(o).map((check) => check.name),
-            ),
-          },
-        ],
-      });
+      this.store.queue(
+        {
+          requestId: `receipt:${dispatchId}`,
+          actorId: agentId,
+          entries: [
+            {
+              prUrl: pr.url,
+              method: target.method,
+              checks: [...new Set(currentMergeChecks(o).map((check) => check.name))],
+            },
+          ],
+        },
+        true,
+        "inferred",
+      );
       entry = { ...this.store.entry(pr.id), autoMerge: false };
       this.store.saveEntry(entry);
     }

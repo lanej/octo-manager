@@ -22,17 +22,17 @@ Independent check-run IDs remain independent. Only cancelled workflow suites wit
 
 ## Repository check substitutions
 
-When Octo infers expected checks, an owner-bound `octo-manager.toml` can replace the observed names of a substitutable workflow or job with a group of requirements. A rule applies if any exact name in `replace` was observed. Every name in `require` then becomes expected, including jobs GitHub has yet to expose. Explicit check declarations and GitHub-required contexts take precedence and are preserved. Existing entries keep their saved checks.
+When Octo infers expected checks, an owner-bound `octo-manager.toml` can replace the observed names of a substitutable workflow or job with a group of requirements. A rule applies if any exact name in `replace` was observed. Every name in `require` then becomes expected, including jobs GitHub has yet to expose. Explicit check declarations and GitHub-required contexts take precedence and are preserved. Inferred entries under configured rules re-evaluate current applicability and later check observations before merging. Entries with previously saved check declarations retain them.
 
 ```toml
 [[merging.check_substitutions]]
 base = "master"
 owner_prs_only = true
-replace = ["resources (macos-latest)", "Pi shared resources"]
+replace = ["resources (macos-latest)", "Pi shared resources", "resources (ubuntu-latest)"]
 require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
 ```
 
-The optional `base` limits a rule to the exact target branch. `owner_prs_only` requires both the repository owner's GitHub login as the PR author and a head branch in the same repository. Missing or different source evidence keeps the ordinary hosted check requirements.
+The optional `base` limits a rule to the exact target branch. `owner_prs_only` requires both the repository owner's GitHub login as the PR author and a head branch in the same repository. Missing or different source evidence keeps the ordinary hosted check requirements. If a previously applicable and observed substitution is revoked, Octo requires the original names listed in `replace` that were absent from its `require` list.
 
 After owner assessment, the regular merge scheduler can proceed once Linux and the current test-merge status pass, even while the hosted macOS job is queued. Receipt-based Ready offers still follow completion of the tracked head checks. See [merge chains](merge-chains.md#queue-and-assess) for the exact test-merge requirement.
 

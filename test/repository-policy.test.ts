@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { MergeDeclined } from "../src/merging/async-merge.js";
 import { test, expect, spyOn } from "bun:test";
+import { writeFileSync } from "node:fs";
 import { mkdtemp, writeFile, rm, symlink, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,7 +22,7 @@ const owner = {
 const config =
   'schema_version = 1\n[merging]\nauto_merge = "project_stage"\n[notifications.instructions]\nreview_feedback = "Repair the review findings."\n';
 
-async function fixture(overflow = false) {
+async function fixture(overflow = false, startsBeforePi = false, linuxOnly = false) {
   const directory = await mkdtemp(join(tmpdir(), "octo-repository-policy-"));
   const root = join(await realpath(directory), "repo");
   const git = Bun.spawnSync(["git", "init", "-q", root]);
@@ -35,7 +36,7 @@ async function fixture(overflow = false) {
 [[merging.check_substitutions]]
 base = "main"
 owner_prs_only = true
-replace = ["resources (macos-latest)", "Pi shared resources"]
+replace = ["resources (macos-latest)", "Pi shared resources", "resources (ubuntu-latest)"]
 require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
 `
         : ""),
@@ -43,9 +44,12 @@ require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
   await writeFile(join(root, ".source-code.json"), JSON.stringify({ schema_version: 1, stage: "alpha" }));
   let writes = 0,
     decline = false,
-    linuxPassed = false,
+    linuxPassed = linuxOnly,
+    hasPiEvidence = !startsBeforePi,
+    targetRef = "main",
     requiredByGitHub: string[] = [],
     now = Date.now();
+  let beforeDispatch: (() => void) | undefined;
   const checkEvidence = () => {
     const run = {
       id: "ci",
@@ -59,12 +63,14 @@ require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
     };
     return {
       state: "complete" as const,
-      value: overflow
-        ? [
-            { ...run, id: "mac", key: "mac", name: "resources (macos-latest)", status: "queued", conclusion: "" },
-            ...(linuxPassed ? [{ ...run, name: "resources (ubuntu-latest)" }] : []),
-          ]
-        : [run],
+      value:
+        overflow && hasPiEvidence
+          ? [
+              { ...run, id: "mac", key: "mac", name: "resources (macos-latest)", status: "queued", conclusion: "" },
+              ...(linuxPassed ? [{ ...run, name: "resources (ubuntu-latest)" }] : []),
+              ...(startsBeforePi ? [{ ...run, id: "original", key: "original" }] : []),
+            ]
+          : [linuxOnly ? { ...run, name: "resources (ubuntu-latest)" } : run],
     };
   };
   const options = {
@@ -81,7 +87,7 @@ require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
               observedAt: 1000,
               headSha: "a".repeat(40),
               baseSha: "b".repeat(40),
-              targetBase: { ref: "main", sha: "b".repeat(40) },
+              targetBase: { ref: targetRef, sha: "b".repeat(40) },
               lifecycle: "open" as const,
               mergeability: "mergeable" as const,
               checks: checkEvidence(),
@@ -100,6 +106,7 @@ require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
               : {}),
           }),
         merge: (_url: string, _head: string, _method: string, _signal: AbortSignal, beforeSend: () => void) => {
+          beforeDispatch?.();
           beforeSend();
           writes++;
           return decline
@@ -146,7 +153,38 @@ require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
     },
     finishLinux() {
       linuxPassed = true;
+      hasPiEvidence = true;
       now += 60000;
+    },
+    retarget(ref: string) {
+      targetRef = ref;
+      const observation = coordinator.store.tracking.pr(pr.id).observation;
+      if (!observation) throw new Error("Missing expected observation");
+      coordinator.store.tracking.observe(
+        pr.id,
+        {
+          ...observation,
+          targetBase: { ref, sha: "b".repeat(40) },
+        },
+        coordinator.tracking.config,
+      );
+    },
+    async removeSubstitutions() {
+      await writeFile(join(root, "octo-manager.toml"), config);
+      coordinator.store.repositories.tick();
+    },
+    loseSourceEvidence() {
+      const observation = coordinator.store.tracking.pr(pr.id).observation;
+      if (!observation) throw new Error("Missing expected observation");
+      const next = { ...observation };
+      delete next.pullRequestSource;
+      coordinator.store.tracking.observe(pr.id, next, coordinator.tracking.config);
+    },
+    withdrawAtDispatch() {
+      beforeDispatch = () => {
+        writeFileSync(join(root, "octo-manager.toml"), config);
+        coordinator.store.repositories.tick();
+      };
     },
     requireOnGitHub(checks: string[]) {
       requiredByGitHub = checks;
@@ -320,6 +358,75 @@ test("inferred Pi policy waits for Linux and can merge while hosted macOS is que
     await f.c.merging.tick();
     expect(f.writes).toBe(1);
     expect(f.c.store.merging.entries()[0]?.state).toBe(EntryState.Merged);
+  } finally {
+    await f.close();
+  }
+});
+
+test("inferred gates restore hosted checks when eligibility or repository policy changes", async () => {
+  for (const revoke of ["retarget", "remove"]) {
+    const f = await fixture(true);
+    try {
+      f.finishLinux();
+      if (revoke === "retarget") f.retarget("release");
+      else await f.removeSubstitutions();
+      f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+      await f.c.merging.tick();
+      expect(f.writes).toBe(0);
+      f.finishLinux();
+      await f.c.merging.tick();
+      expect(f.writes).toBe(0);
+      expect(f.c.store.merging.entry(url).detail).toContain("resources (macos-latest)");
+    } finally {
+      await f.close();
+    }
+  }
+});
+
+test("losing owner evidence while only Linux is visible cannot drop the hosted macOS requirement", async () => {
+  const f = await fixture(true, true, true);
+  try {
+    expect(f.c.store.merging.entry(url).checks).toEqual([
+      "resources (ubuntu-latest)",
+      "merge-status:Pi macOS verification",
+    ]);
+    f.loseSourceEvidence();
+    f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    expect(f.c.store.merging.entry(url).detail).toContain("resources (macos-latest)");
+  } finally {
+    await f.close();
+  }
+});
+
+test("withdrawing the inferred substitution before GitHub dispatch fences the merge", async () => {
+  const f = await fixture(true);
+  try {
+    f.finishLinux();
+    f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+    f.withdrawAtDispatch();
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    expect(f.c.store.merging.operations()[0]?.state).toBe(OperationState.Failed);
+    expect(f.c.store.merging.entry(url).detail).toContain("Merge context changed before GitHub dispatch");
+  } finally {
+    await f.close();
+  }
+});
+
+test("a late Pi workflow causes another eligibility inspection with the inferred macOS gate", async () => {
+  const f = await fixture(true, true);
+  try {
+    expect(f.c.store.merging.entry(url).checks).toEqual(["CI"]);
+    f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+    f.finishLinux();
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    expect(f.c.store.merging.entry(url).detail).toBe("Inferred check policy changed during eligibility inspection");
+    f.finishLinux();
+    await f.c.merging.tick();
+    expect(f.writes).toBe(1);
   } finally {
     await f.close();
   }
