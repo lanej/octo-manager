@@ -8,7 +8,7 @@ import {
   selectedServiceIdentity,
 } from "../src/install/activation.js";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { mkdir, lstat, readFile, writeFile, copyFile, rename, symlink, rm, chmod } from "node:fs/promises";
@@ -77,6 +77,24 @@ async function json(path: string): Promise<unknown> {
   if ((await lstat(path)).isSymbolicLink())
     throw new Error(`Preserve symlinked configuration; update its source explicitly: ${path}`);
   return JSON.parse(await readFile(path, "utf8"));
+}
+
+async function stageDependencies(stage: string): Promise<void> {
+  const manifest: unknown = await Bun.file(join(source, "package.json")).json();
+  if (!object(manifest)) throw new Error("Invalid package.json");
+  // Bun resolves every declared patch during a production-only install.
+  const patches = manifest["patchedDependencies"];
+  if (patches !== undefined) {
+    if (!object(patches)) throw new Error("Invalid Bun patchedDependencies");
+    for (const path of Object.values(patches)) {
+      if (typeof path !== "string" || path === "" || isAbsolute(path) || path.split("/").includes(".."))
+        throw new Error("Expected a repository-relative Bun patch path");
+      const destination = join(stage, path);
+      await mkdir(dirname(destination), { recursive: true });
+      await copyFile(join(source, path), destination);
+    }
+  }
+  for (const file of ["package.json", "bun.lock"]) await copyFile(join(source, file), join(stage, file));
 }
 
 async function configure(path: string, value: unknown, backup: string): Promise<void> {
@@ -184,7 +202,7 @@ async function main(): Promise<void> {
         await copyFile(join(source, "build/octo-manager"), join(stage, "build/octo-manager"));
         await chmod(join(stage, "build/octo-manager"), 0o755);
       }
-      for (const file of ["package.json", "bun.lock"]) await copyFile(join(source, file), join(stage, file));
+      await stageDependencies(stage);
       run(bun, ["install", "--production", "--frozen-lockfile", "--ignore-scripts"], stage);
       await writeFile(
         join(stage, "release.json"),

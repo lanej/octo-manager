@@ -10,6 +10,7 @@ import {
   readlink,
   readdir,
   copyFile,
+  cp,
   chmod,
   symlink,
   rm,
@@ -75,6 +76,7 @@ async function installerFixture() {
   await writeFile(config, '{"endpoints":{}}\n', { mode: 0o600 });
   await symlink(legacy, current);
   for (const name of ["package.json", "bun.lock"]) await copyFile(resolve(name), join(source, name));
+  await cp(resolve("patches"), join(source, "patches"), { recursive: true });
   for (const [entry, output] of [
     ["scripts/install-local.ts", "scripts"],
     ["src/cli.ts", "fixture-dist"],
@@ -135,7 +137,11 @@ const args=process.argv.slice(2);
 if(args[0]==='--version'){console.log(process.versions.bun);}
 else if(args[0]==='run'&&args[1]==='build'){}
 else if(args[0]==='node_modules/typescript/bin/tsc'){cpSync(join(process.cwd(),'fixture-dist'),args[2],{recursive:true});}
-else if(args[0]==='install'){mkdirSync(join(process.cwd(),'node_modules'));}
+else if(args[0]==='install'){
+  const { patchedDependencies } = JSON.parse(readFileSync('package.json', 'utf8'));
+  for (const patch of Object.values(patchedDependencies ?? {})) readFileSync(patch);
+  mkdirSync(join(process.cwd(),'node_modules'));
+}
 else if(args[1]==='lifecycle'&&args[2]==='artifact'&&process.env.OCTO_TEST_ARTIFACT_SEQUENCE){const path=process.env.OCTO_TEST_ARTIFACT_SEQUENCE;const value=JSON.parse(readFileSync(path,'utf8'));const identity=value.identities[Math.min(value.index,value.identities.length-1)];value.index++;writeFileSync(path,JSON.stringify(value));console.log(JSON.stringify({expected_identity:identity}));}
 else {const child=Bun.spawn([${JSON.stringify(runtime)},...args],{stdin:'inherit',stdout:'inherit',stderr:'inherit'});process.exitCode=await child.exited;}
 `,
