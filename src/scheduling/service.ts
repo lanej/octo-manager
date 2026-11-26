@@ -33,6 +33,7 @@ interface Pending {
 export class GitHubScheduler extends EventEmitter implements RequestDispatch {
   private task: ScheduledTask | undefined;
   private heartbeat: ScheduledTask | undefined;
+  private dashboards = 0;
   private queue: Pending[] = [];
   private busy = false;
   private inFlight: Promise<void> | undefined;
@@ -68,13 +69,33 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     });
     this.heartbeat = scheduler.task("github-heartbeat", () => {
       this.sequence++;
-      this.nextTickAtMs = this.now() + this.policy.tickMs;
+      this.nextTickAtMs =
+        this.dashboards > 0 ? this.now() + this.policy.tickMs : 0;
       this.poll();
-      this.emit("tick");
-      return this.nextTickAtMs;
+      this.emit("heartbeat");
+      return this.nextTickAtMs === 0 ? undefined : this.nextTickAtMs;
     });
     this.task.wake();
-    this.heartbeat.wake();
+    if (this.dashboards > 0) this.heartbeat.wake();
+  }
+  dashboardInterest(): () => void {
+    this.dashboards++;
+    if (this.dashboards === 1) {
+      this.nextTickAtMs = this.now() + this.policy.tickMs;
+      this.heartbeat?.at(this.nextTickAtMs);
+    }
+    return () => {
+      this.dashboards--;
+      if (this.dashboards === 0) {
+        this.nextTickAtMs = 0;
+        this.heartbeat?.at(undefined);
+      }
+    };
+  }
+  private changed(): void {
+    if (this.closed) return;
+    this.sequence++;
+    this.emit("change");
   }
   private nextDeadline(
     reviews: readonly ScheduledRefresh[],
@@ -118,6 +139,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     else state.graphqlRetryAtMs = Math.max(state.graphqlRetryAtMs, until);
     this.store.saveDispatch(state);
     this.task?.wake();
+    this.changed();
   }
   dispatch<T>(
     resource: GitHubResource,
@@ -134,6 +156,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       const cancel = () => {
         this.queue = this.queue.filter((value) => value !== item);
         this.task?.wake();
+        this.changed();
         reject(new GitHubRequestCancelledError());
       };
       const item: Pending = {
@@ -159,6 +182,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       signal?.addEventListener("abort", cancel, { once: true });
       this.queue.push(item);
       this.task?.wake();
+      this.changed();
     });
   }
   interest(raw: string): () => void {
@@ -196,6 +220,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         state: ScheduleState.Queued,
       });
     this.task?.wake();
+    this.changed();
   }
   reviewState(raw: string) {
     const url = canonicalPR(raw);
@@ -220,6 +245,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         state: ScheduleState.Running,
         lastAttemptAtMs: attemptedAt,
       });
+      this.changed();
       const work = this.interactive(async () => {
         try {
           const value = await this.readReviews(
@@ -261,6 +287,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       }).finally(() => {
         this.reviews.delete(entry.key);
         this.task?.wake();
+        this.changed();
       });
       this.reviews.set(entry.key, work);
     }
@@ -296,6 +323,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       ...dispatch,
       nextAtMs: this.now() + this.policy.requestSpacingMs,
     });
+    this.changed();
     this.inFlight = item
       .run()
       .finally(() => {
@@ -309,6 +337,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         });
         this.busy = false;
         this.task?.wake();
+        this.changed();
       })
       .catch(() => {});
   }

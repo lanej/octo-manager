@@ -223,19 +223,41 @@ export function createServices(
       ].every((service) => service.checkpointable());
     },
     changed(scope?: InputScope) {
+      // Unknown scoped changes retain conservative intake invalidation; known observations do not.
+      if (
+        scope !== undefined &&
+        (scope.source === undefined || scope.notificationEligibility === true)
+      )
+        notifications.wake();
       digests.wake(
         scopedDigestInputs && scope?.recipients !== "all"
           ? scope?.prId
           : undefined,
       );
-      assessments.wake();
-      repairs.wake();
-      tracking.wake();
-      submissions.wake();
-      submissionNotifications.wake();
-      issues.wake();
+      if (scope === undefined) {
+        assessments.wake();
+        repairs.wake();
+        tracking.inputsChanged();
+        submissions.wake();
+        submissionNotifications.wake();
+        issues.wake();
+        notifications.wake();
+      } else if (scope.source === undefined || scope.source === "tracking") {
+        // PR evidence drives these consumers; repair verification and external intake own their deadlines.
+        assessments.wake();
+        tracking.inputsChanged(scope.prId);
+        if (scope.prId === undefined) issues.wake();
+        else
+          issues.wakeForPullRequest(store.tracking.prContext(scope.prId).url);
+      } else if (scope.source === "issues") {
+        issues.wake();
+        tracking.wake();
+      } else if (scope.source === "submissions") {
+        submissions.wake();
+        submissionNotifications.wake();
+        tracking.wake();
+      }
       merging.wake();
-      notifications.wake();
       githubScheduler.emit("tick");
     },
     recipient(agentId: string) {

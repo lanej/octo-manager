@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { createApplicationFixture } from "./support/application.js";
+import { assembleApplication } from "../src/application/composition.js";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { TrackingState } from "../src/tracking/retirement.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
@@ -22,7 +23,7 @@ test("first PR archived by drain expiry wakes the sleeping notification monitor"
     checks: { state: "unavailable", reason: "Controlled incomplete checks" },
     reviews: { state: "complete", value: [] },
   };
-  const coordinator = await createApplicationFixture(directory, {
+  const application = await assembleApplication(directory, {
     now: () => now,
     trackingOptions: {
       read: () => Promise.resolve(observation),
@@ -43,8 +44,23 @@ test("first PR archived by drain expiry wakes the sleeping notification monitor"
         }),
     },
   });
+  const coordinator = { ...application.services, store: application.store };
+  const plans: Array<number | undefined> = [];
+  const scheduler = new WorkScheduler(
+    () => now,
+    undefined,
+    (key, work) => {
+      const result = work();
+      if (key !== "notification-flush") return result;
+      return Promise.resolve(result).then((deadline) => {
+        plans.push(deadline);
+        return deadline;
+      });
+    },
+  );
   try {
-    await coordinator.start();
+    application.services.start(scheduler);
+    scheduler.start();
     const pr = coordinator.tracking.track(
       "https://github.com/owner/repo/pull/1",
       { harness: "codex", endpoint: "local", sessionId: "controlled" },
@@ -59,16 +75,29 @@ test("first PR archived by drain expiry wakes the sleeping notification monitor"
       TrackingState.Draining,
     );
     expect(identities).toBe(0);
+    expect(plans.at(-1)).toBeUndefined();
     now += 86400001;
-    coordinator.store.tracking.retirement.expire();
+    coordinator.tracking.tick();
     const deadline = Date.now() + 1000;
     while (identities === 0 && Date.now() < deadline) await sleep(5);
     expect(coordinator.store.tracking.pr(pr.id).state).toBe(
       TrackingState.Archived,
     );
     expect(identities).toBe(1);
+    await sleep(10);
+    expect(plans.at(-1)).toBe(now + 60000);
+    const beforeDisable = plans.length;
+    coordinator.store.tracking.untrack(pr.id);
+    const parkedDeadline = Date.now() + 1000;
+    while (plans.length === beforeDisable && Date.now() < parkedDeadline)
+      await sleep(5);
+    expect(plans.length).toBeGreaterThan(beforeDisable);
+    expect(plans.at(-1)).toBeUndefined();
+    expect(identities).toBe(1);
   } finally {
-    await coordinator.close();
+    scheduler.stop();
+    await application.runtime.close();
+    await scheduler.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

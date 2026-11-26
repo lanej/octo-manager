@@ -1,5 +1,6 @@
 import { join } from "node:path";
-import { test, expect } from "bun:test";
+import { test, expect, jest, spyOn } from "bun:test";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import { DatabaseSync } from "node:sqlite";
 import { IssueStore } from "../src/issues/store.js";
 import { IssueService } from "../src/issues/service.js";
@@ -833,5 +834,206 @@ test("adding an initially empty issue description supersedes active implementati
     );
   } finally {
     f.close();
+  }
+});
+
+test("active assignments keep their five-second observation deadline", async () => {
+  jest.useFakeTimers({ now: 100000 });
+  const f = fixture();
+  let now = 100000;
+  const scheduler = new WorkScheduler(() => now);
+  const ticks = spyOn(f.service, "tick");
+  const settle = async () => {
+    for (let i = 0; i < 30; i++) {
+      jest.advanceTimersByTime(0);
+      await Promise.resolve();
+    }
+  };
+  const advance = (ms: number) => {
+    now += ms;
+    f.advance(ms);
+    jest.advanceTimersByTime(ms);
+  };
+  try {
+    f.service.start(scheduler);
+    scheduler.start();
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    const assignment = f.assignments[0];
+    if (assignment === undefined)
+      throw new Error("Missing investigation assignment");
+    f.results.set(assignment.id, {
+      disposition: "brief",
+      summary: "Investigated",
+      evidence: ["example"],
+      brief,
+    });
+    advance(4999);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    advance(1);
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(2);
+    expect(f.store.get(f.enrolled.id).brief).toEqual(brief);
+    expect(f.store.get(f.enrolled.id).assignmentId).toBe("");
+    expect(f.assignments).toHaveLength(1);
+  } finally {
+    ticks.mockRestore();
+    await f.service.close();
+    await scheduler.close();
+    f.close();
+    jest.useRealTimers();
+  }
+});
+
+test("uncertain tracker effects retain a one-minute reconciliation deadline without replay", async () => {
+  jest.useFakeTimers({ now: 100000 });
+  const f = fixture();
+  let now = 100000;
+  const scheduler = new WorkScheduler(() => now);
+  const tracker = f.options.trackers[0];
+  if (tracker === undefined) throw new Error("Missing tracker");
+  const reads = spyOn(tracker, "findPost");
+  const writes = spyOn(tracker, "post");
+  const settle = async () => {
+    for (let i = 0; i < 30; i++) {
+      jest.advanceTimersByTime(0);
+      await Promise.resolve();
+    }
+  };
+  const advance = (ms: number) => {
+    now += ms;
+    f.advance(ms);
+    jest.advanceTimersByTime(ms);
+  };
+  try {
+    f.store.save(
+      { ...f.enrolled, stage: IssueStage.Done, nextAt: now + 900000 },
+      "done",
+      "Done",
+    );
+    const effect = {
+      id: "uncertain-post",
+      issueId: f.enrolled.id,
+      kind: "post",
+      body: "Existing external write",
+      title: "",
+      state: "uncertain",
+      url: "",
+    };
+    f.store.effect(effect);
+    f.service.start(scheduler);
+    scheduler.start();
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(1);
+    advance(59999);
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(1);
+    f.posts.set(effect.id, effect.body);
+    advance(1);
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(2);
+    expect(writes).not.toHaveBeenCalled();
+    expect(f.store.effects()).toEqual([]);
+  } finally {
+    reads.mockRestore();
+    writes.mockRestore();
+    await f.service.close();
+    await scheduler.close();
+    f.close();
+    jest.useRealTimers();
+  }
+});
+
+test("only a linked PR observation wakes issue review before its tracker deadline", async () => {
+  jest.useFakeTimers({ now: 100000 });
+  const f = fixture();
+  const scheduler = new WorkScheduler(() => 100000);
+  const ticks = spyOn(f.service, "tick");
+  const settle = async () => {
+    for (let i = 0; i < 30; i++) {
+      jest.advanceTimersByTime(0);
+      await Promise.resolve();
+    }
+  };
+  try {
+    f.store.save(
+      {
+        ...f.enrolled,
+        stage: IssueStage.InReview,
+        prUrl: "https://test/pr/1",
+        prHead: "abc",
+        nextAt: 1000000,
+      },
+      "published",
+      "Published",
+    );
+    f.service.start(scheduler);
+    scheduler.start();
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    f.service.wakeForPullRequest("https://test/pr/unrelated");
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(1);
+    f.merge();
+    f.service.wakeForPullRequest("https://test/pr/1");
+    await settle();
+    expect(ticks).toHaveBeenCalledTimes(2);
+    expect(f.store.get(f.enrolled.id).stage).toBe(IssueStage.Verification);
+    expect(f.assignments[0]?.role).toBe(Role.Verification);
+  } finally {
+    ticks.mockRestore();
+    await f.service.close();
+    await scheduler.close();
+    f.close();
+    jest.useRealTimers();
+  }
+});
+
+test("repeated tracker failures renew their explicit retry deadline", async () => {
+  jest.useFakeTimers({ now: 100000 });
+  const f = fixture();
+  let now = 100000;
+  const scheduler = new WorkScheduler(() => now);
+  const tracker = f.options.trackers[0];
+  if (tracker === undefined) throw new Error("Missing tracker");
+  const reads = spyOn(tracker, "observe").mockRejectedValue(
+    new Error("Tracker offline"),
+  );
+  const settle = async () => {
+    for (let i = 0; i < 30; i++) {
+      jest.advanceTimersByTime(0);
+      await Promise.resolve();
+    }
+  };
+  const advance = (ms: number) => {
+    now += ms;
+    f.advance(ms);
+    jest.advanceTimersByTime(ms);
+  };
+  try {
+    f.service.start(scheduler);
+    scheduler.start();
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(1);
+    expect(f.store.get(f.enrolled.id).nextAt).toBe(220000);
+    advance(119999);
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(1);
+    advance(1);
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(2);
+    expect(f.store.get(f.enrolled.id).nextAt).toBe(340000);
+    advance(120000);
+    await settle();
+    expect(reads).toHaveBeenCalledTimes(3);
+    expect(f.store.get(f.enrolled.id).nextAt).toBe(460000);
+    expect(f.assignments).toEqual([]);
+  } finally {
+    reads.mockRestore();
+    await f.service.close();
+    await scheduler.close();
+    f.close();
+    jest.useRealTimers();
   }
 });

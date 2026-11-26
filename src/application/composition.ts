@@ -42,8 +42,15 @@ export async function assembleApplication(
     );
     register(workScheduler);
     const policyWork = workScheduler.task("repository-policy", () =>
-      ownedStore.repositories.tick().monitorFiles ? now() + 5000 : undefined,
+      ownedStore.repositories.scheduled(now()),
     );
+    ownedStore.repositories.watch(policyWork.wake);
+    register({
+      close: () => {
+        ownedStore.repositories.close();
+        return Promise.resolve();
+      },
+    });
     const services = createServices(
       directory,
       ownedStore,
@@ -72,7 +79,12 @@ export async function assembleApplication(
     inputs.bind({
       changed: (scope) => {
         services.changed(scope);
-        policyWork.wake();
+        if (
+          scope?.source === undefined ||
+          scope.source === "tracking" ||
+          scope.source === "merge"
+        )
+          policyWork.wake();
       },
       jobs: () => {
         jobs.wake();

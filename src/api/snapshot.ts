@@ -4,6 +4,7 @@ import {
   AttemptSchema,
   JobEventSchema,
   JobSchema,
+  GitHubSchedulerStatusSchema,
   JobStatus,
   SchedulerState,
   SnapshotSchema,
@@ -139,4 +140,38 @@ export function wireSnapshot(application: SnapshotSource) {
         })),
     ),
   });
+}
+
+// Dashboard subscribers share the durable projection. Liveness refreshes only the
+// time-sensitive usage/dispatch overlay; data ticks also invalidate transient jobs.
+export function retainedDashboardSnapshot(application: SnapshotSource) {
+  let snapshot: ReturnType<typeof wireSnapshot> | undefined;
+  let inputRevision: string | undefined;
+  let revision = 0;
+  let projectedRevision = -1;
+  return {
+    invalidate: () => {
+      revision++;
+    },
+    read: () => {
+      const current = application.store.inputRevision();
+      if (
+        snapshot === undefined ||
+        inputRevision !== current ||
+        projectedRevision !== revision
+      ) {
+        snapshot = wireSnapshot(application);
+        inputRevision = current;
+        projectedRevision = revision;
+      }
+      return {
+        ...snapshot,
+        githubUsage: wireGitHubUsage(githubReads.usage()),
+        githubScheduler: create(
+          GitHubSchedulerStatusSchema,
+          wireScheduler(application.services.githubScheduler),
+        ),
+      };
+    },
+  };
 }

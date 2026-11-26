@@ -58,7 +58,6 @@ test("RPC rejects a stale readiness head with a refresh diagnostic and preserves
   const directory = await mkdtemp(join(tmpdir(), "octo-readiness-rpc-"));
   const current = snapshot();
   const coordinator = await createApplicationFixture(directory, {
-    mergeOptions: { intervalMs: 600000 },
     trackingOptions: {
       read: () => Promise.resolve(structuredClone(current.observation)),
     },

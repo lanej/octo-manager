@@ -22,15 +22,36 @@ export class ApplicationInputs {
   changed = (scope?: InputScope): void => {
     this.generation++;
     if (scope === undefined) this.roster++;
-    else this.references.set(scope.prId, this.generation);
+    else if (scope.prId !== undefined)
+      this.references.set(scope.prId, this.generation);
     if (scope === undefined || scope.recipients === "all") this.broad++;
     if (this.targets !== undefined) {
       this.targets.changed(scope);
       return;
     }
     if (scope === undefined) this.pendingBroad = true;
-    else if (this.pending.get(scope.prId)?.recipients !== "all")
-      this.pending.set(scope.prId, scope);
+    else {
+      const key =
+        scope.prId === undefined
+          ? `source:${scope.source ?? "unknown"}`
+          : `pr:${scope.prId}`;
+      const previous = this.pending.get(key);
+      this.pending.set(key, {
+        ...(scope.prId === undefined ? {} : { prId: scope.prId }),
+        ...(previous?.recipients === "all" || scope.recipients === "all"
+          ? { recipients: "all" }
+          : {}),
+        ...(previous?.notificationEligibility === true ||
+        scope.notificationEligibility === true
+          ? { notificationEligibility: true }
+          : {}),
+        ...(previous === undefined || previous.source === scope.source
+          ? scope.source === undefined
+            ? {}
+            : { source: scope.source }
+          : {}),
+      });
+    }
   };
   jobs = (): void => {
     if (this.targets !== undefined) this.targets.jobs();

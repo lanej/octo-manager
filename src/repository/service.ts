@@ -1,4 +1,4 @@
-import { loadRepositoryConfig } from "./config.js";
+import { RepositoryPolicyMonitor } from "./monitor.js";
 import { inheritedAutomation, matchesBinding } from "./policy.js";
 import { RepositoryPolicyStore } from "./store.js";
 import { execFileSync } from "node:child_process";
@@ -18,12 +18,35 @@ import {
   type Instructions,
 } from "./contracts.js";
 export class RepositoryPolicies {
+  private monitor = new RepositoryPolicyMonitor();
+  private reconcileAt: number | undefined;
   constructor(
     private store: RepositoryPolicyStore,
     private tracking: TrackingStore,
     private merging: MergeStore,
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
+  watch(changed: () => void): void {
+    this.monitor.start(changed);
+  }
+  scheduled(now: number): number | undefined {
+    const refresh = this.reconcileAt !== undefined && now >= this.reconcileAt;
+    const { monitorFiles } = this.tick(refresh);
+    if (!monitorFiles) return (this.reconcileAt = undefined);
+    // Watcher failure retries are bounded; a slow safety pass recovers missed filesystem events.
+    const deadline = now + (this.monitor.retryNeeded() ? 5000 : 300000);
+    if (
+      refresh ||
+      this.reconcileAt === undefined ||
+      deadline < this.reconcileAt
+    )
+      this.reconcileAt = deadline;
+    return this.reconcileAt;
+  }
+  close(): void {
+    this.monitor.close();
+    this.reconcileAt = undefined;
+  }
   get(prId: string): AutomationPolicy | undefined {
     return this.store.get(prId);
   }
@@ -79,14 +102,12 @@ export class RepositoryPolicies {
     });
     this.tick();
   }
-  tick(): { monitorFiles: boolean } {
+  tick(refresh = true): { monitorFiles: boolean } {
+    if (refresh) this.monitor.invalidate();
     let monitorFiles = false;
-    const roots = new Map<
-      string,
-      ReturnType<typeof loadRepositoryConfig> | Error
-    >();
+    const roots = new Set<string>();
     const contexts = this.tracking.prContexts();
-    // Read current policies once per pass; no decisions survive into the next tick.
+    // Binding and merge decisions use current durable state; only file parsing is retained.
     const policies = this.store.enabledPolicies();
     const stale = contexts.filter((pr) => {
       const prior = policies.get(pr.id);
@@ -114,20 +135,8 @@ export class RepositoryPolicies {
         continue;
       }
       monitorFiles = true;
-      let loaded = roots.get(prior.root);
-      if (loaded === undefined) {
-        try {
-          if (realpathSync(prior.root) !== prior.root)
-            throw new Error("Repository root changed");
-          loaded = loadRepositoryConfig(prior.root);
-        } catch (error) {
-          loaded =
-            error instanceof Error
-              ? error
-              : new Error("Repository policy unavailable");
-        }
-        roots.set(prior.root, loaded);
-      }
+      roots.add(prior.root);
+      const loaded = this.monitor.read(prior.root);
       const next: AutomationPolicy =
         loaded instanceof Error
           ? {
@@ -198,6 +207,7 @@ export class RepositoryPolicies {
         this.merging.policyStage(pr.id, next.stage);
       }
     }
+    this.monitor.retain(roots);
     return { monitorFiles };
   }
   forMessage(message: AgentMessage): string | undefined {

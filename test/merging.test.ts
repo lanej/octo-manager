@@ -175,7 +175,6 @@ async function fixture(
     },
     mergeOptions: {
       provider,
-      intervalMs: 3600000,
       prepare(input) {
         writes.push("prepare");
         if (options.pausedPush === true)

@@ -526,6 +526,68 @@ test("shared tracking work rearms a busy delivery at its five-second deadline wi
   }
 });
 
+test("tracking sleeps without work and preserves unrelated delivery throttles across input wakes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "octo-tracking-input-wake-"));
+  const at = 1000;
+  const store = new Store(dir, () => at);
+  const config = defaultTrackingConfig();
+  const attempts = new Map<string, number>();
+  const scheduler = new WorkScheduler(() => at);
+  const service = new TrackingService(store.tracking, config, () => at, {
+    read: () => Promise.resolve(input),
+    connect: () =>
+      connection({
+        prepare: (agent) => {
+          attempts.set(
+            agent.sessionId,
+            (attempts.get(agent.sessionId) ?? 0) + 1,
+          );
+          return Promise.resolve({ busy: false });
+        },
+      }),
+  });
+  try {
+    assert.equal(service.tick(), undefined);
+    const first = store.tracking.track(url, target);
+    const second = store.tracking.track(
+      "https://github.com/owner/repo/pull/2",
+      {
+        ...target,
+        sessionId: "second-owner",
+      },
+    );
+    for (const pr of [first, second])
+      store.tracking.observe(pr.id, input, config);
+    // A retained legacy body without a typed notice cannot advance through direct delivery.
+    for (const delivery of store.tracking.deliveries())
+      store.tracking.inbox.record(delivery.id, "Retained legacy notification");
+    service.start(scheduler);
+    scheduler.start();
+    await until(
+      () => attempts.get("owner") === 1 && attempts.get("second-owner") === 1,
+    );
+    await Bun.sleep(20);
+    service.wake();
+    await Bun.sleep(20);
+    assert.deepEqual(
+      [...attempts],
+      [
+        ["owner", 1],
+        ["second-owner", 1],
+      ],
+    );
+    service.inputsChanged(second.id);
+    await until(() => attempts.get("second-owner") === 2);
+    assert.equal(attempts.get("owner"), 1);
+  } finally {
+    scheduler.stop();
+    await service.close();
+    await scheduler.close();
+    store.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("a handoff arriving during an active drain coalesces a prompt follow-up", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-handoff-during-drain-"));
   const store = new Store(dir);

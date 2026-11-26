@@ -43,6 +43,7 @@ export class IssueService {
   private work: Promise<void> | undefined;
   private task: ScheduledTask | undefined;
   private effectChecks = new Map<string, number>();
+  private interestedPullRequests = new Set<string>();
   private abort = new AbortController();
   constructor(
     readonly store: IssueStore,
@@ -325,6 +326,9 @@ export class IssueService {
   wake(): void {
     this.task?.wake();
   }
+  wakeForPullRequest(url: string): void {
+    if (this.interestedPullRequests.has(url)) this.wake();
+  }
   private nextDeadline(): number | undefined {
     if (this.abort.signal.aborted) return undefined;
     const now = this.now();
@@ -339,7 +343,7 @@ export class IssueService {
       );
     if (issues.length === 0 && this.store.effects().length === 0)
       return undefined;
-    const deadlines = [now + 30000];
+    const deadlines: number[] = [];
     for (const issue of issues) {
       if (issue.nextAt > now) deadlines.push(issue.nextAt);
       if (
@@ -351,7 +355,7 @@ export class IssueService {
     }
     for (const at of this.effectChecks.values())
       if (at > now) deadlines.push(at);
-    return Math.min(...deadlines);
+    return deadlines.length === 0 ? undefined : Math.min(...deadlines);
   }
   tick(): Promise<void> {
     if (this.work != null) return this.work;
@@ -514,6 +518,7 @@ export class IssueService {
             });
             continue;
           }
+          this.interestedPullRequests.add(published.url);
           this.options.codeHost.enroll(
             published.url,
             issue.ownerId,
@@ -761,7 +766,11 @@ export class IssueService {
   }
   private async run(): Promise<void> {
     let sourceIssueIds: ReadonlySet<string> | undefined;
-    for (const original of this.store.list()) {
+    const issues = this.store.list();
+    this.interestedPullRequests = new Set(
+      issues.flatMap((issue) => (issue.prUrl === "" ? [] : [issue.prUrl])),
+    );
+    for (const original of issues) {
       let issue = original;
       if (terminal(issue.stage) && issue.assignmentId === "") {
         if (
@@ -937,7 +946,11 @@ export class IssueService {
           error instanceof Error
             ? error.message
             : "Issue operation unavailable";
-        if (current.waiting !== Waiting.Blocked || current.detail !== detail)
+        if (
+          current.waiting !== Waiting.Blocked ||
+          current.detail !== detail ||
+          current.nextAt <= this.now()
+        )
           this.store.save(
             {
               ...current,

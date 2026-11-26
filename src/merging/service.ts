@@ -38,7 +38,6 @@ export interface MergeOptions {
   ) => string | undefined;
   provider?: MergeProvider;
   prepare?: Preparer;
-  intervalMs?: number;
   // No argument identifies roster-wide input; a PR argument identifies only that PR's reference input.
   referenceInputRevision?: (prId?: string) => string;
 }
@@ -66,7 +65,6 @@ export class MergeService {
     const root = join(directory, "merge-workspaces");
     mkdirSync(root, { recursive: true, mode: 0o700 });
     this.prepare = options.prepare ?? preparer(root, cases);
-    this.interval = options.intervalMs ?? 30000;
     this.issueGate = options.issueGate ?? (() => true);
     store.recover();
     this.receipts = new ReceiptMerges(
@@ -84,7 +82,6 @@ export class MergeService {
   }
   readonly receipts: ReceiptMerges;
   private profiles: Record<string, PreparationProfile>;
-  private interval: number;
   private issueGate: (url: string) => boolean;
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("merging", async () => {
@@ -99,17 +96,28 @@ export class MergeService {
         readiness.size === 0
       )
         return undefined;
-      const deadlines = [now + this.interval];
+      const deadlines: number[] = [];
       for (const entry of entries)
-        if (entry.nextAt > now) deadlines.push(entry.nextAt);
+        if (
+          entry.nextAt > now &&
+          entry.nextAt < Number.MAX_SAFE_INTEGER &&
+          this.active(entry) &&
+          !this.store.busy(entry.prId)
+        )
+          deadlines.push(entry.nextAt);
       for (const operation of operations)
-        if (operation.nextCheckAt !== undefined && operation.nextCheckAt > now)
+        if (
+          operation.state === OperationState.Running &&
+          operation.requestId !== undefined &&
+          operation.nextCheckAt !== undefined &&
+          operation.nextCheckAt > now
+        )
           deadlines.push(operation.nextCheckAt);
       for (const id of readiness) {
         const at = this.store.noticeReadiness(id)?.retryAt;
         if (at !== undefined && at > now) deadlines.push(at);
       }
-      return Math.min(...deadlines);
+      return deadlines.length === 0 ? undefined : Math.min(...deadlines);
     });
     this.task.wake();
   }
