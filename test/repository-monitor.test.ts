@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { watch, type FSWatcher } from "node:fs";
 import { RepositoryPolicyMonitor } from "../src/repository/monitor.js";
 import { loadRepositoryConfig } from "../src/repository/config.js";
 
@@ -169,6 +170,49 @@ test("missing checkouts stay parked and unavailable-watch retries preserve healt
     expect(monitor.retryNeeded()).toBe(false);
     monitor.read(healthy);
     expect(loads.get(healthy)).toBe(1);
+  } finally {
+    monitor.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("asynchronous watcher errors remain fail-closed until an explicit bounded retry", async () => {
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), "octo-policy-monitor-")),
+  );
+  const watchers: FSWatcher[] = [];
+  let changes = 0;
+  const monitor = new RepositoryPolicyMonitor(
+    loadRepositoryConfig,
+    (path, listener) => {
+      const watcher = watch(path, listener);
+      watchers.push(watcher);
+      return watcher;
+    },
+  );
+  monitor.start(() => {
+    changes++;
+  });
+  try {
+    await writeFile(
+      join(directory, "octo-manager.toml"),
+      "schema_version = 1\n",
+    );
+    await Bun.sleep(25);
+    expect(monitor.read(directory)).toMatchObject({ status: "valid" });
+    expect(watchers).toHaveLength(2);
+    const watcher = watchers[0];
+    if (watcher === undefined) throw new Error("Missing parent watcher");
+    watcher.emit("error", new Error("Controlled watcher failure"));
+    expect(changes).toBe(1);
+    expect(monitor.retryNeeded()).toBe(true);
+    for (let i = 0; i < 10; i++)
+      expect(monitor.read(directory)).toBeInstanceOf(Error);
+    expect(watchers).toHaveLength(2);
+    monitor.retryUnavailable();
+    expect(monitor.read(directory)).toMatchObject({ status: "valid" });
+    expect(watchers).toHaveLength(4);
+    expect(monitor.retryNeeded()).toBe(false);
   } finally {
     monitor.close();
     await rm(directory, { recursive: true, force: true });

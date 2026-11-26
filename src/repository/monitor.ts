@@ -15,12 +15,19 @@ interface Root {
   failed: boolean;
   generation: number;
 }
+type Observe = (
+  path: string,
+  listener: (event: string, filename: string | null) => void,
+) => FSWatcher;
 
 // Directory watches survive atomic config replacement; the parent watch detects root replacement.
 export class RepositoryPolicyMonitor {
   private roots = new Map<string, Root>();
   private changed: (() => void) | undefined;
-  constructor(private load = loadRepositoryConfig) {}
+  constructor(
+    private load = loadRepositoryConfig,
+    private observe: Observe = watch,
+  ) {}
 
   start(changed: () => void): void {
     this.invalidate();
@@ -41,9 +48,16 @@ export class RepositoryPolicyMonitor {
           this.invalidate(path);
           this.changed?.();
         };
+        const unavailable = (error: Error) => {
+          if (root.generation !== generation) return;
+          this.invalidate(path);
+          root.failed = true;
+          root.value = error;
+          this.changed?.();
+        };
         try {
           let identity: Stats | undefined;
-          const parent = watch(dirname(path), (_event, filename) => {
+          const parent = this.observe(dirname(path), (_event, filename) => {
             if (filename !== null && filename !== basename(path)) return;
             try {
               const current = lstatSync(path);
@@ -60,7 +74,7 @@ export class RepositoryPolicyMonitor {
             invalidated();
           });
           root.watchers.push(parent);
-          parent.on("error", invalidated);
+          parent.on("error", unavailable);
           try {
             identity = lstatSync(path);
           } catch (error) {
@@ -75,7 +89,7 @@ export class RepositoryPolicyMonitor {
           }
           // An absent checkout is stable while its parent can notify us of recreation.
           if (identity?.isDirectory() === true && realpathSync(path) === path) {
-            const directory = watch(path, (_event, filename) => {
+            const directory = this.observe(path, (_event, filename) => {
               if (
                 filename === null ||
                 [
@@ -87,7 +101,7 @@ export class RepositoryPolicyMonitor {
                 invalidated();
             });
             root.watchers.push(directory);
-            directory.on("error", invalidated);
+            directory.on("error", unavailable);
           }
         } catch (error) {
           this.invalidate(path);
