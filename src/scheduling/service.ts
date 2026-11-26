@@ -8,6 +8,7 @@ import type { PullRequestDetails } from "../github/reviews.js";
 import {
   RefreshKind,
   ScheduleState,
+  type ScheduledRefresh,
   type SchedulerPolicy,
 } from "./contracts.js";
 import type { ScheduleStore } from "./store.js";
@@ -60,9 +61,10 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
   }
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("github-dispatch", () => {
-      this.refreshReviews();
+      const reviews = this.store.reviews();
+      this.refreshReviews(reviews);
       this.pump();
-      return this.nextDeadline();
+      return this.nextDeadline(reviews);
     });
     this.heartbeat = scheduler.task("github-heartbeat", () => {
       this.sequence++;
@@ -74,18 +76,25 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.task.wake();
     this.heartbeat.wake();
   }
-  private nextDeadline(): number | undefined {
+  private nextDeadline(
+    reviews: readonly ScheduledRefresh[],
+  ): number | undefined {
     let next = Infinity;
-    if (!this.busy) {
+    if (!this.busy && this.queue.length > 0) {
       const dispatch = this.store.dispatch();
       for (const item of this.queue)
         if (item.signal?.aborted !== true)
           next = Math.min(
             next,
-            Math.max(dispatch.nextAtMs, this.deadline(item.resource)),
+            Math.max(
+              dispatch.nextAtMs,
+              item.resource === "core"
+                ? dispatch.coreRetryAtMs
+                : dispatch.graphqlRetryAtMs,
+            ),
           );
     }
-    for (const entry of this.store.reviews())
+    for (const entry of reviews)
       if (
         entry.kind === RefreshKind.Reviews &&
         !this.reviews.has(entry.key) &&
@@ -195,8 +204,8 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       schedule: this.store.get(`reviews:${url}`),
     };
   }
-  private refreshReviews(): void {
-    for (const entry of this.store.reviews()) {
+  private refreshReviews(reviews = this.store.reviews()): void {
+    for (const entry of reviews) {
       if (entry.kind !== RefreshKind.Reviews || this.reviews.has(entry.key))
         continue;
       if (
@@ -266,11 +275,15 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.emit("tick");
   }
   private pump(): void {
-    if (this.busy || this.store.dispatch().nextAtMs > this.now()) return;
+    if (this.busy || this.queue.length === 0) return;
+    const dispatch = this.store.dispatch();
+    if (dispatch.nextAtMs > this.now()) return;
     const ready = this.queue.filter(
       (item) =>
         item.signal?.aborted !== true &&
-        this.deadline(item.resource) <= this.now(),
+        (item.resource === "core"
+          ? dispatch.coreRetryAtMs
+          : dispatch.graphqlRetryAtMs) <= this.now(),
     );
     const item =
       ready.find((value) => value.interactive !== this.lastInteractive) ??
@@ -280,16 +293,17 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.lastInteractive = item.interactive;
     this.busy = true;
     this.store.saveDispatch({
-      ...this.store.dispatch(),
+      ...dispatch,
       nextAtMs: this.now() + this.policy.requestSpacingMs,
     });
     this.inFlight = item
       .run()
       .finally(() => {
+        const current = this.store.dispatch();
         this.store.saveDispatch({
-          ...this.store.dispatch(),
+          ...current,
           nextAtMs: Math.max(
-            this.store.dispatch().nextAtMs,
+            current.nextAtMs,
             this.now() + this.policy.requestSpacingMs,
           ),
         });
