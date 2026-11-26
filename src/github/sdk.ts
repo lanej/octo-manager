@@ -1,10 +1,8 @@
-import {
-  GitHubRequestCancelledError,
-  throwIfGitHubCancelled,
-} from "./errors.js";
+import { GitHubRequestCancelledError, throwIfGitHubCancelled } from "./errors.js";
 import { Octokit } from "@octokit/core";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+
 const exec = promisify(execFile);
 export interface GitHubRequest {
   method: "GET" | "POST" | "PUT" | "PATCH";
@@ -22,32 +20,27 @@ export type GitHubTransport = (
   signal?: AbortSignal,
   beforeSend?: () => void,
 ) => Promise<GitHubResponse>;
+
 async function credential(): Promise<string> {
   try {
-    const { stdout } = await exec(
-      "gh",
-      ["auth", "token", "--hostname", "github.com"],
-      { timeout: 10000, maxBuffer: 16384 },
-    );
+    const { stdout } = await exec("gh", ["auth", "token", "--hostname", "github.com"], {
+      timeout: 10000,
+      maxBuffer: 16384,
+    });
     const token = stdout.trim();
-    if (token === "" || /\s/u.test(token))
-      throw new Error("Invalid credential");
+    if (token === "" || /\s/u.test(token)) throw new Error("Invalid credential");
     return token;
   } catch {
-    throw new Error(
-      "GitHub authentication unavailable; run gh auth login -h github.com and restart Octo",
-    );
+    throw new Error("GitHub authentication unavailable; run gh auth login -h github.com and restart Octo");
   }
 }
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function response(value: unknown): GitHubResponse {
-  if (
-    !record(value) ||
-    typeof value["status"] !== "number" ||
-    !record(value["headers"])
-  )
+  if (!record(value) || typeof value["status"] !== "number" || !record(value["headers"]))
     throw new Error("Invalid GitHub SDK response");
   const headers = new Map<string, string>();
   for (const [key, field] of Object.entries(value["headers"]))
@@ -59,17 +52,14 @@ function response(value: unknown): GitHubResponse {
       : typeof data === "string"
         ? data
         : JSON.stringify(data ?? null);
-  if (Buffer.byteLength(body) > 2 * 1024 * 1024)
-    throw new Error("GitHub response exceeds 2 MiB");
+  if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("GitHub response exceeds 2 MiB");
   return { status: value["status"], headers, body };
 }
+
 async function boundedFetch(
   input: Parameters<typeof fetch>[0],
   init: RequestInit | undefined,
-  fetcher: (
-    input: Parameters<typeof fetch>[0],
-    init?: RequestInit,
-  ) => Promise<Response>,
+  fetcher: (input: Parameters<typeof fetch>[0], init?: RequestInit) => Promise<Response>,
 ): Promise<Response> {
   const result = await fetcher(input, init);
   if (result.body === null) return result;
@@ -96,26 +86,22 @@ async function boundedFetch(
     headers: result.headers,
   });
 }
+
 export function sdkTransport(
   auth: () => Promise<string> = credential,
-  fetcher: (
-    input: Parameters<typeof fetch>[0],
-    init?: RequestInit,
-  ) => Promise<Response> = fetch,
+  fetcher: (input: Parameters<typeof fetch>[0], init?: RequestInit) => Promise<Response> = fetch,
 ): GitHubTransport {
   let client: Promise<Octokit> | undefined;
   return async (request, signal, beforeSend) => {
     throwIfGitHubCancelled(signal);
-    if (/^\w+:|^\/\/|[\\\r\n#]/u.test(request.path))
-      throw new Error("GitHub request must use an API-relative path");
+    if (/^\w+:|^\/\/|[\\\r\n#]/u.test(request.path)) throw new Error("GitHub request must use an API-relative path");
     client ??= auth().then(
       (token) =>
         new Octokit({
           auth: token,
           userAgent: "octo-manager",
           request: {
-            fetch: (input: Parameters<typeof fetch>[0], init?: RequestInit) =>
-              boundedFetch(input, init, fetcher),
+            fetch: (input: Parameters<typeof fetch>[0], init?: RequestInit) => boundedFetch(input, init, fetcher),
           },
         }),
     );
@@ -127,25 +113,17 @@ export function sdkTransport(
         await octokit.request({
           method: request.method,
           url: "/" + request.path.replace(/^\//u, ""),
-          ...(request.headers === undefined
-            ? {}
-            : { headers: request.headers }),
-          ...(request.data === undefined ? {} : { data: request.data }),
+          ...(!request.headers ? {} : { headers: request.headers }),
+          ...(!request.data ? {} : { data: request.data }),
           request: {
-            signal:
-              signal === undefined
-                ? AbortSignal.timeout(20000)
-                : AbortSignal.any([signal, AbortSignal.timeout(20000)]),
+            signal: !signal ? AbortSignal.timeout(20000) : AbortSignal.any([signal, AbortSignal.timeout(20000)]),
           },
         }),
       );
     } catch (error) {
-      if (record(error) && record(error["response"]))
-        return response(error["response"]);
+      if (record(error) && record(error["response"])) return response(error["response"]);
       if (signal?.aborted === true) throw new GitHubRequestCancelledError();
-      throw new Error(
-        "GitHub unavailable; check authentication, access and connectivity",
-      );
+      throw new Error("GitHub unavailable; check authentication, access and connectivity");
     }
   };
 }

@@ -1,12 +1,14 @@
 import type { PRLifecycleValue, ReviewStateValue } from "./states.js";
 import type { Lifecycle } from "./retirement.js";
 import type { CheckWatch, CheckWatchState } from "./checks.js";
+
 export type UnixMillis = number;
 
 export enum TrackingHarness {
   Codex = "codex",
   Pi = "pi",
 }
+
 export function supportedTrackingTarget(target: AgentTarget): boolean {
   return (
     Object.is(target.harness, TrackingHarness.Codex) ||
@@ -15,6 +17,7 @@ export function supportedTrackingTarget(target: AgentTarget): boolean {
       /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(target.sessionId))
   );
 }
+
 export interface AgentRef {
   id: string;
   harness: string;
@@ -193,10 +196,7 @@ export type DeliveryProgress =
       note?: string;
     }
   | {
-      state:
-        | DeliveryState.Uncertain
-        | DeliveryState.Unavailable
-        | DeliveryState.Cancelled;
+      state: DeliveryState.Uncertain | DeliveryState.Unavailable | DeliveryState.Cancelled;
       at: number;
       reason: string;
     };
@@ -228,6 +228,4 @@ export interface TrackingSnapshot {
   checkWatches: CheckWatch[];
 }
 export const unfinished = (a: Action): boolean =>
-  [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(
-    a.progress.state,
-  );
+  [ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(a.progress.state);

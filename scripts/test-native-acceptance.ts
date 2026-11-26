@@ -1,14 +1,6 @@
 import { PerformanceCaptureState } from "../src/gen/octomanager/v2/diagnostics_pb.js";
 import { buildNative } from "./build-native.js";
-import {
-  mkdtemp,
-  mkdir,
-  cp,
-  copyFile,
-  writeFile,
-  rm,
-  access,
-} from "node:fs/promises";
+import { mkdtemp, mkdir, cp, copyFile, writeFile, rm, access } from "node:fs/promises";
 import { fork } from "node:child_process";
 import { join, resolve } from "node:path";
 import { schedulerClient } from "../src/client.js";
@@ -17,6 +9,7 @@ import { runtimeLifecycle } from "../src/lifecycle-rpc.js";
 function assert(value: boolean, message: string): asserts value {
   if (!value) throw new Error(message);
 }
+
 const temporary = await mkdtemp("/tmp/octo-native-acceptance-");
 const release = join(temporary, "releases", "native"),
   state = join(temporary, "state"),
@@ -32,9 +25,7 @@ let daemon: ReturnType<typeof Bun.spawn> | undefined;
 try {
   const compiler = process.env["OCTO_AOT_BUN"];
   if (compiler === undefined || compiler === "")
-    throw new Error(
-      "Set OCTO_AOT_BUN to verify native supported-provider initialization",
-    );
+    throw new Error("Set OCTO_AOT_BUN to verify native supported-provider initialization");
   const providerProbe = join(temporary, "provider-probe");
   buildNative(compiler, providerProbe, "scripts/native-provider-probe.ts");
   const syntheticCodex = join(home, "codex");
@@ -100,10 +91,7 @@ try {
   for (const name of ["package.json", "bun.lock", "build/octo-manager"])
     await copyFile(resolve(name), join(release, name));
   const revision = "a".repeat(40);
-  await writeFile(
-    join(release, "release.json"),
-    JSON.stringify({ revision, format: "native-aot" }),
-  );
+  await writeFile(join(release, "release.json"), JSON.stringify({ revision, format: "native-aot" }));
   const binary = join(release, "build/octo-manager");
   const artifact = Bun.spawnSync([binary, "lifecycle", "artifact"], {
     cwd: home,
@@ -163,10 +151,7 @@ try {
   await client.setPaused({ paused: false });
   const captureOutput = await new Response(captureCommand.stdout).text();
   const captureErrors = await new Response(captureCommand.stderr).text();
-  assert(
-    (await captureCommand.exited) === 0,
-    "Native diagnostics capture failed: " + captureErrors,
-  );
+  assert((await captureCommand.exited) === 0, "Native diagnostics capture failed: " + captureErrors);
   const captureResult: unknown = JSON.parse(captureOutput);
   assert(
     typeof captureResult === "object" &&
@@ -175,15 +160,11 @@ try {
       typeof captureResult.id === "string",
     "Native capture did not return an identity",
   );
-  const captured = (
-    await client.getPerformanceCapture({ id: captureResult.id })
-  ).capture;
+  const captured = (await client.getPerformanceCapture({ id: captureResult.id })).capture;
   assert(
     captured?.state === PerformanceCaptureState.COMPLETED &&
       (captured.report?.queryEvents ?? 0) > 0 &&
-      captured.report?.scopes.some(
-        (scope) => scope.name === "jobs" && scope.cycles > 0,
-      ) === true,
+      captured.report?.scopes.some((scope) => scope.name === "jobs" && scope.cycles > 0) === true,
     "Native capture did not retain completed query and scheduler work",
   );
   const report = await runtimeLifecycle(state, {
@@ -193,8 +174,7 @@ try {
     expectedIdentity: "",
   });
   assert(
-    report.targets[0].running_identity === identity.expected_identity &&
-      report.targets[0].ready,
+    report.targets[0].running_identity === identity.expected_identity && report.targets[0].ready,
     "Native running and selected identity differ",
   );
   for (const kind of ["job", "assessment"]) {
@@ -220,20 +200,10 @@ try {
         child.once("error", rejected);
         child.once("exit", () => {
           if (failure) fulfilled();
-          else
-            rejected(
-              new Error(
-                `Native ${kind} exited before rejection: ${diagnostic}`,
-              ),
-            );
+          else rejected(new Error(`Native ${kind} exited before rejection: ${diagnostic}`));
         });
         child.on("message", (message: unknown) => {
-          if (
-            typeof message === "object" &&
-            message !== null &&
-            "type" in message &&
-            message.type === "failure"
-          ) {
+          if (typeof message === "object" && message !== null && "type" in message && message.type === "failure") {
             failure = true;
             child.kill("SIGTERM");
           }
@@ -269,17 +239,11 @@ try {
   }
   const publicationState = join(temporary, "publication-state");
   const publication = Bun.spawnSync(
-    [
-      binary,
-      "--octo-internal-worker=publication",
-      publicationState,
-      "missing-native-test",
-    ],
+    [binary, "--octo-internal-worker=publication", publicationState, "missing-native-test"],
     { cwd: home, env },
   );
   assert(
-    publication.exitCode !== 0 &&
-      publication.stderr.toString().includes("not found"),
+    publication.exitCode !== 0 && publication.stderr.toString().includes("not found"),
     "Native publication worker did not reject missing receipt",
   );
   await access(join(publicationState, "publications", "requests.sqlite"));

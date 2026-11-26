@@ -1,17 +1,6 @@
 import { watch, type FSWatcher } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
-import {
-  mkdir,
-  lstat,
-  chmod,
-  writeFile,
-  link,
-  unlink,
-  readFile,
-  readdir,
-  rename,
-  rm,
-} from "node:fs/promises";
+import { mkdir, lstat, chmod, writeFile, link, unlink, readFile, readdir, rename, rm } from "node:fs/promises";
 import { join, isAbsolute } from "node:path";
 import { canonicalPR } from "../github/pr-identity.js";
 import type { AgentTarget } from "../tracking/types.js";
@@ -28,17 +17,19 @@ export interface FailedHandoff {
   reason: string;
   at: number;
 }
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 export function handoffId(url: string, sessionId: string): string {
   return createHash("sha256")
     .update(JSON.stringify([canonicalPR(url), sessionId]))
     .digest("hex");
 }
+
 export function parseHandoff(value: unknown): Handoff {
-  if (!object(value) || !object(value["owner"]))
-    throw new Error("Invalid PR handoff");
+  if (!object(value) || !object(value["owner"])) throw new Error("Invalid PR handoff");
   const owner = value["owner"],
     url = value["url"],
     cwd = value["cwd"],
@@ -56,8 +47,7 @@ export function parseHandoff(value: unknown): Handoff {
     sessionId.length > 200 ||
     owner["harness"] !== "codex" ||
     owner["endpoint"] !== "local" ||
-    (label !== undefined &&
-      (typeof label !== "string" || label.length > 200)) ||
+    (label !== undefined && (typeof label !== "string" || label.length > 200)) ||
     typeof createdAt !== "number" ||
     !Number.isSafeInteger(createdAt) ||
     createdAt < 0 ||
@@ -77,15 +67,14 @@ export function parseHandoff(value: unknown): Handoff {
     createdAt,
   };
 }
+
 async function privateDirectory(path: string): Promise<void> {
   await mkdir(path, { recursive: true, mode: 0o700 });
-  if (
-    !(await lstat(path)).isDirectory() ||
-    (await lstat(path)).isSymbolicLink()
-  )
+  if (!(await lstat(path)).isDirectory() || (await lstat(path)).isSymbolicLink())
     throw new Error("Handoff directory must be private and not a symlink");
   await chmod(path, 0o700);
 }
+
 async function statusFile(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, "utf8");
@@ -94,23 +83,24 @@ async function statusFile(path: string): Promise<string | undefined> {
     throw error;
   }
 }
+
 export class Handoffs {
   private root: string;
+
   constructor(
     directory: string,
     private now: () => number = Date.now,
   ) {
     this.root = join(directory, "handoffs");
   }
+
   private async directories(): Promise<void> {
     await privateDirectory(this.root);
     await privateDirectory(join(this.root, "pending"));
     await privateDirectory(join(this.root, "failed"));
   }
-  async watch(
-    onChange: () => void,
-    onError: (error: Error) => void,
-  ): Promise<FSWatcher> {
+
+  async watch(onChange: () => void, onError: (error: Error) => void): Promise<FSWatcher> {
     await this.directories();
     const watcher = watch(join(this.root, "pending"), (_event, filename) => {
       if (filename === null || filename.endsWith(".json")) onChange();
@@ -118,11 +108,8 @@ export class Handoffs {
     watcher.on("error", onError);
     return watcher;
   }
-  async enqueue(
-    url: string,
-    owner: AgentTarget,
-    cwd: string,
-  ): Promise<Handoff> {
+
+  async enqueue(url: string, owner: AgentTarget, cwd: string): Promise<Handoff> {
     const request = parseHandoff({
       id: handoffId(url, owner.sessionId),
       url,
@@ -130,8 +117,7 @@ export class Handoffs {
       cwd,
       createdAt: this.now(),
     });
-    if (Buffer.byteLength(JSON.stringify(request)) > 16000)
-      throw new Error("PR handoff exceeds its size limit");
+    if (Buffer.byteLength(JSON.stringify(request)) > 16000) throw new Error("PR handoff exceeds its size limit");
     await this.directories();
     const path = join(this.root, "pending", `${request.id}.json`),
       temporary = join(this.root, `.${randomUUID()}.tmp`);
@@ -148,6 +134,7 @@ export class Handoffs {
     }
     return request;
   }
+
   private async entries(folder: "pending" | "failed"): Promise<string[]> {
     try {
       return (await readdir(join(this.root, folder)))
@@ -159,21 +146,16 @@ export class Handoffs {
       throw error;
     }
   }
-  async drain(
-    accept: (
-      handoff: Handoff,
-    ) => { accepted: true } | { accepted: false; reason: string },
-  ): Promise<void> {
+
+  async drain(accept: (handoff: Handoff) => { accepted: true } | { accepted: false; reason: string }): Promise<void> {
     for (const file of (await this.entries("pending")).slice(0, 20)) {
       const path = join(this.root, "pending", file);
       let handoff: Handoff;
       try {
         const stat = await lstat(path);
-        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 16000)
-          throw new Error("Invalid handoff file");
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 16000) throw new Error("Invalid handoff file");
         handoff = parseHandoff(JSON.parse(await readFile(path, "utf8")));
-        if (file !== `${handoff.id}.json`)
-          throw new Error("Handoff identity mismatch");
+        if (file !== `${handoff.id}.json`) throw new Error("Handoff identity mismatch");
       } catch {
         await rename(path, join(this.root, "failed", `${file}.invalid`));
         continue;
@@ -200,11 +182,7 @@ export class Handoffs {
         try {
           await rename(
             join(this.root, "failed", file),
-            join(
-              this.root,
-              "failed",
-              `${handoff.id}.resolved-${randomUUID()}.json`,
-            ),
+            join(this.root, "failed", `${handoff.id}.resolved-${randomUUID()}.json`),
           );
         } catch (error) {
           if (!(object(error) && error["code"] === "ENOENT")) throw error;
@@ -213,9 +191,8 @@ export class Handoffs {
       await unlink(path);
     }
   }
-  async status(
-    sessionId: string,
-  ): Promise<{ pending: Handoff[]; failed: FailedHandoff[] }> {
+
+  async status(sessionId: string): Promise<{ pending: Handoff[]; failed: FailedHandoff[] }> {
     const pending: Handoff[] = [],
       failed: FailedHandoff[] = [];
     for (const file of await this.entries("pending")) {
@@ -228,15 +205,9 @@ export class Handoffs {
       const content = await statusFile(join(this.root, "failed", file));
       if (content === undefined) continue;
       const raw: unknown = JSON.parse(content);
-      if (
-        !object(raw) ||
-        typeof raw["reason"] !== "string" ||
-        typeof raw["at"] !== "number"
-      )
-        continue;
+      if (!object(raw) || typeof raw["reason"] !== "string" || typeof raw["at"] !== "number") continue;
       const handoff = parseHandoff(raw["handoff"]);
-      if (handoff.owner.sessionId === sessionId)
-        failed.push({ handoff, reason: raw["reason"], at: raw["at"] });
+      if (handoff.owner.sessionId === sessionId) failed.push({ handoff, reason: raw["reason"], at: raw["at"] });
     }
     return { pending, failed };
   }

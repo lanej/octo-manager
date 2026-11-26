@@ -9,11 +9,7 @@ import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  ActionState,
-  DeliveryState,
-  type ObservationInput,
-} from "../src/tracking/types.js";
+import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
 import { DeliveryError, type AgentConnection } from "../src/agents/codex.js";
 
 const input: ObservationInput = {
@@ -25,6 +21,7 @@ const input: ObservationInput = {
   checks: { state: "complete", value: [] },
   reviews: { state: "complete", value: [] },
 };
+
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 100; i++) {
     if (check()) return;
@@ -32,6 +29,7 @@ async function until(check: () => boolean): Promise<void> {
   }
   assert.fail("Inbox work did not finish");
 }
+
 test("immutable inbox survives restart, reconciles before replay and requires a message-specific recipient receipt", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-inbox-"));
   let at = 1000;
@@ -77,11 +75,7 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
   });
   try {
     service.tick();
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Uncertain,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Uncertain);
     assert.equal(sent.length, 1);
     const message = store.tracking.inbox.get(delivery.id);
     assert(message !== undefined);
@@ -99,11 +93,7 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
     assert.equal(lookups, 0);
     at += 60000;
     service.tick();
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Delivered,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Delivered);
     assert.equal(sent.length, 1);
     store.tracking.reprofile(delivery.actionId, {
       ...config,
@@ -124,53 +114,24 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
     await until(() => sent.length === 2);
     assert.deepEqual(sent[0], sent[1]);
     assert.equal(store.tracking.inbox.list(pr.ownerAgentId).messages.length, 1);
-    assert.throws(
-      () => store.tracking.acknowledgeMessage(delivery.id, "other-agent"),
-      /another agent/,
-    );
+    assert.throws(() => store.tracking.acknowledgeMessage(delivery.id, "other-agent"), /another agent/);
     store.tracking.progress(delivery.actionId, pr.ownerAgentId, false);
-    assert.equal(
-      store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
-      undefined,
-    );
-    const receipt = store.tracking.acknowledgeMessage(
-      delivery.id,
-      pr.ownerAgentId,
-    );
+    assert.equal(store.tracking.inbox.get(delivery.id)?.acknowledgedAt, undefined);
+    const receipt = store.tracking.acknowledgeMessage(delivery.id, pr.ownerAgentId);
     assert.equal(receipt.acknowledgedAt, at);
-    assert.equal(
-      store.tracking.action(delivery.actionId).progress.state,
-      ActionState.Acknowledged,
-    );
+    assert.equal(store.tracking.action(delivery.actionId).progress.state, ActionState.Acknowledged);
     at += 1;
     assert.equal(
-      store.tracking.acknowledgeMessage(delivery.id, pr.ownerAgentId)
-        .acknowledgedAt,
+      store.tracking.acknowledgeMessage(delivery.id, pr.ownerAgentId).acknowledgedAt,
       receipt.acknowledgedAt,
     );
     assert.equal(store.tracking.inbox.list(pr.ownerAgentId).messages.length, 0);
-    assert.equal(
-      store.tracking.inbox.list(pr.ownerAgentId, 0, true).messages.length,
-      1,
-    );
+    assert.equal(store.tracking.inbox.list(pr.ownerAgentId, 0, true).messages.length, 1);
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
     try {
-      assert.throws(
-        () => db.prepare("UPDATE delivery_messages SET body='rewritten'").run(),
-        /immutable/,
-      );
-      assert.throws(
-        () =>
-          db
-            .prepare("UPDATE delivery_messages SET acknowledged_at_ms=NULL")
-            .run(),
-        /immutable/,
-      );
-      assert.throws(
-        () =>
-          db.prepare("UPDATE deliveries SET recipient_agent_id='other'").run(),
-        /immutable/,
-      );
+      assert.throws(() => db.prepare("UPDATE delivery_messages SET body='rewritten'").run(), /immutable/);
+      assert.throws(() => db.prepare("UPDATE delivery_messages SET acknowledged_at_ms=NULL").run(), /immutable/);
+      assert.throws(() => db.prepare("UPDATE deliveries SET recipient_agent_id='other'").run(), /immutable/);
     } finally {
       db.close();
     }
@@ -178,10 +139,7 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
     service.tick();
     await new Promise((resolve) => setTimeout(resolve, 10));
     assert.equal(sent.length, 2);
-    assert.equal(
-      store.tracking.action(delivery.actionId).progress.state,
-      ActionState.Acknowledged,
-    );
+    assert.equal(store.tracking.action(delivery.actionId).progress.state, ActionState.Acknowledged);
   } finally {
     await service.close();
     store.close();
@@ -206,26 +164,20 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
   });
   try {
     await coordinator.start();
-    const pr = coordinator.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      { harness: "codex", endpoint: "local", sessionId: "api-owner" },
-    );
+    const pr = coordinator.tracking.track("https://github.com/owner/repo/pull/1", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "api-owner",
+    });
     await coordinator.tracking.refresh(pr.id);
     coordinator.tracking.tick();
-    await until(
-      () =>
-        coordinator.store.tracking.inbox.list(pr.ownerAgentId).messages
-          .length === 1,
-    );
+    await until(() => coordinator.store.tracking.inbox.list(pr.ownerAgentId).messages.length === 1);
     const client = schedulerClient(directory);
     const page = await client.listAgentMessages({ agentId: pr.ownerAgentId });
     const message = page.messages[0];
     assert(message !== undefined);
     assert(message.body.includes(`octo-manager read ${shortId(message.id)}`));
-    assert.equal(
-      (await client.getAction({ id: shortId(message.actionId) })).action?.id,
-      message.actionId,
-    );
+    assert.equal((await client.getAction({ id: shortId(message.actionId) })).action?.id, message.actionId);
     assert.equal(message.applicable, true);
     assert.equal(page.hasMore, false);
     assert.equal(
@@ -239,8 +191,7 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
     );
     await assert.rejects(
       client.acknowledgeMessage({ id: shortId(message.id), agentId: "wrong" }),
-      (error) =>
-        error instanceof ConnectError && error.code === Code.PermissionDenied,
+      (error) => error instanceof ConnectError && error.code === Code.PermissionDenied,
     );
     const child = Bun.spawn(
       [
@@ -261,19 +212,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       },
     );
     const body = await new Response(child.stdout).text();
-    assert.equal(
-      await child.exited,
-      0,
-      await new Response(child.stderr).text(),
-    );
+    assert.equal(await child.exited, 0, await new Response(child.stderr).text());
     assert(body.includes(shortId(message.id)));
     assert(!body.includes(message.body));
     assert(Buffer.byteLength(body) < 250);
-    assert.equal(
-      (await client.listAgentMessages({ agentId: pr.ownerAgentId })).messages
-        .length,
-      0,
-    );
+    assert.equal((await client.listAgentMessages({ agentId: pr.ownerAgentId })).messages.length, 0);
     const received = (
       await client.listAgentMessages({
         agentId: pr.ownerAgentId,
@@ -281,16 +224,11 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
       })
     ).messages[0];
     assert(received?.acknowledgedAtMs !== undefined);
-    const delivered = (
-      await client.getSnapshot({})
-    ).snapshot?.tracking?.deliveries.find(
+    const delivered = (await client.getSnapshot({})).snapshot?.tracking?.deliveries.find(
       (delivery) => delivery.id === message.id,
     );
     assert.equal(delivered?.acknowledgedAtMs, received.acknowledgedAtMs);
-    assert.equal(
-      coordinator.store.tracking.action(message.actionId).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(coordinator.store.tracking.action(message.actionId).progress.state, ActionState.Open);
     const cli = Bun.spawn(
       [
         process.execPath,
@@ -313,11 +251,7 @@ test("typed inbox and CLI expose immutable payloads, page by recipient and recor
     const listed = await new Response(cli.stdout).text();
     assert.equal(await cli.exited, 0, await new Response(cli.stderr).text());
     assert(listed.includes(message.id));
-    assert(
-      coordinator.store
-        .eventsSince(0)
-        .some((event) => event.kind === "message_acknowledged"),
-    );
+    assert(coordinator.store.eventsSince(0).some((event) => event.kind === "message_acknowledged"));
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
@@ -357,11 +291,7 @@ test("busy replay rechecks newly visible history instead of submitting another c
   try {
     service.tick();
     await until(() => sends === 1);
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Delivered,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Delivered);
     at += 300000;
     busy = true;
     service.tick();
@@ -415,17 +345,10 @@ test("receipt arriving during send retains both acknowledged receipt and complet
     store.tracking.acknowledgeMessage(message.id, pr.ownerAgentId);
     assert(finish !== undefined);
     finish({ queueId: "accepted-after-receipt" });
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Delivered,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Delivered);
     assert(store.tracking.inbox.get(message.id)?.acknowledgedAt !== undefined);
     assert.equal(store.tracking.attempts()[0]?.outcome.state, "accepted");
-    assert.equal(
-      store.tracking.action(message.actionId).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(store.tracking.action(message.actionId).progress.state, ActionState.Open);
     service.tick();
     await new Promise((resolve) => setTimeout(resolve, 10));
     assert.equal(sends, 1);
@@ -456,11 +379,7 @@ test("inbox pagination never treats its cursor as receipt and migration retains 
       at: 1000,
       url: pr.url,
     }));
-    store.tracking.observe(
-      pr.id,
-      { ...input, checks: { state: "complete", value: checks } },
-      config,
-    );
+    store.tracking.observe(pr.id, { ...input, checks: { state: "complete", value: checks } }, config);
     for (const delivery of store.tracking.deliveries())
       store.tracking.inbox.record(delivery.id, `Frozen ${delivery.id}`);
     const first = store.tracking.inbox.list(pr.ownerAgentId);
@@ -470,10 +389,7 @@ test("inbox pagination never treats its cursor as receipt and migration retains 
     assert.equal(last.messages.length, 2);
     assert.equal(last.hasMore, false);
     assert.equal(store.tracking.inbox.list("other").messages.length, 0);
-    assert.equal(
-      store.tracking.inbox.list(pr.ownerAgentId).messages.length,
-      200,
-    );
+    assert.equal(store.tracking.inbox.list(pr.ownerAgentId).messages.length, 200);
     const legacy = store.tracking.deliveries()[0];
     assert(legacy !== undefined);
     store.tracking.saveDelivery(
@@ -496,10 +412,7 @@ test("inbox pagination never treats its cursor as receipt and migration retains 
     db.close();
     store = new Store(directory);
     assert.equal(store.instanceId(), identity);
-    assert.equal(
-      store.tracking.deliveries()[0]?.progress.state,
-      DeliveryState.Delivered,
-    );
+    assert.equal(store.tracking.deliveries()[0]?.progress.state, DeliveryState.Delivered);
     assert.equal(store.tracking.inbox.list(pr.ownerAgentId).messages.length, 0);
     assert.equal(store.tracking.inbox.get(legacy.id), undefined);
   } finally {
@@ -519,9 +432,7 @@ test("receipt during reconciliation retains the newly confirmed transport receip
     sessionId: "owner",
   });
   store.tracking.observe(pr.id, input, config);
-  let finish:
-    | ((value: { found: boolean; queueId: string }) => void)
-    | undefined;
+  let finish: ((value: { found: boolean; queueId: string }) => void) | undefined;
   let sends = 0;
   const service = new TrackingService(store.tracking, config, () => at, {
     read: () => Promise.resolve(input),
@@ -540,11 +451,7 @@ test("receipt during reconciliation retains the newly confirmed transport receip
   });
   try {
     service.tick();
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Uncertain,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Uncertain);
     const message = store.tracking.inbox.list(pr.ownerAgentId).messages[0];
     assert(message !== undefined);
     at += 60000;
@@ -553,17 +460,10 @@ test("receipt during reconciliation retains the newly confirmed transport receip
     store.tracking.acknowledgeMessage(message.id, pr.ownerAgentId);
     assert(finish !== undefined);
     finish({ found: true, queueId: "reconciled" });
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Delivered,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Delivered);
     assert(store.tracking.inbox.get(message.id)?.acknowledgedAt !== undefined);
     assert.equal(sends, 1);
-    assert.equal(
-      store.tracking.action(message.actionId).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(store.tracking.action(message.actionId).progress.state, ActionState.Open);
   } finally {
     await service.close();
     store.close();
@@ -601,36 +501,19 @@ test("service confirms exact host receipt once without accepting the action", as
   });
   try {
     service.tick();
-    await until(
-      () =>
-        store.tracking.deliveries()[0]?.progress.state ===
-        DeliveryState.Delivered,
-    );
+    await until(() => store.tracking.deliveries()[0]?.progress.state === DeliveryState.Delivered);
     const delivery = store.tracking.deliveries()[0];
     assert(delivery !== undefined);
     at += 300001;
     service.tick();
-    await until(
-      () => (store.tracking.inbox.get(delivery.id)?.nextCheckAt ?? 0) > at,
-    );
-    assert.equal(
-      store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
-      undefined,
-    );
+    await until(() => (store.tracking.inbox.get(delivery.id)?.nextCheckAt ?? 0) > at);
+    assert.equal(store.tracking.inbox.get(delivery.id)?.acknowledgedAt, undefined);
     received = true;
     at += 300001;
     service.tick();
-    await until(
-      () => store.tracking.inbox.get(delivery.id)?.acknowledgedAt !== undefined,
-    );
-    assert.equal(
-      store.tracking.action(delivery.actionId).progress.state,
-      ActionState.Open,
-    );
-    const receipts = () =>
-      store
-        .eventsSince(0)
-        .filter((event) => event.kind === "message_acknowledged").length;
+    await until(() => store.tracking.inbox.get(delivery.id)?.acknowledgedAt !== undefined);
+    assert.equal(store.tracking.action(delivery.actionId).progress.state, ActionState.Open);
+    const receipts = () => store.eventsSince(0).filter((event) => event.kind === "message_acknowledged").length;
     assert.equal(receipts(), 1);
     at += 300001;
     service.tick();
@@ -672,15 +555,9 @@ test("message prefix receipts update canonical identities and reject ambiguous p
       );
       store.tracking.inbox.record(id, `Message ${id}`);
     }
-    assert.throws(
-      () => store.tracking.acknowledgeMessage("deadbeef", pr.ownerAgentId),
-      /ambiguous/,
-    );
+    assert.throws(() => store.tracking.acknowledgeMessage("deadbeef", pr.ownerAgentId), /ambiguous/);
     assert.equal(store.tracking.inbox.get(first)?.acknowledgedAt, undefined);
-    const receipt = store.tracking.acknowledgeMessage(
-      "deadbeef1",
-      pr.ownerAgentId,
-    );
+    const receipt = store.tracking.acknowledgeMessage("deadbeef1", pr.ownerAgentId);
     assert.equal(receipt.id, first);
     assert(receipt.acknowledgedAt !== undefined);
     assert.equal(store.tracking.inbox.get(second)?.acknowledgedAt, undefined);

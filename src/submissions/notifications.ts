@@ -6,6 +6,7 @@ import type { SubmissionStore } from "./store.js";
 import type { TrackingService } from "../tracking/service.js";
 import { CodexConnection, type AgentConnection } from "../agents/codex.js";
 import type { AgentRef } from "../tracking/types.js";
+
 export const NoticeSchema = Type.Object(
   {
     id: Type.String(),
@@ -31,16 +32,18 @@ export const NoticeSchema = Type.Object(
   { additionalProperties: false },
 );
 export type Notice = import("typebox").Static<typeof NoticeSchema>;
+
 export function parseNotice(value: unknown): Notice {
-  if (!Check(NoticeSchema, value))
-    throw new Error("Invalid operation notification");
+  if (!Check(NoticeSchema, value)) throw new Error("Invalid operation notification");
   return value;
 }
+
 export class SubmissionNotifications {
   private work: Promise<void> | undefined;
   private connection: AgentConnection | undefined;
   private task: ScheduledTask | undefined;
   private stopped = false;
+
   constructor(
     private store: SubmissionStore,
     private tracking: TrackingService,
@@ -49,6 +52,7 @@ export class SubmissionNotifications {
   ) {
     store.recoverNotices();
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("submission-notifications", async () => {
       if (this.stopped) return;
@@ -60,8 +64,7 @@ export class SubmissionNotifications {
             this.managedQueue?.(value.recipient) !== true &&
             this.store.noticeApplicable(value.id),
         );
-      this.work =
-        attempted === undefined ? Promise.resolve() : this.deliver(attempted);
+      this.work = !attempted ? Promise.resolve() : this.deliver(attempted);
       try {
         await this.work;
       } finally {
@@ -69,41 +72,28 @@ export class SubmissionNotifications {
       }
       let next = Infinity;
       for (const value of this.store.notices())
-        if (
-          this.managedQueue?.(value.recipient) !== true &&
-          this.store.noticeApplicable(value.id)
-        ) {
+        if (this.managedQueue?.(value.recipient) !== true && this.store.noticeApplicable(value.id)) {
           const stalled =
-            value.id === attempted?.id &&
-            value.nextCheckAt <= attempted.nextCheckAt &&
-            value.nextCheckAt <= Date.now();
-          next = Math.min(
-            next,
-            stalled ? Date.now() + 30000 : value.nextCheckAt,
-          );
+            value.id === attempted?.id && value.nextCheckAt <= attempted.nextCheckAt && value.nextCheckAt <= Date.now();
+          next = Math.min(next, stalled ? Date.now() + 30000 : value.nextCheckAt);
         }
       return Number.isFinite(next) ? next : undefined;
     });
     this.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   private async deliver(notice: Notice): Promise<void> {
     const agent = this.tracking.store.agent(notice.recipient),
       endpoint = this.tracking.config.endpoints[agent.endpoint];
-    if (endpoint === undefined) {
-      this.store.saveNotice(
-        notice,
-        "unavailable",
-        "Recipient endpoint is not configured",
-        Date.now() + 30000,
-      );
+    if (!endpoint) {
+      this.store.saveNotice(notice, "unavailable", "Recipient endpoint is not configured", Date.now() + 30000);
       return;
     }
-    const connection =
-      this.connect?.(agent) ??
-      new CodexConnection(endpoint.socket, endpoint.delivery);
+    const connection = this.connect?.(agent) ?? new CodexConnection(endpoint.socket, endpoint.delivery);
     this.connection = connection;
     try {
       const prepared = await connection.prepare(agent);
@@ -113,35 +103,17 @@ export class SubmissionNotifications {
         return;
       }
       if (previous.found) {
-        this.store.saveNotice(
-          notice,
-          "accepted",
-          "Agent receipt pending",
-          Date.now() + 30000,
-        );
+        this.store.saveNotice(notice, "accepted", "Agent receipt pending", Date.now() + 30000);
         return;
       }
       if (!this.store.noticeApplicable(notice.id)) return;
       if (prepared.busy) {
-        this.store.saveNotice(
-          notice,
-          notice.state,
-          "Caller is busy",
-          Date.now() + 30000,
-        );
+        this.store.saveNotice(notice, notice.state, "Caller is busy", Date.now() + 30000);
         return;
       }
-      this.store.saveNotice(
-        notice,
-        "sending",
-        "Sending to caller",
-        Date.now() + 30000,
-      );
+      this.store.saveNotice(notice, "sending", "Sending to caller", Date.now() + 30000);
       const message = this.tracking.store.inbox.get(notice.id);
-      if (
-        message === undefined ||
-        this.tracking.store.inbox.automatic(message).body !== notice.body
-      ) {
+      if (!message || this.tracking.store.inbox.automatic(message).body !== notice.body) {
         this.store.saveNotice(
           notice,
           "unavailable",
@@ -151,22 +123,13 @@ export class SubmissionNotifications {
         return;
       }
       const sent = await connection.send(agent, notice.id, notice.body);
-      this.store.saveNotice(
-        notice,
-        "accepted",
-        sent.queueId ?? sent.turnId ?? "Queue accepted",
-        Date.now() + 30000,
-      );
-      if (sent.received === true)
-        this.tracking.store.acknowledgeMessage(notice.id, agent.id);
+      this.store.saveNotice(notice, "accepted", sent.queueId ?? sent.turnId ?? "Queue accepted", Date.now() + 30000);
+      if (sent.received === true) this.tracking.store.acknowledgeMessage(notice.id, agent.id);
     } catch (error) {
       this.store.saveNotice(
         notice,
         "uncertain",
-        (error instanceof Error ? error.message : "Delivery unavailable").slice(
-          0,
-          500,
-        ),
+        (error instanceof Error ? error.message : "Delivery unavailable").slice(0, 500),
         Date.now() + 30000,
       );
     } finally {
@@ -174,9 +137,11 @@ export class SubmissionNotifications {
       this.connection = undefined;
     }
   }
+
   checkpointable(): boolean {
     return this.work === undefined;
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.task?.close();

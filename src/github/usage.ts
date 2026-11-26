@@ -1,4 +1,5 @@
 import { QuotaHistory, type QuotaForecast } from "./forecast.js";
+
 export type GitHubResource = "core" | "graphql";
 export interface GitHubBudget {
   limit: number;
@@ -29,11 +30,13 @@ export interface GitHubReadUsage {
   restRetryAtMs: number;
   graphqlRetryAtMs: number;
 }
+
 function integer(value: string | undefined): number | undefined {
   if (value === undefined || !/^\d+$/u.test(value)) return undefined;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : undefined;
 }
+
 export class GitHubUsage {
   private readonly startedAtMs: number;
   private requests = 0;
@@ -43,9 +46,11 @@ export class GitHubUsage {
   private readonly hours = new Map<number, GitHubTrafficBucket>();
   private readonly quotaHistory = new QuotaHistory();
   private readonly budgets: Partial<Record<GitHubResource, GitHubBudget>> = {};
+
   constructor(private readonly now: () => number) {
     this.startedAtMs = now();
   }
+
   private bucket(
     buckets: Map<number, GitHubTrafficBucket>,
     at: number,
@@ -53,15 +58,15 @@ export class GitHubUsage {
     capacity: number,
   ): GitHubTrafficBucket {
     const start = Math.floor(at / span) * span;
-    for (const key of buckets.keys())
-      if (key < start - (capacity - 1) * span) buckets.delete(key);
+    for (const key of buckets.keys()) if (key < start - (capacity - 1) * span) buckets.delete(key);
     let bucket = buckets.get(start);
-    if (bucket === undefined) {
+    if (!bucket) {
       bucket = { startedAtMs: start, rest: 0, graphql: 0, cacheReuses: 0 };
       buckets.set(start, bucket);
     }
     return bucket;
   }
+
   private window(
     buckets: Map<number, GitHubTrafficBucket>,
     at: number,
@@ -69,10 +74,7 @@ export class GitHubUsage {
     capacity: number,
   ): GitHubTrafficBucket[] {
     const latest = Math.floor(at / span) * span;
-    const earliest = Math.max(
-      latest - (capacity - 1) * span,
-      Math.floor(this.startedAtMs / span) * span,
-    );
+    const earliest = Math.max(latest - (capacity - 1) * span, Math.floor(this.startedAtMs / span) * span);
     for (const key of buckets.keys()) if (key < earliest) buckets.delete(key);
     const result: GitHubTrafficBucket[] = [];
     for (let start = earliest; start <= latest; start += span)
@@ -86,26 +88,27 @@ export class GitHubUsage {
       });
     return result;
   }
+
   attempt(resource: GitHubResource): void {
     this.requests++;
     const at = this.now();
-    for (const bucket of [
-      this.bucket(this.minutes, at, 60000, 60),
-      this.bucket(this.hours, at, 3600000, 168),
-    ]) {
+    for (const bucket of [this.bucket(this.minutes, at, 60000, 60), this.bucket(this.hours, at, 3600000, 168)]) {
       if (resource === "core") bucket.rest++;
       else bucket.graphql++;
     }
   }
+
   reused(): void {
     this.cacheReuses++;
     const at = this.now();
     this.bucket(this.minutes, at, 60000, 60).cacheReuses++;
     this.bucket(this.hours, at, 3600000, 168).cacheReuses++;
   }
+
   limited(): void {
     this.rateLimits++;
   }
+
   observe(resource: GitHubResource, headers: Map<string, string>): void {
     const named = headers.get("x-ratelimit-resource");
     if (named !== undefined && named !== resource) return;
@@ -131,6 +134,7 @@ export class GitHubUsage {
     };
     this.quotaHistory.observe(resource, this.budgets[resource]);
   }
+
   snapshot(retryAtMs: Record<GitHubResource, number>): GitHubReadUsage {
     const at = this.now();
     const minutes = this.window(this.minutes, at, 60000, 60);
@@ -143,28 +147,20 @@ export class GitHubUsage {
       rateLimits: this.rateLimits,
       minutes,
       hours,
-      ...(this.budgets.core === undefined
+      ...(!this.budgets.core
         ? {}
         : {
             rest: {
               ...this.budgets.core,
-              forecast: this.quotaHistory.forecast(
-                "core",
-                this.budgets.core,
-                at,
-              ),
+              forecast: this.quotaHistory.forecast("core", this.budgets.core, at),
             },
           }),
-      ...(this.budgets.graphql === undefined
+      ...(!this.budgets.graphql
         ? {}
         : {
             graphql: {
               ...this.budgets.graphql,
-              forecast: this.quotaHistory.forecast(
-                "graphql",
-                this.budgets.graphql,
-                at,
-              ),
+              forecast: this.quotaHistory.forecast("graphql", this.budgets.graphql, at),
             },
           }),
       restRetryAtMs: retryAtMs.core,

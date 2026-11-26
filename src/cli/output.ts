@@ -4,27 +4,19 @@ import { cliJSON } from "../client.js";
 import { compact } from "../tracking/messages.js";
 import { agentProjection } from "./agent-output.js";
 
-export function agentResponse(
-  parsed: ReturnType<typeof parseCommand>,
-  raw: unknown,
-): string {
+export function agentResponse(parsed: ReturnType<typeof parseCommand>, raw: unknown): string {
   const project = agentProjection(parsed);
-  if (project === undefined) throw new Error("Missing agent output projection");
+  if (!project) throw new Error("Missing agent output projection");
   const normalized: unknown = JSON.parse(
     JSON.stringify(raw === undefined ? null : raw, (key, value: unknown) => {
-      if (typeof value === "bigint" && !Number.isSafeInteger(Number(value)))
-        return value.toString();
+      if (typeof value === "bigint" && !Number.isSafeInteger(Number(value))) return value.toString();
       return cliJSON(key, value);
     }),
   );
   return JSON.stringify(project(normalized));
 }
 
-export function printAgentError(
-  message: string,
-  code?: string,
-  fix?: string,
-): void {
+export function printAgentError(message: string, code?: string, fix?: string): void {
   console.error(
     JSON.stringify({
       error: {
@@ -36,10 +28,7 @@ export function printAgentError(
   );
 }
 
-export function printResult(
-  parsed: ReturnType<typeof parseCommand>,
-  result: unknown,
-): void {
+export function printResult(parsed: ReturnType<typeof parseCommand>, result: unknown): void {
   console.log(
     parsed.output.agent && !parsed.output.full
       ? agentResponse(parsed, result)
@@ -47,24 +36,15 @@ export function printResult(
           result,
           cliJSON,
           parsed.values.json === true ||
-            [
-              "ack",
-              "merge",
-              "acknowledge-digest",
-              "acknowledge-message",
-            ].includes(parsed.positionals[0] ?? "")
+            ["ack", "merge", "acknowledge-digest", "acknowledge-message"].includes(parsed.positionals[0] ?? "")
             ? undefined
             : 2,
         ),
   );
 }
-export function printFailure(
-  error: unknown,
-  args: string[],
-  env: NodeJS.ProcessEnv,
-): void {
-  const message =
-    error instanceof Error ? error.message : "CLI operation failed";
+
+export function printFailure(error: unknown, args: string[], env: NodeJS.ProcessEnv): void {
+  const message = error instanceof Error ? error.message : "CLI operation failed";
   if (agentMode(args.includes("--agent"), env)) {
     const code =
       typeof error === "object" &&

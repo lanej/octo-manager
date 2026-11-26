@@ -1,8 +1,5 @@
 export function parseGitHubPR(url: string) {
-  const match =
-    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/([1-9][0-9]*)\/?$/.exec(
-      url,
-    );
+  const match = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/pull\/([1-9][0-9]*)\/?$/.exec(url);
   const [, owner, repository, pull] = match ?? [];
   if (
     owner === undefined ||

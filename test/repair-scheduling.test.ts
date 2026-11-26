@@ -5,11 +5,7 @@ import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
 import { RepairService, type RepairOptions } from "../src/repairs/service.js";
-import {
-  RepairState,
-  RepairStep,
-  type RepairProfile,
-} from "../src/repairs/types.js";
+import { RepairState, RepairStep, type RepairProfile } from "../src/repairs/types.js";
 import { WorkScheduler } from "../src/scheduling/work.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { TrackingService } from "../src/tracking/service.js";
@@ -22,15 +18,18 @@ function gate() {
   });
   return { promise, release };
 }
+
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+
 async function until(predicate: () => boolean, timeout = 1000) {
   const deadline = Date.now() + timeout;
   while (!predicate() && Date.now() < deadline) await sleep(5);
   expect(predicate()).toBe(true);
 }
+
 const profile: RepairProfile = {
   repository: "owner/repo",
   harness: "pi",
@@ -42,17 +41,11 @@ const profile: RepairProfile = {
 };
 const head = "a".repeat(40),
   base = "b".repeat(40);
-async function fixture(
-  options: RepairOptions = {},
-  now: () => number = Date.now,
-) {
+
+async function fixture(options: RepairOptions = {}, now: () => number = Date.now) {
   const directory = await mkdtemp(join(tmpdir(), "octo-repair-scheduling-"));
   const store = new Store(directory, now);
-  const tracking = new TrackingService(
-    store.tracking,
-    defaultTrackingConfig(),
-    now,
-  );
+  const tracking = new TrackingService(store.tracking, defaultTrackingConfig(), now);
   const prs = [1, 2, 3].map((number) =>
     tracking.track(`https://github.com/owner/repo/pull/${String(number)}`, {
       harness: "codex",
@@ -64,14 +57,7 @@ async function fixture(
   const scheduler = new WorkScheduler(now, (_key, error) => {
     errors.push(error);
   });
-  const service = new RepairService(
-    store.repairs,
-    tracking,
-    { controlled: profile },
-    directory,
-    now,
-    options,
-  );
+  const service = new RepairService(store.repairs, tracking, { controlled: profile }, directory, now, options);
   const input = (index: number) => {
     const pr = prs[index];
     if (pr === undefined) throw new Error("Missing fixture PR");
@@ -125,11 +111,8 @@ test("blocked repair history sleeps, while a new request starts before the forme
       const startedAt = Date.now();
       const request = f.service.request(f.input(1));
       await until(() => entered, process.env["CI"] === undefined ? 200 : 30000);
-      if (process.env["CI"] === undefined)
-        expect(Date.now() - startedAt).toBeLessThan(250);
-      await until(
-        () => f.store.repairs.get(request.id).state === RepairState.Blocked,
-      );
+      if (process.env["CI"] === undefined) expect(Date.now() - startedAt).toBeLessThan(250);
+      await until(() => f.store.repairs.get(request.id).state === RepairState.Blocked);
     } finally {
       reads.mockRestore();
     }
@@ -194,9 +177,7 @@ test("repair verification follows its fifteen-second and rate-limit deadlines", 
     now = 90000;
     f.service.wake();
     await until(() => calls === 3);
-    expect(f.store.repairs.get(queued.id).state).toBe(
-      RepairState.AwaitingChecks,
-    );
+    expect(f.store.repairs.get(queued.id).state).toBe(RepairState.AwaitingChecks);
   } finally {
     await f.close();
   }
@@ -230,11 +211,7 @@ test("repair intake while busy coalesces and preserves newest-first dispatch wit
     expect(started).toHaveLength(1);
     release.release();
     await until(() => started.length === 3);
-    expect(started).toEqual([
-      f.input(0).prUrl,
-      f.input(2).prUrl,
-      f.input(1).prUrl,
-    ]);
+    expect(started).toEqual([f.input(0).prUrl, f.input(2).prUrl, f.input(1).prUrl]);
     expect(maximum).toBe(1);
   } finally {
     release.release();

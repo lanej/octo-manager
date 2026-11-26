@@ -36,10 +36,7 @@ export function sqlShape(sql: string): string {
       const start = i++;
       while (i < sql.length && /[A-Za-z0-9_$]/u.test(sql[i] ?? "")) i++;
       out += sql.slice(start, i);
-    } else if (
-      /[0-9]/u.test(ch) ||
-      (ch === "." && /[0-9]/u.test(sql[i + 1] ?? ""))
-    ) {
+    } else if (/[0-9]/u.test(ch) || (ch === "." && /[0-9]/u.test(sql[i + 1] ?? ""))) {
       i++;
       while (i < sql.length && /[A-Za-z0-9_.+-]/u.test(sql[i] ?? "")) i++;
       out += "?";
@@ -57,13 +54,7 @@ export function sqlShape(sql: string): string {
 export function statementKind(shape: string): "read" | "write" | "unknown" {
   if (shape.replace(/;\s*$/u, "").includes(";")) return "unknown";
   if (/^(SELECT|EXPLAIN)\b/iu.test(shape)) return "read";
-  if (
-    /^(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER|VACUUM|REINDEX)\b/iu.test(
-      shape,
-    )
-  )
-    return "write";
-  if (/^PRAGMA (data_version|schema_version)\s*;?$/iu.test(shape))
-    return "read";
+  if (/^(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER|VACUUM|REINDEX)\b/iu.test(shape)) return "write";
+  if (/^PRAGMA (data_version|schema_version)\s*;?$/iu.test(shape)) return "read";
   return "unknown";
 }

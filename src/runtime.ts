@@ -2,9 +2,7 @@ import { readFileSync } from "node:fs";
 import { packageRoot } from "./package-root.js";
 import { join } from "node:path";
 
-const manifest: unknown = JSON.parse(
-  readFileSync(join(packageRoot(), "package.json"), "utf8"),
-);
+const manifest: unknown = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8"));
 if (
   typeof manifest !== "object" ||
   manifest === null ||
@@ -15,9 +13,7 @@ if (
   typeof manifest.engines.bun !== "string" ||
   !/^>=(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.test(manifest.engines.bun)
 )
-  throw new Error(
-    "Declare a Bun minimum as >=major.minor.patch in package.json engines.bun",
-  );
+  throw new Error("Declare a Bun minimum as >=major.minor.patch in package.json engines.bun");
 
 export const bunRequirement = manifest.engines.bun;
 

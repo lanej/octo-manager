@@ -13,10 +13,7 @@ import { ApplicationRuntime, type Application } from "./runtime.js";
 import { ApiTransport } from "./transport.js";
 import type { ApplicationOptions } from "./options.js";
 
-export async function assembleApplication(
-  directory: string,
-  options: ApplicationOptions = {},
-) {
+export async function assembleApplication(directory: string, options: ApplicationOptions = {}) {
   const now = options.now ?? Date.now;
   const diagnostics = new PerformanceDiagnostics(directory);
   const inputs = new ApplicationInputs();
@@ -32,18 +29,12 @@ export async function assembleApplication(
     const workScheduler = new WorkScheduler(
       now,
       (key, error) => {
-        ownedStore.event(
-          "",
-          "scheduler_work_failed",
-          `${key}: ${errorText(error)}`,
-        );
+        ownedStore.event("", "scheduler_work_failed", `${key}: ${errorText(error)}`);
       },
       (key, work) => performanceScope(directory, key, work),
     );
     register(workScheduler);
-    const policyWork = workScheduler.task("repository-policy", () =>
-      ownedStore.repositories.scheduled(now()),
-    );
+    const policyWork = workScheduler.task("repository-policy", () => ownedStore.repositories.scheduled(now()));
     ownedStore.repositories.watch(() => {
       policyWork.wake();
     });
@@ -53,13 +44,7 @@ export async function assembleApplication(
         return Promise.resolve();
       },
     });
-    const services = createServices(
-      directory,
-      ownedStore,
-      options,
-      inputs,
-      register,
-    );
+    const services = createServices(directory, ownedStore, options, inputs, register);
     const jobs = register(
       new JobRuntime(
         directory,
@@ -67,12 +52,8 @@ export async function assembleApplication(
         {
           now,
           ...(options.model === undefined ? {} : { model: options.model }),
-          ...(options.workerEnv === undefined
-            ? {}
-            : { workerEnv: options.workerEnv }),
-          workerPath:
-            options.workerPath ??
-            workerModule("job", new URL("../worker.js", import.meta.url).href),
+          ...(!options.workerEnv ? {} : { workerEnv: options.workerEnv }),
+          workerPath: options.workerPath ?? workerModule("job", new URL("../worker.js", import.meta.url).href),
         },
         workScheduler,
         () => services.githubScheduler.emit("tick"),
@@ -81,12 +62,7 @@ export async function assembleApplication(
     inputs.bind({
       changed: (scope) => {
         services.changed(scope);
-        if (
-          scope?.source === undefined ||
-          scope.source === "tracking" ||
-          scope.source === "merge"
-        )
-          policyWork.wake();
+        if (scope?.source === undefined || scope.source === "tracking" || scope.source === "merge") policyWork.wake();
       },
       jobs: () => {
         jobs.wake();
@@ -127,25 +103,15 @@ export async function assembleApplication(
       transport,
     };
   } catch (error) {
-    const outcomes = await Promise.allSettled(
-      resources.reverse().map((resource) => resource.close()),
-    );
-    const failures = outcomes.flatMap((result) =>
-      result.status === "rejected" ? [result.reason as unknown] : [],
-    );
+    const outcomes = await Promise.allSettled(resources.reverse().map((resource) => resource.close()));
+    const failures = outcomes.flatMap((result) => (result.status === "rejected" ? [result.reason as unknown] : []));
     diagnostics.close();
-    if (failures.length > 0)
-      throw new AggregateError(
-        [error, ...failures],
-        "Application assembly cleanup failed",
-      );
+    if (failures.length > 0) throw new AggregateError([error, ...failures], "Application assembly cleanup failed");
     store?.close();
     throw error;
   }
 }
-export async function createApplication(
-  directory: string,
-  options: ApplicationOptions = {},
-): Promise<Application> {
+
+export async function createApplication(directory: string, options: ApplicationOptions = {}): Promise<Application> {
   return (await assembleApplication(directory, options)).runtime;
 }

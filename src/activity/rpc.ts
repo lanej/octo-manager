@@ -8,12 +8,7 @@ import {
   type ListActivityRequest,
   type ActivityInput as WireInput,
 } from "../gen/octomanager/v2/activity_pb.js";
-import {
-  ActivityName,
-  ActivityOutcome,
-  type ActivityReport,
-  type ActivityInput,
-} from "./types.js";
+import { ActivityName, ActivityOutcome, type ActivityReport, type ActivityInput } from "./types.js";
 import type { JobEvent } from "../gen/octomanager/v2/scheduler_pb.js";
 import type { ActivityStore } from "./store.js";
 
@@ -30,6 +25,7 @@ export const activityOutcomes: Record<ActivityOutcome, WireOutcome> = {
   [ActivityOutcome.Failed]: WireOutcome.FAILED,
   [ActivityOutcome.Uncertain]: WireOutcome.UNCERTAIN,
 };
+
 export function wireActivityInput(input: ActivityInput) {
   return {
     ...input,
@@ -37,6 +33,7 @@ export function wireActivityInput(input: ActivityInput) {
     outcome: activityOutcomes[input.outcome],
   };
 }
+
 function wireReport(report: ActivityReport) {
   return create(ActivityReportSchema, {
     sequence: BigInt(report.sequence),
@@ -44,19 +41,16 @@ function wireReport(report: ActivityReport) {
     report: wireActivityInput(report),
   });
 }
+
 function fromWire(input: WireInput | undefined): unknown {
-  if (input === undefined)
-    throw new ConnectError("Activity report is required", Code.InvalidArgument);
+  if (input === undefined) throw new ConnectError("Activity report is required", Code.InvalidArgument);
   return {
     ...input,
-    name: Object.entries(activityNames).find(
-      ([, value]) => value === input.name,
-    )?.[0],
-    outcome: Object.entries(activityOutcomes).find(
-      ([, value]) => value === input.outcome,
-    )?.[0],
+    name: Object.entries(activityNames).find(([, value]) => value === input.name)?.[0],
+    outcome: Object.entries(activityOutcomes).find(([, value]) => value === input.outcome)?.[0],
   };
 }
+
 export function activityRoutes(
   store: ActivityStore,
   sequence: () => number,
@@ -71,38 +65,20 @@ export function activityRoutes(
         if (error instanceof ConnectError) throw error;
         if (error instanceof Error && error.message.startsWith("Invalid"))
           throw new ConnectError(error.message, Code.InvalidArgument);
-        if (
-          error instanceof Error &&
-          error.message.startsWith("Activity request ID already used")
-        )
+        if (error instanceof Error && error.message.startsWith("Activity request ID already used"))
           throw new ConnectError(error.message, Code.AlreadyExists);
         throw new ConnectError("Activity recording failed", Code.Internal);
       }
     },
     listActivity(request: ListActivityRequest) {
-      if (
-        request.limit > 200 ||
-        (request.limit !== 0 && request.beforeSequence === undefined)
-      )
-        throw new ConnectError(
-          "Activity limit requires a recent cursor and must be at most 200",
-          Code.InvalidArgument,
-        );
+      if (request.limit > 200 || (request.limit !== 0 && request.beforeSequence === undefined))
+        throw new ConnectError("Activity limit requires a recent cursor and must be at most 200", Code.InvalidArgument);
       if (request.beforeSequence !== undefined) {
         if (request.afterSequence !== 0n)
-          throw new ConnectError(
-            "Activity cursors cannot be combined",
-            Code.InvalidArgument,
-          );
-        const before =
-          request.beforeSequence === 0n
-            ? BigInt(sequence()) + 1n
-            : request.beforeSequence;
+          throw new ConnectError("Activity cursors cannot be combined", Code.InvalidArgument);
+        const before = request.beforeSequence === 0n ? BigInt(sequence()) + 1n : request.beforeSequence;
         if (before < 0n || before > BigInt(sequence()) + 1n)
-          throw new ConnectError(
-            "Activity cursor is outside retained history",
-            Code.OutOfRange,
-          );
+          throw new ConnectError("Activity cursor is outside retained history", Code.OutOfRange);
         const rows = recent(Number(before)),
           page = rows.slice(0, request.limit === 0 ? 200 : request.limit),
           next = page.at(-1)?.sequence ?? 0n;
@@ -116,14 +92,8 @@ export function activityRoutes(
           hasMore: rows.length > page.length,
         };
       }
-      if (
-        request.afterSequence < 0n ||
-        request.afterSequence > BigInt(sequence())
-      )
-        throw new ConnectError(
-          "Activity cursor is outside retained history",
-          Code.OutOfRange,
-        );
+      if (request.afterSequence < 0n || request.afterSequence > BigInt(sequence()))
+        throw new ConnectError("Activity cursor is outside retained history", Code.OutOfRange);
       const page = events(Number(request.afterSequence));
       const next = page.at(-1)?.sequence ?? request.afterSequence;
       return {
@@ -131,10 +101,7 @@ export function activityRoutes(
           .list(Number(request.afterSequence))
           .filter((entry) => BigInt(entry.sequence) <= next)
           .map(wireReport),
-        events: page.filter(
-          (entry) =>
-            entry.kind !== "agent_activity" && entry.kind !== "progress",
-        ),
+        events: page.filter((entry) => entry.kind !== "agent_activity" && entry.kind !== "progress"),
         nextSequence: next,
         hasMore: next < BigInt(sequence()),
       };

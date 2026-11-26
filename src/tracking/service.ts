@@ -2,12 +2,7 @@ import type { FSWatcher } from "node:fs";
 import type { ScheduledTask, WorkScheduler } from "../scheduling/work.js";
 import { RefreshKind, ScheduleState } from "../scheduling/contracts.js";
 import type { ScheduleStore } from "../scheduling/store.js";
-import {
-  defaultPollPolicy,
-  schedulePoll,
-  type PollState,
-  type PollPolicy,
-} from "./polling.js";
+import { defaultPollPolicy, schedulePoll, type PollState, type PollPolicy } from "./polling.js";
 import { GitHubRequestCancelledError } from "../github/errors.js";
 import { GitHubRateLimitError } from "../github/reads.js";
 import { TrackingState } from "./retirement.js";
@@ -27,11 +22,8 @@ import {
 import { TrackingStore } from "./store.js";
 import type { TrackingConfig } from "./config.js";
 import { GitHubObservationChangedError, readObservation } from "./github.js";
-import {
-  CodexConnection,
-  DeliveryError,
-  type AgentConnection,
-} from "../agents/codex.js";
+import { CodexConnection, DeliveryError, type AgentConnection } from "../agents/codex.js";
+
 export interface TrackingOptions {
   repositoryEnrollment?: (prId: string, agentId: string, cwd?: string) => void;
   stateDirectory?: string;
@@ -46,6 +38,7 @@ export interface TrackingOptions {
   connect?: (agent: AgentRef) => AgentConnection;
   intervalMs?: number;
 }
+
 export class TrackingService {
   private handoffWork: Promise<void> | undefined;
   private handoffDirty = false;
@@ -64,21 +57,17 @@ export class TrackingService {
   private refreshControllers = new Map<string, AbortController>();
   private stopped = false;
   private connections = new Set<AgentConnection>();
+
   constructor(
     readonly store: TrackingStore,
     readonly config: TrackingConfig,
     private now: () => number = Date.now,
     private options: TrackingOptions = {},
   ) {
-    this.handoffs =
-      options.stateDirectory === undefined
-        ? undefined
-        : new Handoffs(options.stateDirectory, now);
+    this.handoffs = options.stateDirectory === undefined ? undefined : new Handoffs(options.stateDirectory, now);
     store.transaction(() => {
       const at = this.now();
-      for (const a of store
-        .attempts()
-        .filter((a) => a.outcome.state === "sending"))
+      for (const a of store.attempts().filter((a) => a.outcome.state === "sending"))
         store.saveAttempt({
           ...a,
           outcome: {
@@ -105,20 +94,19 @@ export class TrackingService {
     });
     store.prepareSafeRecovery();
   }
+
   get failureExcerpt(): typeof readFailureExcerpt {
     return this.options.failureExcerpt ?? readFailureExcerpt;
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("tracking", () => this.tick());
-    if (this.handoffs !== undefined) {
+    if (this.handoffs) {
       const failed = (error: unknown) => {
         this.handoffWatcher?.close();
         this.handoffWatcher = undefined;
         this.handoffWatchFailure = {
-          error:
-            error instanceof Error
-              ? error
-              : new Error("Handoff watcher failed"),
+          error: error instanceof Error ? error : new Error("Handoff watcher failed"),
         };
         this.task?.wake();
       };
@@ -137,49 +125,50 @@ export class TrackingService {
     }
     this.task.wake();
   }
+
   private handoffChanged(): void {
-    if (this.handoffWork !== undefined) this.handoffDirty = true;
+    if (this.handoffWork) this.handoffDirty = true;
     else this.task?.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   inputsChanged(prId?: string): void {
     for (const [id, value] of this.deliveryNotBefore)
-      if (prId === undefined || value.prId === prId)
-        this.deliveryNotBefore.delete(id);
+      if (prId === undefined || value.prId === prId) this.deliveryNotBefore.delete(id);
     this.wake();
   }
+
   private validateTarget(target: AgentTarget): void {
-    if (
-      !supportedTrackingTarget(target) ||
-      !Object.hasOwn(this.config.endpoints, target.endpoint)
-    )
+    if (!supportedTrackingTarget(target) || !Object.hasOwn(this.config.endpoints, target.endpoint))
       throw new Error("Unsupported harness or endpoint");
   }
+
   registerAgent(target: AgentTarget) {
     this.validateTarget(target);
     return this.store.registerAgent(target);
   }
+
   track(url: string, target: AgentTarget, cwd?: string) {
     this.validateTarget(target);
     const p = this.store.track(url, target);
-    this.options.repositoryEnrollment?.(
-      p.id,
-      this.store.registerAgent(target).id,
-      cwd,
-    );
+    this.options.repositoryEnrollment?.(p.id, this.store.registerAgent(target).id, cwd);
     this.requestRefresh(p.id);
     return p;
   }
+
   subscribe(id: string, target: AgentTarget) {
     this.validateTarget(target);
     return this.store.subscribe(id, target);
   }
+
   assign(id: string, target: AgentTarget) {
     this.validateTarget(target);
     return this.store.assign(id, target);
   }
+
   requestRefresh(id: string): void {
     const pr = this.store.pr(id);
     if (!pr.enabled) throw new Error("PR tracking is disabled");
@@ -199,31 +188,27 @@ export class TrackingService {
     this.savePoll(pr.id, next, true);
     this.wake();
   }
+
   private pollState(id: string): PollState | undefined {
     const saved = this.options.schedules?.get(`tracking:${id}`);
-    if (saved !== undefined && saved.epoch !== undefined)
+    if (saved && saved.epoch !== undefined)
       return {
         epoch: saved.epoch,
         active: saved.active === true,
         intervalMs: saved.intervalMs,
         nextAt: saved.dueAtMs,
-        ...(saved.deferredReason === undefined
-          ? {}
-          : { deferredReason: saved.deferredReason }),
-        ...(saved.signature === undefined
-          ? {}
-          : { signature: saved.signature }),
+        ...(saved.deferredReason === undefined ? {} : { deferredReason: saved.deferredReason }),
+        ...(saved.signature === undefined ? {} : { signature: saved.signature }),
       };
     return this.pollStates.get(id);
   }
+
   private savePoll(id: string, state: PollState, interactive = false): void {
     this.pollStates.set(id, state);
     const previous = this.options.schedules?.get(`tracking:${id}`);
     const lastError = this.store.pr(id).lastRefreshError?.message;
     this.options.schedules?.save({
-      ...(previous?.lastAttemptAtMs === undefined
-        ? {}
-        : { lastAttemptAtMs: previous.lastAttemptAtMs }),
+      ...(previous?.lastAttemptAtMs === undefined ? {} : { lastAttemptAtMs: previous.lastAttemptAtMs }),
       ...(lastError === undefined ? {} : { lastError }),
       key: `tracking:${id}`,
       kind: RefreshKind.Tracking,
@@ -233,26 +218,22 @@ export class TrackingService {
       epoch: state.epoch,
       active: state.active,
       ...(state.signature === undefined ? {} : { signature: state.signature }),
-      ...(state.deferredReason === undefined
-        ? {}
-        : { deferredReason: state.deferredReason }),
+      ...(state.deferredReason === undefined ? {} : { deferredReason: state.deferredReason }),
       state: interactive ? ScheduleState.Queued : ScheduleState.Deferred,
     });
   }
+
   refresh(id: string, trigger: "poll" | "manual" = "manual"): Promise<unknown> {
-    if (this.stopped)
-      return Promise.reject(new Error("Coordinator is stopping"));
+    if (this.stopped) return Promise.reject(new Error("Coordinator is stopping"));
     const p = this.store.pr(id);
     if (!p.enabled) return Promise.reject(new Error("PR tracking is disabled"));
     const existing = this.refreshes.get(p.id);
-    if (existing !== undefined && trigger === "manual")
-      this.refreshTriggers.set(p.id, "manual");
-    if (existing !== undefined)
+    if (existing && trigger === "manual") this.refreshTriggers.set(p.id, "manual");
+    if (existing)
       return this.refreshEpochs.get(p.id) === p.trackingEpoch
         ? existing
         : existing.then(() => this.refresh(id, trigger));
-    if (this.now() < this.githubRetryAt)
-      return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
+    if (this.now() < this.githubRetryAt) return Promise.reject(new GitHubRateLimitError(this.githubRetryAt));
     const scheduled = this.options.schedules?.get(`tracking:${p.id}`);
     this.options.schedules?.save({
       ...scheduled,
@@ -269,13 +250,10 @@ export class TrackingService {
     this.refreshTriggers.set(p.id, trigger);
     let observed: ObservationInput | undefined;
     let deferredReason: string | undefined;
-    const priorReason =
-      this.pollState(p.id)?.deferredReason ?? p.lastRefreshError?.message;
+    const priorReason = this.pollState(p.id)?.deferredReason ?? p.lastRefreshError?.message;
     const work = (async () => {
       try {
-        const input: ObservationInput = await (
-          this.options.read ?? readObservation
-        )(
+        const input: ObservationInput = await (this.options.read ?? readObservation)(
           p.url,
           controller.signal,
           undefined,
@@ -284,60 +262,31 @@ export class TrackingService {
           this.store.checks.reconciliationChecks(p.id),
         );
         const current = this.store.pr(p.id);
-        if (
-          !this.stopped &&
-          current.enabled &&
-          current.trackingEpoch === p.trackingEpoch
-        ) {
-          const accepted = this.store.observe(
-            p.id,
-            input,
-            this.config,
-            p.trackingEpoch,
-          );
+        if (!this.stopped && current.enabled && current.trackingEpoch === p.trackingEpoch) {
+          const accepted = this.store.observe(p.id, input, this.config, p.trackingEpoch);
           if (accepted.observation?.id !== current.observation?.id) {
             observed = input;
-            if (priorReason !== undefined)
-              this.store.refreshOutcome(p.id, "recovered", priorReason);
+            if (priorReason !== undefined) this.store.refreshOutcome(p.id, "recovered", priorReason);
           }
         }
       } catch (error) {
-        if (error instanceof GitHubRateLimitError)
-          this.githubRetryAt = Math.max(this.githubRetryAt, error.retryAtMs);
-        const cancelled =
-          controller.signal.aborted ||
-          error instanceof GitHubRequestCancelledError;
+        if (error instanceof GitHubRateLimitError) this.githubRetryAt = Math.max(this.githubRetryAt, error.retryAtMs);
+        const cancelled = controller.signal.aborted || error instanceof GitHubRequestCancelledError;
         if (this.store.prContext(p.id).trackingEpoch === p.trackingEpoch) {
-          const reason = (
-            error instanceof Error ? error.message : "GitHub refresh failed"
-          ).slice(0, 1000);
-          if (
-            cancelled ||
-            (!this.stopped && error instanceof GitHubObservationChangedError)
-          ) {
+          const reason = (error instanceof Error ? error.message : "GitHub refresh failed").slice(0, 1000);
+          if (cancelled || (!this.stopped && error instanceof GitHubObservationChangedError)) {
             deferredReason = reason;
-            this.store.refreshOutcome(
-              p.id,
-              cancelled ? "cancelled" : "retry_scheduled",
-              reason,
-            );
+            this.store.refreshOutcome(p.id, cancelled ? "cancelled" : "retry_scheduled", reason);
           } else if (!this.stopped) this.store.refreshError(p.id, reason);
         }
       } finally {
-        const minimumMs =
-          this.options.intervalMs ??
-          this.config.polling?.minimumMs ??
-          defaultPollPolicy.minimumMs;
+        const minimumMs = this.options.intervalMs ?? this.config.polling?.minimumMs ?? defaultPollPolicy.minimumMs;
         const policy: PollPolicy = {
           minimumMs,
-          maximumMs: Math.max(
-            minimumMs,
-            this.config.polling?.maximumMs ?? defaultPollPolicy.maximumMs,
-          ),
+          maximumMs: Math.max(minimumMs, this.config.polling?.maximumMs ?? defaultPollPolicy.maximumMs),
           activeMaximumMs: Math.max(
             minimumMs,
-            this.config.polling?.activeMaximumMs ??
-              defaultPollPolicy.activeMaximumMs,
+            this.config.polling?.activeMaximumMs ?? defaultPollPolicy.activeMaximumMs,
           ),
         };
         this.savePoll(p.id, {
@@ -354,7 +303,7 @@ export class TrackingService {
         });
         if (this.stopped) {
           const interrupted = this.options.schedules?.get(`tracking:${p.id}`);
-          if (interrupted !== undefined)
+          if (interrupted)
             this.options.schedules?.save({
               ...interrupted,
               state: ScheduleState.Queued,
@@ -374,25 +323,21 @@ export class TrackingService {
     this.refreshes.set(p.id, work);
     return work;
   }
+
   tick(): number | undefined {
     if (this.stopped) return;
-    if (this.handoffWatchFailure !== undefined) {
+    if (this.handoffWatchFailure) {
       const { error } = this.handoffWatchFailure;
       this.handoffWatchFailure = undefined;
       throw error;
     }
     // File intake only needs a fallback while its push channel is unavailable.
-    let next =
-      this.handoffs !== undefined && this.handoffWatcher === undefined
-        ? this.now() + 30000
-        : Infinity;
-    if (this.handoffs !== undefined && this.handoffWork === undefined) {
+    let next = this.handoffs && !this.handoffWatcher ? this.now() + 30000 : Infinity;
+    if (this.handoffs && !this.handoffWork) {
       this.handoffWork = this.handoffs
         .drain((request) => {
-          const existing = this.store
-            .prContexts()
-            .find((pr) => pr.url === request.url);
-          if (existing !== undefined) {
+          const existing = this.store.prContexts().find((pr) => pr.url === request.url);
+          if (existing) {
             const owner = this.store.agent(existing.ownerAgentId);
             if (
               owner.harness !== request.owner.harness ||
@@ -401,8 +346,7 @@ export class TrackingService {
             )
               return {
                 accepted: false,
-                reason:
-                  "PR already belongs to another agent; explicit reassignment is required",
+                reason: "PR already belongs to another agent; explicit reassignment is required",
               };
           }
           this.track(request.url, request.owner, request.cwd);
@@ -417,8 +361,7 @@ export class TrackingService {
           }
         });
     }
-    for (const id of this.store.retirement.expire())
-      this.refreshControllers.get(id)?.abort();
+    for (const id of this.store.retirement.expire()) this.refreshControllers.get(id)?.abort();
     const queued = this.options.schedules?.queuedKeys();
     for (const p of this.store.prContexts()) {
       if (p.state === TrackingState.Draining && p.drainDeadlineAt !== undefined)
@@ -435,16 +378,8 @@ export class TrackingService {
         continue;
       }
       const state = this.pollState(p.id);
-      if (
-        ((state?.epoch === p.trackingEpoch ? state.nextAt : undefined) ?? 0) <=
-        this.now()
-      )
-        this.runPoll(p.id);
-      if (!this.refreshes.has(p.id))
-        next = Math.min(
-          next,
-          Math.max(this.githubRetryAt, state?.nextAt ?? this.now()),
-        );
+      if (((state?.epoch === p.trackingEpoch ? state.nextAt : undefined) ?? 0) <= this.now()) this.runPoll(p.id);
+      if (!this.refreshes.has(p.id)) next = Math.min(next, Math.max(this.githubRetryAt, state?.nextAt ?? this.now()));
     }
     if (!this.deliveryBusy) {
       this.deliveryBusy = true;
@@ -458,68 +393,45 @@ export class TrackingService {
     }
     return Number.isFinite(next) ? next : undefined;
   }
+
   private runPoll(id: string): void {
     const saved = this.options.schedules?.get(`tracking:${id}`);
-    const run = () =>
-      this.refresh(
-        id,
-        saved?.state === ScheduleState.Queued ? "manual" : "poll",
-      ).catch(() => {});
-    if (
-      saved?.state === ScheduleState.Queued &&
-      this.options.interactive !== undefined
-    )
+    const run = () => this.refresh(id, saved?.state === ScheduleState.Queued ? "manual" : "poll").catch(() => {});
+    if (saved?.state === ScheduleState.Queued && this.options.interactive)
       this.options.interactive(run).catch(() => {});
     else run().catch(() => {});
   }
+
   private usesPullInbox(agentId: string): boolean {
     return (
-      Object.is(this.store.agent(agentId).harness, TrackingHarness.Pi) ||
-      this.options.managedQueue?.(agentId) === true
+      Object.is(this.store.agent(agentId).harness, TrackingHarness.Pi) || this.options.managedQueue?.(agentId) === true
     );
   }
+
   private deliveryNotBefore = new Map<string, { at: number; prId: string }>();
+
   private *deliveryPlans(): Generator<{ delivery: Delivery; at: number }> {
     const candidates = this.store.deliveryCandidates();
     const managed = this.options.managedQueueBatch?.([
       ...new Set(
-        candidates
-          .filter((candidate) => candidate.messageRecorded)
-          .map((candidate) => candidate.recipientAgentId),
+        candidates.filter((candidate) => candidate.messageRecorded).map((candidate) => candidate.recipientAgentId),
       ),
     ]);
     for (const d of candidates) {
       // Recorded pull-inbox work belongs to digest reconciliation; direct selection does not need its body.
-      if (
-        d.messageRecorded &&
-        (managed?.has(d.recipientAgentId) === true ||
-          this.usesPullInbox(d.recipientAgentId))
-      )
+      if (d.messageRecorded && (managed?.has(d.recipientAgentId) === true || this.usesPullInbox(d.recipientAgentId)))
         continue;
       const message = this.store.inbox.get(d.id);
-      if (
-        message?.acknowledgedAt !== undefined ||
-        (message !== undefined && this.usesPullInbox(d.recipientAgentId))
-      )
-        continue;
+      if (message?.acknowledgedAt !== undefined || (message && this.usesPullInbox(d.recipientAgentId))) continue;
       const replaced = this.store.inbox.isReplaced(d.id);
       let at: number | undefined;
       if (replaced) {
-        if (
-          message !== undefined &&
-          (d.progress.state === DeliveryState.Uncertain ||
-            d.progress.state === DeliveryState.Delivered)
-        )
+        if (message && (d.progress.state === DeliveryState.Uncertain || d.progress.state === DeliveryState.Delivered))
           at = message.nextCheckAt;
-      } else if (d.progress.state === DeliveryState.Pending)
-        at = d.progress.nextAttemptAt;
+      } else if (d.progress.state === DeliveryState.Pending) at = d.progress.nextAttemptAt;
       else if (d.progress.state === DeliveryState.Uncertain)
         at = message?.nextCheckAt ?? this.nextUncertainCheck.get(d.id) ?? 0;
-      else if (
-        d.progress.state === DeliveryState.Delivered &&
-        message?.applicable === true
-      )
-        at = message.nextCheckAt;
+      else if (d.progress.state === DeliveryState.Delivered && message?.applicable === true) at = message.nextCheckAt;
       if (at === undefined) continue;
       const action = this.store.action(d.actionId);
       if (
@@ -535,7 +447,9 @@ export class TrackingService {
       };
     }
   }
+
   private deliveryDeadline = Infinity;
+
   private async deliverNext(): Promise<void> {
     this.deliveryDeadline = Infinity;
     let plan: { delivery: Delivery; at: number } | undefined;
@@ -546,23 +460,18 @@ export class TrackingService {
       }
       this.deliveryDeadline = Math.min(this.deliveryDeadline, candidate.at);
     }
-    if (plan === undefined) return;
+    if (!plan) return;
     try {
       await this.deliver(plan.delivery);
     } finally {
-      const current = this.store
-        .deliveryCandidates()
-        .find((value) => value.id === plan.delivery.id);
+      const current = this.store.deliveryCandidates().find((value) => value.id === plan.delivery.id);
       const message = this.store.inbox.get(plan.delivery.id);
       const next =
         current?.progress.state === DeliveryState.Pending
           ? current.progress.nextAttemptAt
           : current?.progress.state === DeliveryState.Uncertain
-            ? (message?.nextCheckAt ??
-              this.nextUncertainCheck.get(plan.delivery.id) ??
-              0)
-            : current?.progress.state === DeliveryState.Delivered &&
-                message?.applicable === true
+            ? (message?.nextCheckAt ?? this.nextUncertainCheck.get(plan.delivery.id) ?? 0)
+            : current?.progress.state === DeliveryState.Delivered && message?.applicable === true
               ? message.nextCheckAt
               : undefined;
       // An unchanged due row needs bounded upkeep rather than another immediate attempt.
@@ -575,6 +484,7 @@ export class TrackingService {
       this.task?.wake();
     }
   }
+
   private async deliver(d: Delivery): Promise<void> {
     if (this.store.inbox.isReplaced(d.id)) {
       await this.reconcileReplaced(d);
@@ -583,17 +493,9 @@ export class TrackingService {
     const action = this.store.action(d.actionId),
       pr = this.store.pr(action.prId),
       agent = this.store.agent(d.recipientAgentId);
-    if (
-      !pr.enabled ||
-      !unfinished(action) ||
-      !this.store.subscriptions.includes(action.prId, agent.id)
-    )
-      return;
+    if (!pr.enabled || !unfinished(action) || !this.store.subscriptions.includes(action.prId, agent.id)) return;
     try {
-      if (
-        d.progress.state === DeliveryState.Pending &&
-        this.store.inbox.get(d.id) === undefined
-      ) {
+      if (d.progress.state === DeliveryState.Pending && !this.store.inbox.get(d.id)) {
         const notice = this.store.noticeForAction(action, agent.id);
         this.store.transaction(() => {
           this.store.inbox.freezeNotice(d.id, notice);
@@ -602,8 +504,7 @@ export class TrackingService {
         this.options.notificationRecorded?.(d.recipientAgentId);
       }
     } catch (error) {
-      const reason =
-        error instanceof Error ? error.message : "Message capture failed";
+      const reason = error instanceof Error ? error.message : "Message capture failed";
       this.store.transaction(() => {
         this.store.saveDelivery(
           {
@@ -623,7 +524,7 @@ export class TrackingService {
     if (this.usesPullInbox(agent.id)) return;
     const message = this.store.inbox.get(d.id);
     const endpoint = this.config.endpoints[agent.endpoint];
-    if (endpoint === undefined) {
+    if (!endpoint) {
       this.store.saveDelivery(
         {
           ...d,
@@ -639,8 +540,7 @@ export class TrackingService {
       return;
     }
     const connection: AgentConnection =
-      this.options.connect?.(agent) ??
-      new CodexConnection(endpoint.socket, endpoint.delivery);
+      this.options.connect?.(agent) ?? new CodexConnection(endpoint.socket, endpoint.delivery);
     this.connections.add(connection);
     let attempt: DeliveryAttempt | undefined;
     const reconciling =
@@ -651,26 +551,19 @@ export class TrackingService {
         .some(
           (attempt) =>
             attempt.deliveryId === d.id &&
-            (attempt.outcome.state === "accepted" ||
-              attempt.outcome.state === "uncertain"),
+            (attempt.outcome.state === "accepted" || attempt.outcome.state === "uncertain"),
         );
     try {
       const prepared = await connection.prepare(agent);
       if (!this.current(d)) return;
-      if (prepared.version) this.store.runtime(agent.id, prepared.version);
+      if (prepared.version !== undefined && prepared.version !== "") this.store.runtime(agent.id, prepared.version);
       if (reconciling) {
         const found = await connection.find(agent, d.id, message?.body);
-        if (message !== undefined) {
-          if (found.received === true && found.found && this.current(d))
-            this.store.acknowledgeMessage(d.id, agent.id);
+        if (message) {
+          if (found.received === true && found.found && this.current(d)) this.store.acknowledgeMessage(d.id, agent.id);
           else this.store.inbox.defer(d.id, this.now() + 300000);
         }
-        if (
-          !this.stopped &&
-          found.found &&
-          this.current(d, true) &&
-          d.progress.state !== DeliveryState.Delivered
-        )
+        if (!this.stopped && found.found && this.current(d, true) && d.progress.state !== DeliveryState.Delivered)
           this.store.transaction(() => {
             this.store.saveDelivery(
               {
@@ -678,12 +571,8 @@ export class TrackingService {
                 progress: {
                   state: DeliveryState.Delivered,
                   at: this.now(),
-                  ...(found.turnId === undefined
-                    ? {}
-                    : { turnId: found.turnId }),
-                  ...(found.queueId === undefined
-                    ? {}
-                    : { queueId: found.queueId }),
+                  ...(found.turnId === undefined ? {} : { turnId: found.turnId }),
+                  ...(found.queueId === undefined ? {} : { queueId: found.queueId }),
                   ...(found.note === undefined ? {} : { note: found.note }),
                 },
                 updatedAt: this.now(),
@@ -693,7 +582,7 @@ export class TrackingService {
           });
         // rationale: Bounded absence cannot prove rejection. Replays retain the same ID and immutable body so recipients can recognize duplicates.
         this.nextUncertainCheck.set(d.id, this.now() + 60000);
-        if (found.found || message === undefined) return;
+        if (found.found || !message) return;
       }
       if (prepared.busy) {
         if (reconciling && d.progress.state !== DeliveryState.Pending) {
@@ -701,7 +590,7 @@ export class TrackingService {
           return;
         }
         if (this.current(d))
-          this.store.transaction(() =>
+          this.store.transaction(() => {
             this.store.saveDelivery(
               {
                 ...d,
@@ -712,29 +601,22 @@ export class TrackingService {
                 updatedAt: this.now(),
               },
               "delivery_waiting",
-            ),
-          );
+            );
+          });
         return;
       }
-      if (
-        !this.current(d) ||
-        this.store.inbox.isReplaced(d.id) ||
-        message === undefined ||
-        message.notice === undefined
-      )
-        return;
-      const previous = this.store
-        .attempts()
-        .filter((a) => a.deliveryId === d.id);
-      attempt = {
+      if (!this.current(d) || this.store.inbox.isReplaced(d.id) || !message || !message.notice) return;
+      const previous = this.store.attempts().filter((a) => a.deliveryId === d.id);
+      const started: DeliveryAttempt = {
         deliveryId: d.id,
         number: previous.length + 1,
         startedAt: this.now(),
-        harnessVersion: prepared.version,
+        ...(prepared.version === undefined ? {} : { harnessVersion: prepared.version }),
         outcome: { state: "sending" },
       };
+      attempt = started;
       this.store.transaction(() => {
-        this.store.saveAttempt(attempt!);
+        this.store.saveAttempt(started);
         this.store.saveDelivery(
           {
             ...d,
@@ -749,14 +631,12 @@ export class TrackingService {
       this.store.inbox.defer(d.id, this.now() + 300000);
       this.store.transaction(() => {
         this.store.saveAttempt({
-          ...attempt!,
+          ...started,
           outcome: {
             state: "accepted",
             at: this.now(),
             ...(result.turnId === undefined ? {} : { turnId: result.turnId }),
-            ...(result.queueId === undefined
-              ? {}
-              : { queueId: result.queueId }),
+            ...(result.queueId === undefined ? {} : { queueId: result.queueId }),
           },
         });
         if (this.current(d, true))
@@ -766,12 +646,8 @@ export class TrackingService {
               progress: {
                 state: DeliveryState.Delivered,
                 at: this.now(),
-                ...(result.turnId === undefined
-                  ? {}
-                  : { turnId: result.turnId }),
-                ...(result.queueId === undefined
-                  ? {}
-                  : { queueId: result.queueId }),
+                ...(result.turnId === undefined ? {} : { turnId: result.turnId }),
+                ...(result.queueId === undefined ? {} : { queueId: result.queueId }),
                 ...(result.note === undefined ? {} : { note: result.note }),
               },
               updatedAt: this.now(),
@@ -781,16 +657,11 @@ export class TrackingService {
       });
     } catch (error) {
       if (this.stopped) return;
-      if (attempt === undefined && reconciling) {
+      if (!attempt && reconciling) {
         this.store.inbox.defer(d.id, this.now() + 60000);
         this.nextUncertainCheck.set(d.id, this.now() + 60000);
-        const reason =
-          error instanceof Error ? error.message : "Receipt lookup unavailable";
-        if (
-          this.current(d) &&
-          (d.progress.state !== DeliveryState.Uncertain ||
-            d.progress.reason !== reason)
-        )
+        const reason = error instanceof Error ? error.message : "Receipt lookup unavailable";
+        if (this.current(d) && (d.progress.state !== DeliveryState.Uncertain || d.progress.reason !== reason))
           this.store.transaction(() => {
             this.store.saveDelivery(
               {
@@ -809,32 +680,25 @@ export class TrackingService {
       }
       const applicable = this.current(d, true);
       if (!attempt && !applicable) return;
-      const reason =
-        error instanceof Error ? error.message : "Agent delivery failed";
-      if (!attempt)
-        attempt = {
-          deliveryId: d.id,
-          number:
-            this.store.attempts().filter((a) => a.deliveryId === d.id).length +
-            1,
-          startedAt: this.now(),
-          outcome: { state: "sending" },
-        };
-      const uncertain =
-        reconciling || (error instanceof DeliveryError && error.uncertain);
-      const retry =
-        message === undefined
-          ? [5000, 30000, 120000][d.retryCount ?? 0]
-          : [5000, 30000, 120000][Math.min(d.retryCount ?? 0, 2)];
-      const state = uncertain
-        ? DeliveryState.Uncertain
-        : (error instanceof DeliveryError && error.permanent) ||
-            retry === undefined
-          ? DeliveryState.Unavailable
-          : DeliveryState.Pending;
+      const reason = error instanceof Error ? error.message : "Agent delivery failed";
+      const failedAttempt: DeliveryAttempt = attempt ?? {
+        deliveryId: d.id,
+        number: this.store.attempts().filter((a) => a.deliveryId === d.id).length + 1,
+        startedAt: this.now(),
+        outcome: { state: "sending" },
+      };
+      const uncertain = reconciling || (error instanceof DeliveryError && error.uncertain);
+      const retry = !message
+        ? [5000, 30000, 120000][d.retryCount ?? 0]
+        : [5000, 30000, 120000][Math.min(d.retryCount ?? 0, 2)];
+      const progress: Delivery["progress"] = uncertain
+        ? { state: DeliveryState.Uncertain, at: this.now(), reason }
+        : (error instanceof DeliveryError && error.permanent) || retry === undefined
+          ? { state: DeliveryState.Unavailable, at: this.now(), reason }
+          : { state: DeliveryState.Pending, nextAttemptAt: this.now() + retry };
       this.store.transaction(() => {
         this.store.saveAttempt({
-          ...attempt!,
+          ...failedAttempt,
           outcome: {
             state: uncertain ? "uncertain" : "rejected",
             at: this.now(),
@@ -846,13 +710,10 @@ export class TrackingService {
             {
               ...d,
               retryCount: (d.retryCount ?? 0) + 1,
-              progress:
-                state === DeliveryState.Pending
-                  ? { state, nextAttemptAt: this.now() + retry! }
-                  : { state, at: this.now(), reason },
+              progress,
               updatedAt: this.now(),
             },
-            `delivery_${state}`,
+            `delivery_${progress.state}`,
           );
       });
       if (uncertain) {
@@ -864,15 +725,14 @@ export class TrackingService {
       connection.close();
     }
   }
+
   private async reconcileReplaced(delivery: Delivery): Promise<void> {
     const message = this.store.inbox.get(delivery.id);
     const agent = this.store.agent(delivery.recipientAgentId);
     if (Object.is(agent.harness, TrackingHarness.Pi)) return;
     const endpoint = this.config.endpoints[agent.endpoint];
-    if (message === undefined || endpoint === undefined) return;
-    const connection =
-      this.options.connect?.(agent) ??
-      new CodexConnection(endpoint.socket, endpoint.delivery);
+    if (!message || !endpoint) return;
+    const connection = this.options.connect?.(agent) ?? new CodexConnection(endpoint.socket, endpoint.delivery);
     this.connections.add(connection);
     // A replacement fences sends, while exact historical receipt evidence remains independently reconcilable.
     this.store.inbox.defer(delivery.id, this.now() + 60000);
@@ -883,16 +743,9 @@ export class TrackingService {
       const found = await connection.find(agent, delivery.id, message.body);
       if (stopped() || !found.found) return;
       this.store.transaction(() => {
-        if (found.received === true)
-          this.store.acknowledgeMessageInside(delivery.id, agent.id);
-        const current = this.store
-          .deliveries()
-          .find((value) => value.id === delivery.id);
-        if (
-          current === undefined ||
-          current.progress.state === DeliveryState.Cancelled
-        )
-          return;
+        if (found.received === true) this.store.acknowledgeMessageInside(delivery.id, agent.id);
+        const current = this.store.deliveries().find((value) => value.id === delivery.id);
+        if (!current || current.progress.state === DeliveryState.Cancelled) return;
         this.store.saveDelivery(
           {
             ...current,
@@ -900,9 +753,7 @@ export class TrackingService {
               state: DeliveryState.Delivered,
               at: this.now(),
               ...(found.turnId === undefined ? {} : { turnId: found.turnId }),
-              ...(found.queueId === undefined
-                ? {}
-                : { queueId: found.queueId }),
+              ...(found.queueId === undefined ? {} : { queueId: found.queueId }),
               ...(found.note === undefined ? {} : { note: found.note }),
             },
             updatedAt: this.now(),
@@ -917,7 +768,9 @@ export class TrackingService {
       connection.close();
     }
   }
+
   private nextUncertainCheck = new Map<string, number>();
+
   private current(d: Delivery, includeReceived = false): boolean {
     const value = this.store.deliveries().find((x) => x.id === d.id);
     const action = this.store.action(d.actionId);
@@ -928,10 +781,10 @@ export class TrackingService {
       this.store.pr(action.prId).enabled &&
       unfinished(action) &&
       this.store.subscriptions.includes(action.prId, d.recipientAgentId) &&
-      (includeReceived ||
-        this.store.inbox.get(d.id)?.acknowledgedAt === undefined)
+      (includeReceived || this.store.inbox.get(d.id)?.acknowledgedAt === undefined)
     );
   }
+
   checkpointable(): boolean {
     return (
       this.handoffWork === undefined &&
@@ -949,24 +802,20 @@ export class TrackingService {
         ) &&
       !this.store
         .attempts()
-        .some(
-          (attempt) =>
-            attempt.outcome.state === "sending" ||
-            attempt.outcome.state === "uncertain",
-        )
+        .some((attempt) => attempt.outcome.state === "sending" || attempt.outcome.state === "uncertain")
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.task?.close();
     this.handoffWatcher?.close();
     await this.handoffWatchWork;
-    for (const controller of this.refreshControllers.values())
-      controller.abort();
+    for (const controller of this.refreshControllers.values()) controller.abort();
     for (const c of this.connections) c.close();
     await Promise.allSettled([
       ...this.refreshes.values(),
-      ...(this.handoffWork === undefined ? [] : [this.handoffWork]),
+      ...(!this.handoffWork ? [] : [this.handoffWork]),
       ...(this.deliveryWork ? [this.deliveryWork] : []),
     ]);
   }

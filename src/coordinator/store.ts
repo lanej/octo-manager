@@ -1,3 +1,5 @@
+import { Type } from "typebox";
+import { Check } from "typebox/value";
 import { NotificationInputRevision } from "../notifications/input-revision.js";
 import { migrateTracking } from "../tracking/schema.js";
 import { NotificationRepository } from "../notifications/repository.js";
@@ -6,15 +8,15 @@ import { AssessmentStore } from "../assessments/store.js";
 import { IssueStore } from "../issues/store.js";
 import { RepositoryPolicies } from "../repository/service.js";
 import { RepositoryPolicyStore } from "../repository/store.js";
-import {migrateScheduling,ScheduleStore} from "../scheduling/store.js";
-import {migrateAutoMerge} from "../merging/upgrade.js";
-import {migrateMerging} from "../merging/schema.js";
-import {MergeStore} from "../merging/store.js";
-import {migrateSubscriptions} from "../tracking/subscriptions.js";
-import {NotificationStore} from "../tracking/notifications.js";
-import {migrateRetirement} from "../tracking/retirement.js";
-import {migrateDigests,migrateInbox,migrateNotificationEvidence} from "../notifications/schema.js";
-import {DigestStore} from "../notifications/store.js";
+import { migrateScheduling, ScheduleStore } from "../scheduling/store.js";
+import { migrateAutoMerge } from "../merging/upgrade.js";
+import { migrateMerging } from "../merging/schema.js";
+import { MergeStore } from "../merging/store.js";
+import { migrateSubscriptions } from "../tracking/subscriptions.js";
+import { NotificationStore } from "../tracking/notifications.js";
+import { migrateRetirement } from "../tracking/retirement.js";
+import { migrateDigests, migrateInbox, migrateNotificationEvidence } from "../notifications/schema.js";
+import { DigestStore } from "../notifications/store.js";
 import { migrateSubmissions } from "../submissions/schema.js";
 import { SubmissionStore } from "../submissions/store.js";
 import { migrateChecks } from "../tracking/checks-schema.js";
@@ -29,21 +31,59 @@ import { DatabaseSync } from "node:sqlite";
 import { chmodSync, mkdirSync, lstatSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { digest, type Job, type JobEvent, type Task } from "../jobs/domain.js";
+import { digest, jobTransitions, parseTask, type Status, type Job, type JobEvent, type Task } from "../jobs/domain.js";
+
+const storedJobShape = Type.Object({
+  id: Type.String(),
+  requestId: Type.String(),
+  digest: Type.String(),
+  task: Type.Unknown(),
+  status: Type.String(),
+  createdAt: Type.Integer(),
+  updatedAt: Type.Integer(),
+  retryCount: Type.Integer(),
+  availableAt: Type.Integer(),
+  result: Type.Optional(Type.String()),
+  error: Type.Optional(Type.String()),
+  fixture: Type.Optional(Type.String()),
+  attempts: Type.Array(
+    Type.Object({
+      number: Type.Integer(),
+      startedAt: Type.Integer(),
+      endedAt: Type.Optional(Type.Integer()),
+      pid: Type.Optional(Type.Integer()),
+      exitObservedAt: Type.Optional(Type.Integer()),
+      error: Type.Optional(Type.String()),
+    }),
+  ),
+});
+
+function jobStatus(value: string): value is Status {
+  return Object.hasOwn(jobTransitions, value);
+}
+
+function storedJob(data: unknown): Job {
+  if (typeof data !== "string") throw new Error("Invalid stored job text");
+  const value: unknown = JSON.parse(data);
+  if (!Check(storedJobShape, value) || !jobStatus(value.status)) throw new Error("Invalid stored job record");
+  return { ...value, task: parseTask(value.task), status: value.status };
+}
 
 export function privateDirectory(path: string): void {
   mkdirSync(path, { recursive: true, mode: 0o700 });
   if (lstatSync(path).isSymbolicLink()) throw new Error("State directory must not be a symlink");
   chmodSync(path, 0o700);
 }
+
 export interface InputScope {
   prId?: string;
   recipients?: "all";
   notificationEligibility?: true;
   source?: "tracking" | "merge" | "repository" | "issues" | "submissions";
 }
+
 export class Store {
-  private db!: DatabaseSync;
+  private db: DatabaseSync;
   readonly tracking: TrackingStore;
   readonly notificationRepository: NotificationRepository;
   readonly assessments: AssessmentStore;
@@ -54,16 +94,22 @@ export class Store {
   readonly activity: ActivityStore;
   readonly repairs: RepairStore;
   readonly conflicts: ConflictStore;
-  readonly mergeConflicts:ConflictStore;
+  readonly mergeConflicts: ConflictStore;
   readonly submissions: SubmissionStore;
   readonly digests: DigestStore;
-  readonly notifications:NotificationStore;
+  readonly notifications: NotificationStore;
   private ownership: DatabaseSync;
   private closed = false;
   private readonly eventListeners = new Set<() => void>();
   private eventNotificationQueued = false;
   private eventSequence = 0;
-  constructor(readonly directory: string, private now: () => number = Date.now, private wakeDigests?: (scope?: InputScope) => void, private wakeJobs?: () => void) {
+
+  constructor(
+    readonly directory: string,
+    private now: () => number = Date.now,
+    private wakeDigests?: (scope?: InputScope) => void,
+    private wakeJobs?: () => void,
+  ) {
     privateDirectory(directory);
     this.ownership = new DatabaseSync(join(directory, "coordinator-lock.sqlite"));
     try {
@@ -73,105 +119,214 @@ export class Store {
       this.ownership.close();
       throw new Error("Another coordinator owns this state directory");
     }
+    let opened: DatabaseSync | undefined;
     try {
-      this.db = new DatabaseSync(join(directory, "jobs.sqlite"));
-      this.db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+      opened = new DatabaseSync(join(directory, "jobs.sqlite"));
+      this.db = opened;
+      this.db.exec(
+        "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+      );
       migrateTracking(this.db);
       migrateNotificationEvidence(this.db);
       migrateAssessments(this.db);
       this.assessments = new AssessmentStore(this.db, this.now);
       this.assessments.recoverInterrupted();
       this.notificationRepository = new NotificationRepository(this.db, this.now, directory);
-      this.tracking = new TrackingStore(this.db, this.now, (kind, detail, prId, actionId, context) => {
-        this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)").run("", this.now(), kind, detail.slice(0,16000), prId, actionId??null, context === undefined ? null : JSON.stringify(context));
+      this.tracking = new TrackingStore(
+        this.db,
+        this.now,
+        (kind, detail, prId, actionId, context) => {
+          this.db
+            .prepare(
+              "INSERT INTO events(job_id,at,kind,detail,pr_id,action_id,action_context_json) VALUES(?,?,?,?,?,?,?)",
+            )
+            .run(
+              "",
+              this.now(),
+              kind,
+              detail.slice(0, 16000),
+              prId,
+              actionId ?? null,
+              !context ? null : JSON.stringify(context),
+            );
+          this.notifyEvents();
+          if (
+            kind === "pr_observed" ||
+            kind === "pr_tracked" ||
+            kind === "pr_retracked" ||
+            kind === "pr_assigned" ||
+            kind === "pr_archived" ||
+            kind === "pr_untracked" ||
+            kind === "pr_subscribed" ||
+            kind === "pr_unsubscribed" ||
+            kind === "delivery_cancelled" ||
+            kind === "message_acknowledged" ||
+            kind.startsWith("assessment_notification_")
+          )
+            this.wakeDigests?.(
+              kind === "pr_observed" || kind === "pr_archived"
+                ? { prId, source: "tracking", ...(kind === "pr_archived" ? { notificationEligibility: true } : {}) }
+                : undefined,
+            );
+        },
+        this.notificationRepository,
+        this.assessments,
+      );
+      this.activity = new ActivityStore(this.db, this.now, () => {
         this.notifyEvents();
-        if (kind === "pr_observed" || kind === "pr_tracked" || kind === "pr_retracked" || kind === "pr_assigned" || kind === "pr_archived" ||
-          kind === "pr_untracked" || kind === "pr_subscribed" ||
-          kind === "pr_unsubscribed" || kind === "delivery_cancelled" ||
-          kind === "message_acknowledged" || kind.startsWith("assessment_notification_"))
-          this.wakeDigests?.(kind === "pr_observed" || kind === "pr_archived" ? { prId, source: "tracking", ...(kind === "pr_archived" ? { notificationEligibility: true } : {}) } : undefined);
-      }, this.notificationRepository, this.assessments);
-      this.activity = new ActivityStore(this.db, this.now, () => { this.notifyEvents(); });
+      });
       migrateEvidence(this.db);
-      this.repairs = new RepairStore(this.db, this.now, () => { this.notifyEvents(); });
+      this.repairs = new RepairStore(this.db, this.now, () => {
+        this.notifyEvents();
+      });
       this.conflicts = new ConflictStore(this.db, this.now);
       migrateFeedback(this.db);
       migrateInbox(this.db);
       migrateChecks(this.db);
       migrateSubmissions(this.db);
       migrateDigests(this.db);
-      migrateRetirement(this.db,this.now());
+      migrateRetirement(this.db, this.now());
       migrateSubscriptions(this.db);
       migrateMerging(this.db);
       migrateAutoMerge(this.db);
       migrateScheduling(this.db);
-      this.issues=new IssueStore(this.db,this.now,this.notificationRepository,()=>{ this.wakeDigests?.({source: "issues", recipients: "all"}); });
-      this.schedules=new ScheduleStore(this.db,this.now);
-      this.mergeConflicts=new ConflictStore(this.db,this.now,"merge_conflict_cases");
-      this.merging=new MergeStore(this.db,this.tracking,this.now,(kind,detail,prId)=>{
-        this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
-        this.notifyEvents();
-        if (kind === "merge_entry_updated" || kind === "merge_notification_updated") this.wakeDigests?.(prId === undefined ? undefined : { prId, recipients: "all", source: "merge" });
+      this.issues = new IssueStore(this.db, this.now, this.notificationRepository, () => {
+        this.wakeDigests?.({ source: "issues", recipients: "all" });
       });
-      this.repositories=new RepositoryPolicies(new RepositoryPolicyStore(this.db),this.tracking,this.merging,(kind,detail,prId)=>{
-        this.db.prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)").run("",this.now(),kind,detail,prId??null);
+      this.schedules = new ScheduleStore(this.db, this.now);
+      this.mergeConflicts = new ConflictStore(this.db, this.now, "merge_conflict_cases");
+      this.merging = new MergeStore(this.db, this.tracking, this.now, (kind, detail, prId) => {
+        this.db
+          .prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)")
+          .run("", this.now(), kind, detail, prId ?? null);
         this.notifyEvents();
-        this.wakeDigests?.({ ...(prId === undefined ? {} : { prId }), recipients: "all", source: "repository" });
+        if (kind === "merge_entry_updated" || kind === "merge_notification_updated")
+          this.wakeDigests?.(prId === undefined ? undefined : { prId, recipients: "all", source: "merge" });
       });
-      this.notifications=new NotificationStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
-      this.digests = new DigestStore(this.db,this.now,(kind,detail)=>{this.event("",kind,detail);});
-      this.submissions = new SubmissionStore(this.db, this.now, (kind, detail) => {
+      this.repositories = new RepositoryPolicies(
+        new RepositoryPolicyStore(this.db),
+        this.tracking,
+        this.merging,
+        (kind, detail, prId) => {
+          this.db
+            .prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES(?,?,?,?,?)")
+            .run("", this.now(), kind, detail, prId ?? null);
+          this.notifyEvents();
+          this.wakeDigests?.({ ...(prId === undefined ? {} : { prId }), recipients: "all", source: "repository" });
+        },
+      );
+      this.notifications = new NotificationStore(this.db, this.now, (kind, detail) => {
         this.event("", kind, detail);
-        if (kind === "submission_notification") this.wakeDigests?.({ source: "submissions", recipients: "all" });
-      }, this.notificationRepository);
+      });
+      this.digests = new DigestStore(this.db, this.now, (kind, detail) => {
+        this.event("", kind, detail);
+      });
+      this.submissions = new SubmissionStore(
+        this.db,
+        this.now,
+        (kind, detail) => {
+          this.event("", kind, detail);
+          if (kind === "submission_notification") this.wakeDigests?.({ source: "submissions", recipients: "all" });
+        },
+        this.notificationRepository,
+      );
       this.tracking.reconcileCachedRetirement();
       this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('instance_id',?)").run(randomUUID());
       for (const name of ["coordinator-lock.sqlite", "jobs.sqlite"]) chmodSync(join(directory, name), 0o600);
-    } catch (error) { this.db?.close(); this.ownership.close(); throw error; }
+    } catch (error) {
+      opened?.close();
+      this.ownership.close();
+      throw error;
+    }
   }
+
   private notificationRevision: NotificationInputRevision | undefined;
-  notificationInputRevision(): string { return (this.notificationRevision ??= new NotificationInputRevision(this.db)).current(); }
-  inputRevision(): string {
-    return JSON.stringify(this.db.prepare("SELECT total_changes() AS local_changes, (SELECT data_version FROM pragma_data_version) AS external_changes").get());
+
+  notificationInputRevision(): string {
+    return (this.notificationRevision ??= new NotificationInputRevision(this.db)).current();
   }
-  jobs(): Job[] { return this.db.prepare("SELECT data FROM jobs ORDER BY rowid").all().map(r => JSON.parse(r.data as string) as Job); }
+
+  inputRevision(): string {
+    return JSON.stringify(
+      this.db
+        .prepare(
+          "SELECT total_changes() AS local_changes, (SELECT data_version FROM pragma_data_version) AS external_changes",
+        )
+        .get(),
+    );
+  }
+
+  jobs(): Job[] {
+    return this.db
+      .prepare("SELECT data FROM jobs ORDER BY rowid")
+      .all()
+      .map((r) => storedJob(r["data"]));
+  }
+
   get(id: string): Job {
     const row = this.db.prepare("SELECT data FROM jobs WHERE id=?").get(id);
     if (!row) throw new Error("Job not found");
-    return JSON.parse(row.data as string) as Job;
+    return storedJob(row["data"]);
   }
+
   submit(task: Task, requestId: string): Job {
-    if (!requestId || requestId.length > 200) throw new Error("Invalid request ID");
+    if (requestId === "" || requestId.length > 200) throw new Error("Invalid request ID");
     const row = this.db.prepare("SELECT data FROM jobs WHERE request_id=?").get(requestId);
     if (row) {
-      const existing = JSON.parse(row.data as string) as Job;
+      const existing = storedJob(row["data"]);
       if (existing.digest !== digest(task)) throw new Error("Request ID already used with a different task");
       return existing;
     }
     const now = this.now();
-    const job: Job = { id: randomUUID(), requestId, task, digest: digest(task), status: "queued", createdAt: now, updatedAt: now, availableAt: now, attempts: [], retryCount: 0 };
+    const job: Job = {
+      id: randomUUID(),
+      requestId,
+      task,
+      digest: digest(task),
+      status: "queued",
+      createdAt: now,
+      updatedAt: now,
+      availableAt: now,
+      attempts: [],
+      retryCount: 0,
+    };
     this.save(job, "queued", task.kind);
     return job;
   }
+
   save(job: Job, kind: string, detail = ""): void {
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      this.db.prepare("INSERT INTO jobs(id,request_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(job.id, job.requestId, JSON.stringify(job));
-      this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(job.id, this.now(), kind, detail.slice(0, 16000));
+      this.db
+        .prepare("INSERT INTO jobs(id,request_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data")
+        .run(job.id, job.requestId, JSON.stringify(job));
+      this.db
+        .prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)")
+        .run(job.id, this.now(), kind, detail.slice(0, 16000));
       this.db.exec("COMMIT");
-    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
     this.notifyEvents();
     this.wakeJobs?.();
   }
+
   event(jobId: string, kind: string, detail: string): void {
-    this.db.prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)").run(jobId, this.now(), kind, detail.slice(0, 16000));
+    this.db
+      .prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)")
+      .run(jobId, this.now(), kind, detail.slice(0, 16000));
     this.notifyEvents();
   }
+
   subscribeEvents(listener: () => void): () => void {
     if (this.eventListeners.size === 0) this.eventSequence = this.sequence();
     this.eventListeners.add(listener);
-    return () => { this.eventListeners.delete(listener); };
+    return () => {
+      this.eventListeners.delete(listener);
+    };
   }
+
   private notifyEvents(): void {
     if (this.eventNotificationQueued) return;
     this.eventNotificationQueued = true;
@@ -186,34 +341,67 @@ export class Store {
       for (const listener of this.eventListeners) listener();
     });
   }
+
   events(after = 0, jobId?: string): JobEvent[] {
-    const rows = jobId
-      ? this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId)
-      : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
+    const rows =
+      jobId !== undefined && jobId !== ""
+        ? this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId)
+        : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
     return rows.map(storedEvent);
   }
-  sequence(): number { return Number(this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()!.seq); }
-  instanceId(): string { return this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()!.value as string; }
+
+  sequence(): number {
+    const sequence = this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()?.["seq"];
+    if (typeof sequence !== "number" && typeof sequence !== "bigint") throw new Error("Invalid stored event sequence");
+    return Number(sequence);
+  }
+
+  instanceId(): string {
+    const value = this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()?.["value"];
+    if (typeof value !== "string") throw new Error("Invalid stored instance ID");
+    return value;
+  }
+
   eventsSince(after: number, jobId?: string, prId?: string): JobEvent[] {
-    const rows = prId !== undefined
-      ? this.db.prepare("SELECT * FROM events WHERE seq>? AND pr_id=? ORDER BY seq LIMIT 200").all(after,prId)
-      : jobId === undefined
-      ? this.db.prepare("SELECT * FROM events WHERE seq>? ORDER BY seq LIMIT 200").all(after)
-      : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
+    const rows =
+      prId !== undefined
+        ? this.db.prepare("SELECT * FROM events WHERE seq>? AND pr_id=? ORDER BY seq LIMIT 200").all(after, prId)
+        : jobId === undefined
+          ? this.db.prepare("SELECT * FROM events WHERE seq>? ORDER BY seq LIMIT 200").all(after)
+          : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
     return rows.map(storedEvent);
   }
+
   activityBefore(before: number): JobEvent[] {
-    return this.db.prepare("SELECT * FROM events WHERE seq<? AND kind!='progress' ORDER BY seq DESC LIMIT 201").all(before).map(storedEvent);
+    return this.db
+      .prepare("SELECT * FROM events WHERE seq<? AND kind!='progress' ORDER BY seq DESC LIMIT 201")
+      .all(before)
+      .map(storedEvent);
   }
-  paused(): boolean { return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.value === "true"; }
+
+  paused(): boolean {
+    return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.["value"] === "true";
+  }
+
   setPaused(value: boolean): void {
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      this.db.prepare("INSERT INTO settings VALUES ('paused',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(value));
+      this.db
+        .prepare("INSERT INTO settings VALUES ('paused',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+        .run(String(value));
       this.event("", value ? "scheduler_paused" : "scheduler_resumed", "Dispatch setting changed");
       this.db.exec("COMMIT");
-    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
     this.wakeJobs?.();
   }
-  close(): void { if (this.closed) return; this.closed = true; this.db.close(); this.ownership.close(); }
+
+  close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    this.db.close();
+    this.ownership.close();
+  }
 }

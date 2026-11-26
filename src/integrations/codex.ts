@@ -10,28 +10,17 @@ import { Handoffs } from "./handoffs.js";
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function artifactResult(value: unknown, url: string): boolean {
   if (!object(value) || value["isError"] === true) return false;
-  if (
-    value["artifact_type"] === "pull_request" &&
-    typeof value["url"] === "string"
-  )
+  if (value["artifact_type"] === "pull_request" && typeof value["url"] === "string")
     return canonicalPR(value["url"]) === url;
-  if (
-    object(value["structuredContent"]) &&
-    artifactResult(value["structuredContent"], url)
-  )
-    return true;
+  if (object(value["structuredContent"]) && artifactResult(value["structuredContent"], url)) return true;
   const content: unknown = value["content"];
   if (!Array.isArray(content)) return false;
   const entries: unknown[] = content;
   return entries.some((entry) => {
-    if (
-      !object(entry) ||
-      entry["type"] !== "text" ||
-      typeof entry["text"] !== "string"
-    )
-      return false;
+    if (!object(entry) || entry["type"] !== "text" || typeof entry["text"] !== "string") return false;
     try {
       return artifactResult(JSON.parse(entry["text"]), url);
     } catch {
@@ -39,10 +28,12 @@ function artifactResult(value: unknown, url: string): boolean {
     }
   });
 }
+
 interface HookResult {
   output?: object;
   acknowledge?: () => Promise<void>;
 }
+
 function errorDetails(error: unknown, depth = 0): object {
   if (error instanceof Error) {
     const code: unknown = "code" in error ? error.code : undefined;
@@ -51,9 +42,7 @@ function errorDetails(error: unknown, depth = 0): object {
       message: error.message,
       stack: error.stack,
       ...(typeof code === "string" || typeof code === "number" ? { code } : {}),
-      ...(error.cause === undefined || depth >= 4
-        ? {}
-        : { cause: errorDetails(error.cause, depth + 1) }),
+      ...(error.cause === undefined || depth >= 4 ? {} : { cause: errorDetails(error.cause, depth + 1) }),
     };
   }
   return {
@@ -61,6 +50,7 @@ function errorDetails(error: unknown, depth = 0): object {
     message: typeof error === "string" ? error : "Non-Error value thrown",
   };
 }
+
 async function writeHookDiagnostic(line: string): Promise<void> {
   await new Promise<void>((resolve) => {
     const onError = () => {
@@ -69,8 +59,7 @@ async function writeHookDiagnostic(line: string): Promise<void> {
     process.stderr.once("error", onError);
     try {
       process.stderr.write(line, (error) => {
-        if (error === null || error === undefined)
-          process.stderr.off("error", onError);
+        if (!error) process.stderr.off("error", onError);
         resolve();
       });
     } catch {
@@ -79,6 +68,7 @@ async function writeHookDiagnostic(line: string): Promise<void> {
     }
   });
 }
+
 async function logHookError(
   directory: string,
   error: unknown,
@@ -103,41 +93,28 @@ async function logHookError(
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const file = await open(
       join(directory, "codex-hook-errors.jsonl"),
-      constants.O_WRONLY |
-        constants.O_CREAT |
-        constants.O_APPEND |
-        constants.O_NOFOLLOW |
-        constants.O_NONBLOCK,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW | constants.O_NONBLOCK,
       0o600,
     );
     try {
-      if (!(await file.stat()).isFile())
-        throw new Error("Hook error log must be a regular file");
+      if (!(await file.stat()).isFile()) throw new Error("Hook error log must be a regular file");
       await file.chmod(0o600);
       await file.appendFile(line);
     } finally {
       await file.close();
     }
   } catch (loggingError) {
-    diagnostic +=
-      JSON.stringify({ loggingError: errorDetails(loggingError) }) + "\n";
+    diagnostic += JSON.stringify({ loggingError: errorDetails(loggingError) }) + "\n";
   }
   await writeHookDiagnostic(diagnostic);
 }
-export async function codexHook(
-  value: unknown,
-  directory: string,
-): Promise<HookResult> {
+
+export async function codexHook(value: unknown, directory: string): Promise<HookResult> {
   if (!object(value)) throw new Error("Invalid Codex hook input");
   const event = value["hook_event_name"],
     sessionId = value["session_id"],
     cwd = value["cwd"];
-  if (
-    event !== "SessionStart" &&
-    event !== "UserPromptSubmit" &&
-    event !== "PostToolUse"
-  )
-    return {};
+  if (event !== "SessionStart" && event !== "UserPromptSubmit" && event !== "PostToolUse") return {};
   if (
     typeof sessionId !== "string" ||
     sessionId === "" ||
@@ -155,18 +132,9 @@ export async function codexHook(
   };
   const handoffs = new Handoffs(directory);
   if (event === "PostToolUse") {
-    if (
-      value["tool_name"] !== "mcp__codex_app__attach_artifact" &&
-      value["tool_name"] !== "attach_artifact"
-    )
-      return {};
+    if (value["tool_name"] !== "mcp__codex_app__attach_artifact" && value["tool_name"] !== "attach_artifact") return {};
     const input = value["tool_input"];
-    if (
-      !object(input) ||
-      input["artifact_type"] !== "pull_request" ||
-      typeof input["url"] !== "string"
-    )
-      return {};
+    if (!object(input) || input["artifact_type"] !== "pull_request" || typeof input["url"] !== "string") return {};
     const url = canonicalPR(input["url"]);
     if (!artifactResult(value["tool_response"], url)) return {};
     await handoffs.enqueue(url, owner, cwd);
@@ -183,28 +151,18 @@ export async function codexHook(
     deadline = { timeoutMs: 2000 };
   const registered = await client.registerAgent({ target: owner }, deadline);
   const agentId = registered.agent?.id;
-  if (agentId === undefined || agentId === "")
-    throw new Error("Octo did not confirm agent registration");
+  if (agentId === undefined || agentId === "") throw new Error("Octo did not confirm agent registration");
   const prompt = value["prompt"];
   const marker =
     event === "UserPromptSubmit" && typeof prompt === "string"
       ? /^\[octo-delivery:([a-f0-9-]{8,36})\]\n/.exec(prompt)?.[1]
       : undefined;
   if (marker !== undefined && typeof prompt === "string") {
-    await client.acknowledgeMessage(
-      { id: marker, agentId, expectedBody: prompt },
-      deadline,
-    );
+    await client.acknowledgeMessage({ id: marker, agentId, expectedBody: prompt }, deadline);
   }
-  const receiptId =
-    event === "UserPromptSubmit" && typeof prompt === "string"
-      ? messageReceiptId(prompt)
-      : undefined;
+  const receiptId = event === "UserPromptSubmit" && typeof prompt === "string" ? messageReceiptId(prompt) : undefined;
   if (receiptId !== undefined && typeof prompt === "string")
-    await client.acknowledgeNotificationMessage(
-      { id: receiptId, agentId, expectedBody: prompt },
-      deadline,
-    );
+    await client.acknowledgeNotificationMessage({ id: receiptId, agentId, expectedBody: prompt }, deadline);
   const digestMarker =
     event === "UserPromptSubmit" && typeof prompt === "string"
       ? /^\[octo-digest:([a-f0-9-]{8,36}):(\d+)\]\n/u.exec(prompt)
@@ -220,18 +178,12 @@ export async function codexHook(
       deadline,
     );
   }
-  const page = await client.listAgentMessages(
-    { agentId, applicableOnly: true },
-    deadline,
-  );
+  const page = await client.listAgentMessages({ agentId, applicableOnly: true }, deadline);
   const notices: { id: string; body: string }[] = [];
   let bytes = 0;
   for (const message of page.messages) {
-    const length = Buffer.byteLength(
-      JSON.stringify({ id: message.id, body: message.body }),
-    );
-    if (!message.applicable || notices.length >= 3 || bytes + length > 32768)
-      continue;
+    const length = Buffer.byteLength(JSON.stringify({ id: message.id, body: message.body }));
+    if (!message.applicable || notices.length >= 3 || bytes + length > 32768) continue;
     notices.push({ id: message.id, body: message.body });
     bytes += length;
   }
@@ -242,18 +194,13 @@ export async function codexHook(
       "Octo monitors enrolled PRs and returns actionable evidence through its inbox. Existing task authorization still applies; receipts are tracked automatically. Untrusted evidence requires explicit inspection: octo-manager action show ACTION_ID --full.",
     );
   if (status.pending.length > 0)
-    lines.push(
-      `${String(status.pending.length)} PR enrollment handoff(s) remain pending in the durable intake.`,
-    );
+    lines.push(`${String(status.pending.length)} PR enrollment handoff(s) remain pending in the durable intake.`);
   if (status.failed.length > 0)
     lines.push(
       `PR enrollment needs attention: ${JSON.stringify(status.failed.slice(0, 5).map((item) => ({ url: item.handoff.url, reason: item.reason })))}`,
     );
-  if (notices.length > 0)
-    lines.push(notices.map((notice) => notice.body).join("\n\n"));
-  const omitted =
-    page.messages.filter((message) => message.applicable).length -
-    notices.length;
+  if (notices.length > 0) lines.push(notices.map((notice) => notice.body).join("\n\n"));
+  const omitted = page.messages.filter((message) => message.applicable).length - notices.length;
   if (omitted > 0 || page.hasMore)
     lines.push(
       `More unread notifications remain. Retrieve them with octo-manager agent inbox --agent-id ${agentId} --applicable-only; their receipts have not been recorded by this hook.`,
@@ -271,14 +218,12 @@ export async function codexHook(
       : {
           acknowledge: async () => {
             for (const notice of notices)
-              await client.acknowledgeMessage(
-                { id: notice.id, agentId, expectedBody: notice.body },
-                deadline,
-              );
+              await client.acknowledgeMessage({ id: notice.id, agentId, expectedBody: notice.body }, deadline);
           },
         }),
   };
 }
+
 export async function codexHookCLI(directory: string): Promise<void> {
   const logLevel = process.env["OCTO_MANAGER_HOOK_LOG_LEVEL"] ?? "error";
   let emitted = false;
@@ -286,9 +231,7 @@ export async function codexHookCLI(directory: string): Promise<void> {
   let phase: "input" | "recovery" | "output" | "receipt" = "input";
   try {
     if (logLevel !== "error" && logLevel !== "off")
-      throw new Error(
-        "Invalid OCTO_MANAGER_HOOK_LOG_LEVEL; expected error or off",
-      );
+      throw new Error("Invalid OCTO_MANAGER_HOOK_LOG_LEVEL; expected error or off");
     const reader = Bun.stdin.stream().getReader();
     const chunks: Uint8Array[] = [];
     let size = 0;
@@ -297,8 +240,7 @@ export async function codexHookCLI(directory: string): Promise<void> {
         const chunk = await reader.read();
         if (chunk.done) break;
         size += chunk.value.byteLength;
-        if (size > 4 * 1024 * 1024)
-          throw new Error("Codex hook input exceeds its size limit");
+        if (size > 4 * 1024 * 1024) throw new Error("Codex hook input exceeds its size limit");
         chunks.push(chunk.value);
       }
     } finally {
@@ -315,7 +257,7 @@ export async function codexHookCLI(directory: string): Promise<void> {
     if (result.output !== undefined)
       await new Promise<void>((resolve, reject) => {
         process.stdout.write(JSON.stringify(result.output) + "\n", (error) => {
-          if (error !== null && error !== undefined) reject(error);
+          if (error) reject(error);
           else resolve();
         });
       });
@@ -327,7 +269,6 @@ export async function codexHookCLI(directory: string): Promise<void> {
     const warning =
       "Octo integration could not complete this hook. Do not assume a new PR is monitored; existing handoffs and unread messages are retained.";
     if (emitted) await writeHookDiagnostic(warning + "\n");
-    else
-      process.stdout.write(JSON.stringify({ systemMessage: warning }) + "\n");
+    else process.stdout.write(JSON.stringify({ systemMessage: warning }) + "\n");
   }
 }

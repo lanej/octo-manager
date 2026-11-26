@@ -1,25 +1,16 @@
-import type {
-  GitHubRequest,
-  GitHubResponse,
-  GitHubTransport,
-} from "../src/github/sdk.js";
+import type { GitHubRequest, GitHubResponse, GitHubTransport } from "../src/github/sdk.js";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { GitHubReads, GitHubRateLimitError } from "../src/github/reads.js";
 
-function http(
-  status: number,
-  body: unknown,
-  headers: Record<string, string> = {},
-): GitHubResponse {
+function http(status: number, body: unknown, headers: Record<string, string> = {}): GitHubResponse {
   return {
     status,
-    headers: new Map(
-      Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
-    ),
+    headers: new Map(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v])),
     body: JSON.stringify(body),
   };
 }
+
 test("conditional reads reuse only server-confirmed evidence and replace changed responses", async () => {
   const calls: GitHubRequest[] = [];
   const replies = [
@@ -100,16 +91,11 @@ test("primary rate limits pause REST reads until reset without blocking the sepa
             },
           ),
         );
-      return Promise.resolve(
-        args.path === "graphql"
-          ? http(200, { data: { ok: true } })
-          : http(200, { fresh: true }),
-      );
+      return Promise.resolve(args.path === "graphql" ? http(200, { data: { ok: true } }) : http(200, { fresh: true }));
     },
     () => at,
   );
-  const limited = (error: unknown) =>
-    error instanceof GitHubRateLimitError && error.retryAtMs === 101000;
+  const limited = (error: unknown) => error instanceof GitHubRateLimitError && error.retryAtMs === 101000;
   await assert.rejects(reader.read("first"), limited);
   at = 100000;
   await assert.rejects(reader.read("other"), limited);
@@ -129,17 +115,14 @@ test("secondary limits honor retry-after and repeated limits back off exponentia
     () => {
       calls++;
       return Promise.resolve(
-        calls === 1
-          ? http(429, {}, { "Retry-After": "120" })
-          : http(403, { message: "Secondary rate limit" }),
+        calls === 1 ? http(429, {}, { "Retry-After": "120" }) : http(403, { message: "Secondary rate limit" }),
       );
     },
     () => at,
   );
   await assert.rejects(
     reader.read("first"),
-    (error: unknown) =>
-      error instanceof GitHubRateLimitError && error.retryAtMs === 121000,
+    (error: unknown) => error instanceof GitHubRateLimitError && error.retryAtMs === 121000,
   );
   at = 120000;
   await assert.rejects(reader.read("other"), GitHubRateLimitError);
@@ -147,14 +130,12 @@ test("secondary limits honor retry-after and repeated limits back off exponentia
   at = 121000;
   await assert.rejects(
     reader.read("other"),
-    (error: unknown) =>
-      error instanceof GitHubRateLimitError && error.retryAtMs === 241000,
+    (error: unknown) => error instanceof GitHubRateLimitError && error.retryAtMs === 241000,
   );
   at = 241000;
   await assert.rejects(
     reader.read("other"),
-    (error: unknown) =>
-      error instanceof GitHubRateLimitError && error.retryAtMs === 481000,
+    (error: unknown) => error instanceof GitHubRateLimitError && error.retryAtMs === 481000,
   );
 });
 test("the last successful REST response is usable but pauses subsequent reads", async () => {
@@ -181,14 +162,8 @@ test("the last successful REST response is usable but pauses subsequent reads", 
 });
 test("invalid, missing, partial, and forbidden responses cannot become cached evidence", async () => {
   const run: GitHubTransport = () => Promise.resolve(http(304, null));
-  await assert.rejects(
-    new GitHubReads(run).read("first"),
-    /without cached evidence/,
-  );
-  await assert.rejects(
-    new GitHubReads(() => Promise.resolve(http(403, {}))).read("first"),
-    /HTTP 403/,
-  );
+  await assert.rejects(new GitHubReads(run).read("first"), /without cached evidence/);
+  await assert.rejects(new GitHubReads(() => Promise.resolve(http(403, {}))).read("first"), /HTTP 403/);
   await assert.rejects(
     new GitHubReads(() =>
       Promise.resolve({
@@ -236,8 +211,7 @@ test("HTTP 200 GraphQL secondary rate-limit errors pause both API resources", as
   );
   await assert.rejects(
     reader.query("query { viewer { login } }"),
-    (error: unknown) =>
-      error instanceof GitHubRateLimitError && error.retryAtMs === 91000,
+    (error: unknown) => error instanceof GitHubRateLimitError && error.retryAtMs === 91000,
   );
   await assert.rejects(reader.read("rest"), GitHubRateLimitError);
   assert.equal(calls, 1);
@@ -248,8 +222,7 @@ test("the REST cache evicts older objects within its bounded entry count", async
     calls.push(args);
     return Promise.resolve(http(200, {}, { etag: '"one"' }));
   });
-  for (let index = 0; index < 129; index++)
-    await reader.read(`object/${String(index)}`);
+  for (let index = 0; index < 129; index++) await reader.read(`object/${String(index)}`);
   await reader.read("object/0");
   assert.equal(calls.at(-1)?.headers?.["if-none-match"] !== undefined, false);
 });

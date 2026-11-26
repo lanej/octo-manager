@@ -6,16 +6,12 @@ export class NotificationInputRevision {
   private readonly fallback: StatementSync;
 
   constructor(db: DatabaseSync) {
-    this.schemaVersion = db.prepare("PRAGMA main.schema_version").get()?.[
-      "schema_version"
-    ];
+    this.schemaVersion = db.prepare("PRAGMA main.schema_version").get()?.["schema_version"];
     db.exec(
       "CREATE TEMP TABLE notification_input_revision(value INTEGER NOT NULL); INSERT INTO notification_input_revision VALUES(0)",
     );
     const tables = db
-      .prepare(
-        "SELECT name FROM main.sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-      )
+      .prepare("SELECT name FROM main.sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")
       .all();
     for (const [index, row] of tables.entries()) {
       const table = String(row["name"]);
@@ -61,8 +57,7 @@ export class NotificationInputRevision {
   current(): string {
     // Unknown schema additions retain conservative invalidation until the next connection installs its triggers.
     const row = this.read.get();
-    if (row === undefined)
-      throw new Error("Notification input revision is unavailable");
+    if (!row) throw new Error("Notification input revision is unavailable");
     const schema = row["schema_version"];
     return JSON.stringify([
       schema,

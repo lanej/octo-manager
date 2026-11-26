@@ -6,27 +6,14 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
-import {
-  CheckWatchState,
-  checkEvidence,
-  checksFinished,
-} from "../src/tracking/checks.js";
+import { CheckWatchState, checkEvidence, checksFinished } from "../src/tracking/checks.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { readObservation } from "../src/tracking/github.js";
-import {
-  ActionState,
-  DeliveryState,
-  type CheckObservation,
-  type ObservationInput,
-} from "../src/tracking/types.js";
+import { ActionState, DeliveryState, type CheckObservation, type ObservationInput } from "../src/tracking/types.js";
 
 const url = "https://github.com/owner/repo/pull/1";
-const check = (
-  id: string,
-  status = "completed",
-  conclusion = "success",
-): CheckObservation => ({
+const check = (id: string, status = "completed", conclusion = "success"): CheckObservation => ({
   id,
   key: "same-app:same-job-name",
   name: "check (linux)",
@@ -36,9 +23,7 @@ const check = (
   at: 1000,
   url: `${url}#${id}`,
 });
-const observation = (
-  patch: Partial<ObservationInput> = {},
-): ObservationInput => ({
+const observation = (patch: Partial<ObservationInput> = {}): ObservationInput => ({
   observedAt: 1000,
   headSha: "head",
   baseSha: "base",
@@ -49,6 +34,7 @@ const observation = (
   reviews: { state: "complete", value: [] },
   ...patch,
 });
+
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 100; i++) {
     if (check()) return;
@@ -86,22 +72,13 @@ test("check watches notify completed success once and report each failure once",
       },
       config,
     );
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Waiting,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Waiting);
     store.tracking.observe(pr.id, complete, config);
     store.tracking.observe(pr.id, complete, config);
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Completed,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Completed);
     assert.equal(store.tracking.checks.list()[0]?.id, watch.id);
     assert.equal(store.tracking.actions().length, 1);
-    assert.equal(
-      store.tracking.actions()[0]?.summary,
-      "Checks passed; no merge conflicts",
-    );
+    assert.equal(store.tracking.actions()[0]?.summary, "Checks passed; no merge conflicts");
     assert.equal(store.tracking.deliveries().length, 1);
     for (const checks of [
       { state: "unavailable" as const, reason: "offline" },
@@ -109,10 +86,7 @@ test("check watches notify completed success once and report each failure once",
       { state: "complete" as const, value: [] },
     ]) {
       store.tracking.observe(pr.id, observation({ checks }), config);
-      assert.equal(
-        store.tracking.actions()[0]?.progress.state,
-        ActionState.Open,
-      );
+      assert.equal(store.tracking.actions()[0]?.progress.state, ActionState.Open);
     }
     store.close();
     store = new Store(directory);
@@ -152,10 +126,7 @@ test("check watches notify completed success once and report each failure once",
     assert.equal(store.tracking.checks.list().length, 2);
     assert.equal(store.tracking.actions().length, 2);
     assert.equal(store.tracking.actions()[1]?.blocker.kind, "check_failed");
-    assert.equal(
-      store.tracking.actions()[0]?.progress.state,
-      ActionState.Superseded,
-    );
+    assert.equal(store.tracking.actions()[0]?.progress.state, ActionState.Superseded);
     assert.equal(store.tracking.deliveries().length, 2);
   } finally {
     store.close();
@@ -190,10 +161,7 @@ test("head replacement and successful merged-PR completion remain in watch histo
     store.tracking.observe(pr.id, finished, config);
     assert.equal(store.tracking.actions().length, 0);
     assert.equal(store.tracking.deliveries().length, 0);
-    assert.equal(
-      store.tracking.checks.list()[1]?.state,
-      CheckWatchState.Completed,
-    );
+    assert.equal(store.tracking.checks.list()[1]?.state, CheckWatchState.Completed);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -210,8 +178,7 @@ test("GitHub workflow coverage waits for queued runs even when every materialize
         head: { sha: "head" },
         base: { sha: "base", ref: "main", repo: { private: false } },
       });
-    if (path.includes("/git/ref/"))
-      return Promise.resolve({ object: { sha: "base" } });
+    if (path.includes("/git/ref/")) return Promise.resolve({ object: { sha: "base" } });
     if (path.includes("check-runs")) return Promise.resolve({ check_runs: [] });
     if (path.includes("/actions/runs?")) {
       assert(path.includes("head_sha=head"));
@@ -260,28 +227,19 @@ test("a missing previously running execution remains waiting and status ties kee
       }),
       config,
     );
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Waiting,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Waiting);
     assert.equal(store.tracking.actions().length, 0);
     store.tracking.observe(
       pr.id,
       observation({
         checks: {
           state: "complete",
-          value: [
-            { ...pending, status: "completed", conclusion: "success" },
-            check("run:green"),
-          ],
+          value: [{ ...pending, status: "completed", conclusion: "success" }, check("run:green")],
         },
       }),
       config,
     );
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Completed,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Completed);
     const evidence = checkEvidence({
       ...observation(),
       id: 1,
@@ -362,21 +320,11 @@ test("version7 migration retains existing message payloads, sequences and receip
     sessionId: "owner",
   });
   try {
-    store.tracking.observe(
-      pr.id,
-      observation({ mergeability: "conflicting" }),
-      config,
-    );
+    store.tracking.observe(pr.id, observation({ mergeability: "conflicting" }), config);
     const delivery = store.tracking.deliveries()[0];
     assert(delivery !== undefined);
-    const message = store.tracking.inbox.record(
-      delivery.id,
-      "Exact historical bytes",
-    );
-    const receipt = store.tracking.acknowledgeMessage(
-      message.id,
-      pr.ownerAgentId,
-    );
+    const message = store.tracking.inbox.record(delivery.id, "Exact historical bytes");
+    const receipt = store.tracking.acknowledgeMessage(message.id, pr.ownerAgentId);
     const identity = store.instanceId();
     store.close();
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
@@ -416,13 +364,7 @@ test("the coordinator reports failed workflow completion without a waiting calle
           checks: { state: "complete", value: [check("run:job")] },
           workflows: {
             state: "complete",
-            value: [
-              check(
-                "workflow:run:1",
-                reads === 1 ? "queued" : "completed",
-                reads === 1 ? "" : "failure",
-              ),
-            ],
+            value: [check("workflow:run:1", reads === 1 ? "queued" : "completed", reads === 1 ? "" : "failure")],
           },
         }),
       );
@@ -451,10 +393,7 @@ test("the coordinator reports failed workflow completion without a waiting calle
     assert(reads >= 2);
     assert(body.includes("Checks failed"));
     assert(!body.includes(" at head"));
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Completed,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Completed);
   } finally {
     scheduler.stop();
     await scheduler.close();
@@ -477,11 +416,7 @@ test("disappearing failed executions stay in waiting and completed-generation re
   try {
     const failure = check("run:failed", "completed", "failure"),
       pending = check("run:pending", "in_progress", "");
-    store.tracking.observe(
-      pr.id,
-      observation({ checks: { state: "complete", value: [failure, pending] } }),
-      config,
-    );
+    store.tracking.observe(pr.id, observation({ checks: { state: "complete", value: [failure, pending] } }), config);
     const onlyGreen = observation({
       checks: {
         state: "complete",
@@ -494,25 +429,11 @@ test("disappearing failed executions stay in waiting and completed-generation re
     const watch = watches[0];
     assert.equal(watch?.state, CheckWatchState.Completed);
     assert(watch.evidence.state === "complete");
-    assert(
-      watch.evidence.value.some(
-        (check) => check.id === failure.id && check.conclusion === "failure",
-      ),
-    );
+    assert(watch.evidence.value.some((check) => check.id === failure.id && check.conclusion === "failure"));
     store.tracking.observe(pr.id, onlyGreen, config);
     assert.equal(store.tracking.checks.list().length, 1);
-    assert.equal(
-      store.tracking
-        .actions()
-        .filter((action) => action.blocker.kind === "check_failed").length,
-      1,
-    );
-    assert.equal(
-      store.tracking
-        .actions()
-        .filter((action) => action.blocker.kind === "check_results").length,
-      0,
-    );
+    assert.equal(store.tracking.actions().filter((action) => action.blocker.kind === "check_failed").length, 1);
+    assert.equal(store.tracking.actions().filter((action) => action.blocker.kind === "check_results").length, 0);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -534,11 +455,7 @@ test("completion identifies an uncovered workflow instead of repeating a covered
       url: "https://github.com/owner/repo/actions/runs/3/job/1",
       at: 1100,
     };
-    store.tracking.observe(
-      pr.id,
-      observation({ checks: { state: "complete", value: [failure] } }),
-      config,
-    );
+    store.tracking.observe(pr.id, observation({ checks: { state: "complete", value: [failure] } }), config);
     const workflows = [
       {
         ...check("workflow:3:1", "completed", "failure"),
@@ -560,9 +477,7 @@ test("completion identifies an uncovered workflow instead of repeating a covered
       }),
       config,
     );
-    const result = store.tracking
-      .actions()
-      .find((action) => action.blocker.kind === "check_results");
+    const result = store.tracking.actions().find((action) => action.blocker.kind === "check_results");
     assert(result?.blocker.kind === "check_results");
     assert.deepEqual(
       result.blocker.checks.map((check) => check.id),
@@ -588,10 +503,7 @@ test("completion identifies an uncovered workflow instead of repeating a covered
       }),
       config,
     );
-    assert.equal(
-      store.tracking.action(result.id).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(store.tracking.action(result.id).progress.state, ActionState.Open);
     store.tracking.observe(
       pr.id,
       observation({
@@ -600,15 +512,9 @@ test("completion identifies an uncovered workflow instead of repeating a covered
       }),
       config,
     );
+    assert.equal(store.tracking.action(result.id).progress.state, ActionState.Resolved);
     assert.equal(
-      store.tracking.action(result.id).progress.state,
-      ActionState.Resolved,
-    );
-    assert.equal(
-      store.tracking
-        .actions()
-        .find((action) => action.blocker.kind === "check_failed")?.progress
-        .state,
+      store.tracking.actions().find((action) => action.blocker.kind === "check_failed")?.progress.state,
       ActionState.Open,
     );
   } finally {
@@ -628,11 +534,7 @@ test("retained workflow failure is not reported again in a later same-head gener
   });
   try {
     const failure = check("workflow:1:1", "completed", "failure");
-    store.tracking.observe(
-      pr.id,
-      observation({ workflows: { state: "complete", value: [failure] } }),
-      config,
-    );
+    store.tracking.observe(pr.id, observation({ workflows: { state: "complete", value: [failure] } }), config);
     assert.equal(store.tracking.actions().length, 1);
     store.tracking.observe(
       pr.id,
@@ -679,9 +581,7 @@ test("startup preserves queued successful completions without rewriting history"
     store.close();
     const db = new DatabaseSync(join(directory, "jobs.sqlite"));
     try {
-      db.prepare(
-        "UPDATE actions SET blocker_json=?,summary='Checks passed' WHERE id=?",
-      ).run(
+      db.prepare("UPDATE actions SET blocker_json=?,summary='Checks passed' WHERE id=?").run(
         JSON.stringify({ ...action.blocker, checks: [success] }),
         action.id,
       );
@@ -693,23 +593,11 @@ test("startup preserves queued successful completions without rewriting history"
       db.close();
     }
     store = new Store(directory);
-    assert.equal(
-      store.tracking.action(action.id).progress.state,
-      ActionState.Open,
-    );
-    assert.equal(
-      store.tracking.deliveries()[0]?.progress.state,
-      DeliveryState.Pending,
-    );
-    assert.equal(
-      store.tracking.inbox.get(delivery.id)?.body,
-      "Historical success body",
-    );
+    assert.equal(store.tracking.action(action.id).progress.state, ActionState.Open);
+    assert.equal(store.tracking.deliveries()[0]?.progress.state, DeliveryState.Pending);
+    assert.equal(store.tracking.inbox.get(delivery.id)?.body, "Historical success body");
     assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, true);
-    assert.equal(
-      store.tracking.checks.list()[0]?.state,
-      CheckWatchState.Completed,
-    );
+    assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Completed);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -735,9 +623,7 @@ test("readiness distinguishes conflicts and neutral checks and expires when the 
         },
       });
       store.tracking.observe(pr.id, complete, config);
-      const readiness = store.tracking
-        .actions()
-        .find((action) => action.blocker.kind === "check_results");
+      const readiness = store.tracking.actions().find((action) => action.blocker.kind === "check_results");
       assert(readiness !== undefined);
       assert(readiness.summary.includes("includes neutral/skipped"));
       assert(
@@ -749,18 +635,9 @@ test("readiness distinguishes conflicts and neutral checks and expires when the 
               : "conflict status unknown",
         ),
       );
-      store.tracking.observe(
-        pr.id,
-        { ...complete, lifecycle: "merged" },
-        config,
-      );
-      assert.equal(
-        store.tracking.action(readiness.id).progress.state,
-        ActionState.Superseded,
-      );
-      const delivery = store.tracking
-        .deliveries()
-        .find((delivery) => delivery.actionId === readiness.id);
+      store.tracking.observe(pr.id, { ...complete, lifecycle: "merged" }, config);
+      assert.equal(store.tracking.action(readiness.id).progress.state, ActionState.Superseded);
+      const delivery = store.tracking.deliveries().find((delivery) => delivery.actionId === readiness.id);
       assert.equal(delivery?.progress.state, DeliveryState.Cancelled);
     } finally {
       store.close();
@@ -787,13 +664,9 @@ for (const upgrade of [false, true]) {
         },
       });
       store.tracking.observe(pr.id, failure, config);
-      const action = store.tracking
-        .actions()
-        .find((a) => a.blocker.kind === "check_results");
+      const action = store.tracking.actions().find((a) => a.blocker.kind === "check_results");
       assert(action !== undefined);
-      const delivery = store.tracking
-        .deliveries()
-        .find((d) => d.actionId === action.id);
+      const delivery = store.tracking.deliveries().find((d) => d.actionId === action.id);
       assert(delivery !== undefined);
       store.tracking.inbox.record(delivery.id, "Final failed workflow");
       assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, true);
@@ -801,44 +674,21 @@ for (const upgrade of [false, true]) {
         store.close();
         const db = new DatabaseSync(join(directory, "jobs.sqlite"));
         try {
-          db.prepare(
-            "UPDATE pr_observations SET lifecycle='merged' WHERE pr_id=?",
-          ).run(pr.id);
+          db.prepare("UPDATE pr_observations SET lifecycle='merged' WHERE pr_id=?").run(pr.id);
         } finally {
           db.close();
         }
         store = new Store(directory);
       } else {
-        store.tracking.observe(
-          pr.id,
-          { ...failure, lifecycle: "merged" },
-          config,
-        );
+        store.tracking.observe(pr.id, { ...failure, lifecycle: "merged" }, config);
       }
-      assert.equal(
-        store.tracking.actions().find((a) => a.id === action.id)?.progress
-          .state,
-        ActionState.Superseded,
-      );
+      assert.equal(store.tracking.actions().find((a) => a.id === action.id)?.progress.state, ActionState.Superseded);
       assert.equal(store.tracking.inbox.get(delivery.id)?.applicable, false);
-      assert.equal(
-        store.tracking.inbox.get(delivery.id)?.body,
-        "Final failed workflow",
-      );
-      assert.equal(
-        store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
-        undefined,
-      );
-      assert.equal(
-        store.tracking.checks.list()[0]?.state,
-        CheckWatchState.Completed,
-      );
+      assert.equal(store.tracking.inbox.get(delivery.id)?.body, "Final failed workflow");
+      assert.equal(store.tracking.inbox.get(delivery.id)?.acknowledgedAt, undefined);
+      assert.equal(store.tracking.checks.list()[0]?.state, CheckWatchState.Completed);
       const actions = store.tracking.actions().length;
-      store.tracking.observe(
-        pr.id,
-        { ...failure, lifecycle: "merged" },
-        config,
-      );
+      store.tracking.observe(pr.id, { ...failure, lifecycle: "merged" }, config);
       assert.equal(store.tracking.actions().length, actions);
       store.close();
       store = new Store(directory);

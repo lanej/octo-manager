@@ -2,13 +2,9 @@ import { assembleApplication } from "../../src/application/composition.js";
 import type { ApplicationOptions } from "../../src/application/options.js";
 
 // Integration fixtures expose owned components without expanding the CLI's application handle.
-export async function createApplicationFixture(
-  directory: string,
-  options: ApplicationOptions = {},
-) {
+export async function createApplicationFixture(directory: string, options: ApplicationOptions = {}) {
   const assembly = await assembleApplication(directory, options);
-  const { runtime, jobs, services, store, inputs, diagnostics, transport } =
-    assembly;
+  const { runtime, jobs, services, store, inputs, diagnostics, transport } = assembly;
   return {
     ...services,
     inputs,
@@ -31,6 +27,5 @@ export async function createApplicationFixture(
     },
   };
 }
-export type ApplicationFixture = Awaited<
-  ReturnType<typeof createApplicationFixture>
->;
+
+export type ApplicationFixture = Awaited<ReturnType<typeof createApplicationFixture>>;

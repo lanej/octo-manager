@@ -33,10 +33,7 @@ function strip(value: unknown): unknown {
   );
 }
 
-export function readOutput(
-  response: ReadNotificationMessageResponse,
-  agent: boolean,
-): unknown {
+export function readOutput(response: ReadNotificationMessageResponse, agent: boolean): unknown {
   const json = record(toJson(ReadNotificationMessageResponseSchema, response));
   if (response.message !== undefined)
     json["message"] = {

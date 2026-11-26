@@ -1,10 +1,7 @@
 import { ForecastState, type QuotaForecast } from "../github/forecast.js";
 import { GitHubForecastState } from "../gen/octomanager/v2/github_pb.js";
 import { create } from "@bufbuild/protobuf";
-import {
-  GitHubReadUsageSchema,
-  type GitHubReadUsage as WireUsage,
-} from "../gen/octomanager/v2/github_pb.js";
+import { GitHubReadUsageSchema, type GitHubReadUsage as WireUsage } from "../gen/octomanager/v2/github_pb.js";
 import type { GitHubBudget, GitHubReadUsage } from "../github/usage.js";
 
 const states: Record<ForecastState, GitHubForecastState> = {
@@ -13,6 +10,7 @@ const states: Record<ForecastState, GitHubForecastState> = {
   at_risk: GitHubForecastState.AT_RISK,
   exhausted: GitHubForecastState.EXHAUSTED,
 };
+
 function forecast(value: QuotaForecast | undefined) {
   if (value === undefined) return undefined;
   return {
@@ -23,18 +21,15 @@ function forecast(value: QuotaForecast | undefined) {
     ...(value.state === ForecastState.Unknown
       ? {}
       : {
-          ...(value.unitsPerHour === undefined
-            ? {}
-            : { unitsPerHour: value.unitsPerHour }),
+          ...(value.unitsPerHour === undefined ? {} : { unitsPerHour: value.unitsPerHour }),
           projectedRemainingAtReset: value.projectedRemainingAtReset,
-          ...(value.exhaustAtMs === undefined
-            ? {}
-            : { exhaustAtMs: BigInt(value.exhaustAtMs) }),
+          ...(value.exhaustAtMs === undefined ? {} : { exhaustAtMs: BigInt(value.exhaustAtMs) }),
         }),
   };
 }
+
 function budget(value: GitHubBudget | undefined) {
-  return value === undefined
+  return !value
     ? undefined
     : {
         limit: value.limit,
@@ -44,6 +39,7 @@ function budget(value: GitHubBudget | undefined) {
         forecast: forecast(value.forecast),
       };
 }
+
 export function wireGitHubUsage(value: GitHubReadUsage): WireUsage {
   return create(GitHubReadUsageSchema, {
     startedAtMs: BigInt(value.startedAtMs),

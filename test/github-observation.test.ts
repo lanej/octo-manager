@@ -4,10 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubMetadata } from "../src/tracking/metadata.js";
-import {
-  GitHubObservationChangedError,
-  readObservation,
-} from "../src/tracking/github.js";
+import { GitHubObservationChangedError, readObservation } from "../src/tracking/github.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { Store } from "../src/coordinator/store.js";
@@ -31,8 +28,7 @@ const collections = (path: string): Promise<unknown> => {
   assert(!path.includes("/git/ref/"));
   assert(!/\/pulls\/\d+$/u.test(path));
   if (path.includes("check-runs")) return Promise.resolve({ check_runs: [] });
-  if (path.includes("/actions/runs"))
-    return Promise.resolve({ workflow_runs: [] });
+  if (path.includes("/actions/runs")) return Promise.resolve({ workflow_runs: [] });
   return Promise.resolve([]);
 };
 test("production metadata batching brackets all REST collection evidence across concurrent PR refreshes", async () => {
@@ -122,9 +118,7 @@ test("changed GraphQL head, target, lifecycle, base branch, and mergeability rej
   }
 });
 test("GraphQL metadata does not turn an incomplete REST collection into complete evidence", async () => {
-  const metadata = new GitHubMetadata(() =>
-    Promise.resolve({ data: { pr0: repository }, errors: [] }),
-  );
+  const metadata = new GitHubMetadata(() => Promise.resolve({ data: { pr0: repository }, errors: [] }));
   const result = await readObservation(
     url,
     undefined,
@@ -166,21 +160,15 @@ test("automatic and explicit tracking refreshes honor a shared rate-limit deadli
       endpoint: "local",
       sessionId: "one",
     });
-    const second = store.tracking.track(
-      "https://github.com/owner/repo/pull/2",
-      {
-        harness: "codex",
-        endpoint: "local",
-        sessionId: "two",
-      },
-    );
+    const second = store.tracking.track("https://github.com/owner/repo/pull/2", {
+      harness: "codex",
+      endpoint: "local",
+      sessionId: "two",
+    });
     store.tracking.observe(first.id, prior, config);
     await service.refresh(first.id);
     assert.equal(store.tracking.pr(first.id).observation?.observedAt, 1000);
-    assert.match(
-      store.tracking.pr(first.id).lastRefreshError?.message ?? "",
-      /rate limit/,
-    );
+    assert.match(store.tracking.pr(first.id).lastRefreshError?.message ?? "", /rate limit/);
     at = 120000;
     service.tick();
     await assert.rejects(service.refresh(second.id), GitHubRateLimitError);

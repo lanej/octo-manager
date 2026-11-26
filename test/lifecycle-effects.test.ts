@@ -1,25 +1,14 @@
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
-import {
-  mkdtemp,
-  mkdir,
-  copyFile,
-  readFile,
-  writeFile,
-  rm,
-} from "node:fs/promises";
+import { mkdtemp, mkdir, copyFile, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-for (const fixture of [
-  "held",
-  "lost",
-  "publishing",
-  "enrolling",
-  "uncertain",
-]) {
+
+for (const fixture of ["held", "lost", "publishing", "enrolling", "uncertain"]) {
   test(`native checkpoint preserves ${fixture} delivery or publication authority without replay`, async () => {
     const directory = await mkdtemp("/tmp/octo-effects-v2-"),
       release = join(directory, "releases", "current"),
@@ -60,8 +49,7 @@ let stopping=false;const close=()=>{if(stopping)return;stopping=true;clearInterv
       });
       expect(result.success).toBe(true);
     }
-    for (const name of ["package.json", "bun.lock"])
-      await copyFile(resolve(name), join(release, name));
+    for (const name of ["package.json", "bun.lock"]) await copyFile(resolve(name), join(release, name));
     const environment = {
       ...process.env,
       HOME: directory,
@@ -71,27 +59,18 @@ let stopping=false;const close=()=>{if(stopping)return;stopping=true;clearInterv
       PROJECT_UPDATE_RETIREMENT_POLICY: "successful-exit",
       PROJECT_UPDATE_RUN_ID: randomUUID(),
     };
-    const child = Bun.spawn(
-      [process.execPath, join(release, "dist", "probe.js")],
-      { env: environment, stdout: "pipe", stderr: "pipe" },
-    );
+    const child = Bun.spawn([process.execPath, join(release, "dist", "probe.js")], {
+      env: environment,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const cli = async (action: string, nativeId = "") => {
-      const invocation = Bun.spawn(
-        [
-          process.execPath,
-          join(release, "dist", "cli.js"),
-          "lifecycle",
-          action,
-        ],
-        {
-          env: { ...environment, PROJECT_UPDATE_INSTANCE_ID: nativeId },
-          stdout: "pipe",
-          stderr: "pipe",
-        },
-      );
-      const value: unknown = JSON.parse(
-        await new Response(invocation.stdout).text(),
-      );
+      const invocation = Bun.spawn([process.execPath, join(release, "dist", "cli.js"), "lifecycle", action], {
+        env: { ...environment, PROJECT_UPDATE_INSTANCE_ID: nativeId },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const value: unknown = JSON.parse(await new Response(invocation.stdout).text());
       return { code: await invocation.exited, value };
     };
     try {
@@ -114,8 +93,7 @@ let stopping=false;const close=()=>{if(stopping)return;stopping=true;clearInterv
         } catch {
           // The owned coordinator publishes the first status file after startup.
         }
-        if (Date.now() > deadline)
-          throw new Error("Fixture effects did not settle");
+        if (Date.now() > deadline) throw new Error("Fixture effects did not settle");
         await Bun.sleep(20);
       }
       const inventory = await cli("inventory");
@@ -129,8 +107,7 @@ let stopping=false;const close=()=>{if(stopping)return;stopping=true;clearInterv
       assert.equal(owner["pid"], child.pid);
       const nativeId = owner["native_id"];
       assert.equal(typeof nativeId, "string");
-      if (typeof nativeId !== "string")
-        throw new Error("Native incarnation unavailable");
+      if (typeof nativeId !== "string") throw new Error("Native incarnation unavailable");
       for (let iteration = 0; iteration < 3; iteration++) {
         expect((await cli("checkpoint", nativeId)).code).toBe(3);
         expect((await cli("verify")).code).toBe(0);
@@ -143,9 +120,7 @@ let stopping=false;const close=()=>{if(stopping)return;stopping=true;clearInterv
       expect(after["closes"]).toBe(before["closes"]);
       if (fixture === "held" || fixture === "lost") {
         expect(after["sends"]).toBe(1);
-        expect(after["delivery"]).toBe(
-          fixture === "held" ? "sending" : "uncertain",
-        );
+        expect(after["delivery"]).toBe(fixture === "held" ? "sending" : "uncertain");
       } else expect(after["submission"]).toBe(fixture);
     } finally {
       if (child.exitCode === null) {

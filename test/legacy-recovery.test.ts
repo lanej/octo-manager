@@ -7,15 +7,9 @@ import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { SubmissionService } from "../src/submissions/service.js";
-import {
-  GitHubSubmissions,
-  type SubmissionGitHub,
-} from "../src/submissions/github.js";
-import {
-  SubmissionState,
-  Complexity,
-  type SubmissionInput,
-} from "../src/submissions/contracts.js";
+import { GitHubSubmissions, type SubmissionGitHub } from "../src/submissions/github.js";
+import { SubmissionState, Complexity, type SubmissionInput } from "../src/submissions/contracts.js";
+
 const request: SubmissionInput = {
   requestId: "legacy",
   repository: "owner/repo",
@@ -35,15 +29,10 @@ test("automatic legacy recovery is find-only, durably backed off, and enrolls on
     workers = 0,
     found = false;
   let store = new Store(directory, () => now),
-    tracking = new TrackingService(
-      store.tracking,
-      defaultTrackingConfig(),
-      () => now,
-    );
+    tracking = new TrackingService(store.tracking, defaultTrackingConfig(), () => now);
   const github: SubmissionGitHub = {
     snapshot: () => Promise.reject(new Error("No snapshot during recovery")),
-    verify: () =>
-      Promise.reject(new Error("No publication preflight during recovery")),
+    verify: () => Promise.reject(new Error("No publication preflight during recovery")),
     publish: () => {
       remoteWrites++;
       return Promise.reject(new Error("Never publish"));
@@ -99,9 +88,7 @@ test("automatic legacy recovery is find-only, durably backed off, and enrolls on
     service.reconcileLegacy(now);
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(finds).toBe(1);
-    expect(store.submissions.get(value.id).state).toBe(
-      SubmissionState.Uncertain,
-    );
+    expect(store.submissions.get(value.id).state).toBe(SubmissionState.Uncertain);
     expect(store.submissions.reconciliation(value.id)).toEqual({
       attempts: 1,
       nextAt: 61000,
@@ -112,11 +99,7 @@ test("automatic legacy recovery is find-only, durably backed off, and enrolls on
     await tracking.close();
     store.close();
     store = new Store(directory, () => now);
-    tracking = new TrackingService(
-      store.tracking,
-      defaultTrackingConfig(),
-      () => now,
-    );
+    tracking = new TrackingService(store.tracking, defaultTrackingConfig(), () => now);
     service = new SubmissionService(store.submissions, tracking, options);
     service.reconcileLegacy(now);
     expect(finds).toBe(1);
@@ -125,9 +108,7 @@ test("automatic legacy recovery is find-only, durably backed off, and enrolls on
     service.reconcileLegacy(now);
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(finds).toBe(2);
-    expect(store.submissions.get(value.id).state).toBe(
-      SubmissionState.Succeeded,
-    );
+    expect(store.submissions.get(value.id).state).toBe(SubmissionState.Succeeded);
     expect(store.tracking.prs()).toHaveLength(1);
     service.reconcileLegacy(now + 3600000);
     expect(finds).toBe(2);
@@ -152,8 +133,5 @@ test("legacy publication lookup rejects duplicate markers instead of selecting t
       })),
     ),
   );
-  await assert.rejects(
-    () => provider.find(request, marker, new AbortController().signal),
-    /ambiguous/u,
-  );
+  await assert.rejects(() => provider.find(request, marker, new AbortController().signal), /ambiguous/u);
 });

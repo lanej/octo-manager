@@ -6,15 +6,9 @@ import { homedir } from "node:os";
 import { schedulerClient } from "../client.js";
 import { printResult } from "../cli/output.js";
 import type { parseCommand } from "../cli/arguments.js";
-import {
-  checked,
-  CommandSchema,
-  QueueInputSchema,
-  type MergeCommand,
-} from "./contracts.js";
-export async function mergingCLI(
-  parsed: ReturnType<typeof parseCommand>,
-): Promise<boolean> {
+import { checked, CommandSchema, QueueInputSchema, type MergeCommand } from "./contracts.js";
+
+export async function mergingCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const [rawCommand, id] = parsed.positionals,
     { values } = parsed;
   const command = rawCommand ?? "";
@@ -32,27 +26,18 @@ export async function mergingCLI(
         op: "policy",
         pr: id ?? "",
         actorId,
-        checks: (values.checks ?? "")
-          .split(",")
-          .filter((value) => value !== ""),
+        checks: (values.checks ?? "").split(",").filter((value) => value !== ""),
         noCi: values.ci === false,
       };
-      if (input.noCi && input.checks.length > 0)
-        throw new Error("Choose expected checks or --no-ci");
+      if (input.noCi && input.checks.length > 0) throw new Error("Choose expected checks or --no-ci");
       break;
     case "auto-merge":
-      if (
-        [values.on, values.off, values.inherit].filter(
-          (value) => value === true,
-        ).length !== 1
-      )
+      if ([values.on, values.off, values.inherit].filter((value) => value === true).length !== 1)
         throw new Error("Choose --on, --off, or --inherit");
       input = {
         op: "auto_merge",
         ...(values.inherit === true ? { inherit: true } : {}),
-        ...(values.instructions === undefined
-          ? {}
-          : { instructions: values.instructions }),
+        ...(values.instructions === undefined ? {} : { instructions: values.instructions }),
         pr: id ?? "",
         enabled: values.on === true,
         actorId,
@@ -104,9 +89,7 @@ export async function mergingCLI(
   }
   checked(CommandSchema, input);
   const directory = resolve(
-    values.state ??
-      process.env["OCTO_MANAGER_STATE"] ??
-      join(homedir(), ".local/state/octo-manager"),
+    values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local/state/octo-manager"),
   );
   const value = await mergeRequest(schedulerClient(directory), input);
   printResult(parsed, value);

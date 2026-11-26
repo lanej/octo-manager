@@ -5,13 +5,12 @@ import { shortId } from "../../../src/tracking/identifiers.js";
 import { stripVTControlCharacters } from "node:util";
 import type { Action } from "../../../src/tracking/types.js";
 import { successfulCheck } from "../../../src/tracking/checks.js";
+
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
     .filter(
       (character) =>
-        character === "\n" ||
-        character === "\t" ||
-        (character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
+        character === "\n" || character === "\t" || (character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
     )
     .join("")
     .trim();
@@ -23,21 +22,18 @@ export function compact(value: string, limit: number): string {
   }
   return text + "…";
 }
+
 function link(label: string, url: string): string {
   try {
     const parsed = new URL(url);
-    if (
-      parsed.protocol !== "https:" ||
-      parsed.username !== "" ||
-      parsed.password !== "" ||
-      parsed.href.length > 512
-    )
+    if (parsed.protocol !== "https:" || parsed.username !== "" || parsed.password !== "" || parsed.href.length > 512)
       return label;
     return `[${label}](${parsed.href.replaceAll("(", "%28").replaceAll(")", "%29")})`;
   } catch {
     return label;
   }
 }
+
 export function agentMessage(
   action: Action,
   prUrl: string,
@@ -55,14 +51,8 @@ export function agentMessage(
       : blocker.kind === "review_feedback"
         ? blocker.feedback.headSha
         : blocker.headSha;
-  const failed =
-    blocker.kind === "check_results"
-      ? blocker.checks.find((check) => !successfulCheck(check))
-      : undefined;
-  const body =
-    blocker.kind === "review_feedback"
-      ? feedbackExcerpt(blocker.feedback)
-      : excerpt;
+  const failed = blocker.kind === "check_results" ? blocker.checks.find((check) => !successfulCheck(check)) : undefined;
+  const body = blocker.kind === "review_feedback" ? feedbackExcerpt(blocker.feedback) : excerpt;
   const detail =
     body === undefined
       ? ""

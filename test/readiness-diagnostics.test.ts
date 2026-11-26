@@ -64,37 +64,24 @@ test("RPC rejects a stale readiness head with a refresh diagnostic and preserves
   });
   try {
     const pr = coordinator.store.tracking.track(url, owner);
-    coordinator.store.tracking.observe(
-      pr.id,
-      current.observation,
-      coordinator.tracking.config,
-    );
+    coordinator.store.tracking.observe(pr.id, current.observation, coordinator.tracking.config);
     await coordinator.start();
     const client = schedulerClient(directory);
     const request = { pr: url, actorId: pr.ownerAgentId, head: newer };
-    const failure: unknown = await client
-      .setMergeReady(request)
-      .catch((error: unknown) => error);
+    const failure: unknown = await client.setMergeReady(request).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(ConnectError);
-    if (!(failure instanceof ConnectError))
-      throw new Error("Missing RPC error");
+    if (!(failure instanceof ConnectError)) throw new Error("Missing RPC error");
     expect(failure.code).toBe(Code.FailedPrecondition);
     expect(failure.rawMessage).toContain(`Readiness head ${newer}`);
     expect(failure.rawMessage).toContain(`observed head ${head}`);
     expect(failure.rawMessage).toContain(`octo-manager pr refresh ${url}`);
-    expect(failure.rawMessage).toContain(
-      "wait until the observed head matches",
-    );
+    expect(failure.rawMessage).toContain("wait until the observed head matches");
     expect(coordinator.store.merging.entries()).toHaveLength(0);
     expect(coordinator.store.merging.operations()).toHaveLength(0);
 
     current.observation.headSha = newer;
     current.observation.checks = { state: "complete", value: [] };
-    coordinator.store.tracking.observe(
-      pr.id,
-      current.observation,
-      coordinator.tracking.config,
-    );
+    coordinator.store.tracking.observe(pr.id, current.observation, coordinator.tracking.config);
     const result = await client.setMergeReady(request);
     expect(result.entry?.ready?.head).toBe(newer);
     expect(coordinator.store.merging.operations()).toHaveLength(0);
@@ -146,26 +133,18 @@ test("queued merge reports inspection before the actual eligibility gate, then p
   });
   try {
     const pr = coordinator.store.tracking.track(url, owner);
-    coordinator.store.tracking.observe(
-      pr.id,
-      current.observation,
-      defaultTrackingConfig(),
-    );
+    coordinator.store.tracking.observe(pr.id, current.observation, defaultTrackingConfig());
     coordinator.store.merging.queue({
       requestId: "readiness-gate",
       actorId: pr.ownerAgentId,
       entries: [{ prUrl: url, checks: ["CI"] }],
     });
     const queued = coordinator.store.merging.ready(url, pr.ownerAgentId, head);
-    expect(queued.detail).toContain(
-      "queued for fresh GitHub merge eligibility",
-    );
+    expect(queued.detail).toContain("queued for fresh GitHub merge eligibility");
     expect(queued.detail).not.toContain("waiting for GitHub checks");
     const tick = coordinator.merging.tick();
     await inspectionStarted;
-    expect(coordinator.store.merging.entry(url).detail).toBe(
-      "Inspecting current GitHub merge eligibility",
-    );
+    expect(coordinator.store.merging.entry(url).detail).toBe("Inspecting current GitHub merge eligibility");
     expect(coordinator.store.merging.operations()).toHaveLength(0);
     release?.();
     await tick;
@@ -174,25 +153,19 @@ test("queued merge reports inspection before the actual eligibility gate, then p
     expect(blocked.detail).toBe("GitHub review gate: REVIEW_REQUIRED");
     expect(writes).toBe(0);
 
-    const notices = database
-      .prepare("SELECT count(*) AS total FROM merge_notices")
-      .get();
+    const notices = database.prepare("SELECT count(*) AS total FROM merge_notices").get();
     now += 60000;
     await coordinator.merging.tick();
     expect(coordinator.store.merging.entry(url).version).toBe(blocked.version);
     expect(coordinator.store.merging.entry(url).detail).toBe(blocked.detail);
-    expect(
-      database.prepare("SELECT count(*) AS total FROM merge_notices").get(),
-    ).toEqual(notices);
+    expect(database.prepare("SELECT count(*) AS total FROM merge_notices").get()).toEqual(notices);
     expect(writes).toBe(0);
 
     current.review = null;
     now += 60000;
     await coordinator.merging.tick();
     expect(writes).toBe(1);
-    expect(coordinator.store.merging.entries(pr.id)[0]?.state).toBe(
-      EntryState.Merged,
-    );
+    expect(coordinator.store.merging.entries(pr.id)[0]?.state).toBe(EntryState.Merged);
   } finally {
     release?.();
     database.close();

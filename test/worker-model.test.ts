@@ -20,16 +20,11 @@ test("worker selectors retain existing models and identify the Bedrock provider"
     provider: "openai-codex",
     id: "gpt-6.1-terra",
   });
-  assert.deepEqual(
-    workerModel("amazon-bedrock/us.anthropic.claude-opus-4-6-v1"),
-    { provider: "amazon-bedrock", id: "us.anthropic.claude-opus-4-6-v1" },
-  );
-  for (const invalid of [
-    "",
-    " gpt-6.1-terra",
-    "amazon-bedrock/",
-    "other/model",
-  ]) {
+  assert.deepEqual(workerModel("amazon-bedrock/us.anthropic.claude-opus-4-6-v1"), {
+    provider: "amazon-bedrock",
+    id: "us.anthropic.claude-opus-4-6-v1",
+  });
+  for (const invalid of ["", " gpt-6.1-terra", "amazon-bedrock/", "other/model"]) {
     assert.throws(() => workerModel(invalid), /worker (model|provider)/u);
   }
 });
@@ -86,9 +81,7 @@ test("serve uses the retained worker model and an explicit CLI model takes prece
       assert.equal(result.status, JobStatus.FAILED);
       assert.match(
         result.error ?? "",
-        override
-          ? /Authentication required/u
-          : /Configured worker model is unavailable/u,
+        override ? /Authentication required/u : /Configured worker model is unavailable/u,
       );
     } finally {
       if (child.exitCode === null && child.signalCode === null) {
@@ -104,20 +97,16 @@ test("serve uses the retained worker model and an explicit CLI model takes prece
 test("the real worker selects Bedrock before looking up its model and does not require Codex", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-bedrock-worker-"));
   const messages: unknown[] = [];
-  const child = fork(
-    fileURLToPath(new URL("../src/worker.ts", import.meta.url)),
-    [],
-    {
-      execArgv: [],
-      stdio: ["ignore", "ignore", "ignore", "ipc"],
-      env: {
-        ...process.env,
-        PI_CODING_AGENT_DIR: directory,
-        CODEX_HOME: join(directory, "absent-codex"),
-        AWS_BEARER_TOKEN_BEDROCK: "synthetic-bedrock-token",
-      },
+  const child = fork(fileURLToPath(new URL("../src/worker.ts", import.meta.url)), [], {
+    execArgv: [],
+    stdio: ["ignore", "ignore", "ignore", "ipc"],
+    env: {
+      ...process.env,
+      PI_CODING_AGENT_DIR: directory,
+      CODEX_HOME: join(directory, "absent-codex"),
+      AWS_BEARER_TOKEN_BEDROCK: "synthetic-bedrock-token",
     },
-  );
+  });
   try {
     await new Promise<void>((resolve, reject) => {
       const deadline = setTimeout(() => {
@@ -190,10 +179,7 @@ test("Bedrock uses the SDK runtime without requiring or writing ChatGPT credenti
     });
     assert.equal(source, "aws");
     assert.equal(runtime.hasConfiguredAuth("amazon-bedrock"), true);
-    assert.notEqual(
-      runtime.getModel("amazon-bedrock", "us.anthropic.claude-opus-4-6-v1"),
-      undefined,
-    );
+    assert.notEqual(runtime.getModel("amazon-bedrock", "us.anthropic.claude-opus-4-6-v1"), undefined);
     assert.deepEqual(await readdir(directory), []);
   } finally {
     if (previous === undefined) delete process.env["AWS_BEARER_TOKEN_BEDROCK"];
@@ -213,9 +199,7 @@ test("missing Bedrock configuration fails without creating credentials or fallin
     "AWS_CONTAINER_CREDENTIALS_FULL_URI",
     "AWS_WEB_IDENTITY_TOKEN_FILE",
   ];
-  const previous = new Map<string, string | undefined>(
-    names.map((name) => [name, process.env[name]]),
-  );
+  const previous = new Map<string, string | undefined>(names.map((name) => [name, process.env[name]]));
   for (const name of names) Reflect.deleteProperty(process.env, name);
   try {
     await assert.rejects(

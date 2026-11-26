@@ -2,27 +2,10 @@ import { shortId } from "../tracking/identifiers.js";
 import { CheckWatchState } from "../tracking/checks.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 import type { TrackingService } from "../tracking/service.js";
-import {
-  ActionState,
-  TrackingHarness,
-  type Action,
-  type PRObservation,
-  type TrackedPR,
-} from "../tracking/types.js";
-import {
-  checkGate,
-  feedbackKey,
-  fingerprint,
-  graphKey,
-  reviewGate,
-} from "./policy.js";
+import { ActionState, TrackingHarness, type Action, type PRObservation, type TrackedPR } from "../tracking/types.js";
+import { checkGate, feedbackKey, fingerprint, graphKey, reviewGate } from "./policy.js";
 import { currentMergeChecks } from "./checks.js";
-import {
-  ChainState,
-  EntryState,
-  terminal,
-  type MergeEntry,
-} from "./contracts.js";
+import { ChainState, EntryState, terminal, type MergeEntry } from "./contracts.js";
 import type { MergeSnapshot } from "./github.js";
 import type { MergeStore } from "./store.js";
 import type { MessagePresentation, ReceiptTarget } from "./receipt-types.js";
@@ -40,45 +23,35 @@ export function receiptContext(store: MergeStore, pr: TrackedPR): string {
     o?.checks,
     o?.workflows,
     o?.reviews,
-    o === undefined ? undefined : feedbackKey(o),
+    !o ? undefined : feedbackKey(o),
     graphKey(store.dependencies(), pr.id),
   ]);
 }
+
 function publicReason(reason: string): string {
-  return reason.startsWith("Readiness unavailable:")
-    ? "readiness unavailable"
-    : reason;
+  return reason.startsWith("Readiness unavailable:") ? "readiness unavailable" : reason;
 }
+
 export class ReceiptMerges {
   constructor(
     private store: MergeStore,
     private tracking: TrackingService,
-    private inspect: (
-      prId: string,
-      observation: PRObservation,
-    ) => Promise<MergeSnapshot>,
+    private inspect: (prId: string, observation: PRObservation) => Promise<MergeSnapshot>,
     private now: () => number,
-    private repositoryInstructions?: (
-      message: AgentMessage,
-    ) => string | undefined,
+    private repositoryInstructions?: (message: AgentMessage) => string | undefined,
   ) {}
+
   private selection(message: AgentMessage) {
     if (!message.applicable) return undefined;
-    const actionId =
-      message.actionId === ""
-        ? this.store.readinessAction(message.id)
-        : message.actionId;
+    const actionId = message.actionId === "" ? this.store.readinessAction(message.id) : message.actionId;
     if (actionId === undefined) return undefined;
     return this.candidate(this.tracking.store.action(actionId));
   }
+
   private candidate(action: Action) {
     const blocker = action.blocker;
     if (
-      ![
-        ActionState.Open,
-        ActionState.Acknowledged,
-        ActionState.Working,
-      ].includes(action.progress.state) ||
+      ![ActionState.Open, ActionState.Acknowledged, ActionState.Working].includes(action.progress.state) ||
       blocker.kind !== "check_results"
     )
       return undefined;
@@ -89,17 +62,16 @@ export class ReceiptMerges {
       blocker.headSha !== pr.observation?.headSha ||
       pr.observation.lifecycle !== "open" ||
       blocker.checks.length === 0 ||
-      blocker.checks.some(
-        (c) => !["success", "neutral", "skipped"].includes(c.conclusion),
-      )
+      blocker.checks.some((c) => !["success", "neutral", "skipped"].includes(c.conclusion))
     )
       return undefined;
     return { action, pr };
   }
+
   private policyKey(pr: TrackedPR): string {
     const entry = this.store.entries(pr.id).find((e) => !terminal(e.state));
     return fingerprint(
-      entry === undefined
+      !entry
         ? null
         : [
             entry.id,
@@ -116,23 +88,16 @@ export class ReceiptMerges {
           ],
     );
   }
+
   presentation = (message: AgentMessage): MessagePresentation => {
     const prId =
       message.workflowPRId ??
       message.participantPRId ??
-      (message.actionId === ""
-        ? undefined
-        : this.tracking.store.action(message.actionId).prId);
+      (message.actionId === "" ? undefined : this.tracking.store.action(message.actionId).prId);
     const taskInstructions =
-      prId === undefined
-        ? undefined
-        : this.store.agentInstructions(prId, message.recipientAgentId);
+      prId === undefined ? undefined : this.store.agentInstructions(prId, message.recipientAgentId);
     const readiness = this.readinessPresentation(message);
-    const instructions = [
-      readiness.instructions,
-      this.repositoryInstructions?.(message),
-      taskInstructions,
-    ]
+    const instructions = [readiness.instructions, this.repositoryInstructions?.(message), taskInstructions]
       .filter((value) => value !== undefined && value !== "")
       .join("\n");
     return {
@@ -140,21 +105,19 @@ export class ReceiptMerges {
       ...(instructions === "" ? {} : { instructions }),
     };
   };
+
   private readinessPresentation(message: AgentMessage): MessagePresentation {
     const selected = this.selection(message);
-    if (selected === undefined) return {};
+    if (!selected) return {};
     const { action, pr } = selected;
-    if (
-      pr.observation === undefined ||
-      feedbackKey(pr.observation) === undefined
-    )
+    if (!pr.observation || feedbackKey(pr.observation) === undefined)
       return {
         summary: "Checks passed · review status unavailable",
         status: "review_unavailable",
       };
     const cached = this.store.noticeReadiness(pr.id);
     if (
-      cached === undefined ||
+      !cached ||
       cached.inspectionError !== undefined ||
       cached.target.actionId !== action.id ||
       cached.target.context !== receiptContext(this.store, pr) ||
@@ -166,15 +129,10 @@ export class ReceiptMerges {
       ? {
           summary: "Ready",
           status: "ready",
-          ...(message.recipientAgentId === pr.ownerAgentId
-            ? { mergeTarget: cached.target }
-            : {}),
+          ...(message.recipientAgentId === pr.ownerAgentId ? { mergeTarget: cached.target } : {}),
         }
       : {
-          status:
-            cached.reason === "Review feedback requires owner assessment"
-              ? "feedback_assessment"
-              : "blocked",
+          status: cached.reason === "Review feedback requires owner assessment" ? "feedback_assessment" : "blocked",
           summary: `${action.blocker.kind === "check_results" && action.blocker.checks.every((check) => check.conclusion === "success") ? "Checks passed" : "Checks complete"} · ${publicReason(cached.reason)}`,
           ...(cached.reason === "Review feedback requires owner assessment"
             ? {
@@ -183,6 +141,7 @@ export class ReceiptMerges {
             : {}),
         };
   }
+
   async refresh(): Promise<void> {
     const candidates = this.store.readinessCandidates();
     for (const id of candidates) {
@@ -194,26 +153,15 @@ export class ReceiptMerges {
       const head = entries.some((entry) => entry.state === EntryState.Merged)
         ? this.tracking.store.observationHead(pr.id)
         : undefined;
-      const merged = entries.some(
-        (entry) =>
-          entry.state === EntryState.Merged && entry.ready?.head === head,
-      );
+      const merged = entries.some((entry) => entry.state === EntryState.Merged && entry.ready?.head === head);
       if (merged) {
-        if (prior !== undefined)
-          this.store.notice(
-            pr,
-            "entry",
-            `ready:${prior.target.actionId}`,
-            "merged",
-            "",
-            false,
-          );
+        if (prior) this.store.notice(pr, "entry", `ready:${prior.target.actionId}`, "merged", "", false);
         continue;
       }
       const authorized = entries.find((entry) => !terminal(entry.state));
       if (
         this.store.busy(pr.id) ||
-        (authorized?.ready !== undefined &&
+        (authorized?.ready &&
           authorized.state === EntryState.WaitingChecks &&
           this.store.chain(authorized.chainId).state === ChainState.Active &&
           (authorized.autoMerge || authorized.receiptId !== undefined))
@@ -236,21 +184,9 @@ export class ReceiptMerges {
         .toReversed()
         .map((action) => this.candidate(action))
         .find((candidate) => candidate !== undefined);
-      if (
-        selected === undefined ||
-        selected.pr.observation === undefined ||
-        feedbackKey(selected.pr.observation) === undefined
-      ) {
+      if (!selected || !selected.pr.observation || feedbackKey(selected.pr.observation) === undefined) {
         const prior = this.store.noticeReadiness(pr.id);
-        if (prior !== undefined)
-          this.store.notice(
-            pr,
-            "entry",
-            `ready:${prior.target.actionId}`,
-            "retired",
-            "",
-            false,
-          );
+        if (prior) this.store.notice(pr, "entry", `ready:${prior.target.actionId}`, "retired", "", false);
         continue;
       }
       if (
@@ -267,9 +203,7 @@ export class ReceiptMerges {
         old?.target.actionId === selected.action.id &&
         old.target.context === context &&
         old.policy === policyKey &&
-        (old.inspectionError !== undefined ||
-          JSON.stringify(old.recipients) ===
-            JSON.stringify(readinessRecipients)) &&
+        (old.inspectionError !== undefined || JSON.stringify(old.recipients) === JSON.stringify(readinessRecipients)) &&
         old.retryAt > this.now()
       )
         continue;
@@ -289,8 +223,7 @@ export class ReceiptMerges {
         .some(
           (d) =>
             d.dependentId === pr.id &&
-            (this.store.tracking.pr(d.prerequisiteId).observation?.lifecycle !==
-              "merged" ||
+            (this.store.tracking.pr(d.prerequisiteId).observation?.lifecycle !== "merged" ||
               d.preparation !== undefined),
         );
       let reason = "dependency requirements remain",
@@ -299,37 +232,25 @@ export class ReceiptMerges {
         if (!dependencyBlocked) {
           const snapshot = await this.inspect(pr.id, selected.pr.observation);
           const fresh = this.tracking.store.pr(pr.id);
-          const existing = this.store
-            .entries(pr.id)
-            .find((e) => !terminal(e.state));
+          const existing = this.store.entries(pr.id).find((e) => !terminal(e.state));
           target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
           const assessment = this.store.ownerAssessment(fresh);
           const policy = {
             method: target.method,
             checks: existing?.checks ?? [
-              ...new Set(
-                currentMergeChecks(snapshot.observation).map(
-                  (check) => check.name,
-                ),
-              ),
+              ...new Set(currentMergeChecks(snapshot.observation).map((check) => check.name)),
             ],
             noCi: existing?.noCi ?? false,
-            ...(assessment === undefined ? {} : { ready: assessment }),
+            ...(!assessment ? {} : { ready: assessment }),
           };
           reason =
-            receiptContext(this.store, fresh) !== context ||
-            this.policyKey(fresh) !== policyKey
+            receiptContext(this.store, fresh) !== context || this.policyKey(fresh) !== policyKey
               ? "PR changed; waiting for current evidence"
-              : existing !== undefined &&
-                  (this.store.chain(existing.chainId).state !==
-                    ChainState.Active ||
-                    this.store.busy(pr.id))
+              : existing && (this.store.chain(existing.chainId).state !== ChainState.Active || this.store.busy(pr.id))
                 ? "merge policy is paused or already busy"
                 : (checkGate(policy, snapshot) ?? "");
-          if (reason === "GitHub review gate: REVIEW_REQUIRED")
-            reason = "awaiting review";
-          else if (reason === "GitHub review gate: CHANGES_REQUESTED")
-            reason = "review changes requested";
+          if (reason === "GitHub review gate: REVIEW_REQUIRED") reason = "awaiting review";
+          else if (reason === "GitHub review gate: CHANGES_REQUESTED") reason = "review changes requested";
           else if (reason === "PR is a draft") reason = "draft";
           eligible = reason === "";
         }
@@ -337,9 +258,7 @@ export class ReceiptMerges {
         // A failed read is not evidence that eligibility changed. Keep the last
         // decision for deduplication, but suppress its offer until revalidated.
         const sameDecision =
-          old?.target.actionId === target.actionId &&
-          old.target.context === context &&
-          old.policy === policyKey;
+          old?.target.actionId === target.actionId && old.target.context === context && old.policy === policyKey;
         this.store.saveNoticeReadiness({
           ...(sameDecision
             ? old
@@ -353,45 +272,19 @@ export class ReceiptMerges {
               }),
           checkedAt: this.now(),
           retryAt: this.now() + 300000,
-          inspectionError:
-            error instanceof Error
-              ? error.message.slice(0, 1000)
-              : "eligibility read failed",
+          inspectionError: error instanceof Error ? error.message.slice(0, 1000) : "eligibility read failed",
         });
         return;
       }
-      const semantic = fingerprint([
-        target,
-        policyKey,
-        eligible,
-        publicReason(reason),
-      ]);
+      const semantic = fingerprint([target, policyKey, eligible, publicReason(reason)]);
       const changed =
-        old === undefined ||
-        semantic !==
-          fingerprint([
-            old.target,
-            old.policy,
-            old.eligible,
-            publicReason(old.reason),
-          ]);
-      const generation =
-        old === undefined ? 1 : old.generation + (changed ? 1 : 0);
+        old === undefined || semantic !== fingerprint([old.target, old.policy, old.eligible, publicReason(old.reason)]);
+      const generation = !old ? 1 : old.generation + (changed ? 1 : 0);
       this.store.transaction(() => {
-        if (old !== undefined && old.target.actionId !== target.actionId)
-          this.store.notice(
-            pr,
-            "entry",
-            `ready:${old.target.actionId}`,
-            "retired",
-            "",
-            false,
-          );
+        if (old && old.target.actionId !== target.actionId)
+          this.store.notice(pr, "entry", `ready:${old.target.actionId}`, "retired", "", false);
         const number = new URL(pr.url).pathname.split("/").at(-1) ?? "";
-        if (
-          changed ||
-          JSON.stringify(old.recipients) !== JSON.stringify(readinessRecipients)
-        ) {
+        if (changed || JSON.stringify(old.recipients) !== JSON.stringify(readinessRecipients)) {
           this.store.notice(
             pr,
             "entry",
@@ -402,14 +295,9 @@ export class ReceiptMerges {
             readinessRecipients,
           );
         }
-        for (const action of this.tracking.store
-          .actions()
-          .filter((action) => action.prId === pr.id)) {
-          if (this.candidate(action) !== undefined)
-            this.tracking.store.replaceCompletionNotifications(
-              action.id,
-              readinessRecipients,
-            );
+        for (const action of this.tracking.store.actions().filter((action) => action.prId === pr.id)) {
+          if (this.candidate(action))
+            this.tracking.store.replaceCompletionNotifications(action.id, readinessRecipients);
         }
         this.store.saveNoticeReadiness({
           target,
@@ -425,18 +313,17 @@ export class ReceiptMerges {
       return; // One optional eligibility inspection per scheduler tick.
     }
   }
+
   inboxReadyHead(message: AgentMessage): string | undefined {
     if (
       message.workflowPRId === undefined ||
       this.store.readinessAction(message.id) === undefined ||
-      !Object.is(
-        this.tracking.store.agent(message.recipientAgentId).harness,
-        TrackingHarness.Pi,
-      )
+      !Object.is(this.tracking.store.agent(message.recipientAgentId).harness, TrackingHarness.Pi)
     )
       return undefined;
     return this.presentation(message).mergeTarget?.head;
   }
+
   requestFromInbox(id: string, agentId: string, url: string, head: string) {
     const agent = this.tracking.store.agent(agentId);
     const pr = this.tracking.store.pr(url);
@@ -453,7 +340,7 @@ export class ReceiptMerges {
 
     const dispatchId = `pi-inbox:${message.id}:${head}`;
     const previous = this.store.receiptRequest(dispatchId);
-    if (previous !== undefined) {
+    if (previous) {
       if (!previous.current)
         return {
           state: "blocked",
@@ -472,9 +359,10 @@ export class ReceiptMerges {
     this.tracking.store.acknowledgeMessageInside(message.id, agentId);
     return this.request(target, dispatchId, agentId);
   }
+
   request(target: ReceiptTarget, dispatchId: string, agentId: string) {
     const previous = this.store.receiptRequest(dispatchId);
-    if (previous !== undefined)
+    if (previous)
       return previous.current
         ? this.result(previous.entry)
         : {
@@ -483,8 +371,7 @@ export class ReceiptMerges {
             reason: "A newer owner decision superseded this merge request",
           };
     const pr = this.tracking.store.pr(target.prId);
-    if (pr.ownerAgentId !== agentId || target.ownerId !== agentId)
-      throw new Error("PR belongs to another owner");
+    if (pr.ownerAgentId !== agentId || target.ownerId !== agentId) throw new Error("PR belongs to another owner");
     if (
       !pr.enabled ||
       pr.trackingEpoch !== target.epoch ||
@@ -499,8 +386,7 @@ export class ReceiptMerges {
       };
     const assessment = this.store.ownerAssessment(pr);
     const review = reviewGate(pr.observation, assessment);
-    if (review !== undefined)
-      return { state: "blocked", pr: pr.url, reason: review };
+    if (review !== undefined) return { state: "blocked", pr: pr.url, reason: review };
     if (this.store.noticeReadiness(pr.id)?.inspectionError !== undefined)
       return {
         state: "blocked",
@@ -508,18 +394,13 @@ export class ReceiptMerges {
         reason: "Readiness unavailable; waiting for a successful inspection",
       };
     let entry = this.store.entries(pr.id).find((e) => !terminal(e.state));
-    if (
-      entry !== undefined &&
-      (this.store.busy(pr.id) ||
-        this.store.chain(entry.chainId).state !== ChainState.Active)
-    )
+    if (entry && (this.store.busy(pr.id) || this.store.chain(entry.chainId).state !== ChainState.Active))
       return {
         state: "blocked",
         pr: pr.url,
-        reason:
-          "Existing merge operation or paused merge policy requires attention",
+        reason: "Existing merge operation or paused merge policy requires attention",
       };
-    if (entry === undefined) {
+    if (!entry) {
       const o = pr.observation;
       this.store.queue({
         requestId: `receipt:${dispatchId}`,
@@ -542,6 +423,7 @@ export class ReceiptMerges {
     this.store.saveReceiptRequest(dispatchId, entry);
     return this.result(entry);
   }
+
   private result(entry: MergeEntry) {
     return {
       state: entry.state === EntryState.WaitingChecks ? "queued" : entry.state,

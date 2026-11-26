@@ -4,6 +4,7 @@ import type { DigestService } from "./service.js";
 import type { TrackingStore } from "../tracking/store.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 import { noticeLabel } from "../security/notifications.js";
+
 export function digestReceipt(
   service: DigestService,
   tracking: TrackingStore,
@@ -13,7 +14,7 @@ export function digestReceipt(
 ) {
   const value = service.store.get(id),
     receipt = service.store.receipt(value.id, number);
-  if (receipt === undefined) throw new Error("Digest receipt not found");
+  if (!receipt) throw new Error("Digest receipt not found");
   return {
     receipt: wire(DomainDigestReceiptSchema, {
       id: value.id,
@@ -23,25 +24,20 @@ export function digestReceipt(
       receivedAtMs: receipt.at,
     }),
     messages: messages.map((message) => {
-      const action =
-        message.actionId === "" ? undefined : tracking.action(message.actionId);
-      const pr =
-        action === undefined
-          ? message.workflowPRId !== undefined
-            ? tracking.pr(message.workflowPRId)
-            : message.participantPRId === undefined
-              ? undefined
-              : tracking.pr(message.participantPRId)
-          : tracking.pr(action.prId);
+      const action = message.actionId === "" ? undefined : tracking.action(message.actionId);
+      const pr = !action
+        ? message.workflowPRId !== undefined
+          ? tracking.pr(message.workflowPRId)
+          : message.participantPRId === undefined
+            ? undefined
+            : tracking.pr(message.participantPRId)
+        : tracking.pr(action.prId);
       return {
         messageId: message.id,
         actionId: message.actionId,
         submissionId: message.submissionId,
         applicable: service.applicable(message),
-        acknowledgedAtMs:
-          message.acknowledgedAt === undefined
-            ? undefined
-            : BigInt(message.acknowledgedAt),
+        acknowledgedAtMs: message.acknowledgedAt === undefined ? undefined : BigInt(message.acknowledgedAt),
         summary: noticeLabel(
           tracking.inbox.automatic(message).notice ?? {
             version: 1,
@@ -50,12 +46,7 @@ export function digestReceipt(
           },
         ),
         prUrl: pr?.url ?? "",
-        recipientRole:
-          pr === undefined
-            ? ""
-            : pr.ownerAgentId === message.recipientAgentId
-              ? "owner"
-              : "observer",
+        recipientRole: !pr ? "" : pr.ownerAgentId === message.recipientAgentId ? "owner" : "observer",
         ownerAgentId: pr?.ownerAgentId ?? "",
       };
     }),

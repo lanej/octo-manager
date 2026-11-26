@@ -9,22 +9,16 @@ import {
   type AssessmentInput,
   type AssessmentResult,
 } from "./contracts.js";
-export type Assess = (
-  input: AssessmentInput,
-  model: string,
-  signal: AbortSignal,
-) => Promise<AssessmentResult>;
+
+export type Assess = (input: AssessmentInput, model: string, signal: AbortSignal) => Promise<AssessmentResult>;
+
 export function assessmentRunner(
-  workerPath = workerModule(
-    "assessment",
-    new URL("./worker.js", import.meta.url).href,
-  ),
+  workerPath = workerModule("assessment", new URL("./worker.js", import.meta.url).href),
   timeout = timeoutMs,
 ): Assess {
   return async (input, model, signal) => {
     signal.throwIfAborted();
-    if (Buffer.byteLength(JSON.stringify(input)) > inputLimit)
-      throw new Error("Oversized assessment input");
+    if (Buffer.byteLength(JSON.stringify(input)) > inputLimit) throw new Error("Oversized assessment input");
     const child = fork(workerPath, [], {
       cwd: tmpdir(),
       stdio: ["ignore", "ignore", "ignore", "ipc"],
@@ -42,13 +36,12 @@ export function assessmentRunner(
       await new Promise<void>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", (code) => {
-          if (failure || code !== 0 || output === undefined || signal.aborted)
-            reject(new Error("Assessment unavailable"));
+          if (failure || code !== 0 || !output || signal.aborted) reject(new Error("Assessment unavailable"));
           else resolve();
         });
         child.on("message", (value: unknown) => {
           if (
-            output !== undefined ||
+            output ||
             typeof value !== "object" ||
             value === null ||
             !("type" in value) ||
@@ -70,13 +63,12 @@ export function assessmentRunner(
           if (error !== null) stop();
         });
       });
-      if (output === undefined) throw new Error("Assessment unavailable");
+      if (!output) throw new Error("Assessment unavailable");
       return output;
     } finally {
       clearTimeout(timer);
       signal.removeEventListener("abort", stop);
-      if (child.exitCode === null && child.signalCode === null)
-        child.kill("SIGKILL");
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
     }
   };
 }

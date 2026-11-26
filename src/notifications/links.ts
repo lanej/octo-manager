@@ -1,25 +1,12 @@
 import { compact } from "../tracking/messages.js";
 
 // GitHub resolves bare references in the source repository, not the receiving agent's repository.
-export function linkPRReferences(
-  text: string,
-  sourceUrl?: string,
-  knownUrl?: string,
-  limit = 768,
-): string {
-  const repository =
-    sourceUrl === undefined
-      ? undefined
-      : new URL(sourceUrl).pathname.split("/").slice(1, 3).join("/");
+export function linkPRReferences(text: string, sourceUrl?: string, knownUrl?: string, limit = 768): string {
+  const repository = sourceUrl === undefined ? undefined : new URL(sourceUrl).pathname.split("/").slice(1, 3).join("/");
   const source =
-    repository !== undefined &&
-    /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository)
-      ? repository
-      : undefined;
+    repository !== undefined && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository) ? repository : undefined;
   const tokens: { text: string; atomic: boolean }[] = [];
-  for (const [index, segment] of text
-    .split(/(`+[^`]*`+|\[[^\]\n]*\]\([^)\n]*\))/gu)
-    .entries()) {
+  for (const [index, segment] of text.split(/(`+[^`]*`+|\[[^\]\n]*\]\([^)\n]*\))/gu).entries()) {
     if (index % 2 === 1) {
       tokens.push({ text: segment, atomic: true });
       continue;
@@ -48,16 +35,9 @@ export function linkPRReferences(
         }
       }
       const label =
-        target === undefined
-          ? undefined
-          : new URL(target).pathname
-              .slice(1)
-              .replace(/\/(?:pull|issues)\//u, "#");
+        target === undefined ? undefined : new URL(target).pathname.slice(1).replace(/\/(?:pull|issues)\//u, "#");
       tokens.push({
-        text:
-          target === undefined || label === undefined
-            ? value
-            : `[${compact(label, 120)}](${target})`,
+        text: target === undefined || label === undefined ? value : `[${compact(label, 120)}](${target})`,
         atomic: target !== undefined,
       });
       previous = match.index + value.length;
@@ -71,8 +51,7 @@ export function linkPRReferences(
       continue;
     }
     const remaining = limit - Buffer.byteLength(result);
-    if (!token.atomic && remaining > 3)
-      return result + compact(token.text, remaining);
+    if (!token.atomic && remaining > 3) return result + compact(token.text, remaining);
     return result.trimEnd() + "…";
   }
   return result;

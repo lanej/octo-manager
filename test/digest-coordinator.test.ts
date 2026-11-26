@@ -54,10 +54,11 @@ for (const callback of ["presentation", "ownerFeedbackCovered"] as const) {
       digestOptions: { connect: () => queue, ...callbacks },
     });
     try {
-      const pr = coordinator.tracking.track(
-        "https://github.com/owner/repo/pull/1",
-        { harness: "codex", endpoint: "local", sessionId: "custom-input" },
-      );
+      const pr = coordinator.tracking.track("https://github.com/owner/repo/pull/1", {
+        harness: "codex",
+        endpoint: "local",
+        sessionId: "custom-input",
+      });
       coordinator.store.tracking.observe(
         pr.id,
         {
@@ -74,10 +75,7 @@ for (const callback of ["presentation", "ownerFeedbackCovered"] as const) {
       const delivery = coordinator.store.tracking.deliveries()[0];
       if (delivery === undefined) throw new Error("Missing delivery");
       const action = coordinator.store.tracking.action(delivery.actionId);
-      const notice = coordinator.store.tracking.noticeForAction(
-        action,
-        pr.ownerAgentId,
-      );
+      const notice = coordinator.store.tracking.noticeForAction(action, pr.ownerAgentId);
       const inbox = coordinator.store.tracking.inbox;
       inbox.freezeNotice(delivery.id, notice);
       inbox.record(delivery.id, inbox.render(delivery.id, notice));
@@ -103,19 +101,13 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
   let serial = 0;
   const queue: QueueConnection = {
     prepare: () => Promise.resolve({ busy: true }),
-    queued: (agent) =>
-      Promise.resolve(
-        [...slots].flatMap(([id, item]) => (id === agent.id ? [item] : [])),
-      ),
+    queued: (agent) => Promise.resolve([...slots].flatMap(([id, item]) => (id === agent.id ? [item] : []))),
     enqueueQueued: (agent, clientId, body) => {
       const item = { queueId: `q-${String(++serial)}`, clientId, body };
       slots.set(agent.id, item);
       return Promise.resolve(item);
     },
-    cancelQueued: (agent, id) =>
-      Promise.resolve(
-        slots.get(agent.id)?.queueId === id && slots.delete(agent.id),
-      ),
+    cancelQueued: (agent, id) => Promise.resolve(slots.get(agent.id)?.queueId === id && slots.delete(agent.id)),
     received: () => Promise.resolve({ bodies: [], complete: true }),
     close: () => {},
   };
@@ -168,20 +160,10 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     for (const delivery of tracking.deliveries()) {
       if (tracking.inbox.get(delivery.id) !== undefined) continue;
       const action = tracking.action(delivery.actionId);
-      if (
-        action.blocker.kind !== "check_failed" &&
-        action.blocker.kind !== "review_feedback"
-      )
-        continue;
-      const notice = tracking.noticeForAction(
-        action,
-        delivery.recipientAgentId,
-      );
+      if (action.blocker.kind !== "check_failed" && action.blocker.kind !== "review_feedback") continue;
+      const notice = tracking.noticeForAction(action, delivery.recipientAgentId);
       tracking.inbox.freezeNotice(delivery.id, notice);
-      tracking.inbox.record(
-        delivery.id,
-        tracking.inbox.render(delivery.id, notice),
-      );
+      tracking.inbox.record(delivery.id, tracking.inbox.render(delivery.id, notice));
     }
   }
   try {
@@ -218,15 +200,10 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     expect(read.items).toHaveLength(2);
     const current = read.items.find((item) => item.applicable);
     expect(current?.summary).toBe("Checks failed");
-    expect(read.items.find((item) => !item.applicable)?.summary).toBe(
-      "Stale · Review feedback",
+    expect(read.items.find((item) => !item.applicable)?.summary).toBe("Stale · Review feedback");
+    expect(store.tracking.actions().find((action) => action.blocker.kind === "review_feedback")?.progress.state).toBe(
+      ActionState.Open,
     );
-    expect(
-      store.tracking
-        .actions()
-        .find((action) => action.blocker.kind === "review_feedback")?.progress
-        .state,
-    ).toBe(ActionState.Open);
 
     store.tracking.observe(
       pr.id,
@@ -242,14 +219,8 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     );
     await waitForQueue(() => !slots.has(pr.ownerAgentId));
     const historical = messages.read(original.clientId, pr.ownerAgentId);
-    expect(historical.message.items.every((item) => !item.applicable)).toBe(
-      true,
-    );
-    expect(
-      historical.message.items.every(
-        (item) => item.acknowledgedAtMs !== undefined,
-      ),
-    ).toBe(true);
+    expect(historical.message.items.every((item) => !item.applicable)).toBe(true);
+    expect(historical.message.items.every((item) => item.acknowledgedAtMs !== undefined)).toBe(true);
     expect(historical.instructions).toEqual([]);
 
     store.tracking.observe(
@@ -271,21 +242,12 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     );
     const edited = store.tracking
       .actions()
-      .find(
-        (action) =>
-          action.blocker.kind === "review_feedback" &&
-          action.progress.state === ActionState.Open,
-      );
+      .find((action) => action.blocker.kind === "review_feedback" && action.progress.state === ActionState.Open);
     if (edited === undefined) throw new Error("Missing edited action");
     freezePendingNotices();
-    await waitForQueue(
-      () =>
-        slots.get(pr.ownerAgentId)?.body?.includes("Review feedback") === true,
-    );
+    await waitForQueue(() => slots.get(pr.ownerAgentId)?.body?.includes("Review feedback") === true);
     store.tracking.untrack(pr.id);
-    await waitForQueue(
-      () => !slots.has(pr.ownerAgentId) && !slots.has(watcher.id),
-    );
+    await waitForQueue(() => !slots.has(pr.ownerAgentId) && !slots.has(watcher.id));
   } finally {
     scheduler.stop();
     await coordinator.close();
@@ -341,10 +303,7 @@ test("coordinator combines both producers and atomically receipts exact members 
         sessionId: "synthetic-agent",
       },
       actor = coordinator.tracking.registerAgent(owner);
-    const pr = coordinator.store.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      owner,
-    );
+    const pr = coordinator.store.tracking.track("https://github.com/owner/repo/pull/1", owner);
     coordinator.store.tracking.observe(pr.id, input, config);
     const submission = coordinator.store.submissions.request({
       requestId: "controlled",
@@ -368,22 +327,16 @@ test("coordinator combines both producers and atomically receipts exact members 
       const current = coordinator.store.digests.active(actor.id);
       if (
         current !== undefined &&
-        coordinator.store.digests.version(current.id, current.revision)
-          .messageIds.length === 2
+        coordinator.store.digests.version(current.id, current.revision).messageIds.length === 2
       )
         break;
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
     const digest = coordinator.store.digests.active(actor.id);
     if (digest === undefined) throw new Error("No shared digest");
-    const version = coordinator.store.digests.version(
-      digest.id,
-      digest.revision,
-    );
+    const version = coordinator.store.digests.version(digest.id, digest.revision);
     expect(version.messageIds).toHaveLength(2);
-    expect(version.body).toContain(
-      `\`octo-manager read ${shortId(version.dispatchId)}`,
-    );
+    expect(version.body).toContain(`\`octo-manager read ${shortId(version.dispatchId)}`);
     expect(version.body).not.toContain(actor.id);
     expect(slot?.body).toBe(version.body);
     expect(directCalls).toBe(0);
@@ -399,14 +352,10 @@ test("coordinator combines both producers and atomically receipts exact members 
     const client = schedulerClient(directory),
       record = await client.getAgentDigest({ id: digest.id, revision: 1 });
     expect(JSON.stringify(record.inspection, cliJSON)).toContain(digest.id);
-    const inspection: unknown = JSON.parse(
-      JSON.stringify(record.inspection, cliJSON),
-    );
+    const inspection: unknown = JSON.parse(JSON.stringify(record.inspection, cliJSON));
     const events = objectRecord(inspection)["events"];
     if (!Array.isArray(events)) throw new Error("Missing digest events");
-    const replacement: unknown = events.find(
-      (value: unknown) => objectRecord(value)["kind"] === "queue_replaced",
-    );
+    const replacement: unknown = events.find((value: unknown) => objectRecord(value)["kind"] === "queue_replaced");
     expect(objectRecord(replacement)["detail"]).toEqual({
       ...reconciliation,
       omittedFields: ["futureEvidence"],
@@ -439,12 +388,9 @@ test("coordinator combines both producers and atomically receipts exact members 
     );
     expect(hookResult.output).toBeUndefined();
     for (let index = 0; index < 200; index++)
-      coordinator.store.digests.event(
-        actor.id,
-        digest.id,
-        "synthetic_history",
-        { detail: "historical event ".repeat(100) },
-      );
+      coordinator.store.digests.event(actor.id, digest.id, "synthetic_history", {
+        detail: "historical event ".repeat(100),
+      });
     const receipt = await client.acknowledgeAgentDigest({
       id: digest.id,
       revision: digest.revision,
@@ -452,28 +398,15 @@ test("coordinator combines both producers and atomically receipts exact members 
       expectedBody: version.body,
     });
     expect(receipt.messages).toHaveLength(2);
-    expect(
-      receipt.messages.find((message) => message.submissionId === submission.id)
-        ?.summary,
-    ).toBe("Submission update");
-    expect(
-      Buffer.byteLength(JSON.stringify(receipt.receipt, cliJSON)),
-    ).toBeLessThan(300);
-    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
-      "synthetic_history",
+    expect(receipt.messages.find((message) => message.submissionId === submission.id)?.summary).toBe(
+      "Submission update",
     );
-    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain(
-      "messageIds",
-    );
+    expect(Buffer.byteLength(JSON.stringify(receipt.receipt, cliJSON))).toBeLessThan(300);
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain("synthetic_history");
+    expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain("messageIds");
     expect(JSON.stringify(receipt.receipt, cliJSON)).not.toContain("events");
-    expect(
-      receipt.messages.every(
-        (message) => message.acknowledgedAtMs !== undefined,
-      ),
-    ).toBe(true);
-    expect(coordinator.store.tracking.actions()[0]?.progress.state).toBe(
-      ActionState.Open,
-    );
+    expect(receipt.messages.every((message) => message.acknowledgedAtMs !== undefined)).toBe(true);
+    expect(coordinator.store.tracking.actions()[0]?.progress.state).toBe(ActionState.Open);
     await coordinator.digests.flush();
     expect(slot).toBeUndefined();
   } finally {
@@ -523,28 +456,18 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     sessionId: "receipt-owner",
   };
   async function run(id: string, env: NodeJS.ProcessEnv) {
-    const child = Bun.spawn(
-      [
-        process.execPath,
-        resolve("src/cli.ts"),
-        "ack",
-        id,
-        "--state",
-        directory,
-      ],
-      {
-        env: {
-          ...process.env,
-          CODEX_THREAD_ID: undefined,
-          OCTO_MANAGER_AGENT_ID: undefined,
-          OCTO_MANAGER_ENDPOINT: undefined,
-          OCTO_MANAGER_AGENT: "1",
-          ...env,
-        },
-        stdout: "pipe",
-        stderr: "pipe",
+    const child = Bun.spawn([process.execPath, resolve("src/cli.ts"), "ack", id, "--state", directory], {
+      env: {
+        ...process.env,
+        CODEX_THREAD_ID: undefined,
+        OCTO_MANAGER_AGENT_ID: undefined,
+        OCTO_MANAGER_ENDPOINT: undefined,
+        OCTO_MANAGER_AGENT: "1",
+        ...env,
       },
-    );
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const [stdout, stderr, code] = await Promise.all([
       new Response(child.stdout).text(),
       new Response(child.stderr).text(),
@@ -556,10 +479,7 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     for (let n = 0; n < 200; n++) {
       const value = coordinator.store.digests.active(actor.id);
       if (value !== undefined) {
-        const version = coordinator.store.digests.version(
-          value.id,
-          value.revision,
-        );
+        const version = coordinator.store.digests.version(value.id, value.revision);
         if (version.messageIds.length === count) return version;
       }
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -568,10 +488,7 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
   }
   const actor = coordinator.tracking.registerAgent(owner);
   try {
-    const first = coordinator.store.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      owner,
-    );
+    const first = coordinator.store.tracking.track("https://github.com/owner/repo/pull/1", owner);
     coordinator.store.tracking.observe(first.id, input, config);
     await coordinator.start();
     const previous = await current(1);
@@ -583,18 +500,13 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     expect(previous.body).not.toContain("Action:");
     expect(previous.body).not.toContain("--agent-id");
     expect(previous.body).not.toContain("--revision");
-    const second = coordinator.store.tracking.track(
-      "https://github.com/owner/repo/pull/2",
-      owner,
-    );
+    const second = coordinator.store.tracking.track("https://github.com/owner/repo/pull/2", owner);
     coordinator.store.tracking.observe(second.id, input, config);
     const replacement = await current(2);
     expect(messageReceiptId(replacement.body)).not.toBe(token);
     expect(replacement.body).not.toContain("\n- ");
     expect((await run(token, {})).code).not.toBe(0);
-    expect(
-      (await run(token, { CODEX_THREAD_ID: "unknown-session" })).code,
-    ).not.toBe(0);
+    expect((await run(token, { CODEX_THREAD_ID: "unknown-session" })).code).not.toBe(0);
     expect(coordinator.store.tracking.agents()).toHaveLength(1);
     coordinator.tracking.registerAgent({ ...owner, endpoint: "other" });
     const ambiguous = await run(token, { CODEX_THREAD_ID: owner.sessionId });
@@ -607,23 +519,12 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     expect(received.code).toBe(0);
     expect(received.stdout).not.toContain('"revision"');
     expect(received.stdout).not.toContain("digest");
-    expect(
-      coordinator.store.tracking.inbox.get(previous.messageIds[0] ?? "")
-        ?.acknowledgedAt,
-    ).toBeDefined();
-    const added = replacement.messageIds.find(
-      (id) => !previous.messageIds.includes(id),
-    );
+    expect(coordinator.store.tracking.inbox.get(previous.messageIds[0] ?? "")?.acknowledgedAt).toBeDefined();
+    const added = replacement.messageIds.find((id) => !previous.messageIds.includes(id));
     if (added === undefined) throw new Error("No newer member");
-    expect(
-      coordinator.store.tracking.inbox.get(added)?.acknowledgedAt,
-    ).toBeUndefined();
-    expect((await run(token, { OCTO_MANAGER_AGENT_ID: actor.id })).code).toBe(
-      0,
-    );
-    expect(
-      coordinator.store.tracking.inbox.get(added)?.acknowledgedAt,
-    ).toBeUndefined();
+    expect(coordinator.store.tracking.inbox.get(added)?.acknowledgedAt).toBeUndefined();
+    expect((await run(token, { OCTO_MANAGER_AGENT_ID: actor.id })).code).toBe(0);
+    expect(coordinator.store.tracking.inbox.get(added)?.acknowledgedAt).toBeUndefined();
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });

@@ -10,6 +10,7 @@ import {
   readlink,
   readdir,
   copyFile,
+  cp,
   chmod,
   symlink,
   rm,
@@ -74,8 +75,8 @@ async function installerFixture() {
   await writeFile(hooks, '{"hooks":{}}\n', { mode: 0o600 });
   await writeFile(config, '{"endpoints":{}}\n', { mode: 0o600 });
   await symlink(legacy, current);
-  for (const name of ["package.json", "bun.lock"])
-    await copyFile(resolve(name), join(source, name));
+  for (const name of ["package.json", "bun.lock"]) await copyFile(resolve(name), join(source, name));
+  await cp(resolve("patches"), join(source, "patches"), { recursive: true });
   for (const [entry, output] of [
     ["scripts/install-local.ts", "scripts"],
     ["src/cli.ts", "fixture-dist"],
@@ -91,20 +92,17 @@ async function installerFixture() {
               {
                 name: "private-fixture-manager-boundary",
                 setup(builder) {
-                  builder.onLoad(
-                    { filter: /install-local\.ts$/ },
-                    async (args) => ({
-                      contents: (
-                        'import { readFileSync as fixtureReadFileSync, appendFileSync as fixtureAppendFileSync } from "node:fs";\n' +
-                        (await readFile(args.path, "utf8"))
-                      ).replace(
-                        "  return execFileSync(command, args, {",
-                        '  if (command === "/bin/launchctl") {\n    const report = process.env["OCTO_TEST_MANAGER_REPORT"];\n    if (report === undefined) throw Object.assign(new Error("No fixture manager"), {status: 113});\n    if (args[0] === "print") return fixtureReadFileSync(report, "utf8");\n    const ledger = process.env["OCTO_TEST_MANAGER_MUTATIONS"];\n    if (ledger !== undefined) fixtureAppendFileSync(ledger, JSON.stringify([command, ...args]) + String.fromCharCode(10));\n    throw new Error("Fixture refuses mutative OS control");\n  }\n  return execFileSync(command, args, {',
-                      ),
-                      loader: "ts",
-                      resolveDir: resolve(args.path, ".."),
-                    }),
-                  );
+                  builder.onLoad({ filter: /install-local\.ts$/ }, async (args) => ({
+                    contents: (
+                      'import { readFileSync as fixtureReadFileSync, appendFileSync as fixtureAppendFileSync } from "node:fs";\n' +
+                      (await readFile(args.path, "utf8"))
+                    ).replace(
+                      "  return execFileSync(command, args, {",
+                      '  if (command === "/bin/launchctl") {\n    const report = process.env["OCTO_TEST_MANAGER_REPORT"];\n    if (report === undefined) throw Object.assign(new Error("No fixture manager"), {status: 113});\n    if (args[0] === "print") return fixtureReadFileSync(report, "utf8");\n    const ledger = process.env["OCTO_TEST_MANAGER_MUTATIONS"];\n    if (ledger !== undefined) fixtureAppendFileSync(ledger, JSON.stringify([command, ...args]) + String.fromCharCode(10));\n    throw new Error("Fixture refuses mutative OS control");\n  }\n  return execFileSync(command, args, {',
+                    ),
+                    loader: "ts",
+                    resolveDir: resolve(args.path, ".."),
+                  }));
                 },
               },
             ]
@@ -139,7 +137,11 @@ const args=process.argv.slice(2);
 if(args[0]==='--version'){console.log(process.versions.bun);}
 else if(args[0]==='run'&&args[1]==='build'){}
 else if(args[0]==='node_modules/typescript/bin/tsc'){cpSync(join(process.cwd(),'fixture-dist'),args[2],{recursive:true});}
-else if(args[0]==='install'){mkdirSync(join(process.cwd(),'node_modules'));}
+else if(args[0]==='install'){
+  const { patchedDependencies } = JSON.parse(readFileSync('package.json', 'utf8'));
+  for (const patch of Object.values(patchedDependencies ?? {})) readFileSync(patch);
+  mkdirSync(join(process.cwd(),'node_modules'));
+}
 else if(args[1]==='lifecycle'&&args[2]==='artifact'&&process.env.OCTO_TEST_ARTIFACT_SEQUENCE){const path=process.env.OCTO_TEST_ARTIFACT_SEQUENCE;const value=JSON.parse(readFileSync(path,'utf8'));const identity=value.identities[Math.min(value.index,value.identities.length-1)];value.index++;writeFileSync(path,JSON.stringify(value));console.log(JSON.stringify({expected_identity:identity}));}
 else {const child=Bun.spawn([${JSON.stringify(runtime)},...args],{stdin:'inherit',stdout:'inherit',stderr:'inherit'});process.exitCode=await child.exited;}
 `,
@@ -199,18 +201,7 @@ else console.log(['LoadState=not-found','ActiveState=inactive','MainPID=0'].join
 }
 
 test("installer preserves legacy consumers and reports partial promotion after an acknowledged current change", async () => {
-  const {
-    root,
-    state,
-    base,
-    current,
-    legacy,
-    launcher,
-    hooks,
-    config,
-    definition,
-    install,
-  } = await installerFixture();
+  const { root, state, base, current, legacy, launcher, hooks, config, definition, install } = await installerFixture();
   let requests = 0,
     legacyReads = 0;
   const server = createServer((request, response) => {
@@ -223,9 +214,7 @@ test("installer preserves legacy consumers and reports partial promotion after a
     requests++;
     assert.equal(request.url, "/octomanager.v2.SchedulerService/GetServerInfo");
     response.writeHead(404, { "Content-Type": "application/json" });
-    response.end(
-      JSON.stringify({ code: "unimplemented", message: "Legacy v1 fixture" }),
-    );
+    response.end(JSON.stringify({ code: "unimplemented", message: "Legacy v1 fixture" }));
   });
   await new Promise<void>((done, reject) => {
     server.once("error", reject);
@@ -275,13 +264,9 @@ test("installer preserves legacy consumers and reports partial promotion after a
     expect(receipt["promotion_state"]).toBe("not-attempted");
     expect(receipt["expected_identity"]).toMatch(/^[a-f0-9]{64}$/u);
     assert(typeof receipt["release_path"] === "string");
-    expect(
-      receipt["release_path"].startsWith(join(base, "releases") + "/"),
-    ).toBe(true);
+    expect(receipt["release_path"].startsWith(join(base, "releases") + "/")).toBe(true);
     expect(await readlink(current)).toBe(legacy);
-    expect(
-      await Promise.all(paths.map((path) => readFile(path, "utf8"))),
-    ).toEqual(contents);
+    expect(await Promise.all(paths.map((path) => readFile(path, "utf8")))).toEqual(contents);
     expect(await readdir(state)).toEqual(["run.sock"]);
     expect((await stat(state)).ctimeMs).toBe(stateBefore.ctimeMs);
     expect(requests).toBe(0);
@@ -291,13 +276,9 @@ test("installer preserves legacy consumers and reports partial promotion after a
     assert(record(refusal));
     expect(refusal["promoted"]).toBe(false);
     expect(refusal["promotion_state"]).toBe("not-attempted");
-    expect(refusal["reason"]).toBe(
-      "native-client-promotion-api-incompatible-or-unavailable",
-    );
+    expect(refusal["reason"]).toBe("native-client-promotion-api-incompatible-or-unavailable");
     expect(await readlink(current)).toBe(legacy);
-    expect(
-      await Promise.all(paths.map((path) => readFile(path, "utf8"))),
-    ).toEqual(contents);
+    expect(await Promise.all(paths.map((path) => readFile(path, "utf8")))).toEqual(contents);
     expect(await readdir(state)).toEqual(["run.sock"]);
     expect(requests).toBe(1);
     expect(server.listening).toBe(true);
@@ -309,10 +290,7 @@ test("installer preserves legacy consumers and reports partial promotion after a
         else reject(error);
       });
     });
-    await writeFile(
-      join(state, "install-backups"),
-      "Fixture blocks backup directory creation",
-    );
+    await writeFile(join(state, "install-backups"), "Fixture blocks backup directory creation");
     const partial = await install("--no-start");
     assert.equal(partial.status, 1);
     const failed: unknown = JSON.parse(partial.stdout);
@@ -321,9 +299,7 @@ test("installer preserves legacy consumers and reports partial promotion after a
     expect(await readlink(current)).not.toBe(legacy);
     expect(failed["promoted"]).toBe(true);
     expect(failed["promotion_state"]).toBe("partial");
-    expect(
-      await Promise.all(paths.map((path) => readFile(path, "utf8"))),
-    ).toEqual(contents);
+    expect(await Promise.all(paths.map((path) => readFile(path, "utf8")))).toEqual(contents);
     expect(partial.stderr).toContain("install-backups");
   } finally {
     if (server.listening)
@@ -371,8 +347,7 @@ test("installer freezes its staged identity and preserves the checkpointed owner
           },
           runtimeLifecycle(request) {
             if (request.action === LifecycleAction.STOP) stops++;
-            else if (request.action !== LifecycleAction.INVENTORY)
-              throw new Error("Unexpected fixture mutation");
+            else if (request.action !== LifecycleAction.INVENTORY) throw new Error("Unexpected fixture mutation");
             return {
               report: wireLifecycle({ schema_version: 1, targets: [target] }),
             };
@@ -400,11 +375,7 @@ test("installer freezes its staged identity and preserves the checkpointed owner
       JSON.stringify({ schema_version: 1, targets: [target] }),
       { mode: 0o600 },
     );
-    await writeFile(
-      identities,
-      JSON.stringify({ identities: [frozen, changed], index: 0 }),
-      { mode: 0o600 },
-    );
+    await writeFile(identities, JSON.stringify({ identities: [frozen, changed], index: 0 }), { mode: 0o600 });
     await writeFile(
       manager,
       process.platform === "darwin"
@@ -426,9 +397,7 @@ test("installer freezes its staged identity and preserves the checkpointed owner
     expect(receipt["started"]).toBe(false);
     expect(stops).toBe(0);
     expect(receipt["incomplete_activation"]).toBe(true);
-    expect(receipt["reason"]).toBe(
-      "native-selected-artifact-identity-changed-before-retirement",
-    );
+    expect(receipt["reason"]).toBe("native-selected-artifact-identity-changed-before-retirement");
     const observed: unknown = JSON.parse(await readFile(identities, "utf8"));
     assert(record(observed));
     expect(observed["index"]).toBe(2);

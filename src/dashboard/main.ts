@@ -37,15 +37,12 @@ const { values } = parseArgs({
   },
 });
 const directory = resolve(
-  values.state ??
-    process.env["OCTO_MANAGER_STATE"] ??
-    join(homedir(), ".local", "state", "octo-manager"),
+  values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local", "state", "octo-manager"),
 );
 const theme = dashboardTheme(values.theme);
 const hourValue = values["github-hours"] ?? "24";
 const hours = Number(hourValue);
-if (!/^\d+$/u.test(hourValue) || hours < 1 || hours > 168)
-  throw new Error("GitHub hours must be between 1 and 168.");
+if (!/^\d+$/u.test(hourValue) || hours < 1 || hours > 168) throw new Error("GitHub hours must be between 1 and 168.");
 const formatter = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
   month: "short",
@@ -54,16 +51,10 @@ const formatter = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
   second: "2-digit",
   timeZoneName: "short",
-  ...(values.timezone === undefined || values.timezone === "local"
-    ? {}
-    : { timeZone: values.timezone }),
+  ...(values.timezone === undefined || values.timezone === "local" ? {} : { timeZone: values.timezone }),
 });
-const time = (value?: bigint) =>
-  value === undefined || value === 0n
-    ? "Unknown"
-    : formatter.format(Number(value));
-if (!process.stdin.isTTY || !process.stdout.isTTY)
-  throw new Error("Dashboard needs an interactive terminal.");
+const time = (value?: bigint) => (value === undefined || value === 0n ? "Unknown" : formatter.format(Number(value)));
+if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("Dashboard needs an interactive terminal.");
 
 const stop = new AbortController();
 const stopped = () => stop.signal.aborted;
@@ -92,9 +83,7 @@ let reading = false;
 let operationsSequence: bigint | undefined;
 let operationsError = "";
 let readingOperations = false;
-let workerHistory:
-  | { instance: string; job: string; through: bigint; events: JobEvent[] }
-  | undefined;
+let workerHistory: { instance: string; job: string; through: bigint; events: JobEvent[] } | undefined;
 let readingWorker = false;
 let pending = false;
 let connection = "Connecting";
@@ -131,31 +120,26 @@ function listing(): RecordView[] {
 function repaint() {
   let rows = listing();
   const history = workerHistory;
-  if (history !== undefined && history.instance === snapshot?.instanceId)
+  if (history && history.instance === snapshot?.instanceId)
     rows = rows.map((row) =>
       row.jobId === history.job
         ? {
             ...row,
-            log: history.events
-              .map((event) => eventLine(event, time))
-              .join("\n"),
+            log: history.events.map((event) => eventLine(event, time)).join("\n"),
           }
         : row,
     );
   const selected = view.selected() ?? rows[0];
   const reviews =
-    view.screen === "Reviews" ||
-    (view.inspecting &&
-      (view.screen === "Attention" || view.screen === "Deliveries"));
-  if (selected !== undefined && (reviews || view.screen === "Tracking")) {
+    view.screen === "Reviews" || (view.inspecting && (view.screen === "Attention" || view.screen === "Deliveries"));
+  if (selected && (reviews || view.screen === "Tracking")) {
     const selectedFrame = interest.url === selected.url ? frame : undefined;
     rows = rows.map((row) => {
       if (row.id !== selected.id) return row;
       if (reviews)
         return {
           ...row,
-          ...(row.delivery === undefined ||
-          selectedFrame?.pullRequest?.title === undefined
+          ...(!row.delivery || selectedFrame?.pullRequest?.title === undefined
             ? {}
             : {
                 delivery: {
@@ -164,11 +148,7 @@ function repaint() {
                 },
               }),
           detail: view.screen === "Reviews" ? row.label : row.detail,
-          markdown: reviewDetail(
-            interest.reviews ? selectedFrame : undefined,
-            row,
-            time,
-          ),
+          markdown: reviewDetail(interest.reviews ? selectedFrame : undefined, row, time),
         };
       return {
         ...row,
@@ -192,9 +172,7 @@ function repaint() {
 function updateInterest() {
   const url = view.selected()?.url ?? "";
   const reviews =
-    view.screen === "Reviews" ||
-    (view.inspecting &&
-      (view.screen === "Attention" || view.screen === "Deliveries"));
+    view.screen === "Reviews" || (view.inspecting && (view.screen === "Attention" || view.screen === "Deliveries"));
   const interestedURL = reviews || view.screen === "Tracking" ? url : "";
   if (interestedURL === interest.url && reviews === interest.reviews) return;
   interest = { url: interestedURL, reviews };
@@ -204,53 +182,29 @@ function updateInterest() {
 }
 
 function queueActivity() {
-  Promise.all([loadActivity(), loadOperations(), loadWorker()]).catch(
-    (error: unknown) => {
-      notice = error instanceof Error ? error.message : String(error);
-      if (!stopped()) repaint();
-    },
-  );
+  Promise.all([loadActivity(), loadOperations(), loadWorker()]).catch((error: unknown) => {
+    notice = error instanceof Error ? error.message : String(error);
+    if (!stopped()) repaint();
+  });
 }
 
 async function loadWorker(force = false) {
   const current = snapshot;
   const job = view.selected()?.jobId;
-  if (
-    readingWorker ||
-    current === undefined ||
-    job === undefined ||
-    connection !== "Live"
-  )
-    return;
-  const cache =
-    workerHistory?.instance === current.instanceId && workerHistory.job === job
-      ? workerHistory
-      : undefined;
+  if (readingWorker || current === undefined || job === undefined || connection !== "Live") return;
+  const cache = workerHistory?.instance === current.instanceId && workerHistory.job === job ? workerHistory : undefined;
   if (!force && cache?.through === current.sequence) return;
   readingWorker = true;
   try {
     let cursor = cache?.events.at(-1)?.sequence ?? 0n;
     let events = cache?.events ?? [];
-    while (
-      !stopped() &&
-      snapshot?.instanceId === current.instanceId &&
-      view.selected()?.jobId === job
-    ) {
-      const response = await client.listEvents(
-        { jobId: job, afterSequence: cursor },
-        { signal: stop.signal },
-      );
-      if (
-        stopped() ||
-        snapshot.instanceId !== current.instanceId ||
-        view.selected()?.jobId !== job
-      )
-        return;
+    while (!stopped() && snapshot?.instanceId === current.instanceId && view.selected()?.jobId === job) {
+      const response = await client.listEvents({ jobId: job, afterSequence: cursor }, { signal: stop.signal });
+      if (stopped() || snapshot.instanceId !== current.instanceId || view.selected()?.jobId !== job) return;
       events = [...events, ...response.events].slice(-500);
       const next = response.events.at(-1)?.sequence ?? cursor;
       if (response.events.length < 200 || next >= current.sequence) break;
-      if (next <= cursor)
-        throw new Error("Worker history cursor did not advance");
+      if (next <= cursor) throw new Error("Worker history cursor did not advance");
       cursor = next;
     }
     workerHistory = {
@@ -261,11 +215,7 @@ async function loadWorker(force = false) {
     };
     repaint();
   } catch (error) {
-    if (
-      !stopped() &&
-      snapshot?.instanceId === current.instanceId &&
-      view.selected()?.jobId === job
-    ) {
+    if (!stopped() && snapshot?.instanceId === current.instanceId && view.selected()?.jobId === job) {
       notice = `Worker history unavailable · ${error instanceof Error ? error.message : String(error)}`;
       repaint();
     }
@@ -276,37 +226,20 @@ async function loadWorker(force = false) {
 
 async function loadActivity(cursors?: bigint[]) {
   const current = snapshot;
-  if (
-    view.screen !== "Activity" ||
-    connection !== "Live" ||
-    current === undefined ||
-    reading
-  )
-    return;
-  if (
-    cursors === undefined &&
-    (activityError !== "" ||
-      pageCursors.length > 1 ||
-      pageSequence === current.sequence)
-  )
-    return;
+  if (view.screen !== "Activity" || connection !== "Live" || current === undefined || reading) return;
+  if (!cursors && (activityError !== "" || pageCursors.length > 1 || pageSequence === current.sequence)) return;
   reading = true;
   const target = cursors ?? pageCursors;
   const before = target.at(-1) ?? 0n;
   try {
-    const history = await client.listActivity(
-      { beforeSequence: before, limit: 50 },
-      { signal: stop.signal },
-    );
+    const history = await client.listActivity({ beforeSequence: before, limit: 50 }, { signal: stop.signal });
     if (snapshot?.instanceId !== current.instanceId) return;
     if (
       history.events.length + history.activities.length > 50 ||
       (before > 0n && history.nextSequence >= before) ||
       (history.hasMore && history.nextSequence === 0n)
     )
-      throw new Error(
-        "Activity page exceeded its bound or did not advance its cursor",
-      );
+      throw new Error("Activity page exceeded its bound or did not advance its cursor");
     page = history;
     pageCursors = target;
     retryPage = undefined;
@@ -330,20 +263,17 @@ async function loadOperations(force = false) {
     connection !== "Live" ||
     current === undefined ||
     readingOperations ||
-    (!force &&
-      (operationsError !== "" || operationsSequence === current.sequence))
+    (!force && (operationsError !== "" || operationsSequence === current.sequence))
   )
     return;
   readingOperations = true;
   try {
     const result = await client.inspectMergeChains({}, { signal: stop.signal });
     if (snapshot?.instanceId !== current.instanceId) return;
-    if (result.overview === undefined)
-      throw new Error("Coordinator returned no operation overview");
+    if (result.overview === undefined) throw new Error("Coordinator returned no operation overview");
     const selected = view.selected()?.id;
     const operationRank = (operation: DomainMergeOverviewOperationsItem) =>
-      `operation:${operation.id ?? operation.requestId ?? "unknown"}` ===
-      selected
+      `operation:${operation.id ?? operation.requestId ?? "unknown"}` === selected
         ? 0
         : operation.state === OperationState.UNCERTAIN
           ? 1
@@ -366,11 +296,7 @@ async function loadOperations(force = false) {
     readingOperations = false;
     if (!stopped()) {
       repaint();
-      if (
-        snapshot?.instanceId !== current.instanceId ||
-        snapshot.sequence !== current.sequence
-      )
-        queueActivity();
+      if (snapshot?.instanceId !== current.instanceId || snapshot.sequence !== current.sequence) queueActivity();
     }
   }
 }
@@ -388,9 +314,7 @@ async function command(key: string) {
   if (screen === "Activity" && (key === "h" || key === "l" || key === "u")) {
     if (key === "u") {
       await Promise.all([
-        operationsError === "" || retryPage !== undefined
-          ? loadActivity(retryPage ?? [0n])
-          : undefined,
+        operationsError === "" || retryPage ? loadActivity(retryPage ?? [0n]) : undefined,
         loadOperations(true),
       ]);
       return;
@@ -398,21 +322,18 @@ async function command(key: string) {
     if (reading) return;
     if (key === "h" && page?.hasMore === true && page.nextSequence > 0n)
       await loadActivity([...pageCursors, page.nextSequence]);
-    if (key === "l" && pageCursors.length > 1)
-      await loadActivity(pageCursors.slice(0, -1));
+    if (key === "l" && pageCursors.length > 1) await loadActivity(pageCursors.slice(0, -1));
     return;
   }
   if ((key === "o" || key === "g") && selected?.url !== undefined) {
     const address = browserURL(selected.url);
-    if (address === undefined)
-      throw new Error("This record has no supported GitHub PR URL.");
+    if (address === undefined) throw new Error("This record has no supported GitHub PR URL.");
     const opener = process.platform === "darwin" ? "open" : "xdg-open";
     const processHandle = Bun.spawn([opener, address], {
       stdout: "ignore",
       stderr: "ignore",
     });
-    if ((await processHandle.exited) !== 0)
-      throw new Error("Could not open the pull request.");
+    if ((await processHandle.exited) !== 0) throw new Error("Could not open the pull request.");
     return;
   }
   if (!hasFreshObservation) {
@@ -425,18 +346,11 @@ async function command(key: string) {
     if (
       key === "a" &&
       selected?.prId !== undefined &&
-      (screen === "Tracking" ||
-        (view.inspecting &&
-          (screen === "Attention" || screen === "Deliveries")))
+      (screen === "Tracking" || (view.inspecting && (screen === "Attention" || screen === "Deliveries")))
     ) {
-      const entry = snapshot.mergeStatuses.find(
-        (status) => status.prId === selected.prId,
-      );
-      const owner = snapshot.tracking?.prs.find(
-        (pr) => pr.id === selected.prId,
-      )?.ownerAgentId;
-      if (owner === undefined || owner === "")
-        throw new Error("This PR has no responsible owner.");
+      const entry = snapshot.mergeStatuses.find((status) => status.prId === selected.prId);
+      const owner = snapshot.tracking?.prs.find((pr) => pr.id === selected.prId)?.ownerAgentId;
+      if (owner === undefined || owner === "") throw new Error("This PR has no responsible owner.");
       await client.setAutoMerge(
         {
           pr: selected.prId,
@@ -447,15 +361,8 @@ async function command(key: string) {
         options,
       );
       report("Auto-merge preference recorded");
-    } else if (
-      key === "u" &&
-      screen === "Reviews" &&
-      selected?.url !== undefined
-    ) {
-      await client.getPullRequest(
-        { url: selected.url, refresh: true },
-        options,
-      );
+    } else if (key === "u" && screen === "Reviews" && selected?.url !== undefined) {
+      await client.getPullRequest({ url: selected.url, refresh: true }, options);
       report("Review refresh requested");
     } else if (key === "u" && selected?.prId !== undefined) {
       await client.refreshTrackedPullRequest({ id: selected.prId }, options);
@@ -465,24 +372,13 @@ async function command(key: string) {
     } else if (key === "u") {
       request.abort();
       request = new AbortController();
-    } else if (
-      screen === "Activity" &&
-      key === "r" &&
-      selected?.operationId !== undefined &&
-      operationsError === ""
-    ) {
-      await client.reconcileMergeOperation(
-        { id: selected.operationId },
-        options,
-      );
+    } else if (screen === "Activity" && key === "r" && selected?.operationId !== undefined && operationsError === "") {
+      await client.reconcileMergeOperation({ id: selected.operationId }, options);
       report("Reconciliation requested · awaiting evidence");
       await loadOperations(true);
     } else if (screen === "Output" || screen === "Runtime") {
       if (key === "p") {
-        await client.setPaused(
-          { paused: snapshot.scheduler !== SchedulerState.PAUSED },
-          options,
-        );
+        await client.setPaused({ paused: snapshot.scheduler !== SchedulerState.PAUSED }, options);
         report("Scheduler preference recorded");
       } else if (key === "c" && selected?.jobId !== undefined) {
         await client.cancelJob({ id: selected.jobId }, options);
@@ -493,8 +389,7 @@ async function command(key: string) {
       }
     }
   } catch (error) {
-    if (!stopped())
-      report(error instanceof Error ? error.message : String(error));
+    if (!stopped()) report(error instanceof Error ? error.message : String(error));
   } finally {
     pending = false;
     if (!stopped()) repaint();
@@ -538,10 +433,7 @@ async function watch() {
     if (stopped()) break;
     if (selectedRequest.signal.aborted) continue;
     acceptedRequest = undefined;
-    connection =
-      snapshot === undefined
-        ? "Reconnecting…"
-        : "Disconnected · showing last snapshot";
+    connection = snapshot === undefined ? "Reconnecting…" : "Disconnected · showing last snapshot";
     repaint();
     try {
       await setTimeout(1000, undefined, { signal: stop.signal });

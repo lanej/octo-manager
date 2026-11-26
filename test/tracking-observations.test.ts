@@ -5,15 +5,8 @@ import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { SQLiteObservationRepository } from "../src/tracking/observations.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  feedbackRevision,
-  reviewObservation,
-} from "../src/tracking/feedback.js";
-import {
-  PRLifecycle,
-  ReviewState,
-  prLifecycle,
-} from "../src/tracking/states.js";
+import { feedbackRevision, reviewObservation } from "../src/tracking/feedback.js";
+import { PRLifecycle, ReviewState, prLifecycle } from "../src/tracking/states.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
 const url = "https://github.com/owner/repo/pull/1";
@@ -87,9 +80,7 @@ test("provider and persisted review states reject unsupported values without sil
     html_url: url,
   };
   expect(reviewObservation(provider, url).state).toBe(ReviewState.Pending);
-  expect(() =>
-    reviewObservation({ ...provider, state: "UNRECOGNIZED" }, url),
-  ).toThrow("Invalid review state");
+  expect(() => reviewObservation({ ...provider, state: "UNRECOGNIZED" }, url)).toThrow("Invalid review state");
   expect(() => prLifecycle("reopened")).toThrow("Invalid PR lifecycle");
   const directory = await mkdtemp("/tmp/octo-observation-state-");
   const store = new Store(directory, () => 1000);
@@ -115,10 +106,7 @@ test("provider and persisted review states reject unsupported values without sil
         },
       ],
     };
-    db.prepare("UPDATE pr_observations SET reviews_json=? WHERE pr_id=?").run(
-      JSON.stringify(persisted),
-      pr.id,
-    );
+    db.prepare("UPDATE pr_observations SET reviews_json=? WHERE pr_id=?").run(JSON.stringify(persisted), pr.id);
     expect(repository.latest(pr.id)?.reviews).toEqual(persisted);
     db.prepare("UPDATE pr_observations SET reviews_json=? WHERE pr_id=?").run(
       JSON.stringify({
@@ -128,9 +116,7 @@ test("provider and persisted review states reject unsupported values without sil
       pr.id,
     );
     expect(() => repository.latest(pr.id)).toThrow("Invalid review state");
-    expect(() => repository.lifecycle(Number.MAX_SAFE_INTEGER)).toThrow(
-      "Opening PR observation not found",
-    );
+    expect(() => repository.lifecycle(Number.MAX_SAFE_INTEGER)).toThrow("Opening PR observation not found");
   } finally {
     db.close();
     store.close();

@@ -1,6 +1,7 @@
 import { ReceiptTargetSchema } from "../merging/receipt-types.js";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
+
 export enum DigestState {
   Ready = "ready",
   Queued = "queued",
@@ -28,11 +29,12 @@ export const ArchivedInspectionSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ArchivedInspection = Static<typeof ArchivedInspectionSchema>;
+
 export function archivedInspection(value: unknown): ArchivedInspection {
-  if (!Check(ArchivedInspectionSchema, value))
-    throw new Error("Invalid archived queue inspection");
+  if (!Check(ArchivedInspectionSchema, value)) throw new Error("Invalid archived queue inspection");
   return value;
 }
+
 export const DigestSchema = Type.Object(
   {
     transport: QueueTransportSchema,
@@ -79,21 +81,22 @@ export const DigestEventSchema = Type.Object(
 export type Digest = Static<typeof DigestSchema>;
 export type DigestRevision = Static<typeof RevisionSchema>;
 export type DigestEvent = Static<typeof DigestEventSchema>;
+
 export function digest(value: unknown): Digest {
   if (!Check(DigestSchema, value)) throw new Error("Invalid digest record");
   return value;
 }
+
 export function revision(value: unknown): DigestRevision {
   if (!Check(RevisionSchema, value)) throw new Error("Invalid digest revision");
   return value;
 }
+
 export function digestEvent(value: unknown): DigestEvent {
   if (!Check(DigestEventSchema, value)) throw new Error("Invalid digest event");
   return value;
 }
+
 export function terminal(value: Digest): boolean {
-  return (
-    value.state === DigestState.Received ||
-    value.state === DigestState.Cancelled
-  );
+  return value.state === DigestState.Received || value.state === DigestState.Cancelled;
 }

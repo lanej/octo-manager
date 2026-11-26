@@ -22,9 +22,7 @@ test(
       await coordinator.start();
       coordinator.command({ op: "pause" });
       database = new DatabaseSync(join(directory, "jobs.sqlite"));
-      const insert = database.prepare(
-        "INSERT INTO jobs(id,request_id,data) VALUES(?,?,?)",
-      );
+      const insert = database.prepare("INSERT INTO jobs(id,request_id,data) VALUES(?,?,?)");
       const result = "r".repeat(16000);
       const addJobs = (count: number) => {
         assert.ok(database !== undefined);
@@ -40,9 +38,7 @@ test(
             createdAt: 1,
             updatedAt: 2,
             availableAt: 1,
-            attempts: [
-              { number: 1, startedAt: 1, endedAt: 2, exitObservedAt: 2 },
-            ],
+            attempts: [{ number: 1, startedAt: 1, endedAt: 2, exitObservedAt: 2 }],
             retryCount: 0,
             result,
           };
@@ -55,16 +51,11 @@ test(
       const response = await client.getSnapshot({});
       assert.equal(response.snapshot?.jobs.length, 320);
       assert.equal(response.snapshot.jobs.at(-1)?.resultMarkdown, result);
-      assert.ok(
-        toBinary(GetSnapshotResponseSchema, response).byteLength >
-          4 * 1024 * 1024,
-      );
+      assert.ok(toBinary(GetSnapshotResponseSchema, response).byteLength > 4 * 1024 * 1024);
       addJobs(800);
       await assert.rejects(
         client.getSnapshot({}),
-        (error: unknown) =>
-          error instanceof ConnectError &&
-          error.code === Code.ResourceExhausted,
+        (error: unknown) => error instanceof ConnectError && error.code === Code.ResourceExhausted,
       );
     } finally {
       database?.exec("DELETE FROM jobs");

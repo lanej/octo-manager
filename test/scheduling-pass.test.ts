@@ -5,11 +5,7 @@ import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import { WorkScheduler } from "../src/scheduling/work.js";
-import {
-  defaultSchedulerPolicy,
-  RefreshKind,
-  ScheduleState,
-} from "../src/scheduling/contracts.js";
+import { defaultSchedulerPolicy, RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
 
 const url = "https://github.com/owner/repo/pull/31";
 afterEach(() => jest.useRealTimers());
@@ -113,9 +109,7 @@ test("a shared schedule snapshot retains the next review deadline and completion
       await Promise.resolve();
       expect(passes()).toBeGreaterThanOrEqual(3);
       expect(reviews).toHaveBeenCalledTimes(passes());
-      expect(store.schedules.get(`reviews:${url}`)?.state).toBe(
-        ScheduleState.Deferred,
-      );
+      expect(store.schedules.get(`reviews:${url}`)?.state).toBe(ScheduleState.Deferred);
       jest.advanceTimersByTime(60000);
       expect(reads()).toBe(1);
     } finally {

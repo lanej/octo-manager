@@ -5,12 +5,10 @@ import {
   type GetConflictCaseRequest,
 } from "../gen/octomanager/v2/repairs_pb.js";
 import { Code, ConnectError } from "@connectrpc/connect";
-import {
-  RepairState as WireState,
-  type RequestRebaseRequest,
-} from "../gen/octomanager/v2/repairs_pb.js";
+import { RepairState as WireState, type RequestRebaseRequest } from "../gen/octomanager/v2/repairs_pb.js";
 import { RepairState, type RepairAttempt } from "./types.js";
 import type { RepairService } from "./service.js";
+
 const states: Record<RepairState, WireState> = {
   [RepairState.Queued]: WireState.QUEUED,
   [RepairState.Running]: WireState.RUNNING,
@@ -20,6 +18,7 @@ const states: Record<RepairState, WireState> = {
   [RepairState.Failed]: WireState.FAILED,
   [RepairState.Uncertain]: WireState.UNCERTAIN,
 };
+
 export function wireRepair(a: RepairAttempt) {
   return {
     id: a.id,
@@ -48,12 +47,14 @@ export function wireRepair(a: RepairAttempt) {
     })),
   };
 }
+
 const decisions: Record<RecipeDecision, ConflictDecision> = {
   [RecipeDecision.Pending]: ConflictDecision.PENDING,
   [RecipeDecision.Applied]: ConflictDecision.APPLIED,
   [RecipeDecision.Declined]: ConflictDecision.DECLINED,
   [RecipeDecision.Error]: ConflictDecision.ERROR,
 };
+
 function wireCase(c: ConflictCase, url: string) {
   return {
     id: BigInt(c.id),
@@ -76,18 +77,18 @@ function wireCase(c: ConflictCase, url: string) {
     agentResult: c.agentResult,
   };
 }
+
 function caseNumber(id: bigint) {
   if (id < 0n || id > BigInt(Number.MAX_SAFE_INTEGER))
     throw new ConnectError("Invalid conflict case ID", Code.InvalidArgument);
   return Number(id);
 }
+
 export function repairRoutes(service: RepairService) {
   return {
     listConflictCases(r: ListConflictCasesRequest) {
       const cases = service.conflicts?.list(caseNumber(r.afterId)) ?? [];
-      const attempts = new Map(
-        service.store.list().map((a) => [a.id, a.request.prUrl]),
-      );
+      const attempts = new Map(service.store.list().map((a) => [a.id, a.request.prUrl]));
       return {
         cases: cases.map((c) => wireCase(c, attempts.get(c.repairId) ?? "")),
         nextId: BigInt(cases.at(-1)?.id ?? caseNumber(r.afterId)),
@@ -97,12 +98,9 @@ export function repairRoutes(service: RepairService) {
       const id = caseNumber(r.id);
       try {
         const c = service.conflicts?.get(id);
-        if (c === undefined) throw new Error("Not found");
+        if (!c) throw new Error("Not found");
         return {
-          conflictCase: wireCase(
-            c,
-            service.store.get(c.repairId).request.prUrl,
-          ),
+          conflictCase: wireCase(c, service.store.get(c.repairId).request.prUrl),
         };
       } catch {
         throw new ConnectError("Conflict case not found", Code.NotFound);
@@ -120,8 +118,7 @@ export function repairRoutes(service: RepairService) {
           ),
         };
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Repair request failed";
+        const message = error instanceof Error ? error.message : "Repair request failed";
         throw new ConnectError(
           message,
           message.includes("already used")

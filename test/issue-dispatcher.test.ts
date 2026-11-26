@@ -7,11 +7,8 @@ import { WebSocketServer } from "ws";
 import { Type } from "typebox";
 import { checked } from "../src/merging/contracts.js";
 import { CodexDispatcher } from "../src/dispatch/codex.js";
-import {
-  AttemptState,
-  Role,
-  type Assignment,
-} from "../src/issues/contracts.js";
+import { AttemptState, Role, type Assignment } from "../src/issues/contracts.js";
+
 test("Codex dispatcher checkpoints session before turn and reconciles structured completion", async () => {
   const directory = await mkdtemp("/tmp/octo-issue-ws-");
   const path = join(directory, "socket");
@@ -48,13 +45,9 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
           platformFamily: "unix",
           platformOs: "test",
         };
-      if (request.method === "thread/start")
-        response = { thread: { id: "01234567-89ab-cdef-0123-456789abcdef" } };
+      if (request.method === "thread/start") response = { thread: { id: "01234567-89ab-cdef-0123-456789abcdef" } };
       if (request.method === "thread/name/set") {
-        const params = checked(
-          Type.Object({ threadId: Type.String(), name: Type.String() }),
-          request.params,
-        );
+        const params = checked(Type.Object({ threadId: Type.String(), name: Type.String() }), request.params);
         expect(params.threadId).toBe("01234567-89ab-cdef-0123-456789abcdef");
         names.push(params.name);
         if (revokeDuringNaming) authorized = false;
@@ -69,9 +62,7 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
         }
       }
       if (request.method === "turn/start") {
-        expect(
-          checked(Type.Object({ cwd: Type.String() }), request.params).cwd,
-        ).toBe("/fixture");
+        expect(checked(Type.Object({ cwd: Type.String() }), request.params).cwd).toBe("/fixture");
         response = { turn: { id: "stage-turn" } };
       }
       if (request.method === "thread/turns/list")
@@ -139,15 +130,9 @@ test("Codex dispatcher checkpoints session before turn and reconciles structured
     );
     assignment.turnId = status.turnId;
     expect(status.state).toBe("running");
-    expect(names).toEqual([
-      "Investigate owner/repo#42: Fix retries · 01234567",
-    ]);
-    expect(methods.indexOf("thread/name/set")).toBeGreaterThan(
-      methods.indexOf("thread/start"),
-    );
-    expect(methods.indexOf("thread/name/set")).toBeLessThan(
-      methods.indexOf("turn/start"),
-    );
+    expect(names).toEqual(["Investigate owner/repo#42: Fix retries · 01234567"]);
+    expect(methods.indexOf("thread/name/set")).toBeGreaterThan(methods.indexOf("thread/start"));
+    expect(methods.indexOf("thread/name/set")).toBeLessThan(methods.indexOf("turn/start"));
     const completed = await dispatcher.inspect(assignment, signal);
     expect(completed.state).toBe("completed");
     expect(completed.result?.disposition).toBe("blocked");

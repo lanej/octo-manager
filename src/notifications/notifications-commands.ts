@@ -1,16 +1,12 @@
 import type { CommandSpec } from "../cli/contracts.js";
+
 export const commands: CommandSpec[] = [
   {
     path: "read <id>",
     route: "read",
     capability: "notifications",
     description: "Read untrusted evidence and record delivery",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>"],
   },
   {
     path: "messages inspect <id>",
@@ -24,26 +20,14 @@ export const commands: CommandSpec[] = [
     route: "digests",
     capability: "notifications",
     description: "List queued message envelopes",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "messages ack <id>",
     route: "ack",
     capability: "notifications",
     description: "ack a frozen agent message",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "messages merge <id>",
@@ -65,26 +49,14 @@ export const commands: CommandSpec[] = [
     route: "message",
     capability: "notifications",
     description: "show a frozen agent message",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "ack <id>",
     route: "ack",
     capability: "notifications",
     description: "Acknowledge a frozen message",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "merge <id>",
@@ -106,12 +78,6 @@ export const commands: CommandSpec[] = [
     route: "message",
     capability: "notifications",
     description: "Inspect a frozen message",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
 ];

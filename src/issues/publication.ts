@@ -27,23 +27,15 @@ export async function updateIssuePR(
   signal: AbortSignal,
   authorize: () => void,
 ): Promise<{ url: string; head: string }> {
-  const match =
-    /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)$/u.exec(
-      issue.prUrl,
-    );
+  const match = /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)$/u.exec(issue.prUrl);
   if (match?.[1] !== tested.repository || match[2] === undefined)
     throw new Error("Linked PR does not belong to the verified code host");
   const number = match[2];
   const read = async () => {
-    const response = await transport(
-      { method: "GET", path: `repos/${tested.repository}/pulls/${number}` },
-      signal,
-    );
-    if (response.status !== 200)
-      throw new Error("Linked PR observation unavailable");
+    const response = await transport({ method: "GET", path: `repos/${tested.repository}/pulls/${number}` }, signal);
+    if (response.status !== 200) throw new Error("Linked PR observation unavailable");
     const value: unknown = JSON.parse(response.body);
-    if (!Check(linkedPR, value))
-      throw new Error("Invalid linked PR observation");
+    if (!Check(linkedPR, value)) throw new Error("Invalid linked PR observation");
     if (
       value.html_url !== issue.prUrl ||
       value.state !== "open" ||
@@ -53,25 +45,17 @@ export async function updateIssuePR(
       value.head.ref !== tested.branch ||
       value.base.ref !== tested.base
     )
-      throw new Error(
-        "Linked PR no longer matches the authorized issue branch",
-      );
+      throw new Error("Linked PR no longer matches the authorized issue branch");
     return value;
   };
   const before = await read();
   if (before.head.sha !== tested.head) {
-    if (before.head.sha !== issue.prHead)
-      throw new Error(
-        "Linked PR head changed; observe and retest before updating",
-      );
+    if (before.head.sha !== issue.prHead) throw new Error("Linked PR head changed; observe and retest before updating");
     signal.throwIfAborted();
     authorize();
     await push(before.head.ref);
   }
   const confirmed = await read();
-  if (confirmed.head.sha !== tested.head)
-    throw new Error(
-      "Linked PR update unconfirmed; reconcile before continuing",
-    );
+  if (confirmed.head.sha !== tested.head) throw new Error("Linked PR update unconfirmed; reconcile before continuing");
   return { url: issue.prUrl, head: tested.head };
 }

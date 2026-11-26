@@ -5,17 +5,18 @@ import type { ReviewFeedback, ReviewObservation } from "./types.js";
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function identifier(value: unknown): string {
-  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0)
-    return String(value);
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return String(value);
   if (typeof value === "string" && value !== "") return value;
   throw new Error("Invalid GitHub feedback identity");
 }
+
 function text(value: unknown, limit: number): string {
-  if (typeof value !== "string" || value.length > limit)
-    throw new Error("Invalid GitHub feedback text");
+  if (typeof value !== "string" || value.length > limit) throw new Error("Invalid GitHub feedback text");
   return value;
 }
+
 function feedbackUrl(value: unknown, prUrl: string): string {
   const url = new URL(text(value, 4000));
   const pr = new URL(prUrl);
@@ -31,12 +32,9 @@ function feedbackUrl(value: unknown, prUrl: string): string {
     throw new Error("Comment URL does not match PR");
   return url.href;
 }
-export function reviewObservation(
-  value: unknown,
-  prUrl: string,
-): ReviewObservation {
-  if (!object(value) || !object(value["user"]))
-    throw new Error("Invalid GitHub review");
+
+export function reviewObservation(value: unknown, prUrl: string): ReviewObservation {
+  if (!object(value) || !object(value["user"])) throw new Error("Invalid GitHub review");
   const state = reviewState(value["state"]);
   const submittedAt = Date.parse(text(value["submitted_at"] ?? "", 100));
   return {
@@ -46,14 +44,11 @@ export function reviewObservation(
     state,
     at: Number.isNaN(submittedAt) ? 0 : submittedAt,
     url: feedbackUrl(value["html_url"] ?? prUrl, prUrl),
-    ...(value["body"] === undefined || state === ReviewState.Pending
-      ? {}
-      : { body: text(value["body"], 65536) }),
+    ...(value["body"] === undefined || state === ReviewState.Pending ? {} : { body: text(value["body"], 65536) }),
   };
 }
-export function feedbackRevision(
-  input: Omit<ReviewFeedback, "revision">,
-): ReviewFeedback {
+
+export function feedbackRevision(input: Omit<ReviewFeedback, "revision">): ReviewFeedback {
   const content = {
     source: input.source,
     id: input.id,
@@ -65,25 +60,15 @@ export function feedbackRevision(
   };
   return {
     ...input,
-    revision: createHash("sha256")
-      .update(JSON.stringify(content))
-      .digest("hex"),
+    revision: createHash("sha256").update(JSON.stringify(content)).digest("hex"),
   };
 }
-export function commentFeedback(
-  value: unknown,
-  source: "inline" | "conversation",
-  prUrl: string,
-): ReviewFeedback {
-  if (!object(value) || !object(value["user"]))
-    throw new Error("Invalid GitHub comment");
+
+export function commentFeedback(value: unknown, source: "inline" | "conversation", prUrl: string): ReviewFeedback {
+  if (!object(value) || !object(value["user"])) throw new Error("Invalid GitHub comment");
   const url = feedbackUrl(value["html_url"], prUrl);
   const line = value["line"];
-  if (
-    line !== undefined &&
-    line !== null &&
-    (typeof line !== "number" || !Number.isSafeInteger(line) || line <= 0)
-  )
+  if (line !== undefined && line !== null && (typeof line !== "number" || !Number.isSafeInteger(line) || line <= 0))
     throw new Error("Invalid comment line");
   return feedbackRevision({
     source,
@@ -102,27 +87,19 @@ export function commentFeedback(
   });
 }
 
-export function storedFeedback(
-  value: unknown,
-): import("./types.js").ObservationPart<ReviewFeedback[]> | undefined {
+export function storedFeedback(value: unknown): import("./types.js").ObservationPart<ReviewFeedback[]> | undefined {
   if (value === null || value === undefined) return undefined;
   const raw: unknown = typeof value === "string" ? JSON.parse(value) : value;
   if (!object(raw)) throw new Error("Invalid stored feedback");
   const state = raw["state"];
-  if (state === "unavailable")
-    return { state, reason: text(raw["reason"], 4000) };
-  if (
-    (state !== "complete" && state !== "partial") ||
-    !Array.isArray(raw["value"])
-  )
+  if (state === "unavailable") return { state, reason: text(raw["reason"], 4000) };
+  if ((state !== "complete" && state !== "partial") || !Array.isArray(raw["value"]))
     throw new Error("Invalid stored feedback state");
   const items: unknown[] = raw["value"];
   const decoded = items.map((item): ReviewFeedback => {
     if (
       !object(item) ||
-      (item["source"] !== "review" &&
-        item["source"] !== "inline" &&
-        item["source"] !== "conversation")
+      (item["source"] !== "review" && item["source"] !== "inline" && item["source"] !== "conversation")
     )
       throw new Error("Invalid stored feedback source");
     const result: ReviewFeedback = {
@@ -149,25 +126,18 @@ export function storedFeedback(
     : { state, value: decoded, reason: text(raw["reason"], 4000) };
 }
 
-export function storedReviews(
-  value: unknown,
-): import("./types.js").ObservationPart<ReviewObservation[]> {
+export function storedReviews(value: unknown): import("./types.js").ObservationPart<ReviewObservation[]> {
   const raw: unknown = typeof value === "string" ? JSON.parse(value) : value;
   if (!object(raw)) throw new Error("Invalid stored reviews");
   const state = raw["state"];
-  if (state === "unavailable")
-    return { state, reason: text(raw["reason"], 4000) };
-  if (
-    (state !== "complete" && state !== "partial") ||
-    !Array.isArray(raw["value"])
-  )
+  if (state === "unavailable") return { state, reason: text(raw["reason"], 4000) };
+  if ((state !== "complete" && state !== "partial") || !Array.isArray(raw["value"]))
     throw new Error("Invalid stored review coverage");
   const items: unknown[] = raw["value"];
   const reviews = items.map((item): ReviewObservation => {
     if (!object(item)) throw new Error("Invalid stored review");
     const at = item["at"];
-    if (typeof at !== "number" || !Number.isSafeInteger(at))
-      throw new Error("Invalid stored review timestamp");
+    if (typeof at !== "number" || !Number.isSafeInteger(at)) throw new Error("Invalid stored review timestamp");
     return {
       id: identifier(item["id"]),
       author: text(item["author"], 200),
@@ -175,9 +145,7 @@ export function storedReviews(
       state: reviewState(item["state"]),
       at,
       url: text(item["url"], 4000),
-      ...(item["body"] === undefined
-        ? {}
-        : { body: text(item["body"], 65536) }),
+      ...(item["body"] === undefined ? {} : { body: text(item["body"], 65536) }),
     };
   });
   return state === "complete"

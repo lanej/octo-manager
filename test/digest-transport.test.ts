@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { WebSocketServer } from "ws";
 import { CodexConnection } from "../src/agents/codex.js";
+
 test("native queue transport confirms withdrawal, preserves opaque content and bounds receipt coverage", async () => {
   const directory = await mkdtemp("/tmp/oc-dws-"),
     path = join(directory, "sock"),
@@ -30,10 +31,7 @@ test("native queue transport confirms withdrawal, preserves opaque content and b
       )
         return;
       methods.push(raw.method);
-      const params =
-        "params" in raw && typeof raw.params === "object" && raw.params !== null
-          ? raw.params
-          : {};
+      const params = "params" in raw && typeof raw.params === "object" && raw.params !== null ? raw.params : {};
       let result: unknown = {};
       if (raw.method === "initialize")
         result = {
@@ -42,8 +40,7 @@ test("native queue transport confirms withdrawal, preserves opaque content and b
           platformFamily: "unix",
           platformOs: "test",
         };
-      if (raw.method === "thread/read")
-        result = { thread: { id: "thread", status: { type: "active" } } };
+      if (raw.method === "thread/read") result = { thread: { id: "thread", status: { type: "active" } } };
       if (raw.method === "thread/queue/list")
         result = {
           data: [
@@ -59,16 +56,13 @@ test("native queue transport confirms withdrawal, preserves opaque content and b
         result = {
           queuedSubmission: {
             id: "owned",
-            clientUserMessageId:
-              "clientUserMessageId" in params ? params.clientUserMessageId : "",
+            clientUserMessageId: "clientUserMessageId" in params ? params.clientUserMessageId : "",
             input: "input" in params ? params.input : [],
           },
         };
       if (raw.method === "thread/queue/delete")
         result = {
-          deleted:
-            "queuedSubmissionId" in params &&
-            params.queuedSubmissionId === "owned",
+          deleted: "queuedSubmissionId" in params && params.queuedSubmissionId === "owned",
         };
       if (raw.method === "thread/turns/list")
         result = {
@@ -101,9 +95,7 @@ test("native queue transport confirms withdrawal, preserves opaque content and b
     };
   try {
     await connection.prepare(agent);
-    expect(await connection.queued(agent)).toEqual([
-      { queueId: "opaque", clientId: "foreign" },
-    ]);
+    expect(await connection.queued(agent)).toEqual([{ queueId: "opaque", clientId: "foreign" }]);
     expect(await connection.enqueueQueued(agent, "dispatch", "exact")).toEqual({
       queueId: "owned",
       clientId: "dispatch",

@@ -10,6 +10,7 @@ import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readMergeReadiness } from "../src/merging/github.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 import type { GitHubGate } from "../src/merging/github.js";
+
 test("readiness reuses tracking evidence and fits default request spacing with only eligibility reads", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-readiness-dispatch-"));
   let now = 0;
@@ -163,12 +164,7 @@ test("fresh GitHub closure or mergeability changes cannot reuse cached Ready fac
       });
     });
     await assert.rejects(
-      readMergeReadiness(
-        "https://github.com/owner/repo/pull/38",
-        observation,
-        new AbortController().signal,
-        reader,
-      ),
+      readMergeReadiness("https://github.com/owner/repo/pull/38", observation, new AbortController().signal, reader),
       /changed/u,
     );
     expect(requests).toBe(1);
@@ -246,14 +242,8 @@ test("closed readiness confirms facts without open mergeability or native-stack 
     { ...observation, lifecycle: "closed" },
   );
   assert.equal(closed.mergeCommit, undefined);
-  await assert.rejects(
-    inspect({ ...gate, headRefOid: "d".repeat(40) }),
-    /changed/u,
-  );
-  await assert.rejects(
-    inspect({ ...gate, state: "CLOSED", merged: false, mergeCommit: null }),
-    /changed/u,
-  );
+  await assert.rejects(inspect({ ...gate, headRefOid: "d".repeat(40) }), /changed/u);
+  await assert.rejects(inspect({ ...gate, state: "CLOSED", merged: false, mergeCommit: null }), /changed/u);
   await assert.rejects(inspect({ ...gate, mergeCommit: { oid: "invalid" } }));
   const openObservation: ObservationInput = {
     ...observation,
@@ -268,10 +258,7 @@ test("closed readiness confirms facts without open mergeability or native-stack 
     mergeCommit: null,
     baseRef: { target: { oid: base }, branchProtectionRule: null },
   };
-  await assert.rejects(
-    inspect(openGate, openObservation),
-    /Native stack exceeds/u,
-  );
+  await assert.rejects(inspect(openGate, openObservation), /Native stack exceeds/u);
   await assert.rejects(
     inspect(
       {

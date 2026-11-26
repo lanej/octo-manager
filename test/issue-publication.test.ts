@@ -73,28 +73,15 @@ test("remediation updates its existing PR and recovers a lost push acknowledgmen
     ),
     /acknowledgment lost/u,
   );
-  expect(
-    await updateIssuePR(
-      f.issue,
-      f.tested,
-      f.transport,
-      f.push,
-      signal,
-      f.authorize,
-    ),
-  ).toEqual({ url: f.issue.prUrl, head: "tested" });
+  expect(await updateIssuePR(f.issue, f.tested, f.transport, f.push, signal, f.authorize)).toEqual({
+    url: f.issue.prUrl,
+    head: "tested",
+  });
   expect(f.pushes()).toBe(1);
 });
 
 test("remediation rejects changed, closed, foreign, or retargeted PRs before pushing", async () => {
-  for (const change of [
-    "head",
-    "closed",
-    "fork",
-    "base",
-    "branch",
-    "url",
-  ] as const) {
+  for (const change of ["head", "closed", "fork", "base", "branch", "url"] as const) {
     const f = fixture();
     switch (change) {
       case "head":
@@ -117,14 +104,7 @@ test("remediation rejects changed, closed, foreign, or retargeted PRs before pus
         break;
     }
     await assert.rejects(
-      updateIssuePR(
-        f.issue,
-        f.tested,
-        f.transport,
-        f.push,
-        new AbortController().signal,
-        f.authorize,
-      ),
+      updateIssuePR(f.issue, f.tested, f.transport, f.push, new AbortController().signal, f.authorize),
     );
     expect(f.pushes()).toBe(0);
   }
@@ -133,14 +113,7 @@ test("remediation rejects changed, closed, foreign, or retargeted PRs before pus
 test("remediation does not confirm an update without the tested remote head", async () => {
   const f = fixture();
   await assert.rejects(
-    updateIssuePR(
-      f.issue,
-      f.tested,
-      f.transport,
-      () => Promise.resolve(),
-      new AbortController().signal,
-      f.authorize,
-    ),
+    updateIssuePR(f.issue, f.tested, f.transport, () => Promise.resolve(), new AbortController().signal, f.authorize),
     /unconfirmed/u,
   );
 });

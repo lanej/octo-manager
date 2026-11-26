@@ -1,13 +1,6 @@
 import { fields, rows } from "../cli/projection.js";
-const brief = fields([
-  "version",
-  "outcome",
-  "scope",
-  "criteria",
-  "assumptions",
-  "questions",
-  "blockingQuestions",
-]);
+
+const brief = fields(["version", "outcome", "scope", "criteria", "assumptions", "questions", "blockingQuestions"]);
 const assignment = fields([
   "id",
   "role",

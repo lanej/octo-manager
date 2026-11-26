@@ -10,6 +10,7 @@ import {
   type NotificationPage,
 } from "./notification-reader.js";
 import type { TrackingService } from "./service.js";
+
 const CursorSchema = Type.Object(
   {
     since: Type.Integer({ minimum: 0 }),
@@ -30,37 +31,32 @@ const StatusSchema = Type.Object(
   { additionalProperties: false },
 );
 type Status = Static<typeof StatusSchema>;
+
 export class NotificationStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
     private event: (kind: string, detail: string) => void,
   ) {}
+
   cursor(account: string): Cursor {
-    const row = this.db
-      .prepare("SELECT data FROM notification_cursors WHERE account=?")
-      .get(account);
-    if (row === undefined) return { since: 0, page: 1 };
+    const row = this.db.prepare("SELECT data FROM notification_cursors WHERE account=?").get(account);
+    if (!row) return { since: 0, page: 1 };
     const value: unknown = JSON.parse(String(row["data"]));
-    if (!Check(CursorSchema, value))
-      throw new Error("Invalid notification cursor");
+    if (!Check(CursorSchema, value)) throw new Error("Invalid notification cursor");
     return value;
   }
+
   status(): Status {
-    const row = this.db
-      .prepare(
-        "SELECT value FROM settings WHERE key='github_notification_monitor'",
-      )
-      .get();
-    if (row === undefined) return { nextPollAt: 0 };
+    const row = this.db.prepare("SELECT value FROM settings WHERE key='github_notification_monitor'").get();
+    if (!row) return { nextPollAt: 0 };
     const value: unknown = JSON.parse(String(row["value"]));
-    if (!Check(StatusSchema, value))
-      throw new Error("Invalid notification monitor status");
+    if (!Check(StatusSchema, value)) throw new Error("Invalid notification monitor status");
     return value;
   }
+
   statusResult(value: Status): void {
-    if (!Check(StatusSchema, value))
-      throw new Error("Invalid notification monitor status");
+    if (!Check(StatusSchema, value)) throw new Error("Invalid notification monitor status");
     const old = this.status();
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -71,12 +67,8 @@ export class NotificationStore {
         .run(JSON.stringify(value));
       if (old.lastError !== value.lastError)
         this.event(
-          value.lastError === undefined
-            ? "notification_monitor_recovered"
-            : "notification_monitor_unavailable",
-          value.lastError === undefined
-            ? "GitHub notification access recovered"
-            : value.lastError,
+          value.lastError === undefined ? "notification_monitor_recovered" : "notification_monitor_unavailable",
+          value.lastError === undefined ? "GitHub notification access recovered" : value.lastError,
         );
       this.db.exec("COMMIT");
     } catch (error) {
@@ -84,35 +76,29 @@ export class NotificationStore {
       throw error;
     }
   }
+
   eligible(): boolean {
     return (
-      this.db
-        .prepare(
-          "SELECT id FROM tracked_prs WHERE enabled=1 AND tracking_state='archived' LIMIT 1",
-        )
-        .get() !== undefined
+      this.db.prepare("SELECT id FROM tracked_prs WHERE enabled=1 AND tracking_state='archived' LIMIT 1").get() !==
+      undefined
     );
   }
+
   page(account: string, page: NotificationPage): void {
     const cursor = this.cursor(account),
       next: Cursor = { ...cursor };
     if (page.notModified) {
-      if (cursor.page !== 1)
-        throw new Error("Unexpected conditional response during pagination");
+      if (cursor.page !== 1) throw new Error("Unexpected conditional response during pagination");
       return;
     }
     if (cursor.page === 1) {
       next.scanStartedAt = page.serverTime ?? this.now();
       delete next.scanModified;
-      if (page.lastModified !== undefined)
-        next.scanModified = page.lastModified;
+      if (page.lastModified !== undefined) next.scanModified = page.lastModified;
     }
     if (page.more) next.page++;
     else {
-      next.since = Math.max(
-        cursor.since,
-        (next.scanStartedAt ?? this.now()) - 60000,
-      );
+      next.since = Math.max(cursor.since, (next.scanStartedAt ?? this.now()) - 60000);
       next.page = 1;
       if (next.scanModified === undefined) delete next.lastModified;
       else next.lastModified = next.scanModified;
@@ -124,12 +110,10 @@ export class NotificationStore {
       for (const update of page.updates) {
         if (update.prUrl === undefined) continue;
         const pr = this.db
-          .prepare(
-            "SELECT id FROM tracked_prs WHERE url=? AND enabled=1 AND tracking_state='archived'",
-          )
+          .prepare("SELECT id FROM tracked_prs WHERE url=? AND enabled=1 AND tracking_state='archived'")
           .get(update.prUrl);
         if (
-          pr !== undefined &&
+          pr &&
           Number(
             this.db
               .prepare("INSERT OR IGNORE INTO notification_seen VALUES(?,?,?)")
@@ -153,52 +137,50 @@ export class NotificationStore {
       throw error;
     }
   }
+
   nextRefreshAt(): number | undefined {
-    const value = this.db
-      .prepare("SELECT min(next_check_ms) AS next FROM notification_refreshes")
-      .get()?.["next"];
+    const value = this.db.prepare("SELECT min(next_check_ms) AS next FROM notification_refreshes").get()?.["next"];
     return typeof value === "number" ? value : undefined;
   }
+
   pending(): { id: string; revision: number }[] {
     return this.db
-      .prepare(
-        "SELECT pr_id,revision FROM notification_refreshes WHERE next_check_ms<=? LIMIT 20",
-      )
+      .prepare("SELECT pr_id,revision FROM notification_refreshes WHERE next_check_ms<=? LIMIT 20")
       .all(this.now())
       .map((row) => ({
         id: String(row["pr_id"]),
         revision: Number(row["revision"]),
       }));
   }
+
   finish(id: string, revision: number): void {
-    this.db
-      .prepare(
-        "DELETE FROM notification_refreshes WHERE pr_id=? AND revision=?",
-      )
-      .run(id, revision);
+    this.db.prepare("DELETE FROM notification_refreshes WHERE pr_id=? AND revision=?").run(id, revision);
   }
+
   defer(id: string, revision: number): void {
     this.db
-      .prepare(
-        "UPDATE notification_refreshes SET next_check_ms=? WHERE pr_id=? AND revision=?",
-      )
+      .prepare("UPDATE notification_refreshes SET next_check_ms=? WHERE pr_id=? AND revision=?")
       .run(this.now() + 60000, id, revision);
   }
 }
+
 export class NotificationService {
   private task: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private stopped = false;
   private controller: AbortController | undefined;
+
   constructor(
     private store: NotificationStore,
     private tracking: TrackingService,
     private now: () => number = Date.now,
     private reader: NotificationReader = githubNotifications,
   ) {}
+
   private isStopped(): boolean {
     return this.stopped;
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("notification-flush", async () => {
       await this.flush();
@@ -215,17 +197,20 @@ export class NotificationService {
     });
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   flush(): Promise<void> {
-    if (this.work !== undefined) return this.work;
+    if (this.work) return this.work;
     if (this.isStopped()) return Promise.resolve();
     this.work = this.run().finally(() => {
       this.work = undefined;
     });
     return this.work;
   }
+
   private async run(): Promise<void> {
     const status = this.store.status();
     if (this.store.eligible() && status.nextPollAt <= this.now()) {
@@ -239,9 +224,7 @@ export class NotificationService {
           const query = {
             since: cursor.since,
             page: cursor.page,
-            ...(cursor.page === 1 && cursor.lastModified !== undefined
-              ? { lastModified: cursor.lastModified }
-              : {}),
+            ...(cursor.page === 1 && cursor.lastModified !== undefined ? { lastModified: cursor.lastModified } : {}),
           };
           const page = await this.reader.page(query, controller.signal);
           if (this.isStopped()) return;
@@ -259,14 +242,9 @@ export class NotificationService {
           this.store.statusResult({
             nextPollAt: Math.max(
               this.now() + 60000,
-              error instanceof NotificationAccessError
-                ? (error.retryAt ?? 0)
-                : 0,
+              error instanceof NotificationAccessError ? (error.retryAt ?? 0) : 0,
             ),
-            lastError:
-              error instanceof Error
-                ? error.message.slice(0, 500)
-                : "GitHub notification access unavailable",
+            lastError: error instanceof Error ? error.message.slice(0, 500) : "GitHub notification access unavailable",
           });
       } finally {
         this.controller = undefined;
@@ -283,22 +261,24 @@ export class NotificationService {
         await this.tracking.refresh(request.id);
         if (this.isStopped()) return;
         const pr = this.tracking.store.pr(request.id);
-        if (pr.lastRefreshError !== undefined)
-          this.store.defer(request.id, request.revision);
+        if (pr.lastRefreshError) this.store.defer(request.id, request.revision);
         else this.store.finish(request.id, request.revision);
       } catch {
         this.store.defer(request.id, request.revision);
       }
     }
   }
+
   stop(): void {
     this.stopped = true;
     this.task?.close();
     this.controller?.abort();
   }
+
   checkpointable(): boolean {
     return this.work === undefined;
   }
+
   async close(): Promise<void> {
     this.stop();
     await this.work;

@@ -1,4 +1,5 @@
 import { fields, rows } from "../cli/projection.js";
+
 const entry = fields([
   "id",
   "chainId",
@@ -31,15 +32,7 @@ const operation = fields([
   "baseSha",
   "mergeCommit",
 ]);
-const dependency = fields([
-  "id",
-  "dependentId",
-  "prerequisiteId",
-  "active",
-  "reason",
-  "referenceId",
-  "preparation",
-]);
+const dependency = fields(["id", "dependentId", "prerequisiteId", "active", "reason", "referenceId", "preparation"]);
 const reference = fields([
   "id",
   "targetUrl",

@@ -8,8 +8,7 @@ setBedrockProviderModule(bedrockProviderModule);
 if (import.meta.main) {
   const mode = process.argv[2] ?? "";
   if (
-    (mode === "--octo-internal-worker=job" ||
-      mode === "--octo-internal-worker=assessment") &&
+    (mode === "--octo-internal-worker=job" || mode === "--octo-internal-worker=assessment") &&
     typeof process.send !== "function"
   )
     throw new Error("Internal worker requires an IPC parent");

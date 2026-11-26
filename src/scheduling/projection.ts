@@ -16,25 +16,25 @@ export function wireScheduler(service: GitHubScheduler) {
     graphqlRetryAtMs: BigInt(value.graphqlRetryAtMs),
   };
 }
+
 const states: Record<ScheduleState, RefreshState> = {
   [ScheduleState.Queued]: RefreshState.QUEUED,
   [ScheduleState.Running]: RefreshState.RUNNING,
   [ScheduleState.Deferred]: RefreshState.DEFERRED,
 };
+
 export function wireRefresh(value: ScheduledRefresh | undefined) {
-  if (value === undefined) return undefined;
+  if (!value) return undefined;
   return {
     state: states[value.state],
     dueAtMs: BigInt(value.dueAtMs),
-    lastAttemptAtMs:
-      value.lastAttemptAtMs === undefined
-        ? undefined
-        : BigInt(value.lastAttemptAtMs),
+    lastAttemptAtMs: value.lastAttemptAtMs === undefined ? undefined : BigInt(value.lastAttemptAtMs),
     lastError: value.lastError ?? "",
   };
 }
+
 export function wireDetails(value: PullRequestDetails | undefined) {
-  if (value === undefined) return undefined;
+  if (!value) return undefined;
   return {
     ...value,
     observedAtMs: BigInt(value.observedAtMs),

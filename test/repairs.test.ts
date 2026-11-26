@@ -2,51 +2,31 @@ import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import {
-  mkdtemp,
-  mkdir,
-  writeFile,
-  rm,
-  symlink,
-  unlink,
-} from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, symlink, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { devNull, tmpdir } from "node:os";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  repairProfile,
-  RepairState,
-  RepairStep,
-  type RebaseSource,
-} from "../src/repairs/types.js";
+import { repairProfile, RepairState, RepairStep, type RebaseSource } from "../src/repairs/types.js";
 import { parse as parseYaml } from "yaml";
 import { expandInlineSequences } from "../src/repairs/yaml.js";
 import { RecipeDecision } from "../src/repairs/cases.js";
 import { RebaseWorkspace } from "../src/repairs/git.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+
 const exec = promisify(execFile);
 const url = "https://github.com/owner/repo/pull/42";
+
 async function git(cwd: string, args: string[]): Promise<string> {
   const r = await exec(
     "git",
-    [
-      "-c",
-      "user.name=Repair Test",
-      "-c",
-      "user.email=repair@localhost",
-      "-c",
-      "commit.gpgsign=false",
-      ...args,
-    ],
+    ["-c", "user.name=Repair Test", "-c", "user.email=repair@localhost", "-c", "commit.gpgsign=false", ...args],
     { cwd },
   );
   return r.stdout.trim();
 }
+
 async function fixture(conflicting = false) {
   const root = await mkdtemp(join(tmpdir(), "octo-rebase-"));
   const remote = join(root, "remote.git"),
@@ -111,11 +91,7 @@ async function fixture(conflicting = false) {
       reviews: { state: "complete", value: [] },
     };
   };
-  const workspace = (
-    directory: string,
-    s: RebaseSource,
-    signal: AbortSignal,
-  ) => {
+  const workspace = (directory: string, s: RebaseSource, signal: AbortSignal) => {
     const w = new RebaseWorkspace(directory, s, signal, remote);
     const prepare = w.prepare.bind(w);
     w.prepare = async () => {
@@ -129,29 +105,21 @@ async function fixture(conflicting = false) {
   };
   return { root, remote, source, config, observe, workspace };
 }
-async function wait(
-  coordinator: ApplicationFixture,
-  id: string,
-  state?: RepairState,
-) {
+
+async function wait(coordinator: ApplicationFixture, id: string, state?: RepairState) {
   for (let i = 0; i < 400; i++) {
     const a = coordinator.store.repairs.get(id);
     if (
       state === undefined
-        ? ![
-            RepairState.Queued,
-            RepairState.Running,
-            RepairState.AwaitingChecks,
-          ].includes(a.state)
+        ? ![RepairState.Queued, RepairState.Running, RepairState.AwaitingChecks].includes(a.state)
         : a.state === state
     )
       return a;
     await new Promise((r) => setTimeout(r, 10));
   }
-  throw new Error(
-    `Repair did not settle: ${JSON.stringify(coordinator.store.repairs.get(id))}`,
-  );
+  throw new Error(`Repair did not settle: ${JSON.stringify(coordinator.store.repairs.get(id))}`);
 }
+
 function enroll(coordinator: ApplicationFixture) {
   return coordinator.store.tracking.track(url, {
     harness: "codex",
@@ -190,22 +158,12 @@ test("RPC rebase uses Git without an agent, pushes the linear result, verifies G
     assert.equal(done.state, RepairState.Succeeded, done.detail);
     assert.equal(agents, 0);
     assert.notEqual(done.resultHead, before.headSha);
-    assert.equal(
-      await git(f.remote, ["rev-parse", "feature"]),
-      done.resultHead,
-    );
-    await git(f.remote, [
-      "merge-base",
-      "--is-ancestor",
-      before.targetSha,
-      "feature",
-    ]);
+    assert.equal(await git(f.remote, ["rev-parse", "feature"]), done.resultHead);
+    await git(f.remote, ["merge-base", "--is-ancestor", before.targetSha, "feature"]);
     assert.equal((await client.requestRebase(request)).repair?.id, id);
     assert.equal(c.store.repairs.list().length, 1);
     assert.equal(c.store.tracking.agents()[0]?.sessionId, "owner");
-    await assert.rejects(
-      client.requestRebase({ ...request, profile: "different" }),
-    );
+    await assert.rejects(client.requestRebase({ ...request, profile: "different" }));
     assert((await client.getSnapshot({})).snapshot?.repairs.length === 1);
   } finally {
     await c.close();
@@ -249,15 +207,9 @@ test("conflicts escalate only unresolved text, then checks gate the exact leased
     const done = await wait(c, a.id);
     assert.equal(done.state, RepairState.Succeeded, done.detail);
     assert.equal(agents, 1);
-    assert.equal(
-      await git(f.remote, ["show", "feature:policy.txt"]),
-      "timeout=90",
-    );
+    assert.equal(await git(f.remote, ["show", "feature:policy.txt"]), "timeout=90");
     assert.equal(done.profile.model, "test-model");
-    assert.equal(
-      await git(f.remote, ["rev-list", "--merges", "main..feature"]),
-      "",
-    );
+    assert.equal(await git(f.remote, ["rev-list", "--merges", "main..feature"]), "");
   } finally {
     await c.close();
     await rm(f.root, { recursive: true, force: true });
@@ -300,11 +252,7 @@ test("failed local validation preserves the remote source branch", async () => {
 test("exact Git lease refuses a competing source update and file tools reject symlinks", async () => {
   const f = await fixture();
   const source = await f.source();
-  const w = f.workspace(
-    join(f.root, "checkout"),
-    source,
-    new AbortController().signal,
-  );
+  const w = f.workspace(join(f.root, "checkout"), source, new AbortController().signal);
   try {
     await w.prepare();
     await w.rebase();
@@ -439,9 +387,7 @@ test("empty and pending hosted checks cannot pass; transient reads retry without
     assert.equal(done.state, RepairState.Succeeded, done.detail);
     assert.equal(pushes, 1);
     assert(done.history.some((h) => h.step === RepairStep.Push));
-    assert(
-      done.history.some((h) => h.detail.includes("verification unavailable")),
-    );
+    assert(done.history.some((h) => h.detail.includes("verification unavailable")));
   } finally {
     await c.close();
     await rm(f.root, { recursive: true, force: true });
@@ -541,10 +487,7 @@ async function yamlFixture(ambiguous = false) {
   await git(seed, ["commit", "-am", "target first port"]);
   await git(seed, ["push", f.remote, "yaml-main"]);
   await git(seed, ["switch", "yaml-feature"]);
-  await writeFile(
-    join(seed, "config.yaml"),
-    ambiguous ? "ports: [82, 443, 8080]\n" : "ports: [80, 443, 9090]\n",
-  );
+  await writeFile(join(seed, "config.yaml"), ambiguous ? "ports: [82, 443, 8080]\n" : "ports: [80, 443, 9090]\n");
   await git(seed, ["commit", "-am", "source port"]);
   await git(seed, ["push", f.remote, "yaml-feature"]);
   const source = async (): Promise<RebaseSource> => ({
@@ -563,10 +506,7 @@ async function yamlFixture(ambiguous = false) {
       targetBase: { ref: s.targetRef, sha: s.targetSha },
       checks: {
         state: "complete",
-        value:
-          o.checks.state === "complete"
-            ? o.checks.value.map((check) => ({ ...check, headSha: s.headSha }))
-            : [],
+        value: o.checks.state === "complete" ? o.checks.value.map((check) => ({ ...check, headSha: s.headSha })) : [],
       },
     };
   };
@@ -586,9 +526,7 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
       observe: f.observe,
       resolve: () => {
         agents++;
-        return Promise.reject(
-          new Error("Mechanical recipe must precede the agent"),
-        );
+        return Promise.reject(new Error("Mechanical recipe must precede the agent"));
       },
     },
   });
@@ -615,8 +553,7 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
     const summary = cases.cases[0];
     assert(summary !== undefined);
     assert.equal(summary.baseText, undefined);
-    const detail = (await client.getConflictCase({ id: summary.id }))
-      .conflictCase;
+    const detail = (await client.getConflictCase({ id: summary.id })).conflictCase;
     assert(detail !== undefined);
     assert.equal(detail.baseText, "ports: [80, 443, 8080]\n");
     assert.equal(detail.targetText, "ports: [81, 443, 8080]\n");
@@ -630,14 +567,8 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
       trackingConfig: f.config,
       trackingOptions: { read: f.observe },
     });
-    assert.equal(
-      c.store.conflicts.get(Number(summary.id)).inputs?.base,
-      detail.baseText,
-    );
-    assert.equal(
-      c.store.conflicts.get(Number(summary.id)).candidate,
-      detail.candidate,
-    );
+    assert.equal(c.store.conflicts.get(Number(summary.id)).inputs?.base, detail.baseText);
+    assert.equal(c.store.conflicts.get(Number(summary.id)).candidate, detail.candidate);
   } finally {
     await c.close();
     await rm(f.root, { recursive: true, force: true });
@@ -717,9 +648,7 @@ test("sequence additions, reorders, duplicates, aliases and invalid YAML remain 
 });
 
 test("large inline sequences decline within the explicit comparison budget", () => {
-  const base = Array.from({ length: 10000 }, (_, index) => String(index)).join(
-    ", ",
-  );
+  const base = Array.from({ length: 10000 }, (_, index) => String(index)).join(", ");
   assert.throws(
     () =>
       expandInlineSequences({
@@ -750,9 +679,7 @@ test("multiline execution failures remain readable through storage and RPC", asy
     const done = await wait(c, a.id);
     assert.equal(done.state, RepairState.Blocked);
     assert.equal(done.detail, message);
-    const response = await schedulerClient(join(f.root, "state")).listRepairs(
-      {},
-    );
+    const response = await schedulerClient(join(f.root, "state")).listRepairs({});
     assert.equal(response.repairs[0]?.detail, message);
   } finally {
     await c.close();

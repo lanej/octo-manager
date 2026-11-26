@@ -1,5 +1,6 @@
 import { cleanText } from "../text.js";
 import { canonicalPR } from "../github/pr-identity.js";
+
 export enum RepairState {
   Queued = "queued",
   Running = "running",
@@ -66,24 +67,23 @@ export interface RepairWorkerTask {
   instructions: string;
   paths: string[];
 }
+
 export function record(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    throw new Error("Invalid repair object");
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid repair object");
   return Object.fromEntries(Object.entries(value));
 }
+
 export function single(value: unknown, name: string, limit = 200): string {
   if (
     typeof value !== "string" ||
     value.trim() === "" ||
     value.length > limit ||
-    Array.from(value).some(
-      (character) =>
-        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    )
+    Array.from(value).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
     throw new Error(`Invalid repair ${name}`);
   return value;
 }
+
 export function rebaseInput(value: unknown): RebaseInput {
   const r = record(value);
   return {
@@ -92,6 +92,7 @@ export function rebaseInput(value: unknown): RebaseInput {
     profile: single(r["profile"], "profile"),
   };
 }
+
 export function repairProfile(value: unknown): RepairProfile {
   const r = record(value);
   const repository = single(r["repository"], "repository").toLowerCase();
@@ -103,9 +104,7 @@ export function repairProfile(value: unknown): RepairProfile {
     throw new Error("Invalid repair repository or unsupported harness");
   const checks = r["checks"];
   if (!Array.isArray(checks) || checks.length === 0 || checks.length > 10)
-    throw new Error(
-      "Invalid repair checks; configure at least one validation command",
-    );
+    throw new Error("Invalid repair checks; configure at least one validation command");
   const argv = checks.map((command: unknown) => {
     if (!Array.isArray(command) || command.length === 0 || command.length > 30)
       throw new Error("Invalid repair command");
@@ -113,19 +112,10 @@ export function repairProfile(value: unknown): RepairProfile {
   });
   const required = r["githubChecks"];
   if (!Array.isArray(required) || required.length === 0 || required.length > 30)
-    throw new Error(
-      "Invalid repair GitHub checks; configure expected check names",
-    );
-  const githubChecks = required.map((name: unknown) =>
-    single(name, "GitHub check name"),
-  );
+    throw new Error("Invalid repair GitHub checks; configure expected check names");
+  const githubChecks = required.map((name: unknown) => single(name, "GitHub check name"));
   const timeout = r["timeoutMs"] ?? 120000;
-  if (
-    typeof timeout !== "number" ||
-    !Number.isSafeInteger(timeout) ||
-    timeout < 1000 ||
-    timeout > 600000
-  )
+  if (typeof timeout !== "number" || !Number.isSafeInteger(timeout) || timeout < 1000 || timeout > 600000)
     throw new Error("Invalid repair timeout");
   return {
     repository,
@@ -137,20 +127,13 @@ export function repairProfile(value: unknown): RepairProfile {
     timeoutMs: timeout,
   };
 }
+
 export function activeRepair(state: RepairState): boolean {
-  return (
-    state === RepairState.Queued ||
-    state === RepairState.Running ||
-    state === RepairState.AwaitingChecks
-  );
+  return state === RepairState.Queued || state === RepairState.Running || state === RepairState.AwaitingChecks;
 }
 
 export function diagnostic(value: unknown, name: string, limit = 2000): string {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    cleanText(value, limit) !== value
-  )
+  if (typeof value !== "string" || value.length === 0 || cleanText(value, limit) !== value)
     throw new Error(`Invalid repair ${name}`);
   return value;
 }
@@ -159,8 +142,7 @@ export function storedRepair(value: unknown): RepairAttempt {
   const r = record(value);
   const state = Object.values(RepairState).find((s) => s === r["state"]);
   const step = Object.values(RepairStep).find((s) => s === r["step"]);
-  if (state === undefined || step === undefined)
-    throw new Error("Invalid stored repair state");
+  if (state === undefined || step === undefined) throw new Error("Invalid stored repair state");
   const paths = r["conflictedPaths"];
   if (!Array.isArray(paths)) throw new Error("Invalid stored repair paths");
   const createdAt = r["createdAt"],
@@ -183,12 +165,9 @@ export function storedRepair(value: unknown): RepairAttempt {
     createdAt,
     updatedAt,
     usedAgent: r["usedAgent"] === true,
-    mechanicalRepairs:
-      typeof r["mechanicalRepairs"] === "number" ? r["mechanicalRepairs"] : 0,
+    mechanicalRepairs: typeof r["mechanicalRepairs"] === "number" ? r["mechanicalRepairs"] : 0,
     history: [],
-    conflictedPaths: paths.map((path: unknown) =>
-      single(path, "file path", 4000),
-    ),
+    conflictedPaths: paths.map((path: unknown) => single(path, "file path", 4000)),
   };
   const history = r["history"];
   if (!Array.isArray(history)) throw new Error("Invalid repair history");
@@ -197,12 +176,7 @@ export function storedRepair(value: unknown): RepairAttempt {
     const state = Object.values(RepairState).find((s) => s === h["state"]);
     const step = Object.values(RepairStep).find((s) => s === h["step"]);
     const at = h["at"];
-    if (
-      state === undefined ||
-      step === undefined ||
-      typeof at !== "number" ||
-      !Number.isSafeInteger(at)
-    )
+    if (state === undefined || step === undefined || typeof at !== "number" || !Number.isSafeInteger(at))
       throw new Error("Invalid repair history");
     a.history.push({
       state,
@@ -211,10 +185,8 @@ export function storedRepair(value: unknown): RepairAttempt {
       detail: diagnostic(h["detail"], "history detail"),
     });
   }
-  if (r["workspace"] !== undefined)
-    a.workspace = single(r["workspace"], "workspace", 4000);
-  if (r["resultHead"] !== undefined)
-    a.resultHead = single(r["resultHead"], "result revision");
+  if (r["workspace"] !== undefined) a.workspace = single(r["workspace"], "workspace", 4000);
+  if (r["resultHead"] !== undefined) a.resultHead = single(r["resultHead"], "result revision");
   if (r["source"] !== undefined) {
     const source = record(r["source"]);
     a.source = {
@@ -227,11 +199,11 @@ export function storedRepair(value: unknown): RepairAttempt {
   }
   return a;
 }
+
 export function repairWorkerTask(value: unknown): RepairWorkerTask {
   const raw = record(value);
   const paths = raw["paths"];
-  if (raw["kind"] !== "repair_conflicts" || !Array.isArray(paths))
-    throw new Error("Invalid repair worker task");
+  if (raw["kind"] !== "repair_conflicts" || !Array.isArray(paths)) throw new Error("Invalid repair worker task");
   return {
     kind: "repair_conflicts",
     instructions: single(raw["instructions"], "instructions", 8000),

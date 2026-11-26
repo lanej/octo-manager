@@ -1,12 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { randomUUID, createHash } from "node:crypto";
-import {
-  assessment,
-  policyVersion,
-  type Assessment,
-  type AssessmentInput,
-} from "./contracts.js";
+import { assessment, policyVersion, type Assessment, type AssessmentInput } from "./contracts.js";
 import { resolveId } from "../tracking/identifiers.js";
+
 export class AssessmentStore {
   constructor(
     private db: DatabaseSync,
@@ -16,17 +12,19 @@ export class AssessmentStore {
       "CREATE INDEX IF NOT EXISTS assessments_to_reconcile ON evidence_assessments(id) WHERE json_extract(data,'$.state') IS NOT 'superseded'",
     );
   }
+
   recoverInterrupted(): void {
     for (const item of this.list())
-      if (item.state === "running")
-        this.save({ ...item, state: "interrupted", updatedAt: this.now() });
+      if (item.state === "running") this.save({ ...item, state: "interrupted", updatedAt: this.now() });
   }
+
   list(): Assessment[] {
     return this.db
       .prepare("SELECT data FROM evidence_assessments ORDER BY rowid")
       .all()
       .map((row) => assessment(JSON.parse(String(row["data"]))));
   }
+
   reconciliationCandidates(): Assessment[] {
     // rationale: Rowid ordering otherwise favors scanning superseded payloads over the partial index.
     return this.db
@@ -36,6 +34,7 @@ export class AssessmentStore {
       .all()
       .map((row) => assessment(JSON.parse(String(row["data"]))));
   }
+
   get(id: string): Assessment {
     const items = this.list(),
       full = resolveId(
@@ -43,26 +42,24 @@ export class AssessmentStore {
         items.map((item) => item.id),
       );
     const item = items.find((item) => item.id === full);
-    if (item === undefined) throw new Error("Assessment not found");
+    if (!item) throw new Error("Assessment not found");
     return item;
   }
+
   latest(actionId: string): Assessment | undefined {
     const row = this.db
-      .prepare(
-        "SELECT data FROM evidence_assessments WHERE action_id=? ORDER BY rowid DESC LIMIT 1",
-      )
+      .prepare("SELECT data FROM evidence_assessments WHERE action_id=? ORDER BY rowid DESC LIMIT 1")
       .get(actionId);
-    return row === undefined
-      ? undefined
-      : assessment(JSON.parse(String(row["data"])));
+    return !row ? undefined : assessment(JSON.parse(String(row["data"])));
   }
+
   ensure(input: AssessmentInput, model: string): Assessment {
     const row = this.db
       .prepare(
         "SELECT data FROM evidence_assessments WHERE action_id=? AND json_extract(data,'$.state')!='superseded' AND json_extract(data,'$.input.sourceKey')=? AND json_extract(data,'$.input.headSha')=? AND COALESCE(json_extract(data,'$.input.epoch'),-1)=? ORDER BY rowid DESC LIMIT 1",
       )
       .get(input.actionId, input.sourceKey, input.headSha, input.epoch ?? -1);
-    if (row !== undefined) return assessment(JSON.parse(String(row["data"])));
+    if (row) return assessment(JSON.parse(String(row["data"])));
     const fingerprint = createHash("sha256")
       .update(
         JSON.stringify({
@@ -89,36 +86,25 @@ export class AssessmentStore {
     this.save(item);
     return item;
   }
+
   save(item: Assessment): void {
     assessment(item);
-    const row = this.db
-      .prepare("SELECT data FROM evidence_assessments WHERE id=?")
-      .get(item.id);
-    const previous =
-      row === undefined
-        ? undefined
-        : assessment(JSON.parse(String(row["data"])));
+    const row = this.db.prepare("SELECT data FROM evidence_assessments WHERE id=?").get(item.id);
+    const previous = !row ? undefined : assessment(JSON.parse(String(row["data"])));
     const next = {
       ...item,
       history:
         previous?.state === item.state
           ? previous.history
-          : [
-              ...(previous?.history ?? []),
-              { state: item.state, at: this.now() },
-            ],
+          : [...(previous?.history ?? []), { state: item.state, at: this.now() }],
     };
     this.db
       .prepare(
         "INSERT INTO evidence_assessments(id,action_id,fingerprint,data) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data",
       )
-      .run(
-        item.id,
-        item.input.actionId,
-        item.fingerprint,
-        JSON.stringify(next),
-      );
+      .run(item.id, item.input.actionId, item.fingerprint, JSON.stringify(next));
   }
+
   retry(id: string): Assessment {
     const item = this.get(id);
     if (item.state !== "failed" && item.state !== "interrupted")

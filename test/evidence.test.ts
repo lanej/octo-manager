@@ -33,8 +33,7 @@ test("conflict evidence uses the independently read target while retaining the P
   };
   let refReads = 0;
   const read = (path: string): Promise<unknown> => {
-    if (path.includes("/pulls/1") && !path.includes("reviews"))
-      return Promise.resolve(pr);
+    if (path.includes("/pulls/1") && !path.includes("reviews")) return Promise.resolve(pr);
     if (path.endsWith("git/ref/heads/release%2Ftest")) {
       refReads++;
       return Promise.resolve({ object: { sha: "target-tip" } });
@@ -48,21 +47,17 @@ test("conflict evidence uses the independently read target while retaining the P
     ref: "release/test",
     sha: "target-tip",
   });
-  assert.deepEqual(
-    findings({ ...observation, id: 1, prId: "pr" }, url)[0]?.blocker,
-    {
-      kind: "conflict",
-      headSha: "head",
-      baseSha: "target-tip",
-      baseRef: "release/test",
-    },
-  );
+  assert.deepEqual(findings({ ...observation, id: 1, prId: "pr" }, url)[0]?.blocker, {
+    kind: "conflict",
+    headSha: "head",
+    baseSha: "target-tip",
+    baseRef: "release/test",
+  });
   assert.equal(refReads, 2);
   let prReads = 0;
   await assert.rejects(
     readObservation(url, undefined, (path) => {
-      if (path.endsWith("/pulls/1"))
-        return Promise.resolve({ ...pr, mergeable: ++prReads === 1 });
+      if (path.endsWith("/pulls/1")) return Promise.resolve({ ...pr, mergeable: ++prReads === 1 });
       return read(path);
     }),
     /revisions changed/,
@@ -70,9 +65,7 @@ test("conflict evidence uses the independently read target while retaining the P
   let unstableReads = 0;
   await assert.rejects(
     readObservation(url, undefined, async (path) =>
-      path.includes("/git/ref/")
-        ? { object: { sha: ++unstableReads === 1 ? "target-tip" : "new-tip" } }
-        : read(path),
+      path.includes("/git/ref/") ? { object: { sha: ++unstableReads === 1 ? "target-tip" : "new-tip" } } : read(path),
     ),
     /revisions changed/,
   );
@@ -113,8 +106,7 @@ test("action events retain their state and actor after progress, reassignment an
     assert.equal(acknowledgment.actionContext?.actorSessionId, "first");
     store.tracking.reprofile(action.id, defaultTrackingConfig());
     assert.equal(
-      store.eventsSince(0).find((event) => event.kind === "action_reprofiled")
-        ?.actionContext?.actorAgentId,
+      store.eventsSince(0).find((event) => event.kind === "action_reprofiled")?.actionContext?.actorAgentId,
       undefined,
     );
     store.tracking.progress(action.id, pr.ownerAgentId, true);
@@ -127,10 +119,7 @@ test("action events retain their state and actor after progress, reassignment an
       store.eventsSince(0).find((event) => event.seq === acknowledgment.seq),
       acknowledgment,
     );
-    assert.deepEqual(
-      store.tracking.pr(pr.id).observation?.targetBase,
-      input.targetBase,
-    );
+    assert.deepEqual(store.tracking.pr(pr.id).observation?.targetBase, input.targetBase);
     const instance = store.instanceId(),
       sequence = store.sequence();
     store.close();
@@ -148,17 +137,10 @@ test("action events retain their state and actor after progress, reassignment an
     store = new Store(dir);
     assert.equal(store.instanceId(), instance);
     assert.equal(store.sequence(), sequence);
-    assert.equal(
-      store.eventsSince(0).find((event) => event.seq === acknowledgment.seq)
-        ?.actionContext,
-      undefined,
-    );
+    assert.equal(store.eventsSince(0).find((event) => event.seq === acknowledgment.seq)?.actionContext, undefined);
     assert.equal(store.tracking.pr(pr.id).observation?.targetBase, undefined);
     store.tracking.observe(pr.id, input, defaultTrackingConfig());
-    assert.deepEqual(
-      store.tracking.pr(pr.id).observation?.targetBase,
-      input.targetBase,
-    );
+    assert.deepEqual(store.tracking.pr(pr.id).observation?.targetBase, input.targetBase);
   } finally {
     store.close();
     await rm(dir, { recursive: true, force: true });

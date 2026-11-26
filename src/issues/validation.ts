@@ -13,6 +13,7 @@ import {
   type Assignment,
   type Brief,
 } from "./contracts.js";
+
 const text = Type.String();
 const number = Type.Integer({ minimum: 0 });
 const profile = Type.Object({
@@ -58,11 +59,7 @@ const assignment = Type.Object({
   id: text,
   issueId: text,
   role: Type.Enum(Role),
-  purpose: Type.Union([
-    Type.Literal("stage"),
-    Type.Literal("comments"),
-    Type.Literal("timeout"),
-  ]),
+  purpose: Type.Union([Type.Literal("stage"), Type.Literal("comments"), Type.Literal("timeout")]),
   briefVersion: number,
   epoch: number,
   state: Type.Enum(AttemptState),
@@ -76,32 +73,35 @@ const assignment = Type.Object({
   updatedAt: number,
   detail: text,
 });
+
 function stored(value: unknown): unknown {
   if (typeof value !== "string") throw new Error("Invalid stored issue record");
   const parsed: unknown = JSON.parse(value);
   return parsed;
 }
+
 function isIssue(value: unknown): value is IssueRecord {
   return Check(issue, value);
 }
+
 function isAssignment(value: unknown): value is Assignment {
   return Check(assignment, value);
 }
+
 export function decodeIssue(value: unknown): IssueRecord {
   const parsed = stored(value);
   if (!isIssue(parsed)) throw new Error("Stored issue failed validation");
   return parsed;
 }
+
 export function decodeAssignment(value: unknown): Assignment {
   const parsed = stored(value);
-  if (!isAssignment(parsed))
-    throw new Error("Stored assignment failed validation");
+  if (!isAssignment(parsed)) throw new Error("Stored assignment failed validation");
   return parsed;
 }
 
 export function decodeIssueBrief(value: unknown): Brief {
   const parsed = stored(value);
-  if (!Check(BriefSchema, parsed))
-    throw new Error("Stored brief failed validation");
+  if (!Check(BriefSchema, parsed)) throw new Error("Stored brief failed validation");
   return parsed;
 }

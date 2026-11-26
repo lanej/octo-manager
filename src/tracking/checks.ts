@@ -1,11 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import type {
-  CheckObservation,
-  ObservationPart,
-  PRObservation,
-  Blocker,
-} from "./types.js";
+import type { CheckObservation, ObservationPart, PRObservation, Blocker } from "./types.js";
 
 export enum CheckWatchState {
   Waiting = "waiting",
@@ -45,26 +40,20 @@ const terminal = new Set([
 ]);
 export const successfulCheck = (check: CheckObservation): boolean =>
   ["success", "neutral", "skipped"].includes(check.conclusion);
-export function checkEvidence(
-  observation: PRObservation,
-): ObservationPart<CheckObservation[]> {
+
+export function checkEvidence(observation: PRObservation): ObservationPart<CheckObservation[]> {
   const parts = [observation.checks, observation.workflows];
   const entries = parts
-    .flatMap((part) =>
-      part === undefined || part.state === "unavailable" ? [] : part.value,
-    )
+    .flatMap((part) => (!part || part.state === "unavailable" ? [] : part.value))
     .filter((check) => check.headSha === observation.headSha);
   const current = new Map<string, CheckObservation>();
   for (const check of entries) {
     const key = check.id.startsWith("status:") ? check.key : check.id;
     const previous = current.get(key);
-    if (previous === undefined || check.at > previous.at)
-      current.set(key, check);
+    if (!previous || check.at > previous.at) current.set(key, check);
   }
   const value = [...current.values()]
-    .filter(
-      (check) => !entries.some((candidate) => checkReplaces(check, candidate)),
-    )
+    .filter((check) => !entries.some((candidate) => checkReplaces(check, candidate)))
     .sort((left, right) => left.id.localeCompare(right.id));
   return parts.every((part) => part?.state === "complete")
     ? { state: "complete", value }
@@ -74,6 +63,7 @@ export function checkEvidence(
         reason: `Checks: ${observation.checks.state}; workflows: ${observation.workflows?.state ?? "unknown"}. Waiting for complete coverage.`,
       };
 }
+
 function executionFinished(check: CheckObservation): boolean {
   return (
     terminal.has(check.conclusion) &&
@@ -82,19 +72,12 @@ function executionFinished(check: CheckObservation): boolean {
       : check.status === "completed")
   );
 }
-export function checksFinished(
-  evidence: ObservationPart<CheckObservation[]>,
-): boolean {
-  return (
-    evidence.state === "complete" &&
-    evidence.value.length > 0 &&
-    evidence.value.every(executionFinished)
-  );
+
+export function checksFinished(evidence: ObservationPart<CheckObservation[]>): boolean {
+  return evidence.state === "complete" && evidence.value.length > 0 && evidence.value.every(executionFinished);
 }
-export function checkReplaces(
-  previous: CheckObservation,
-  candidate: CheckObservation,
-): boolean {
+
+export function checkReplaces(previous: CheckObservation, candidate: CheckObservation): boolean {
   if (candidate.headSha !== previous.headSha) return false;
   const workflow = /^workflow:([1-9][0-9]*):([1-9][0-9]*)$/.exec(candidate.id);
   if (
@@ -117,21 +100,13 @@ export function checkReplaces(
     if (candidate.at > previous.at) return true;
     const oldId = /^status:(\d+)$/.exec(previous.id)?.[1],
       newId = /^status:(\d+)$/.exec(candidate.id)?.[1];
-    return (
-      candidate.at === previous.at &&
-      oldId !== undefined &&
-      newId !== undefined &&
-      BigInt(newId) > BigInt(oldId)
-    );
+    return candidate.at === previous.at && oldId !== undefined && newId !== undefined && BigInt(newId) > BigInt(oldId);
   }
   const oldAttempt = /^workflow:\d+:(\d+)$/.exec(previous.id)?.[1],
     newAttempt = /^workflow:\d+:(\d+)$/.exec(candidate.id)?.[1];
-  return (
-    oldAttempt !== undefined &&
-    newAttempt !== undefined &&
-    BigInt(newAttempt) > BigInt(oldAttempt)
-  );
+  return oldAttempt !== undefined && newAttempt !== undefined && BigInt(newAttempt) > BigInt(oldAttempt);
 }
+
 function retainEvidence(
   previous: ObservationPart<CheckObservation[]>,
   current: ObservationPart<CheckObservation[]>,
@@ -139,28 +114,19 @@ function retainEvidence(
   if (previous.state === "unavailable") return current;
   const observed = current.state === "unavailable" ? [] : current.value;
   const missing = previous.value.filter(
-    (check) =>
-      !observed.some(
-        (candidate) =>
-          candidate.id === check.id || checkReplaces(check, candidate),
-      ),
+    (check) => !observed.some((candidate) => candidate.id === check.id || checkReplaces(check, candidate)),
   );
   if (missing.length === 0) return current;
-  const value = [...observed, ...missing].sort((left, right) =>
-    left.id.localeCompare(right.id),
-  );
-  if (missing.every(executionFinished) && current.state === "complete")
-    return { state: "complete", value };
+  const value = [...observed, ...missing].sort((left, right) => left.id.localeCompare(right.id));
+  if (missing.every(executionFinished) && current.state === "complete") return { state: "complete", value };
   return {
     state: "partial",
     value,
-    reason:
-      "Waiting for complete terminal evidence for previously observed executions",
+    reason: "Waiting for complete terminal evidence for previously observed executions",
   };
 }
-export function checkResultPreview(
-  result: Extract<Blocker, { kind: "check_results" }>,
-) {
+
+export function checkResultPreview(result: Extract<Blocker, { kind: "check_results" }>) {
   const checks: CheckObservation[] = [];
   let size = 0;
   for (const check of result.checks) {
@@ -174,42 +140,40 @@ export function checkResultPreview(
     checks,
     totalChecks: result.checks.length,
     omittedChecks: result.checks.length - checks.length,
-    fullEvidence:
-      "Use the supplied inspect argv for the complete immutable result snapshot",
+    fullEvidence: "Use the supplied inspect argv for the complete immutable result snapshot",
   };
 }
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function string(value: unknown): string {
   if (typeof value !== "string") throw new Error("Invalid check evidence text");
   return value;
 }
+
 function integer(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
     throw new Error("Invalid check evidence integer");
   return value;
 }
+
 export function workflowObservation(value: unknown): CheckObservation {
   if (!object(value)) throw new Error("Invalid workflow run");
   const id = integer(value["id"]),
     attempt = integer(value["run_attempt"] ?? 1);
-  const at = Date.parse(
-    string(value["run_started_at"] ?? value["created_at"] ?? ""),
-  );
+  const at = Date.parse(string(value["run_started_at"] ?? value["created_at"] ?? ""));
   return {
     id: `workflow:${String(id)}:${String(attempt)}`,
     key: `workflow:${String(id)}`,
-    ...(typeof value["run_number"] === "number" &&
-    Number.isSafeInteger(value["run_number"])
+    ...(typeof value["run_number"] === "number" && Number.isSafeInteger(value["run_number"])
       ? { runNumber: value["run_number"] }
       : {}),
-    ...(typeof value["workflow_id"] === "number" &&
-    Number.isSafeInteger(value["workflow_id"])
+    ...(typeof value["workflow_id"] === "number" && Number.isSafeInteger(value["workflow_id"])
       ? { workflowId: value["workflow_id"] }
       : {}),
-    ...(typeof value["check_suite_id"] === "number" &&
-    Number.isSafeInteger(value["check_suite_id"])
+    ...(typeof value["check_suite_id"] === "number" && Number.isSafeInteger(value["check_suite_id"])
       ? { suiteId: value["check_suite_id"] }
       : {}),
     ...(typeof value["event"] === "string" ? { event: value["event"] } : {}),
@@ -221,18 +185,13 @@ export function workflowObservation(value: unknown): CheckObservation {
     url: string(value["html_url"]),
   };
 }
-export function storedCheckEvidence(
-  value: unknown,
-): ObservationPart<CheckObservation[]> | undefined {
+
+export function storedCheckEvidence(value: unknown): ObservationPart<CheckObservation[]> | undefined {
   if (value === null || value === undefined) return undefined;
   const raw: unknown = typeof value === "string" ? JSON.parse(value) : value;
   if (!object(raw)) throw new Error("Invalid stored check evidence");
-  if (raw["state"] === "unavailable")
-    return { state: "unavailable", reason: string(raw["reason"]) };
-  if (
-    (raw["state"] !== "complete" && raw["state"] !== "partial") ||
-    !Array.isArray(raw["value"])
-  )
+  if (raw["state"] === "unavailable") return { state: "unavailable", reason: string(raw["reason"]) };
+  if ((raw["state"] !== "complete" && raw["state"] !== "partial") || !Array.isArray(raw["value"]))
     throw new Error("Invalid stored check coverage");
   const entries: unknown[] = raw["value"];
   const checks = entries.map((entry): CheckObservation => {
@@ -253,18 +212,10 @@ export function storedCheckEvidence(
           }),
       id: string(entry["id"]),
       key: string(entry["key"]),
-      ...(entry["suiteId"] === undefined
-        ? {}
-        : { suiteId: integer(entry["suiteId"]) }),
-      ...(entry["runNumber"] === undefined
-        ? {}
-        : { runNumber: integer(entry["runNumber"]) }),
-      ...(entry["workflowId"] === undefined
-        ? {}
-        : { workflowId: integer(entry["workflowId"]) }),
-      ...(entry["event"] === undefined
-        ? {}
-        : { event: string(entry["event"]) }),
+      ...(entry["suiteId"] === undefined ? {} : { suiteId: integer(entry["suiteId"]) }),
+      ...(entry["runNumber"] === undefined ? {} : { runNumber: integer(entry["runNumber"]) }),
+      ...(entry["workflowId"] === undefined ? {} : { workflowId: integer(entry["workflowId"]) }),
+      ...(entry["event"] === undefined ? {} : { event: string(entry["event"]) }),
       name: string(entry["name"]),
       headSha: string(entry["headSha"]),
       status: string(entry["status"]),
@@ -277,33 +228,27 @@ export function storedCheckEvidence(
     ? { state: "complete", value: checks }
     : { state: "partial", value: checks, reason: string(raw["reason"]) };
 }
+
 export class CheckWatches {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
   ) {}
+
   hasWaiting(prId: string): boolean {
     return (
-      this.db
-        .prepare(
-          "SELECT 1 FROM check_watches WHERE pr_id=? AND state='waiting' LIMIT 1",
-        )
-        .get(prId) !== undefined
+      this.db.prepare("SELECT 1 FROM check_watches WHERE pr_id=? AND state='waiting' LIMIT 1").get(prId) !== undefined
     );
   }
+
   list(prId?: string): CheckWatch[] {
     return this.db
-      .prepare(
-        "SELECT * FROM check_watches WHERE (? IS NULL OR pr_id=?) ORDER BY rowid",
-      )
+      .prepare("SELECT * FROM check_watches WHERE (? IS NULL OR pr_id=?) ORDER BY rowid")
       .all(prId ?? null, prId ?? null)
       .map((row) => {
-        const state = Object.values(CheckWatchState).find(
-          (state) => state === row["state"],
-        );
+        const state = Object.values(CheckWatchState).find((state) => state === row["state"]);
         const evidence = storedCheckEvidence(row["evidence_json"]);
-        if (state === undefined || evidence === undefined)
-          throw new Error("Invalid stored check watch");
+        if (state === undefined || !evidence) throw new Error("Invalid stored check watch");
         return {
           id: string(row["id"]),
           prId: string(row["pr_id"]),
@@ -313,51 +258,36 @@ export class CheckWatches {
           evidence,
           createdAt: integer(row["created_at_ms"]),
           updatedAt: integer(row["updated_at_ms"]),
-          ...(row["replacement_head_sha"] === null
-            ? {}
-            : { replacementHeadSha: string(row["replacement_head_sha"]) }),
+          ...(row["replacement_head_sha"] === null ? {} : { replacementHeadSha: string(row["replacement_head_sha"]) }),
         };
       });
   }
-  reconciliationChecks(
-    prId: string,
-    observation?: PRObservation | string,
-  ): CheckReconciliationContext {
+
+  reconciliationChecks(prId: string, observation?: PRObservation | string): CheckReconciliationContext {
     if (observation === undefined)
       return {
         checks: [],
         forHead: (headSha) => this.reconciliationChecks(prId, headSha),
       };
-    const headSha =
-      typeof observation === "string" ? observation : observation.headSha;
+    const headSha = typeof observation === "string" ? observation : observation.headSha;
     const watch = this.list(prId)
       .filter(
         (value) =>
-          [
-            CheckWatchState.Waiting,
-            CheckWatchState.Completed,
-            CheckWatchState.Superseded,
-          ].includes(value.state) && value.headSha === headSha,
+          [CheckWatchState.Waiting, CheckWatchState.Completed, CheckWatchState.Superseded].includes(value.state) &&
+          value.headSha === headSha,
       )
       .at(-1);
-    if (watch === undefined || watch.evidence.state === "unavailable")
-      return { checks: [] };
+    if (!watch || watch.evidence.state === "unavailable") return { checks: [] };
     const candidates = watch.evidence.value
       .filter((check) => check.id.startsWith("run:"))
       .sort((a, b) => a.id.localeCompare(b.id));
     if (candidates.length === 0) return { checks: [] };
     const key = `check-reconciliation:${prId}`;
-    const saved = this.db
-      .prepare("SELECT value FROM settings WHERE key=?")
-      .get(key);
+    const saved = this.db.prepare("SELECT value FROM settings WHERE key=?").get(key);
     let after = "";
-    if (saved !== undefined) {
+    if (saved) {
       const cursor: unknown = JSON.parse(String(saved["value"]));
-      if (
-        !object(cursor) ||
-        typeof cursor["headSha"] !== "string" ||
-        typeof cursor["after"] !== "string"
-      )
+      if (!object(cursor) || typeof cursor["headSha"] !== "string" || typeof cursor["after"] !== "string")
         throw new Error("Invalid check reconciliation cursor");
       if (cursor["headSha"] === headSha) after = cursor["after"];
     }
@@ -365,17 +295,15 @@ export class CheckWatches {
       checks: candidates,
       after,
       selected: (id) => {
-        if (!candidates.some((check) => check.id === id))
-          throw new Error("Invalid check reconciliation selection");
+        if (!candidates.some((check) => check.id === id)) throw new Error("Invalid check reconciliation selection");
         // The cursor records attempted coverage, never an execution outcome.
         this.db
-          .prepare(
-            "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-          )
+          .prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
           .run(key, JSON.stringify({ headSha, after: id }));
       },
     };
   }
+
   private save(watch: CheckWatch): void {
     this.db
       .prepare(
@@ -393,13 +321,12 @@ export class CheckWatches {
         watch.replacementHeadSha ?? null,
       );
   }
+
   observe(observation: PRObservation, forceNew = false): CheckWatch[] {
     const watches = this.list(observation.prId),
       results: CheckWatch[] = [];
     for (const watch of watches.filter(
-      (watch) =>
-        watch.state === CheckWatchState.Waiting &&
-        watch.headSha !== observation.headSha,
+      (watch) => watch.state === CheckWatchState.Waiting && watch.headSha !== observation.headSha,
     )) {
       const result = {
         ...watch,
@@ -411,61 +338,37 @@ export class CheckWatches {
       results.push(result);
     }
     const evidence = checkEvidence(observation);
-    const sameHead = watches.filter(
-      (watch) => watch.headSha === observation.headSha,
-    );
+    const sameHead = watches.filter((watch) => watch.headSha === observation.headSha);
     const previous = sameHead.at(-1);
-    let watch =
-      previous?.state === CheckWatchState.Waiting ? previous : undefined;
-    const rawUpdates =
-      observation.checks.state === "unavailable"
-        ? []
-        : observation.checks.value;
-    const enrich = (
-      value: ObservationPart<CheckObservation[]>,
-    ): ObservationPart<CheckObservation[]> =>
+    let watch = previous?.state === CheckWatchState.Waiting ? previous : undefined;
+    const rawUpdates = observation.checks.state === "unavailable" ? [] : observation.checks.value;
+    const enrich = (value: ObservationPart<CheckObservation[]>): ObservationPart<CheckObservation[]> =>
       value.state === "unavailable"
         ? value
         : {
             ...value,
             value: value.value.map(
-              (old) =>
-                rawUpdates.find(
-                  (fresh) =>
-                    fresh.id === old.id && fresh.headSha === old.headSha,
-                ) ?? old,
+              (old) => rawUpdates.find((fresh) => fresh.id === old.id && fresh.headSha === old.headSha) ?? old,
             ),
           };
     const previousChecks =
-      previous?.evidence.state === "complete" ||
-      previous?.evidence.state === "partial"
-        ? previous.evidence.value
-        : [];
+      previous?.evidence.state === "complete" || previous?.evidence.state === "partial" ? previous.evidence.value : [];
     const changed =
       previous?.state === CheckWatchState.Completed &&
       evidence.state !== "unavailable" &&
       (evidence.value.some((check) => {
-        const before = previousChecks.find(
-          (candidate) => candidate.id === check.id,
-        );
-        return (
-          before === undefined ||
-          before.status !== check.status ||
-          before.conclusion !== check.conclusion
-        );
+        const before = previousChecks.find((candidate) => candidate.id === check.id);
+        return before === undefined || before.status !== check.status || before.conclusion !== check.conclusion;
       }) ||
         previousChecks.some((old) => {
-          const refreshed =
-            rawUpdates.find((fresh) => fresh.id === old.id) ?? old;
-          return evidence.value.some((candidate) =>
-            checkReplaces(refreshed, candidate),
-          );
+          const refreshed = rawUpdates.find((fresh) => fresh.id === old.id) ?? old;
+          return evidence.value.some((candidate) => checkReplaces(refreshed, candidate));
         }));
     if (
-      watch === undefined &&
+      !watch &&
       observation.lifecycle === "open" &&
       (forceNew ||
-        previous === undefined ||
+        !previous ||
         previous.state === CheckWatchState.Cancelled ||
         previous.state === CheckWatchState.Expired ||
         previous.state === CheckWatchState.Superseded ||
@@ -477,38 +380,27 @@ export class CheckWatches {
         headSha: observation.headSha,
         generation: sameHead.length + 1,
         state: CheckWatchState.Waiting,
-        evidence:
-          previous === undefined
-            ? evidence
-            : retainEvidence(enrich(previous.evidence), evidence),
+        evidence: !previous ? evidence : retainEvidence(enrich(previous.evidence), evidence),
         createdAt: this.now(),
         updatedAt: this.now(),
       };
     }
-    if (watch !== undefined) {
+    if (watch) {
       const retained = retainEvidence(enrich(watch.evidence), evidence);
       const next = {
         ...watch,
         evidence: retained,
         updatedAt: this.now(),
-        state: checksFinished(retained)
-          ? CheckWatchState.Completed
-          : CheckWatchState.Waiting,
+        state: checksFinished(retained) ? CheckWatchState.Completed : CheckWatchState.Waiting,
       };
       this.save(next);
       if (next.state === CheckWatchState.Completed) results.push(next);
     }
     return results;
   }
-  cancel(
-    prId: string,
-    state:
-      | CheckWatchState.Cancelled
-      | CheckWatchState.Expired = CheckWatchState.Cancelled,
-  ): void {
-    for (const watch of this.list(prId).filter(
-      (watch) => watch.state === CheckWatchState.Waiting,
-    ))
+
+  cancel(prId: string, state: CheckWatchState.Cancelled | CheckWatchState.Expired = CheckWatchState.Cancelled): void {
+    for (const watch of this.list(prId).filter((watch) => watch.state === CheckWatchState.Waiting))
       this.save({
         ...watch,
         state,
@@ -517,10 +409,7 @@ export class CheckWatches {
   }
 }
 
-export function checkRunObservation(
-  value: unknown,
-  url: string,
-): CheckObservation {
+export function checkRunObservation(value: unknown, url: string): CheckObservation {
   if (!object(value)) throw new Error("Invalid GitHub check run");
   const app = object(value["app"]) ? value["app"] : undefined,
     suite = object(value["check_suite"]) ? value["check_suite"] : undefined;
@@ -529,13 +418,13 @@ export function checkRunObservation(
     at = Date.parse(string(value["started_at"] ?? value["completed_at"] ?? ""));
   return {
     id: `run:${String(id)}`,
-    key: `run:${app === undefined ? "" : String(integer(app["id"]))}:${name}`,
+    key: `run:${!app ? "" : String(integer(app["id"]))}:${name}`,
     name,
     headSha: string(value["head_sha"]),
     status: string(value["status"]),
     conclusion: string(value["conclusion"] ?? ""),
     at: Number.isNaN(at) ? 0 : at,
     url: typeof value["html_url"] === "string" ? value["html_url"] : url,
-    ...(suite === undefined ? {} : { suiteId: integer(suite["id"]) }),
+    ...(!suite ? {} : { suiteId: integer(suite["id"]) }),
   };
 }

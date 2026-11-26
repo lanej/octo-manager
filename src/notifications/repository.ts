@@ -8,15 +8,15 @@ import { compactId } from "../tracking/identifiers.js";
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 
 function integer(value: unknown): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
-    throw new Error("Invalid inbox integer");
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error("Invalid inbox integer");
   return value;
 }
+
 function text(value: unknown): string {
-  if (typeof value !== "string" || value === "")
-    throw new Error("Invalid inbox text");
+  if (typeof value !== "string" || value === "") throw new Error("Invalid inbox text");
   return value;
 }
+
 const applicable = /* sql */ `
   (NOT EXISTS(
   SELECT 1
@@ -192,28 +192,19 @@ function decode(row: Record<string, unknown>): AgentMessage {
     sequence: integer(row["sequence"]),
     id: text(row["delivery_id"]),
     actionId: typeof row["action_id"] === "string" ? row["action_id"] : "",
-    ...(typeof row["submission_id"] === "string"
-      ? { submissionId: row["submission_id"] }
-      : {}),
-    ...(typeof row["participant_pr_id"] === "string"
-      ? { participantPRId: row["participant_pr_id"] }
-      : {}),
-    ...(typeof row["workflow_pr_id"] === "string"
-      ? { workflowPRId: row["workflow_pr_id"] }
-      : {}),
-    ...(typeof row["issue_id"] === "string"
-      ? { issueId: row["issue_id"] }
-      : {}),
+    ...(typeof row["submission_id"] === "string" ? { submissionId: row["submission_id"] } : {}),
+    ...(typeof row["participant_pr_id"] === "string" ? { participantPRId: row["participant_pr_id"] } : {}),
+    ...(typeof row["workflow_pr_id"] === "string" ? { workflowPRId: row["workflow_pr_id"] } : {}),
+    ...(typeof row["issue_id"] === "string" ? { issueId: row["issue_id"] } : {}),
     recipientAgentId: text(row["recipient_agent_id"]),
     body: text(row["body"]),
     createdAt: integer(row["created_at_ms"]),
     nextCheckAt: integer(row["next_check_at_ms"]),
     applicable: row["applicable"] === 1,
-    ...(row["acknowledged_at_ms"] === null
-      ? {}
-      : { acknowledgedAt: integer(row["acknowledged_at_ms"]) }),
+    ...(row["acknowledged_at_ms"] === null ? {} : { acknowledgedAt: integer(row["acknowledged_at_ms"]) }),
   };
 }
+
 export class NotificationRepository {
   // rationale: Store constructs this repository before completing notification migrations.
   private byId: StatementSync | undefined;
@@ -224,17 +215,21 @@ export class NotificationRepository {
   private workflowRecovery: StatementSync | undefined;
   private actionRecovery: StatementSync | undefined;
   private noticeById: StatementSync | undefined;
+
   constructor(
     private db: DatabaseSync,
     private now: () => number,
     private directory: string,
   ) {}
+
   newMessageId(): string {
     return allocateMessageId(this.db);
   }
+
   render(id: string, notice: SafeNotice): string {
     return renderDirectNotice(this.notice(id) ?? notice, id, this.directory);
   }
+
   recoverWorkflows(): void {
     const rows = (this.workflowRecovery ??= this.db.prepare(
       `${messagesQuery} WHERE action_id='' AND applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=delivery_id)`,
@@ -250,11 +245,7 @@ export class NotificationRepository {
             : undefined;
       const prId = message.participantPRId ?? message.workflowPRId;
       const pr =
-        prId === undefined
-          ? undefined
-          : this.db
-              .prepare("SELECT url FROM tracked_prs WHERE id=?")
-              .get(prId)?.["url"];
+        prId === undefined ? undefined : this.db.prepare("SELECT url FROM tracked_prs WHERE id=?").get(prId)?.["url"];
       const notice: SafeNotice = {
         version: 1,
         kind:
@@ -266,23 +257,17 @@ export class NotificationRepository {
                 ? "participants"
                 : "merge",
         assessment: "not_required",
-        ...(subject === undefined ? {} : { subject }),
+        ...(!subject ? {} : { subject }),
         ...(typeof pr === "string" ? { prUrl: pr } : {}),
       };
       this.freezeNotice(id, notice);
       this.db
         .prepare("INSERT INTO safe_recovery_messages VALUES(?,?,?,?,?,NULL,?)")
-        .run(
-          nextInboxSequence(this.db),
-          id,
-          message.id,
-          this.render(id, notice),
-          this.now(),
-          this.now(),
-        );
+        .run(nextInboxSequence(this.db), id, message.id, this.render(id, notice), this.now(), this.now());
       this.markReplacement(message.id, id);
     }
   }
+
   legacyActionMessages(): AgentMessage[] {
     return (this.actionRecovery ??= this.db.prepare(
       `SELECT m.* FROM (${query}) m WHERE applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=m.delivery_id)`,
@@ -290,6 +275,7 @@ export class NotificationRepository {
       .all()
       .map(decode);
   }
+
   isReplaced(id: string): boolean {
     return (
       this.db
@@ -299,26 +285,23 @@ export class NotificationRepository {
         .get(id, id) !== undefined
     );
   }
+
   supersede(originalId: string, replacementId: string): void {
     this.db
-      .prepare(
-        "INSERT OR IGNORE INTO safe_notice_supersessions(original_id,replacement_id) VALUES(?,?)",
-      )
+      .prepare("INSERT OR IGNORE INTO safe_notice_supersessions(original_id,replacement_id) VALUES(?,?)")
       .run(originalId, replacementId);
   }
+
   markReplacement(originalId: string, replacementId: string): void {
     this.db
-      .prepare(
-        "INSERT INTO safe_notice_replacements(original_id,replacement_id) VALUES(?,?)",
-      )
+      .prepare("INSERT INTO safe_notice_replacements(original_id,replacement_id) VALUES(?,?)")
       .run(originalId, replacementId);
   }
+
   freezeNotice(id: string, notice: SafeNotice): void {
     parseNotice(notice);
     const ids = (table: string, column = "id") =>
-      this.db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
-        .get(table) === undefined
+      !this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)
         ? []
         : this.db
             .prepare(`SELECT ${column} FROM ${table}`)
@@ -334,26 +317,18 @@ export class NotificationRepository {
       ...ids("agent_digest_revisions", "json_extract(data,'$.dispatchId')"),
       id,
     ];
-    const action = this.db
-      .prepare("SELECT action_id FROM deliveries WHERE id=?")
-      .get(id)?.["action_id"];
+    const action = this.db.prepare("SELECT action_id FROM deliveries WHERE id=?").get(id)?.["action_id"];
     const reference = (value: string, namespace: string[]) =>
-      /^[a-f0-9-]{8,36}$/u.test(value)
-        ? shortId(value, namespace)
-        : "unavailable";
+      /^[a-f0-9-]{8,36}$/u.test(value) ? shortId(value, namespace) : "unavailable";
     const references = {
       message: reference(id, messages),
-      action:
-        typeof action === "string" ? reference(action, ids("actions")) : "none",
+      action: typeof action === "string" ? reference(action, ids("actions")) : "none",
       ...(notice.assessmentId === undefined
         ? {}
         : {
-            assessment: reference(
-              notice.assessmentId,
-              ids("evidence_assessments"),
-            ),
+            assessment: reference(notice.assessmentId, ids("evidence_assessments")),
           }),
-      ...(notice.subject === undefined
+      ...(!notice.subject
         ? {}
         : {
             subject: reference(
@@ -374,32 +349,23 @@ export class NotificationRepository {
     };
     notice = { ...notice, references };
     this.db
-      .prepare(
-        "INSERT OR IGNORE INTO safe_agent_notices(message_id,notice_json) VALUES(?,?)",
-      )
+      .prepare("INSERT OR IGNORE INTO safe_agent_notices(message_id,notice_json) VALUES(?,?)")
       .run(id, JSON.stringify(notice));
   }
+
   notice(id: string): SafeNotice | undefined {
     const row = (this.noticeById ??= this.db.prepare(
       "SELECT notice_json FROM safe_agent_notices WHERE message_id=?",
     )).get(id);
-    return row === undefined
-      ? undefined
-      : parseNotice(JSON.parse(String(row["notice_json"])));
+    return !row ? undefined : parseNotice(JSON.parse(String(row["notice_json"])));
   }
-  private source(
-    message: AgentMessage,
-    notice: SafeNotice | undefined,
-  ): NotificationSource {
-    if (message.actionId !== "")
-      return { kind: "action", id: message.actionId };
-    if (message.issueId !== undefined)
-      return { kind: "issue", id: message.issueId };
-    if (message.submissionId !== undefined)
-      return { kind: "submission", id: message.submissionId };
-    if (message.participantPRId !== undefined)
-      return { kind: "participants", id: message.participantPRId };
-    if (notice?.subject !== undefined) {
+
+  private source(message: AgentMessage, notice: SafeNotice | undefined): NotificationSource {
+    if (message.actionId !== "") return { kind: "action", id: message.actionId };
+    if (message.issueId !== undefined) return { kind: "issue", id: message.issueId };
+    if (message.submissionId !== undefined) return { kind: "submission", id: message.submissionId };
+    if (message.participantPRId !== undefined) return { kind: "participants", id: message.participantPRId };
+    if (notice?.subject) {
       switch (notice.subject.kind) {
         case "action":
           return { kind: "action", id: notice.subject.id };
@@ -425,55 +391,49 @@ export class NotificationRepository {
         .get(message.id, message.id);
       const id = row?.["subject_id"];
       if (typeof id === "string") {
-        if (row?.["subject_kind"] === "reference")
-          return { kind: "reference", id };
+        if (row?.["subject_kind"] === "reference") return { kind: "reference", id };
         if (row?.["subject_kind"] === "entry")
-          return id.startsWith("ready:")
-            ? { kind: "action", id: id.slice(6) }
-            : { kind: "merge", id };
+          return id.startsWith("ready:") ? { kind: "action", id: id.slice(6) } : { kind: "merge", id };
       }
     }
     return { kind: "unavailable" };
   }
+
   private withNotice(message: AgentMessage): AgentMessage {
     const notice = this.notice(message.id);
     return {
       ...message,
       source: this.source(message, notice),
-      ...(notice === undefined ? {} : { notice }),
+      ...(!notice ? {} : { notice }),
     };
   }
 
   get(id: string): AgentMessage | undefined {
-    const row = (this.byId ??= this.db.prepare(
-      `${messagesQuery} WHERE delivery_id=?`,
-    )).get(id);
-    if (row !== undefined) return this.withNotice(decode(row));
+    const row = (this.byId ??= this.db.prepare(`${messagesQuery} WHERE delivery_id=?`)).get(id);
+    if (row) return this.withNotice(decode(row));
     const prefix = compactId(id);
     if (!/^[a-f0-9]{8,32}$/.test(prefix)) return undefined;
     const matches = (this.byPrefix ??= this.db.prepare(
       `${messagesQuery} WHERE replace(delivery_id,'-','') LIKE ? LIMIT 2`,
     )).all(prefix + "%");
-    if (matches.length > 1)
-      throw new Error("Invalid ambiguous ID prefix; use a longer ID");
-    return matches[0] === undefined
-      ? undefined
-      : this.withNotice(decode(matches[0]));
+    if (matches.length > 1) throw new Error("Invalid ambiguous ID prefix; use a longer ID");
+    return !matches[0] ? undefined : this.withNotice(decode(matches[0]));
   }
+
   record(id: string, body: string): AgentMessage {
     const previous = this.get(id);
-    if (previous !== undefined) return previous;
-    if (body === "" || body.length > 1024 * 1024)
-      throw new Error("Invalid inbox message size");
+    if (previous) return previous;
+    if (body === "" || body.length > 1024 * 1024) throw new Error("Invalid inbox message size");
     this.db
       .prepare(
         "INSERT INTO delivery_messages(sequence,delivery_id,body,created_at_ms,next_check_at_ms) VALUES(?,?,?,?,?)",
       )
       .run(nextInboxSequence(this.db), id, body, this.now(), this.now());
     const result = this.get(id);
-    if (result === undefined) throw new Error("Message was not recorded");
+    if (!result) throw new Error("Message was not recorded");
     return result;
   }
+
   list(
     agentId: string,
     after = 0,
@@ -488,49 +448,36 @@ export class NotificationRepository {
           )).all(agentId, after)
         : (this.page ??= this.db.prepare(
             `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND (?=1 OR acknowledged_at_ms IS NULL) AND (?=0 OR applicable=1) ORDER BY sequence LIMIT 201`,
-          )).all(
-            agentId,
-            after,
-            includeAcknowledged ? 1 : 0,
-            applicableOnly ? 1 : 0,
-          );
-    const messages = rows
-      .slice(0, 200)
-      .map((row) => this.withNotice(decode(row)));
+          )).all(agentId, after, includeAcknowledged ? 1 : 0, applicableOnly ? 1 : 0);
+    const messages = rows.slice(0, 200).map((row) => this.withNotice(decode(row)));
     return {
       messages,
       nextSequence: messages.at(-1)?.sequence ?? after,
       hasMore: rows.length > 200,
     };
   }
-  uncovered(
-    agentId: string,
-    after = 0,
-  ): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
+
+  uncovered(agentId: string, after = 0): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
     integer(after);
     const rows = (this.uncoveredPage ??= this.db.prepare(
       `${messagesQuery} WHERE recipient_agent_id=? AND sequence>? AND NOT EXISTS(SELECT 1 FROM agent_digest_members c JOIN agent_digests d ON d.id=c.digest_id WHERE c.message_id=delivery_id AND d.agent_id=recipient_agent_id) ORDER BY sequence LIMIT 201`,
     )).all(agentId, after);
-    const messages = rows
-      .slice(0, 200)
-      .map((row) => this.withNotice(decode(row)));
+    const messages = rows.slice(0, 200).map((row) => this.withNotice(decode(row)));
     return {
       messages,
       nextSequence: messages.at(-1)?.sequence ?? after,
       hasMore: rows.length > 200,
     };
   }
+
   acknowledge(id: string, agentId: string): AgentMessage {
     const message = this.get(id);
-    if (message === undefined) throw new Error("Message not found");
-    if (message.recipientAgentId !== agentId)
-      throw new Error("Message belongs to another agent");
+    if (!message) throw new Error("Message not found");
+    if (message.recipientAgentId !== agentId) throw new Error("Message belongs to another agent");
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        this.db
-          .prepare("SELECT 1 FROM safe_recovery_messages WHERE id=?")
-          .get(message.id) !== undefined
+        this.db.prepare("SELECT 1 FROM safe_recovery_messages WHERE id=?").get(message.id)
           ? "UPDATE safe_recovery_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
           : message.issueId !== undefined
             ? "UPDATE issue_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
@@ -544,15 +491,11 @@ export class NotificationRepository {
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);
-    if (result === undefined)
-      throw new Error("Message not found after acknowledgment");
+    if (!result) throw new Error("Message not found after acknowledgment");
     return result;
   }
+
   defer(id: string, at: number): void {
-    this.db
-      .prepare(
-        "UPDATE delivery_messages SET next_check_at_ms=? WHERE delivery_id=?",
-      )
-      .run(integer(at), id);
+    this.db.prepare("UPDATE delivery_messages SET next_check_at_ms=? WHERE delivery_id=?").run(integer(at), id);
   }
 }

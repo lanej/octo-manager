@@ -1,9 +1,6 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
-import {
-  roots,
-  rootDescriptions,
-  CommandSchema,
-} from "../src/api/contracts.js";
+import { roots, rootDescriptions, CommandSchema } from "../src/api/contracts.js";
+
 interface SchemaNode {
   type?: string;
   description?: string;
@@ -14,43 +11,38 @@ interface SchemaNode {
   properties?: Record<string, SchemaNode>;
   required?: string[];
 }
+
 function object(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    throw new Error("Invalid contract schema");
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid contract schema");
   return Object.fromEntries(Object.entries(value));
 }
+
 function array(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Invalid contract array");
   return value;
 }
+
 function strings(value: unknown): string[] {
   return array(value).map((item) => {
     if (typeof item !== "string") throw new Error("Invalid contract string");
     return item;
   });
 }
+
 function node(value: unknown): SchemaNode {
   const raw = object(value),
     result: SchemaNode = {};
   if (typeof raw["type"] === "string") result.type = raw["type"];
-  if (typeof raw["description"] === "string")
-    result.description = raw["description"];
+  if (typeof raw["description"] === "string") result.description = raw["description"];
   const constant = raw["const"];
-  if (
-    typeof constant === "string" ||
-    typeof constant === "number" ||
-    typeof constant === "boolean"
-  )
+  if (typeof constant === "string" || typeof constant === "number" || typeof constant === "boolean")
     result.const = constant;
   if (raw["enum"] !== undefined) result.enum = strings(raw["enum"]);
   if (raw["anyOf"] !== undefined) result.anyOf = array(raw["anyOf"]).map(node);
   if (raw["items"] !== undefined) result.items = node(raw["items"]);
   if (raw["properties"] !== undefined)
     result.properties = Object.fromEntries(
-      Object.entries(object(raw["properties"])).map(([key, item]) => [
-        key,
-        node(item),
-      ]),
+      Object.entries(object(raw["properties"])).map(([key, item]) => [key, node(item)]),
     );
   if (raw["required"] !== undefined) result.required = strings(raw["required"]);
   return result;
@@ -88,47 +80,38 @@ if (existsSync(manifestPath)) {
       const row = object(field),
         number = row["number"],
         type = row["type"];
-      if (
-        typeof number !== "number" ||
-        !Number.isSafeInteger(number) ||
-        number < 1 ||
-        typeof type !== "string"
-      )
+      if (typeof number !== "number" || !Number.isSafeInteger(number) || number < 1 || typeof type !== "string")
         throw new Error("Invalid API tag manifest");
       fields[key] = { number, type };
     }
     tags[name] = fields;
   }
 }
+
 function tag(name: string, key: string, type: string): number {
   const fields = tags[name] ?? {};
   tags[name] = fields;
   const prior = fields[key];
   if (prior !== undefined) {
-    if (prior.type !== type)
-      throw new Error(
-        `API wire type changed: ${name}.${key}; bump the API version`,
-      );
+    if (prior.type !== type) throw new Error(`API wire type changed: ${name}.${key}; bump the API version`);
     return prior.number;
   }
-  const number =
-    Math.max(0, ...Object.values(fields).map((value) => value.number)) + 1;
+  const number = Math.max(0, ...Object.values(fields).map((value) => value.number)) + 1;
   fields[key] = { number, type };
   return number;
 }
+
 function reserved(name: string, used: number[]): string {
   const retired = Object.values(tags[name] ?? {})
     .map((value) => value.number)
     .filter((value) => !used.includes(value));
   return retired.length === 0 ? "" : `reserved ${retired.join(", ")};`;
 }
+
 function variantKey(schema: SchemaNode): string {
   if (schema.const !== undefined) return `literal:${String(schema.const)}`;
-  const discriminator = Object.entries(schema.properties ?? {}).find(
-    ([, value]) => value.const !== undefined,
-  );
-  if (discriminator !== undefined)
-    return `${discriminator[0]}:${String(discriminator[1].const)}`;
+  const discriminator = Object.entries(schema.properties ?? {}).find(([, value]) => value.const !== undefined);
+  if (discriminator !== undefined) return `${discriminator[0]}:${String(discriminator[1].const)}`;
   return (
     "fields:" +
     Object.keys(schema.properties ?? {})
@@ -136,23 +119,17 @@ function variantKey(schema: SchemaNode): string {
       .join(",")
   );
 }
+
 function type(name: string, s: SchemaNode, purpose: string): string {
   const documentation = `// ${name} ${s.description ?? purpose}\n`;
-  if (s.enum !== undefined)
-    return type(
-      name,
-      { anyOf: s.enum.map((value) => ({ const: value })) },
-      purpose,
-    );
+  if (s.enum !== undefined) return type(name, { anyOf: s.enum.map((value) => ({ const: value })) }, purpose);
   if (s.anyOf !== undefined) {
     const branches = s.anyOf;
     if (branches.every((b) => typeof b.const === "string")) {
       const prefix = snake(name).toUpperCase(),
         values = branches.map((b) => String(b.const));
       const numbers = values.map((value) => tag(name, value, "enum"));
-      const wireNames = values.map(
-        (value) => `${prefix}_${value.toUpperCase()}`,
-      );
+      const wireNames = values.map((value) => `${prefix}_${value.toUpperCase()}`);
       definitions.push(
         `enum ${name} { ${prefix}_UNSPECIFIED = 0; ${reserved(name, numbers)} ${wireNames.map((value, i) => `${value} = ${String(numbers[i])};`).join(" ")} }`,
       );
@@ -162,11 +139,7 @@ function type(name: string, s: SchemaNode, purpose: string): string {
     const variants = branches.map((branch) => {
       const number = tag(name, variantKey(branch), "variant");
       return {
-        type: type(
-          name + "Variant" + String(number),
-          branch,
-          `represents ${variantKey(branch)} for ${name}.`,
-        ),
+        type: type(name + "Variant" + String(number), branch, `represents ${variantKey(branch)} for ${name}.`),
         field: `variant${String(number)}`,
         number,
       };
@@ -184,34 +157,21 @@ function type(name: string, s: SchemaNode, purpose: string): string {
     return name;
   }
   if (s.const !== undefined) {
-    if (typeof s.const === "string")
-      return type(name, { anyOf: [{ const: s.const }] }, purpose);
+    if (typeof s.const === "string") return type(name, { anyOf: [{ const: s.const }] }, purpose);
     const scalar = typeof s.const === "boolean" ? "bool" : "int64";
-    definitions.push(
-      `${documentation}message ${name} { optional ${scalar} literal = 1; }`,
-    );
+    definitions.push(`${documentation}message ${name} { optional ${scalar} literal = 1; }`);
     shapes[name] = { kind: "literal", scalar, value: s.const };
     return name;
   }
   if (s.type === "array") {
-    const element = type(
-      name + "Item",
-      s.items ?? {},
-      `represents one item in ${name}.`,
-    );
-    definitions.push(
-      `${documentation}message ${name} { repeated ${element} items = 1; }`,
-    );
+    const element = type(name + "Item", s.items ?? {}, `represents one item in ${name}.`);
+    definitions.push(`${documentation}message ${name} { repeated ${element} items = 1; }`);
     shapes[name] = { kind: "list", element };
     return name;
   }
   if (s.type === "object") {
     const fields = Object.entries(s.properties ?? {}).map(([key, value]) => {
-      const fieldType = type(
-          name + pascal(key),
-          value,
-          `contains the ${key} value of ${name}.`,
-        ),
+      const fieldType = type(name + pascal(key), value, `contains the ${key} value of ${name}.`),
         number = tag(name, key, fieldType);
       return {
         key,
@@ -243,11 +203,11 @@ function type(name: string, s: SchemaNode, purpose: string): string {
   if (s.type === "boolean") return "bool";
   throw new Error(`Untyped API field: ${name}`);
 }
+
 const descriptions: Readonly<Record<string, string>> = rootDescriptions;
 for (const [name, schema] of Object.entries(roots)) {
   const purpose = descriptions[name];
-  if (purpose === undefined)
-    throw new Error(`Missing API documentation: ${name}`);
+  if (purpose === undefined) throw new Error(`Missing API documentation: ${name}`);
   type("Domain" + name, node(schema), purpose);
 }
 const operations: Record<string, string> = {
@@ -269,8 +229,7 @@ const operations: Record<string, string> = {
 const requests: Record<string, string> = {};
 for (const schema of node(CommandSchema).anyOf ?? []) {
   const { op, ...fields } = schema.properties ?? {};
-  if (typeof op?.const !== "string")
-    throw new Error("Missing operation discriminator");
+  if (typeof op?.const !== "string") throw new Error("Missing operation discriminator");
   const operation = operations[op.const];
   if (operation === undefined) throw new Error("Unmapped operation");
   type(

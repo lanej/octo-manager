@@ -5,18 +5,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  createApplicationFixture,
-  type ApplicationFixture,
-} from "./support/application.js";
+import { createApplicationFixture, type ApplicationFixture } from "./support/application.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
-import {
-  ChainState,
-  EntryState,
-  OperationState,
-  type MergeEntry,
-} from "../src/merging/contracts.js";
+import { ChainState, EntryState, OperationState, type MergeEntry } from "../src/merging/contracts.js";
 import type { MergeProvider, MergeSnapshot } from "../src/merging/github.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
@@ -31,6 +23,7 @@ const target = {
   endpoint: "local",
   sessionId: "external-merge",
 };
+
 function snapshot(sha = head): MergeSnapshot {
   const observation: ObservationInput = {
     observedAt: 1000,
@@ -68,6 +61,7 @@ function snapshot(sha = head): MergeSnapshot {
     methods: ["squash"],
   };
 }
+
 async function fixture(
   run: (f: {
     current: () => ApplicationFixture;
@@ -127,11 +121,7 @@ async function fixture(
     const value = remote.get(url);
     assert(value !== undefined);
     coordinator.store.tracking.observe(pr.id, value.observation, config);
-    return coordinator.store.merging.ready(
-      pr.id,
-      pr.ownerAgentId,
-      value.observation.headSha,
-    );
+    return coordinator.store.merging.ready(pr.id, pr.ownerAgentId, value.observation.headSha);
   };
   const closePR = (url = first) => {
     const value = remote.get(url);
@@ -190,10 +180,7 @@ test("persisted manual assessments reconcile externally merged heads and complet
     assert.equal(merged?.state, EntryState.Merged);
     assert.equal(merged.mergeCommit, commit);
     assert.equal(merged.autoMerge, false);
-    assert.equal(
-      f.current().store.merging.chain(entry.chainId).state,
-      ChainState.Completed,
-    );
+    assert.equal(f.current().store.merging.chain(entry.chainId).state, ChainState.Completed);
     const reads = f.reads();
     await f.current().merging.tick();
     assert.equal(f.reads(), reads);
@@ -207,11 +194,7 @@ test("different assessed heads and closed unmerged PRs cancel entries without im
       const pr = coordinator.store.tracking.track(url, target);
       const value = f.remote.get(url);
       assert(value !== undefined);
-      coordinator.store.tracking.observe(
-        pr.id,
-        value.observation,
-        coordinator.tracking.config,
-      );
+      coordinator.store.tracking.observe(pr.id, value.observation, coordinator.tracking.config);
     }
     const owner = coordinator.store.tracking.pr(first).ownerAgentId;
     const chain = coordinator.store.merging.queue(
@@ -234,20 +217,11 @@ test("different assessed heads and closed unmerged PRs cancel entries without im
     f.closePR(second);
     await coordinator.merging.tick();
     const entries = coordinator.store.merging.entriesForChain(chain.id);
-    assert.equal(
-      entries.find((e) => e.prId === coordinator.store.tracking.pr(first).id)
-        ?.state,
-      EntryState.Merged,
-    );
-    const cancelled = entries.find(
-      (e) => e.prId === coordinator.store.tracking.pr(second).id,
-    );
+    assert.equal(entries.find((e) => e.prId === coordinator.store.tracking.pr(first).id)?.state, EntryState.Merged);
+    const cancelled = entries.find((e) => e.prId === coordinator.store.tracking.pr(second).id);
     assert.equal(cancelled?.state, EntryState.Cancelled);
     assert.equal(cancelled.mergeCommit, undefined);
-    assert.equal(
-      coordinator.store.merging.chain(chain.id).state,
-      ChainState.Cancelled,
-    );
+    assert.equal(coordinator.store.merging.chain(chain.id).state, ChainState.Cancelled);
     assert.equal(f.effects(), 0);
   }));
 
@@ -257,20 +231,10 @@ test("a confirmed closed-unmerged PR cancels its manual entry and chain", () =>
       value = f.remote.get(first);
     assert(value !== undefined);
     value.observation.lifecycle = "closed";
-    f.current().store.tracking.observe(
-      entry.prId,
-      value.observation,
-      f.current().tracking.config,
-    );
+    f.current().store.tracking.observe(entry.prId, value.observation, f.current().tracking.config);
     await f.current().merging.tick();
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.Cancelled,
-    );
-    assert.equal(
-      f.current().store.merging.chain(entry.chainId).state,
-      ChainState.Cancelled,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.Cancelled);
+    assert.equal(f.current().store.merging.chain(entry.chainId).state, ChainState.Cancelled);
     assert.equal(f.effects(), 0);
   }));
 
@@ -308,22 +272,11 @@ test("unconfirmed merge commits and rate limits retain unknown outcomes with bou
     f.intercept(undefined);
     value.mergeCommit = commit;
     await f.current().merging.tick();
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.Merged,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.Merged);
     assert.equal(f.effects(), 0);
   }));
 
-for (const change of [
-  "pause",
-  "cancel",
-  "owner",
-  "receipt",
-  "rearm",
-  "operation",
-  "observation",
-] as const)
+for (const change of ["pause", "cancel", "owner", "receipt", "rearm", "operation", "observation"] as const)
   test(`external inspection cannot overwrite concurrent ${change} changes`, () =>
     fixture(async (f) => {
       const entry = f.ready();
@@ -352,12 +305,7 @@ for (const change of [
             });
             break;
           case "rearm":
-            store.autoMerge(
-              first,
-              coordinator.store.tracking.pr(first).ownerAgentId,
-              true,
-              "rearm",
-            );
+            store.autoMerge(first, coordinator.store.tracking.pr(first).ownerAgentId, true, "rearm");
             break;
           case "observation":
             coordinator.store.tracking.observe(
@@ -394,15 +342,9 @@ for (const change of [
       await coordinator.merging.tick();
       assert.notEqual(store.entryById(entry.id)?.state, EntryState.Merged);
       assert.notEqual(store.chain(entry.chainId).state, ChainState.Completed);
-      if (change === "cancel")
-        assert.equal(store.chain(entry.chainId).state, ChainState.Cancelled);
-      if (change === "pause")
-        assert.equal(store.chain(entry.chainId).state, ChainState.Paused);
-      if (change === "operation")
-        assert.equal(
-          store.operations(entry.prId)[0]?.state,
-          OperationState.Uncertain,
-        );
+      if (change === "cancel") assert.equal(store.chain(entry.chainId).state, ChainState.Cancelled);
+      if (change === "pause") assert.equal(store.chain(entry.chainId).state, ChainState.Paused);
+      if (change === "operation") assert.equal(store.operations(entry.prId)[0]?.state, OperationState.Uncertain);
       if (["pause", "cancel", "operation"].includes(change)) {
         const reads = f.reads();
         await coordinator.merging.tick();
@@ -421,14 +363,8 @@ test("shutdown during external confirmation does not report a terminal outcome",
     });
     await f.current().merging.tick();
     await shutdown;
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.WaitingChecks,
-    );
-    assert.equal(
-      f.current().store.merging.chain(entry.chainId).state,
-      ChainState.Active,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.WaitingChecks);
+    assert.equal(f.current().store.merging.chain(entry.chainId).state, ChainState.Active);
     assert.equal(f.effects(), 0);
   }));
 
@@ -436,16 +372,9 @@ test("entry-level uncertainty remains unconfirmed without an operation lease", (
   fixture(async (f) => {
     const entry = f.ready();
     f.closePR();
-    f.current().store.merging.state(
-      entry,
-      EntryState.Uncertain,
-      "Historical effect remains unconfirmed",
-    );
+    f.current().store.merging.state(entry, EntryState.Uncertain, "Historical effect remains unconfirmed");
     await f.current().merging.tick();
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.Uncertain,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.Uncertain);
     assert.equal(f.reads(), 0);
     assert.equal(f.effects(), 0);
   }));
@@ -459,18 +388,12 @@ test("closed reconciliation prefers fresh readiness proof and rejects mismatchin
     assert(value !== undefined);
     value.observation.headSha = changed;
     await f.current().merging.tick();
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.Blocked,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.Blocked);
     assert.equal(f.reads(), 0);
     f.advance(61000);
     value.observation.headSha = head;
     await f.current().merging.tick();
-    assert.equal(
-      f.current().store.merging.entryById(entry.id)?.state,
-      EntryState.Merged,
-    );
+    assert.equal(f.current().store.merging.entryById(entry.id)?.state, EntryState.Merged);
     assert.equal(f.readinessReads(), 2);
     assert.equal(f.reads(), 0);
     assert.equal(f.effects(), 0);
@@ -512,14 +435,8 @@ for (const retry of [
           scheduler.start();
           await settleScheduledWork();
           assert.equal(f.reads(), 1);
-          assert.equal(
-            coordinator.store.merging.entryById(entry.id)?.state,
-            EntryState.Blocked,
-          );
-          assert.equal(
-            coordinator.store.merging.entryById(entry.id)?.nextAt,
-            retry.at,
-          );
+          assert.equal(coordinator.store.merging.entryById(entry.id)?.state, EntryState.Blocked);
+          assert.equal(coordinator.store.merging.entryById(entry.id)?.nextAt, retry.at);
           f.intercept(undefined);
           const beforeRetry = retry.at - f.clock() - 1;
           f.advance(beforeRetry);
@@ -530,18 +447,9 @@ for (const retry of [
           jest.advanceTimersByTime(1);
           await settleScheduledWork();
           assert.equal(f.reads(), 2);
-          assert.equal(
-            coordinator.store.merging.entryById(entry.id)?.state,
-            EntryState.Merged,
-          );
-          assert.equal(
-            coordinator.store.merging.entryById(entry.id)?.mergeCommit,
-            commit,
-          );
-          assert.equal(
-            coordinator.store.merging.chain(entry.chainId).state,
-            ChainState.Completed,
-          );
+          assert.equal(coordinator.store.merging.entryById(entry.id)?.state, EntryState.Merged);
+          assert.equal(coordinator.store.merging.entryById(entry.id)?.mergeCommit, commit);
+          assert.equal(coordinator.store.merging.chain(entry.chainId).state, ChainState.Completed);
           assert.equal(f.effects(), 0);
         } finally {
           await scheduler.close();
@@ -556,13 +464,7 @@ for (const retry of [
 test("manual closure retries remain parked when read authority is withdrawn", async () => {
   jest.useFakeTimers({ now: 1000 });
   try {
-    for (const change of [
-      "pause",
-      "cancel",
-      "untrack",
-      "uncertain",
-      "assessment",
-    ] as const) {
+    for (const change of ["pause", "cancel", "untrack", "uncertain", "assessment"] as const) {
       await fixture(async (f) => {
         const entry = f.ready();
         f.closePR();
@@ -581,11 +483,7 @@ test("manual closure retries remain parked when read authority is withdrawn", as
             coordinator.store.tracking.untrack(entry.prId);
             break;
           case "uncertain":
-            store.state(
-              pending,
-              EntryState.Uncertain,
-              "External outcome remains uncertain",
-            );
+            store.state(pending, EntryState.Uncertain, "External outcome remains uncertain");
             break;
           case "assessment": {
             delete pending.ready;
@@ -594,43 +492,23 @@ test("manual closure retries remain parked when read authority is withdrawn", as
           }
         }
         let passes = 0;
-        const scheduler = new WorkScheduler(
-          f.clock,
-          undefined,
-          (_key, work) => {
-            passes++;
-            return work();
-          },
-        );
+        const scheduler = new WorkScheduler(f.clock, undefined, (_key, work) => {
+          passes++;
+          return work();
+        });
         try {
           coordinator.merging.start(scheduler);
           scheduler.start();
           await settleScheduledWork();
           assert.equal(passes, 1, `${change}: initial pass`);
-          assert.equal(
-            f.reads(),
-            0,
-            `${change}: confirmation must remain parked`,
-          );
+          assert.equal(f.reads(), 0, `${change}: confirmation must remain parked`);
           f.advance(180000);
           jest.advanceTimersByTime(180000);
           await settleScheduledWork();
-          assert.equal(
-            passes,
-            1,
-            `${change}: no retry timer without eligibility`,
-          );
+          assert.equal(passes, 1, `${change}: no retry timer without eligibility`);
           assert.equal(f.reads(), 0, `${change}: no confirmation retry`);
-          assert.notEqual(
-            store.entryById(entry.id)?.state,
-            EntryState.Merged,
-            change,
-          );
-          assert.notEqual(
-            store.chain(entry.chainId).state,
-            ChainState.Completed,
-            change,
-          );
+          assert.notEqual(store.entryById(entry.id)?.state, EntryState.Merged, change);
+          assert.notEqual(store.chain(entry.chainId).state, ChainState.Completed, change);
           assert.equal(f.effects(), 0, `${change}: no write authority`);
         } finally {
           await scheduler.close();

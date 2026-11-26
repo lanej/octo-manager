@@ -1,16 +1,12 @@
 import type { CommandSpec } from "../cli/contracts.js";
+
 export const commands: CommandSpec[] = [
   {
     path: "pr init",
     route: "pr init",
     capability: "publication",
     description: "Initialize the local publication contract",
-    options: [
-      "--derive",
-      "--template <path>",
-      "--sample-remote <remote>",
-      "--sample-count <count>",
-    ],
+    options: ["--derive", "--template <path>", "--sample-remote <remote>", "--sample-count <count>"],
   },
   {
     path: "pr instructions",
@@ -23,11 +19,7 @@ export const commands: CommandSpec[] = [
     route: "pr refresh",
     capability: "publication",
     description: "Refresh repository publication guidance",
-    options: [
-      "--template <path>",
-      "--sample-remote <remote>",
-      "--sample-count <count>",
-    ],
+    options: ["--template <path>", "--sample-remote <remote>", "--sample-count <count>"],
   },
   {
     path: "pr validate",

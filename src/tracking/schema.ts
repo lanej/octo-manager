@@ -1,9 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
+
 export function migrateTracking(db: DatabaseSync): void {
   db.exec("PRAGMA foreign_keys=ON");
-  const version = Number(db.prepare("PRAGMA user_version").get()!.user_version);
-  if (version > 15)
-    throw new Error("Tracking database is newer than this application");
+  const value = db.prepare("PRAGMA user_version").get()?.["user_version"];
+  if (typeof value !== "number" && typeof value !== "bigint") throw new Error("Invalid tracking schema version");
+  const version = Number(value);
+  if (version > 15) throw new Error("Tracking database is newer than this application");
   if (version >= 1) return;
   db.exec(`BEGIN IMMEDIATE;
     ALTER TABLE events ADD COLUMN pr_id TEXT;

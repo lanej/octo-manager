@@ -2,12 +2,7 @@ import { test, expect } from "bun:test";
 import { serviceDefinition, startService } from "../src/install/service.js";
 import { serviceCommand } from "../src/install/config.js";
 import { packageRoot, workerModule } from "../src/package-root.js";
-import {
-  buildNative,
-  validNativeCompiler,
-  compilerRevision,
-  compilerSource,
-} from "../scripts/build-native.js";
+import { buildNative, validNativeCompiler, compilerRevision, compilerSource } from "../scripts/build-native.js";
 import { resolve } from "node:path";
 
 test("native installation selects the executable for both service managers and manual startup", async () => {
@@ -22,9 +17,7 @@ test("native installation selects the executable for both service managers and m
   };
   expect(serviceCommand(input)).toEqual([input.executable]);
   const linux = serviceDefinition("linux", input, 501);
-  expect(linux.text).toContain(
-    'ExecStart="/fixture/release/build/octo-manager" "serve"',
-  );
+  expect(linux.text).toContain('ExecStart="/fixture/release/build/octo-manager" "serve"');
   const mac = serviceDefinition("darwin", input, 501);
   expect(mac.text).toContain(
     "<key>ProgramArguments</key><array><string>/fixture/release/build/octo-manager</string><string>serve</string></array>",
@@ -39,16 +32,14 @@ test("native installation selects the executable for both service managers and m
     false,
     "a".repeat(64),
   );
-  expect(manual.manualCommand).toContain(
-    "'/fixture/release/build/octo-manager' 'serve'",
-  );
+  expect(manual.manualCommand).toContain("'/fixture/release/build/octo-manager' 'serve'");
 });
 
 test("source development retains module-relative roots and ordinary worker paths", () => {
   expect(packageRoot()).toBe(resolve(import.meta.dir, ".."));
-  expect(
-    workerModule("job", new URL("./fake-worker.mjs", import.meta.url).href),
-  ).toBe(resolve(import.meta.dir, "fake-worker.mjs"));
+  expect(workerModule("job", new URL("./fake-worker.mjs", import.meta.url).href)).toBe(
+    resolve(import.meta.dir, "fake-worker.mjs"),
+  );
 });
 
 test("stable Bun cannot masquerade as the selected native compiler by accepting --aot", () => {

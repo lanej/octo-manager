@@ -3,10 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/coordinator/store.js";
-import {
-  TrackingService,
-  type TrackingOptions,
-} from "../src/tracking/service.js";
+import { TrackingService, type TrackingOptions } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { DigestService } from "../src/notifications/service.js";
 import { DigestState } from "../src/notifications/types.js";
@@ -35,18 +32,8 @@ async function fixture(targets: AgentTarget[], recorded = true) {
     managedQueue: (id) => digests.managed(id),
     managedQueueBatch: (ids) => digests.managedBatch(ids),
   };
-  let tracking = new TrackingService(
-    store.tracking,
-    config,
-    () => 1000,
-    options,
-  );
-  const digests = new DigestService(
-    store.digests,
-    tracking,
-    store.submissions,
-    directory,
-  );
+  let tracking = new TrackingService(store.tracking, config, () => 1000, options);
+  const digests = new DigestService(store.digests, tracking, store.submissions, directory);
   const prs = targets.map((target, index) => {
     const url = `https://github.com/owner/repo/pull/${String(index + 1)}`;
     const pr = store.tracking.track(url, target);
@@ -72,10 +59,7 @@ async function fixture(targets: AgentTarget[], recorded = true) {
       if (pr === undefined) throw new Error("Missing PR");
       const notice = actionNotice(action, pr.url);
       store.tracking.inbox.freezeNotice(delivery.id, notice);
-      store.tracking.inbox.record(
-        delivery.id,
-        store.tracking.inbox.render(delivery.id, notice),
-      );
+      store.tracking.inbox.record(delivery.id, store.tracking.inbox.render(delivery.id, notice));
     }
   }
   return {
@@ -93,12 +77,7 @@ async function fixture(targets: AgentTarget[], recorded = true) {
     async pass() {
       tracking.tick();
       await tracking.close();
-      tracking = new TrackingService(
-        store.tracking,
-        config,
-        () => 1000,
-        options,
-      );
+      tracking = new TrackingService(store.tracking, config, () => 1000, options);
     },
     async close() {
       await tracking.close();
@@ -108,6 +87,7 @@ async function fixture(targets: AgentTarget[], recorded = true) {
     },
   };
 }
+
 const owner = (sessionId: string, harness = "codex"): AgentTarget => ({
   harness,
   endpoint: "local",
@@ -115,12 +95,7 @@ const owner = (sessionId: string, harness = "codex"): AgentTarget => ({
 });
 
 test("default batch resolves duplicate recorded recipients once per pass and refreshes later facts", async () => {
-  const f = await fixture([
-    owner("one"),
-    owner("one"),
-    owner("two"),
-    owner("two"),
-  ]);
+  const f = await fixture([owner("one"), owner("one"), owner("two"), owner("two")]);
   const agent = spyOn(f.store.tracking, "agent");
   try {
     await f.pass();
@@ -180,18 +155,14 @@ test("nonrecorded candidates retain direct selection even with a positive batch 
     await f.pass();
     expect(seen).toEqual([[]]);
     expect(f.prepared).toEqual([f.ownerId(0)]);
-    expect(f.store.tracking.deliveryCandidates()[0]?.messageRecorded).toBe(
-      true,
-    );
+    expect(f.store.tracking.deliveryCandidates()[0]?.messageRecorded).toBe(true);
   } finally {
     await f.close();
   }
 });
 
 test("Pi recipients retain their pull-inbox fallback when absent from the default managed batch", async () => {
-  const f = await fixture([
-    owner("00000000-0000-0000-0000-000000000001", "pi"),
-  ]);
+  const f = await fixture([owner("00000000-0000-0000-0000-000000000001", "pi")]);
   try {
     expect(f.digests.managedBatch([f.ownerId(0)])).toEqual(new Set<string>());
     await f.pass();
@@ -206,17 +177,12 @@ test("pending digest cleanup remains managed after an endpoint switches to direc
   try {
     const pr = f.prs[0],
       delivery = f.store.tracking.deliveries()[0];
-    if (pr === undefined || delivery === undefined)
-      throw new Error("Missing fixture");
-    const digest = f.store.digests.create(
-      pr.ownerAgentId,
-      { kind: "codex_queue", socket: "/synthetic" },
-      () => ({ body: "Immutable fixture notice", messageIds: [delivery.id] }),
-    );
-    f.store.digests.save(
-      { ...digest, state: DigestState.Cancelled, cleanupPending: true },
-      "fixture_cancelled",
-    );
+    if (pr === undefined || delivery === undefined) throw new Error("Missing fixture");
+    const digest = f.store.digests.create(pr.ownerAgentId, { kind: "codex_queue", socket: "/synthetic" }, () => ({
+      body: "Immutable fixture notice",
+      messageIds: [delivery.id],
+    }));
+    f.store.digests.save({ ...digest, state: DigestState.Cancelled, cleanupPending: true }, "fixture_cancelled");
     f.config.endpoints["local"] = { delivery: "turn", socket: "/synthetic" };
     await f.pass();
     expect(f.prepared).toHaveLength(0);

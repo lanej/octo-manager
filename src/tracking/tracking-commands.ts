@@ -1,4 +1,5 @@
 import type { CommandSpec } from "../cli/contracts.js";
+
 export const commands: CommandSpec[] = [
   {
     path: "assessment show <id>",
@@ -43,65 +44,35 @@ export const commands: CommandSpec[] = [
     route: "pr",
     capability: "tracking",
     description: "show a tracked pull request",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "pr refresh <id>",
     route: "refresh",
     capability: "tracking",
     description: "refresh a tracked pull request",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "pr assign <id>",
     route: "assign",
     capability: "tracking",
     description: "assign a tracked pull request",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "pr untrack <id>",
     route: "untrack",
     capability: "tracking",
     description: "untrack a tracked pull request",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "agent register",
     route: "register-agent",
     capability: "tracking",
     description: "Register an agent session",
-    options: [
-      "--agent-id <id>",
-      "--thread-id <id>",
-      "--harness <name>",
-      "--endpoint <name>",
-      "--label <topic>",
-    ],
+    options: ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"],
   },
   {
     path: "agent inbox",

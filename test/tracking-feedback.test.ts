@@ -11,6 +11,7 @@ import { TrackingService } from "../src/tracking/service.js";
 import { ActionState, DeliveryState } from "../src/tracking/types.js";
 
 const url = "https://github.com/owner/repo/pull/1";
+
 function github() {
   let body = "Please use the existing parser.";
   let offline = false;
@@ -24,8 +25,7 @@ function github() {
         head: { sha: "head" },
         base: { sha: "base", ref: "main", repo: { private: true } },
       });
-    if (path.includes("/git/ref/"))
-      return Promise.resolve({ object: { sha: "base" } });
+    if (path.includes("/git/ref/")) return Promise.resolve({ object: { sha: "base" } });
     if (path.includes("check-runs")) return Promise.resolve({ check_runs: [] });
     if (path.includes("/reviews?"))
       return Promise.resolve([
@@ -131,9 +131,7 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     store.tracking.observe(pr.id, observed, config);
     store.tracking.observe(pr.id, observed, config);
     assert.equal(store.tracking.actions().length, 3);
-    assert(
-      !JSON.stringify(store.tracking.snapshot()).includes("Private draft"),
-    );
+    assert(!JSON.stringify(store.tracking.snapshot()).includes("Private draft"));
     for (let i = 0; i < 100 && sent.length < 3; i++) {
       service.tick();
       await new Promise((resolve) => setTimeout(resolve, 5));
@@ -147,32 +145,13 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
           !message.includes("existing parser"),
       ),
     );
-    assert(
-      sent.every(
-        (message) =>
-          !message.includes("cheap-model") && message.includes("PR #1"),
-      ),
-    );
-    assert(
-      store.tracking
-        .actions()
-        .every((action) => action.progress.state === ActionState.Open),
-    );
-    assert(
-      store.tracking
-        .deliveries()
-        .every(
-          (delivery) => delivery.progress.state === DeliveryState.Delivered,
-        ),
-    );
+    assert(sent.every((message) => !message.includes("cheap-model") && message.includes("PR #1")));
+    assert(store.tracking.actions().every((action) => action.progress.state === ActionState.Open));
+    assert(store.tracking.deliveries().every((delivery) => delivery.progress.state === DeliveryState.Delivered));
     await service.close();
     const original = store.tracking
       .actions()
-      .find(
-        (action) =>
-          action.blocker.kind === "review_feedback" &&
-          action.blocker.feedback.source === "inline",
-      );
+      .find((action) => action.blocker.kind === "review_feedback" && action.blocker.feedback.source === "inline");
     assert(original !== undefined);
     store.tracking.progress(original.id, pr.ownerAgentId, false);
     const identity = store.instanceId();
@@ -185,28 +164,18 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     db.close();
     store = new Store(directory);
     assert.equal(store.instanceId(), identity);
-    assert.equal(
-      store.tracking.action(original.id).progress.state,
-      ActionState.Acknowledged,
-    );
+    assert.equal(store.tracking.action(original.id).progress.state, ActionState.Acknowledged);
     assert.equal(store.tracking.attempts().length, 3);
     store.tracking.observe(pr.id, observed, config);
     assert.equal(store.tracking.actions().length, 3);
     source.move();
-    store.tracking.observe(
-      pr.id,
-      await readObservation(url, undefined, source.read),
-      config,
-    );
+    store.tracking.observe(pr.id, await readObservation(url, undefined, source.read), config);
     assert.equal(store.tracking.actions().length, 3);
     source.edit();
     const edited = await readObservation(url, undefined, source.read);
     store.tracking.observe(pr.id, edited, config);
     assert.equal(store.tracking.actions().length, 4);
-    assert.equal(
-      store.tracking.action(original.id).progress.state,
-      ActionState.Superseded,
-    );
+    assert.equal(store.tracking.action(original.id).progress.state, ActionState.Superseded);
     source.disconnect();
     const partial = await readObservation(url, undefined, source.read);
     assert.equal(partial.feedback?.state, "partial");
@@ -215,17 +184,12 @@ test("review, inline and conversation feedback is durable, deduplicated, deliver
     const fresh = store.tracking
       .actions()
       .find(
-        (action) =>
-          action.blocker.kind === "review_feedback" &&
-          action.blocker.feedback.body.includes("add context"),
+        (action) => action.blocker.kind === "review_feedback" && action.blocker.feedback.body.includes("add context"),
       );
     assert(fresh !== undefined);
     assert.equal(fresh.progress.state, ActionState.Open);
     store.tracking.observe(pr.id, { ...edited, headSha: "new-head" }, config);
-    assert.equal(
-      store.tracking.action(fresh.id).progress.state,
-      ActionState.Open,
-    );
+    assert.equal(store.tracking.action(fresh.id).progress.state, ActionState.Open);
     service = new TrackingService(store.tracking, config);
   } finally {
     await service.close();

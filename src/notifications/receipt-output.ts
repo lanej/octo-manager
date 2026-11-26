@@ -5,6 +5,7 @@ import { Check } from "typebox/value";
 import { compact } from "../tracking/messages.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { AcknowledgeAgentDigestResponse } from "../gen/octomanager/v2/notifications_pb.js";
+
 const ReceiptSchema = Type.Object(
   {
     id: Type.String({ minLength: 1, maxLength: 200 }),
@@ -15,11 +16,11 @@ const ReceiptSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
 export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
   if (response.receipt === undefined) throw new Error("Missing digest receipt");
   const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);
-  if (!Check(ReceiptSchema, receipt))
-    throw new Error("Invalid digest receipt response");
+  if (!Check(ReceiptSchema, receipt)) throw new Error("Invalid digest receipt response");
   return {
     receipt: {
       digest: receipt.id,
@@ -31,9 +32,7 @@ export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
     items: response.messages.map((item) => ({
       message: item.messageId,
       ...(item.actionId === "" ? {} : { action: item.actionId }),
-      ...(item.submissionId === undefined
-        ? {}
-        : { submission: item.submissionId }),
+      ...(item.submissionId === undefined ? {} : { submission: item.submissionId }),
       applicable: item.applicable,
       summary: item.summary,
       ...(item.prUrl === "" ? {} : { pr: item.prUrl }),
@@ -42,38 +41,25 @@ export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
     })),
   };
 }
-export function receiptOutput(
-  response: AcknowledgeAgentDigestResponse,
-  state?: string,
-) {
+
+export function receiptOutput(response: AcknowledgeAgentDigestResponse, state?: string) {
   if (response.receipt === undefined) throw new Error("Missing digest receipt");
   const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);
-  if (!Check(ReceiptSchema, receipt))
-    throw new Error("Invalid digest receipt response");
+  if (!Check(ReceiptSchema, receipt)) throw new Error("Invalid digest receipt response");
   const ids = response.messages
-    .flatMap((item) => [
-      item.messageId,
-      item.actionId,
-      item.submissionId ?? "",
-      item.ownerAgentId,
-    ])
+    .flatMap((item) => [item.messageId, item.actionId, item.submissionId ?? "", item.ownerAgentId])
     .filter((id) => id !== "");
   const candidates = response.messages.map((item) => ({
     message: shortId(item.messageId, ids),
     ...(item.actionId === "" ? {} : { action: shortId(item.actionId, ids) }),
-    ...(item.submissionId === undefined
-      ? {}
-      : { submission: shortId(item.submissionId, ids) }),
+    ...(item.submissionId === undefined ? {} : { submission: shortId(item.submissionId, ids) }),
     applicable: item.applicable,
     summary: compact(item.summary, 160),
     ...(item.prUrl === "" ? {} : { pr: item.prUrl }),
     ...(item.recipientRole === "" ? {} : { role: item.recipientRole }),
-    ...(item.ownerAgentId === ""
-      ? {}
-      : { owner: shortId(item.ownerAgentId, ids) }),
+    ...(item.ownerAgentId === "" ? {} : { owner: shortId(item.ownerAgentId, ids) }),
   }));
-  const stateSuffix =
-    state === undefined ? "" : ` --state '${state.replaceAll("'", "'\"'\"'")}'`;
+  const stateSuffix = state === undefined ? "" : ` --state '${state.replaceAll("'", "'\"'\"'")}'`;
   const stateFits = Buffer.byteLength(JSON.stringify(stateSuffix)) <= 1000;
   const result = {
     receipt: {
@@ -88,10 +74,7 @@ export function receiptOutput(
     inspect: `octo-manager messages inspect ${shortId(receipt.id)} --revision ${String(receipt.revision)}${stateFits ? stateSuffix : ""}`,
     ...(stateFits ? {} : { inspectState: "Reuse the same --state argument" }),
   };
-  while (
-    Buffer.byteLength(JSON.stringify(result)) > 6000 &&
-    result.items.length > 0
-  ) {
+  while (Buffer.byteLength(JSON.stringify(result)) > 6000 && result.items.length > 0) {
     result.items.pop();
     result.omittedItems++;
   }

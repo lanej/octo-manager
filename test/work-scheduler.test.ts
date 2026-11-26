@@ -1,12 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  expect,
-  jest,
-  mock,
-  spyOn,
-  test,
-} from "bun:test";
+import { afterEach, beforeEach, expect, jest, mock, spyOn, test } from "bun:test";
 import { WorkScheduler } from "../src/scheduling/work.js";
 
 function gate() {
@@ -16,6 +8,7 @@ function gate() {
   });
   return { promise, release };
 }
+
 async function microtasks() {
   await Promise.resolve();
   await Promise.resolve();
@@ -39,9 +32,7 @@ test("registered tasks create no idle timer and duplicate keys fail", async () =
     jest.advanceTimersByTime(60000);
     expect(timer).not.toHaveBeenCalled();
     expect(work).not.toHaveBeenCalled();
-    expect(() => scheduler.task("idle", work)).toThrow(
-      "Duplicate scheduled task: idle",
-    );
+    expect(() => scheduler.task("idle", work)).toThrow("Duplicate scheduled task: idle");
     task.close();
     task.wake();
     task.runNow();
@@ -299,9 +290,7 @@ test("stop discards queued work and late completions while close joins active wo
     expect(jest.getTimerCount()).toBe(0);
     expect(calls).toBe(1);
     expect(otherCalls).toBe(0);
-    expect(() => scheduler.task("resurrect", () => {})).toThrow(
-      "Work scheduler is closed",
-    );
+    expect(() => scheduler.task("resurrect", () => {})).toThrow("Work scheduler is closed");
   } finally {
     blocked.release();
     await scheduler.close();

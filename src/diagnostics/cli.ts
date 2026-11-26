@@ -3,10 +3,7 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import {
-  PerformanceCaptureSchema,
-  PerformanceCaptureState as State,
-} from "../gen/octomanager/v2/diagnostics_pb.js";
+import { PerformanceCaptureSchema, PerformanceCaptureState as State } from "../gen/octomanager/v2/diagnostics_pb.js";
 import { schedulerClient } from "../client.js";
 import { printResult } from "../cli/output.js";
 import type { ParsedCommand } from "../cli/contracts.js";
@@ -14,22 +11,13 @@ import type { ParsedCommand } from "../cli/contracts.js";
 export async function diagnosticsCLI(parsed: ParsedCommand): Promise<void> {
   const { values, positionals } = parsed;
   const client = schedulerClient(
-    resolve(
-      values.state ??
-        process.env["OCTO_MANAGER_STATE"] ??
-        join(homedir(), ".local", "state", "octo-manager"),
-    ),
+    resolve(values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local", "state", "octo-manager")),
   );
   const command = positionals[0];
   let capture;
   if (command === "diagnostics-capture") {
     const seconds = values["seconds"] ?? "60";
-    if (
-      typeof seconds !== "string" ||
-      !/^\d+$/u.test(seconds) ||
-      Number(seconds) < 1 ||
-      Number(seconds) > 300
-    )
+    if (typeof seconds !== "string" || !/^\d+$/u.test(seconds) || Number(seconds) < 1 || Number(seconds) > 300)
       throw new Error("--seconds must be an integer from 1 to 300");
     capture = (
       await client.startPerformanceCapture({
@@ -40,8 +28,7 @@ export async function diagnosticsCLI(parsed: ParsedCommand): Promise<void> {
     if (values["wait"] === true) {
       while (capture?.state === State.COLLECTING) {
         await delay(500);
-        capture = (await client.getPerformanceCapture({ id: capture.id }))
-          .capture;
+        capture = (await client.getPerformanceCapture({ id: capture.id })).capture;
       }
     }
   } else {
@@ -59,7 +46,5 @@ export async function diagnosticsCLI(parsed: ParsedCommand): Promise<void> {
   }
   printResult(parsed, toJson(PerformanceCaptureSchema, capture));
   if (capture.state === State.FAILED || capture.state === State.INTERRUPTED)
-    throw new Error(
-      capture.detail === "" ? "Capture did not complete" : capture.detail,
-    );
+    throw new Error(capture.detail === "" ? "Capture did not complete" : capture.detail);
 }

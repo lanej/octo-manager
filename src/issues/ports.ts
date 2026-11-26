@@ -1,31 +1,13 @@
-import type {
-  Assignment,
-  IssueReference,
-  IssueRecord,
-  StageResult,
-  TrackerObservation,
-} from "./contracts.js";
+import type { Assignment, IssueReference, IssueRecord, StageResult, TrackerObservation } from "./contracts.js";
+
 // Write adapters must invoke authorize immediately before dispatch, after any awaited preparation.
 export interface IssueTracker {
   provider: string;
   identify(url: string): IssueReference;
   verifyRepository(root: string, ref: IssueReference): void;
-  observe(
-    ref: IssueReference,
-    signal: AbortSignal,
-  ): Promise<TrackerObservation>;
-  post(
-    ref: IssueReference,
-    key: string,
-    body: string,
-    signal: AbortSignal,
-    authorize: () => void,
-  ): Promise<string>;
-  findPost(
-    ref: IssueReference,
-    key: string,
-    signal: AbortSignal,
-  ): Promise<string | undefined>;
+  observe(ref: IssueReference, signal: AbortSignal): Promise<TrackerObservation>;
+  post(ref: IssueReference, key: string, body: string, signal: AbortSignal, authorize: () => void): Promise<string>;
+  findPost(ref: IssueReference, key: string, signal: AbortSignal): Promise<string | undefined>;
   createFollowUp(
     ref: IssueReference,
     key: string,
@@ -34,16 +16,8 @@ export interface IssueTracker {
     signal: AbortSignal,
     authorize: () => void,
   ): Promise<string>;
-  findFollowUp(
-    ref: IssueReference,
-    key: string,
-    signal: AbortSignal,
-  ): Promise<string | undefined>;
-  close(
-    ref: IssueReference,
-    signal: AbortSignal,
-    authorize: () => void,
-  ): Promise<void>;
+  findFollowUp(ref: IssueReference, key: string, signal: AbortSignal): Promise<string | undefined>;
+  close(ref: IssueReference, signal: AbortSignal, authorize: () => void): Promise<void>;
 }
 export interface DispatchStatus {
   state: "running" | "completed" | "failed" | "uncertain";
@@ -54,11 +28,7 @@ export interface DispatchStatus {
 }
 export interface AgentDispatcher {
   harness: string;
-  submit(
-    assignment: Assignment,
-    checkpoint: (sessionId: string) => void,
-    signal: AbortSignal,
-  ): Promise<DispatchStatus>;
+  submit(assignment: Assignment, checkpoint: (sessionId: string) => void, signal: AbortSignal): Promise<DispatchStatus>;
   inspect(assignment: Assignment, signal: AbortSignal): Promise<DispatchStatus>;
   // True confirms terminal execution; interrupt acceptance alone returns false.
   cancel(assignment: Assignment, signal: AbortSignal): Promise<boolean>;
@@ -74,11 +44,7 @@ export interface CodeHostStatus {
   feedback: string[];
 }
 export interface IssueCodeHost {
-  commit(
-    issue: IssueRecord,
-    signal: AbortSignal,
-    authorize: () => void,
-  ): Promise<string>;
+  commit(issue: IssueRecord, signal: AbortSignal, authorize: () => void): Promise<string>;
   publish(
     key: string,
     issue: IssueRecord,

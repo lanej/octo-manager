@@ -1,0 +1,20 @@
+diff --git a/globals.d.ts b/globals.d.ts
+index 349cd414a1826ef309b9e44e312697bf7df1a393..7999c2caa34236e2a886fc41890b8ee370f43848 100644
+--- a/globals.d.ts
++++ b/globals.d.ts
+@@ -323,7 +323,7 @@ interface TextEncoder extends Bun.__internal.LibEmptyOrNodeUtilTextEncoder {
+    * @param src The text to encode.
+    * @param dest The array that receives the encoded bytes.
+    */
+-  encodeInto(src: string, dest: Bun.BufferSource): import("node:util").TextEncoderEncodeIntoResult;
++  encodeInto(src: string, dest: Bun.BufferSource): ReturnType<import("node:util").TextEncoder["encodeInto"]>;
+ }
+ declare var TextEncoder: Bun.__internal.UseLibDomIfAvailable<
+   "TextEncoder",
+diff --git a/overrides.d.ts b/overrides.d.ts
+index 6a5dd88be9a7387254e0d0d973214017cfc4e458..a82eaec586342eb3043924077cfddf46fe8b5863 100644
+--- a/overrides.d.ts
++++ b/overrides.d.ts
+@@ -1 +1 @@
+-export {};
++import type { ConnectionOptions, KeyObject, TLSSocket } from "node:tls";

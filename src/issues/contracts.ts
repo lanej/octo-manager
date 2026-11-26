@@ -1,5 +1,6 @@
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
+
 export enum IssueStage {
   Investigation = "investigation",
   Ready = "ready",
@@ -163,11 +164,12 @@ export interface IssueEvent {
   kind: string;
   detail: string;
 }
+
 export function result(value: unknown): StageResult {
-  if (!Check(ResultSchema, value))
-    throw new Error("Invalid issue stage result");
+  if (!Check(ResultSchema, value)) throw new Error("Invalid issue stage result");
   return value;
 }
+
 export function validateBrief(brief: Brief): void {
   if (
     !Check(BriefSchema, brief) ||
@@ -178,9 +180,11 @@ export function validateBrief(brief: Brief): void {
   )
     throw new Error("Outcome, scope and acceptance criteria are required");
 }
+
 export function terminal(stage: IssueStage): boolean {
   return stage === IssueStage.Done || stage === IssueStage.Cancelled;
 }
+
 export function roleFor(stage: IssueStage): Role {
   switch (stage) {
     case IssueStage.Investigation:
@@ -197,6 +201,7 @@ export function roleFor(stage: IssueStage): Role {
       throw new Error("Stage does not dispatch an agent");
   }
 }
+
 export function clarificationTimeout(stage: string): number | undefined {
   switch (stage) {
     case "research":

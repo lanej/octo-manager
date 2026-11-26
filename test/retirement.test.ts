@@ -18,13 +18,11 @@ import {
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ActionState } from "../src/tracking/types.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+
 const owner = { harness: "codex", endpoint: "local", sessionId: "owner" };
 const url = "https://github.com/owner/repo/pull/1";
-function observation(
-  at: number,
-  lifecycle: "open" | "closed" = "open",
-  status = "completed",
-): ObservationInput {
+
+function observation(at: number, lifecycle: "open" | "closed" = "open", status = "completed"): ObservationInput {
   return {
     observedAt: at,
     headSha: "a".repeat(40),
@@ -50,6 +48,7 @@ function observation(
     reviews: { state: "complete", value: [] },
   };
 }
+
 async function fixture() {
   const directory = await mkdtemp("/tmp/om-retire-");
   let now = 1000;
@@ -77,15 +76,12 @@ async function fixture() {
     },
   };
 }
+
 test("closed PR drains, archives after a final refresh and retains unread final failure", async () => {
   const f = await fixture();
   try {
     const pr = f.store.tracking.track(url, owner);
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "open", "in_progress"),
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, observation(f.now, "open", "in_progress"), f.config);
     f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
     const delivery = f.store.tracking.deliveries().at(-1);
@@ -93,15 +89,11 @@ test("closed PR drains, archives after a final refresh and retains unread final 
     f.store.tracking.inbox.record(delivery.id, "Final CI failure");
     f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
-    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(
-      ArchiveReason.Settled,
-    );
+    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(ArchiveReason.Settled);
     expect(f.store.tracking.inbox.get(delivery.id)?.applicable).toBe(true);
     f.reopen();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
-    expect(
-      f.store.tracking.inbox.get(delivery.id)?.acknowledgedAt,
-    ).toBeUndefined();
+    expect(f.store.tracking.inbox.get(delivery.id)?.acknowledgedAt).toBeUndefined();
   } finally {
     await f.close();
   }
@@ -110,41 +102,18 @@ test("deadline survives restart, expires unresolved watches, and fences an old r
   const f = await fixture();
   try {
     const pr = f.store.tracking.track(url, owner);
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "open", "in_progress"),
-      f.config,
-    );
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "closed", "in_progress"),
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, observation(f.now, "open", "in_progress"), f.config);
+    f.store.tracking.observe(pr.id, observation(f.now, "closed", "in_progress"), f.config);
     const before = f.store.tracking.pr(pr.id);
     f.advance(1000);
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "closed", "in_progress"),
-      f.config,
-    );
-    expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(
-      before.drainDeadlineAt,
-    );
+    f.store.tracking.observe(pr.id, observation(f.now, "closed", "in_progress"), f.config);
+    expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(before.drainDeadlineAt);
     f.reopen();
     f.advance(86400000);
     f.store.tracking.retirement.expire();
-    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(
-      ArchiveReason.Deadline,
-    );
-    expect(f.store.tracking.checks.list(pr.id)[0]?.state).toBe(
-      CheckWatchState.Expired,
-    );
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now),
-      f.config,
-      before.trackingEpoch,
-    );
+    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(ArchiveReason.Deadline);
+    expect(f.store.tracking.checks.list(pr.id)[0]?.state).toBe(CheckWatchState.Expired);
+    f.store.tracking.observe(pr.id, observation(f.now), f.config, before.trackingEpoch);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
     f.store.tracking.observe(pr.id, observation(f.now), f.config);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Watching);
@@ -155,8 +124,7 @@ test("deadline survives restart, expires unresolved watches, and fences an old r
 });
 test("notification cursor and queued refresh survive restart without reenrolling unknown or disabled PRs", async () => {
   const f = await fixture();
-  let service: NotificationService | undefined,
-    tracking: TrackingService | undefined;
+  let service: NotificationService | undefined, tracking: TrackingService | undefined;
   try {
     const pr = f.store.tracking.track(url, owner);
     f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
@@ -191,12 +159,7 @@ test("notification cursor and queued refresh survive restart without reenrolling
       identity: () => Promise.resolve("github.com/owner"),
       page: () => Promise.resolve({ ...page, updates: [], more: false }),
     };
-    service = new NotificationService(
-      f.store.notifications,
-      tracking,
-      () => f.now,
-      reader,
-    );
+    service = new NotificationService(f.store.notifications, tracking, () => f.now, reader);
     await service.flush();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Watching);
     expect(f.store.tracking.pr(pr.id).ownerAgentId).toBe(pr.ownerAgentId);
@@ -229,35 +192,26 @@ test("notifications retain cursor on failure, honor conditional reads and reject
   );
   expect(parsed.pollSeconds).toBe(120);
   expect(parsed.updates[0]?.prUrl).toBeUndefined();
-  expect(
-    parseNotificationResponse(
-      "HTTP/2.0 304 Not Modified\nX-Poll-Interval: 60\n\n",
-    ).notModified,
-  ).toBe(true);
+  expect(parseNotificationResponse("HTTP/2.0 304 Not Modified\nX-Poll-Interval: 60\n\n").notModified).toBe(true);
   expect(() => parseNotificationResponse("HTTP/2.0 200 OK\n\n{}")).toThrow();
 });
 test("failed notification pagination resumes its cursor, deduplicates updates and respects rate backoff", async () => {
   const f = await fixture();
-  let service: NotificationService | undefined,
-    tracking: TrackingService | undefined;
+  let service: NotificationService | undefined, tracking: TrackingService | undefined;
   try {
     const pr = f.store.tracking.track(url, owner);
-    for (let i = 0; i < 2; i++)
-      f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
+    for (let i = 0; i < 2; i++) f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
     let fail = true;
     const pages: number[] = [];
     tracking = new TrackingService(f.store.tracking, f.config, () => f.now, {
       read: () =>
-        fail
-          ? Promise.reject(new Error("PR metadata offline"))
-          : Promise.resolve(observation(f.now, "closed")),
+        fail ? Promise.reject(new Error("PR metadata offline")) : Promise.resolve(observation(f.now, "closed")),
     });
     const reader: NotificationReader = {
       identity: () => Promise.resolve("github.com/owner"),
       page: (query) => {
         pages.push(query.page);
-        if (query.page === 2 && fail)
-          return Promise.reject(new Error("Page unavailable"));
+        if (query.page === 2 && fail) return Promise.reject(new Error("Page unavailable"));
         return Promise.resolve({
           updates: [{ id: "thread", updatedAt: 1000, prUrl: url }],
           more: query.page === 1,
@@ -268,12 +222,7 @@ test("failed notification pagination resumes its cursor, deduplicates updates an
         });
       },
     };
-    service = new NotificationService(
-      f.store.notifications,
-      tracking,
-      () => f.now,
-      reader,
-    );
+    service = new NotificationService(f.store.notifications, tracking, () => f.now, reader);
     await service.flush();
     expect(f.store.notifications.cursor("github.com/owner").page).toBe(2);
     expect(f.store.notifications.pending()).toHaveLength(0);
@@ -283,9 +232,7 @@ test("failed notification pagination resumes its cursor, deduplicates updates an
     await service.flush();
     expect(pages).toEqual([1, 2, 2]);
     expect(f.store.notifications.cursor("github.com/owner").page).toBe(1);
-    expect(f.store.notifications.cursor("github.com/owner").lastModified).toBe(
-      "stamp",
-    );
+    expect(f.store.notifications.cursor("github.com/owner").lastModified).toBe("stamp");
     expect(f.store.notifications.status().nextPollAt).toBe(f.now + 120000);
     expect(f.store.notifications.status().lastError).toBeUndefined();
     f.store.notifications.page("github.com/owner", {
@@ -337,12 +284,8 @@ test("manual disable and retrack fence an already running observation", async ()
 test("notification access failures retain server retry deadlines", () => {
   const response =
     "HTTP/2 403 Forbidden\r\nDate: Thu, 12 Nov 2026 00:00:00 GMT\r\nRetry-After: 120\r\nX-RateLimit-Remaining: 0\r\nX-RateLimit-Reset: 1794441900\r\n\r\n{}";
-  expect(notificationAccessError(response).retryAt).toBe(
-    Math.max(Date.parse("2026-11-12T00:02:00Z"), 1794441901000),
-  );
-  expect(
-    notificationAccessError("HTTP/2 401 Unauthorized\r\n\r\n{}").retryAt,
-  ).toBeUndefined();
+  expect(notificationAccessError(response).retryAt).toBe(Math.max(Date.parse("2026-11-12T00:02:00Z"), 1794441901000));
+  expect(notificationAccessError("HTTP/2 401 Unauthorized\r\n\r\n{}").retryAt).toBeUndefined();
 });
 
 test("retirement deadlines expire locally during a shared GitHub cooldown without resuming archived polling", async () => {
@@ -359,24 +302,14 @@ test("retirement deadlines expire locally during a shared GitHub cooldown withou
   });
   try {
     const pr = f.store.tracking.track(url, owner);
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "open", "in_progress"),
-      f.config,
-    );
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "closed", "in_progress"),
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, observation(f.now, "open", "in_progress"), f.config);
+    f.store.tracking.observe(pr.id, observation(f.now, "closed", "in_progress"), f.config);
     await service.refresh(pr.id);
     expect(reads).toBe(1);
     f.advance(86400001);
     service.tick();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
-    expect(f.store.tracking.checks.list(pr.id)[0]?.state).toBe(
-      CheckWatchState.Expired,
-    );
+    expect(f.store.tracking.checks.list(pr.id)[0]?.state).toBe(CheckWatchState.Expired);
     await rejects(service.refresh(pr.id), GitHubRateLimitError);
     expect(reads).toBe(1);
     f.advance(86400000);
@@ -395,11 +328,7 @@ test("startup archives cached settled merged PRs without fetching or removing hi
   try {
     const pr = f.store.tracking.track(url, owner);
     f.store.tracking.observe(pr.id, observation(f.now), f.config);
-    f.store.tracking.observe(
-      pr.id,
-      { ...observation(f.now), lifecycle: "merged" },
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, { ...observation(f.now), lifecycle: "merged" }, f.config);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
     f.reopen();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
@@ -415,11 +344,7 @@ test("startup retains draining PRs whose cached checks are still running", async
   const f = await fixture();
   try {
     const pr = f.store.tracking.track(url, owner);
-    f.store.tracking.observe(
-      pr.id,
-      { ...observation(f.now, "open", "in_progress"), lifecycle: "merged" },
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, { ...observation(f.now, "open", "in_progress"), lifecycle: "merged" }, f.config);
     f.reopen();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
   } finally {
@@ -459,12 +384,7 @@ test("SDK notification cooldown survives coordinator restart", async () => {
     f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
     f.store.tracking.observe(pr.id, observation(f.now, "closed"), f.config);
     tracking = new TrackingService(f.store.tracking, f.config, () => f.now);
-    service = new NotificationService(
-      f.store.notifications,
-      tracking,
-      () => f.now,
-      reader(),
-    );
+    service = new NotificationService(f.store.notifications, tracking, () => f.now, reader());
     await service.flush();
     expect(f.store.notifications.status().nextPollAt).toBe(f.now + 180000);
     await service.close();
@@ -472,12 +392,7 @@ test("SDK notification cooldown survives coordinator restart", async () => {
     f.reopen();
     f.advance(61000);
     tracking = new TrackingService(f.store.tracking, f.config, () => f.now);
-    service = new NotificationService(
-      f.store.notifications,
-      tracking,
-      () => f.now,
-      reader(),
-    );
+    service = new NotificationService(f.store.notifications, tracking, () => f.now, reader());
     await service.flush();
     expect(calls).toBe(2);
   } finally {
@@ -499,16 +414,8 @@ test("queued manual refresh can revisit archived enrollment without restarting a
   });
   try {
     const pr = f.store.tracking.track(url, owner);
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "closed", "completed"),
-      f.config,
-    );
-    f.store.tracking.observe(
-      pr.id,
-      observation(f.now, "closed", "completed"),
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, observation(f.now, "closed", "completed"), f.config);
+    f.store.tracking.observe(pr.id, observation(f.now, "closed", "completed"), f.config);
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
     service.tick();
     await new Promise((resolve) => setImmediate(resolve));
@@ -558,11 +465,8 @@ for (const terminal of ["closed", "merged"] as const)
         },
         f.config,
       );
-      const prior = f.store.tracking
-        .actions()
-        .find((action) => action.blocker.kind === "review_feedback");
-      if (prior === undefined)
-        throw new Error("Missing original review action");
+      const prior = f.store.tracking.actions().find((action) => action.blocker.kind === "review_feedback");
+      if (prior === undefined) throw new Error("Missing original review action");
       const pending: ObservationInput = {
         ...observation(f.now),
         lifecycle: terminal,
@@ -585,9 +489,7 @@ for (const terminal of ["closed", "merged"] as const)
       const deadline = f.store.tracking.pr(pr.id).drainDeadlineAt;
       f.store.tracking.observe(pr.id, pending, f.config);
       expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
-      expect(f.store.tracking.action(prior.id).progress.state).toBe(
-        ActionState.Superseded,
-      );
+      expect(f.store.tracking.action(prior.id).progress.state).toBe(ActionState.Superseded);
       f.reopen();
       expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
       expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(deadline);
@@ -614,34 +516,17 @@ for (const terminal of ["closed", "merged"] as const)
       expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Archived);
       const late = f.store.tracking
         .actions()
-        .find(
-          (action) =>
-            action.blocker.kind === "review_feedback" &&
-            action.blocker.feedback.id === "2",
-        );
+        .find((action) => action.blocker.kind === "review_feedback" && action.blocker.feedback.id === "2");
       if (late === undefined) throw new Error("Missing late review action");
-      const delivery = f.store.tracking
-        .deliveries()
-        .find((item) => item.actionId === late.id);
-      if (delivery === undefined)
-        throw new Error("Missing late review delivery");
+      const delivery = f.store.tracking.deliveries().find((item) => item.actionId === late.id);
+      if (delivery === undefined) throw new Error("Missing late review delivery");
       f.store.tracking.inbox.record(delivery.id, "Late submitted review");
       f.store.tracking.observe(pr.id, submitted, f.config);
       f.reopen();
-      expect(f.store.tracking.action(late.id).progress.state).toBe(
-        ActionState.Open,
-      );
+      expect(f.store.tracking.action(late.id).progress.state).toBe(ActionState.Open);
       expect(f.store.tracking.inbox.get(delivery.id)?.applicable).toBe(true);
-      expect(
-        f.store.tracking
-          .actions()
-          .filter((action) => action.blocker.kind === "review_feedback"),
-      ).toHaveLength(2);
-      expect(
-        f.store.tracking
-          .deliveries()
-          .filter((item) => item.actionId === late.id),
-      ).toHaveLength(1);
+      expect(f.store.tracking.actions().filter((action) => action.blocker.kind === "review_feedback")).toHaveLength(2);
+      expect(f.store.tracking.deliveries().filter((item) => item.actionId === late.id)).toHaveLength(1);
     } finally {
       await f.close();
     }
@@ -671,19 +556,13 @@ test("a pending review cannot extend the original drain deadline", async () => {
     f.store.tracking.observe(pr.id, pending, f.config);
     const deadline = f.store.tracking.pr(pr.id).drainDeadlineAt;
     f.advance(86399999);
-    f.store.tracking.observe(
-      pr.id,
-      { ...pending, observedAt: f.now },
-      f.config,
-    );
+    f.store.tracking.observe(pr.id, { ...pending, observedAt: f.now }, f.config);
     f.reopen();
     expect(f.store.tracking.pr(pr.id).state).toBe(TrackingState.Draining);
     expect(f.store.tracking.pr(pr.id).drainDeadlineAt).toBe(deadline);
     f.advance(1);
     f.store.tracking.retirement.expire();
-    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(
-      ArchiveReason.Deadline,
-    );
+    expect(f.store.tracking.pr(pr.id).archiveReason).toBe(ArchiveReason.Deadline);
   } finally {
     await f.close();
   }

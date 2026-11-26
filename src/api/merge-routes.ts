@@ -3,19 +3,20 @@ import { wire, unwire, record } from "./codec.js";
 import { trackingOperation } from "../tracking/rpc.js";
 import * as api from "../gen/octomanager/v2/domain_pb.js";
 import { CommandSchema, checked } from "../merging/contracts.js";
+
 function list(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Expected merge records");
   return value;
 }
+
 function text(value: unknown): string {
   if (typeof value !== "string") throw new Error("Expected merge result text");
   return value;
 }
+
 export function mergeRoutes(merging: MergeService) {
   return {
-    setAutoMerge(
-      r: import("../gen/octomanager/v2/domain_pb.js").SetAutoMergeRequest,
-    ) {
+    setAutoMerge(r: import("../gen/octomanager/v2/domain_pb.js").SetAutoMergeRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -24,20 +25,15 @@ export function mergeRoutes(merging: MergeService) {
           }),
         );
         const data = record(result);
-        if (typeof data["enabled"] !== "boolean")
-          throw new Error("Invalid automatic merge result");
+        if (typeof data["enabled"] !== "boolean") throw new Error("Invalid automatic merge result");
         return {
           prId: text(data["prId"]),
           enabled: data["enabled"],
-          ...(data["entry"] === undefined
-            ? {}
-            : { entry: wire(api.DomainMergeEntrySchema, data["entry"]) }),
+          ...(data["entry"] === undefined ? {} : { entry: wire(api.DomainMergeEntrySchema, data["entry"]) }),
         };
       });
     },
-    queueMergeChain(
-      r: import("../gen/octomanager/v2/domain_pb.js").QueueMergeChainRequest,
-    ) {
+    queueMergeChain(r: import("../gen/octomanager/v2/domain_pb.js").QueueMergeChainRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -48,9 +44,7 @@ export function mergeRoutes(merging: MergeService) {
         return { chain: wire(api.DomainMergeChainSchema, result) };
       });
     },
-    inspectMergeChains(
-      r: import("../gen/octomanager/v2/domain_pb.js").InspectMergeChainsRequest,
-    ) {
+    inspectMergeChains(r: import("../gen/octomanager/v2/domain_pb.js").InspectMergeChainsRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -61,9 +55,7 @@ export function mergeRoutes(merging: MergeService) {
         return { overview: wire(api.DomainMergeOverviewSchema, result) };
       });
     },
-    listPRReferences(
-      r: import("../gen/octomanager/v2/domain_pb.js").ListPRReferencesRequest,
-    ) {
+    listPRReferences(r: import("../gen/octomanager/v2/domain_pb.js").ListPRReferencesRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -72,15 +64,11 @@ export function mergeRoutes(merging: MergeService) {
           }),
         );
         return {
-          references: list(record(result)["references"]).map((value) =>
-            wire(api.DomainPRReferenceSchema, value),
-          ),
+          references: list(record(result)["references"]).map((value) => wire(api.DomainPRReferenceSchema, value)),
         };
       });
     },
-    listPRDependencies(
-      r: import("../gen/octomanager/v2/domain_pb.js").ListPRDependenciesRequest,
-    ) {
+    listPRDependencies(r: import("../gen/octomanager/v2/domain_pb.js").ListPRDependenciesRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -89,15 +77,11 @@ export function mergeRoutes(merging: MergeService) {
           }),
         );
         return {
-          dependencies: list(record(result)["dependencies"]).map((value) =>
-            wire(api.DomainDependencySchema, value),
-          ),
+          dependencies: list(record(result)["dependencies"]).map((value) => wire(api.DomainDependencySchema, value)),
         };
       });
     },
-    confirmPRDependency(
-      r: import("../gen/octomanager/v2/domain_pb.js").ConfirmPRDependencyRequest,
-    ) {
+    confirmPRDependency(r: import("../gen/octomanager/v2/domain_pb.js").ConfirmPRDependencyRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -108,9 +92,7 @@ export function mergeRoutes(merging: MergeService) {
         return { dependency: wire(api.DomainDependencySchema, result) };
       });
     },
-    removePRDependency(
-      r: import("../gen/octomanager/v2/domain_pb.js").RemovePRDependencyRequest,
-    ) {
+    removePRDependency(r: import("../gen/octomanager/v2/domain_pb.js").RemovePRDependencyRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -121,9 +103,7 @@ export function mergeRoutes(merging: MergeService) {
         return { dependency: wire(api.DomainDependencySchema, result) };
       });
     },
-    decidePRReference(
-      r: import("../gen/octomanager/v2/domain_pb.js").DecidePRReferenceRequest,
-    ) {
+    decidePRReference(r: import("../gen/octomanager/v2/domain_pb.js").DecidePRReferenceRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -134,9 +114,7 @@ export function mergeRoutes(merging: MergeService) {
         return { reference: wire(api.DomainPRReferenceSchema, result) };
       });
     },
-    setMergePolicy(
-      r: import("../gen/octomanager/v2/domain_pb.js").SetMergePolicyRequest,
-    ) {
+    setMergePolicy(r: import("../gen/octomanager/v2/domain_pb.js").SetMergePolicyRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -147,9 +125,7 @@ export function mergeRoutes(merging: MergeService) {
         return { entry: wire(api.DomainMergeEntrySchema, result) };
       });
     },
-    setMergeReady(
-      r: import("../gen/octomanager/v2/domain_pb.js").SetMergeReadyRequest,
-    ) {
+    setMergeReady(r: import("../gen/octomanager/v2/domain_pb.js").SetMergeReadyRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -160,9 +136,7 @@ export function mergeRoutes(merging: MergeService) {
         return { entry: wire(api.DomainMergeEntrySchema, result) };
       });
     },
-    pauseMergeChain(
-      r: import("../gen/octomanager/v2/domain_pb.js").PauseMergeChainRequest,
-    ) {
+    pauseMergeChain(r: import("../gen/octomanager/v2/domain_pb.js").PauseMergeChainRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -173,9 +147,7 @@ export function mergeRoutes(merging: MergeService) {
         return { chain: wire(api.DomainMergeChainSchema, result) };
       });
     },
-    resumeMergeChain(
-      r: import("../gen/octomanager/v2/domain_pb.js").ResumeMergeChainRequest,
-    ) {
+    resumeMergeChain(r: import("../gen/octomanager/v2/domain_pb.js").ResumeMergeChainRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -186,9 +158,7 @@ export function mergeRoutes(merging: MergeService) {
         return { chain: wire(api.DomainMergeChainSchema, result) };
       });
     },
-    cancelMergeChain(
-      r: import("../gen/octomanager/v2/domain_pb.js").CancelMergeChainRequest,
-    ) {
+    cancelMergeChain(r: import("../gen/octomanager/v2/domain_pb.js").CancelMergeChainRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {
@@ -199,9 +169,7 @@ export function mergeRoutes(merging: MergeService) {
         return { chain: wire(api.DomainMergeChainSchema, result) };
       });
     },
-    reconcileMergeOperation(
-      r: import("../gen/octomanager/v2/domain_pb.js").ReconcileMergeOperationRequest,
-    ) {
+    reconcileMergeOperation(r: import("../gen/octomanager/v2/domain_pb.js").ReconcileMergeOperationRequest) {
       return trackingOperation(() => {
         const result = merging.command(
           checked(CommandSchema, {

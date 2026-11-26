@@ -3,11 +3,8 @@ import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
-import {
-  ActionState,
-  DeliveryState,
-  type ObservationInput,
-} from "../src/tracking/types.js";
+import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
+
 const owner = {
   harness: "codex",
   endpoint: "local",
@@ -33,77 +30,47 @@ test("many agents listen across PRs with independent receipts and owner-only act
   const directory = await mkdtemp("/tmp/om-subscriptions-");
   let store = new Store(directory, () => 1000);
   try {
-    const first = store.tracking.track(
-        "https://github.com/owner/repo/pull/1",
-        owner,
-      ),
-      second = store.tracking.track(
-        "https://github.com/owner/other/pull/2",
-        owner,
-      );
+    const first = store.tracking.track("https://github.com/owner/repo/pull/1", owner),
+      second = store.tracking.track("https://github.com/owner/other/pull/2", owner);
     store.tracking.subscribe(first.id, listener);
     store.tracking.subscribe(second.id, listener);
-    const observer = store.tracking
-      .agents()
-      .find((agent) => agent.sessionId === listener.sessionId);
+    const observer = store.tracking.agents().find((agent) => agent.sessionId === listener.sessionId);
     if (observer === undefined) throw new Error("Missing observer");
-    for (const pr of [first, second])
-      store.tracking.observe(pr.id, input, defaultTrackingConfig());
+    for (const pr of [first, second]) store.tracking.observe(pr.id, input, defaultTrackingConfig());
     const deliveries = store.tracking.deliveries();
     expect(deliveries).toHaveLength(4);
-    for (const delivery of deliveries)
-      store.tracking.inbox.record(delivery.id, "Frozen update");
-    const action = store.tracking
-      .actions()
-      .find((item) => item.prId === first.id);
+    for (const delivery of deliveries) store.tracking.inbox.record(delivery.id, "Frozen update");
+    const action = store.tracking.actions().find((item) => item.prId === first.id);
     if (action === undefined) throw new Error("Missing action");
-    expect(() =>
-      store.tracking.progress(action.id, observer.id, false),
-    ).toThrow("another agent");
+    expect(() => store.tracking.progress(action.id, observer.id, false)).toThrow("another agent");
     const ownerCopy = deliveries.find(
-        (item) =>
-          item.actionId === action.id &&
-          item.recipientAgentId === first.ownerAgentId,
+        (item) => item.actionId === action.id && item.recipientAgentId === first.ownerAgentId,
       ),
-      observerCopy = deliveries.find(
-        (item) =>
-          item.actionId === action.id && item.recipientAgentId === observer.id,
-      );
-    if (ownerCopy === undefined || observerCopy === undefined)
-      throw new Error("Missing independent copies");
+      observerCopy = deliveries.find((item) => item.actionId === action.id && item.recipientAgentId === observer.id);
+    if (ownerCopy === undefined || observerCopy === undefined) throw new Error("Missing independent copies");
     store.tracking.acknowledgeMessage(ownerCopy.id, first.ownerAgentId);
-    expect(
-      store.tracking.inbox.get(observerCopy.id)?.acknowledgedAt,
-    ).toBeUndefined();
-    expect(store.tracking.action(action.id).progress.state).toBe(
-      ActionState.Open,
-    );
-    expect(() =>
-      store.tracking.unsubscribe(first.id, first.ownerAgentId),
-    ).toThrow("Owner cannot unsubscribe");
+    expect(store.tracking.inbox.get(observerCopy.id)?.acknowledgedAt).toBeUndefined();
+    expect(store.tracking.action(action.id).progress.state).toBe(ActionState.Open);
+    expect(() => store.tracking.unsubscribe(first.id, first.ownerAgentId)).toThrow("Owner cannot unsubscribe");
     store.tracking.unsubscribe(first.id, observer.id);
     expect(store.tracking.inbox.get(observerCopy.id)?.applicable).toBe(false);
-    expect(
-      store.tracking.deliveries().find((d) => d.id === observerCopy.id)
-        ?.progress.state,
-    ).toBe(DeliveryState.Cancelled);
-    expect(store.tracking.subscriptions.includes(second.id, observer.id)).toBe(
-      true,
+    expect(store.tracking.deliveries().find((d) => d.id === observerCopy.id)?.progress.state).toBe(
+      DeliveryState.Cancelled,
     );
+    expect(store.tracking.subscriptions.includes(second.id, observer.id)).toBe(true);
     expect(
       store.tracking.inbox
         .list(observer.id, 0, false, true)
         .messages.some(
-          (message) =>
-            message.actionId !== "" &&
-            store.tracking.action(message.actionId).prId === second.id,
+          (message) => message.actionId !== "" && store.tracking.action(message.actionId).prId === second.id,
         ),
     ).toBe(true);
     store.close();
     store = new Store(directory, () => 2000);
-    expect(
-      store.tracking.participants(second.id).map((item) => item.label),
-    ).toEqual(["Octo implementation", "Independent review"]);
+    expect(store.tracking.participants(second.id).map((item) => item.label)).toEqual([
+      "Octo implementation",
+      "Independent review",
+    ]);
     expect(store.tracking.inbox.get(ownerCopy.id)?.acknowledgedAt).toBe(1000);
   } finally {
     store.close();
@@ -114,15 +81,10 @@ test("subscription catchup is idempotent, roster changes supersede chatter and l
   const directory = await mkdtemp("/tmp/om-subscriptions-");
   const store = new Store(directory, () => 1000);
   try {
-    const pr = store.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      owner,
-    );
+    const pr = store.tracking.track("https://github.com/owner/repo/pull/1", owner);
     store.tracking.observe(pr.id, input, defaultTrackingConfig());
     store.tracking.subscribe(pr.id, listener);
-    const observer = store.tracking
-      .agents()
-      .find((agent) => agent.sessionId === listener.sessionId);
+    const observer = store.tracking.agents().find((agent) => agent.sessionId === listener.sessionId);
     if (observer === undefined) throw new Error("Missing observer");
     const copies = store.tracking.deliveries();
     store.tracking.subscribe(pr.id, listener);
@@ -143,15 +105,11 @@ test("subscription catchup is idempotent, roster changes supersede chatter and l
     expect(store.tracking.inbox.get(copy.id)?.applicable).toBe(false);
     expect(store.tracking.inbox.get(roster.id)?.applicable).toBe(false);
     expect(
-      store.tracking.inbox
-        .list(observer.id, 0, false, true)
-        .messages.filter((item) => item.participantPRId === pr.id),
+      store.tracking.inbox.list(observer.id, 0, false, true).messages.filter((item) => item.participantPRId === pr.id),
     ).toHaveLength(1);
     store.tracking.untrack(pr.id);
     expect(() => store.tracking.subscribe(pr.id, listener)).toThrow("disabled");
-    expect(
-      store.tracking.inbox.list(observer.id, 0, false, true).messages,
-    ).toHaveLength(0);
+    expect(store.tracking.inbox.list(observer.id, 0, false, true).messages).toHaveLength(0);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -162,19 +120,12 @@ test("owner transfer replaces role-specific copies while retaining explicit obse
   const directory = await mkdtemp("/tmp/om-subscriptions-");
   const store = new Store(directory, () => 1000);
   try {
-    const pr = store.tracking.track(
-      "https://github.com/owner/repo/pull/1",
-      owner,
-    );
+    const pr = store.tracking.track("https://github.com/owner/repo/pull/1", owner);
     store.tracking.subscribe(pr.id, listener);
     store.tracking.observe(pr.id, input, defaultTrackingConfig());
-    const observer = store.tracking
-      .agents()
-      .find((agent) => agent.sessionId === listener.sessionId);
+    const observer = store.tracking.agents().find((agent) => agent.sessionId === listener.sessionId);
     if (observer === undefined) throw new Error("Missing observer");
-    const old = store.tracking
-      .deliveries()
-      .find((item) => item.recipientAgentId === observer.id);
+    const old = store.tracking.deliveries().find((item) => item.recipientAgentId === observer.id);
     if (old === undefined) throw new Error("Missing observer delivery");
     store.tracking.inbox.record(old.id, "Observer role copy");
     store.tracking.saveDelivery(
@@ -189,24 +140,16 @@ test("owner transfer replaces role-specific copies while retaining explicit obse
     expect(store.tracking.inbox.get(old.id)?.applicable).toBe(false);
     const fresh = store.tracking
       .deliveries()
-      .find(
-        (item) =>
-          item.recipientAgentId === observer.id &&
-          item.progress.state === DeliveryState.Pending,
-      );
+      .find((item) => item.recipientAgentId === observer.id && item.progress.state === DeliveryState.Pending);
     if (fresh === undefined) throw new Error("No fresh owner copy");
     expect(fresh.id).not.toBe(old.id);
-    expect(store.tracking.subscriptions.includes(pr.id, pr.ownerAgentId)).toBe(
-      false,
-    );
-    expect(
-      store.tracking.progress(fresh.actionId, observer.id, false).progress
-        .state,
-    ).toBe(ActionState.Acknowledged);
+    expect(store.tracking.subscriptions.includes(pr.id, pr.ownerAgentId)).toBe(false);
+    expect(store.tracking.progress(fresh.actionId, observer.id, false).progress.state).toBe(ActionState.Acknowledged);
     store.tracking.assign(pr.id, owner);
-    expect(store.tracking.participants(pr.id).map((item) => item.role)).toEqual(
-      [ParticipantRole.Owner, ParticipantRole.Observer],
-    );
+    expect(store.tracking.participants(pr.id).map((item) => item.role)).toEqual([
+      ParticipantRole.Owner,
+      ParticipantRole.Observer,
+    ]);
   } finally {
     store.close();
     await rm(directory, { recursive: true, force: true });

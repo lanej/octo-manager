@@ -4,27 +4,16 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { parseCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
-export async function subscriptionsCLI(
-  parsed: ReturnType<typeof parseCommand>,
-): Promise<boolean> {
+
+export async function subscriptionsCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed,
     [command, id] = positionals;
-  if (
-    command !== "subscribe" &&
-    command !== "unsubscribe" &&
-    command !== "participants"
-  )
-    return false;
+  if (command !== "subscribe" && command !== "unsubscribe" && command !== "participants") return false;
   const client = schedulerClient(
-    resolve(
-      values.state ??
-        process.env["OCTO_MANAGER_STATE"] ??
-        join(homedir(), ".local/state/octo-manager"),
-    ),
+    resolve(values.state ?? process.env["OCTO_MANAGER_STATE"] ?? join(homedir(), ".local/state/octo-manager")),
   );
   const offset = Number(values.after ?? 0);
-  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 4294967295)
-    throw new Error("Invalid participant offset");
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 4294967295) throw new Error("Invalid participant offset");
   const result =
     command === "subscribe"
       ? await client.subscribePullRequest({

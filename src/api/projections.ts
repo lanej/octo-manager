@@ -1,21 +1,13 @@
 import { Check } from "typebox/value";
-import {
-  PolicyAnalysisSchema,
-  ChangeAnalysisSchema,
-  WriterSchema,
-  type Submission,
-} from "../submissions/contracts.js";
+import { PolicyAnalysisSchema, ChangeAnalysisSchema, WriterSchema, type Submission } from "../submissions/contracts.js";
 import { record } from "./codec.js";
+
 export function archiveSubmission(value: Submission) {
   return {
     ...value,
     stages: value.stages.map((stage) => {
       const schema =
-        stage.role === "policy"
-          ? PolicyAnalysisSchema
-          : stage.role === "change"
-            ? ChangeAnalysisSchema
-            : WriterSchema;
+        stage.role === "policy" ? PolicyAnalysisSchema : stage.role === "change" ? ChangeAnalysisSchema : WriterSchema;
       const { result, ...saved } = stage;
       return {
         ...saved,
@@ -24,44 +16,20 @@ export function archiveSubmission(value: Submission) {
     }),
   };
 }
-export function digestInspection(
-  value: ReturnType<
-    import("../notifications/service.js").DigestService["inspect"]
-  >,
-) {
-  const textKeys = [
-      "reason",
-      "queueId",
-      "clientId",
-      "dispatchId",
-      "operation",
-      "socket",
-      "error",
-      "state",
-    ],
-    numberKeys = [
-      "revision",
-      "receivedRevision",
-      "currentRevision",
-      "oldRevision",
-      "nextRevision",
-    ];
+
+export function digestInspection(value: ReturnType<import("../notifications/service.js").DigestService["inspect"]>) {
+  const textKeys = ["reason", "queueId", "clientId", "dispatchId", "operation", "socket", "error", "state"],
+    numberKeys = ["revision", "receivedRevision", "currentRevision", "oldRevision", "nextRevision"];
   return {
     ...value,
     events: value.events.map((event) => {
       const raw = record(event.detail),
         detail: Record<string, unknown> = {};
-      for (const key of textKeys)
-        if (typeof raw[key] === "string") detail[key] = raw[key];
-      for (const key of numberKeys)
-        if (typeof raw[key] === "number") detail[key] = raw[key];
-      if (
-        Array.isArray(raw["messages"]) &&
-        raw["messages"].every((item: unknown) => typeof item === "string")
-      )
+      for (const key of textKeys) if (typeof raw[key] === "string") detail[key] = raw[key];
+      for (const key of numberKeys) if (typeof raw[key] === "number") detail[key] = raw[key];
+      if (Array.isArray(raw["messages"]) && raw["messages"].every((item: unknown) => typeof item === "string"))
         detail["messages"] = raw["messages"];
-      for (const key of ["deleted", "historyComplete"])
-        if (typeof raw[key] === "boolean") detail[key] = raw[key];
+      for (const key of ["deleted", "historyComplete"]) if (typeof raw[key] === "boolean") detail[key] = raw[key];
       const omittedFields = Object.keys(raw).filter((key) => !(key in detail));
       if (omittedFields.length > 0) detail["omittedFields"] = omittedFields;
       return { ...event, detail };

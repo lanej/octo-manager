@@ -35,20 +35,13 @@ export class WorkScheduler {
 
   constructor(
     private readonly now: () => number = Date.now,
-    private readonly onError?: (
-      key: string,
-      error: unknown,
-    ) => void | Promise<void>,
-    private readonly observe?: (
-      key: string,
-      work: TaskWork,
-    ) => ReturnType<TaskWork>,
+    private readonly onError?: (key: string, error: unknown) => void | Promise<void>,
+    private readonly observe?: (key: string, work: TaskWork) => ReturnType<TaskWork>,
   ) {}
 
   task(key: string, work: TaskCallback): ScheduledTask {
     if (this.state === "closed") throw new Error("Work scheduler is closed");
-    if (this.tasks.has(key))
-      throw new Error(`Duplicate scheduled task: ${key}`);
+    if (this.tasks.has(key)) throw new Error(`Duplicate scheduled task: ${key}`);
     const task: Task = {
       key,
       work: () => this.invoke(work),
@@ -98,6 +91,7 @@ export class WorkScheduler {
     this.state = "running";
     this.arm();
   }
+
   stop(): void {
     if (this.state === "closed") return;
     this.state = "stopped";
@@ -105,8 +99,9 @@ export class WorkScheduler {
     this.clearTimer();
     for (const task of this.tasks.values()) this.clearPlan(task);
   }
+
   close(): Promise<void> {
-    if (this.closing !== undefined) return this.closing;
+    if (this.closing) return this.closing;
     this.stop();
     this.state = "closed";
     for (const task of this.tasks.values()) task.closed = true;
@@ -122,36 +117,35 @@ export class WorkScheduler {
       return value;
     });
   }
+
   private accepts(task: Task): boolean {
     return !task.closed && this.state !== "stopped" && this.state !== "closed";
   }
+
   private validate(deadline: unknown): asserts deadline is number | undefined {
-    if (
-      deadline !== undefined &&
-      (typeof deadline !== "number" || !Number.isFinite(deadline))
-    )
+    if (deadline !== undefined && (typeof deadline !== "number" || !Number.isFinite(deadline)))
       throw new Error("Scheduled deadline must be finite or undefined");
   }
+
   private clearPlan(task: Task): void {
     task.deadline = undefined;
     task.next = undefined;
     task.wakeAt = undefined;
     task.retryAt = undefined;
   }
+
   private due(task: Task): number {
     if (task.closed || task.running) return Infinity;
-    const deadline = Math.min(
-      task.deadline ?? Infinity,
-      task.next ?? Infinity,
-      task.wakeAt ?? Infinity,
-    );
+    const deadline = Math.min(task.deadline ?? Infinity, task.next ?? Infinity, task.wakeAt ?? Infinity);
     return Math.max(deadline, task.retryAt ?? -Infinity);
   }
+
   private clearTimer(): void {
-    if (this.timer !== undefined) clearTimeout(this.timer);
+    if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
     this.timerAt = undefined;
   }
+
   private arm(): void {
     if (this.draining) return;
     if (this.state !== "running") {
@@ -160,8 +154,7 @@ export class WorkScheduler {
     }
     let at = Infinity;
     for (const task of this.tasks.values()) at = Math.min(at, this.due(task));
-    if (at === this.timerAt && this.timer !== undefined && at > this.now())
-      return;
+    if (at === this.timerAt && this.timer && at > this.now()) return;
     this.clearTimer();
     if (!Number.isFinite(at)) return;
     this.timerAt = at;
@@ -174,17 +167,17 @@ export class WorkScheduler {
       Math.min(maximumTimeout, Math.max(0, at - this.now())),
     );
   }
+
   private isRunning(): boolean {
     return this.state === "running";
   }
+
   private drain(): void {
     if (!this.isRunning()) return;
     this.draining = true;
     try {
       const now = this.now();
-      const ready = [...this.tasks.values()].filter(
-        (task) => this.due(task) <= now,
-      );
+      const ready = [...this.tasks.values()].filter((task) => this.due(task) <= now);
       for (const task of ready) {
         if (!this.isRunning()) break;
         if (this.due(task) <= now) this.dispatch(task);
@@ -194,14 +187,14 @@ export class WorkScheduler {
       this.arm();
     }
   }
+
   private dispatch(task: Task): void {
     if (!this.accepts(task) || task.running) return;
     task.running = true;
     task.wakeAt = undefined;
     task.next = undefined;
     task.retryAt = undefined;
-    if (task.deadline !== undefined && task.deadline <= this.now())
-      task.deadline = undefined;
+    if (task.deadline !== undefined && task.deadline <= this.now()) task.deadline = undefined;
     const generation = this.generation,
       planVersion = task.planVersion;
     let resolve: () => void = () => {};
@@ -215,10 +208,7 @@ export class WorkScheduler {
       task.next = task.retryAt;
       try {
         // Reporter failures cannot escape scheduler cleanup.
-        Promise.resolve(this.onError?.(task.key, error)).then(
-          undefined,
-          () => undefined,
-        );
+        Promise.resolve(this.onError?.(task.key, error)).then(undefined, () => undefined);
       } catch {
         // The error hook cannot prevent bounded retries or lifecycle cleanup.
       }
@@ -226,12 +216,11 @@ export class WorkScheduler {
     const finish = (result: unknown, failure?: { error: unknown }) => {
       try {
         if (this.accepts(task) && this.generation === generation) {
-          if (failure !== undefined) failed(failure.error);
+          if (failure) failed(failure.error);
           else {
             this.validate(result);
             // An explicit cancellation made during this pass outranks its stale returned plan.
-            if (!(task.planVersion !== planVersion && task.cancelled))
-              task.next = result;
+            if (!(task.planVersion !== planVersion && task.cancelled)) task.next = result;
           }
         }
       } catch (error) {
@@ -244,10 +233,7 @@ export class WorkScheduler {
       }
     };
     try {
-      const result =
-        this.observe !== undefined
-          ? this.observe(task.key, task.work)
-          : task.work();
+      const result = this.observe ? this.observe(task.key, task.work) : task.work();
       if (typeof result === "number" || result === undefined) finish(result);
       else
         Promise.resolve(result).then(

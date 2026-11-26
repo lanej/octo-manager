@@ -5,15 +5,9 @@ import { Check } from "typebox/value";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { runStage, type RunStage } from "../submissions/worker.js";
-import {
-  digest,
-  readContract,
-  safePath,
-  PublicationError,
-  ContractSchema,
-  githubRepository,
-} from "./contract.js";
+import { digest, readContract, safePath, PublicationError, ContractSchema, githubRepository } from "./contract.js";
 import { sdkTransport, type GitHubTransport } from "../github/sdk.js";
+
 const exec = promisify(execFile);
 const StyleSchema = Type.Object(
   {
@@ -30,6 +24,7 @@ export interface Sample {
   body: string;
   url: string;
 }
+
 export function sampleStatistics(samples: Sample[]) {
   const median = (values: number[]) => {
     const sorted = [...values].sort((a, b) => a - b),
@@ -40,17 +35,14 @@ export function sampleStatistics(samples: Sample[]) {
   };
   return {
     sampleCount: samples.length,
-    medianTitleCharacters: median(
-      samples.map((sample) => Array.from(sample.title).length),
-    ),
+    medianTitleCharacters: median(samples.map((sample) => Array.from(sample.title).length)),
     medianBodyWords: median(
-      samples.map((sample) =>
-        sample.body.trim() === "" ? 0 : sample.body.trim().split(/\s+/u).length,
-      ),
+      samples.map((sample) => (sample.body.trim() === "" ? 0 : sample.body.trim().split(/\s+/u).length)),
     ),
     advisory: true,
   };
 }
+
 export async function recentSamples(
   root: string,
   remote: string,
@@ -58,10 +50,7 @@ export async function recentSamples(
   transport: GitHubTransport = sdkTransport(),
 ): Promise<Sample[]> {
   if (remote !== "origin" && remote !== "upstream")
-    throw new PublicationError(
-      "sample_remote",
-      "Choose --sample-remote origin or upstream.",
-    );
+    throw new PublicationError("sample_remote", "Choose --sample-remote origin or upstream.");
   const url = (
     await exec("git", ["remote", "get-url", remote], {
       cwd: root,
@@ -70,10 +59,7 @@ export async function recentSamples(
   ).stdout.trim();
   const repository = githubRepository(url);
   if (repository === undefined)
-    throw new PublicationError(
-      "sample_remote",
-      "The selected remote must identify a GitHub repository.",
-    );
+    throw new PublicationError("sample_remote", "The selected remote must identify a GitHub repository.");
   const response = await transport({
     method: "GET",
     path: `repos/${repository}/pulls?state=closed&sort=updated&direction=desc&per_page=${String(count)}`,
@@ -111,6 +97,7 @@ export async function recentSamples(
   }
   return samples;
 }
+
 export async function deriveGuidance(
   root: string,
   options: { remote: string; count: number; model: string },
@@ -135,12 +122,7 @@ export async function deriveGuidance(
     if (bytes > 24576) break;
     sources.push({ path, text });
   }
-  const samples = await recentSamples(
-    root,
-    options.remote,
-    options.count,
-    transport,
-  );
+  const samples = await recentSamples(root, options.remote, options.count, transport);
   const statistics = sampleStatistics(samples),
     sourceDigest = digest({
       sources,
@@ -187,10 +169,7 @@ export async function deriveGuidance(
     () => {},
   );
   if (!Check(StyleSchema, result.result))
-    throw new PublicationError(
-      "style_invalid",
-      "Guidance generation returned invalid data; retry pr refresh.",
-    );
+    throw new PublicationError("style_invalid", "Guidance generation returned invalid data; retry pr refresh.");
   const style: Style = result.result;
   style.proposedContract.template = configured.contract.template;
   const output = {

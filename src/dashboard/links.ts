@@ -27,25 +27,13 @@ export function dashboardLink(value: string): DashboardLink | undefined {
     };
   }
 
-  const pull = /^(\/[\w.-]+\/[\w.-]+)\/pull\/([1-9]\d*)\/?$/u.exec(
-    address.pathname,
-  );
+  const pull = /^(\/[\w.-]+\/[\w.-]+)\/pull\/([1-9]\d*)\/?$/u.exec(address.pathname);
   if (pull?.[1] !== undefined && pull[2] !== undefined) {
     const anchor = address.hash.slice(1);
-    const detail =
-      /^(pullrequestreview|discussion_r|issuecomment)-?(\d+)$/u.exec(anchor);
+    const detail = /^(pullrequestreview|discussion_r|issuecomment)-?(\d+)$/u.exec(anchor);
     const description =
-      detail?.[1] === "pullrequestreview"
-        ? "review"
-        : detail?.[1] === "discussion_r"
-          ? "thread"
-          : "comment";
-    const suffix =
-      detail?.[2] !== undefined
-        ? ` · ${description} ${detail[2]}`
-        : anchor === ""
-          ? ""
-          : ` · ${anchor}`;
+      detail?.[1] === "pullrequestreview" ? "review" : detail?.[1] === "discussion_r" ? "thread" : "comment";
+    const suffix = detail?.[2] !== undefined ? ` · ${description} ${detail[2]}` : anchor === "" ? "" : ` · ${anchor}`;
     return { label: `${pull[1].slice(1)} #${pull[2]}${suffix}`, url: value };
   }
 
@@ -58,7 +46,7 @@ export function dashboardLink(value: string): DashboardLink | undefined {
 
 export function markdownReference(value: string): string | undefined {
   const address = dashboardLink(value);
-  if (address === undefined) return undefined;
+  if (!address) return undefined;
   const label = address.label.replace(/[\\[\]]/gu, "\\$&");
   return `[${label}](<${address.url}>)`;
 }
@@ -76,7 +64,7 @@ export const compactMarkdownLinks: MarkdownInlineHook = (spans) => {
     const destination = label?.link?.url;
     if (
       span.text === " " &&
-      span.link === undefined &&
+      !span.link &&
       destination !== undefined &&
       open?.text === "(" &&
       open.link?.url === destination &&
@@ -88,7 +76,7 @@ export const compactMarkdownLinks: MarkdownInlineHook = (spans) => {
       hiddenThrough = index + 3;
       continue;
     }
-    if (span.link !== undefined && dashboardLink(span.link.url) === undefined) {
+    if (span.link && !dashboardLink(span.link.url)) {
       const unlinked = { ...span };
       delete unlinked.link;
       compact.push(unlinked);

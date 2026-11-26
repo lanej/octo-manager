@@ -78,10 +78,7 @@ const inputMethods: Readonly<Record<string, boolean>> = {
 
 export function inputIntake(changed: () => void): Interceptor {
   return (next) => async (request) => {
-    if (
-      request.service.typeName !== SchedulerService.typeName ||
-      inputMethods[request.method.localName] !== true
-    )
+    if (request.service.typeName !== SchedulerService.typeName || inputMethods[request.method.localName] !== true)
       return next(request);
     try {
       return await next(request);

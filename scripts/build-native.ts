@@ -9,6 +9,7 @@ const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const compilerRevision = "1.4.6-canary.1+bfda77855";
 export const compilerSource = "bfda7785587f737438d24f4a68a060a70071aa8f";
+
 export function validNativeCompiler(value: unknown): boolean {
   return (
     typeof value === "object" &&
@@ -22,6 +23,7 @@ export function validNativeCompiler(value: unknown): boolean {
     /^[a-f0-9]{64}$/u.test(value.sha256)
   );
 }
+
 export function buildNative(
   compiler: string,
   outfile: string,
@@ -56,32 +58,20 @@ export function buildNative(
   } finally {
     rmSync(probe, { recursive: true, force: true });
   }
-  run([
-    "compile",
-    entrypoint,
-    "--define=OCTO_NATIVE_AOT=true",
-    "--sourcemap=external",
-    "--outfile",
-    outfile,
-  ]);
+  run(["compile", entrypoint, "--define=OCTO_NATIVE_AOT=true", "--sourcemap=external", "--outfile", outfile]);
   return {
     revision: compilerRevision,
     source: compilerSource,
     sha256: createHash("sha256").update(readFileSync(executable)).digest("hex"),
   };
 }
+
 if (import.meta.main) {
   const compiler = process.env["OCTO_AOT_BUN"];
   if (compiler === undefined || compiler === "")
     throw new Error(
       "Set OCTO_AOT_BUN to the explicitly selected native AOT compiler; no interpreted fallback is installed.",
     );
-  const metadata = buildNative(
-    compiler,
-    join(sourceRoot, "build/octo-manager"),
-  );
-  writeFileSync(
-    join(sourceRoot, "build/native-compiler.json"),
-    JSON.stringify(metadata) + "\n",
-  );
+  const metadata = buildNative(compiler, join(sourceRoot, "build/octo-manager"));
+  writeFileSync(join(sourceRoot, "build/native-compiler.json"), JSON.stringify(metadata) + "\n");
 }

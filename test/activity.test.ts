@@ -8,10 +8,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
-import {
-  ActivityName,
-  ActivityOutcome,
-} from "../src/gen/octomanager/v2/activity_pb.js";
+import { ActivityName, ActivityOutcome } from "../src/gen/octomanager/v2/activity_pb.js";
 
 const input = {
   requestId: "merge-report-1",
@@ -28,9 +25,9 @@ const input = {
   },
   detail: "Merged PR after checking the exact head",
   prUrl: "https://github.com/lanej/octo-manager/pull/2",
-  evidenceUrl:
-    "https://github.com/lanej/octo-manager/commit/197e1b61054babefa12daa7eb017ab2dd4db06dd",
+  evidenceUrl: "https://github.com/lanej/octo-manager/commit/197e1b61054babefa12daa7eb017ab2dd4db06dd",
 };
+
 function hasCode(code: Code): (error: unknown) => boolean {
   return (error) => error instanceof ConnectError && error.code === code;
 }
@@ -95,10 +92,7 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
     ]) {
       assert.match(await cli(args), /ACTIVITY_NAME_MERGE_PR/u);
     }
-    assert.match(
-      await cli(["--state", directory, "agent", "status", "--json"]),
-      /"prs":\[\]/u,
-    );
+    assert.match(await cli(["--state", directory, "agent", "status", "--json"]), /"prs":\[\]/u);
     const client = schedulerClient(directory);
     const first = (await client.listActivity({})).activities;
     assert.equal(first.length, 1);
@@ -116,22 +110,14 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
       client.recordActivity({ report: input }),
       client.recordActivity({ report: input }),
     ]);
-    assert(
-      duplicates.every(
-        (response) => response.activity?.sequence === entry.sequence,
-      ),
-    );
+    assert(duplicates.every((response) => response.activity?.sequence === entry.sequence));
     assert.equal(coordinator.store.sequence(), 1);
     assert.equal(coordinator.store.jobs().length, 0);
     assert.equal(coordinator.store.tracking.prs().length, 0);
     const events = await client.listEvents({});
     assert.equal(events.events.length, 1);
     assert.equal(events.events[0]?.kind, "agent_activity");
-    assert.equal(
-      (await client.listActivity({ afterSequence: entry.sequence })).activities
-        .length,
-      0,
-    );
+    assert.equal((await client.listActivity({ afterSequence: entry.sequence })).activities.length, 0);
     await assert.rejects(
       client.recordActivity({
         report: { ...input, detail: "different report" },
@@ -148,13 +134,9 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
       }),
       hasCode(Code.InvalidArgument),
     );
-    await assert.rejects(
-      client.listActivity({ afterSequence: 2n }),
-      hasCode(Code.OutOfRange),
-    );
+    await assert.rejects(client.listActivity({ afterSequence: 2n }), hasCode(Code.OutOfRange));
     coordinator.store.event("", "delivery_delivered", "notification accepted");
-    for (let i = 0; i < 200; i++)
-      coordinator.store.event("", "progress", "streamed text");
+    for (let i = 0; i < 200; i++) coordinator.store.event("", "progress", "streamed text");
     await client.recordActivity({
       report: {
         ...input,
@@ -183,23 +165,14 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
     assert.equal(recent.events.length, 1);
     assert.equal(recent.activities.length, 2);
     assert.equal(recent.activities[0]?.sequence, 203n);
-    await assert.rejects(
-      client.listActivity({ afterSequence: 1n, beforeSequence: 0n }),
-      hasCode(Code.InvalidArgument),
-    );
+    await assert.rejects(client.listActivity({ afterSequence: 1n, beforeSequence: 0n }), hasCode(Code.InvalidArgument));
     await coordinator.close();
     const reopened = new Store(directory);
     try {
       assert.equal(reopened.activity.list(0)[0]?.name, "merge_pr");
-      assert.equal(
-        reopened.activity.list(0)[0]?.actor.version,
-        input.actor.version,
-      );
+      assert.equal(reopened.activity.list(0)[0]?.actor.version, input.actor.version);
       assert.equal(reopened.activity.list(0)[0]?.actor.cwd, input.actor.cwd);
-      assert.equal(
-        reopened.activity.list(0)[0]?.actor.label,
-        input.actor.label,
-      );
+      assert.equal(reopened.activity.list(0)[0]?.actor.label, input.actor.label);
       assert.equal(reopened.sequence(), 203);
     } finally {
       reopened.close();
@@ -215,11 +188,7 @@ test("recent activity pages bound a large history and retain forward replay and 
   const coordinator = await createApplicationFixture(directory);
   try {
     for (let i = 1; i <= 12000; i++)
-      coordinator.store.event(
-        "",
-        "queue_inspection_unavailable",
-        `failure ${String(i)}`,
-      );
+      coordinator.store.event("", "queue_inspection_unavailable", `failure ${String(i)}`);
     await coordinator.start();
     const client = schedulerClient(directory);
     const recent = await client.listActivity({ beforeSequence: 12001n });
@@ -246,21 +215,12 @@ test("recent activity pages bound a large history and retain forward replay and 
     });
     assert.equal(smallOlder.events[0]?.detail, "failure 11950");
     assert.equal(smallOlder.events.at(-1)?.detail, "failure 11901");
-    await assert.rejects(
-      client.listActivity({ beforeSequence: 0n, limit: 201 }),
-      hasCode(Code.InvalidArgument),
-    );
-    await assert.rejects(
-      client.listActivity({ afterSequence: 0n, limit: 50 }),
-      hasCode(Code.InvalidArgument),
-    );
+    await assert.rejects(client.listActivity({ beforeSequence: 0n, limit: 201 }), hasCode(Code.InvalidArgument));
+    await assert.rejects(client.listActivity({ afterSequence: 0n, limit: 50 }), hasCode(Code.InvalidArgument));
     const replay = await client.listActivity({ afterSequence: 0n });
     assert.equal(replay.events[0]?.detail, "failure 1");
     assert.equal(replay.nextSequence, 200n);
-    await assert.rejects(
-      client.listActivity({ beforeSequence: 12002n }),
-      hasCode(Code.OutOfRange),
-    );
+    await assert.rejects(client.listActivity({ beforeSequence: 12002n }), hasCode(Code.OutOfRange));
   } finally {
     await coordinator.close();
     await rm(directory, { recursive: true, force: true });
@@ -283,8 +243,7 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     assert.equal(store.instanceId(), identity);
     assert.equal(store.sequence(), 1);
     const report = { ...input, name: "run_checks", outcome: "attempted" };
-    for (let i = 0; i < 201; i++)
-      store.activity.record({ ...report, requestId: `check-${String(i)}` });
+    for (let i = 0; i < 201; i++) store.activity.record({ ...report, requestId: `check-${String(i)}` });
     const page = store.activity.list(0);
     assert.equal(page.length, 200);
     assert.equal(page[0]?.sequence, 2);
@@ -320,16 +279,9 @@ test("activity preserves legacy events and identity, enforces named data, and pa
     assert.equal(store.sequence(), 202);
     const reader = new DatabaseSync(join(directory, "jobs.sqlite"));
     try {
-      assert.equal(
-        reader.prepare("PRAGMA user_version").get()?.["user_version"],
-        15,
-      );
-      assert.throws(() =>
-        reader.prepare("UPDATE agent_activity SET outcome='invented'").run(),
-      );
-      assert.throws(() =>
-        reader.prepare("UPDATE agent_activity SET name='merge_pr'").run(),
-      );
+      assert.equal(reader.prepare("PRAGMA user_version").get()?.["user_version"], 15);
+      assert.throws(() => reader.prepare("UPDATE agent_activity SET outcome='invented'").run());
+      assert.throws(() => reader.prepare("UPDATE agent_activity SET name='merge_pr'").run());
     } finally {
       reader.close();
     }

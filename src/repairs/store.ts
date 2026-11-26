@@ -8,6 +8,7 @@ import {
   type RebaseInput,
   type RepairProfile,
 } from "./types.js";
+
 export class RepairStore {
   constructor(
     private db: DatabaseSync,
@@ -44,26 +45,23 @@ export class RepairStore {
    CREATE UNIQUE INDEX one_active_repair ON repair_attempts(pr_id) WHERE state IN ('queued','running','awaiting_checks');
    PRAGMA user_version=4; COMMIT;`);
   }
+
   list(): RepairAttempt[] {
     return this.db
       .prepare("SELECT payload FROM repair_attempts ORDER BY rowid DESC")
       .all()
       .map((row) => storedRepair(JSON.parse(String(row["payload"]))));
   }
+
   get(id: string): RepairAttempt {
     const item = this.list().find((a) => a.id === id);
-    if (item === undefined) throw new Error("Repair not found");
+    if (!item) throw new Error("Repair not found");
     return item;
   }
-  request(
-    input: RebaseInput,
-    profile: RepairProfile,
-    prId: string,
-  ): RepairAttempt {
-    const existing = this.list().find(
-      (a) => a.request.requestId === input.requestId,
-    );
-    if (existing !== undefined) {
+
+  request(input: RebaseInput, profile: RepairProfile, prId: string): RepairAttempt {
+    const existing = this.list().find((a) => a.request.requestId === input.requestId);
+    if (existing) {
       if (JSON.stringify(existing.request) !== JSON.stringify(input))
         throw new Error("Repair request ID already used with different input");
       return existing;
@@ -94,6 +92,7 @@ export class RepairStore {
     this.save(a);
     return a;
   }
+
   save(a: RepairAttempt): void {
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -101,19 +100,9 @@ export class RepairStore {
         .prepare(
           "INSERT INTO repair_attempts VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,payload=excluded.payload,updated_at_ms=excluded.updated_at_ms",
         )
-        .run(
-          a.id,
-          a.request.requestId,
-          a.prId,
-          a.state,
-          JSON.stringify(a),
-          a.createdAt,
-          a.updatedAt,
-        );
+        .run(a.id, a.request.requestId, a.prId, a.state, JSON.stringify(a), a.createdAt, a.updatedAt);
       this.db
-        .prepare(
-          "INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES('',?,'repair_progress',?,?)",
-        )
+        .prepare("INSERT INTO events(job_id,at,kind,detail,pr_id) VALUES('',?,'repair_progress',?,?)")
         .run(a.updatedAt, a.detail, a.prId);
       this.db.exec("COMMIT");
       this.changed?.();

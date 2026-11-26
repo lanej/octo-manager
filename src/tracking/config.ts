@@ -1,28 +1,20 @@
-import {
-  defaultSchedulerPolicy,
-  type SchedulerPolicy,
-} from "../scheduling/contracts.js";
+import { defaultSchedulerPolicy, type SchedulerPolicy } from "../scheduling/contracts.js";
 import type { PollPolicy } from "./polling.js";
-import {
-  checked,
-  PreparationProfileSchema,
-  type PreparationProfile,
-} from "../merging/contracts.js";
+import { checked, PreparationProfileSchema, type PreparationProfile } from "../merging/contracts.js";
 import { repairProfile, type RepairProfile } from "../repairs/types.js";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
 import { workerModel as parseWorkerModel } from "../jobs/worker-model.js";
+
 export interface CodexEndpoint {
   socket?: string;
   delivery?: "turn" | "queue";
 }
+
 function codexEndpoint(value: unknown): CodexEndpoint {
-  if (
-    !object(value) ||
-    Object.keys(value).some((key) => key !== "delivery" && key !== "socket")
-  )
+  if (!object(value) || Object.keys(value).some((key) => key !== "delivery" && key !== "socket"))
     throw new Error("Invalid endpoint");
   const delivery = value["delivery"],
     socket = value["socket"];
@@ -32,9 +24,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
     socket !== undefined &&
     (typeof socket !== "string" ||
       !socket.startsWith("/") ||
-      Array.from(socket).some(
-        (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
-      ))
+      Array.from(socket).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127))
   )
     throw new Error("Invalid endpoint socket");
   return {
@@ -42,6 +32,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
     ...(socket === undefined ? {} : { socket }),
   };
 }
+
 export interface TrackingConfig {
   workerModel?: string;
   polling?: PollPolicy & Partial<SchedulerPolicy>;
@@ -52,13 +43,7 @@ export interface TrackingConfig {
   rules: { kind: Blocker["kind"]; checkName?: string; profile: string }[];
   endpoints: Record<string, CodexEndpoint>;
 }
-const kinds = [
-  "conflict",
-  "check_failed",
-  "changes_requested",
-  "review_feedback",
-  "check_results",
-] as const;
+const kinds = ["conflict", "check_failed", "changes_requested", "review_feedback", "check_results"] as const;
 const defaults: TrackingConfig = {
   repairs: {},
   profiles: Object.fromEntries(
@@ -82,25 +67,23 @@ const defaults: TrackingConfig = {
   rules: [],
   endpoints: { local: {} },
 };
+
 function object(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 export function defaultTrackingConfig(): TrackingConfig {
   return structuredClone(defaults);
 }
+
 export function loadTrackingConfig(path?: string): TrackingConfig {
   const target =
-    path ??
-    join(
-      process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
-      "octo-manager",
-      "config.json",
-    );
+    path ?? join(process.env["XDG_CONFIG_HOME"] ?? join(homedir(), ".config"), "octo-manager", "config.json");
   let raw: unknown;
   try {
     raw = JSON.parse(readFileSync(target, "utf8"));
   } catch (error) {
-    if (!path && (error as NodeJS.ErrnoException).code === "ENOENT")
+    if ((path === undefined || path === "") && error instanceof Error && "code" in error && error.code === "ENOENT")
       return structuredClone(defaults);
     throw new Error("Invalid tracking configuration: could not read JSON");
   }
@@ -124,8 +107,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   const result = structuredClone(defaults);
   if (raw["workerModel"] !== undefined) {
     const model = raw["workerModel"];
-    if (typeof model !== "string" || model.length > 200)
-      throw new Error("Invalid worker model");
+    if (typeof model !== "string" || model.length > 200) throw new Error("Invalid worker model");
     parseWorkerModel(model);
     result.workerModel = model;
   }
@@ -134,14 +116,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
     if (
       !object(value) ||
       Object.keys(value).some(
-        (key) =>
-          ![
-            "minimumMs",
-            "maximumMs",
-            "activeMaximumMs",
-            "tickMs",
-            "requestSpacingMs",
-          ].includes(key),
+        (key) => !["minimumMs", "maximumMs", "activeMaximumMs", "tickMs", "requestSpacingMs"].includes(key),
       )
     )
       throw new Error("Invalid polling configuration");
@@ -163,8 +138,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
     )
       throw new Error("Invalid polling interval bounds");
     const tickMs = value["tickMs"] ?? defaultSchedulerPolicy.tickMs;
-    const requestSpacingMs =
-      value["requestSpacingMs"] ?? defaultSchedulerPolicy.requestSpacingMs;
+    const requestSpacingMs = value["requestSpacingMs"] ?? defaultSchedulerPolicy.requestSpacingMs;
     if (
       typeof tickMs !== "number" ||
       !Number.isSafeInteger(tickMs) ||
@@ -187,16 +161,13 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
 
   if (raw["merging"] !== undefined) {
     const profiles = raw["merging"];
-    if (!object(profiles))
-      throw new Error("Invalid merge preparation configuration");
+    if (!object(profiles)) throw new Error("Invalid merge preparation configuration");
     result.merging = {};
     for (const [name, value] of Object.entries(profiles)) {
       const profile = checked(PreparationProfileSchema, value);
       if (
         profile.kind === "toml_revision" &&
-        (profile.path === undefined ||
-          profile.key === undefined ||
-          profile.expectedValue === undefined)
+        (profile.path === undefined || !profile.key || profile.expectedValue === undefined)
       )
         throw new Error("TOML preparation needs path, key, and expectedValue");
       result.merging[name] = profile;
@@ -204,22 +175,13 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   }
   if (raw["submissionModels"] !== undefined) {
     const models = raw["submissionModels"];
-    if (
-      !object(models) ||
-      Object.keys(models).some(
-        (key) => !["policy", "change", "writer"].includes(key),
-      )
-    )
+    if (!object(models) || Object.keys(models).some((key) => !["policy", "change", "writer"].includes(key)))
       throw new Error("Invalid submission models");
     result.submissionModels = {};
     for (const role of ["policy", "change", "writer"] as const) {
       const model = models[role];
       if (model !== undefined) {
-        if (
-          typeof model !== "string" ||
-          model.trim() === "" ||
-          model.length > 200
-        )
+        if (typeof model !== "string" || model.trim() === "" || model.length > 200)
           throw new Error("Invalid submission model");
         result.submissionModels[role] = model;
       }
@@ -227,50 +189,41 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   }
   if (raw["repairs"] !== undefined) {
     if (!object(raw["repairs"])) throw new Error("Invalid repair profiles");
-    for (const [name, profile] of Object.entries(raw["repairs"]))
-      result.repairs[name] = repairProfile(profile);
+    for (const [name, profile] of Object.entries(raw["repairs"])) result.repairs[name] = repairProfile(profile);
   }
-  if (raw.profiles !== undefined) {
-    if (!object(raw.profiles)) throw new Error("Invalid profiles");
-    for (const [name, p] of Object.entries(raw.profiles)) {
+  if (raw["profiles"] !== undefined) {
+    if (!object(raw["profiles"])) throw new Error("Invalid profiles");
+    for (const [name, p] of Object.entries(raw["profiles"])) {
       if (
-        !name ||
+        name === "" ||
         !object(p) ||
-        Object.keys(p).some(
-          (k) => !["instructions", "harness", "model"].includes(k),
-        ) ||
-        typeof p.instructions !== "string" ||
-        !p.instructions.trim() ||
-        p.instructions.length > 8000 ||
-        (p.harness !== undefined &&
-          (typeof p.harness !== "string" || !p.harness)) ||
-        (p.model !== undefined && (typeof p.model !== "string" || !p.model))
+        Object.keys(p).some((k) => !["instructions", "harness", "model"].includes(k)) ||
+        typeof p["instructions"] !== "string" ||
+        p["instructions"].trim() === "" ||
+        p["instructions"].length > 8000 ||
+        (p["harness"] !== undefined && (typeof p["harness"] !== "string" || p["harness"] === "")) ||
+        (p["model"] !== undefined && (typeof p["model"] !== "string" || p["model"] === ""))
       )
         throw new Error("Invalid profile");
       result.profiles[name] = {
         name,
-        instructions: p.instructions,
-        ...(p.harness === undefined ? {} : { harness: p.harness as string }),
-        ...(p.model === undefined ? {} : { model: p.model as string }),
+        instructions: p["instructions"],
+        ...(p["harness"] === undefined ? {} : { harness: p["harness"] }),
+        ...(p["model"] === undefined ? {} : { model: p["model"] }),
       };
     }
   }
-  if (raw.endpoints !== undefined) {
-    if (!object(raw.endpoints)) throw new Error("Invalid endpoints");
-    for (const [name, e] of Object.entries(raw.endpoints)) {
+  if (raw["endpoints"] !== undefined) {
+    if (!object(raw["endpoints"])) throw new Error("Invalid endpoints");
+    for (const [name, e] of Object.entries(raw["endpoints"])) {
       if (name === "") throw new Error("Invalid endpoint name");
       result.endpoints[name] = codexEndpoint(e);
     }
   }
-  if (raw.rules !== undefined) {
-    if (!Array.isArray(raw.rules)) throw new Error("Invalid routing rules");
-    result.rules = raw.rules.map((r) => {
-      if (
-        !object(r) ||
-        Object.keys(r).some(
-          (key) => !["kind", "checkName", "profile"].includes(key),
-        )
-      )
+  if (raw["rules"] !== undefined) {
+    if (!Array.isArray(raw["rules"])) throw new Error("Invalid routing rules");
+    result.rules = raw["rules"].map((r) => {
+      if (!object(r) || Object.keys(r).some((key) => !["kind", "checkName", "profile"].includes(key)))
         throw new Error("Invalid routing rule");
       const kind = kinds.find((kind) => kind === r["kind"]);
       const profile = r["profile"],
@@ -279,10 +232,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
         kind === undefined ||
         typeof profile !== "string" ||
         !Object.hasOwn(result.profiles, profile) ||
-        (checkName !== undefined &&
-          (kind !== "check_failed" ||
-            typeof checkName !== "string" ||
-            checkName === ""))
+        (checkName !== undefined && (kind !== "check_failed" || typeof checkName !== "string" || checkName === ""))
       )
         throw new Error("Invalid routing rule");
       return {
@@ -294,15 +244,14 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   }
   return result;
 }
-export function selectProfile(
-  blocker: Blocker,
-  config: TrackingConfig,
-): ExecutionProfile {
+
+export function selectProfile(blocker: Blocker, config: TrackingConfig): ExecutionProfile {
   const rule = config.rules.find(
     (r) =>
       r.kind === blocker.kind &&
-      (r.checkName === undefined ||
-        (blocker.kind === "check_failed" && r.checkName === blocker.checkName)),
+      (r.checkName === undefined || (blocker.kind === "check_failed" && r.checkName === blocker.checkName)),
   );
-  return structuredClone(config.profiles[rule?.profile ?? blocker.kind]!);
+  const profile = config.profiles[rule?.profile ?? blocker.kind];
+  if (!profile) throw new Error("Configured tracking profile is missing");
+  return structuredClone(profile);
 }

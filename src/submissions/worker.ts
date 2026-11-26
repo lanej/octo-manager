@@ -1,12 +1,8 @@
 import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
-import {
-  hash,
-  type Role,
-  type StageResult,
-  type StageTask,
-} from "./contracts.js";
+import { hash, type Role, type StageResult, type StageTask } from "./contracts.js";
 import type { TSchema } from "typebox";
+
 export type RunStage = (
   role: Role,
   input: unknown,
@@ -47,12 +43,7 @@ export const createStageRunner =
       await new Promise<void>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", (code, exitSignal) => {
-          if (
-            failure !== undefined ||
-            raw === undefined ||
-            signal.aborted ||
-            code !== 0
-          )
+          if (failure || raw === undefined || signal.aborted || code !== 0)
             reject(
               failure ??
                 new Error(
@@ -69,24 +60,13 @@ export const createStageRunner =
             stop();
             return;
           }
-          if (
-            "type" in value &&
-            value.type === "done" &&
-            "text" in value &&
-            typeof value.text === "string"
-          ) {
+          if ("type" in value && value.type === "done" && "text" in value && typeof value.text === "string") {
             raw = value.text;
-            if (child.connected)
-              child.send({ type: "result_ack", attempt: 1 }, () => {});
+            if (child.connected) child.send({ type: "result_ack", attempt: 1 }, () => {});
           }
           if ("type" in value && value.type === "failure") {
-            failure = new Error(
-              "error" in value && typeof value.error === "string"
-                ? value.error
-                : "PR worker failed",
-            );
-            if (child.connected)
-              child.send({ type: "result_ack", attempt: 1 }, () => {});
+            failure = new Error("error" in value && typeof value.error === "string" ? value.error : "PR worker failed");
+            if (child.connected) child.send({ type: "result_ack", attempt: 1 }, () => {});
           }
           if ("type" in value && value.type === "tool") {
             failure = new Error("PR drafting workers cannot use tools");
@@ -95,11 +75,8 @@ export const createStageRunner =
         });
         child.send({ type: "start", attempt: 1, task, model });
       });
-      if (raw === undefined || Buffer.byteLength(raw) > 65536)
-        throw new Error("Invalid PR worker output size");
-      const json = raw
-        .trim()
-        .replace(/^```(?:json)?\s*\n([\s\S]*)\n```$/u, "$1");
+      if (raw === undefined || Buffer.byteLength(raw) > 65536) throw new Error("Invalid PR worker output size");
+      const json = raw.trim().replace(/^```(?:json)?\s*\n([\s\S]*)\n```$/u, "$1");
       let result: unknown;
       try {
         result = JSON.parse(json);
@@ -122,6 +99,4 @@ export const createStageRunner =
     }
   };
 
-export const runStage = createStageRunner(
-  workerModule("job", new URL("../worker.js", import.meta.url).href),
-);
+export const runStage = createStageRunner(workerModule("job", new URL("../worker.js", import.meta.url).href));

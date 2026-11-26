@@ -24,19 +24,12 @@ const Ready = Type.Object({
 
 test("real serve readiness retains its contract and identifies the running process without using cwd metadata", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-startup-"));
-  await writeFile(
-    join(directory, "release.json"),
-    JSON.stringify({ revision: "f".repeat(40) }),
-  );
+  await writeFile(join(directory, "release.json"), JSON.stringify({ revision: "f".repeat(40) }));
   const state = join(directory, "state");
-  const child = spawn(
-    process.execPath,
-    [resolve("src/cli.ts"), "--state", state, "serve"],
-    {
-      cwd: directory,
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
+  const child = spawn(process.execPath, [resolve("src/cli.ts"), "--state", state, "serve"], {
+    cwd: directory,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   const lines = createInterface({ input: child.stdout });
   let error = "";
   child.stderr.on("data", (chunk) => {
@@ -53,8 +46,7 @@ test("real serve readiness retains its contract and identifies the running proce
     )[0];
     if (typeof line !== "string") throw new Error("Missing readiness record");
     const value: unknown = JSON.parse(line);
-    if (!Check(Ready, value))
-      throw new Error(`Invalid readiness record: ${line}`);
+    if (!Check(Ready, value)) throw new Error(`Invalid readiness record: ${line}`);
     expect(value.state).toBe(state);
     const pid = child.pid;
     if (pid === undefined) throw new Error("Missing child process identity");
@@ -80,21 +72,14 @@ test("release identity reads bounded metadata beside its own module and rejects 
   const directory = await mkdtemp(join(tmpdir(), "octo-release-context-"));
   const root = join(directory, "release");
   await mkdir(join(root, "dist"), { recursive: true });
-  const moduleUrl = pathToFileURL(
-    join(root, "dist", "startup-context.js"),
-  ).href;
+  const moduleUrl = pathToFileURL(join(root, "dist", "startup-context.js")).href;
   const metadata = join(root, "release.json");
   try {
     expect(releaseIdentity(moduleUrl)).toEqual({
       status: "unavailable",
       reason: "missing",
     });
-    for (const value of [
-      null,
-      { revision: 5 },
-      { revision: "main" },
-      { revision: "a".repeat(41) },
-    ]) {
+    for (const value of [null, { revision: 5 }, { revision: "main" }, { revision: "a".repeat(41) }]) {
       await writeFile(metadata, JSON.stringify(value));
       expect(releaseIdentity(moduleUrl)).toEqual({
         status: "unavailable",
@@ -106,10 +91,7 @@ test("release identity reads bounded metadata beside its own module and rejects 
       status: "unavailable",
       reason: "invalid",
     });
-    await writeFile(
-      metadata,
-      JSON.stringify({ revision: "a".repeat(40), padding: "x".repeat(4096) }),
-    );
+    await writeFile(metadata, JSON.stringify({ revision: "a".repeat(40), padding: "x".repeat(4096) }));
     expect(releaseIdentity(moduleUrl)).toEqual({
       status: "unavailable",
       reason: "invalid",

@@ -1,17 +1,8 @@
-import {
-  PRLifecycle,
-  pendingReview,
-  terminalPR,
-  prLifecycle,
-} from "./states.js";
+import { PRLifecycle, pendingReview, terminalPR, prLifecycle } from "./states.js";
 import type { DatabaseSync } from "node:sqlite";
-import {
-  CheckWatchState,
-  checkEvidence,
-  checksFinished,
-  type CheckWatches,
-} from "./checks.js";
+import { CheckWatchState, checkEvidence, checksFinished, type CheckWatches } from "./checks.js";
 import type { PRObservation } from "./types.js";
+
 export enum TrackingState {
   Watching = "watching",
   Draining = "draining",
@@ -29,13 +20,10 @@ export interface Lifecycle {
   archivedAt?: number;
   archiveReason?: ArchiveReason;
 }
+
 export function lifecycle(row: Record<string, unknown>): Lifecycle {
-  const state =
-    row["tracking_state"] ??
-    (row["enabled"] === 0 ? TrackingState.Disabled : TrackingState.Watching);
-  const checkedState = Object.values(TrackingState).find(
-    (value) => value === state,
-  );
+  const state = row["tracking_state"] ?? (row["enabled"] === 0 ? TrackingState.Disabled : TrackingState.Watching);
+  const checkedState = Object.values(TrackingState).find((value) => value === state);
   if (checkedState === undefined) throw new Error("Invalid tracking state");
   const result: Lifecycle = {
     state: checkedState,
@@ -43,10 +31,8 @@ export function lifecycle(row: Record<string, unknown>): Lifecycle {
   };
   if (!Number.isSafeInteger(result.trackingEpoch) || result.trackingEpoch < 0)
     throw new Error("Invalid tracking epoch");
-  if (typeof row["drain_deadline_ms"] === "number")
-    result.drainDeadlineAt = row["drain_deadline_ms"];
-  if (typeof row["archived_at_ms"] === "number")
-    result.archivedAt = row["archived_at_ms"];
+  if (typeof row["drain_deadline_ms"] === "number") result.drainDeadlineAt = row["drain_deadline_ms"];
+  if (typeof row["archived_at_ms"] === "number") result.archivedAt = row["archived_at_ms"];
   const reason = row["archive_reason"];
   if (reason !== undefined && reason !== null) {
     if (reason !== ArchiveReason.Settled && reason !== ArchiveReason.Deadline)
@@ -55,18 +41,11 @@ export function lifecycle(row: Record<string, unknown>): Lifecycle {
   }
   return result;
 }
+
 export function migrateRetirement(db: DatabaseSync, now: number): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (
-    version === 15 ||
-    version === 14 ||
-    version === 13 ||
-    version === 12 ||
-    version === 11
-  )
-    return;
-  if (version !== 10)
-    throw new Error("Unsupported retirement database version");
+  if (version === 15 || version === 14 || version === 13 || version === 12 || version === 11) return;
+  if (version !== 10) throw new Error("Unsupported retirement database version");
   db.exec("BEGIN IMMEDIATE");
   try {
     const columns = db.prepare("PRAGMA table_info(tracked_prs)").all();
@@ -81,11 +60,7 @@ export function migrateRetirement(db: DatabaseSync, now: number): void {
         `UPDATE tracked_prs SET tracking_state='draining',drain_deadline_ms=? WHERE enabled=1 AND (SELECT lifecycle FROM pr_observations WHERE pr_id=tracked_prs.id ORDER BY id DESC LIMIT 1) IN ('closed','merged')`,
       ).run(now + 86400000);
     }
-    const sql = String(
-      db
-        .prepare("SELECT sql FROM sqlite_master WHERE name='check_watches'")
-        .get()?.["sql"],
-    );
+    const sql = String(db.prepare("SELECT sql FROM sqlite_master WHERE name='check_watches'").get()?.["sql"]);
     if (!sql.includes("'expired'"))
       db.exec(`CREATE TABLE check_watches_next (
  id TEXT PRIMARY KEY,pr_id TEXT NOT NULL REFERENCES tracked_prs(id),head_sha TEXT NOT NULL,generation INTEGER NOT NULL CHECK(generation>0),
@@ -108,6 +83,7 @@ export function migrateRetirement(db: DatabaseSync, now: number): void {
     throw error;
   }
 }
+
 export class RetirementStore {
   constructor(
     private db: DatabaseSync,
@@ -115,12 +91,8 @@ export class RetirementStore {
     private checks: CheckWatches,
     private event: (kind: string, detail: string, prId: string) => void,
   ) {}
-  private set(
-    id: string,
-    state: TrackingState,
-    deadline: number | null,
-    reason: ArchiveReason | null,
-  ): void {
+
+  private set(id: string, state: TrackingState, deadline: number | null, reason: ArchiveReason | null): void {
     this.db
       .prepare(
         `UPDATE tracked_prs SET tracking_state=?,enabled=?,tracking_epoch=tracking_epoch+1,drain_deadline_ms=?,archive_reason=?,archived_at_ms=?,updated_at_ms=? WHERE id=?`,
@@ -135,91 +107,68 @@ export class RetirementStore {
         id,
       );
   }
+
   resumeInside(id: string): void {
     this.set(id, TrackingState.Watching, null, null);
   }
+
   disableInside(id: string): void {
     this.set(id, TrackingState.Disabled, null, null);
   }
+
   observeInside(id: string, observation: PRObservation): void {
     const row = this.db.prepare("SELECT * FROM tracked_prs WHERE id=?").get(id);
-    if (row === undefined) throw new Error("Tracked PR not found");
+    if (!row) throw new Error("Tracked PR not found");
     const current = lifecycle(row);
     if (current.state === TrackingState.Disabled) return;
     if (!terminalPR(observation.lifecycle)) {
       if (current.state !== TrackingState.Watching) {
         this.resumeInside(id);
-        this.event(
-          "pr_reactivated",
-          "Reopened PR monitoring resumed under its existing owner",
-          id,
-        );
+        this.event("pr_reactivated", "Reopened PR monitoring resumed under its existing owner", id);
       }
       return;
     }
     if (current.state === TrackingState.Archived) return;
     if (current.state === TrackingState.Watching) {
       this.set(id, TrackingState.Draining, this.now() + 86400000, null);
-      this.event(
-        "pr_draining",
-        "PR closed; finishing checks and pending reviews for at most 24 hours",
-        id,
-      );
+      this.event("pr_draining", "PR closed; finishing checks and pending reviews for at most 24 hours", id);
       return;
     }
     if (
       checkEvidence(observation).state === "complete" &&
       observation.reviews.state === "complete" &&
-      !observation.reviews.value.some((review) =>
-        pendingReview(review.state),
-      ) &&
-      (observation.feedback === undefined ||
-        observation.feedback.state === "complete") &&
+      !observation.reviews.value.some((review) => pendingReview(review.state)) &&
+      (!observation.feedback || observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
     ) {
       this.set(id, TrackingState.Archived, null, ArchiveReason.Settled);
-      this.event(
-        "pr_archived",
-        "Polling stopped after a final complete refresh; unread deliveries retained",
-        id,
-      );
+      this.event("pr_archived", "Polling stopped after a final complete refresh; unread deliveries retained", id);
     }
   }
+
   cachedMergedInside(id: string, observation: PRObservation): void {
     const row = this.db.prepare("SELECT * FROM tracked_prs WHERE id=?").get(id);
-    if (row === undefined) return;
+    if (!row) return;
     const current = lifecycle(row);
-    if (
-      current.state === TrackingState.Disabled ||
-      current.state === TrackingState.Archived
-    )
-      return;
+    if (current.state === TrackingState.Disabled || current.state === TrackingState.Archived) return;
     const evidence = checkEvidence(observation);
     if (
       prLifecycle(observation.lifecycle) === PRLifecycle.Merged &&
       evidence.state === "complete" &&
       (evidence.value.length === 0 || checksFinished(evidence)) &&
       observation.reviews.state === "complete" &&
-      !observation.reviews.value.some((review) =>
-        pendingReview(review.state),
-      ) &&
-      (observation.feedback === undefined ||
-        observation.feedback.state === "complete") &&
+      !observation.reviews.value.some((review) => pendingReview(review.state)) &&
+      (!observation.feedback || observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
     ) {
       this.set(id, TrackingState.Archived, null, ArchiveReason.Settled);
-      this.event(
-        "pr_archived",
-        "Cached merged PR settled during startup; history and unread deliveries retained",
-        id,
-      );
+      this.event("pr_archived", "Cached merged PR settled during startup; history and unread deliveries retained", id);
     }
   }
+
   expire(): string[] {
     const rows = this.db
-      .prepare(
-        "SELECT id FROM tracked_prs WHERE tracking_state='draining' AND drain_deadline_ms<=?",
-      )
+      .prepare("SELECT id FROM tracked_prs WHERE tracking_state='draining' AND drain_deadline_ms<=?")
       .all(this.now());
     if (rows.length === 0) return [];
     this.db.exec("BEGIN IMMEDIATE");

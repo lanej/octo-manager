@@ -24,66 +24,45 @@ import { complexity, renderTemplate } from "../submissions/contracts.js";
 import { inboxRoutes } from "../tracking/inbox-rpc.js";
 import { repairRoutes } from "../repairs/rpc.js";
 import { activityRoutes } from "../activity/rpc.js";
-import {
-  wirePR,
-  wireAction,
-  wireAgent,
-  wireDelivery,
-  trackingOperation,
-} from "../tracking/rpc.js";
+import { wirePR, wireAction, wireAgent, wireDelivery, trackingOperation } from "../tracking/rpc.js";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
-import {
-  SchedulerService,
-  type Task as WireTask,
-} from "../gen/octomanager/v2/scheduler_pb.js";
+import { SchedulerService, type Task as WireTask } from "../gen/octomanager/v2/scheduler_pb.js";
 import { parseTask } from "../jobs/domain.js";
 import type { ApplicationApi } from "../application/api.js";
 import { wireEvent, wireJob, wireSnapshot } from "./snapshot.js";
 
 function task(value?: WireTask) {
-  if (value?.kind.case === "resolveConflict")
-    return parseTask({ kind: "resolve_conflict" });
+  if (value?.kind.case === "resolveConflict") return parseTask({ kind: "resolve_conflict" });
   if (value?.kind.case === "summarizePullRequest")
     return parseTask({ kind: "summarize_pr", url: value.kind.value.url });
   throw new ConnectError("A supported task is required", Code.InvalidArgument);
 }
+
 function jobOperation<T>(work: () => T): T {
   try {
     return work();
   } catch (error) {
     if (error instanceof ConnectError) throw error;
     const message = error instanceof Error ? error.message : "Unknown failure";
-    if (message === "Job not found")
-      throw new ConnectError(message, Code.NotFound);
-    if (message.startsWith("Request ID already used"))
-      throw new ConnectError(message, Code.AlreadyExists);
+    if (message === "Job not found") throw new ConnectError(message, Code.NotFound);
+    if (message.startsWith("Request ID already used")) throw new ConnectError(message, Code.AlreadyExists);
     if (/previous worker|Only failed or interrupted/.test(message))
       throw new ConnectError(message, Code.FailedPrecondition);
-    if (message === "Coordinator is stopping")
-      throw new ConnectError(message, Code.Unavailable);
-    if (/Invalid|Expected|Unsupported|Task must/.test(message))
-      throw new ConnectError(message, Code.InvalidArgument);
+    if (message === "Coordinator is stopping") throw new ConnectError(message, Code.Unavailable);
+    if (/Invalid|Expected|Unsupported|Task must/.test(message)) throw new ConnectError(message, Code.InvalidArgument);
     throw new ConnectError("Coordinator operation failed", Code.Internal);
   }
 }
-export function schedulerRoutes(
-  application: ApplicationApi,
-  router: ConnectRouter,
-): void {
+
+export function schedulerRoutes(application: ApplicationApi, router: ConnectRouter): void {
   const tracking = application.services.tracking;
   const messages = new Messages(
     application.store,
     application.services.digests,
     application.services.merging.receipts.presentation,
   );
-  const owner = (value?: {
-    harness: string;
-    endpoint: string;
-    sessionId: string;
-    label?: string | undefined;
-  }) => {
-    if (value === undefined)
-      throw new ConnectError("Owner is required", Code.InvalidArgument);
+  const owner = (value?: { harness: string; endpoint: string; sessionId: string; label?: string | undefined }) => {
+    if (!value) throw new ConnectError("Owner is required", Code.InvalidArgument);
     return {
       harness: value.harness,
       endpoint: value.endpoint,
@@ -160,17 +139,14 @@ export function schedulerRoutes(
       },
       readNotificationMessage(r) {
         return trackingOperation(() => {
-          if (r.agentId !== "" && r.agentTarget !== undefined)
-            throw new Error("Invalid mixed recipient references");
+          if (r.agentId !== "" && r.agentTarget !== undefined) throw new Error("Invalid mixed recipient references");
           const agentId =
             r.agentTarget === undefined
               ? application.store.merging.actor(r.agentId)
               : tracking.store.sessionAgent(
                   r.agentTarget.harness,
                   r.agentTarget.sessionId,
-                  r.agentTarget.endpoint === ""
-                    ? undefined
-                    : r.agentTarget.endpoint,
+                  r.agentTarget.endpoint === "" ? undefined : r.agentTarget.endpoint,
                 );
           return messages.read(r.id, agentId);
         });
@@ -182,17 +158,14 @@ export function schedulerRoutes(
       },
       acknowledgeNotificationMessage(r) {
         return trackingOperation(() => {
-          if (r.agentId !== "" && r.agentTarget !== undefined)
-            throw new Error("Invalid mixed recipient references");
+          if (r.agentId !== "" && r.agentTarget !== undefined) throw new Error("Invalid mixed recipient references");
           const agentId =
             r.agentTarget === undefined
               ? application.store.merging.actor(r.agentId)
               : tracking.store.sessionAgent(
                   r.agentTarget.harness,
                   r.agentTarget.sessionId,
-                  r.agentTarget.endpoint === ""
-                    ? undefined
-                    : r.agentTarget.endpoint,
+                  r.agentTarget.endpoint === "" ? undefined : r.agentTarget.endpoint,
                 );
           return {
             message: messages.acknowledge(r.id, agentId, r.expectedBody),
@@ -203,19 +176,13 @@ export function schedulerRoutes(
         return trackingOperation(() => {
           if (r.receiptId !== "" && (r.id !== "" || r.revision !== undefined))
             throw new Error("Invalid mixed message receipt references");
-          const version =
-            r.receiptId === ""
-              ? undefined
-              : application.store.digests.delivery(r.receiptId);
+          const version = r.receiptId === "" ? undefined : application.store.digests.delivery(r.receiptId);
           const inspection = application.services.digests.inspect(
             version?.digestId ?? r.id,
             version?.revision ?? r.revision,
           );
           return {
-            inspection: wire(
-              DomainDigestInspectionSchema,
-              digestInspection(inspection),
-            ),
+            inspection: wire(DomainDigestInspectionSchema, digestInspection(inspection)),
           };
         });
       },
@@ -231,12 +198,8 @@ export function schedulerRoutes(
         return trackingOperation(() => {
           if (r.receiptId !== "" && (r.id !== "" || r.revision !== 0))
             throw new Error("Invalid mixed message receipt references");
-          if (r.agentId !== "" && r.agentTarget !== undefined)
-            throw new Error("Invalid mixed recipient references");
-          const version =
-            r.receiptId === ""
-              ? undefined
-              : application.store.digests.delivery(r.receiptId);
+          if (r.agentId !== "" && r.agentTarget !== undefined) throw new Error("Invalid mixed recipient references");
+          const version = r.receiptId === "" ? undefined : application.store.digests.delivery(r.receiptId);
           const id = version?.digestId ?? r.id,
             number = version?.revision ?? r.revision;
           const agentId =
@@ -245,38 +208,20 @@ export function schedulerRoutes(
               : tracking.store.sessionAgent(
                   r.agentTarget.harness,
                   r.agentTarget.sessionId,
-                  r.agentTarget.endpoint === ""
-                    ? undefined
-                    : r.agentTarget.endpoint,
+                  r.agentTarget.endpoint === "" ? undefined : r.agentTarget.endpoint,
                 );
-          const messages = application.services.digests.acknowledge(
-            id,
-            number,
-            agentId,
-            r.expectedBody,
-          );
-          return digestReceipt(
-            application.services.digests,
-            tracking.store,
-            id,
-            number,
-            messages,
-          );
+          const messages = application.services.digests.acknowledge(id, number, agentId, r.expectedBody);
+          return digestReceipt(application.services.digests, tracking.store, id, number, messages);
         });
       },
       getSubmission(r) {
         return trackingOperation(() => ({
-          submission: wire(
-            DomainArchivedSubmissionSchema,
-            archiveSubmission(application.store.submissions.get(r.id)),
-          ),
+          submission: wire(DomainArchivedSubmissionSchema, archiveSubmission(application.store.submissions.get(r.id))),
         }));
       },
       listSubmissions(r) {
         const page = application.store.submissions.summaryPage(
-          r.beforeRowId === 0n
-            ? Number.MAX_SAFE_INTEGER
-            : Number(r.beforeRowId),
+          r.beforeRowId === 0n ? Number.MAX_SAFE_INTEGER : Number(r.beforeRowId),
           r.limit === 0 ? 20 : r.limit,
         );
         return {
@@ -285,9 +230,7 @@ export function schedulerRoutes(
               id: value["id"],
               state: value["state"],
               detail: value["detail"],
-              ...(typeof value["url"] === "string"
-                ? { url: value["url"] }
-                : {}),
+              ...(typeof value["url"] === "string" ? { url: value["url"] } : {}),
             }),
           ),
           nextBeforeRowId: BigInt(page.next ?? 0),
@@ -295,15 +238,9 @@ export function schedulerRoutes(
       },
       getRepositoryPolicy(r) {
         return trackingOperation(() => {
-          const policy = application.store.submissions.policy(
-            r.repository.toLowerCase(),
-            r.version,
-          );
-          if (policy === undefined)
-            throw new ConnectError(
-              "Policy not found; submit a PR to analyze repository guidelines",
-              Code.NotFound,
-            );
+          const policy = application.store.submissions.policy(r.repository.toLowerCase(), r.version);
+          if (!policy)
+            throw new ConnectError("Policy not found; submit a PR to analyze repository guidelines", Code.NotFound);
           const tier = complexity(r.tier === "" ? "standard" : r.tier);
           return {
             policy: wire(DomainRepositoryPolicySchema, policy),
@@ -316,9 +253,7 @@ export function schedulerRoutes(
           agent: wireAgent(tracking.registerAgent(owner(r.target))),
         }));
       },
-      ...inboxRoutes(tracking.store, (message) =>
-        application.services.merging.receipts.inboxReadyHead(message),
-      ),
+      ...inboxRoutes(tracking.store, (message) => application.services.merging.receipts.inboxReadyHead(message)),
       ...repairRoutes(application.services.repairs),
       ...activityRoutes(
         application.store.activity,
@@ -337,15 +272,12 @@ export function schedulerRoutes(
       async getTrackedPullRequest(r) {
         return trackingOperation(() => ({
           pr: wirePR(tracking.store.pr(r.id)),
-          ...(application.store.repositories.get(tracking.store.pr(r.id).id) ===
-          undefined
+          ...(!application.store.repositories.get(tracking.store.pr(r.id).id)
             ? {}
             : {
                 repositoryPolicy: wire(
                   DomainRepositoryAutomationPolicySchema,
-                  application.store.repositories.get(
-                    tracking.store.pr(r.id).id,
-                  ),
+                  application.store.repositories.get(tracking.store.pr(r.id).id),
                 ),
               }),
         }));
@@ -355,11 +287,7 @@ export function schedulerRoutes(
           tracking.requestRefresh(r.id);
           return {
             pr: wirePR(tracking.store.pr(r.id)),
-            refresh: wireRefresh(
-              application.store.schedules.get(
-                `tracking:${tracking.store.pr(r.id).id}`,
-              ),
-            ),
+            refresh: wireRefresh(application.store.schedules.get(`tracking:${tracking.store.pr(r.id).id}`)),
           };
         });
       },
@@ -377,9 +305,7 @@ export function schedulerRoutes(
         return {
           actions: tracking.store
             .actions()
-            .filter(
-              (a) => r.prId === undefined || r.prId === "" || a.prId === r.prId,
-            )
+            .filter((a) => r.prId === undefined || r.prId === "" || a.prId === r.prId)
             .map((a) => wireAction(a, r.full)),
         };
       },
@@ -389,25 +315,18 @@ export function schedulerRoutes(
             assessment = application.store.assessments.latest(action.id);
           return {
             action: wireAction(action, r.full),
-            ...(assessment === undefined
-              ? {}
-              : { assessment: wireAssessment(assessment, r.full) }),
+            ...(!assessment ? {} : { assessment: wireAssessment(assessment, r.full) }),
           };
         });
       },
       getAssessment(r) {
         return trackingOperation(() => ({
-          assessment: wireAssessment(
-            application.store.assessments.get(r.id),
-            r.full,
-          ),
+          assessment: wireAssessment(application.store.assessments.get(r.id), r.full),
         }));
       },
       retryAssessment(r) {
         return trackingOperation(() => ({
-          assessment: wireAssessment(
-            application.services.assessments.retry(r.id),
-          ),
+          assessment: wireAssessment(application.services.assessments.retry(r.id)),
         }));
       },
       async acknowledgeAction(r) {
@@ -454,22 +373,13 @@ export function schedulerRoutes(
       },
       getJob(request) {
         return {
-          job: wireJob(
-            jobOperation(() =>
-              application.jobs.command({ op: "get", id: request.id }),
-            ),
-          ),
+          job: wireJob(jobOperation(() => application.jobs.command({ op: "get", id: request.id }))),
         };
       },
       getPullRequest(request) {
         return trackingOperation(() => {
-          application.services.githubScheduler.ensureReviews(
-            request.url,
-            request.refresh,
-          );
-          const view = application.services.githubScheduler.reviewState(
-            request.url,
-          );
+          application.services.githubScheduler.ensureReviews(request.url, request.refresh);
+          const view = application.services.githubScheduler.reviewState(request.url);
           return {
             pullRequest: wireDetails(view.details),
             refresh: wireRefresh(view.schedule),
@@ -481,76 +391,38 @@ export function schedulerRoutes(
       },
       cancelJob(request) {
         return {
-          job: wireJob(
-            jobOperation(() =>
-              application.jobs.command({ op: "cancel", id: request.id }),
-            ),
-          ),
+          job: wireJob(jobOperation(() => application.jobs.command({ op: "cancel", id: request.id }))),
         };
       },
       retryJob(request) {
         return {
-          job: wireJob(
-            jobOperation(() =>
-              application.jobs.command({ op: "retry", id: request.id }),
-            ),
-          ),
+          job: wireJob(jobOperation(() => application.jobs.command({ op: "retry", id: request.id }))),
         };
       },
       setPaused(request) {
-        jobOperation(() =>
-          application.jobs.command({ op: request.paused ? "pause" : "resume" }),
-        );
+        jobOperation(() => application.jobs.command({ op: request.paused ? "pause" : "resume" }));
         return { snapshot: wireSnapshot(application) };
       },
       listEvents(request) {
         if (request.jobId !== undefined && request.prId !== undefined)
-          throw new ConnectError(
-            "Choose job or PR filter",
-            Code.InvalidArgument,
-          );
-        if (
-          request.afterSequence < 0n ||
-          request.afterSequence > BigInt(application.store.sequence())
-        )
-          throw new ConnectError(
-            "Cursor is outside retained history",
-            Code.OutOfRange,
-          );
+          throw new ConnectError("Choose job or PR filter", Code.InvalidArgument);
+        if (request.afterSequence < 0n || request.afterSequence > BigInt(application.store.sequence()))
+          throw new ConnectError("Cursor is outside retained history", Code.OutOfRange);
         return {
           events: application.store
-            .eventsSince(
-              Number(request.afterSequence),
-              request.jobId,
-              request.prId,
-            )
+            .eventsSince(Number(request.afterSequence), request.jobId, request.prId)
             .map(wireEvent),
         };
       },
       async *watch(request, context) {
         if (request.jobId !== undefined && request.prId !== undefined)
-          throw new ConnectError(
-            "Choose job or PR filter",
-            Code.InvalidArgument,
-          );
+          throw new ConnectError("Choose job or PR filter", Code.InvalidArgument);
         if (request.instanceId !== application.store.instanceId())
-          throw new ConnectError(
-            "State instance changed; obtain a fresh snapshot",
-            Code.FailedPrecondition,
-          );
-        if (
-          request.afterSequence < 0n ||
-          request.afterSequence > BigInt(application.store.sequence())
-        )
-          throw new ConnectError(
-            "Cursor is ahead of retained history; obtain a fresh snapshot",
-            Code.OutOfRange,
-          );
+          throw new ConnectError("State instance changed; obtain a fresh snapshot", Code.FailedPrecondition);
+        if (request.afterSequence < 0n || request.afterSequence > BigInt(application.store.sequence()))
+          throw new ConnectError("Cursor is ahead of retained history; obtain a fresh snapshot", Code.OutOfRange);
         let cursor = Number(request.afterSequence);
-        const signal = AbortSignal.any([
-          context.signal,
-          application.services.githubScheduler.signal,
-        ]);
+        const signal = AbortSignal.any([context.signal, application.services.githubScheduler.signal]);
         while (!context.signal.aborted) {
           if (application.runtime.isStopping() || signal.aborted)
             throw new ConnectError("Coordinator is stopping", Code.Unavailable);
@@ -563,11 +435,7 @@ export function schedulerRoutes(
           const release = application.store.subscribeEvents(resume);
           signal.addEventListener("abort", resume, { once: true });
           try {
-            const events = application.store.eventsSince(
-              cursor,
-              request.jobId,
-              request.prId,
-            );
+            const events = application.store.eventsSince(cursor, request.jobId, request.prId);
             for (const event of events) {
               cursor = event.seq;
               yield { event: wireEvent(event) };

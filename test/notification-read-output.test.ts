@@ -57,9 +57,7 @@ test("agent reads preserve every finding and instruction while dropping duplicat
     },
   });
   const full = readOutput(response, false);
-  const ordinary = record(
-    toJson(ReadNotificationMessageResponseSchema, response),
-  );
+  const ordinary = record(toJson(ReadNotificationMessageResponseSchema, response));
   const items: unknown = record(ordinary["message"])["items"];
   if (!Array.isArray(items)) throw new Error("Missing ordinary message items");
   const first: unknown = items[0];

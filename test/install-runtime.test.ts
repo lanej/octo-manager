@@ -10,13 +10,7 @@ test("Bun minimum accepts the floor and newer releases, and rejects insufficient
     expect(() => {
       requireBun(version);
     }).not.toThrow();
-  for (const version of [
-    undefined,
-    "1.4.3",
-    "1.3.99",
-    "1.4.4-canary",
-    "invalid",
-  ])
+  for (const version of [undefined, "1.4.3", "1.3.99", "1.4.4-canary", "invalid"])
     expect(() => {
       requireBun(version);
     }).toThrow("requires Bun >=1.4.4");
@@ -29,29 +23,16 @@ for (const version of [undefined, "1.4.3"]) {
       const bin = join(fixture, "bin");
       await mkdir(bin);
       if (version !== undefined)
-        await writeFile(
-          join(bin, "bun"),
-          `#!/bin/sh\nprintf '%s\\n' '${version}'\n`,
-          {
-            mode: 0o755,
-          },
-        );
+        await writeFile(join(bin, "bun"), `#!/bin/sh\nprintf '%s\\n' '${version}'\n`, {
+          mode: 0o755,
+        });
       const home = join(fixture, "home");
       const state = join(fixture, "state");
-      const child = Bun.spawn(
-        [
-          process.execPath,
-          "scripts/install-local.ts",
-          "--home",
-          home,
-          "--no-start",
-        ],
-        {
-          env: { ...process.env, PATH: bin, OCTO_MANAGER_STATE: state },
-          stdout: "pipe",
-          stderr: "pipe",
-        },
-      );
+      const child = Bun.spawn([process.execPath, "scripts/install-local.ts", "--home", home, "--no-start"], {
+        env: { ...process.env, PATH: bin, OCTO_MANAGER_STATE: state },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
       const stderr = await new Response(child.stderr).text();
       expect(await child.exited).toBe(1);
       expect(stderr).toContain("requires Bun >=1.4.4");

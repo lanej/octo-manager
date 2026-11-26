@@ -5,6 +5,7 @@ import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "./messages.js";
 import { shortId } from "./identifiers.js";
 import type { AgentRef, TrackedPR } from "./types.js";
+
 export enum ParticipantRole {
   Owner = "owner",
   Observer = "observer",
@@ -15,12 +16,11 @@ export interface Participant {
   label: string;
   harness: string;
 }
+
 export function migrateSubscriptions(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
-  if (version === 15 || version === 14 || version === 13 || version === 12)
-    return;
-  if (version !== 11)
-    throw new Error("Unsupported subscription database version");
+  if (version === 15 || version === 14 || version === 13 || version === 12) return;
+  if (version !== 11) throw new Error("Unsupported subscription database version");
   db.exec(`BEGIN IMMEDIATE;
     CREATE TABLE IF NOT EXISTS pr_subscriptions (
       pr_id TEXT NOT NULL REFERENCES tracked_prs(id),agent_id TEXT NOT NULL REFERENCES agent_refs(id),created_at_ms INTEGER NOT NULL,
@@ -38,6 +38,7 @@ export function migrateSubscriptions(db: DatabaseSync): void {
     CREATE TRIGGER IF NOT EXISTS monotonic_participant_receipt BEFORE UPDATE OF acknowledged_at_ms ON participant_messages WHEN OLD.acknowledged_at_ms IS NOT NULL AND NEW.acknowledged_at_ms IS NOT OLD.acknowledged_at_ms BEGIN SELECT RAISE(ABORT,'Participant receipt is immutable'); END;
     PRAGMA user_version=12;COMMIT;`);
 }
+
 export class Subscriptions {
   constructor(
     private db: DatabaseSync,
@@ -45,6 +46,7 @@ export class Subscriptions {
     private agent: (id: string) => AgentRef,
     private notices: NotificationRepository,
   ) {}
+
   includes(prId: string, agentId: string): boolean {
     return (
       this.db
@@ -54,13 +56,12 @@ export class Subscriptions {
         .get(prId, agentId, agentId) !== undefined
     );
   }
+
   list(pr: TrackedPR): Participant[] {
     const ids = [
       pr.ownerAgentId,
       ...this.db
-        .prepare(
-          "SELECT agent_id FROM pr_subscriptions WHERE pr_id=? AND agent_id!=? ORDER BY created_at_ms,agent_id",
-        )
+        .prepare("SELECT agent_id FROM pr_subscriptions WHERE pr_id=? AND agent_id!=? ORDER BY created_at_ms,agent_id")
         .all(pr.id, pr.ownerAgentId)
         .map((row) => String(row["agent_id"])),
     ];
@@ -68,59 +69,40 @@ export class Subscriptions {
       const agent = this.agent(id);
       return {
         agentId: id,
-        role:
-          id === pr.ownerAgentId
-            ? ParticipantRole.Owner
-            : ParticipantRole.Observer,
-        label: compact(
-          agent.label ?? `${agent.harness} ${shortId(id, ids)}`,
-          120,
-        )
+        role: id === pr.ownerAgentId ? ParticipantRole.Owner : ParticipantRole.Observer,
+        label: compact(agent.label ?? `${agent.harness} ${shortId(id, ids)}`, 120)
           .replaceAll("\n", " ")
           .replaceAll("\t", " "),
         harness: agent.harness,
       };
     });
   }
+
   addInside(pr: TrackedPR, agentId: string): boolean {
-    if (!pr.enabled)
-      throw new Error(
-        "PR tracking is disabled; only explicit tracking can resume it",
-      );
+    if (!pr.enabled) throw new Error("PR tracking is disabled; only explicit tracking can resume it");
     if (pr.ownerAgentId === agentId) return false;
     return (
       Number(
-        this.db
-          .prepare("INSERT OR IGNORE INTO pr_subscriptions VALUES(?,?,?)")
-          .run(pr.id, agentId, this.now()).changes,
+        this.db.prepare("INSERT OR IGNORE INTO pr_subscriptions VALUES(?,?,?)").run(pr.id, agentId, this.now()).changes,
       ) > 0
     );
   }
+
   removeInside(pr: TrackedPR, agentId: string): boolean {
-    if (pr.ownerAgentId === agentId)
-      throw new Error(
-        "Owner cannot unsubscribe; assign ownership or untrack the PR",
-      );
+    if (pr.ownerAgentId === agentId) throw new Error("Owner cannot unsubscribe; assign ownership or untrack the PR");
     return (
-      Number(
-        this.db
-          .prepare("DELETE FROM pr_subscriptions WHERE pr_id=? AND agent_id=?")
-          .run(pr.id, agentId).changes,
-      ) > 0
+      Number(this.db.prepare("DELETE FROM pr_subscriptions WHERE pr_id=? AND agent_id=?").run(pr.id, agentId).changes) >
+      0
     );
   }
+
   publishInside(pr: TrackedPR): void {
-    if (!this.db.isTransaction)
-      throw new Error("Participant update requires a coordinator transaction");
+    if (!this.db.isTransaction) throw new Error("Participant update requires a coordinator transaction");
     this.db
-      .prepare(
-        "INSERT INTO pr_participant_revisions VALUES(?,1) ON CONFLICT(pr_id) DO UPDATE SET revision=revision+1",
-      )
+      .prepare("INSERT INTO pr_participant_revisions VALUES(?,1) ON CONFLICT(pr_id) DO UPDATE SET revision=revision+1")
       .run(pr.id);
     const revision = Number(
-      this.db
-        .prepare("SELECT revision FROM pr_participant_revisions WHERE pr_id=?")
-        .get(pr.id)?.["revision"],
+      this.db.prepare("SELECT revision FROM pr_participant_revisions WHERE pr_id=?").get(pr.id)?.["revision"],
     );
     const participants = this.list(pr);
     for (const recipient of participants) {

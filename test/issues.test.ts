@@ -15,12 +15,8 @@ import {
   type IssuePolicy,
   type TrackerObservation,
 } from "../src/issues/contracts.js";
-import type {
-  IssueTracker,
-  AgentDispatcher,
-  DispatchStatus,
-  IssueCodeHost,
-} from "../src/issues/ports.js";
+import type { IssueTracker, AgentDispatcher, DispatchStatus, IssueCodeHost } from "../src/issues/ports.js";
+
 const brief = {
   version: 1,
   outcome: "Correct the result",
@@ -30,6 +26,7 @@ const brief = {
   questions: [],
   blockingQuestions: false,
 };
+
 function fixture(overrides: Partial<IssuePolicy> = {}) {
   let now = 100000;
   const db = new DatabaseSync(":memory:");
@@ -81,8 +78,7 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
       posts.set(key, body);
       return Promise.resolve(`https://test/${key}`);
     },
-    findPost: (_ref, key) =>
-      Promise.resolve(posts.has(key) ? `https://test/${key}` : undefined),
+    findPost: (_ref, key) => Promise.resolve(posts.has(key) ? `https://test/${key}` : undefined),
     createFollowUp: () => {
       createCount++;
       return Promise.resolve("https://test/followup");
@@ -157,13 +153,7 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     },
     () => now,
   );
-  const enrolled = service.enroll(
-    "test",
-    "https://test/issue",
-    process.cwd(),
-    "owner",
-    "enroll-1",
-  );
+  const enrolled = service.enroll("test", "https://test/issue", process.cwd(), "owner", "enroll-1");
   const complete = async (value: StageResult) => {
     const assignment = assignments.at(-1);
     if (assignment == null) throw new Error("No assignment");
@@ -202,17 +192,14 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     counts: () => ({ closeCount, createCount, cancelCount }),
   };
 }
+
 test("issue steel thread requires brief approval, tests, merge and separate verification", async () => {
   const f = fixture();
   try {
     await f.service.tick();
     expect(f.assignments[0]?.role).toBe(Role.Investigation);
-    expect(f.assignments[0]?.sessionLabel).toBe(
-      "Investigate project#1: Wrong result",
-    );
-    expect(f.store.assignments(f.enrolled.id)[0]?.sessionLabel).toBe(
-      "Investigate project#1: Wrong result",
-    );
+    expect(f.assignments[0]?.sessionLabel).toBe("Investigate project#1: Wrong result");
+    expect(f.store.assignments(f.enrolled.id)[0]?.sessionLabel).toBe("Investigate project#1: Wrong result");
     let issue = await f.complete({
       disposition: "brief",
       summary: "Investigated",
@@ -222,9 +209,7 @@ test("issue steel thread requires brief approval, tests, merge and separate veri
     expect(issue.waiting).toBe(Waiting.Approval);
     await f.service.tick();
     expect(f.assignments).toHaveLength(1);
-    expect(() =>
-      f.service.command(issue.id, "approve", "", 0, "wrong-approval"),
-    ).toThrow();
+    expect(() => f.service.command(issue.id, "approve", "", 0, "wrong-approval")).toThrow();
     f.service.command(issue.id, "approve", "", 1, "approval");
     await f.service.tick();
     expect(f.assignments.at(-1)?.role).toBe(Role.Implementation);
@@ -256,9 +241,7 @@ test("issue steel thread requires brief approval, tests, merge and separate veri
     f.merge();
     await f.service.tick();
     expect(f.assignments.at(-1)?.role).toBe(Role.Verification);
-    expect(f.assignments.at(-1)?.sessionLabel).toBe(
-      "Verify project#1: Wrong result",
-    );
+    expect(f.assignments.at(-1)?.sessionLabel).toBe("Verify project#1: Wrong result");
     issue = await f.complete({
       disposition: "verified",
       summary: "Acceptance confirmed",
@@ -345,9 +328,7 @@ test("edited comments supersede active work before new assessment; stale results
     f.advance(120001);
     await f.service.tick();
     expect(f.counts().cancelCount).toBe(1);
-    expect(
-      f.store.assignments().find((item) => item.id === old.id)?.state,
-    ).toBe(AttemptState.Superseded);
+    expect(f.store.assignments().find((item) => item.id === old.id)?.state).toBe(AttemptState.Superseded);
     await f.service.tick();
     expect(f.assignments.at(-1)?.purpose).toBe("comments");
     await f.complete({
@@ -454,10 +435,7 @@ test("issue CLI traverses the generated socket API and exposes bounded persisted
     const issue = page.issues[0];
     if (issue === undefined) throw new Error("Issue missing");
     const inspected = await client.getIssue({ id: issue.id });
-    expect(
-      inspected.issue?.title === "" ||
-        inspected.issue?.title === "Wrong result",
-    ).toBe(true);
+    expect(inspected.issue?.title === "" || inspected.issue?.title === "Wrong result").toBe(true);
     expect(inspected.events.length).toBeGreaterThan(0);
     const again = await client.enrollIssue({
       provider: "test",
@@ -609,16 +587,9 @@ test("pause and cancel during awaited inspection cannot be overwritten by a stag
       };
       const pending = f.service.tick();
       await entered;
-      f.service.command(
-        f.enrolled.id,
-        operation,
-        "",
-        0,
-        `concurrent-${operation}`,
-      );
+      f.service.command(f.enrolled.id, operation, "", 0, `concurrent-${operation}`);
       const assignment = f.assignments[0];
-      if (assignment === undefined || release === undefined)
-        throw new Error("Inspection not held");
+      if (assignment === undefined || release === undefined) throw new Error("Inspection not held");
       release({
         state: "completed",
         sessionId: assignment.sessionId,
@@ -739,13 +710,7 @@ test("a late publication confirmation cannot revive a cancelled issue", async ()
       draft: { title: "Fix", body: "Fix body" },
     });
     await entered;
-    f.service.command(
-      f.enrolled.id,
-      "cancel",
-      "",
-      1,
-      "cancel-during-publication",
-    );
+    f.service.command(f.enrolled.id, "cancel", "", 1, "cancel-during-publication");
     if (release === undefined) throw new Error("Publication not held");
     release({ url: "https://test/pr/1", head: "abc" });
     await pending;
@@ -821,17 +786,11 @@ test("adding an initially empty issue description supersedes active implementati
     await f.service.tick();
     const observed = f.store.get(f.enrolled.id);
     expect(observed.epoch).toBe(epoch + 1);
-    expect(
-      observed.pendingComments.find((item) => item.id === "issue-body")?.body,
-    ).toBe("Also preserve compatibility");
-    expect(
-      f.store.assignments().find((item) => item.id === active?.id)?.state,
-    ).toBe(AttemptState.Superseded);
+    expect(observed.pendingComments.find((item) => item.id === "issue-body")?.body).toBe("Also preserve compatibility");
+    expect(f.store.assignments().find((item) => item.id === active?.id)?.state).toBe(AttemptState.Superseded);
     await f.service.tick();
     expect(f.assignments.at(-1)?.purpose).toBe("comments");
-    expect(f.assignments.at(-1)?.prompt).toContain(
-      "Also preserve compatibility",
-    );
+    expect(f.assignments.at(-1)?.prompt).toContain("Also preserve compatibility");
   } finally {
     f.close();
   }
@@ -860,8 +819,7 @@ test("active assignments keep their five-second observation deadline", async () 
     await settle();
     expect(ticks).toHaveBeenCalledTimes(1);
     const assignment = f.assignments[0];
-    if (assignment === undefined)
-      throw new Error("Missing investigation assignment");
+    if (assignment === undefined) throw new Error("Missing investigation assignment");
     f.results.set(assignment.id, {
       disposition: "brief",
       summary: "Investigated",
@@ -907,11 +865,7 @@ test("uncertain tracker effects retain a one-minute reconciliation deadline with
     jest.advanceTimersByTime(ms);
   };
   try {
-    f.store.save(
-      { ...f.enrolled, stage: IssueStage.Done, nextAt: now + 900000 },
-      "done",
-      "Done",
-    );
+    f.store.save({ ...f.enrolled, stage: IssueStage.Done, nextAt: now + 900000 }, "done", "Done");
     const effect = {
       id: "uncertain-post",
       issueId: f.enrolled.id,
@@ -997,9 +951,7 @@ test("repeated tracker failures renew their explicit retry deadline", async () =
   const scheduler = new WorkScheduler(() => now);
   const tracker = f.options.trackers[0];
   if (tracker === undefined) throw new Error("Missing tracker");
-  const reads = spyOn(tracker, "observe").mockRejectedValue(
-    new Error("Tracker offline"),
-  );
+  const reads = spyOn(tracker, "observe").mockRejectedValue(new Error("Tracker offline"));
   const settle = async () => {
     for (let i = 0; i < 30; i++) {
       jest.advanceTimersByTime(0);

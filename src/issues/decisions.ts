@@ -8,16 +8,14 @@ import {
   type Assignment,
   type StageResult,
 } from "./contracts.js";
+
 export function applyResult(
   issue: IssueRecord,
   assignment: Assignment,
   value: StageResult,
   policy: IssuePolicy,
 ): IssueRecord {
-  if (
-    assignment.epoch !== issue.epoch ||
-    assignment.briefVersion !== (issue.brief?.version ?? 0)
-  )
+  if (assignment.epoch !== issue.epoch || assignment.briefVersion !== (issue.brief?.version ?? 0))
     throw new Error("Superseded assignment cannot advance this issue");
   const next = {
     ...issue,
@@ -44,31 +42,20 @@ export function applyResult(
         publicationVersion: 0,
         epoch: issue.epoch + 1,
         stage: IssueStage.Investigation,
-        waiting:
-          brief.questions.length > 0 ? Waiting.Clarification : Waiting.Approval,
+        waiting: brief.questions.length > 0 ? Waiting.Clarification : Waiting.Approval,
         clarificationRound: issue.clarificationRound + 1,
         timeoutPlanned: assignment.purpose === "timeout",
         clarificationDueAt: undefined,
       };
     }
     case "implemented":
-      if (
-        assignment.role !== Role.Implementation ||
-        issue.stage !== IssueStage.InProgress
-      )
+      if (assignment.role !== Role.Implementation || issue.stage !== IssueStage.InProgress)
         throw new Error("Implementation assignment required");
       return { ...next, stage: IssueStage.Testing };
     case "tested":
-      if (
-        assignment.role !== Role.Implementation ||
-        issue.stage !== IssueStage.Testing ||
-        value.evidence.length === 0
-      )
+      if (assignment.role !== Role.Implementation || issue.stage !== IssueStage.Testing || value.evidence.length === 0)
         throw new Error("Testing evidence required");
-      if (
-        value.draft !== undefined &&
-        (policy.publish || issue.publicationVersion === issue.brief?.version)
-      )
+      if (value.draft && (policy.publish || issue.publicationVersion === issue.brief?.version))
         return {
           ...next,
           waiting: Waiting.Blocked,
@@ -95,9 +82,7 @@ export function applyResult(
         value.evidence.length === 0 ||
         value.head !== issue.prHead
       )
-        throw new Error(
-          "Verification must cover the merged head with acceptance evidence",
-        );
+        throw new Error("Verification must cover the merged head with acceptance evidence");
       return { ...next, stage: IssueStage.Done, verifiedHead: value.head };
     case "rework":
       if (assignment.role === Role.Verification)
@@ -118,13 +103,11 @@ export function applyResult(
         };
       return { ...next, stage: IssueStage.InProgress, waiting: Waiting.None };
     case "no_change":
-      if (assignment.purpose !== "comments")
-        throw new Error("No-change result requires comment assessment");
+      if (assignment.purpose !== "comments") throw new Error("No-change result requires comment assessment");
       return {
         ...next,
         waiting:
-          issue.stage === IssueStage.Investigation &&
-          (issue.brief?.questions.length ?? 0) > 0
+          issue.stage === IssueStage.Investigation && (issue.brief?.questions.length ?? 0) > 0
             ? Waiting.Clarification
             : Waiting.None,
       };
@@ -141,12 +124,12 @@ export function applyResult(
       };
   }
 }
+
 export function canImplement(issue: IssueRecord, policy: IssuePolicy): boolean {
   return (
     issue.brief !== undefined &&
     !issue.brief.blockingQuestions &&
-    (issue.brief.questions.length === 0 ||
-      (policy.assumptions && issue.timeoutPlanned)) &&
+    (issue.brief.questions.length === 0 || (policy.assumptions && issue.timeoutPlanned)) &&
     (policy.implement || issue.approvedVersion === issue.brief.version)
   );
 }

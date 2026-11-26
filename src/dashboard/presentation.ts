@@ -1,12 +1,4 @@
-import {
-  bg,
-  bold,
-  fg,
-  link,
-  underline,
-  StyledText,
-  type TextChunk,
-} from "@opentui/core";
+import { bg, bold, fg, link, underline, StyledText, type TextChunk } from "@opentui/core";
 import {
   type DetailLine,
   type StatusTone,
@@ -34,6 +26,7 @@ export interface Palette {
 export function plain(text: string): TextChunk {
   return { __isChunk: true, text };
 }
+
 const graphemes = new Intl.Segmenter();
 
 function clip(line: string, width: number): string {
@@ -60,19 +53,11 @@ function deliveryColor(delivery: DeliveryPresentation, palette: Palette) {
   return palette.info;
 }
 
-function linkChunk(
-  label: string,
-  address: string,
-  palette: Palette,
-): TextChunk {
+function linkChunk(label: string, address: string, palette: Palette): TextChunk {
   return link(address)(underline(fg(palette.accent)(label)));
 }
 
-function pillChunk(
-  label: string,
-  tone: StatusTone,
-  palette: Palette,
-): TextChunk {
+function pillChunk(label: string, tone: StatusTone, palette: Palette): TextChunk {
   const color = tone === "neutral" ? palette.muted : palette[tone];
   return bg(palette.surface)(fg(color)(` ${line(label)} `));
 }
@@ -80,9 +65,7 @@ function pillChunk(
 function subject(row: RecordView, width: number, palette: Palette) {
   const text = clip(line(row.delivery?.subject ?? row.label), width);
   const address = row.url === undefined ? undefined : dashboardLink(row.url);
-  return address === undefined
-    ? fg(palette.accent)(text)
-    : linkChunk(text, address.url, palette);
+  return !address ? fg(palette.accent)(text) : linkChunk(text, address.url, palette);
 }
 
 export function listContent(
@@ -95,43 +78,27 @@ export function listContent(
 ): StyledText {
   if (rows.length === 0)
     return new StyledText([
-      fg(palette.muted)(
-        connection === "Live"
-          ? `No ${screen.toLowerCase()} records`
-          : "Waiting for Octo…",
-      ),
+      fg(palette.muted)(connection === "Live" ? `No ${screen.toLowerCase()} records` : "Waiting for Octo…"),
     ]);
   const chunks: TextChunk[] = [];
   let group: DeliveryPresentation["group"] | undefined;
   for (const row of rows) {
     const current = row.id === selected;
     const delivery = row.delivery;
-    if (delivery !== undefined && group !== delivery.group) {
+    if (delivery && group !== delivery.group) {
       chunks.push(fg(palette.muted)(clip(delivery.group, width)), plain("\n"));
       group = delivery.group;
     }
     const prefix = current ? fg(palette.accent)(bold("› ")) : plain("  ");
     const text = subject(row, width - 2, palette);
-    chunks.push(
-      prefix,
-      current ? bg(palette.tab)(bold(text)) : text,
-      plain("\n"),
-    );
-    if (delivery !== undefined) {
+    chunks.push(prefix, current ? bg(palette.tab)(bold(text)) : text, plain("\n"));
+    if (delivery) {
       const title = delivery.title;
       if (title !== undefined && title.trim() !== "")
-        chunks.push(
-          plain("  "),
-          plain(clip(line(title), width - 2)),
-          plain("\n"),
-        );
+        chunks.push(plain("  "), plain(clip(line(title), width - 2)), plain("\n"));
       chunks.push(
         plain("  "),
-        bg(palette.surface)(
-          fg(deliveryColor(delivery, palette))(
-            ` ${clip(line(delivery.condition), width - 4)} `,
-          ),
-        ),
+        bg(palette.surface)(fg(deliveryColor(delivery, palette))(` ${clip(line(delivery.condition), width - 4)} `)),
         plain("\n"),
       );
     }
@@ -143,20 +110,12 @@ export function listContent(
 function section(title: string, width: number, palette: Palette): TextChunk[] {
   return [
     fg(palette.accent)(bold(title)),
-    fg(palette.border)(
-      " " + "─".repeat(Math.max(0, width - Bun.stringWidth(title) - 2)),
-    ),
+    fg(palette.border)(" " + "─".repeat(Math.max(0, width - Bun.stringWidth(title) - 2))),
     plain("\n"),
   ];
 }
 
-const referenceFields = new Set([
-  "PR",
-  "Issue",
-  "Evidence",
-  "Source",
-  "Requires merge",
-]);
+const referenceFields = new Set(["PR", "Issue", "Evidence", "Source", "Requires merge"]);
 
 function fact(value: DetailLine, palette: Palette): TextChunk[] {
   if (typeof value !== "string") {
@@ -169,18 +128,13 @@ function fact(value: DetailLine, palette: Palette): TextChunk[] {
   }
   const text = safeText(value);
   const separator = text.indexOf(": ");
-  if (separator <= 0 || separator > 26 || text.startsWith("• "))
-    return [plain(text)];
+  if (separator <= 0 || separator > 26 || text.startsWith("• ")) return [plain(text)];
   const label = text.slice(0, separator);
   const detail = text.slice(separator + 2);
-  const reference = referenceFields.has(label)
-    ? dashboardLink(detail)
-    : undefined;
+  const reference = referenceFields.has(label) ? dashboardLink(detail) : undefined;
   return [
     fg(palette.muted)(`${label}: `),
-    reference === undefined
-      ? plain(detail)
-      : linkChunk(line(reference.label), reference.url, palette),
+    !reference ? plain(detail) : linkChunk(line(reference.label), reference.url, palette),
   ];
 }
 
@@ -189,25 +143,17 @@ function facts(lines: readonly DetailLine[], palette: Palette): TextChunk[] {
 }
 
 function factWidth(chunks: readonly TextChunk[]): number {
-  return chunks.reduce(
-    (width, chunk) => width + Bun.stringWidth(chunk.text),
-    0,
-  );
+  return chunks.reduce((width, chunk) => width + Bun.stringWidth(chunk.text), 0);
 }
 
-function identityAndVerification(
-  delivery: DeliveryPresentation,
-  width: number,
-  palette: Palette,
-) {
+function identityAndVerification(delivery: DeliveryPresentation, width: number, palette: Palette) {
   const leftWidth = Math.floor((width - 4) / 2);
   const rightWidth = width - leftWidth - 4;
   const { identity, verification } = delivery;
   const leftFacts = identity.map((value) => fact(value, palette));
   const rightFacts = verification.map((value) => fact(value, palette));
   const fits = (chunks: readonly TextChunk[], cells: number) =>
-    chunks.every((chunk) => !chunk.text.includes("\n")) &&
-    factWidth(chunks) <= cells;
+    chunks.every((chunk) => !chunk.text.includes("\n")) && factWidth(chunks) <= cells;
   if (
     width < 66 ||
     !leftFacts.every((value) => fits(value, leftWidth)) ||
@@ -227,11 +173,7 @@ function identityAndVerification(
     plain("    "),
     ...section("Verification", rightWidth, palette),
   ];
-  for (
-    let index = 0;
-    index < Math.max(identity.length, verification.length);
-    index++
-  ) {
+  for (let index = 0; index < Math.max(identity.length, verification.length); index++) {
     const left = leftFacts[index] ?? [];
     columns.push(
       ...left,
@@ -249,19 +191,15 @@ export function detailContent(
   palette: Palette,
   screen: Screen,
 ): StyledText {
-  if (row === undefined) return new StyledText([]);
+  if (!row) return new StyledText([]);
   const delivery = row.delivery;
-  if (delivery !== undefined && screen !== "Reviews") {
+  if (delivery && screen !== "Reviews") {
     const hasFeedback = delivery.feedback.length > 1;
     const highlighted = [
       subject(row, width, palette),
       plain("\n"),
-      ...(delivery.title === undefined
-        ? []
-        : [bold(line(delivery.title) + "\n")]),
-      bg(palette.surface)(
-        fg(deliveryColor(delivery, palette))(` ${line(delivery.condition)} `),
-      ),
+      ...(delivery.title === undefined ? [] : [bold(line(delivery.title) + "\n")]),
+      bg(palette.surface)(fg(deliveryColor(delivery, palette))(` ${line(delivery.condition)} `)),
       plain("\n"),
       fg(palette.muted)(`Observed ${line(delivery.observed)}\n\n`),
       bg(palette.surface)(fg(palette.accent)(bold("  NEXT ACTION  "))),
@@ -283,10 +221,7 @@ export function detailContent(
       ...(hasFeedback ? [] : feedback),
       ...(row.detail.trim() === ""
         ? []
-        : [
-            ...section("Additional evidence", width, palette),
-            ...facts(row.detail.split("\n"), palette),
-          ]),
+        : [...section("Additional evidence", width, palette), ...facts(row.detail.split("\n"), palette)]),
     ]);
   }
 
@@ -295,14 +230,9 @@ export function detailContent(
       safeText(row.detail)
         .split("\n")
         .flatMap((value) => {
-          if (
-            value.endsWith(" quota") ||
-            value.startsWith("Recent ") ||
-            value === "Scheduler activity"
-          )
+          if (value.endsWith(" quota") || value.startsWith("Recent ") || value === "Scheduler activity")
             return section(value, width, palette);
-          if (/^[▮░]+$/u.test(value))
-            return [fg(palette.accent)(value), plain("\n")];
+          if (/^[▮░]+$/u.test(value)) return [fg(palette.accent)(value), plain("\n")];
           if (/^(REST|GraphQL|Cache): +[·▁-█]+$/u.test(value)) {
             const color = value.startsWith("REST")
               ? palette.accent
@@ -315,8 +245,5 @@ export function detailContent(
         }),
     );
   }
-  return new StyledText([
-    ...section(line(row.label), width, palette),
-    ...facts(row.detail.split("\n"), palette),
-  ]);
+  return new StyledText([...section(line(row.label), width, palette), ...facts(row.detail.split("\n"), palette)]);
 }

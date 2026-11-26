@@ -17,14 +17,9 @@ import type { AgentMessage } from "../tracking/inbox.js";
 import type { TrackingService } from "../tracking/service.js";
 import type { SubmissionStore } from "../submissions/store.js";
 import { DigestStore } from "./store.js";
-import {
-  DigestState as State,
-  terminal,
-  type Digest,
-  type DigestRevision,
-  type QueueTransport,
-} from "./types.js";
+import { DigestState as State, terminal, type Digest, type DigestRevision, type QueueTransport } from "./types.js";
 import { renderDigest } from "./render.js";
+
 const recipientConcurrency = 4;
 // Confirmed queue admission needs bounded external housekeeping; new inputs wake immediately.
 const queuedInspectionDelay = 60 * 1000;
@@ -48,6 +43,7 @@ export interface DigestOptions {
   // Override queue inspection deadlines; input wakeups remain immediate.
   intervalMs?: number;
 }
+
 export class DigestService {
   private scheduled: ScheduledTask | undefined;
   private started = false;
@@ -76,6 +72,7 @@ export class DigestService {
       inputRevision?: string;
     }
   >();
+
   constructor(
     readonly store: DigestStore,
     private tracking: TrackingService,
@@ -84,38 +81,32 @@ export class DigestService {
     private now: () => number = Date.now,
     private options: DigestOptions = {},
   ) {
-    this.queuePolicy = managedQueuePolicy(
-      tracking.store,
-      store,
-      tracking.config,
-    );
+    this.queuePolicy = managedQueuePolicy(tracking.store, store, tracking.config);
     store.recover();
   }
+
   private readonly queuePolicy: ReturnType<typeof managedQueuePolicy>;
   managed = (agentId: string): boolean => this.queuePolicy.managed(agentId);
-  managedBatch = (agentIds: readonly string[]): ReadonlySet<string> =>
-    this.queuePolicy.managedBatch(agentIds);
+  managedBatch = (agentIds: readonly string[]): ReadonlySet<string> => this.queuePolicy.managedBatch(agentIds);
+
   start(scheduler: WorkScheduler): void {
     if (this.started || this.stopped) return;
     this.scheduled = scheduler.task("digest-scheduling", () => {
-      if (this.discovery !== undefined)
-        return this.discovery.then(() => this.nextDeadline());
+      if (this.discovery) return this.discovery.then(() => this.nextDeadline());
       const inputsChanged = this.inputDirty;
       const prIds = [...this.dirtyPRs];
       const recipientIds = [...this.dirtyRecipients];
       this.inputDirty = false;
       this.dirtyPRs.clear();
       this.dirtyRecipients.clear();
-      return this.requestDiscovery(inputsChanged, prIds, recipientIds).then(
-        () => this.nextDeadline(),
-      );
+      return this.requestDiscovery(inputsChanged, prIds, recipientIds).then(() => this.nextDeadline());
     });
     this.started = true;
     this.wake();
   }
+
   flush(): Promise<void> {
-    if (!this.started)
-      return this.requestDiscovery().then(() => this.waitIdle());
+    if (!this.started) return this.requestDiscovery().then(() => this.waitIdle());
     this.generation++;
     this.inputDirty = true;
     this.dirtyPRs.clear();
@@ -123,24 +114,22 @@ export class DigestService {
     this.scheduled?.runNow();
     return this.waitIdle();
   }
+
   private requestDiscovery(
     inputsChanged = true,
     prIds: readonly string[] = [],
     recipientIds: readonly string[] = [],
   ): Promise<void> {
     if (this.stopped) return Promise.resolve();
-    this.discovery ??= performanceScope(
-      this.directory,
-      "digest-discovery",
-      () => this.discover(inputsChanged, prIds, recipientIds),
+    this.discovery ??= performanceScope(this.directory, "digest-discovery", () =>
+      this.discover(inputsChanged, prIds, recipientIds),
     )
       .catch((error: unknown) => {
         if (this.started) {
           if (inputsChanged) this.inputDirty = true;
           else {
             for (const prId of prIds) this.dirtyPRs.add(prId);
-            for (const agentId of recipientIds)
-              this.dirtyRecipients.add(agentId);
+            for (const agentId of recipientIds) this.dirtyRecipients.add(agentId);
           }
         }
         for (const waiter of this.idleWaiters) waiter.reject(error);
@@ -155,6 +144,7 @@ export class DigestService {
       });
     return this.discovery;
   }
+
   // Ownership or subscription changes need an unscoped wake so former recipients receive cleanup.
   wake(prId?: string): void {
     if (!this.started || this.stopped) return;
@@ -166,47 +156,44 @@ export class DigestService {
     } else if (!this.inputDirty) this.dirtyPRs.add(prId);
     this.scheduled?.wake();
   }
+
   wakeRecipient(agentId: string): void {
     if (!this.started || this.stopped) return;
     this.generation++;
     if (!this.inputDirty) this.dirtyRecipients.add(agentId);
     this.scheduled?.wake();
   }
+
   private hasInputChanges(): boolean {
-    return (
-      this.inputDirty || this.dirtyPRs.size > 0 || this.dirtyRecipients.size > 0
-    );
+    return this.inputDirty || this.dirtyPRs.size > 0 || this.dirtyRecipients.size > 0;
   }
+
   private nextDeadline(): number | undefined {
     if (!this.started || this.stopped) return undefined;
     if (this.hasInputChanges()) return this.now();
     let at = Infinity;
     for (const [agentId, check] of this.checks) {
-      if (!this.running.has(agentId) && !this.queued.has(agentId))
-        at = Math.min(at, check.at);
+      if (!this.running.has(agentId) && !this.queued.has(agentId)) at = Math.min(at, check.at);
     }
     return Number.isFinite(at) ? at : undefined;
   }
+
   private schedule(): void {
     this.scheduled?.at(this.nextDeadline());
   }
+
   applicable(message: AgentMessage): boolean {
-    return (
-      message.applicable &&
-      this.options.ownerFeedbackCovered?.(message) !== true
-    );
+    return message.applicable && this.options.ownerFeedbackCovered?.(message) !== true;
   }
-  private pending(
-    agentId: string,
-    presentations?: Map<string, MessagePresentation | undefined>,
-  ): AgentMessage[] {
+
+  private pending(agentId: string, presentations?: Map<string, MessagePresentation | undefined>): AgentMessage[] {
     const pending: AgentMessage[] = [];
     let after = 0;
     for (;;) {
       const page = this.tracking.store.inbox.list(agentId, after, false, true);
       for (const message of page.messages) {
         // Legacy arrivals after discovery must receive independent recovery IDs before a digest can receipt them.
-        if (message.notice !== undefined && this.applicable(message)) {
+        if (message.notice && this.applicable(message)) {
           const presentation = this.options.presentation?.(message);
           if (presentation?.defer !== true) {
             presentations?.set(message.id, presentation);
@@ -219,6 +206,7 @@ export class DigestService {
       after = page.nextSequence;
     }
   }
+
   private legacy(agentId: string): AgentMessage[] {
     const messages: AgentMessage[] = [];
     let after = 0;
@@ -229,6 +217,7 @@ export class DigestService {
       after = page.nextSequence;
     }
   }
+
   private inputs(agentId: string): ReconciliationInputs {
     const presentations = new Map<string, MessagePresentation | undefined>();
     return {
@@ -239,20 +228,14 @@ export class DigestService {
       cleanup: this.store.cleanup(agentId),
     };
   }
+
   private signature(agent: AgentRef, inputs: ReconciliationInputs): string {
     return createHash("sha256")
       .update(
         JSON.stringify([
           [agent.harness, agent.endpoint, agent.sessionId],
-          inputs.pending.map((value) => [
-            value.id,
-            inputs.presentations.get(value.id),
-          ]),
-          inputs.legacy.map((value) => [
-            value.id,
-            value.acknowledgedAt,
-            this.applicable(value),
-          ]),
+          inputs.pending.map((value) => [value.id, inputs.presentations.get(value.id)]),
+          inputs.legacy.map((value) => [value.id, value.acknowledgedAt, this.applicable(value)]),
           inputs.active?.id,
           inputs.active?.revision,
           inputs.active?.state,
@@ -263,24 +246,15 @@ export class DigestService {
       )
       .digest("hex");
   }
-  private canSkipDiscovery(
-    agentId: string,
-    revision: string | undefined,
-  ): boolean {
+
+  private canSkipDiscovery(agentId: string, revision: string | undefined): boolean {
     const previous = this.checks.get(agentId);
-    return (
-      revision !== undefined &&
-      previous?.inputRevision === revision &&
-      previous.at > this.now()
-    );
+    return revision !== undefined && previous?.inputRevision === revision && previous.at > this.now();
   }
-  private async discoverRecipients(
-    prIds: readonly string[],
-    recipientIds: readonly string[],
-  ): Promise<void> {
+
+  private async discoverRecipients(prIds: readonly string[], recipientIds: readonly string[]): Promise<void> {
     const recipients = new Map<string, AgentRef>();
-    for (const agentId of recipientIds)
-      recipients.set(agentId, this.tracking.store.agent(agentId));
+    for (const agentId of recipientIds) recipients.set(agentId, this.tracking.store.agent(agentId));
     for (const prId of prIds) {
       const pr = this.tracking.store.prContext(prId);
       for (const participant of this.tracking.store.subscriptions.list(pr)) {
@@ -294,7 +268,7 @@ export class DigestService {
       this.agents.set(agent.id, agent);
       // Keep signatures and retry history, but invalidate the broad-revision shortcut for this recipient.
       const previous = this.checks.get(agent.id);
-      if (previous !== undefined) delete previous.inputRevision;
+      if (previous) delete previous.inputRevision;
       if (!this.managed(agent.id)) continue;
       this.queued.set(agent.id, {
         agent,
@@ -302,6 +276,7 @@ export class DigestService {
       });
     }
   }
+
   private async discover(
     inputsChanged: boolean,
     prIds: readonly string[],
@@ -311,12 +286,7 @@ export class DigestService {
       await this.discoverRecipients(prIds, recipientIds);
       for (const [agentId, check] of this.checks) {
         const agent = this.agents.get(agentId);
-        if (
-          agent !== undefined &&
-          check.at <= this.now() &&
-          !this.running.has(agentId) &&
-          !this.queued.has(agentId)
-        )
+        if (agent && check.at <= this.now() && !this.running.has(agentId) && !this.queued.has(agentId))
           this.queued.set(agentId, { agent, urgent: false });
       }
       this.pump();
@@ -324,20 +294,14 @@ export class DigestService {
     }
     const recoveryRevision = this.options.inputRevision?.();
     let revision = recoveryRevision;
-    if (
-      recoveryRevision === undefined ||
-      recoveryRevision !== this.recoveryRevision
-    ) {
+    if (recoveryRevision === undefined || recoveryRevision !== this.recoveryRevision) {
       this.tracking.store.prepareSafeRecovery();
       this.recoveryRevision = recoveryRevision;
       // Recovery can create notices; eligibility must use its resulting revision.
       revision = this.options.inputRevision?.();
     }
-    this.agents = new Map(
-      this.tracking.store.agents().map((agent) => [agent.id, agent]),
-    );
-    for (const agentId of this.checks.keys())
-      if (!this.agents.has(agentId)) this.checks.delete(agentId);
+    this.agents = new Map(this.tracking.store.agents().map((agent) => [agent.id, agent]));
+    for (const agentId of this.checks.keys()) if (!this.agents.has(agentId)) this.checks.delete(agentId);
     for (const agent of this.agents.values()) {
       // Unchanged recipients need neither a database probe nor an event-loop yield.
       if (this.canSkipDiscovery(agent.id, revision)) continue;
@@ -354,23 +318,18 @@ export class DigestService {
     }
     this.pump();
   }
+
   private pump(): void {
     if (this.stopped) {
       this.queued.clear();
       return;
     }
     while (this.running.size < recipientConcurrency && this.queued.size > 0) {
-      const available = [...this.queued.values()].filter(
-        (value) => !this.running.has(value.agent.id),
-      );
+      const available = [...this.queued.values()].filter((value) => !this.running.has(value.agent.id));
       const next = available.find((value) => value.urgent) ?? available[0];
-      if (next === undefined) break;
+      if (!next) break;
       this.queued.delete(next.agent.id);
-      const work = performanceScope(
-        this.directory,
-        "digest-reconciliation",
-        () => this.reconcileAgent(next.agent),
-      )
+      const work = performanceScope(this.directory, "digest-reconciliation", () => this.reconcileAgent(next.agent))
         .catch((error: unknown) => {
           const previous = this.checks.get(next.agent.id);
           this.checks.set(next.agent.id, {
@@ -378,17 +337,9 @@ export class DigestService {
             at: this.now() + 5000,
             failures: (previous?.failures ?? 0) + 1,
           });
-          this.store.event(
-            next.agent.id,
-            undefined,
-            "queue_inspection_unavailable",
-            {
-              reason:
-                error instanceof Error
-                  ? error.message.slice(0, 1000)
-                  : "Queue reconciliation failed",
-            },
-          );
+          this.store.event(next.agent.id, undefined, "queue_inspection_unavailable", {
+            reason: error instanceof Error ? error.message.slice(0, 1000) : "Queue reconciliation failed",
+          });
         })
         .finally(() => {
           this.running.delete(next.agent.id);
@@ -399,29 +350,21 @@ export class DigestService {
       this.running.set(next.agent.id, work);
     }
   }
+
   private waitIdle(): Promise<void> {
-    if (
-      !this.hasInputChanges() &&
-      this.discovery === undefined &&
-      this.running.size === 0 &&
-      this.queued.size === 0
-    )
+    if (!this.hasInputChanges() && !this.discovery && this.running.size === 0 && this.queued.size === 0)
       return Promise.resolve();
     return new Promise((resolve, reject) => {
       this.idleWaiters.add({ resolve, reject });
     });
   }
+
   private settleIdle(): void {
-    if (
-      this.hasInputChanges() ||
-      this.discovery !== undefined ||
-      this.running.size > 0 ||
-      this.queued.size > 0
-    )
-      return;
+    if (this.hasInputChanges() || this.discovery || this.running.size > 0 || this.queued.size > 0) return;
     for (const waiter of this.idleWaiters) waiter.resolve();
     this.idleWaiters.clear();
   }
+
   private async reconcileAgent(agent: AgentRef): Promise<void> {
     const inputRevision = this.options.inputRevision?.();
     if (!this.managed(agent.id)) {
@@ -430,12 +373,7 @@ export class DigestService {
     }
     const generation = this.generation;
     const inputs = this.inputs(agent.id);
-    if (
-      inputs.pending.length === 0 &&
-      inputs.active === undefined &&
-      inputs.cleanup.length === 0 &&
-      inputs.legacy.length === 0
-    ) {
+    if (inputs.pending.length === 0 && !inputs.active && inputs.cleanup.length === 0 && inputs.legacy.length === 0) {
       this.store.clearArchivedInspection(agent.id);
       const revision = inputRevision;
       if (revision === undefined) this.checks.delete(agent.id);
@@ -449,11 +387,9 @@ export class DigestService {
       return;
     }
     const signature = this.signature(agent, inputs),
-      previous =
-        this.checks.get(agent.id) ?? this.store.archivedInspection(agent.id);
+      previous = this.checks.get(agent.id) ?? this.store.archivedInspection(agent.id);
     if (previous?.signature === signature && previous.at > this.now()) {
-      if (inputRevision !== undefined)
-        this.checks.set(agent.id, { ...previous, inputRevision });
+      if (inputRevision !== undefined) this.checks.set(agent.id, { ...previous, inputRevision });
       return;
     }
     let failures = 0;
@@ -462,37 +398,21 @@ export class DigestService {
     let archived = false;
     try {
       await this.sync(agent);
-      if (
-        previous?.error !== undefined &&
-        this.store.active(agent.id) === undefined
-      )
+      if (previous?.error !== undefined && !this.store.active(agent.id))
         this.store.event(agent.id, undefined, "queue_inspection_recovered", {});
     } catch (error) {
-      failures =
-        (previous?.signature === signature ? previous.failures : 0) + 1;
+      failures = (previous?.signature === signature ? previous.failures : 0) + 1;
       archived = error instanceof DeliveryError && error.archived;
-      delay = archived
-        ? archivedInspectionDelay
-        : Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
+      delay = archived ? archivedInspectionDelay : Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4));
       const current = this.store.active(agent.id),
-        reason = (
-          error instanceof Error ? error.message : "Queue reconciliation failed"
-        ).slice(0, 1000),
+        reason = (error instanceof Error ? error.message : "Queue reconciliation failed").slice(0, 1000),
         nextCheckAt = this.now() + delay;
       failure = reason;
-      if (current !== undefined) {
+      if (current) {
         const state =
-          current.state === State.Ready || current.state === State.Unavailable
-            ? State.Unavailable
-            : State.Uncertain;
-        if (current.state === state && current.error === reason)
-          this.store.defer(current, nextCheckAt);
-        else
-          this.store.save(
-            { ...current, state, error: reason, nextCheckAt },
-            "digest_uncertain",
-            { reason },
-          );
+          current.state === State.Ready || current.state === State.Unavailable ? State.Unavailable : State.Uncertain;
+        if (current.state === state && current.error === reason) this.store.defer(current, nextCheckAt);
+        else this.store.save({ ...current, state, error: reason, nextCheckAt }, "digest_uncertain", { reason });
       } else if (previous?.error !== reason)
         this.store.event(agent.id, undefined, "queue_inspection_unavailable", {
           reason,
@@ -509,10 +429,7 @@ export class DigestService {
       (cleanupRoute === undefined || cleanupRoute === fresh.transport.socket)
     )
       delay = this.options.intervalMs ?? queuedInspectionDelay;
-    const idle =
-      latest.pending.length === 0 &&
-      fresh === undefined &&
-      latest.cleanup.length === 0;
+    const idle = latest.pending.length === 0 && fresh === undefined && latest.cleanup.length === 0;
     const check = {
       signature:
         archived || (this.generation !== generation && failure === undefined)
@@ -524,10 +441,7 @@ export class DigestService {
             ? Infinity
             : this.now() + 60000
           : this.now() + delay,
-        fresh !== undefined &&
-          (fresh.state === State.Uncertain || fresh.state === State.Unavailable)
-          ? fresh.nextCheckAt
-          : 0,
+        fresh && (fresh.state === State.Uncertain || fresh.state === State.Unavailable) ? fresh.nextCheckAt : 0,
       ),
       failures,
       ...(inputRevision === undefined ? {} : { inputRevision }),
@@ -544,46 +458,34 @@ export class DigestService {
       });
     } else this.store.clearArchivedInspection(agent.id);
   }
+
   private transport(agent: AgentRef): QueueTransport | undefined {
     const endpoint = this.tracking.config.endpoints[agent.endpoint];
     return endpoint?.delivery === "queue"
       ? { kind: "codex_queue", socket: codexSocketPath(endpoint.socket) }
       : undefined;
   }
-  private draft(
-    agent: AgentRef,
-    transport: QueueTransport,
-  ): Digest | undefined {
+
+  private draft(agent: AgentRef, transport: QueueTransport): Digest | undefined {
     const messages = this.pending(agent.id);
     if (messages.length === 0) return undefined;
-    const render = (receiptId: string) =>
-      renderDigest(
-        messages,
-        this.directory,
-        receiptId,
-        this.options.presentation,
-      );
+    const render = (receiptId: string) => renderDigest(messages, this.directory, receiptId, this.options.presentation);
     const active = this.store.active(agent.id);
-    return active === undefined
-      ? this.store.create(agent.id, transport, render)
-      : this.store.revise(active, render);
+    return !active ? this.store.create(agent.id, transport, render) : this.store.revise(active, render);
   }
+
   private async sync(agent: AgentRef): Promise<void> {
     const desired = this.transport(agent);
     let active = this.store.active(agent.id);
     const cleanup = this.store.cleanup(agent.id)[0];
     const route = cleanup?.transport ?? active?.transport ?? desired;
-    if (route === undefined) return;
-    if (active === undefined && desired?.socket === route.socket)
-      active = this.draft(agent, desired);
-    const connection =
-      this.options.connect?.(agent, route.socket) ??
-      new CodexConnection(route.socket, "queue");
+    if (!route) return;
+    if (!active && desired?.socket === route.socket) active = this.draft(agent, desired);
+    const connection = this.options.connect?.(agent, route.socket) ?? new CodexConnection(route.socket, "queue");
     this.connections.add(connection);
     try {
       const prepared = await connection.prepare(agent);
-      if (prepared.version !== undefined)
-        this.tracking.store.runtime(agent.id, prepared.version);
+      if (prepared.version !== undefined) this.tracking.store.runtime(agent.id, prepared.version);
       const queued = await connection.queued(agent);
       const owned: {
         item: QueuedMessage;
@@ -591,12 +493,8 @@ export class DigestService {
         version: DigestRevision;
       }[] = [];
       for (const item of queued) {
-        const match = this.store.queuedRevision(
-          agent.id,
-          route.socket,
-          item.clientId,
-        );
-        if (match !== undefined) {
+        const match = this.store.queuedRevision(agent.id, route.socket, item.clientId);
+        if (match) {
           const { digest: known, version } = match;
           if (version.body !== item.body) {
             this.store.event(agent.id, known.id, "queue_content_conflict", {
@@ -606,20 +504,13 @@ export class DigestService {
               throw new Error("Managed queue content was edited outside Octo");
             continue;
           }
-          if (terminal(known))
-            await this.cancel(
-              connection,
-              agent,
-              item,
-              known.id,
-              "received or cancelled digest",
-            );
+          if (terminal(known)) await this.cancel(connection, agent, item, known.id, "received or cancelled digest");
           else owned.push({ item, digest: known, version });
           continue;
         }
         const message = this.tracking.store.inbox.get(item.clientId);
         if (
-          message === undefined ||
+          !message ||
           message.id !== item.clientId ||
           message.recipientAgentId !== agent.id ||
           message.body !== item.body
@@ -638,18 +529,9 @@ export class DigestService {
         );
       }
       for (const digest of this.store.withdrawalDigests(agent.id, route.socket))
-        await this.reconcileLegacyWithdrawals(
-          connection,
-          agent,
-          digest.id,
-          queued,
-        );
-      for (const previous of this.store
-        .cleanup(agent.id)
-        .filter((value) => value.transport.socket === route.socket)) {
-        for (const observed of owned.filter(
-          (value) => value.digest.id === previous.id,
-        ))
+        await this.reconcileLegacyWithdrawals(connection, agent, digest.id, queued);
+      for (const previous of this.store.cleanup(agent.id).filter((value) => value.transport.socket === route.socket)) {
+        for (const observed of owned.filter((value) => value.digest.id === previous.id))
           await this.cancel(
             connection,
             agent,
@@ -659,30 +541,17 @@ export class DigestService {
           );
         const withdrawals = this.withdrawals(previous.id);
         if (withdrawals.length === 0) {
-          this.store.save(
-            { ...previous, cleanupPending: false },
-            "digest_cleanup_confirmed",
-            {},
-          );
+          this.store.save({ ...previous, cleanupPending: false }, "digest_cleanup_confirmed", {});
           continue;
         }
-        const receipts = new Set(
-          this.store.receipts(previous.id).map((receipt) => receipt.revision),
-        );
+        const receipts = new Set(this.store.receipts(previous.id).map((receipt) => receipt.revision));
         const versions = this.store.revisions(previous.id);
         const resolved = withdrawals.map((withdrawal) => {
-          const version = versions.find(
-            (value) => value.dispatchId === withdrawal.clientId,
-          );
-          if (version === undefined)
-            throw new Error(
-              "Previous digest withdrawal is unconfirmed; not adding a replacement",
-            );
+          const version = versions.find((value) => value.dispatchId === withdrawal.clientId);
+          if (!version) throw new Error("Previous digest withdrawal is unconfirmed; not adding a replacement");
           return { withdrawal, version };
         });
-        const unreceived = resolved.filter(
-          ({ version }) => !receipts.has(version.revision),
-        );
+        const unreceived = resolved.filter(({ version }) => !receipts.has(version.revision));
         const history: { bodies: string[] } =
           unreceived.length === 0
             ? { bodies: [] }
@@ -691,32 +560,17 @@ export class DigestService {
                 unreceived.map(({ version }) => version.body),
               );
         for (const { withdrawal, version } of resolved) {
-          if (
-            !receipts.has(version.revision) &&
-            !history.bodies.includes(version.body)
-          )
-            throw new Error(
-              "Previous digest withdrawal is unconfirmed; not adding a replacement",
-            );
-          this.acknowledge(
-            previous.id,
-            version.revision,
-            agent.id,
-            version.body,
-          );
+          if (!receipts.has(version.revision) && !history.bodies.includes(version.body))
+            throw new Error("Previous digest withdrawal is unconfirmed; not adding a replacement");
+          this.acknowledge(previous.id, version.revision, agent.id, version.body);
           this.store.event(agent.id, previous.id, "queue_cancel_reconciled", {
             queueId: withdrawal.queueId,
             revision: version.revision,
           });
         }
-        this.store.save(
-          { ...this.store.get(previous.id), cleanupPending: false },
-          "digest_cleanup_confirmed",
-          {},
-        );
+        this.store.save({ ...this.store.get(previous.id), cleanupPending: false }, "digest_cleanup_confirmed", {});
       }
-      if (active === undefined || active.transport.socket !== route.socket)
-        return;
+      if (!active || active.transport.socket !== route.socket) return;
       active = this.store.get(active.id);
       if (terminal(active)) return;
       const activeId = active.id;
@@ -725,21 +579,12 @@ export class DigestService {
         .sort((a, b) => b.version.revision - a.version.revision);
       const keep = present[0];
       for (const duplicate of present.slice(1))
-        await this.cancel(
-          connection,
-          agent,
-          duplicate.item,
-          active.id,
-          "duplicate digest queue entry",
-        );
+        await this.cancel(connection, agent, duplicate.item, active.id, "duplicate digest queue entry");
       active = this.store.get(activeId);
       if (terminal(active)) return;
       const versions = this.store.revisions(active.id);
-      if (keep === undefined) {
-        const attempted = this.store.hasEvent(
-          active.id,
-          "queue_enqueue_started",
-        );
+      if (!keep) {
+        const attempted = this.store.hasEvent(active.id, "queue_enqueue_started");
         if (attempted) {
           const history = await connection.received(
             agent,
@@ -748,98 +593,60 @@ export class DigestService {
           if (history.bodies.length > 0) {
             for (const body of history.bodies) {
               const version = versions.find((value) => value.body === body);
-              if (version !== undefined)
-                this.acknowledge(active.id, version.revision, agent.id, body);
+              if (version) this.acknowledge(active.id, version.revision, agent.id, body);
             }
             return;
           }
           active = this.store.get(activeId);
           if (terminal(active)) return;
-          if (
-            desired === undefined ||
-            desired.socket !== route.socket ||
-            this.pending(agent.id).length === 0
-          ) {
-            this.store.save(
-              { ...active, state: State.Cancelled, nextCheckAt: this.now() },
-              "digest_cancelled",
-              {
-                reason: "No pending queue entry; receipt was not observed",
-                historyComplete: history.complete,
-              },
-            );
+          if (!desired || desired.socket !== route.socket || this.pending(agent.id).length === 0) {
+            this.store.save({ ...active, state: State.Cancelled, nextCheckAt: this.now() }, "digest_cancelled", {
+              reason: "No pending queue entry; receipt was not observed",
+              historyComplete: history.complete,
+            });
             return;
           }
-          if (!history.complete)
-            throw new Error(
-              "Receipt history is incomplete; not replaying an uncertain digest",
-            );
+          if (!history.complete) throw new Error("Receipt history is incomplete; not replaying an uncertain digest");
           if (this.pendingWithdrawal(active.id))
-            throw new Error(
-              "Previous withdrawal is unconfirmed; not adding a replacement",
-            );
+            throw new Error("Previous withdrawal is unconfirmed; not adding a replacement");
         }
       }
       active = this.store.get(activeId);
       if (terminal(active)) return;
-      if (
-        keep === undefined &&
-        this.pendingWithdrawal(active.id) &&
-        this.pending(agent.id).length > 0
-      )
-        throw new Error(
-          "Previous withdrawal is unconfirmed; not adding a replacement",
-        );
+      if (!keep && this.pendingWithdrawal(active.id) && this.pending(agent.id).length > 0)
+        throw new Error("Previous withdrawal is unconfirmed; not adding a replacement");
       const messages = this.pending(agent.id),
         canSend = desired !== undefined && desired.socket === route.socket;
       if (!canSend || messages.length === 0) {
-        if (keep !== undefined)
+        if (keep)
           await this.cancel(
             connection,
             agent,
             keep.item,
             active.id,
-            !canSend
-              ? "recipient transport changed"
-              : "all messages superseded or received",
+            !canSend ? "recipient transport changed" : "all messages superseded or received",
           );
         const fresh = this.store.get(active.id);
         if (!terminal(fresh))
-          this.store.save(
-            { ...fresh, state: State.Cancelled, nextCheckAt: this.now() },
-            "digest_cancelled",
-            {
-              reason: canSend
-                ? "No applicable unread messages"
-                : "Transport changed",
-            },
-          );
+          this.store.save({ ...fresh, state: State.Cancelled, nextCheckAt: this.now() }, "digest_cancelled", {
+            reason: canSend ? "No applicable unread messages" : "Transport changed",
+          });
         return;
       }
       active = this.store.revise(active, (receiptId) =>
-        renderDigest(
-          messages,
-          this.directory,
-          receiptId,
-          this.options.presentation,
-        ),
+        renderDigest(messages, this.directory, receiptId, this.options.presentation),
       );
       let version = this.store.version(active.id, active.revision);
-      if (keep !== undefined && keep.version.revision === version.revision) {
+      if (keep && keep.version.revision === version.revision) {
         const hadError = active.error !== undefined;
         delete active.error;
-        if (
-          active.state !== State.Queued ||
-          active.queueId !== keep.item.queueId ||
-          hadError
-        )
+        if (active.state !== State.Queued || active.queueId !== keep.item.queueId || hadError)
           this.store.save(
             {
               ...active,
               state: State.Queued,
               queueId: keep.item.queueId,
-              nextCheckAt:
-                this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
+              nextCheckAt: this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
             },
             "digest_queue_observed",
             { revision: version.revision, queueId: keep.item.queueId },
@@ -847,62 +654,37 @@ export class DigestService {
         this.accepted(version, keep.item.queueId);
         return;
       }
-      if (keep !== undefined) {
-        await this.cancel(
-          connection,
-          agent,
-          keep.item,
-          active.id,
-          "replace digest revision",
-        );
+      if (keep) {
+        await this.cancel(connection, agent, keep.item, active.id, "replace digest revision");
         const withdrawn = this.store.get(active.id);
         if (terminal(withdrawn)) return;
         delete withdrawn.queueId;
-        this.store.save(
-          { ...withdrawn, state: State.Ready },
-          "digest_withdrawn",
-          {
-            oldRevision: keep.version.revision,
-            nextRevision: version.revision,
-          },
-        );
+        this.store.save({ ...withdrawn, state: State.Ready }, "digest_withdrawn", {
+          oldRevision: keep.version.revision,
+          nextRevision: version.revision,
+        });
       }
       active = this.store.get(active.id);
       if (terminal(active)) return;
       const latest = this.pending(agent.id),
         currentTransport = this.transport(agent);
       if (latest.length === 0 || currentTransport?.socket !== route.socket) {
-        this.store.save(
-          { ...active, state: State.Cancelled, nextCheckAt: this.now() },
-          "digest_cancelled",
-          { reason: "Membership or transport changed during withdrawal" },
-        );
+        this.store.save({ ...active, state: State.Cancelled, nextCheckAt: this.now() }, "digest_cancelled", {
+          reason: "Membership or transport changed during withdrawal",
+        });
         return;
       }
       active = this.store.revise(active, (receiptId) =>
-        renderDigest(
-          latest,
-          this.directory,
-          receiptId,
-          this.options.presentation,
-        ),
+        renderDigest(latest, this.directory, receiptId, this.options.presentation),
       );
       version = this.store.version(active.id, active.revision);
       const operation = "queue_enqueue";
-      this.store.save(
-        { ...active, state: State.Enqueueing, nextCheckAt: this.now() },
-        operation + "_started",
-        { revision: version.revision, dispatchId: version.dispatchId },
-      );
-      const result = await connection.enqueueQueued(
-        agent,
-        version.dispatchId,
-        version.body,
-      );
-      if (
-        result.clientId !== version.dispatchId ||
-        result.body !== version.body
-      )
+      this.store.save({ ...active, state: State.Enqueueing, nextCheckAt: this.now() }, operation + "_started", {
+        revision: version.revision,
+        dispatchId: version.dispatchId,
+      });
+      const result = await connection.enqueueQueued(agent, version.dispatchId, version.body);
+      if (result.clientId !== version.dispatchId || result.body !== version.body)
         throw new Error("Queue admission did not confirm this digest revision");
       const queueId = result.queueId;
       const fresh = this.store.get(active.id);
@@ -913,25 +695,23 @@ export class DigestService {
             ...fresh,
             state: State.Queued,
             queueId,
-            nextCheckAt:
-              this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
+            nextCheckAt: this.now() + (this.options.intervalMs ?? queuedInspectionDelay),
           },
           operation + "_confirmed",
           { revision: version.revision, queueId },
         );
       else
-        this.store.event(
-          agent.id,
-          active.id,
-          operation + "_confirmed_after_receipt",
-          { revision: version.revision, queueId },
-        );
+        this.store.event(agent.id, active.id, operation + "_confirmed_after_receipt", {
+          revision: version.revision,
+          queueId,
+        });
       this.accepted(version, queueId);
     } finally {
       connection.close();
       this.connections.delete(connection);
     }
   }
+
   private async reconcileLegacyWithdrawals(
     connection: QueueConnection,
     agent: AgentRef,
@@ -940,7 +720,7 @@ export class DigestService {
   ): Promise<void> {
     const legacy = this.withdrawals(digestId).flatMap((withdrawal) => {
       const message = this.tracking.store.inbox.get(withdrawal.clientId);
-      return message !== undefined &&
+      return message &&
         message.id === withdrawal.clientId &&
         message.recipientAgentId === agent.id &&
         !queued.some((item) => item.queueId === withdrawal.queueId)
@@ -948,9 +728,7 @@ export class DigestService {
         : [];
     });
     if (legacy.length === 0) return;
-    const unread = legacy.filter(
-      (value) => value.message.acknowledgedAt === undefined,
-    );
+    const unread = legacy.filter((value) => value.message.acknowledgedAt === undefined);
     const history: { bodies: string[] } =
       unread.length === 0
         ? { bodies: [] }
@@ -959,11 +737,7 @@ export class DigestService {
             unread.map((value) => value.message.body),
           );
     for (const { withdrawal, message } of legacy) {
-      if (
-        message.acknowledgedAt === undefined &&
-        !history.bodies.includes(message.body)
-      )
-        continue;
+      if (message.acknowledgedAt === undefined && !history.bodies.includes(message.body)) continue;
       this.tracking.store.transaction(() => {
         this.tracking.store.acknowledgeMessageInside(message.id, agent.id);
         this.store.event(agent.id, digestId, "queue_cancel_reconciled", {
@@ -973,9 +747,11 @@ export class DigestService {
       });
     }
   }
+
   private pendingWithdrawal(id: string): boolean {
     return this.withdrawals(id).length > 0;
   }
+
   private withdrawals(id: string): { queueId: string; clientId: string }[] {
     const pending = new Map<string, { queueId: string; clientId: string }>();
     for (const event of this.store.events(id, [
@@ -997,10 +773,7 @@ export class DigestService {
       )
         throw new Error("Invalid withdrawal journal");
       if (event.kind === "queue_cancel_started") {
-        if (
-          !("clientId" in event.detail) ||
-          typeof event.detail.clientId !== "string"
-        )
+        if (!("clientId" in event.detail) || typeof event.detail.clientId !== "string")
           throw new Error("Invalid withdrawal identity");
         pending.set(event.detail.queueId, {
           queueId: event.detail.queueId,
@@ -1010,6 +783,7 @@ export class DigestService {
     }
     return [...pending.values()];
   }
+
   private async cancel(
     connection: QueueConnection,
     agent: AgentRef,
@@ -1019,17 +793,12 @@ export class DigestService {
   ): Promise<void> {
     const value = digestId === undefined ? undefined : this.store.get(digestId),
       detail = { queueId: item.queueId, clientId: item.clientId, reason };
-    if (value !== undefined && !terminal(value))
-      this.store.save(
-        { ...value, state: State.Withdrawing },
-        "queue_cancel_started",
-        detail,
-      );
+    if (value && !terminal(value))
+      this.store.save({ ...value, state: State.Withdrawing }, "queue_cancel_started", detail);
     else this.store.event(agent.id, digestId, "queue_cancel_started", detail);
     try {
       const deleted = await connection.cancelQueued(agent, item.queueId);
-      if (!deleted)
-        throw new Error("Queue entry is no longer pending; reconcile receipt");
+      if (!deleted) throw new Error("Queue entry is no longer pending; reconcile receipt");
       this.store.event(agent.id, digestId, "queue_cancel_confirmed", {
         queueId: item.queueId,
         reason,
@@ -1043,30 +812,21 @@ export class DigestService {
       throw error;
     }
   }
+
   private accepted(version: DigestRevision, queueId: string): void {
     this.tracking.store.transaction(() => {
       for (const id of version.messageIds) {
         const message = this.tracking.store.inbox.get(id);
-        if (message === undefined) throw new Error("Digest member disappeared");
+        if (!message) throw new Error("Digest member disappeared");
         if (message.submissionId !== undefined) {
-          const notice = this.submissions
-            .notices(true)
-            .find((value) => value.id === id);
-          if (notice !== undefined && notice.state !== "accepted")
-            this.submissions.saveNotice(
-              notice,
-              "accepted",
-              "Included in an agent digest",
-              this.now() + 30000,
-            );
+          const notice = this.submissions.notices(true).find((value) => value.id === id);
+          if (notice && notice.state !== "accepted")
+            this.submissions.saveNotice(notice, "accepted", "Included in an agent digest", this.now() + 30000);
         } else if (message.applicable) {
-          const delivery = this.tracking.store
-            .deliveries()
-            .find((value) => value.id === id);
+          const delivery = this.tracking.store.deliveries().find((value) => value.id === id);
           if (
-            delivery !== undefined &&
-            (delivery.progress.state !== DeliveryState.Delivered ||
-              delivery.progress.queueId !== queueId)
+            delivery &&
+            (delivery.progress.state !== DeliveryState.Delivered || delivery.progress.queueId !== queueId)
           )
             this.tracking.store.saveDelivery(
               {
@@ -1085,24 +845,17 @@ export class DigestService {
       }
     });
   }
-  acknowledge(
-    id: string,
-    number: number,
-    agentId: string,
-    expectedBody?: string,
-  ): AgentMessage[] {
+
+  acknowledge(id: string, number: number, agentId: string, expectedBody?: string): AgentMessage[] {
     const value = this.store.get(id);
     const resolvedAgentId = resolveId(
       agentId,
       this.tracking.store.agents().map((agent) => agent.id),
     );
-    if (value.agentId !== resolvedAgentId)
-      throw new Error("Digest belongs to another agent");
+    if (value.agentId !== resolvedAgentId) throw new Error("Digest belongs to another agent");
     const version = this.store.version(value.id, number);
     if (expectedBody !== undefined && expectedBody !== version.body)
-      throw new Error(
-        "Invalid digest text; does not match the stored revision",
-      );
+      throw new Error("Invalid digest text; does not match the stored revision");
     const messages = this.store.transaction(() => {
       const items = version.messageIds.map((messageId) =>
         this.tracking.store.acknowledgeMessageInside(messageId, value.agentId),
@@ -1113,29 +866,28 @@ export class DigestService {
     this.checks.delete(value.agentId);
     return messages;
   }
+
   inspect(id: string, number?: number) {
     const value = this.store.get(id);
     return {
       digest: value,
       revision: this.store.version(value.id, number ?? value.revision),
-      revisions: this.store
-        .revisions(value.id)
-        .map((version) => version.revision),
+      revisions: this.store.revisions(value.id).map((version) => version.revision),
       receipts: this.store.receipts(value.id),
       events: this.store.events(value.id, undefined, 100),
     };
   }
+
   checkpointable(): boolean {
     return (
-      this.discovery === undefined &&
+      !this.discovery &&
       this.running.size === 0 &&
       this.queued.size === 0 &&
       !this.hasInputChanges() &&
-      this.store
-        .list()
-        .every((value) => terminal(value) && !value.cleanupPending)
+      this.store.list().every((value) => terminal(value) && !value.cleanupPending)
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.inputDirty = false;
