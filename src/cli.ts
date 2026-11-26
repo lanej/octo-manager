@@ -102,9 +102,10 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   }
   if (command === "dashboard") {
     if (!process.stdin.isTTY) throw new Error("Dashboard needs a terminal");
-    const binary = join(packageRoot(), "build/octo-manager-tui");
-    if (!existsSync(binary)) throw new Error("Build the Charmed dashboard first with bun run build");
-    const child = spawn(binary, ["--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone]), ...(values["github-hours"] === undefined ? [] : ["--github-hours", values["github-hours"]])], { stdio: "inherit" });
+    const entrypoint = join(packageRoot(), "dist/dashboard/main.js");
+    if (!existsSync(entrypoint)) throw new Error("Build the OpenTUI dashboard first with bun run build");
+    const bun = nativeAot ? (Bun.which("bun") ?? "bun") : process.execPath;
+    const child = spawn(bun, [entrypoint, "--state", directory, "--theme", values.theme ?? "terminal", ...(values.timezone === undefined ? [] : ["--timezone", values.timezone]), ...(values["github-hours"] === undefined ? [] : ["--github-hours", values["github-hours"]])], { stdio: "inherit" });
     process.exitCode = await new Promise<number>((resolve, reject) => { child.on("error", reject); child.on("exit", code => resolve(code ?? 1)); });
     return;
   }

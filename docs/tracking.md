@@ -1,6 +1,6 @@
 # PR tracking and Codex handoffs
 
-Tracking belongs to the TypeScript coordinator; the Go dashboard is its client. Tracked PRs exist independently of summary jobs. GitHub observations, pending actions, notification delivery, and worker completion have separate meanings.
+Tracking belongs to the TypeScript coordinator; the OpenTUI dashboard is its client. Tracked PRs exist independently of summary jobs. GitHub observations, pending actions, notification delivery, and worker completion have separate meanings.
 
 ## Enroll a PR
 
@@ -122,9 +122,9 @@ Codex RPC rejections retain the method, error code, bounded upstream message, an
 
 ## Terminal links
 
-PR, commit, and evidence references use Charmed’s OSC 8 link atom: a compact label retains its exact HTTPS destination. Tracking groups the PR, head, PR-reported base, current target, and available comparison ranges in declaration order and wraps between complete items as the pane changes width. Missing revisions remain explicit. Hover, selection, and opening belong to the terminal.
+Tracking uses compact OSC 8 links such as `owner/repo #42 · review 712` for GitHub evidence. The link preserves the original destination, including its anchor. The inspector labels the target branch separately from its observed SHA and the PR-reported base. Status pills distinguish tracking and PR state, transport, receipt, and owner disposition. Press `o` to open the selected GitHub PR.
 
-With the dotfiles Kitty mappings, `⌘⇧O` opens the last visible web link and `⌘⇧U` selects a labeled OSC 8 hyperlink through Kitty’s native picker. The hidden destination is used even when the label contains only a PR number or abbreviated commit. Kitty’s ordinary detected-URL hints remain available through `Ctrl+Shift+E`.
+With the dotfiles Kitty mappings, `⌘⇧O` opens the last visible web link and `⌘⇧U` selects a labeled OSC 8 hyperlink through Kitty’s native picker. The hidden destination is used even when the label is abbreviated. When a multiplexer hides terminal capabilities, `FORCE_HYPERLINK=1 octo-manager dashboard` explicitly enables OpenTUI’s OSC 8 output for a terminal that supports it. Kitty’s ordinary detected-URL hints remain available through `Ctrl+Shift+E`.
 
 
 ## Review feedback

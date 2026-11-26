@@ -1,12 +1,12 @@
 # Local API
 
-The Bun coordinator serves the generated `octomanager.v2` Connect API over its Unix socket. The CLI and Charmed Go dashboard use the generated clients. `GetServerInfo` reports the protocol version; clients check it before requests or dashboard streaming and report incompatible server/client installations clearly. Install the coordinator, CLI, and dashboard together. The v1 service is not served.
+The Bun coordinator serves the generated `octomanager.v2` Connect API over its Unix socket. The CLI and OpenTUI dashboard use the generated clients. `GetServerInfo` reports the protocol version; clients check it before requests or dashboard streaming and report incompatible server/client installations clearly. Install the coordinator, CLI, and dashboard together. The v1 service is not served.
 
 RPC records use explicit Protobuf messages, enums, and variants for check/review coverage, feedback, delivery progress and outcomes, merge policy and results, frozen messages and receipts, and archived submissions and policies. Domain records are not serialized inside string or bytes fields, and the API has no `Struct`, `Value`, or `Any` escape hatch. Markdown, logs, and original worker output remain source text. Invalid archived worker results retain their raw source and an explicit invalid-result marker.
 
 Merge operations have dedicated requests and responses. JSON intent files remain local CLI input where appropriate; they are validated and translated into typed requests. CLI JSON output is a presentation format rather than a serialized document nested in an API field. Database JSON serialization remains an internal storage detail.
 
-`bun run generate` exports the domain contract messages, runs Protobuf lint, and regenerates TypeScript and Go bindings. `proto/api-wire-tags.json` preserves field, enum, and variant numbers across property reordering and additive edits; removed tags remain reserved and incompatible type changes require a protocol version change. Generated domain conversion metadata is committed alongside the bindings. Code-generation drift is checked in CI.
+`bun run generate` exports the domain contract messages, runs Protobuf lint, and regenerates TypeScript bindings. `proto/api-wire-tags.json` preserves field, enum, and variant numbers across property reordering and additive edits; removed tags remain reserved and incompatible type changes require a protocol version change. Generated domain conversion metadata is committed alongside the bindings. Code-generation drift is checked in CI.
 
 Observation variants preserve complete-empty, partial, and unavailable evidence separately. Receipt records preserve exact frozen membership and timestamps; acknowledgment does not accept work, resolve a blocker, or authorize a merge. Diagnostic journal fields have explicit types; unsupported historical fields are identified in `omittedFields`, and the original journal remains stored.
 

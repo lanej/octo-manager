@@ -27,7 +27,7 @@ The worker counts model turns and tool calls, batches text progress, and aborts 
 
 Codex remains the interactive implementer and submits bounded work through `bin/octo-manager`. The [project skill](../.agents/skills/octo-manager/SKILL.md) provides the contract without installing an MCP server. Keep the request ID and job ID, observe state with `get`, and follow durable events with `events`. An uncertain submission is retried with the same request ID; a successful submission is only an acknowledgment.
 
-The CLI and Charmed dashboard use generated clients for the [Connect API](api.md). This allows another Codex integration to speak the same contract without embedding Pi or importing SQLite. Dashboard disconnect cancels only its observation stream; job cancellation is an explicit API operation.
+The CLI and OpenTUI dashboard use generated clients for the [Connect API](api.md). This allows another Codex integration to speak the same contract without embedding Pi or importing SQLite. Dashboard disconnect cancels only its observation stream; job cancellation is an explicit API operation.
 
 Authentication is a separate concern from job orchestration. [auth.ts](../src/jobs/auth.ts) prefers existing Pi authentication, then references a supported file-backed Codex ChatGPT access token in memory. It neither copies credentials into Pi storage nor owns Codex refresh. The README describes the supported session types and optional login path.
 

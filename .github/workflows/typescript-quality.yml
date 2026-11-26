@@ -26,9 +26,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: npm ci --prefix .typescript-quality --ignore-scripts
       - run: python3 scripts/check-source-code.py typescript

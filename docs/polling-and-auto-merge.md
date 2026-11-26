@@ -4,7 +4,7 @@ Octo owns auto-merge. It does not need GitHub's repository-wide auto-merge setti
 
 ## Auto-merge switch
 
-In **Tracking**, press **a** to toggle the Charmed **Auto merge** switch for the selected PR. Agents use:
+In **Tracking**, press **a** to toggle the **Auto merge** preference for the selected PR. Agents use:
 
 ```sh
 octo-manager pr auto-merge https://github.com/owner/repo/pull/42 --on --agent-id OWNER_ID

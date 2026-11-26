@@ -1,6 +1,6 @@
 # Agent activity
 
-Press **3 Activity** for saved merge/preparation operations, coordinator events and named caller reports across sessions. The Charmed list-and-inspector workspace preserves the selected identity through refresh and reordering. Use **j/k** to select, **Enter** to inspect the complete record, **Esc** to return, and **[/]** to scroll. Wide terminals show a preview alongside the list; narrow terminals show the list until inspection opens.
+Press **3 Activity** for saved merge/preparation operations, coordinator events and named caller reports across sessions. The OpenTUI list and inspector preserve the selected identity through refresh and reordering. Use **j/k** to select, **Enter** to inspect the complete record, **Esc** to return, and **[/]** to scroll. Wide terminals show a preview alongside the list; narrow terminals show the list until inspection opens.
 
 The view retains at most 50 saved operations and one page of at most 50 historical records. Saved operations retain uncertain outcomes first and preserve the selected operation within that bound. **h/l** fetch older/newer historical pages on demand; **u** returns to the latest history page, or retries the failed page after a read error. Historical paging replaces the buffer, and automatic history refresh pauses on older pages. Saved operation inspection reads local coordinator state when its sequence changes; it does not directly poll GitHub.
 
@@ -108,13 +108,4 @@ ALTER TABLE events ADD COLUMN action_context_json TEXT
 
 ## Native presentation
 
-Activity and Tracking render structured fields directly with Charmed labels, badges, semantic pills, log glyphs, time atoms, pending indicators, and key hints. Outcomes remain explicit: a delivered notification uses an informational tone, agent success stays labeled “success reported,” and only observed resolution uses the resolved state. Tracking places unfinished actions ahead of closed history. Tracking retains ANSI-aware wrapping. Activity uses multiline record summaries and a separately scrollable inspector. Historical event state and actor come from recorded context; missing historical context stays explicit. Paging replaces the 50-record historical buffer. Worker output and review prose retain Markdown rendering.
-
-![Activity with a saved uncertain operation and its evidence](images/operator-activity.png)
-
-![Operation inspection at 80 columns](images/operator-activity-narrow.png)
-
-![Native Charmed tracking fields and delivery states](images/atoms-tracking.png)
-
-
-The presentation layer resolves internal references to linked `owner/repo#42` labels and commit links such as `owner/repo@abc12345`. Notification rows name the affected blocker and explain delivery outcomes; list summaries omit internal database keys; saved-operation inspection exposes the exact operation and request IDs needed to identify recovery safely. Consecutive observations of the same PR head collapse into one visible check; a changed head or intervening event remains visible. Full events and identifiers remain available through `activity --json`. Historical event context wins over current ownership, and unavailable PR context is stated explicitly rather than guessed.
+Activity and Tracking show observed state, transport state, receipt and owner disposition as separate fields. Caller outcomes retain their attribution, such as “success reported.” Paging replaces the bounded historical buffer. Historical screenshots of the previous renderer are available in the [acceptance archive](live-acceptance.md).

@@ -97,12 +97,7 @@ try {
       recursive: true,
       verbatimSymlinks: true,
     });
-  for (const name of [
-    "package.json",
-    "bun.lock",
-    "build/octo-manager",
-    "build/octo-manager-tui",
-  ])
+  for (const name of ["package.json", "bun.lock", "build/octo-manager"])
     await copyFile(resolve(name), join(release, name));
   const revision = "a".repeat(40);
   await writeFile(
