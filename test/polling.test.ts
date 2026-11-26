@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, StatementSync } from "node:sqlite";
 import { Store } from "../src/coordinator/store.js";
 import { TrackingService } from "../src/tracking/service.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -182,7 +182,8 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
     },
   });
   const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
-  const prepare = spyOn(DatabaseSync.prototype, "prepare");
+  const all = spyOn(StatementSync.prototype, "all");
+  const get = spyOn(StatementSync.prototype, "get");
   try {
     for (let number = 1; number <= 96; number++) {
       const pr = store.tracking.track(
@@ -205,12 +206,16 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
       });
     }
     const idleReads = async (expected: number) => {
-      prepare.mockClear();
+      all.mockClear();
+      get.mockClear();
       service.tick();
       await settle();
+      const contexts: unknown[] = [...all.mock.contexts, ...get.mock.contexts];
       assert.equal(
-        prepare.mock.calls.filter(([sql]) =>
-          /SELECT .* FROM github_schedules/.test(sql),
+        contexts.filter(
+          (statement) =>
+            statement instanceof StatementSync &&
+            /SELECT .* FROM github_schedules/.test(statement.sourceSQL),
         ).length,
         expected,
       );
@@ -284,7 +289,8 @@ test("idle tracking schedule reads stay bounded by active PRs and see freshly qu
     await idleReads(1);
     assert.equal(reads, 1);
   } finally {
-    prepare.mockRestore();
+    all.mockRestore();
+    get.mockRestore();
     await service.close();
     external.close();
     store.close();

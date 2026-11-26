@@ -677,22 +677,34 @@ export class DigestService {
           );
           continue;
         }
-        const receipts = this.store.receipts(previous.id);
-        const versions = this.store.revisions(previous.id),
-          history = await connection.received(
-            agent,
-            versions.map((value) => value.body),
-          );
-        for (const withdrawal of withdrawals) {
+        const receipts = new Set(
+          this.store.receipts(previous.id).map((receipt) => receipt.revision),
+        );
+        const versions = this.store.revisions(previous.id);
+        const resolved = withdrawals.map((withdrawal) => {
           const version = versions.find(
             (value) => value.dispatchId === withdrawal.clientId,
           );
+          if (version === undefined)
+            throw new Error(
+              "Previous digest withdrawal is unconfirmed; not adding a replacement",
+            );
+          return { withdrawal, version };
+        });
+        const unreceived = resolved.filter(
+          ({ version }) => !receipts.has(version.revision),
+        );
+        const history: { bodies: string[] } =
+          unreceived.length === 0
+            ? { bodies: [] }
+            : await connection.received(
+                agent,
+                unreceived.map(({ version }) => version.body),
+              );
+        for (const { withdrawal, version } of resolved) {
           if (
-            version === undefined ||
-            (!history.bodies.includes(version.body) &&
-              !receipts.some(
-                (receipt) => receipt.revision === version.revision,
-              ))
+            !receipts.has(version.revision) &&
+            !history.bodies.includes(version.body)
           )
             throw new Error(
               "Previous digest withdrawal is unconfirmed; not adding a replacement",

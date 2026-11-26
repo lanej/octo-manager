@@ -1304,3 +1304,89 @@ test("settled withdrawals with malformed identities still fail closed during que
     await f.close();
   }
 });
+
+test("terminal withdrawals with canonical receipts need no conversation history", async () => {
+  const f = await fixture();
+  const history = spyOn(f.queue, "received").mockRejectedValue(
+    new Error("History must not be needed for a canonical receipt"),
+  );
+  try {
+    const notice = f.notice("Already received");
+    const digest = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Canonically received digest", messageIds: [notice.id] }),
+    );
+    const version = f.store.digests.version(digest.id, 1);
+    f.service.acknowledge(digest.id, 1, f.actor.id);
+    f.store.digests.event(f.actor.id, digest.id, "queue_cancel_started", {
+      queueId: "uncertain-old-slot",
+      clientId: version.dispatchId,
+    });
+    f.notice("New work");
+    await f.flush();
+    expect(history).not.toHaveBeenCalled();
+    expect(f.store.digests.get(digest.id).cleanupPending).toBe(false);
+    expect(
+      f.store.digests.receipts(digest.id).map((value) => value.revision),
+    ).toEqual([1]);
+    expect(f.queue.operations).toEqual(["add"]);
+    expect(f.queue.slots).toHaveLength(1);
+  } finally {
+    history.mockRestore();
+    await f.close();
+  }
+});
+
+test("terminal cleanup reads only unresolved withdrawal bodies and requires positive history before replacement", async () => {
+  const f = await fixture();
+  const history = spyOn(f.queue, "received");
+  try {
+    const a = f.notice("Received A"),
+      b = f.notice("Unconfirmed B");
+    let digest = f.store.digests.create(
+      f.actor.id,
+      { kind: "codex_queue", socket: "/fixture/queue.sock" },
+      () => ({ body: "Canonically received A", messageIds: [a.id] }),
+    );
+    digest = f.store.digests.revise(digest, () => ({
+      body: "Unconfirmed withdrawal B",
+      messageIds: [b.id],
+    }));
+    digest = f.store.digests.revise(digest, () => ({
+      body: "Unrelated retained revision",
+      messageIds: [a.id],
+    }));
+    f.service.acknowledge(digest.id, 1, f.actor.id);
+    for (const revision of [1, 2]) {
+      const version = f.store.digests.version(digest.id, revision);
+      f.store.digests.event(f.actor.id, digest.id, "queue_cancel_started", {
+        queueId: `uncertain-slot-${String(revision)}`,
+        clientId: version.dispatchId,
+      });
+    }
+    f.notice("Replacement work");
+    await f.flush();
+    expect(history).toHaveBeenCalledTimes(1);
+    expect(history.mock.calls[0]?.[1]).toEqual(["Unconfirmed withdrawal B"]);
+    expect(f.store.digests.get(digest.id).cleanupPending).toBe(true);
+    expect(f.store.tracking.inbox.get(b.id)?.acknowledgedAt).toBeUndefined();
+    expect(f.store.digests.active(f.actor.id)?.error).toContain(
+      "withdrawal is unconfirmed",
+    );
+    expect(f.queue.operations).toEqual([]);
+    f.queue.history.push("Unconfirmed withdrawal B");
+    await f.flush();
+    expect(history).toHaveBeenCalledTimes(2);
+    expect(history.mock.calls[1]?.[1]).toEqual(["Unconfirmed withdrawal B"]);
+    expect(f.store.digests.get(digest.id).cleanupPending).toBe(false);
+    expect(f.store.tracking.inbox.get(b.id)?.acknowledgedAt).toBeDefined();
+    expect(
+      f.store.digests.receipts(digest.id).map((value) => value.revision),
+    ).toEqual([1, 2]);
+    expect(f.queue.operations).toEqual(["add"]);
+  } finally {
+    history.mockRestore();
+    await f.close();
+  }
+});
