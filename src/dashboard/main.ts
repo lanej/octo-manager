@@ -89,6 +89,9 @@ let retryPage: bigint[] | undefined;
 let pageSequence: bigint | undefined;
 let activityError = "";
 let reading = false;
+let operationsSequence: bigint | undefined;
+let operationsError = "";
+let readingOperations = false;
 let workerHistory:
   | { instance: string; job: string; through: bigint; events: JobEvent[] }
   | undefined;
@@ -121,7 +124,7 @@ const view = dashboardView(
 function listing(): RecordView[] {
   if (snapshot === undefined) return [];
   return view.screen === "Activity"
-    ? activityRecords(page, operations, snapshot, time)
+    ? activityRecords(page, operations, snapshot, time, operationsError === "")
     : records(view.screen, snapshot, time, hours);
 }
 
@@ -176,7 +179,13 @@ function repaint() {
   view.update(
     rows,
     connection,
-    view.screen === "Activity" && activityError !== "" ? activityError : notice,
+    view.screen === "Activity"
+      ? operationsError !== ""
+        ? operationsError
+        : activityError !== ""
+          ? activityError
+          : notice
+      : notice,
   );
 }
 
@@ -195,10 +204,12 @@ function updateInterest() {
 }
 
 function queueActivity() {
-  Promise.all([loadActivity(), loadWorker()]).catch((error: unknown) => {
-    notice = error instanceof Error ? error.message : String(error);
-    if (!stopped()) repaint();
-  });
+  Promise.all([loadActivity(), loadOperations(), loadWorker()]).catch(
+    (error: unknown) => {
+      notice = error instanceof Error ? error.message : String(error);
+      if (!stopped()) repaint();
+    },
+  );
 }
 
 async function loadWorker(force = false) {
@@ -283,13 +294,10 @@ async function loadActivity(cursors?: bigint[]) {
   const target = cursors ?? pageCursors;
   const before = target.at(-1) ?? 0n;
   try {
-    const [history, result] = await Promise.all([
-      client.listActivity(
-        { beforeSequence: before, limit: 50 },
-        { signal: stop.signal },
-      ),
-      client.inspectMergeChains({}, { signal: stop.signal }),
-    ]);
+    const history = await client.listActivity(
+      { beforeSequence: before, limit: 50 },
+      { signal: stop.signal },
+    );
     if (snapshot?.instanceId !== current.instanceId) return;
     if (
       history.events.length + history.activities.length > 50 ||
@@ -299,23 +307,6 @@ async function loadActivity(cursors?: bigint[]) {
       throw new Error(
         "Activity page exceeded its bound or did not advance its cursor",
       );
-    const selected = view.selected()?.id;
-    const operationRank = (operation: DomainMergeOverviewOperationsItem) =>
-      `operation:${operation.id ?? operation.requestId ?? "unknown"}` ===
-      selected
-        ? 0
-        : operation.state === OperationState.UNCERTAIN
-          ? 1
-          : 2;
-    operations = (result.overview?.operations?.items ?? [])
-      .toSorted((a, b) => {
-        const rank = operationRank(a) - operationRank(b);
-        if (rank !== 0) return rank;
-        const left = a.updatedAt ?? 0n;
-        const right = b.updatedAt ?? 0n;
-        return left === right ? 0 : left > right ? -1 : 1;
-      })
-      .slice(0, 50);
     page = history;
     pageCursors = target;
     retryPage = undefined;
@@ -332,6 +323,58 @@ async function loadActivity(cursors?: bigint[]) {
   }
 }
 
+async function loadOperations(force = false) {
+  const current = snapshot;
+  if (
+    view.screen !== "Activity" ||
+    connection !== "Live" ||
+    current === undefined ||
+    readingOperations ||
+    (!force &&
+      (operationsError !== "" || operationsSequence === current.sequence))
+  )
+    return;
+  readingOperations = true;
+  try {
+    const result = await client.inspectMergeChains({}, { signal: stop.signal });
+    if (snapshot?.instanceId !== current.instanceId) return;
+    if (result.overview === undefined)
+      throw new Error("Coordinator returned no operation overview");
+    const selected = view.selected()?.id;
+    const operationRank = (operation: DomainMergeOverviewOperationsItem) =>
+      `operation:${operation.id ?? operation.requestId ?? "unknown"}` ===
+      selected
+        ? 0
+        : operation.state === OperationState.UNCERTAIN
+          ? 1
+          : 2;
+    operations = (result.overview.operations?.items ?? [])
+      .toSorted((a, b) => {
+        const rank = operationRank(a) - operationRank(b);
+        if (rank !== 0) return rank;
+        const left = a.updatedAt ?? 0n;
+        const right = b.updatedAt ?? 0n;
+        return left === right ? 0 : left > right ? -1 : 1;
+      })
+      .slice(0, 50);
+    operationsSequence = current.sequence;
+    operationsError = "";
+  } catch (error) {
+    if (!stopped() && snapshot?.instanceId === current.instanceId)
+      operationsError = `Saved operation read failed · ${error instanceof Error ? error.message : String(error)} · u Retry`;
+  } finally {
+    readingOperations = false;
+    if (!stopped()) {
+      repaint();
+      if (
+        snapshot?.instanceId !== current.instanceId ||
+        snapshot.sequence !== current.sequence
+      )
+        queueActivity();
+    }
+  }
+}
+
 async function command(key: string) {
   if (pending || connection !== "Live" || snapshot === undefined) return;
   const current = snapshot;
@@ -343,12 +386,20 @@ async function command(key: string) {
   const screen = view.screen;
   const options = { signal: stop.signal };
   if (screen === "Activity" && (key === "h" || key === "l" || key === "u")) {
+    if (key === "u") {
+      await Promise.all([
+        operationsError === "" || retryPage !== undefined
+          ? loadActivity(retryPage ?? [0n])
+          : undefined,
+        loadOperations(true),
+      ]);
+      return;
+    }
     if (reading) return;
     if (key === "h" && page?.hasMore === true && page.nextSequence > 0n)
       await loadActivity([...pageCursors, page.nextSequence]);
     if (key === "l" && pageCursors.length > 1)
       await loadActivity(pageCursors.slice(0, -1));
-    if (key === "u") await loadActivity(retryPage ?? [0n]);
     return;
   }
   if ((key === "o" || key === "g") && selected?.url !== undefined) {
@@ -418,14 +469,14 @@ async function command(key: string) {
       screen === "Activity" &&
       key === "r" &&
       selected?.operationId !== undefined &&
-      activityError === ""
+      operationsError === ""
     ) {
       await client.reconcileMergeOperation(
         { id: selected.operationId },
         options,
       );
       report("Reconciliation requested · awaiting evidence");
-      await loadActivity(pageCursors);
+      await loadOperations(true);
     } else if (screen === "Output" || screen === "Runtime") {
       if (key === "p") {
         await client.setPaused(
@@ -469,6 +520,8 @@ async function watch() {
           retryPage = undefined;
           pageSequence = undefined;
           activityError = "";
+          operationsSequence = undefined;
+          operationsError = "";
           notice = "";
         }
         snapshot = update.snapshot;

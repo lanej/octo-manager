@@ -13,6 +13,7 @@ import {
   SnapshotSchema,
   WatchDashboardResponseSchema,
 } from "../src/gen/octomanager/v2/scheduler_pb.js";
+import { RepairState } from "../src/gen/octomanager/v2/repairs_pb.js";
 import {
   ActionState,
   DeliveryState,
@@ -344,4 +345,49 @@ test("Activity exposes the caller report PR and compact evidence links", async (
       source,
     ),
   ).toBe(evidence);
+});
+
+test("Attention keeps uncertain repairs and scopes failed repairs to the tracked target", () => {
+  const snapshot = create(SnapshotSchema, {
+    tracking: {
+      prs: [
+        {
+          id: "tracked",
+          url: "https://github.com/owner/repo/pull/42",
+          enabled: true,
+          ownerAgentId: "dev",
+          trackingState: TrackingState.WATCHING,
+          observation: {
+            headSha: "current-head",
+            lifecycle: "open",
+            targetBase: { ref: "main", sha: "target" },
+          },
+        },
+      ],
+    },
+    repairs: [
+      {
+        id: "repair",
+        prId: "tracked",
+        originalHead: "current-head",
+        targetRef: "main",
+        targetSha: "target",
+        state: RepairState.FAILED,
+      },
+    ],
+  });
+  const repair = snapshot.repairs[0];
+  if (repair === undefined) throw new Error("Missing repair fixture");
+  const condition = () =>
+    records("Attention", snapshot, () => "Unknown", 24)[0]?.delivery?.condition;
+  expect(condition()).toBe("Repair needs attention");
+  repair.targetSha = "previous-target";
+  expect(condition()).not.toBe("Repair needs attention");
+  repair.targetSha = "target";
+  repair.targetRef = "old-branch";
+  repair.state = RepairState.BLOCKED;
+  expect(condition()).not.toBe("Repair needs attention");
+  repair.originalHead = "old-head";
+  repair.state = RepairState.UNCERTAIN;
+  expect(condition()).toBe("Repair outcome unknown");
 });

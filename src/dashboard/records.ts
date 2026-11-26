@@ -248,14 +248,31 @@ function prRecord(
     tracking?.actions.filter((action) => action.prId === pr?.id) ?? [];
   const repairs = snapshot.repairs.filter((repair) => repair.prId === pr?.id);
   const activeRepair = latest(
-    repairs.filter(
-      (repair) =>
-        repair.state === RepairState.UNCERTAIN ||
-        observation?.headSha === undefined ||
-        observation.headSha === "" ||
-        repair.originalHead === "" ||
-        [repair.originalHead, repair.resultHead].includes(observation.headSha),
-    ),
+    repairs.filter((repair) => {
+      if (repair.state === RepairState.UNCERTAIN) return true;
+      const head = observation?.headSha ?? "";
+      const originalHead = repair.originalHead ?? "";
+      if (
+        head !== "" &&
+        originalHead !== "" &&
+        originalHead !== head &&
+        repair.resultHead !== head
+      )
+        return false;
+      if (
+        repair.state !== RepairState.FAILED &&
+        repair.state !== RepairState.BLOCKED
+      )
+        return true;
+      const target = observation?.targetBase;
+      return [
+        [repair.targetSha, target?.sha],
+        [repair.targetRef, target?.ref],
+      ].every(
+        ([previous = "", observed = ""]) =>
+          previous === "" || observed === "" || previous === observed,
+      );
+    }),
   );
   const conditions: Condition[] = [];
   if (pr === undefined)
@@ -627,12 +644,14 @@ export function activityRecords(
   operations: readonly Operation[],
   snapshot: Snapshot,
   time: Time,
+  canReconcile = true,
 ): RecordView[] {
   const saved = operations.map((operation): RecordView => {
     const url = snapshot.tracking?.prs.find(
       (pr) => pr.id === operation.prId,
     )?.url;
     const eligible =
+      canReconcile &&
       operation.state === OperationState.UNCERTAIN &&
       ((operation.kind === OperationKind.MERGE &&
         operation.phase === OperationPhase.MERGING) ||
