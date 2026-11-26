@@ -3,8 +3,16 @@ import { create } from "@bufbuild/protobuf";
 import { createTestRenderer } from "@opentui/core/testing";
 import { dashboardLink } from "../src/dashboard/links.js";
 import { dashboardView } from "../src/dashboard/view.js";
-import { records } from "../src/dashboard/records.js";
-import { SnapshotSchema } from "../src/gen/octomanager/v2/scheduler_pb.js";
+import {
+  activityRecords,
+  records,
+  reviewDetail,
+} from "../src/dashboard/records.js";
+import {
+  ListActivityResponseSchema,
+  SnapshotSchema,
+  WatchDashboardResponseSchema,
+} from "../src/gen/octomanager/v2/scheduler_pb.js";
 import {
   ActionState,
   DeliveryState,
@@ -238,4 +246,102 @@ test("compact links retain external hosts and decline unsafe terminal URLs", () 
     dashboardLink("https://github.com/owner/repo/pull/42\u001b]8;;"),
   ).toBeUndefined();
   expect(dashboardLink("file:///tmp/report")).toBeUndefined();
+});
+
+test("Reviews warns when cached evidence is for a different revision and links to the original thread", async () => {
+  await using terminal = await createTestRenderer({ width: 120, height: 40 });
+  const url = "https://github.com/owner/repo/pull/42";
+  const evidence = url + "?view=changes#discussion_r712";
+  const snapshot = create(SnapshotSchema, {
+    tracking: { prs: [{ url, observation: { headSha: "current-head" } }] },
+  });
+  const frame = create(WatchDashboardResponseSchema, {
+    refresh: { lastError: "GitHub timed out" },
+    pullRequest: {
+      url,
+      headSha: "previous-head",
+      mayHaveMoreMessages: true,
+      messages: [
+        { url: evidence, bodyMarkdown: "[local](file:///tmp/report)" },
+      ],
+    },
+  });
+  const time = () => "Unknown";
+  const view = dashboardView(terminal.renderer, {
+    changed() {
+      view.update(
+        records(view.screen, snapshot, time, 24).map((row) => ({
+          ...row,
+          markdown: reviewDetail(frame, row, time),
+        })),
+        "Live",
+        "",
+      );
+    },
+    action() {},
+    quit() {},
+  });
+  terminal.mockInput.pressKey("d");
+  terminal.mockInput.pressKey("1");
+  await terminal.flush();
+
+  const rendered = terminal.captureCharFrame();
+  expect(rendered).toContain("Different revision.");
+  expect(rendered).toContain("current-head");
+  expect(rendered).toContain("previous-head");
+  expect(rendered).toContain("Review history is partial.");
+  expect(rendered).toContain("GitHub timed out");
+  expect(rendered).toContain("Source: owner/repo #42 · thread 712");
+  expect(rendered).not.toContain(evidence);
+  const lines = rendered.split("\n");
+  const source = lines.findIndex((line) => line.includes("Source: owner/repo"));
+  expect(
+    terminal.renderer.getLinkAt(
+      lines[source]?.indexOf("owner/repo") ?? -1,
+      source,
+    ),
+  ).toBe(evidence);
+  const local = lines.findIndex((line) => line.includes("local"));
+  expect(local).toBeGreaterThanOrEqual(0);
+  expect(
+    terminal.renderer.getLinkAt(lines[local]?.indexOf("local") ?? -1, local),
+  ).toBeNull();
+});
+
+test("Activity exposes the caller report PR and compact evidence links", async () => {
+  await using terminal = await createTestRenderer({ width: 120, height: 22 });
+  const url = "https://github.com/owner/repo/pull/42";
+  const evidence = url + "?view=changes#discussion_r712";
+  const page = create(ListActivityResponseSchema, {
+    activities: [
+      { sequence: 1n, report: { prUrl: url, evidenceUrl: evidence } },
+    ],
+  });
+  const view = dashboardView(terminal.renderer, {
+    changed() {
+      view.update(
+        activityRecords(page, [], create(SnapshotSchema), () => "Unknown"),
+        "Live",
+        "",
+      );
+    },
+    action() {},
+    quit() {},
+  });
+  terminal.mockInput.pressKey("3");
+  await terminal.flush();
+  const rendered = terminal.captureCharFrame();
+  expect(rendered).toContain("PR: owner/repo #42");
+  expect(rendered).toContain("Evidence: owner/repo #42 · thread 712");
+  expect(rendered).not.toContain(evidence);
+  const lines = rendered.split("\n");
+  const source = lines.findIndex((line) =>
+    line.includes("Evidence: owner/repo"),
+  );
+  expect(
+    terminal.renderer.getLinkAt(
+      lines[source]?.indexOf("owner/repo") ?? -1,
+      source,
+    ),
+  ).toBe(evidence);
 });

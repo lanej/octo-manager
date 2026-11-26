@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { MAX_LINK_URL_BYTES } from "@opentui/core";
+import { MAX_LINK_URL_BYTES, type MarkdownInlineHook } from "@opentui/core";
 
 export interface DashboardLink {
   label: string;
@@ -62,3 +62,39 @@ export function markdownReference(value: string): string | undefined {
   const label = address.label.replace(/[\\[\]]/gu, "\\$&");
   return `[${label}](<${address.url}>)`;
 }
+
+export const compactMarkdownLinks: MarkdownInlineHook = (spans) => {
+  const compact: typeof spans = [];
+  // OpenTUI appends a linked parenthesized destination after a Markdown label.
+  let hiddenThrough = -1;
+  for (const [index, span] of spans.entries()) {
+    if (index <= hiddenThrough) continue;
+    const label = spans[index - 1];
+    const open = spans[index + 1];
+    const address = spans[index + 2];
+    const close = spans[index + 3];
+    const destination = label?.link?.url;
+    if (
+      span.text === " " &&
+      span.link === undefined &&
+      destination !== undefined &&
+      open?.text === "(" &&
+      open.link?.url === destination &&
+      address?.text === destination &&
+      address.link?.url === destination &&
+      close?.text === ")" &&
+      close.link?.url === destination
+    ) {
+      hiddenThrough = index + 3;
+      continue;
+    }
+    if (span.link !== undefined && dashboardLink(span.link.url) === undefined) {
+      const unlinked = { ...span };
+      delete unlinked.link;
+      compact.push(unlinked);
+    } else {
+      compact.push(span);
+    }
+  }
+  return compact;
+};

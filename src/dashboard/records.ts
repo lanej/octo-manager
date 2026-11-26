@@ -82,6 +82,7 @@ export interface RecordView {
   delivery?: DeliveryPresentation;
   url?: string;
   prId?: string;
+  observedHead?: string;
   jobId?: string;
   operationId?: string;
   markdown?: string;
@@ -484,6 +485,9 @@ function prRecord(
       label: `${prLabel(url)} · ${condition}`,
       url,
       ...(pr === undefined ? {} : { prId: pr.id }),
+      ...(observation === undefined
+        ? {}
+        : { observedHead: observation.headSha }),
       delivery: {
         subject: prLabel(url),
         condition,
@@ -668,6 +672,7 @@ export function activityRecords(
       detail: [
         field("Reported", time(activity.recordedAtMs)),
         field("By", report?.actor?.label ?? report?.actor?.sessionId),
+        field("PR", report?.prUrl),
         field("Outcome reported", enumName(ActivityOutcome, report?.outcome)),
         field("Detail", report?.detail),
         field("Evidence", report?.evidenceUrl),
@@ -925,6 +930,12 @@ export function reviewDetail(
 ) {
   const review =
     frame?.pullRequest?.url === record.url ? frame?.pullRequest : undefined;
+  const trackedHead = record.observedHead ?? "";
+  const differentRevision =
+    review !== undefined &&
+    trackedHead !== "" &&
+    review.headSha !== "" &&
+    trackedHead !== review.headSha;
   return [
     refreshDetail(frame, time),
     review === undefined
@@ -932,6 +943,11 @@ export function reviewDetail(
       : [
           review.title,
           field("Reviewed head", review.headSha),
+          ...(differentRevision
+            ? [
+                `**Different revision.** Tracking observed head \`${trackedHead}\`. The cached reviews below describe another revision.`,
+              ]
+            : []),
           field("Observed", time(review.observedAtMs)),
           ...(review.mayHaveMoreMessages ? ["Review history is partial."] : []),
           ...review.messages.flatMap((message) => [

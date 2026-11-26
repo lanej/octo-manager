@@ -11,6 +11,7 @@ import {
   ScrollBoxRenderable,
   TextRenderable,
 } from "@opentui/core";
+import { compactMarkdownLinks } from "./links.js";
 import {
   diagnostics,
   primary,
@@ -176,6 +177,7 @@ export function dashboardView(
     ...foreground,
     width: "100%",
     syntaxStyle: SyntaxStyle.create(renderer.nativeScene),
+    inlineHook: compactMarkdownLinks,
   });
   const log = new TextRenderable(renderer, {
     ...foreground,
