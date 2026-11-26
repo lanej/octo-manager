@@ -11,6 +11,7 @@ import { TrackingService } from "../src/tracking/service.js";
 import { ActionState, DeliveryState } from "../src/tracking/types.js";
 
 const url = "https://github.com/owner/repo/pull/1";
+
 function github() {
   let body = "Please use the existing parser.";
   let offline = false;

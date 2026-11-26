@@ -26,7 +26,9 @@ import { GitHubSubmissions, type SubmissionGitHub, type PublishedPR } from "./gi
 import { runStage, type RunStage } from "./worker.js";
 import { stageInstructions } from "./prompts.js";
 import type { TrackingService } from "../tracking/service.js";
+
 const terminal = new Set([State.Succeeded, State.NeedsInput, State.Failed, State.Uncertain, State.Cancelled]);
+
 function alive(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -35,6 +37,7 @@ function alive(pid: number): boolean {
     return !(error instanceof Error && "code" in error && error.code === "ESRCH");
   }
 }
+
 export interface SubmissionOptions {
   allowLegacyExecution?: boolean;
   github?: SubmissionGitHub;
@@ -42,18 +45,20 @@ export interface SubmissionOptions {
   instructions?: typeof stageInstructions;
   models?: Partial<Record<Role, string>>;
 }
+
 export class SubmissionService {
   private active: { id: string; abort: AbortController; work: Promise<void> } | undefined;
   private task: ScheduledTask | undefined;
   private stopped = false;
   private github: SubmissionGitHub;
+
   constructor(
     readonly store: SubmissionStore,
     private tracking: TrackingService,
     private options: SubmissionOptions = {},
   ) {
     this.github = options.github ?? new GitHubSubmissions();
-    if (options.allowLegacyExecution !== true) return;
+    if (!this.legacyExecutionEnabled) return;
     for (const value of store.list())
       if (!terminal.has(value.state) && value.state !== State.Queued)
         store.save({
@@ -62,8 +67,13 @@ export class SubmissionService {
           detail: "Coordinator interrupted; retry explicitly after previous workers exit",
         });
   }
+
+  private get legacyExecutionEnabled(): boolean {
+    return this.options.allowLegacyExecution === true;
+  }
+
   start(scheduler: WorkScheduler): void {
-    if (this.options.allowLegacyExecution !== true) {
+    if (!this.legacyExecutionEnabled) {
       for (const value of this.store.list()) {
         if ([State.Queued, State.Analyzing, State.Writing].includes(value.state)) {
           this.store.save({
@@ -77,10 +87,10 @@ export class SubmissionService {
         this.reconcileLegacy(Date.now());
         let next = Infinity;
         for (const value of this.store.recoveryCandidates())
-          if (value.brief !== undefined && [State.Uncertain, State.Publishing, State.Enrolling].includes(value.state))
+          if (value.brief && [State.Uncertain, State.Publishing, State.Enrolling].includes(value.state))
             next = Math.min(next, this.store.reconciliation(value.id).nextAt);
         if (!Number.isFinite(next)) return;
-        return this.active === undefined ? next : Math.max(next, Date.now() + 30000);
+        return !this.active ? next : Math.max(next, Date.now() + 30000);
       });
       this.wake();
       return;
@@ -94,11 +104,13 @@ export class SubmissionService {
     });
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   reconcileLegacy(now: number): void {
-    if (this.options.allowLegacyExecution === true || this.stopped || this.active !== undefined) return;
+    if (this.legacyExecutionEnabled || this.stopped || this.active) return;
     const value = this.store
       .recoveryCandidates()
       .find(
@@ -107,14 +119,15 @@ export class SubmissionService {
           [State.Uncertain, State.Publishing, State.Enrolling].includes(item.state) &&
           this.store.reconciliation(item.id).nextAt <= now,
       );
-    if (value === undefined) return;
+    if (!value) return;
     const previous = this.store.reconciliation(value.id),
       delays = [60000, 300000, 900000];
     this.store.deferReconciliation(value.id, previous.attempts + 1, now + (delays[previous.attempts] ?? 3600000));
     this.retry(value.id);
   }
+
   submit(raw: unknown): Submission {
-    if (this.options.allowLegacyExecution !== true)
+    if (!this.legacyExecutionEnabled)
       throw new Error(
         "Legacy drafting retired; run pr init, pr validate, then submit-pr --title TITLE --body-file FILE.",
       );
@@ -129,12 +142,13 @@ export class SubmissionService {
     this.task?.wake();
     return value;
   }
+
   retry(id: string): Submission {
     const value = this.store.get(id);
-    if (this.options.allowLegacyExecution !== true) {
-      if (value.brief === undefined || ![State.Uncertain, State.Publishing, State.Enrolling].includes(value.state))
+    if (!this.legacyExecutionEnabled) {
+      if (!value.brief || ![State.Uncertain, State.Publishing, State.Enrolling].includes(value.state))
         throw new Error("Legacy drafting is retired; submit a caller-written title/body.");
-      if (this.active !== undefined) throw new Error("A legacy reconciliation is already active.");
+      if (this.active) throw new Error("A legacy reconciliation is already active.");
       const abort = new AbortController();
       const active = { id, abort, work: Promise.resolve() };
       this.active = active;
@@ -145,7 +159,7 @@ export class SubmissionService {
           AbortSignal.any([abort.signal, AbortSignal.timeout(15000)]),
         )
         .then((published) => {
-          if (published === undefined)
+          if (!published)
             this.store.save({
               ...value,
               state: State.Uncertain,
@@ -184,10 +198,11 @@ export class SubmissionService {
     this.task?.wake();
     return next;
   }
+
   cancel(id: string): Submission {
     const value = this.store.get(id);
     if (terminal.has(value.state)) return value;
-    if (value.state === State.Publishing || value.state === State.Enrolling || value.brief !== undefined)
+    if (value.state === State.Publishing || value.state === State.Enrolling || value.brief)
       throw new Error("Publication may have happened; reconcile with retry instead of cancellation");
     if (this.active?.id === value.id) this.active.abort.abort();
     this.store.invalidateNotices(value.id);
@@ -197,11 +212,11 @@ export class SubmissionService {
       detail: "Submission cancelled",
     });
   }
+
   private tick(): void {
-    if (this.stopped || this.active !== undefined || this.store.list().some((value) => value.workerPids.some(alive)))
-      return;
+    if (this.stopped || this.active || this.store.list().some((value) => value.workerPids.some(alive))) return;
     const value = this.store.list().find((value) => value.state === State.Queued);
-    if (value === undefined) return;
+    if (!value) return;
     const abort = new AbortController();
     const active = { id: value.id, abort, work: Promise.resolve() };
     this.active = active;
@@ -210,9 +225,11 @@ export class SubmissionService {
       if (!this.stopped) this.task?.wake();
     });
   }
+
   private update(id: string, patch: Partial<Submission>): Submission {
     return this.store.save({ ...this.store.get(id), ...patch });
   }
+
   private async stage(
     id: string,
     role: Role,
@@ -221,7 +238,7 @@ export class SubmissionService {
     signal: AbortSignal,
   ): Promise<StageResult> {
     const existing = this.store.get(id).stages.findLast((stage) => stage.role === role && Check(schema, stage.result));
-    if (existing !== undefined) return existing;
+    if (existing) return existing;
     const instructions = await (this.options.instructions ?? stageInstructions)(role);
     const result = await (this.options.run ?? runStage)(
       role,
@@ -242,6 +259,7 @@ export class SubmissionService {
     parse(schema, result.result);
     return result;
   }
+
   private async policy(id: string, snapshot: RepositorySnapshot, signal: AbortSignal): Promise<RepositoryPolicy> {
     const pinned = this.store.get(id).policyVersion;
     const existing =
@@ -250,7 +268,7 @@ export class SubmissionService {
           ? undefined
           : this.store.cached(snapshot)
         : this.store.policy(snapshot.repository, pinned);
-    if (existing !== undefined) return existing;
+    if (existing) return existing;
     if (snapshot.sources.length === 0) {
       const policy = this.store.savePolicy(snapshot, {
         requirements: [],
@@ -291,6 +309,7 @@ export class SubmissionService {
     });
     return policy;
   }
+
   private async execute(id: string, signal: AbortSignal): Promise<void> {
     try {
       let value = this.store.get(id);
@@ -299,9 +318,9 @@ export class SubmissionService {
         this.enroll(id, value.prUrl);
         return;
       }
-      if (value.brief !== undefined) {
+      if (value.brief) {
         const recovered = await this.github.find(value.request, marker, signal);
-        if (recovered !== undefined) {
+        if (recovered) {
           signal.throwIfAborted();
           this.verifyPublished(value, recovered, marker);
           this.enroll(id, recovered.url);
@@ -397,6 +416,7 @@ export class SubmissionService {
       this.notice(id);
     }
   }
+
   private verifyPublished(value: Submission, pr: PublishedPR, marker: string): void {
     if (
       pr.headSha !== value.request.headSha ||
@@ -406,6 +426,7 @@ export class SubmissionService {
     )
       throw new Error("Published PR identity changed; inspect before enrollment");
   }
+
   private enroll(id: string, url: string): void {
     const value = this.update(id, {
       prUrl: url,
@@ -420,6 +441,7 @@ export class SubmissionService {
     });
     this.notice(id);
   }
+
   private notice(id: string): void {
     const value = this.store.get(id);
     if (value.notificationRevision > 0) return;
@@ -427,6 +449,7 @@ export class SubmissionService {
     this.store.notify(value, owner.id);
     this.update(id, { notificationRevision: 1 });
   }
+
   checkpointable(): boolean {
     return (
       this.active === undefined &&
@@ -435,13 +458,14 @@ export class SubmissionService {
         .some(
           (value) =>
             value.workerPids.some(alive) ||
-            (!terminal.has(value.state) && this.options.allowLegacyExecution === true) ||
+            (!terminal.has(value.state) && this.legacyExecutionEnabled) ||
             value.state === State.Publishing ||
             value.state === State.Enrolling ||
             value.state === State.Uncertain,
         )
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.task?.close();
@@ -449,4 +473,5 @@ export class SubmissionService {
     await this.active?.work;
   }
 }
+
 class InputNeeded extends Error {}

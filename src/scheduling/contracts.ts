@@ -58,6 +58,7 @@ export function decode(schema: TSchema, data: string): unknown {
   if (!Check(schema, value)) throw new Error("Invalid stored GitHub schedule data");
   return value;
 }
+
 export interface SchedulerPolicy {
   tickMs: number;
   requestSpacingMs: number;

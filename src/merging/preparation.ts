@@ -6,6 +6,7 @@ import { mechanicalConflicts } from "../repairs/mechanical.js";
 import type { ConflictStore } from "../repairs/cases.js";
 import type { MergeOperation, PreparationProfile } from "./contracts.js";
 import { fingerprint } from "./policy.js";
+
 function atKey(value: unknown, key: string[]): unknown {
   let current = value;
   for (const part of key) {
@@ -15,8 +16,9 @@ function atKey(value: unknown, key: string[]): unknown {
   }
   return current;
 }
+
 export function repin(source: string, profile: PreparationProfile, sha: string): string {
-  if (profile.kind !== "toml_revision" || profile.key === undefined || profile.expectedValue === undefined)
+  if (profile.kind !== "toml_revision" || !profile.key || profile.expectedValue === undefined)
     throw new Error("TOML preparation needs an exact key and expected value");
   const current = atKey(Bun.TOML.parse(source), profile.key);
   if (current === sha) return source;
@@ -43,6 +45,7 @@ export function repin(source: string, profile: PreparationProfile, sha: string):
     throw new Error("TOML recipe requires one unambiguous bare key with a quoted revision");
   return result;
 }
+
 export interface PrepareRequest {
   url: string;
   operation: MergeOperation;
@@ -50,6 +53,7 @@ export interface PrepareRequest {
   signal: AbortSignal;
 }
 export type Preparer = (input: PrepareRequest) => Promise<string>;
+
 export function preparer(
   root: string,
   cases: ConflictStore,
@@ -64,7 +68,7 @@ export function preparer(
 ): Preparer {
   return async ({ url, operation, beforePush, signal }) => {
     const profile = operation.preparation;
-    if (profile === undefined) throw new Error("Preparation profile missing");
+    if (!profile) throw new Error("Preparation profile missing");
     const readSource = options.source ?? rebaseSource;
     const source = await readSource(url, signal);
     if (

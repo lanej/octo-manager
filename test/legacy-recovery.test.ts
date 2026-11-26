@@ -9,6 +9,7 @@ import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { SubmissionService } from "../src/submissions/service.js";
 import { GitHubSubmissions, type SubmissionGitHub } from "../src/submissions/github.js";
 import { SubmissionState, Complexity, type SubmissionInput } from "../src/submissions/contracts.js";
+
 const request: SubmissionInput = {
   requestId: "legacy",
   repository: "owner/repo",

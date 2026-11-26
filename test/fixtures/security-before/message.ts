@@ -5,6 +5,7 @@ import { shortId } from "../../../src/tracking/identifiers.js";
 import { stripVTControlCharacters } from "node:util";
 import type { Action } from "../../../src/tracking/types.js";
 import { successfulCheck } from "../../../src/tracking/checks.js";
+
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
     .filter(
@@ -21,6 +22,7 @@ export function compact(value: string, limit: number): string {
   }
   return text + "…";
 }
+
 function link(label: string, url: string): string {
   try {
     const parsed = new URL(url);
@@ -31,6 +33,7 @@ function link(label: string, url: string): string {
     return label;
   }
 }
+
 export function agentMessage(
   action: Action,
   prUrl: string,

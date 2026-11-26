@@ -27,6 +27,7 @@ const details = {
   mayHaveMoreMessages: false,
 };
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+
 async function fixture(run: (store: Store, scheduler: GitHubScheduler, time: (at: number) => void) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "octo-scheduler-"));
   let at = 0;
@@ -48,6 +49,7 @@ async function fixture(run: (store: Store, scheduler: GitHubScheduler, time: (at
     await rm(directory, { recursive: true, force: true });
   }
 }
+
 test("one shared dispatch gate spaces all physical requests, honors cancellation and never catches up in bursts", () =>
   fixture(async (_store, scheduler, time) => {
     const starts: number[] = [];

@@ -1,4 +1,5 @@
 import type { CommandSpec } from "../cli/contracts.js";
+
 const actions = [
   "approve",
   "approve-publication",

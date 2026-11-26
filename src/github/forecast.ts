@@ -1,4 +1,5 @@
 import type { GitHubBudget, GitHubResource } from "./usage.js";
+
 export enum ForecastState {
   Unknown = "unknown",
   OnTrack = "on_track",
@@ -29,6 +30,7 @@ export type QuotaForecast = ForecastEvidence &
 const windowMs = 600000,
   minimumWindowMs = 120000,
   freshnessMs = 180000;
+
 export function forecastQuota(budget: GitHubBudget, samples: GitHubBudget[], at: number): QuotaForecast {
   const unknown = (reason: string): QuotaForecast => ({
     state: ForecastState.Unknown,
@@ -56,7 +58,7 @@ export function forecastQuota(budget: GitHubBudget, samples: GitHubBudget[], at:
       sample.observedAtMs <= budget.observedAtMs,
   );
   const first = current[0];
-  if (first === undefined) return unknown("Waiting for quota history");
+  if (!first) return unknown("Waiting for quota history");
   const duration = budget.observedAtMs - first.observedAtMs;
   if (duration < minimumWindowMs || current.length < 2) return unknown("Need at least two minutes of quota history");
   const used = first.remaining - budget.remaining;
@@ -80,25 +82,28 @@ export function forecastQuota(budget: GitHubBudget, samples: GitHubBudget[], at:
     ...(exhaustAtMs === undefined ? {} : { exhaustAtMs }),
   };
 }
+
 export class QuotaHistory {
   private samples: Partial<Record<GitHubResource, GitHubBudget[]>> = {};
+
   observe(resource: GitHubResource, budget: GitHubBudget): void {
     let history = this.samples[resource] ?? [];
     const previous = history.at(-1);
     if (
-      previous !== undefined &&
+      previous &&
       (previous.resetAtMs !== budget.resetAtMs ||
         previous.limit !== budget.limit ||
         budget.remaining > previous.remaining ||
         budget.observedAtMs < previous.observedAtMs)
     )
       history = [];
-    if (previous !== undefined && Math.floor(previous.observedAtMs / 60000) === Math.floor(budget.observedAtMs / 60000))
+    if (previous && Math.floor(previous.observedAtMs / 60000) === Math.floor(budget.observedAtMs / 60000))
       history = history.slice(0, -1);
     history = history.filter((sample) => sample.observedAtMs >= budget.observedAtMs - windowMs);
     history.push({ ...budget });
     this.samples[resource] = history;
   }
+
   forecast(resource: GitHubResource, budget: GitHubBudget, at: number): QuotaForecast {
     return forecastQuota(budget, this.samples[resource] ?? [], at);
   }

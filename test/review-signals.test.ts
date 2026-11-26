@@ -9,7 +9,9 @@ import { actionableFeedback, feedbackExcerpt } from "../src/tracking/review-sign
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ActionState, DeliveryState, type ObservationInput, type ReviewFeedback } from "../src/tracking/types.js";
+
 const url = "https://github.com/owner/repo/pull/1";
+
 function codex(status: string, findings: boolean | null = null): ReviewFeedback {
   return feedbackRevision({
     source: "conversation",
@@ -19,6 +21,7 @@ function codex(status: string, findings: boolean | null = null): ReviewFeedback 
     url,
   });
 }
+
 function copilot(body: string): ReviewFeedback {
   return feedbackRevision({
     source: "review",
@@ -28,6 +31,7 @@ function copilot(body: string): ReviewFeedback {
     url,
   });
 }
+
 const observation = (feedback: ReviewFeedback[]): ObservationInput => ({
   observedAt: 1000,
   headSha: "head",

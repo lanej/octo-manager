@@ -3,6 +3,7 @@ import type { SchedulerService } from "../gen/octomanager/v2/scheduler_pb.js";
 import type { MergeCommand } from "../merging/contracts.js";
 import { wire, unwire } from "./codec.js";
 import * as api from "../gen/octomanager/v2/domain_pb.js";
+
 export async function mergeRequest(client: Client<typeof SchedulerService>, command: MergeCommand): Promise<unknown> {
   const { op, ...input } = command;
   switch (op) {

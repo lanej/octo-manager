@@ -66,6 +66,7 @@ export function schedulerClient(directory: string) {
     }),
   );
 }
+
 function job(value?: WireJob): Job {
   if (!value?.task) throw new Error("Server returned no job task");
   const task = parseTask(
@@ -97,6 +98,7 @@ function job(value?: WireJob): Job {
     ...(value.error === undefined ? {} : { error: value.error }),
   };
 }
+
 function event(value: WireEvent): JobEvent {
   const context = value.actionContext;
   const mapped =
@@ -114,9 +116,10 @@ function event(value: WireEvent): JobEvent {
     detail: value.detail,
     ...(value.prId === undefined ? {} : { prId: value.prId }),
     ...(value.actionId === undefined ? {} : { actionId: value.actionId }),
-    ...(mapped === undefined ? {} : { actionContext: mapped }),
+    ...(!mapped ? {} : { actionContext: mapped }),
   };
 }
+
 function snapshot(value?: WireSnapshot): Snapshot {
   if (!value) throw new Error("Server returned no snapshot");
   return {
@@ -127,6 +130,7 @@ function snapshot(value?: WireSnapshot): Snapshot {
     ...(value.recoveryPid === undefined ? {} : { recoveryPid: Number(value.recoveryPid) }),
   };
 }
+
 export async function request(directory: string, command: object): Promise<any> {
   const client = schedulerClient(directory);
   const c = command as Record<string, any>;
@@ -238,7 +242,7 @@ export function cliJSON(key: string, value: unknown): unknown {
   if (key === "$typeName") return undefined;
   if (isMessage(value)) {
     const schema = file_octomanager_v2_domain.messages.find((schema) => schema.typeName === value.$typeName);
-    if (schema !== undefined) return unwire(schema, value);
+    if (schema) return unwire(schema, value);
   }
   if (typeof value === "bigint") return Number(value);
   if (value !== null && typeof value === "object" && "$typeName" in value) {

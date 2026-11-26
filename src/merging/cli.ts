@@ -7,6 +7,7 @@ import { schedulerClient } from "../client.js";
 import { printResult } from "../cli/output.js";
 import type { parseCommand } from "../cli/arguments.js";
 import { checked, CommandSchema, QueueInputSchema, type MergeCommand } from "./contracts.js";
+
 export async function mergingCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const [rawCommand, id] = parsed.positionals,
     { values } = parsed;

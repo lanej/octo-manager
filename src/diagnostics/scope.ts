@@ -23,9 +23,9 @@ export function performanceScope<T>(directory: string, name: string, work: () =>
 export function performanceScope<T>(directory: string, name: string, work: () => T): T;
 export function performanceScope(directory: string, name: string, work: () => unknown): unknown {
   const observer = observers.get(resolve(directory));
-  if (observer === undefined) return work();
+  if (!observer) return work();
   const cycle = observer.cycle(name);
-  if (cycle === undefined) return work();
+  if (!cycle) return work();
   const start = performance.now();
   const finish = () => {
     cycle.open = false;

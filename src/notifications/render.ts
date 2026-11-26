@@ -11,6 +11,7 @@ import {
 import { shortId } from "../tracking/identifiers.js";
 import type { AgentMessage } from "../tracking/inbox.js";
 import { EntryState } from "../merging/contracts.js";
+
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
@@ -58,6 +59,7 @@ export interface DigestGroup {
   entries: NoticeView[];
   instructions: string[];
 }
+
 export function digestGroups(
   messages: AgentMessage[],
   presentation?: (message: AgentMessage) => MessagePresentation,
@@ -81,7 +83,7 @@ export function digestGroups(
       }[status];
     const key = entry.group.url ?? "octo";
     let group = groups.get(key);
-    if (group === undefined) {
+    if (!group) {
       group = { reference: entry.group, entries: [], instructions: [] };
       groups.set(key, group);
     }
@@ -91,6 +93,7 @@ export function digestGroups(
   }
   return [...groups.values()];
 }
+
 function renderGroup(group: DigestGroup): string {
   const lines = new Map<string, number>();
   for (const entry of group.entries) {
@@ -112,8 +115,8 @@ export function renderDigest(
     let selected: ReceiptTarget | undefined;
     for (const row of rows) {
       const current = presentations.get(row.id)?.mergeTarget;
-      if (current === undefined) continue;
-      if (selected !== undefined && JSON.stringify(selected) !== JSON.stringify(current)) return undefined;
+      if (!current) continue;
+      if (selected && JSON.stringify(selected) !== JSON.stringify(current)) return undefined;
       selected = current;
     }
     return selected;
@@ -136,7 +139,7 @@ export function renderDigest(
   return {
     body: body(selected),
     messageIds: selected.map((message) => message.id),
-    ...(mergeTarget === undefined ? {} : { mergeTarget }),
+    ...(!mergeTarget ? {} : { mergeTarget }),
   };
 }
 

@@ -3,7 +3,9 @@ import { promisify } from "node:util";
 import { readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { IssueRecord } from "./contracts.js";
+
 const exec = promisify(execFile);
+
 // Coordinator Git effects must not execute files selected by the agent's checkout.
 export async function issueGit(issue: IssueRecord, signal: AbortSignal, authorize: () => void) {
   const root = await realpath(issue.root);

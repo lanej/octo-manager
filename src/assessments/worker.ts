@@ -8,6 +8,7 @@ import {
 import { Check } from "typebox/value";
 import { createWorkerRuntime } from "../jobs/auth.js";
 import { InputSchema, inputLimit, outputLimit, instructions } from "./contracts.js";
+
 let started = false;
 process.on("disconnect", () => process.exit(1));
 process.on("message", (message: unknown) => {
@@ -17,6 +18,7 @@ process.on("message", (message: unknown) => {
     process.send?.({ type: "failure" }, () => process.exit(1));
   });
 });
+
 async function run(message: unknown): Promise<void> {
   if (
     typeof message !== "object" ||
@@ -30,7 +32,7 @@ async function run(message: unknown): Promise<void> {
     throw new Error("Invalid assessment input");
   const { runtime } = await createWorkerRuntime();
   const model = runtime.getModel("openai-codex", message.model);
-  if (model === undefined) throw new Error("Assessment model unavailable");
+  if (!model) throw new Error("Assessment model unavailable");
   const settings = SettingsManager.inMemory({
     retry: { enabled: false },
     compaction: { enabled: false },

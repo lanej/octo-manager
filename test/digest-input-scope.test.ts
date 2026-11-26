@@ -16,6 +16,7 @@ function gate() {
   });
   return { promise, release };
 }
+
 async function until(predicate: () => boolean) {
   const end = Date.now() + 1000;
   while (!predicate() && Date.now() < end)
@@ -24,6 +25,7 @@ async function until(predicate: () => boolean) {
     });
   expect(predicate()).toBe(true);
 }
+
 class Queue implements QueueConnection {
   slots: QueuedMessage[] = [];
   blockNext = false;
@@ -31,12 +33,15 @@ class Queue implements QueueConnection {
   readonly release = gate();
   active = 0;
   maximum = 0;
+
   prepare() {
     return Promise.resolve({ busy: false });
   }
+
   queued() {
     return Promise.resolve(structuredClone(this.slots));
   }
+
   async enqueueQueued(_agent: unknown, clientId: string, body: string) {
     const item = { queueId: clientId, clientId, body };
     this.slots.push(item);
@@ -53,16 +58,20 @@ class Queue implements QueueConnection {
       this.active--;
     }
   }
+
   cancelQueued(_agent: unknown, id: string) {
     const before = this.slots.length;
     this.slots = this.slots.filter((item) => item.queueId !== id);
     return Promise.resolve(before !== this.slots.length);
   }
+
   received() {
     return Promise.resolve({ bodies: [], complete: true });
   }
+
   close() {}
 }
+
 async function fixture() {
   const directory = await mkdtemp("/tmp/octo-digest-scope-");
   const store = new Store(directory, () => 1000);

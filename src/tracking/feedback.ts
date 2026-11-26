@@ -5,15 +5,18 @@ import type { ReviewFeedback, ReviewObservation } from "./types.js";
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function identifier(value: unknown): string {
   if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return String(value);
   if (typeof value === "string" && value !== "") return value;
   throw new Error("Invalid GitHub feedback identity");
 }
+
 function text(value: unknown, limit: number): string {
   if (typeof value !== "string" || value.length > limit) throw new Error("Invalid GitHub feedback text");
   return value;
 }
+
 function feedbackUrl(value: unknown, prUrl: string): string {
   const url = new URL(text(value, 4000));
   const pr = new URL(prUrl);
@@ -29,6 +32,7 @@ function feedbackUrl(value: unknown, prUrl: string): string {
     throw new Error("Comment URL does not match PR");
   return url.href;
 }
+
 export function reviewObservation(value: unknown, prUrl: string): ReviewObservation {
   if (!object(value) || !object(value["user"])) throw new Error("Invalid GitHub review");
   const state = reviewState(value["state"]);
@@ -43,6 +47,7 @@ export function reviewObservation(value: unknown, prUrl: string): ReviewObservat
     ...(value["body"] === undefined || state === ReviewState.Pending ? {} : { body: text(value["body"], 65536) }),
   };
 }
+
 export function feedbackRevision(input: Omit<ReviewFeedback, "revision">): ReviewFeedback {
   const content = {
     source: input.source,
@@ -58,6 +63,7 @@ export function feedbackRevision(input: Omit<ReviewFeedback, "revision">): Revie
     revision: createHash("sha256").update(JSON.stringify(content)).digest("hex"),
   };
 }
+
 export function commentFeedback(value: unknown, source: "inline" | "conversation", prUrl: string): ReviewFeedback {
   if (!object(value) || !object(value["user"])) throw new Error("Invalid GitHub comment");
   const url = feedbackUrl(value["html_url"], prUrl);

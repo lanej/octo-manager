@@ -1,5 +1,6 @@
 import { revision } from "./types.js";
 import type { DatabaseSync } from "node:sqlite";
+
 export function migrateDigests(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (version === 15 || version === 14 || version === 13 || version === 12 || version === 11 || version === 10) return;
@@ -85,8 +86,7 @@ export function migrateNotificationEvidence(db: DatabaseSync): void {
 
 // rationale: Membership is a derived index; immutable revisions retain the audit authority and ordering.
 export function migrateDigestMembership(db: DatabaseSync): void {
-  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='agent_digest_members'").get() !== undefined)
-    return;
+  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='agent_digest_members'").get()) return;
   try {
     db.exec(`BEGIN IMMEDIATE;
       CREATE TABLE agent_digest_members (

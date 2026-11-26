@@ -1,6 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { Check } from "typebox/value";
 import { Compile } from "typebox/compile";
+
 export enum ReviewAssessmentSource {
   Owner = "owner",
   Receipt = "receipt",
@@ -227,10 +228,10 @@ const recordValidators = new Map<TSchema, { Check(value: unknown): boolean }>(
 export function checked<T extends TSchema>(schema: T, value: unknown): Static<T>;
 export function checked(schema: TSchema, value: unknown): unknown {
   const validator = recordValidators.get(schema);
-  if (!(validator === undefined ? Check(schema, value) : validator.Check(value)))
-    throw new Error("Invalid merge-chain data");
+  if (!(!validator ? Check(schema, value) : validator.Check(value))) throw new Error("Invalid merge-chain data");
   return value;
 }
+
 export function terminal(state: EntryState): boolean {
   return state === EntryState.Merged || state === EntryState.Cancelled;
 }

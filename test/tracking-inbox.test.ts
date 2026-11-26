@@ -21,6 +21,7 @@ const input: ObservationInput = {
   checks: { state: "complete", value: [] },
   reviews: { state: "complete", value: [] },
 };
+
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 100; i++) {
     if (check()) return;
@@ -28,6 +29,7 @@ async function until(check: () => boolean): Promise<void> {
   }
   assert.fail("Inbox work did not finish");
 }
+
 test("immutable inbox survives restart, reconciles before replay and requires a message-specific recipient receipt", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-inbox-"));
   let at = 1000;

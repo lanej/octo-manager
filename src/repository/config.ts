@@ -15,6 +15,7 @@ function read(path: string): string | undefined {
     throw error;
   }
 }
+
 export function loadRepositoryConfig(root: string) {
   const toml = read(join(root, "octo-manager.toml"));
   if (toml === undefined)

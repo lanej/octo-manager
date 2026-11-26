@@ -7,9 +7,11 @@ import { CodexSessionReference, createWorkerRuntime } from "../src/jobs/auth.js"
 import type { CredentialStore } from "@earendil-works/pi-ai";
 
 const now = 1700000000000;
+
 function accessToken(exp = now / 1000 + 3600) {
   return `header.${Buffer.from(JSON.stringify({ exp, "https://api.openai.com/auth": { chatgpt_account_id: "test-account" } })).toString("base64url")}.signature`;
 }
+
 function auth(access = accessToken()) {
   return JSON.stringify({
     auth_mode: "chatgpt",
@@ -21,6 +23,7 @@ function auth(access = accessToken()) {
     preserved: "unchanged",
   });
 }
+
 async function fixture(run: (directory: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "pg-auth-"));
   try {
@@ -29,6 +32,7 @@ async function fixture(run: (directory: string) => Promise<void>) {
     await rm(directory, { recursive: true, force: true });
   }
 }
+
 test("existing Codex auth is referenced in memory without copying refresh or identity tokens", async () =>
   fixture(async (directory) => {
     const bytes = auth();

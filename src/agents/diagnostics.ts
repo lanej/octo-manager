@@ -5,6 +5,7 @@ export function codexVersion(value: unknown): string | undefined {
     return undefined;
   return value.userAgent.match(/\/(\d+\.\d+\.\d+[^ ]*)/)?.[1];
 }
+
 export function rpcRejection(method: string, error: unknown, version?: string): string {
   const code =
     typeof error === "object" && error !== null && "code" in error && typeof error.code === "number"

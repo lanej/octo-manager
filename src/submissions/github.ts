@@ -11,19 +11,23 @@ import {
   type SubmissionInput,
   type WriterDraft,
 } from "./contracts.js";
+
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("Invalid GitHub submission response");
   return Object.fromEntries(Object.entries(value));
 }
+
 function string(value: unknown): string {
   if (typeof value !== "string" || value === "") throw new Error("Invalid GitHub submission text");
   return value;
 }
+
 function list(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Invalid GitHub submission collection");
   return value;
 }
+
 export interface PublishedPR {
   url: string;
   headSha: string;
@@ -36,12 +40,15 @@ export interface SubmissionGitHub {
   find(request: SubmissionInput, marker: string, signal: AbortSignal): Promise<PublishedPR | undefined>;
   publish(request: SubmissionInput, draft: WriterDraft, marker: string, signal: AbortSignal): Promise<PublishedPR>;
 }
+
 export class GitHubSubmissions implements SubmissionGitHub {
   constructor(private read: ReadGitHub = ghRead) {}
+
   private async ref(repository: string, ref: string, signal: AbortSignal): Promise<string> {
     const value = record(await this.read(`repos/${repository}/git/ref/heads/${encodeURIComponent(ref)}`, signal));
     return string(record(value["object"])["sha"]);
   }
+
   async verify(request: SubmissionInput, baseSha: string, signal: AbortSignal): Promise<void> {
     const [head, base] = await Promise.all([
       this.ref(request.repository, request.headRef, signal),
@@ -50,6 +57,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
     if (head !== request.headSha) throw new Error("Head branch changed; submit a new request for its new revision");
     if (base !== baseSha) throw new Error("Base branch changed; submit a new request with fresh analysis");
   }
+
   async snapshot(request: SubmissionInput, signal: AbortSignal): Promise<RepositorySnapshot> {
     const repository = request.repository.toLowerCase();
     const info = record(await this.read(`repos/${repository}`, signal));
@@ -120,6 +128,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
       }),
     };
   }
+
   async find(request: SubmissionInput, marker: string, signal: AbortSignal): Promise<PublishedPR | undefined> {
     const owner = request.repository.split("/")[0] ?? "";
     const matches = new Map<string, PublishedPR>();
@@ -151,6 +160,7 @@ export class GitHubSubmissions implements SubmissionGitHub {
     }
     throw new Error("PR lookup coverage is incomplete; publication cannot safely continue");
   }
+
   async publish(
     request: SubmissionInput,
     draft: WriterDraft,

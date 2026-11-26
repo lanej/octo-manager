@@ -15,6 +15,7 @@ type Observe = (path: string, listener: (event: string, filename: string | null)
 export class RepositoryPolicyMonitor {
   private roots = new Map<string, Root>();
   private changed: (() => void) | undefined;
+
   constructor(
     private load = loadRepositoryConfig,
     private observe: Observe = watch,
@@ -24,15 +25,16 @@ export class RepositoryPolicyMonitor {
     this.invalidate();
     this.changed = changed;
   }
+
   read(path: string): Configuration {
     let root = this.roots.get(path);
-    if (root === undefined) {
+    if (!root) {
       root = { watchers: [], failed: false, generation: 0 };
       this.roots.set(path, root);
     }
-    if (root.value !== undefined) return root.value;
+    if (root.value) return root.value;
     try {
-      if (this.changed !== undefined && root.watchers.length === 0) {
+      if (this.changed && root.watchers.length === 0) {
         const generation = root.generation;
         const invalidated = () => {
           if (root.generation !== generation) return;
@@ -52,12 +54,7 @@ export class RepositoryPolicyMonitor {
             if (filename !== null && filename !== basename(path)) return;
             try {
               const current = lstatSync(path);
-              if (
-                identity !== undefined &&
-                current.ino === identity.ino &&
-                current.dev === identity.dev &&
-                !current.isSymbolicLink()
-              )
+              if (identity && current.ino === identity.ino && current.dev === identity.dev && !current.isSymbolicLink())
                 return;
             } catch {
               // Losing the bound root revokes retained policy until a successful read.
@@ -93,6 +90,7 @@ export class RepositoryPolicyMonitor {
     }
     return root.value;
   }
+
   invalidate(path?: string): void {
     for (const [key, root] of this.roots) {
       if (path !== undefined && key !== path) continue;
@@ -103,6 +101,7 @@ export class RepositoryPolicyMonitor {
       delete root.value;
     }
   }
+
   retain(paths: Set<string>): void {
     for (const [path, root] of this.roots) {
       if (paths.has(path)) continue;
@@ -111,12 +110,15 @@ export class RepositoryPolicyMonitor {
       this.roots.delete(path);
     }
   }
+
   retryNeeded(): boolean {
     return this.changed !== undefined && [...this.roots.values()].some((root) => root.failed);
   }
+
   retryUnavailable(): void {
     for (const [path, root] of this.roots) if (root.failed) this.invalidate(path);
   }
+
   close(): void {
     this.changed = undefined;
     this.invalidate();

@@ -27,6 +27,7 @@ const input = {
   prUrl: "https://github.com/lanej/octo-manager/pull/2",
   evidenceUrl: "https://github.com/lanej/octo-manager/commit/197e1b61054babefa12daa7eb017ab2dd4db06dd",
 };
+
 function hasCode(code: Code): (error: unknown) => boolean {
   return (error) => error instanceof ConnectError && error.code === code;
 }

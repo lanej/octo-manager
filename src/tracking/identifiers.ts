@@ -1,6 +1,7 @@
 export function compactId(id: string): string {
   return id.replaceAll("-", "").toLowerCase();
 }
+
 export function shortId(id: string, ids: string[] = []): string {
   const normalized = compactId(id);
   if (!/^[a-f0-9]{32}$/.test(normalized)) return id;
@@ -12,6 +13,7 @@ export function shortId(id: string, ids: string[] = []): string {
     length++;
   return normalized.slice(0, length);
 }
+
 export function resolveId(id: string, ids: string[]): string | undefined {
   if (ids.includes(id)) return id;
   const prefix = compactId(id);

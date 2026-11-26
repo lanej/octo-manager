@@ -7,10 +7,12 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Blocker, ExecutionProfile } from "./types.js";
 import { workerModel as parseWorkerModel } from "../jobs/worker-model.js";
+
 export interface CodexEndpoint {
   socket?: string;
   delivery?: "turn" | "queue";
 }
+
 function codexEndpoint(value: unknown): CodexEndpoint {
   if (!object(value) || Object.keys(value).some((key) => key !== "delivery" && key !== "socket"))
     throw new Error("Invalid endpoint");
@@ -30,6 +32,7 @@ function codexEndpoint(value: unknown): CodexEndpoint {
     ...(socket === undefined ? {} : { socket }),
   };
 }
+
 export interface TrackingConfig {
   workerModel?: string;
   polling?: PollPolicy & Partial<SchedulerPolicy>;
@@ -64,12 +67,15 @@ const defaults: TrackingConfig = {
   rules: [],
   endpoints: { local: {} },
 };
+
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
+
 export function defaultTrackingConfig(): TrackingConfig {
   return structuredClone(defaults);
 }
+
 export function loadTrackingConfig(path?: string): TrackingConfig {
   const target =
     path ?? join(process.env["XDG_CONFIG_HOME"] ?? join(homedir(), ".config"), "octo-manager", "config.json");
@@ -160,7 +166,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
       const profile = checked(PreparationProfileSchema, value);
       if (
         profile.kind === "toml_revision" &&
-        (profile.path === undefined || profile.key === undefined || profile.expectedValue === undefined)
+        (profile.path === undefined || !profile.key || profile.expectedValue === undefined)
       )
         throw new Error("TOML preparation needs path, key, and expectedValue");
       result.merging[name] = profile;
@@ -237,6 +243,7 @@ export function loadTrackingConfig(path?: string): TrackingConfig {
   }
   return result;
 }
+
 export function selectProfile(blocker: Blocker, config: TrackingConfig): ExecutionProfile {
   const rule = config.rules.find(
     (r) =>

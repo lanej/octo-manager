@@ -257,19 +257,17 @@ export function dashboardView(renderer: CliRenderer, controls: Controls, theme: 
         ? "q Quit   Esc Back   [/] Scroll"
         : "q Quit   d Diagnostics   j/k Move   Enter Inspect";
     footer.content = compact ? "q Quit" : `${shortcuts}${stackedFooter ? "\n" : "   "}${keys}`;
-    const listWidth =
-      wide && item !== undefined && !single ? Math.max(32, Math.floor(renderer.width * 0.35)) : renderer.width;
+    const listWidth = wide && item && !single ? Math.max(32, Math.floor(renderer.width * 0.35)) : renderer.width;
     listPanel.width = listWidth;
     listPanel.title = ` ${screen.toUpperCase()} · ${String(rows.length)} `;
     listPanel.visible = item === undefined || (!single && !fullDetail && (wide || !current.inspecting));
     detailPanel.visible = item !== undefined && (single || wide || current.inspecting);
     const detailWidth = listPanel.visible ? renderer.width - listWidth - 6 : renderer.width - 4;
-    const detailTitle =
-      item?.delivery !== undefined
-        ? "DELIVERY DETAIL"
-        : screen === "Activity"
-          ? "OPERATION & EVENT EVIDENCE"
-          : screen.toUpperCase();
+    const detailTitle = item?.delivery
+      ? "DELIVERY DETAIL"
+      : screen === "Activity"
+        ? "OPERATION & EVENT EVIDENCE"
+        : screen.toUpperCase();
     detailPanel.title = ` ${detailTitle} `;
     detailPanel.borderColor = current.inspecting || single ? palette.accent : palette.border;
     if (listPanel.visible) {
@@ -353,7 +351,7 @@ export function dashboardView(renderer: CliRenderer, controls: Controls, theme: 
       } else if (!inPrimary) changeScreen(origin);
       return;
     }
-    if (name === "return" && selected() !== undefined) {
+    if (name === "return" && selected()) {
       current.inspecting = !current.inspecting;
       controls.changed();
       return;

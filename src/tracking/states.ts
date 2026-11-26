@@ -12,16 +12,19 @@ export enum ReviewState {
   Dismissed = "DISMISSED",
 }
 export type ReviewStateValue = `${ReviewState}`;
+
 export function prLifecycle(value: unknown): PRLifecycle {
   const state = Object.values(PRLifecycle).find((candidate) => candidate === value);
   if (state === undefined) throw new Error("Invalid PR lifecycle");
   return state;
 }
+
 export function reviewState(value: unknown): ReviewState {
   const state = Object.values(ReviewState).find((candidate) => candidate === value);
   if (state === undefined) throw new Error("Invalid review state");
   return state;
 }
+
 export function terminalPR(value: PRLifecycleValue): boolean {
   const state = prLifecycle(value);
   switch (state) {
@@ -34,6 +37,7 @@ export function terminalPR(value: PRLifecycleValue): boolean {
       return unreachable(state);
   }
 }
+
 export function pendingReview(value: ReviewStateValue): boolean {
   const state = reviewState(value);
   switch (state) {
@@ -48,6 +52,7 @@ export function pendingReview(value: ReviewStateValue): boolean {
       return unreachable(state);
   }
 }
+
 function unreachable(value: never): never {
   throw new Error(`Unhandled tracking state: ${String(value)}`);
 }

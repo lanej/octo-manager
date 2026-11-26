@@ -2,7 +2,9 @@ import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { CategorizationEngine, shouldNotify } from "../src/categorization/engine.js";
 import { MessageCategory, type GitHubMessage, type HeuristicClassifier } from "../src/categorization/types.js";
+
 const engine = new CategorizationEngine();
+
 function codex(status: string, findings: boolean | null): GitHubMessage {
   return {
     author: "chatgpt-codex-connector[bot]",
@@ -10,6 +12,7 @@ function codex(status: string, findings: boolean | null): GitHubMessage {
     body: `<!-- codex-pull-request-review-summary -->\n<!-- codex-review-state:v1 ${JSON.stringify({ code_review: { status, has_any_findings: findings, has_unresolved_findings: findings } })} -->`,
   };
 }
+
 test("author-routed heuristics produce inspectable categories and delivery policy consumes those categories", () => {
   for (const [message, expected] of [
     [codex("running", null), MessageCategory.Progress],

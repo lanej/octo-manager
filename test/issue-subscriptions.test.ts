@@ -57,6 +57,7 @@ function issue(ownerId: string): IssueRecord {
     pollIntervalMs: 900000,
   };
 }
+
 function observation(revision = "1"): TrackerObservation {
   return {
     title: "Title",
@@ -67,6 +68,7 @@ function observation(revision = "1"): TrackerObservation {
     revision,
   };
 }
+
 function setup(changed?: () => void) {
   const directory = mkdtempSync(join(tmpdir(), "octo-issue-subscriptions-"));
   const store = new Store(directory, Date.now, changed);
@@ -94,6 +96,7 @@ function setup(changed?: () => void) {
     },
   };
 }
+
 async function rejection(request: Promise<unknown>): Promise<string> {
   try {
     await request;
@@ -103,10 +106,12 @@ async function rejection(request: Promise<unknown>): Promise<string> {
   }
   throw new Error("Expected the RPC to reject");
 }
+
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error("Expected fixture value");
   return value;
 }
+
 function inbox(store: Store, agentId: string) {
   return store.tracking.inbox.list(agentId, 0, false, true).messages;
 }
@@ -775,6 +780,7 @@ function observerOptions(observe: IssueOptions["trackers"][number]["observe"]): 
     },
   };
 }
+
 function controlledPolicy(): ReturnType<IssueOptions["policy"]> {
   const profile = {
     harness: "fake",

@@ -5,8 +5,10 @@ import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { Assignment, IssueRecord, IssueEvent, Brief } from "./contracts.js";
 import { AttemptState } from "./contracts.js";
+
 export class IssueStore {
   readonly subscriptions: IssueSubscriptions;
+
   constructor(
     private db: DatabaseSync,
     private now: () => number,
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
  CREATE TABLE IF NOT EXISTS issue_effects(id TEXT PRIMARY KEY, issue_id TEXT NOT NULL, kind TEXT NOT NULL, body TEXT NOT NULL, title TEXT NOT NULL, state TEXT NOT NULL, url TEXT NOT NULL);`);
     this.subscriptions = new IssueSubscriptions(db, now, notifications, changed);
   }
+
   atomic<T>(work: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -32,6 +35,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       throw error;
     }
   }
+
   ownPosts(issueId: string): { url: string; body: string }[] {
     return this.db
       .prepare("SELECT id,url,body FROM issue_effects WHERE issue_id=? AND kind='post' AND state='completed'")
@@ -41,6 +45,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         body: `${String(row["body"])}\n\n<!-- octo-issue:${String(row["id"])} -->`,
       }));
   }
+
   private notice(issue: IssueRecord, kind: string): void {
     const revision = createHash("sha256")
       .update(JSON.stringify([issue.stage, issue.waiting, issue.brief?.version, issue.detail]))
@@ -54,6 +59,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       .all()
       .map((row) => decodeIssue(row["data"]));
   }
+
   get(id: string): IssueRecord {
     const matches = this.list().filter((issue) => issue.id === id || issue.id.startsWith(id) || issue.ref.url === id);
     if (matches.length !== 1) throw new Error("Issue not found or ambiguous");
@@ -61,6 +67,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     if (issue == null) throw new Error("Issue not found");
     return issue;
   }
+
   save(issue: IssueRecord, kind: string, detail: string): void {
     this.db.exec("SAVEPOINT issue_save");
     try {
@@ -75,7 +82,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       this.db
         .prepare("INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)")
         .run(issue.id, this.now(), kind, detail.slice(0, 16000));
-      if (issue.brief !== undefined) {
+      if (issue.brief) {
         this.db
           .prepare("INSERT OR IGNORE INTO issue_briefs VALUES(?,?,?)")
           .run(issue.id, issue.brief.version, JSON.stringify(issue.brief));
@@ -87,6 +94,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       throw error;
     }
   }
+
   assignments(issueId?: string): Assignment[] {
     return this.db
       .prepare("SELECT data FROM issue_assignments ORDER BY rowid")
@@ -94,11 +102,13 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
       .map((row) => decodeAssignment(row["data"]))
       .filter((item) => issueId === undefined || item.issueId === issueId);
   }
+
   assignment(value: Assignment): void {
     this.db
       .prepare("INSERT INTO issue_assignments VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data")
       .run(value.id, value.issueId, JSON.stringify(value));
   }
+
   recover(): void {
     for (const item of this.assignments())
       if (item.state === AttemptState.Intended || item.state === AttemptState.Running)
@@ -108,12 +118,14 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
           detail: "Coordinator restarted; reconcile before dispatch",
         });
   }
+
   briefs(id: string): Brief[] {
     return this.db
       .prepare("SELECT data FROM issue_briefs WHERE issue_id=? ORDER BY version DESC LIMIT 10")
       .all(id)
       .map((row) => decodeIssueBrief(row["data"]));
   }
+
   events(id: string, before = Number.MAX_SAFE_INTEGER): IssueEvent[] {
     return this.db
       .prepare(
@@ -128,6 +140,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         detail: String(row["detail"]),
       }));
   }
+
   request(id: string, input: string): string | undefined {
     if (id.length === 0 || id.length > 200) throw new Error("Request ID required");
     const row = this.db.prepare("SELECT input,issue_id FROM issue_requests WHERE id=?").get(id);
@@ -135,9 +148,11 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     if (row["input"] !== input) throw new Error("Request ID already used with different input");
     return String(row["issue_id"]);
   }
+
   remember(id: string, input: string, issueId: string): void {
     this.db.prepare("INSERT INTO issue_requests VALUES(?,?,?)").run(id, input, issueId);
   }
+
   effects(): Effect[] {
     return this.db
       .prepare("SELECT * FROM issue_effects WHERE state NOT IN ('completed','superseded')")
@@ -152,6 +167,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         url: String(row["url"]),
       }));
   }
+
   effect(value: Effect): void {
     const prior = this.db.prepare("SELECT state FROM issue_effects WHERE id=?").get(value.id);
     this.db
@@ -159,7 +175,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
         "INSERT INTO issue_effects VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=CASE WHEN excluded.state='intended' THEN issue_effects.state ELSE excluded.state END,url=CASE WHEN excluded.state='intended' THEN issue_effects.url ELSE excluded.url END",
       )
       .run(value.id, value.issueId, value.kind, value.body, value.title, value.state, value.url);
-    if (value.state !== "intended" || prior === undefined) {
+    if (value.state !== "intended" || !prior) {
       if (prior?.["state"] !== value.state)
         this.db
           .prepare("INSERT INTO issue_events(issue_id,at,kind,detail) VALUES(?,?,?,?)")
@@ -172,6 +188,7 @@ CREATE TABLE IF NOT EXISTS managed_issues(id TEXT PRIMARY KEY, identity TEXT UNI
     }
   }
 }
+
 export interface Effect {
   id: string;
   issueId: string;

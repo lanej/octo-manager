@@ -7,7 +7,7 @@ export function fields(keys: readonly string[], children: Readonly<Record<string
     const result: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(value)) {
       const child = children[key];
-      if (child !== undefined) result[key] = child(item);
+      if (child) result[key] = child(item);
       else if (keys.includes(key)) result[key] = item;
     }
     return result;

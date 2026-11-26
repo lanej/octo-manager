@@ -8,6 +8,7 @@ import {
   type LifecycleReport,
 } from "./gen/octomanager/v2/lifecycle_pb.js";
 import type { ActivationReport } from "./lifecycle.js";
+
 const actions = {
   inventory: LifecycleAction.INVENTORY,
   checkpoint: LifecycleAction.CHECKPOINT,
@@ -20,11 +21,13 @@ const checkpoints = {
   refused: LifecycleCheckpointState.REFUSED,
   pending: LifecycleCheckpointState.PENDING,
 };
+
 export function actionName(action: LifecycleAction): string {
   const entry = Object.entries(actions).find(([, value]) => value === action);
-  if (entry === undefined) throw new Error("Unsupported lifecycle action");
+  if (!entry) throw new Error("Unsupported lifecycle action");
   return entry[0];
 }
+
 export function wireLifecycle(report: ActivationReport): LifecycleReport {
   return create(LifecycleReportSchema, {
     schemaVersion: report.schema_version,
@@ -46,7 +49,7 @@ export function wireLifecycle(report: ActivationReport): LifecycleReport {
           ? LifecycleRetirementPolicy.SUCCESSFUL_EXIT
           : LifecycleRetirementPolicy.UNKNOWN,
       stopAccepted: target.stop_accepted,
-      ...(target.checkpoint === undefined
+      ...(!target.checkpoint
         ? {}
         : {
             checkpoint: {
@@ -58,6 +61,7 @@ export function wireLifecycle(report: ActivationReport): LifecycleReport {
     })),
   });
 }
+
 export function readLifecycle(report: LifecycleReport | undefined): ActivationReport {
   if (report === undefined || report.schemaVersion !== 1 || report.targets.length !== 1)
     throw new Error("Native lifecycle report schema unavailable");
@@ -100,7 +104,7 @@ export function readLifecycle(report: LifecycleReport | undefined): ActivationRe
   };
   if (target.checkpoint !== undefined) {
     const entry = Object.entries(checkpoints).find(([, state]) => state === target.checkpoint?.state);
-    if (entry === undefined) throw new Error("Native checkpoint state unavailable");
+    if (!entry) throw new Error("Native checkpoint state unavailable");
     const state = entry[0];
     if (state !== "confirmed" && state !== "refused" && state !== "pending")
       throw new Error("Native checkpoint state unsupported");
@@ -109,6 +113,7 @@ export function readLifecycle(report: LifecycleReport | undefined): ActivationRe
   if (target.reason !== undefined) value.targets[0].reason = target.reason;
   return value;
 }
+
 export async function runtimeLifecycle(
   directory: string,
   request: {
@@ -121,7 +126,7 @@ export async function runtimeLifecycle(
   timeoutMs?: number,
 ): Promise<ActivationReport> {
   const entry = Object.entries(actions).find(([name]) => name === request.action);
-  if (entry === undefined) throw new Error("Unsupported lifecycle action");
+  if (!entry) throw new Error("Unsupported lifecycle action");
   const response = await schedulerClient(directory).runtimeLifecycle(
     { ...request, action: entry[1] },
     timeoutMs === undefined ? undefined : { timeoutMs },

@@ -16,12 +16,14 @@ import {
 } from "../gen/octomanager/v2/issues_pb.js";
 import { IssueNotificationKind } from "./contracts.js";
 import { wireIssueNotificationKind } from "./subscription-wire.js";
+
 function integer(value: string | boolean | undefined): number {
   if (value === undefined) return 0;
   if (typeof value !== "string" || !/^\d+$/u.test(value) || !Number.isSafeInteger(Number(value)))
     throw new Error("Expected a nonnegative integer");
   return Number(value);
 }
+
 export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
   const { values, positionals } = parsed;
   const command = positionals[0];
@@ -53,7 +55,7 @@ export async function issuesCLI(parsed: ParsedCommand): Promise<void> {
           await client.setIssueSubscription({
             issueId: id,
             agentId: values["agent-id"] ?? process.env["OCTO_MANAGER_AGENT_ID"] ?? "",
-            ...(kinds === undefined ? {} : { filter: { events: kinds } }),
+            ...(!kinds ? {} : { filter: { events: kinds } }),
           }),
           { alwaysEmitImplicit: true },
         ),

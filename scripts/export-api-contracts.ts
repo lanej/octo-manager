@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { roots, rootDescriptions, CommandSchema } from "../src/api/contracts.js";
+
 interface SchemaNode {
   type?: string;
   description?: string;
@@ -10,20 +11,24 @@ interface SchemaNode {
   properties?: Record<string, SchemaNode>;
   required?: string[];
 }
+
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid contract schema");
   return Object.fromEntries(Object.entries(value));
 }
+
 function array(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Invalid contract array");
   return value;
 }
+
 function strings(value: unknown): string[] {
   return array(value).map((item) => {
     if (typeof item !== "string") throw new Error("Invalid contract string");
     return item;
   });
 }
+
 function node(value: unknown): SchemaNode {
   const raw = object(value),
     result: SchemaNode = {};
@@ -82,6 +87,7 @@ if (existsSync(manifestPath)) {
     tags[name] = fields;
   }
 }
+
 function tag(name: string, key: string, type: string): number {
   const fields = tags[name] ?? {};
   tags[name] = fields;
@@ -94,12 +100,14 @@ function tag(name: string, key: string, type: string): number {
   fields[key] = { number, type };
   return number;
 }
+
 function reserved(name: string, used: number[]): string {
   const retired = Object.values(tags[name] ?? {})
     .map((value) => value.number)
     .filter((value) => !used.includes(value));
   return retired.length === 0 ? "" : `reserved ${retired.join(", ")};`;
 }
+
 function variantKey(schema: SchemaNode): string {
   if (schema.const !== undefined) return `literal:${String(schema.const)}`;
   const discriminator = Object.entries(schema.properties ?? {}).find(([, value]) => value.const !== undefined);
@@ -111,6 +119,7 @@ function variantKey(schema: SchemaNode): string {
       .join(",")
   );
 }
+
 function type(name: string, s: SchemaNode, purpose: string): string {
   const documentation = `// ${name} ${s.description ?? purpose}\n`;
   if (s.enum !== undefined) return type(name, { anyOf: s.enum.map((value) => ({ const: value })) }, purpose);
@@ -194,6 +203,7 @@ function type(name: string, s: SchemaNode, purpose: string): string {
   if (s.type === "boolean") return "bool";
   throw new Error(`Untyped API field: ${name}`);
 }
+
 const descriptions: Readonly<Record<string, string>> = rootDescriptions;
 for (const [name, schema] of Object.entries(roots)) {
   const purpose = descriptions[name];

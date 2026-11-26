@@ -19,6 +19,7 @@ import type { SubmissionStore } from "../submissions/store.js";
 import { DigestStore } from "./store.js";
 import { DigestState as State, terminal, type Digest, type DigestRevision, type QueueTransport } from "./types.js";
 import { renderDigest } from "./render.js";
+
 const recipientConcurrency = 4;
 // Confirmed queue admission needs bounded external housekeeping; new inputs wake immediately.
 const queuedInspectionDelay = 60 * 1000;
@@ -42,6 +43,7 @@ export interface DigestOptions {
   // Override queue inspection deadlines; input wakeups remain immediate.
   intervalMs?: number;
 }
+
 export class DigestService {
   private scheduled: ScheduledTask | undefined;
   private started = false;
@@ -70,6 +72,7 @@ export class DigestService {
       inputRevision?: string;
     }
   >();
+
   constructor(
     readonly store: DigestStore,
     private tracking: TrackingService,
@@ -81,9 +84,11 @@ export class DigestService {
     this.queuePolicy = managedQueuePolicy(tracking.store, store, tracking.config);
     store.recover();
   }
+
   private readonly queuePolicy: ReturnType<typeof managedQueuePolicy>;
   managed = (agentId: string): boolean => this.queuePolicy.managed(agentId);
   managedBatch = (agentIds: readonly string[]): ReadonlySet<string> => this.queuePolicy.managedBatch(agentIds);
+
   start(scheduler: WorkScheduler): void {
     if (this.started || this.stopped) return;
     this.scheduled = scheduler.task("digest-scheduling", () => {
@@ -99,6 +104,7 @@ export class DigestService {
     this.started = true;
     this.wake();
   }
+
   flush(): Promise<void> {
     if (!this.started) return this.requestDiscovery().then(() => this.waitIdle());
     this.generation++;
@@ -108,6 +114,7 @@ export class DigestService {
     this.scheduled?.runNow();
     return this.waitIdle();
   }
+
   private requestDiscovery(
     inputsChanged = true,
     prIds: readonly string[] = [],
@@ -137,6 +144,7 @@ export class DigestService {
       });
     return this.discovery;
   }
+
   // Ownership or subscription changes need an unscoped wake so former recipients receive cleanup.
   wake(prId?: string): void {
     if (!this.started || this.stopped) return;
@@ -148,15 +156,18 @@ export class DigestService {
     } else if (!this.inputDirty) this.dirtyPRs.add(prId);
     this.scheduled?.wake();
   }
+
   wakeRecipient(agentId: string): void {
     if (!this.started || this.stopped) return;
     this.generation++;
     if (!this.inputDirty) this.dirtyRecipients.add(agentId);
     this.scheduled?.wake();
   }
+
   private hasInputChanges(): boolean {
     return this.inputDirty || this.dirtyPRs.size > 0 || this.dirtyRecipients.size > 0;
   }
+
   private nextDeadline(): number | undefined {
     if (!this.started || this.stopped) return undefined;
     if (this.hasInputChanges()) return this.now();
@@ -166,12 +177,15 @@ export class DigestService {
     }
     return Number.isFinite(at) ? at : undefined;
   }
+
   private schedule(): void {
     this.scheduled?.at(this.nextDeadline());
   }
+
   applicable(message: AgentMessage): boolean {
     return message.applicable && this.options.ownerFeedbackCovered?.(message) !== true;
   }
+
   private pending(agentId: string, presentations?: Map<string, MessagePresentation | undefined>): AgentMessage[] {
     const pending: AgentMessage[] = [];
     let after = 0;
@@ -179,7 +193,7 @@ export class DigestService {
       const page = this.tracking.store.inbox.list(agentId, after, false, true);
       for (const message of page.messages) {
         // Legacy arrivals after discovery must receive independent recovery IDs before a digest can receipt them.
-        if (message.notice !== undefined && this.applicable(message)) {
+        if (message.notice && this.applicable(message)) {
           const presentation = this.options.presentation?.(message);
           if (presentation?.defer !== true) {
             presentations?.set(message.id, presentation);
@@ -192,6 +206,7 @@ export class DigestService {
       after = page.nextSequence;
     }
   }
+
   private legacy(agentId: string): AgentMessage[] {
     const messages: AgentMessage[] = [];
     let after = 0;
@@ -202,6 +217,7 @@ export class DigestService {
       after = page.nextSequence;
     }
   }
+
   private inputs(agentId: string): ReconciliationInputs {
     const presentations = new Map<string, MessagePresentation | undefined>();
     return {
@@ -212,6 +228,7 @@ export class DigestService {
       cleanup: this.store.cleanup(agentId),
     };
   }
+
   private signature(agent: AgentRef, inputs: ReconciliationInputs): string {
     return createHash("sha256")
       .update(
@@ -229,10 +246,12 @@ export class DigestService {
       )
       .digest("hex");
   }
+
   private canSkipDiscovery(agentId: string, revision: string | undefined): boolean {
     const previous = this.checks.get(agentId);
     return revision !== undefined && previous?.inputRevision === revision && previous.at > this.now();
   }
+
   private async discoverRecipients(prIds: readonly string[], recipientIds: readonly string[]): Promise<void> {
     const recipients = new Map<string, AgentRef>();
     for (const agentId of recipientIds) recipients.set(agentId, this.tracking.store.agent(agentId));
@@ -249,7 +268,7 @@ export class DigestService {
       this.agents.set(agent.id, agent);
       // Keep signatures and retry history, but invalidate the broad-revision shortcut for this recipient.
       const previous = this.checks.get(agent.id);
-      if (previous !== undefined) delete previous.inputRevision;
+      if (previous) delete previous.inputRevision;
       if (!this.managed(agent.id)) continue;
       this.queued.set(agent.id, {
         agent,
@@ -257,6 +276,7 @@ export class DigestService {
       });
     }
   }
+
   private async discover(
     inputsChanged: boolean,
     prIds: readonly string[],
@@ -266,7 +286,7 @@ export class DigestService {
       await this.discoverRecipients(prIds, recipientIds);
       for (const [agentId, check] of this.checks) {
         const agent = this.agents.get(agentId);
-        if (agent !== undefined && check.at <= this.now() && !this.running.has(agentId) && !this.queued.has(agentId))
+        if (agent && check.at <= this.now() && !this.running.has(agentId) && !this.queued.has(agentId))
           this.queued.set(agentId, { agent, urgent: false });
       }
       this.pump();
@@ -298,6 +318,7 @@ export class DigestService {
     }
     this.pump();
   }
+
   private pump(): void {
     if (this.stopped) {
       this.queued.clear();
@@ -306,7 +327,7 @@ export class DigestService {
     while (this.running.size < recipientConcurrency && this.queued.size > 0) {
       const available = [...this.queued.values()].filter((value) => !this.running.has(value.agent.id));
       const next = available.find((value) => value.urgent) ?? available[0];
-      if (next === undefined) break;
+      if (!next) break;
       this.queued.delete(next.agent.id);
       const work = performanceScope(this.directory, "digest-reconciliation", () => this.reconcileAgent(next.agent))
         .catch((error: unknown) => {
@@ -329,6 +350,7 @@ export class DigestService {
       this.running.set(next.agent.id, work);
     }
   }
+
   private waitIdle(): Promise<void> {
     if (!this.hasInputChanges() && !this.discovery && this.running.size === 0 && this.queued.size === 0)
       return Promise.resolve();
@@ -336,11 +358,13 @@ export class DigestService {
       this.idleWaiters.add({ resolve, reject });
     });
   }
+
   private settleIdle(): void {
     if (this.hasInputChanges() || this.discovery || this.running.size > 0 || this.queued.size > 0) return;
     for (const waiter of this.idleWaiters) waiter.resolve();
     this.idleWaiters.clear();
   }
+
   private async reconcileAgent(agent: AgentRef): Promise<void> {
     const inputRevision = this.options.inputRevision?.();
     if (!this.managed(agent.id)) {
@@ -349,12 +373,7 @@ export class DigestService {
     }
     const generation = this.generation;
     const inputs = this.inputs(agent.id);
-    if (
-      inputs.pending.length === 0 &&
-      inputs.active === undefined &&
-      inputs.cleanup.length === 0 &&
-      inputs.legacy.length === 0
-    ) {
+    if (inputs.pending.length === 0 && !inputs.active && inputs.cleanup.length === 0 && inputs.legacy.length === 0) {
       this.store.clearArchivedInspection(agent.id);
       const revision = inputRevision;
       if (revision === undefined) this.checks.delete(agent.id);
@@ -379,7 +398,7 @@ export class DigestService {
     let archived = false;
     try {
       await this.sync(agent);
-      if (previous?.error !== undefined && this.store.active(agent.id) === undefined)
+      if (previous?.error !== undefined && !this.store.active(agent.id))
         this.store.event(agent.id, undefined, "queue_inspection_recovered", {});
     } catch (error) {
       failures = (previous?.signature === signature ? previous.failures : 0) + 1;
@@ -389,7 +408,7 @@ export class DigestService {
         reason = (error instanceof Error ? error.message : "Queue reconciliation failed").slice(0, 1000),
         nextCheckAt = this.now() + delay;
       failure = reason;
-      if (current !== undefined) {
+      if (current) {
         const state =
           current.state === State.Ready || current.state === State.Unavailable ? State.Unavailable : State.Uncertain;
         if (current.state === state && current.error === reason) this.store.defer(current, nextCheckAt);
@@ -422,9 +441,7 @@ export class DigestService {
             ? Infinity
             : this.now() + 60000
           : this.now() + delay,
-        fresh !== undefined && (fresh.state === State.Uncertain || fresh.state === State.Unavailable)
-          ? fresh.nextCheckAt
-          : 0,
+        fresh && (fresh.state === State.Uncertain || fresh.state === State.Unavailable) ? fresh.nextCheckAt : 0,
       ),
       failures,
       ...(inputRevision === undefined ? {} : { inputRevision }),
@@ -441,26 +458,29 @@ export class DigestService {
       });
     } else this.store.clearArchivedInspection(agent.id);
   }
+
   private transport(agent: AgentRef): QueueTransport | undefined {
     const endpoint = this.tracking.config.endpoints[agent.endpoint];
     return endpoint?.delivery === "queue"
       ? { kind: "codex_queue", socket: codexSocketPath(endpoint.socket) }
       : undefined;
   }
+
   private draft(agent: AgentRef, transport: QueueTransport): Digest | undefined {
     const messages = this.pending(agent.id);
     if (messages.length === 0) return undefined;
     const render = (receiptId: string) => renderDigest(messages, this.directory, receiptId, this.options.presentation);
     const active = this.store.active(agent.id);
-    return active === undefined ? this.store.create(agent.id, transport, render) : this.store.revise(active, render);
+    return !active ? this.store.create(agent.id, transport, render) : this.store.revise(active, render);
   }
+
   private async sync(agent: AgentRef): Promise<void> {
     const desired = this.transport(agent);
     let active = this.store.active(agent.id);
     const cleanup = this.store.cleanup(agent.id)[0];
     const route = cleanup?.transport ?? active?.transport ?? desired;
-    if (route === undefined) return;
-    if (active === undefined && desired?.socket === route.socket) active = this.draft(agent, desired);
+    if (!route) return;
+    if (!active && desired?.socket === route.socket) active = this.draft(agent, desired);
     const connection = this.options.connect?.(agent, route.socket) ?? new CodexConnection(route.socket, "queue");
     this.connections.add(connection);
     try {
@@ -474,7 +494,7 @@ export class DigestService {
       }[] = [];
       for (const item of queued) {
         const match = this.store.queuedRevision(agent.id, route.socket, item.clientId);
-        if (match !== undefined) {
+        if (match) {
           const { digest: known, version } = match;
           if (version.body !== item.body) {
             this.store.event(agent.id, known.id, "queue_content_conflict", {
@@ -490,7 +510,7 @@ export class DigestService {
         }
         const message = this.tracking.store.inbox.get(item.clientId);
         if (
-          message === undefined ||
+          !message ||
           message.id !== item.clientId ||
           message.recipientAgentId !== agent.id ||
           message.body !== item.body
@@ -528,8 +548,7 @@ export class DigestService {
         const versions = this.store.revisions(previous.id);
         const resolved = withdrawals.map((withdrawal) => {
           const version = versions.find((value) => value.dispatchId === withdrawal.clientId);
-          if (version === undefined)
-            throw new Error("Previous digest withdrawal is unconfirmed; not adding a replacement");
+          if (!version) throw new Error("Previous digest withdrawal is unconfirmed; not adding a replacement");
           return { withdrawal, version };
         });
         const unreceived = resolved.filter(({ version }) => !receipts.has(version.revision));
@@ -551,7 +570,7 @@ export class DigestService {
         }
         this.store.save({ ...this.store.get(previous.id), cleanupPending: false }, "digest_cleanup_confirmed", {});
       }
-      if (active === undefined || active.transport.socket !== route.socket) return;
+      if (!active || active.transport.socket !== route.socket) return;
       active = this.store.get(active.id);
       if (terminal(active)) return;
       const activeId = active.id;
@@ -564,7 +583,7 @@ export class DigestService {
       active = this.store.get(activeId);
       if (terminal(active)) return;
       const versions = this.store.revisions(active.id);
-      if (keep === undefined) {
+      if (!keep) {
         const attempted = this.store.hasEvent(active.id, "queue_enqueue_started");
         if (attempted) {
           const history = await connection.received(
@@ -574,13 +593,13 @@ export class DigestService {
           if (history.bodies.length > 0) {
             for (const body of history.bodies) {
               const version = versions.find((value) => value.body === body);
-              if (version !== undefined) this.acknowledge(active.id, version.revision, agent.id, body);
+              if (version) this.acknowledge(active.id, version.revision, agent.id, body);
             }
             return;
           }
           active = this.store.get(activeId);
           if (terminal(active)) return;
-          if (desired === undefined || desired.socket !== route.socket || this.pending(agent.id).length === 0) {
+          if (!desired || desired.socket !== route.socket || this.pending(agent.id).length === 0) {
             this.store.save({ ...active, state: State.Cancelled, nextCheckAt: this.now() }, "digest_cancelled", {
               reason: "No pending queue entry; receipt was not observed",
               historyComplete: history.complete,
@@ -594,12 +613,12 @@ export class DigestService {
       }
       active = this.store.get(activeId);
       if (terminal(active)) return;
-      if (keep === undefined && this.pendingWithdrawal(active.id) && this.pending(agent.id).length > 0)
+      if (!keep && this.pendingWithdrawal(active.id) && this.pending(agent.id).length > 0)
         throw new Error("Previous withdrawal is unconfirmed; not adding a replacement");
       const messages = this.pending(agent.id),
         canSend = desired !== undefined && desired.socket === route.socket;
       if (!canSend || messages.length === 0) {
-        if (keep !== undefined)
+        if (keep)
           await this.cancel(
             connection,
             agent,
@@ -618,7 +637,7 @@ export class DigestService {
         renderDigest(messages, this.directory, receiptId, this.options.presentation),
       );
       let version = this.store.version(active.id, active.revision);
-      if (keep !== undefined && keep.version.revision === version.revision) {
+      if (keep && keep.version.revision === version.revision) {
         const hadError = active.error !== undefined;
         delete active.error;
         if (active.state !== State.Queued || active.queueId !== keep.item.queueId || hadError)
@@ -635,7 +654,7 @@ export class DigestService {
         this.accepted(version, keep.item.queueId);
         return;
       }
-      if (keep !== undefined) {
+      if (keep) {
         await this.cancel(connection, agent, keep.item, active.id, "replace digest revision");
         const withdrawn = this.store.get(active.id);
         if (terminal(withdrawn)) return;
@@ -692,6 +711,7 @@ export class DigestService {
       this.connections.delete(connection);
     }
   }
+
   private async reconcileLegacyWithdrawals(
     connection: QueueConnection,
     agent: AgentRef,
@@ -700,7 +720,7 @@ export class DigestService {
   ): Promise<void> {
     const legacy = this.withdrawals(digestId).flatMap((withdrawal) => {
       const message = this.tracking.store.inbox.get(withdrawal.clientId);
-      return message !== undefined &&
+      return message &&
         message.id === withdrawal.clientId &&
         message.recipientAgentId === agent.id &&
         !queued.some((item) => item.queueId === withdrawal.queueId)
@@ -727,9 +747,11 @@ export class DigestService {
       });
     }
   }
+
   private pendingWithdrawal(id: string): boolean {
     return this.withdrawals(id).length > 0;
   }
+
   private withdrawals(id: string): { queueId: string; clientId: string }[] {
     const pending = new Map<string, { queueId: string; clientId: string }>();
     for (const event of this.store.events(id, [
@@ -761,6 +783,7 @@ export class DigestService {
     }
     return [...pending.values()];
   }
+
   private async cancel(
     connection: QueueConnection,
     agent: AgentRef,
@@ -770,7 +793,7 @@ export class DigestService {
   ): Promise<void> {
     const value = digestId === undefined ? undefined : this.store.get(digestId),
       detail = { queueId: item.queueId, clientId: item.clientId, reason };
-    if (value !== undefined && !terminal(value))
+    if (value && !terminal(value))
       this.store.save({ ...value, state: State.Withdrawing }, "queue_cancel_started", detail);
     else this.store.event(agent.id, digestId, "queue_cancel_started", detail);
     try {
@@ -789,19 +812,20 @@ export class DigestService {
       throw error;
     }
   }
+
   private accepted(version: DigestRevision, queueId: string): void {
     this.tracking.store.transaction(() => {
       for (const id of version.messageIds) {
         const message = this.tracking.store.inbox.get(id);
-        if (message === undefined) throw new Error("Digest member disappeared");
+        if (!message) throw new Error("Digest member disappeared");
         if (message.submissionId !== undefined) {
           const notice = this.submissions.notices(true).find((value) => value.id === id);
-          if (notice !== undefined && notice.state !== "accepted")
+          if (notice && notice.state !== "accepted")
             this.submissions.saveNotice(notice, "accepted", "Included in an agent digest", this.now() + 30000);
         } else if (message.applicable) {
           const delivery = this.tracking.store.deliveries().find((value) => value.id === id);
           if (
-            delivery !== undefined &&
+            delivery &&
             (delivery.progress.state !== DeliveryState.Delivered || delivery.progress.queueId !== queueId)
           )
             this.tracking.store.saveDelivery(
@@ -821,6 +845,7 @@ export class DigestService {
       }
     });
   }
+
   acknowledge(id: string, number: number, agentId: string, expectedBody?: string): AgentMessage[] {
     const value = this.store.get(id);
     const resolvedAgentId = resolveId(
@@ -841,6 +866,7 @@ export class DigestService {
     this.checks.delete(value.agentId);
     return messages;
   }
+
   inspect(id: string, number?: number) {
     const value = this.store.get(id);
     return {
@@ -851,6 +877,7 @@ export class DigestService {
       events: this.store.events(value.id, undefined, 100),
     };
   }
+
   checkpointable(): boolean {
     return (
       !this.discovery &&
@@ -860,6 +887,7 @@ export class DigestService {
       this.store.list().every((value) => terminal(value) && !value.cleanupPending)
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.inputDirty = false;

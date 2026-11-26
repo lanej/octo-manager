@@ -5,6 +5,7 @@ import type {
   StopPerformanceCaptureRequest,
 } from "../gen/octomanager/v2/diagnostics_pb.js";
 import { CaptureError, type PerformanceDiagnostics } from "./service.js";
+
 function operation<T>(work: () => T): T {
   try {
     return work();
@@ -22,6 +23,7 @@ function operation<T>(work: () => T): T {
     throw new ConnectError("Performance capture failed", Code.Internal);
   }
 }
+
 export function diagnosticsRoutes(diagnostics: PerformanceDiagnostics) {
   return {
     startPerformanceCapture: (r: StartPerformanceCaptureRequest) =>

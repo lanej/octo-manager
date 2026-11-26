@@ -2,6 +2,7 @@ import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
 import { hash, type Role, type StageResult, type StageTask } from "./contracts.js";
 import type { TSchema } from "typebox";
+
 export type RunStage = (
   role: Role,
   input: unknown,
@@ -42,7 +43,7 @@ export const createStageRunner =
       await new Promise<void>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", (code, exitSignal) => {
-          if (failure !== undefined || raw === undefined || signal.aborted || code !== 0)
+          if (failure || raw === undefined || signal.aborted || code !== 0)
             reject(
               failure ??
                 new Error(

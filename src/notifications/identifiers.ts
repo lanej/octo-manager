@@ -10,6 +10,7 @@ const sources = [
   ["safe_recovery_messages", "id"],
   ["safe_agent_notices", "message_id"],
 ] as const;
+
 // Public prefixes are shared by direct deliveries and grouped dispatches.
 export function allocateMessageId(db: DatabaseSync, generate: () => string = randomUUID): string {
   const present = sources.filter(
@@ -24,7 +25,7 @@ export function allocateMessageId(db: DatabaseSync, generate: () => string = ran
         WHERE substr(json_extract(data,'$.dispatchId'),1,8)=? LIMIT 1`,
       )
       .get(prefix);
-    if (grouped !== undefined) continue;
+    if (grouped) continue;
     if (
       present.some(
         ([table, column]) =>

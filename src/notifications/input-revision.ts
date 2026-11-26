@@ -57,7 +57,7 @@ export class NotificationInputRevision {
   current(): string {
     // Unknown schema additions retain conservative invalidation until the next connection installs its triggers.
     const row = this.read.get();
-    if (row === undefined) throw new Error("Notification input revision is unavailable");
+    if (!row) throw new Error("Notification input revision is unavailable");
     const schema = row["schema_version"];
     return JSON.stringify([
       schema,

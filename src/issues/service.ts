@@ -20,6 +20,7 @@ import type { IssueTracker, AgentDispatcher, IssueWorkspace, IssueCodeHost } fro
 import { IssueStore } from "./store.js";
 import { applyResult, canImplement } from "./decisions.js";
 import { assignmentPrompt, assignmentLabel } from "./prompts.js";
+
 class TrackerRefreshFailure extends Error {
   constructor(cause: unknown) {
     super(cause instanceof Error ? cause.message : "Tracker unavailable", {
@@ -27,6 +28,7 @@ class TrackerRefreshFailure extends Error {
     });
   }
 }
+
 export interface IssueOptions {
   trackers: IssueTracker[];
   dispatchers: AgentDispatcher[];
@@ -34,12 +36,14 @@ export interface IssueOptions {
   codeHost: IssueCodeHost;
   policy: (root: string) => IssuePolicy;
 }
+
 export class IssueService {
   private work: Promise<void> | undefined;
   private task: ScheduledTask | undefined;
   private effectChecks = new Map<string, number>();
   private interestedPullRequests = new Set<string>();
   private abort = new AbortController();
+
   constructor(
     readonly store: IssueStore,
     private options: IssueOptions,
@@ -47,6 +51,7 @@ export class IssueService {
   ) {
     store.recover();
   }
+
   private authorize(expected: IssueRecord): IssueRecord {
     const current = this.store.get(expected.id);
     if (
@@ -63,19 +68,23 @@ export class IssueService {
       throw new Error("Issue authority changed during operation");
     return current;
   }
+
   private tracker(issue: IssueRecord): IssueTracker {
     const tracker = this.options.trackers.find((item) => item.provider === issue.ref.provider);
     if (tracker == null) throw new Error("Issue tracker not configured");
     return tracker;
   }
+
   private dispatcher(assignment: Assignment): AgentDispatcher {
     const dispatcher = this.options.dispatchers.find((item) => item.harness === assignment.profile.harness);
     if (dispatcher == null) throw new Error("Agent dispatcher not configured");
     return dispatcher;
   }
+
   enroll(provider: string, url: string, root: string, ownerId: string, requestId: string): IssueRecord {
     return this.store.atomic(() => this.enrollOnce(provider, url, root, ownerId, requestId));
   }
+
   private enrollOnce(provider: string, url: string, root: string, ownerId: string, requestId: string): IssueRecord {
     const input = JSON.stringify([provider, url, root, ownerId]);
     const prior = this.store.request(requestId, input);
@@ -135,6 +144,7 @@ export class IssueService {
     this.store.remember(requestId, input, issue.id);
     return issue;
   }
+
   mergeAllowed(url: string): boolean {
     return this.store
       .list()
@@ -148,9 +158,11 @@ export class IssueService {
           !issue.brief.blockingQuestions,
       );
   }
+
   command(id: string, operation: string, text: string, version: number, requestId: string): IssueRecord {
     return this.store.atomic(() => this.commandOnce(id, operation, text, version, requestId));
   }
+
   private commandOnce(id: string, operation: string, text: string, version: number, requestId: string): IssueRecord {
     const input = JSON.stringify([id, operation, text, version]);
     const prior = this.store.request(requestId, input);
@@ -184,7 +196,7 @@ export class IssueService {
         const assignment = this.store
           .assignments(issue.id)
           .find((item) => item.id === text && item.result?.disposition === "follow_up");
-        if (assignment === undefined || assignment.result === undefined || assignment.epoch !== issue.epoch)
+        if (!assignment || !assignment.result || assignment.epoch !== issue.epoch)
           throw new Error("Current follow-up assignment ID required in --text");
         this.queueEffect(
           issue,
@@ -257,6 +269,7 @@ export class IssueService {
     this.store.remember(requestId, input, issue.id);
     return issue;
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("issues", async () => {
       await this.tick();
@@ -264,12 +277,15 @@ export class IssueService {
     });
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   wakeForPullRequest(url: string): void {
     if (this.interestedPullRequests.has(url)) this.wake();
   }
+
   private nextDeadline(): number | undefined {
     if (this.abort.signal.aborted) return undefined;
     const now = this.now();
@@ -288,6 +304,7 @@ export class IssueService {
     for (const at of this.effectChecks.values()) if (at > now) deadlines.push(at);
     return deadlines.length === 0 ? undefined : Math.min(...deadlines);
   }
+
   tick(): Promise<void> {
     if (this.work != null) return this.work;
     if (this.abort.signal.aborted) return Promise.resolve();
@@ -296,6 +313,7 @@ export class IssueService {
     });
     return this.work;
   }
+
   checkpointable(): boolean {
     return (
       this.work === undefined &&
@@ -313,11 +331,13 @@ export class IssueService {
         .every((issue) => terminal(issue.stage) || (issue.waiting === Waiting.Paused && issue.assignmentId === ""))
     );
   }
+
   async close(): Promise<void> {
     this.task?.close();
     this.abort.abort();
     await this.work;
   }
+
   private queueEffect(issue: IssueRecord, key: string, kind: string, body: string, title = ""): void {
     this.store.effect({
       id: `${issue.id}:${key}`,
@@ -329,6 +349,7 @@ export class IssueService {
       url: "",
     });
   }
+
   private async effects(): Promise<void> {
     const pending = this.store.effects();
     const ids = new Set(pending.map((effect) => effect.id));
@@ -518,6 +539,7 @@ export class IssueService {
       }
     }
   }
+
   private async refresh(issue: IssueRecord): Promise<IssueRecord> {
     let observed: TrackerObservation;
     try {
@@ -601,6 +623,7 @@ export class IssueService {
     });
     return next;
   }
+
   private async run(): Promise<void> {
     let sourceIssueIds: ReadonlySet<string> | undefined;
     const issues = this.store.list();
@@ -753,7 +776,7 @@ export class IssueService {
             detail,
           );
         const assignment = this.store.assignments(issue.id).find((item) => item.id === current.assignmentId);
-        if (assignment !== undefined) {
+        if (assignment) {
           try {
             const stopped = await this.dispatcher(assignment).cancel(assignment, this.abort.signal);
             if (!stopped) {
@@ -781,6 +804,7 @@ export class IssueService {
     }
     await this.effects();
   }
+
   private async dispatch(
     issue: IssueRecord,
     policy: IssuePolicy,
@@ -861,6 +885,7 @@ export class IssueService {
       });
     }
   }
+
   private async poll(issue: IssueRecord, policy: IssuePolicy): Promise<void> {
     const assignment = this.store.assignments(issue.id).find((item) => item.id === issue.assignmentId);
     if (assignment == null) throw new Error("Assignment journal missing");
@@ -992,6 +1017,7 @@ export class IssueService {
       );
     }
   }
+
   private complete(issue: IssueRecord, assignment: Assignment, value: StageResult, policy: IssuePolicy): void {
     let next = applyResult(issue, assignment, value, policy);
     if (assignment.purpose === "comments")
@@ -1037,7 +1063,7 @@ export class IssueService {
       this.queueEffect(next, `commit:${assignment.id}`, "commit", JSON.stringify({ version: next.brief?.version }));
     if (
       value.disposition === "tested" &&
-      value.draft !== undefined &&
+      value.draft &&
       (policy.publish || next.publicationVersion === next.brief?.version)
     )
       this.queueEffect(

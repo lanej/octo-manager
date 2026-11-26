@@ -20,15 +20,18 @@ import {
   githubRepository,
 } from "./contract.js";
 import { PublicationStore, receipt, type Publication, type PublicationInput } from "./store.js";
+
 const exec = promisify(execFile);
 import { supportedTrackingTarget, TrackingHarness } from "../tracking/types.js";
 
 type Parsed = ReturnType<typeof parseCommand>;
+
 function clip(text: string, bytes: number): string {
   const chars = Array.from(text);
   while (Buffer.byteLength(JSON.stringify(chars.join(""))) > bytes) chars.pop();
   return chars.join("");
 }
+
 function emitOrdinary(value: unknown, budget = 1024): void {
   const output = JSON.stringify(value);
   if (Buffer.byteLength(output) > budget)
@@ -38,16 +41,20 @@ function emitOrdinary(value: unknown, budget = 1024): void {
     );
   console.log(output);
 }
+
 function error(code: string, fix: string): void {
   process.exitCode = 1;
   emitOrdinary({ error: { code: clip(code, 50), fix: clip(fix, 500) } });
 }
+
 async function git(cwd: string, ...args: string[]): Promise<string> {
   return (await exec("git", args, { cwd, timeout: 15000, maxBuffer: 65536 })).stdout.trim();
 }
+
 async function rootPath(parsed: Parsed): Promise<string> {
   return git(resolve(parsed.values.cwd ?? process.cwd()), "rev-parse", "--show-toplevel");
 }
+
 function draft(parsed: Parsed): Draft {
   const title = parsed.values.title ?? "";
   const body =
@@ -56,6 +63,7 @@ function draft(parsed: Parsed): Draft {
       : readFileSync(resolve(parsed.values.cwd ?? process.cwd(), parsed.values["body-file"]), "utf8");
   return { title, body };
 }
+
 function check(root: string, value: Draft, contract?: Contract, agent = false): boolean {
   const findings = validateDraft(value, contract ?? readContract(root).contract);
   if (findings.length === 0) return true;
@@ -71,6 +79,7 @@ function check(root: string, value: Draft, contract?: Contract, agent = false): 
   });
   return false;
 }
+
 function legacy(state: string, id: string): Record<string, unknown> | undefined {
   const file = join(state, "jobs.sqlite");
   if (!existsSync(file)) return undefined;
@@ -81,18 +90,19 @@ function legacy(state: string, id: string): Record<string, unknown> | undefined 
         "SELECT id,state,substr(json_extract(data,'$.detail'),1,240) AS detail,json_extract(data,'$.prUrl') AS url FROM pr_submissions WHERE id=?",
       )
       .get(id);
-    return row === undefined ? undefined : Object.fromEntries(Object.entries(row));
+    return !row ? undefined : Object.fromEntries(Object.entries(row));
   } finally {
     db.close();
   }
 }
+
 function legacyDraft(state: string, id: string, root: string): PublicationInput {
   const db = new DatabaseSync(join(state, "jobs.sqlite"), { readOnly: true });
   try {
     const row = db.prepare("SELECT data FROM pr_submissions WHERE id=?").get(id);
     if (typeof row?.["data"] !== "string") throw new PublicationError("not_found", "Legacy submission not found.");
     const old = parse(SubmissionSchema, JSON.parse(row["data"]));
-    if (old.brief === undefined || !["uncertain", "publishing", "enrolling"].includes(old.state))
+    if (!old.brief || !["uncertain", "publishing", "enrolling"].includes(old.state))
       throw new PublicationError("legacy_request", "Legacy drafting is retired; submit a caller-written title/body.");
     return {
       title: old.brief.draft.title,
@@ -113,6 +123,7 @@ function legacyDraft(state: string, id: string, root: string): PublicationInput 
     db.close();
   }
 }
+
 function legacyPage(state: string, before: number): { items: Record<string, unknown>[]; next?: number } {
   const file = join(state, "jobs.sqlite");
   if (!existsSync(file)) return { items: [] };
@@ -131,8 +142,9 @@ function legacyPage(state: string, before: number): { items: Record<string, unkn
     db.close();
   }
 }
+
 async function launch(state: string, value: Publication): Promise<void> {
-  if (value.state === "published" && (value.input.track === undefined || value.tracking === "active")) return;
+  if (value.state === "published" && (!value.input.track || value.tracking === "active")) return;
   const worker = workerModule(
     "publication",
     new URL(
@@ -150,6 +162,7 @@ async function launch(state: string, value: Publication): Promise<void> {
   });
   child.unref();
 }
+
 async function input(parsed: Parsed, root: string, value: Draft): Promise<PublicationInput> {
   const track = parsed.values.track;
   const harness = parsed.values.harness ?? TrackingHarness.Codex;
@@ -223,6 +236,7 @@ async function input(parsed: Parsed, root: string, value: Draft): Promise<Public
   }
   return result;
 }
+
 export async function publicationCLI(parsed: Parsed): Promise<boolean> {
   const [command, argument] = parsed.positionals;
   const emit = (value: unknown, budget?: number): void => {
@@ -331,7 +345,7 @@ export async function publicationCLI(parsed: Parsed): Promise<boolean> {
       } catch (failure) {
         if (!(failure instanceof PublicationError && failure.code === "not_found")) throw failure;
         const old = legacy(state, argument);
-        if (old === undefined) throw failure;
+        if (!old) throw failure;
         if (command === "retry-submission") {
           value = store.adoptLegacy(
             argument,

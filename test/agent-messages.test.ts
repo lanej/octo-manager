@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { agentMessage, logExcerpt, readFailureExcerpt } from "../src/tracking/messages.js";
 import { CheckWatchState } from "../src/tracking/checks.js";
 import { ActionState, type Action } from "../src/tracking/types.js";
+
 const pr = "https://github.com/owner/repo/pull/13";
 const action: Action = {
   id: "action",

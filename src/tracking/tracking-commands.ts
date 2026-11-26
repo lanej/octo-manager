@@ -1,4 +1,5 @@
 import type { CommandSpec } from "../cli/contracts.js";
+
 export const commands: CommandSpec[] = [
   {
     path: "assessment show <id>",

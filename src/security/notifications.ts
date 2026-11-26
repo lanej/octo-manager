@@ -86,15 +86,18 @@ const labels: Record<SafeNotice["kind"], string> = {
   update: "Octo update",
   issue: "Issue update",
 };
+
 export function noticeLabel(notice: SafeNotice): string {
   return notice.issueEventKind === undefined
     ? labels[notice.kind]
     : `Issue ${notice.issueEventKind.replaceAll("_", " ")}`;
 }
+
 export function parseNotice(value: unknown): SafeNotice {
   if (!Check(NoticeSchema, value)) throw new Error("Invalid safe notification");
   return value;
 }
+
 export function validPR(value: string): string | undefined {
   try {
     const url = canonicalPR(value);
@@ -103,6 +106,7 @@ export function validPR(value: string): string | undefined {
     return undefined;
   }
 }
+
 export function actionNotice(action: Action, prUrl: string, assessment?: SafeNotice["assessment"]): SafeNotice {
   const b = action.blocker;
   const kind =
@@ -155,6 +159,7 @@ export interface NoticeView {
   title: string;
   fields: NoticeField[];
 }
+
 export function noticeView(
   notice: SafeNotice,
   actionId: string,
@@ -182,7 +187,7 @@ export function noticeView(
       label: "Assessment record",
       value: notice.references?.assessment ?? id(notice.assessmentId, []),
     });
-  if (notice.subject !== undefined && notice.subject.kind !== "action")
+  if (notice.subject && notice.subject.kind !== "action")
     fields.push({
       label:
         notice.subject.kind === "issue"
@@ -217,9 +222,11 @@ export function noticeView(
     fields,
   };
 }
+
 export function renderReference(reference: NoticeReference): string {
   return reference.url === undefined ? reference.label : `[${reference.label}](${reference.url})`;
 }
+
 export function renderNotice(
   notice: SafeNotice,
   messageId: string,

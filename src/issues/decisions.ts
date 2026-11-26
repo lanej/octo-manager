@@ -8,6 +8,7 @@ import {
   type Assignment,
   type StageResult,
 } from "./contracts.js";
+
 export function applyResult(
   issue: IssueRecord,
   assignment: Assignment,
@@ -54,7 +55,7 @@ export function applyResult(
     case "tested":
       if (assignment.role !== Role.Implementation || issue.stage !== IssueStage.Testing || value.evidence.length === 0)
         throw new Error("Testing evidence required");
-      if (value.draft !== undefined && (policy.publish || issue.publicationVersion === issue.brief?.version))
+      if (value.draft && (policy.publish || issue.publicationVersion === issue.brief?.version))
         return {
           ...next,
           waiting: Waiting.Blocked,
@@ -123,6 +124,7 @@ export function applyResult(
       };
   }
 }
+
 export function canImplement(issue: IssueRecord, policy: IssuePolicy): boolean {
   return (
     issue.brief !== undefined &&

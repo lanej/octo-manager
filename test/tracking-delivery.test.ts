@@ -15,6 +15,7 @@ import { TrackingService } from "../src/tracking/service.js";
 import { DeliveryError, type AgentConnection } from "../src/agents/codex.js";
 import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
+
 const input: ObservationInput = {
   observedAt: 1000,
   headSha: "head",
@@ -26,6 +27,7 @@ const input: ObservationInput = {
 };
 const target = { harness: "codex", endpoint: "local", sessionId: "owner" };
 const url = "https://github.com/owner/repo/pull/1";
+
 async function until(check: () => boolean) {
   for (let i = 0; i < 100; i++) {
     if (check()) return;
@@ -33,6 +35,7 @@ async function until(check: () => boolean) {
   }
   assert.fail("Timed out waiting for delivery");
 }
+
 function connection(patch: Partial<AgentConnection> = {}): AgentConnection {
   return {
     prepare: async () => ({ busy: false, version: "0.167.0" }),
@@ -42,6 +45,7 @@ function connection(patch: Partial<AgentConnection> = {}): AgentConnection {
     ...patch,
   };
 }
+
 test("busy threads wait, delivery acceptance is not acknowledgment, and origin settings are untouched", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-delivery-"));
   let at = 1000;

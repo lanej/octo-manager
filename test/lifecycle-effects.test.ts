@@ -3,9 +3,11 @@ import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, copyFile, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 for (const fixture of ["held", "lost", "publishing", "enrolling", "uncertain"]) {
   test(`native checkpoint preserves ${fixture} delivery or publication authority without replay`, async () => {
     const directory = await mkdtemp("/tmp/octo-effects-v2-"),

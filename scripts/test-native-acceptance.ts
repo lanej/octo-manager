@@ -9,6 +9,7 @@ import { runtimeLifecycle } from "../src/lifecycle-rpc.js";
 function assert(value: boolean, message: string): asserts value {
   if (!value) throw new Error(message);
 }
+
 const temporary = await mkdtemp("/tmp/octo-native-acceptance-");
 const release = join(temporary, "releases", "native"),
   state = join(temporary, "state"),

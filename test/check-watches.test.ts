@@ -34,6 +34,7 @@ const observation = (patch: Partial<ObservationInput> = {}): ObservationInput =>
   reviews: { state: "complete", value: [] },
   ...patch,
 });
+
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 100; i++) {
     if (check()) return;

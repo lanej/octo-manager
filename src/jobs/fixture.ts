@@ -8,6 +8,7 @@ const expected = { maxAttempts: 3, timeoutSeconds: 60, retryDelaySeconds: 1 };
 const policyFile = "retry-policy.json";
 export const conflictBrief =
   "Resolve the Git merge conflict in retry-policy.json. Preserve the target branch's maxAttempts of 3, take the source branch's timeoutSeconds of 60, and preserve retryDelaySeconds of 1. Read the conflict, write a combined policy, and validate it. Do not choose either branch unchanged.";
+
 async function git(cwd: string, args: string[], signal?: AbortSignal): Promise<string> {
   const { stdout } = await exec(
     "git",
@@ -38,12 +39,14 @@ async function git(cwd: string, args: string[], signal?: AbortSignal): Promise<s
   );
   return stdout.trim();
 }
+
 async function safeFile(path: string): Promise<string> {
   const file = join(path, policyFile);
   const info = await lstat(file);
   if (!info.isFile() || info.isSymbolicLink() || info.size > 4096) throw new Error("Invalid fixture policy file");
   return file;
 }
+
 export async function createFixture(directory: string): Promise<{ path: string; conflict: string }> {
   const parent = join(directory, "fixtures");
   await mkdir(parent, { recursive: true, mode: 0o700 });
@@ -83,9 +86,11 @@ export async function createFixture(directory: string): Promise<{ path: string; 
     throw error;
   }
 }
+
 export async function readConflict(path: string): Promise<{ brief: string; content: string }> {
   return { brief: conflictBrief, content: await readFile(await safeFile(path), "utf8") };
 }
+
 export async function writeResolution(path: string, policy: unknown): Promise<string> {
   if (!policy || typeof policy !== "object" || Array.isArray(policy)) throw new Error("Policy must be a JSON object");
   const bytes = JSON.stringify(policy);
@@ -93,6 +98,7 @@ export async function writeResolution(path: string, policy: unknown): Promise<st
   await writeFile(await safeFile(path), bytes + "\n");
   return "Policy written. Run validate_resolution before finishing.";
 }
+
 export async function validateResolution(path: string): Promise<{ valid: boolean; reason: string }> {
   try {
     const value = JSON.parse(await readFile(await safeFile(path), "utf8")) as Record<string, unknown>;
@@ -115,6 +121,7 @@ export async function validateResolution(path: string): Promise<{ valid: boolean
     return { valid: false, reason: "Resolution must be valid JSON without conflict markers" };
   }
 }
+
 export async function finishFixture(path: string, signal?: AbortSignal): Promise<string> {
   const validation = await validateResolution(path);
   if (!validation.valid) throw new Error(validation.reason);
@@ -126,6 +133,7 @@ export async function finishFixture(path: string, signal?: AbortSignal): Promise
   if (parents.length !== 3) throw new Error("Resolution did not create a merge commit");
   return JSON.stringify({ policy: expected, mergeCommit: parents[0], clean: true });
 }
+
 export async function removeFixture(directory: string, path: string): Promise<void> {
   if (dirname(resolve(path)) !== resolve(directory, "fixtures") || !path.split("/").at(-1)?.startsWith("attempt-"))
     throw new Error("Refusing cleanup outside owned fixtures");

@@ -1,6 +1,7 @@
 import { Check } from "typebox/value";
 import { PolicyAnalysisSchema, ChangeAnalysisSchema, WriterSchema, type Submission } from "../submissions/contracts.js";
 import { record } from "./codec.js";
+
 export function archiveSubmission(value: Submission) {
   return {
     ...value,
@@ -15,6 +16,7 @@ export function archiveSubmission(value: Submission) {
     }),
   };
 }
+
 export function digestInspection(value: ReturnType<import("../notifications/service.js").DigestService["inspect"]>) {
   const textKeys = ["reason", "queueId", "clientId", "dispatchId", "operation", "socket", "error", "state"],
     numberKeys = ["revision", "receivedRevision", "currentRevision", "oldRevision", "nextRevision"];

@@ -32,6 +32,7 @@ import {
 } from "../src/merging/contracts.js";
 import { repin } from "../src/merging/preparation.js";
 import { checkGate } from "../src/merging/policy.js";
+
 const a = "a".repeat(40),
   b = "b".repeat(40),
   c = "c".repeat(40),
@@ -53,6 +54,7 @@ const profile: PreparationProfile = {
   key: ["tools", "library", "revision"],
   expectedValue: a,
 };
+
 function observation(head = a): ObservationInput {
   return {
     observedAt: 1000,
@@ -81,6 +83,7 @@ function observation(head = a): ObservationInput {
     workflows: { state: "complete", value: [] },
   };
 }
+
 function snapshot(head = a): MergeSnapshot {
   return {
     observation: observation(head),
@@ -92,6 +95,7 @@ function snapshot(head = a): MergeSnapshot {
     methods: ["squash"],
   };
 }
+
 async function fixture(
   run: (
     c: ApplicationFixture,
@@ -193,10 +197,12 @@ async function fixture(
     await rm(directory, { recursive: true, force: true });
   }
 }
+
 function enroll(c: ApplicationFixture, url: string, head = a) {
   const pr = c.store.tracking.track(url, agent);
   return c.store.tracking.observe(pr.id, observation(head), c.tracking.config);
 }
+
 test("RPC queues only explicit targets, prepares cross-repository dependency, and merges after renewed owner readiness", () =>
   fixture(async (c, advance, snapshots, writes) => {
     const upstream = enroll(c, first),
@@ -268,9 +274,11 @@ test("RPC queues only explicit targets, prepares cross-repository dependency, an
     assert(wire !== undefined);
     assert.equal(wire.mergeStatuses.length, 2);
   }));
+
 function cValue(): string {
   return c;
 }
+
 test("reference suggestions do not enroll, arm, or lose confirmed edges when source changes", () =>
   fixture((coordinator, _advance, _snapshots, writes) => {
     const upstream = enroll(coordinator, first),
@@ -763,6 +771,7 @@ test("cancellation during Git target preflight prevents subsequent push dispatch
       active = false;
       return Promise.resolve(b);
     }
+
     override git(args: string[]): Promise<string> {
       if (args[0] === "push") pushes++;
       return Promise.resolve("");

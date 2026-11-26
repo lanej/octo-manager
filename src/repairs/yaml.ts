@@ -1,5 +1,6 @@
 import { parseDocument, visit, isPair, isScalar, isSeq, isMap, isAlias } from "yaml";
 import { isDeepStrictEqual } from "node:util";
+
 export const yamlRecipe = "yaml-flow-sequence-v1";
 export interface ConflictVersions {
   base: string;
@@ -13,6 +14,7 @@ interface Sequence {
   values: unknown[];
   indent: string;
 }
+
 function inspect(source: string, inlineOnly = true): Map<string, Sequence> {
   if (source.includes("\r") || source.includes("\0")) throw new Error("Only LF text is eligible for this recipe");
   const doc = parseDocument(source, { uniqueKeys: true, strict: true });
@@ -81,6 +83,7 @@ function inspect(source: string, inlineOnly = true): Map<string, Sequence> {
   });
   return sequences;
 }
+
 export function expandInlineSequences(
   versions: ConflictVersions,
 ): ConflictVersions & { expected: Map<string, unknown[]> } {
@@ -95,8 +98,8 @@ export function expandInlineSequences(
     const target = maps.target.get(key),
       replayed = maps.replayed.get(key);
     if (
-      target !== undefined &&
-      replayed !== undefined &&
+      target &&
+      replayed &&
       !isDeepStrictEqual(base.values, target.values) &&
       !isDeepStrictEqual(base.values, replayed.values)
     )
@@ -111,7 +114,7 @@ export function expandInlineSequences(
     const base = maps.base.get(key),
       target = maps.target.get(key),
       replayed = maps.replayed.get(key);
-    if (base === undefined || target === undefined || replayed === undefined) throw new Error("Missing sequence");
+    if (!base || !target || !replayed) throw new Error("Missing sequence");
     if (base.values.length !== target.values.length || base.values.length !== replayed.values.length)
       throw new Error("Sequence additions or deletions require another recipe");
     for (const values of [base.values, target.values, replayed.values]) {
@@ -147,7 +150,7 @@ export function expandInlineSequences(
     const edits = selected
       .map((key) => {
         const sequence = map.get(key);
-        if (sequence === undefined) throw new Error("Missing sequence");
+        if (!sequence) throw new Error("Missing sequence");
         return sequence;
       })
       .sort((a, b) => b.start - a.start);
@@ -171,6 +174,7 @@ export function expandInlineSequences(
     expected,
   };
 }
+
 export function validYamlCandidate(source: string, expected: Map<string, unknown[]>): boolean {
   try {
     const sequences = inspect(source, false);

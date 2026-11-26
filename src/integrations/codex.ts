@@ -10,6 +10,7 @@ import { Handoffs } from "./handoffs.js";
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function artifactResult(value: unknown, url: string): boolean {
   if (!object(value) || value["isError"] === true) return false;
   if (value["artifact_type"] === "pull_request" && typeof value["url"] === "string")
@@ -27,10 +28,12 @@ function artifactResult(value: unknown, url: string): boolean {
     }
   });
 }
+
 interface HookResult {
   output?: object;
   acknowledge?: () => Promise<void>;
 }
+
 function errorDetails(error: unknown, depth = 0): object {
   if (error instanceof Error) {
     const code: unknown = "code" in error ? error.code : undefined;
@@ -47,6 +50,7 @@ function errorDetails(error: unknown, depth = 0): object {
     message: typeof error === "string" ? error : "Non-Error value thrown",
   };
 }
+
 async function writeHookDiagnostic(line: string): Promise<void> {
   await new Promise<void>((resolve) => {
     const onError = () => {
@@ -55,7 +59,7 @@ async function writeHookDiagnostic(line: string): Promise<void> {
     process.stderr.once("error", onError);
     try {
       process.stderr.write(line, (error) => {
-        if (error === null || error === undefined) process.stderr.off("error", onError);
+        if (!error) process.stderr.off("error", onError);
         resolve();
       });
     } catch {
@@ -64,6 +68,7 @@ async function writeHookDiagnostic(line: string): Promise<void> {
     }
   });
 }
+
 async function logHookError(
   directory: string,
   error: unknown,
@@ -103,6 +108,7 @@ async function logHookError(
   }
   await writeHookDiagnostic(diagnostic);
 }
+
 export async function codexHook(value: unknown, directory: string): Promise<HookResult> {
   if (!object(value)) throw new Error("Invalid Codex hook input");
   const event = value["hook_event_name"],
@@ -217,6 +223,7 @@ export async function codexHook(value: unknown, directory: string): Promise<Hook
         }),
   };
 }
+
 export async function codexHookCLI(directory: string): Promise<void> {
   const logLevel = process.env["OCTO_MANAGER_HOOK_LOG_LEVEL"] ?? "error";
   let emitted = false;
@@ -250,7 +257,7 @@ export async function codexHookCLI(directory: string): Promise<void> {
     if (result.output !== undefined)
       await new Promise<void>((resolve, reject) => {
         process.stdout.write(JSON.stringify(result.output) + "\n", (error) => {
-          if (error !== null && error !== undefined) reject(error);
+          if (error) reject(error);
           else resolve();
         });
       });

@@ -26,12 +26,15 @@ export function migrateScheduling(db: DatabaseSync): void {
     INSERT OR IGNORE INTO settings(key,value) VALUES ('github_dispatch','{"nextAtMs":0,"coreRetryAtMs":0,"graphqlRetryAtMs":0}');
     PRAGMA user_version=15; COMMIT;`);
 }
+
 // SQL remains authoritative across rollback and other connections. Only identical
 // serialized values reuse validation; callers receive independent object graphs.
 class ValidatedValues<T extends object> {
   private values = new Map<string, T>();
   private bytes = 0;
+
   constructor(private decodeValue: (data: string) => T) {}
+
   read(data: string): T {
     const cached = this.values.get(data);
     if (cached !== undefined) return structuredClone(cached);
@@ -50,6 +53,7 @@ class ValidatedValues<T extends object> {
     return structuredClone(value);
   }
 }
+
 export class ScheduleStore {
   private statements: Record<
     | "list"
@@ -68,6 +72,7 @@ export class ScheduleStore {
   >;
   private schedules = new ValidatedValues((data) => decode(ScheduleSchema, data));
   private dispatchValues = new ValidatedValues((data) => decode(DispatchSchema, data));
+
   constructor(
     db: DatabaseSync,
     private now: () => number,
@@ -104,32 +109,40 @@ export class ScheduleStore {
           deferredReason: "Interrupted refresh queued after restart",
         });
   }
+
   list(): ScheduledRefresh[] {
     return this.statements.list.all().map((row) => this.schedules.read(String(row["data"])));
   }
+
   queuedKeys(): Set<string> {
     return new Set(this.statements.queued.all(ScheduleState.Queued).map((row) => String(row["key"])));
   }
+
   reviews(): ScheduledRefresh[] {
     return this.statements.reviews
       .all(RefreshKind.Reviews, RefreshKind.Reviews)
       .map((row) => this.schedules.read(String(row["data"])));
   }
+
   get(key: string): ScheduledRefresh | undefined {
     const row = this.statements.get.get(key);
-    return row === undefined ? undefined : this.schedules.read(String(row["data"]));
+    return !row ? undefined : this.schedules.read(String(row["data"]));
   }
+
   save(value: ScheduledRefresh): void {
     this.statements.save.run(value.key, value.kind, value.subject, value.dueAtMs, value.state, JSON.stringify(value));
   }
+
   remove(key: string): void {
     this.statements.remove.run(key);
   }
+
   view(url: string): PullRequestDetails | undefined {
     const row = this.statements.view.get(url);
-    if (row === undefined) return undefined;
+    if (!row) return undefined;
     return decode(ViewSchema, String(row["data"]));
   }
+
   saveView(value: PullRequestDetails): void {
     this.statements.saveView.run(value.url, JSON.stringify(value), this.now());
     for (let remaining = 129; remaining > 0; remaining--) {
@@ -138,11 +151,13 @@ export class ScheduleStore {
       this.statements.evictView.run();
     }
   }
+
   dispatch() {
     const row = this.statements.dispatch.get();
-    if (row === undefined) throw new Error("GitHub dispatch state missing");
+    if (!row) throw new Error("GitHub dispatch state missing");
     return this.dispatchValues.read(String(row["value"]));
   }
+
   saveDispatch(value: ReturnType<ScheduleStore["dispatch"]>): void {
     this.statements.saveDispatch.run(JSON.stringify(value));
   }

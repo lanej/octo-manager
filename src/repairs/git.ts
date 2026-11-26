@@ -6,7 +6,9 @@ import { cleanText } from "../text.js";
 import type { RebaseSource } from "./types.js";
 import { tmpdir } from "node:os";
 import type { ConflictVersions } from "./yaml.js";
+
 const exec = promisify(execFile);
+
 export class RebaseWorkspace {
   constructor(
     readonly directory: string,
@@ -14,6 +16,7 @@ export class RebaseWorkspace {
     private signal: AbortSignal,
     private remote = `https://github.com/${source.repository}.git`,
   ) {}
+
   async git(args: string[], allowedFailure = false): Promise<string> {
     try {
       const result = await exec("git", args, {
@@ -35,6 +38,7 @@ export class RebaseWorkspace {
       throw new Error(cleanText(error instanceof Error ? error.message : "Git operation failed", 2000));
     }
   }
+
   async prepare(): Promise<void> {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     await this.git(["init"]);
@@ -58,6 +62,7 @@ export class RebaseWorkspace {
       throw new Error("Source contains merge commits; explicit merge-preserving repair is required");
     await this.git(["checkout", "--detach", this.source.headSha]);
   }
+
   async rebase(continuing = false): Promise<string[]> {
     try {
       await this.git(continuing ? ["rebase", "--continue"] : ["rebase", this.source.targetSha]);
@@ -68,6 +73,7 @@ export class RebaseWorkspace {
       return paths;
     }
   }
+
   async safePath(path: string, write = false): Promise<string> {
     if (
       path === "" ||
@@ -93,16 +99,19 @@ export class RebaseWorkspace {
       throw new Error("Writes are limited to current conflicted files");
     return current;
   }
+
   async read(path: string): Promise<string> {
     const text = await readFile(await this.safePath(path), "utf8");
     if (text.includes("\0")) throw new Error("Binary conflict requires manual repair");
     return text;
   }
+
   async write(path: string, content: string): Promise<void> {
     if (Buffer.byteLength(content) > 256 * 1024 || /^(<<<<<<< |=======\s*$|>>>>>>> )/mu.test(content))
       throw new Error("Resolution is too large or retains conflict markers");
     await writeFile(await this.safePath(path, true), content);
   }
+
   async stage(paths: string[]): Promise<void> {
     for (const path of paths) {
       const content = await this.read(path);
@@ -110,6 +119,7 @@ export class RebaseWorkspace {
       await this.git(["--literal-pathspecs", "add", "--", path]);
     }
   }
+
   async validate(checks: string[][], timeout: number): Promise<string> {
     if ((await this.git(["status", "--porcelain"])) !== "") throw new Error("Rebase did not leave a clean worktree");
     await this.git(["merge-base", "--is-ancestor", this.source.targetSha, "HEAD"]);
@@ -131,6 +141,7 @@ export class RebaseWorkspace {
       throw new Error("Validation modified tracked or untracked files; inspect before pushing");
     return this.git(["rev-parse", "HEAD"]);
   }
+
   async conflictInputs(path: string): Promise<{ refs: Partial<ConflictVersions>; inputs?: ConflictVersions }> {
     const refs: Partial<ConflictVersions> = {};
     const texts: Partial<ConflictVersions> = {};
@@ -172,6 +183,7 @@ export class RebaseWorkspace {
       },
     };
   }
+
   async mergeText(inputs: ConflictVersions): Promise<string | undefined> {
     const directory = await mkdtemp(join(tmpdir(), "octo-yaml-"));
     try {
@@ -200,10 +212,12 @@ export class RebaseWorkspace {
       await rm(directory, { recursive: true, force: true });
     }
   }
+
   async remoteHead(ref = this.source.headRef): Promise<string> {
     const line = await this.git(["ls-remote", "origin", `refs/heads/${ref}`]);
     return line.split(/\s/u)[0] ?? "";
   }
+
   async push(head: string, beforeSend?: () => void): Promise<void> {
     if ((await this.remoteHead(this.source.targetRef)) !== this.source.targetSha)
       throw new Error("Target branch moved before push");

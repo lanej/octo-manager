@@ -27,6 +27,7 @@ import {
   type PreparationProfile,
 } from "./contracts.js";
 import { checkGate, fingerprint, graphKey, readyFor } from "./policy.js";
+
 export interface MergeOptions {
   issueGate?: (url: string) => boolean;
   repositoryInstructions?: (message: import("../tracking/inbox.js").AgentMessage) => string | undefined;
@@ -35,6 +36,7 @@ export interface MergeOptions {
   // No argument identifies roster-wide input; a PR argument identifies only that PR's reference input.
   referenceInputRevision?: (prId?: string) => string;
 }
+
 export class MergeService {
   private task: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
@@ -44,6 +46,7 @@ export class MergeService {
   private referenceInputRevision: ((prId?: string) => string) | undefined;
   private scannedRevision: string | undefined;
   private scannedInputs = new Map<string, string>();
+
   constructor(
     readonly store: MergeStore,
     private tracking: TrackingService,
@@ -70,9 +73,11 @@ export class MergeService {
       options.repositoryInstructions,
     );
   }
+
   readonly receipts: ReceiptMerges;
   private profiles: Record<string, PreparationProfile>;
   private issueGate: (url: string) => boolean;
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("merging", async () => {
       await this.tick();
@@ -86,7 +91,7 @@ export class MergeService {
         if (
           entry.nextAt > now &&
           entry.nextAt < Number.MAX_SAFE_INTEGER &&
-          (this.active(entry) || this.manualClosure(entry) !== undefined) &&
+          (this.active(entry) || this.manualClosure(entry)) &&
           !this.store.busy(entry.prId)
         )
           deadlines.push(entry.nextAt);
@@ -106,9 +111,11 @@ export class MergeService {
     });
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   checkpointable(): boolean {
     return (
       this.work === undefined &&
@@ -118,16 +125,19 @@ export class MergeService {
         .every((operation) => operation.state === OperationState.Succeeded || operation.state === OperationState.Failed)
     );
   }
+
   async close(): Promise<void> {
     this.task?.close();
     this.abort.abort();
     await this.work;
   }
+
   command(value: unknown): unknown {
     const input = checked(CommandSchema, value);
     if (this.abort.signal.aborted) throw new Error("Coordinator is stopping");
     return this.dispatch(input);
   }
+
   private dispatch(input: MergeCommand): unknown {
     switch (input.op) {
       case "auto_merge":
@@ -152,8 +162,7 @@ export class MergeService {
         };
       case "confirm": {
         const profile = input.profile === undefined ? undefined : this.profiles[input.profile];
-        if (input.profile !== undefined && profile === undefined)
-          throw new Error("Unknown configured preparation profile");
+        if (input.profile !== undefined && !profile) throw new Error("Unknown configured preparation profile");
         return this.store.confirm(
           input.pr,
           input.prerequisite,
@@ -181,7 +190,7 @@ export class MergeService {
         const ids = this.store.operations().map((op) => op.id),
           id = resolveId(input.id, ids),
           operation = this.store.operations().find((op) => op.id === id);
-        if (operation === undefined || operation.state !== OperationState.Uncertain)
+        if (!operation || operation.state !== OperationState.Uncertain)
           throw new Error("Uncertain operation not found");
         this.store.saveOperation({
           ...operation,
@@ -197,15 +206,18 @@ export class MergeService {
       }
     }
   }
+
   private reconcileRequested = new Set<string>();
+
   tick(): Promise<void> {
-    if (this.work !== undefined) return this.work;
+    if (this.work) return this.work;
     if (this.abort.signal.aborted) return Promise.resolve();
     this.work = this.run().finally(() => {
       this.work = undefined;
     });
     return this.work;
   }
+
   private active(entry: MergeEntry, op?: MergeOperation): boolean {
     const current = this.store.entryById(entry.id);
     const authority = (value: MergeEntry) =>
@@ -219,7 +231,7 @@ export class MergeService {
         value.receiptId,
         value.receiptContext,
       ]);
-    if (current === undefined || authority(current) !== authority(entry)) return false;
+    if (!current || authority(current) !== authority(entry)) return false;
     const pr = this.store.tracking.pr(entry.prId);
     return (
       this.issueGate(pr.url) &&
@@ -237,6 +249,7 @@ export class MergeService {
           graphKey(this.store.dependencies(), pr.id) === op.graph))
     );
   }
+
   private async run(): Promise<void> {
     const revision = this.referenceInputRevision?.();
     if (
@@ -254,7 +267,7 @@ export class MergeService {
         await setImmediate();
         if (this.abort.signal.aborted) return;
         const observation = this.store.tracking.referenceObservation(pr.id);
-        this.store.scan({ ...pr, ...(observation === undefined ? {} : { observation }) }, prs);
+        this.store.scan({ ...pr, ...(!observation ? {} : { observation }) }, prs);
         if (input !== undefined) this.scannedInputs.set(pr.id, input);
       }
       this.scannedRevision = revision;
@@ -281,7 +294,7 @@ export class MergeService {
         await this.advance(entry);
       } catch (error) {
         const fresh = this.store.entryById(entry.id);
-        if (fresh === undefined || this.store.busy(entry.prId)) continue;
+        if (!fresh || this.store.busy(entry.prId)) continue;
         const delay =
           error instanceof GitHubRateLimitError ? Math.max(this.now() + 60000, error.retryAtMs) : this.now() + 60000;
         this.store.state(
@@ -297,6 +310,7 @@ export class MergeService {
     this.store.completeChains();
     await this.receipts.refresh();
   }
+
   private manualClosure(entry: MergeEntry) {
     if (
       this.abort.signal.aborted ||
@@ -304,25 +318,26 @@ export class MergeService {
       entry.autoMerge ||
       entry.receiptId !== undefined ||
       entry.state === EntryState.Uncertain ||
-      entry.ready === undefined ||
+      !entry.ready ||
       this.store.busy(entry.prId)
     )
       return undefined;
     const current = this.store.entryById(entry.id);
-    if (current === undefined || fingerprint(current) !== fingerprint(entry)) return undefined;
+    if (!current || fingerprint(current) !== fingerprint(entry)) return undefined;
     const pr = this.store.tracking.pr(entry.prId);
     if (
       !pr.enabled ||
-      pr.observation === undefined ||
+      !pr.observation ||
       pr.observation.lifecycle === "open" ||
       this.store.chain(entry.chainId).state !== ChainState.Active
     )
       return undefined;
     return { pr, observation: pr.observation, ready: entry.ready };
   }
+
   private async reconcileManualClosure(entry: MergeEntry): Promise<boolean> {
     const selected = this.manualClosure(entry);
-    if (selected === undefined) return false;
+    if (!selected) return false;
     const { pr, observation, ready } = selected;
     const unchanged = () => {
       const current = this.manualClosure(entry);
@@ -340,10 +355,9 @@ export class MergeService {
     const signal = AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]);
     try {
       // Observing an external outcome does not grant authority to prepare, push or merge.
-      const snapshot =
-        this.provider.readiness === undefined
-          ? await this.provider.inspect(pr.url, signal)
-          : await this.provider.readiness(pr.url, observation, signal);
+      const snapshot = !this.provider.readiness
+        ? await this.provider.inspect(pr.url, signal)
+        : await this.provider.readiness(pr.url, observation, signal);
       if (signal.aborted) throw new Error("External merge inspection cancelled");
       if (!unchanged()) return true;
       const observed = snapshot.observation;
@@ -384,6 +398,7 @@ export class MergeService {
     }
     return true;
   }
+
   private async snapshot(
     prId: string,
     signal: AbortSignal = this.abort.signal,
@@ -392,10 +407,10 @@ export class MergeService {
     const pr = this.store.tracking.pr(prId),
       epoch = pr.trackingEpoch;
     const result =
-      cached !== undefined && this.provider.readiness !== undefined
+      cached && this.provider.readiness
         ? await this.provider.readiness(pr.url, cached, signal)
         : await this.provider.inspect(pr.url, signal);
-    if (cached !== undefined) {
+    if (cached) {
       if (
         result.observation.headSha !== cached.headSha ||
         result.observation.targetBase?.ref !== cached.targetBase?.ref ||
@@ -408,6 +423,7 @@ export class MergeService {
     this.store.tracking.observe(pr.id, result.observation, this.tracking.config, epoch);
     return result;
   }
+
   private async advance(entry: MergeEntry): Promise<void> {
     const expectedGraph = graphKey(this.store.dependencies(), entry.prId);
     let pr = this.store.tracking.pr(entry.prId);
@@ -422,7 +438,7 @@ export class MergeService {
       });
       return;
     }
-    if (observation === undefined) {
+    if (!observation) {
       this.store.state(entry, EntryState.Waiting, "Waiting for initial tracking evidence", {
         nextAt: this.now() + 60000,
       });
@@ -461,7 +477,7 @@ export class MergeService {
         });
         return;
       }
-      if (dependency.preparation !== undefined)
+      if (dependency.preparation)
         preparations.push({
           profile: dependency.preparation,
           commit: snapshot.mergeCommit,
@@ -483,7 +499,7 @@ export class MergeService {
       );
       return;
     }
-    if (preparation !== undefined) {
+    if (preparation) {
       if (entry.preparationHold === true) return;
       const snapshot = await this.snapshot(pr.id);
       if (!this.active(entry)) return;
@@ -529,6 +545,7 @@ export class MergeService {
     }
     await this.execute(entry, snapshot, expectedGraph);
   }
+
   private async execute(
     entry: MergeEntry,
     snapshot: MergeSnapshot,
@@ -537,16 +554,16 @@ export class MergeService {
   ): Promise<void> {
     const pr = this.store.tracking.pr(entry.prId),
       target = snapshot.observation.targetBase;
-    if (target === undefined) throw new Error("Target branch evidence missing");
+    if (!target) throw new Error("Target branch evidence missing");
     const at = this.now();
     let operation: MergeOperation = {
       id: randomUUID(),
       epoch: pr.trackingEpoch,
       entryId: entry.id,
       prId: pr.id,
-      kind: preparation === undefined ? "merge" : "prepare",
+      kind: !preparation ? "merge" : "prepare",
       state: OperationState.Planned,
-      phase: preparation === undefined ? "merging" : "local",
+      phase: !preparation ? "merging" : "local",
       head: snapshot.observation.headSha,
       baseRef: target.ref,
       baseSha: target.sha,
@@ -555,7 +572,7 @@ export class MergeService {
       createdAt: at,
       updatedAt: at,
       detail: "Operation planned",
-      ...(preparation === undefined
+      ...(!preparation
         ? {}
         : {
             preparation: preparation.profile,
@@ -568,15 +585,15 @@ export class MergeService {
       this.store.saveOperation(operation);
       this.store.state(
         entry,
-        preparation === undefined ? EntryState.Merging : EntryState.Preparing,
-        preparation === undefined ? "Head-pinned merge in flight" : "Running deterministic preparation",
+        !preparation ? EntryState.Merging : EntryState.Preparing,
+        !preparation ? "Head-pinned merge in flight" : "Running deterministic preparation",
       );
     });
     try {
       if (!this.active(entry, operation)) throw new Error("Merge chain paused, cancelled, or context changed");
       operation = { ...operation, state: OperationState.Running };
       this.store.saveOperation(operation);
-      if (preparation !== undefined) {
+      if (preparation) {
         const head = await this.prepare({
           url: pr.url,
           operation,
@@ -683,10 +700,11 @@ export class MergeService {
       );
     }
   }
+
   private async pollMerge(operation: MergeOperation): Promise<void> {
-    if (operation.requestId === undefined || this.provider.result === undefined) return;
+    if (operation.requestId === undefined || !this.provider.result) return;
     const entry = this.store.entries().find((value) => value.id === operation.entryId);
-    if (entry === undefined) return;
+    if (!entry) return;
     try {
       const result = await this.provider.result(
         this.store.tracking.pr(operation.prId).url,
@@ -753,9 +771,10 @@ export class MergeService {
         );
     }
   }
+
   private async reconcile(operation: MergeOperation): Promise<void> {
     const entry = this.store.entries().find((entry) => entry.id === operation.entryId);
-    if (entry === undefined) return;
+    if (!entry) return;
     try {
       const snapshot = await this.snapshot(operation.prId);
       if (

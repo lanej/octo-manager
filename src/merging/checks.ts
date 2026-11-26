@@ -1,10 +1,9 @@
 import { checkReplaces } from "../tracking/checks.js";
 import type { CheckObservation, PRObservation, ObservationInput } from "../tracking/types.js";
+
 export function currentMergeChecks(observation: ObservationInput | PRObservation): CheckObservation[] {
   const workflows =
-    observation.workflows !== undefined && observation.workflows.state !== "unavailable"
-      ? observation.workflows.value
-      : [];
+    observation.workflows && observation.workflows.state !== "unavailable" ? observation.workflows.value : [];
   const superseded = workflows.filter(
     (old) =>
       old.conclusion === "cancelled" &&

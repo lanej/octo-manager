@@ -21,18 +21,21 @@ import {
   type RepairAttempt,
   type RepairProfile,
 } from "./types.js";
+
 export interface RepairOptions {
   source?: (url: string, signal: AbortSignal) => Promise<RebaseSource>;
   workspace?: (directory: string, source: RebaseSource, signal: AbortSignal) => RebaseWorkspace;
   resolve?: ResolveConflicts;
   observe?: (url: string, signal: AbortSignal) => Promise<ObservationInput>;
 }
+
 export class RepairService {
   private scheduled: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private controller: AbortController | undefined;
   private stopped = false;
   private nextVerify = new Map<string, number>();
+
   constructor(
     readonly store: RepairStore,
     private tracking: TrackingService,
@@ -51,36 +54,40 @@ export class RepairService {
           "Previous repair was interrupted. Inspect the retained workspace and remote branch before a new attempt.",
         );
   }
+
   request(value: unknown): RepairAttempt {
     if (this.stopped) throw new Error("Repair coordinator is stopping");
     const input = rebaseInput(value);
     const existing = this.store.list().find((a) => a.request.requestId === input.requestId);
-    if (existing !== undefined) {
+    if (existing) {
       if (JSON.stringify(existing.request) !== JSON.stringify(input))
         throw new Error("Repair request ID already used with different input");
       return existing;
     }
     const profile = this.profiles[input.profile];
-    if (profile === undefined) throw new Error("Invalid repair profile");
+    if (!profile) throw new Error("Invalid repair profile");
     const [, owner, repo] = new URL(input.prUrl).pathname.split("/");
     if (owner === undefined || repo === undefined) throw new Error("Invalid repair PR URL");
     if (profile.repository !== `${owner}/${repo}`) throw new Error("Repair profile does not authorize this repository");
     const pr = this.tracking.store.prs().find((p) => p.url === input.prUrl);
-    if (pr === undefined || !pr.enabled) throw new Error("Enroll this PR before requesting repair");
+    if (!pr || !pr.enabled) throw new Error("Enroll this PR before requesting repair");
     if (this.store.list().some((a) => a.prId === pr.id && activeRepair(a.state)))
       throw new Error("Another repair is active for this PR");
     const attempt = this.store.request(input, structuredClone(profile), pr.id);
     this.wake();
     return attempt;
   }
+
   start(scheduler: WorkScheduler): void {
-    if (this.stopped || this.scheduled !== undefined) return;
+    if (this.stopped || this.scheduled) return;
     this.scheduled = scheduler.task("repairs", () => this.tick());
     this.wake();
   }
+
   wake(): void {
     this.scheduled?.wake();
   }
+
   private nextAt(attempts: readonly RepairAttempt[]): number | undefined {
     let next: number | undefined;
     for (const attempt of attempts) {
@@ -94,15 +101,16 @@ export class RepairService {
     }
     return next;
   }
+
   private async tick(): Promise<number | undefined> {
-    if (this.stopped || this.work !== undefined) return undefined;
+    if (this.stopped || this.work) return undefined;
     const attempts = this.store.list();
     const a = attempts.find(
       (a) =>
         a.state === RepairState.Queued ||
         (a.state === RepairState.AwaitingChecks && (this.nextVerify.get(a.id) ?? 0) <= this.now()),
     );
-    if (a === undefined) return this.nextAt(attempts);
+    if (!a) return this.nextAt(attempts);
     const controller = new AbortController();
     this.controller = controller;
     this.work = (a.state === RepairState.Queued ? this.run(a, controller.signal) : this.verify(a, controller.signal))
@@ -123,6 +131,7 @@ export class RepairService {
     await this.work;
     return this.nextAt(this.store.list());
   }
+
   private update(
     a: RepairAttempt,
     state: RepairState,
@@ -143,6 +152,7 @@ export class RepairService {
     this.store.save(next);
     return next;
   }
+
   private async run(input: RepairAttempt, signal: AbortSignal): Promise<void> {
     let a = this.update(input, RepairState.Running, RepairStep.Fetch, "Fetching the PR and current target branch");
     const source = await (this.options.source ?? rebaseSource)(a.request.prUrl, signal);
@@ -165,7 +175,7 @@ export class RepairService {
     let rounds = 0;
     while (paths.length > 0) {
       if (++rounds > 32) throw new Error("Rebase exceeded 32 conflict stops; inspect manually");
-      if (this.conflicts === undefined) throw new Error("Conflict evidence store is unavailable");
+      if (!this.conflicts) throw new Error("Conflict evidence store is unavailable");
       a = this.update(
         a,
         RepairState.Running,
@@ -218,6 +228,7 @@ export class RepairService {
     );
     await this.verify(a, signal);
   }
+
   private async verify(a: RepairAttempt, signal: AbortSignal): Promise<void> {
     this.nextVerify.set(a.id, this.now() + 15000);
     let o: ObservationInput;
@@ -242,8 +253,8 @@ export class RepairService {
       return;
     }
     if (
-      a.source === undefined ||
-      o.targetBase === undefined ||
+      !a.source ||
+      !o.targetBase ||
       o.lifecycle !== "open" ||
       o.targetBase.sha !== a.source.targetSha ||
       o.targetBase.ref !== a.source.targetRef
@@ -302,12 +313,14 @@ export class RepairService {
       "Rebased branch verified on GitHub; configured local checks passed",
     );
   }
+
   checkpointable(): boolean {
     return (
       this.work === undefined &&
       !this.store.list().some((attempt) => activeRepair(attempt.state) || attempt.state === RepairState.Uncertain)
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.scheduled?.close();

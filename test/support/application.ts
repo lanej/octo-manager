@@ -27,4 +27,5 @@ export async function createApplicationFixture(directory: string, options: Appli
     },
   };
 }
+
 export type ApplicationFixture = Awaited<ReturnType<typeof createApplicationFixture>>;

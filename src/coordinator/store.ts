@@ -36,12 +36,14 @@ export function privateDirectory(path: string): void {
   if (lstatSync(path).isSymbolicLink()) throw new Error("State directory must not be a symlink");
   chmodSync(path, 0o700);
 }
+
 export interface InputScope {
   prId?: string;
   recipients?: "all";
   notificationEligibility?: true;
   source?: "tracking" | "merge" | "repository" | "issues" | "submissions";
 }
+
 export class Store {
   private db!: DatabaseSync;
   readonly tracking: TrackingStore;
@@ -63,6 +65,7 @@ export class Store {
   private readonly eventListeners = new Set<() => void>();
   private eventNotificationQueued = false;
   private eventSequence = 0;
+
   constructor(
     readonly directory: string,
     private now: () => number = Date.now,
@@ -104,7 +107,7 @@ export class Store {
               detail.slice(0, 16000),
               prId,
               actionId ?? null,
-              context === undefined ? null : JSON.stringify(context),
+              !context ? null : JSON.stringify(context),
             );
           this.notifyEvents();
           if (
@@ -196,10 +199,13 @@ export class Store {
       throw error;
     }
   }
+
   private notificationRevision: NotificationInputRevision | undefined;
+
   notificationInputRevision(): string {
     return (this.notificationRevision ??= new NotificationInputRevision(this.db)).current();
   }
+
   inputRevision(): string {
     return JSON.stringify(
       this.db
@@ -209,17 +215,20 @@ export class Store {
         .get(),
     );
   }
+
   jobs(): Job[] {
     return this.db
       .prepare("SELECT data FROM jobs ORDER BY rowid")
       .all()
       .map((r) => JSON.parse(r["data"] as string) as Job);
   }
+
   get(id: string): Job {
     const row = this.db.prepare("SELECT data FROM jobs WHERE id=?").get(id);
     if (!row) throw new Error("Job not found");
     return JSON.parse(row["data"] as string) as Job;
   }
+
   submit(task: Task, requestId: string): Job {
     if (!requestId || requestId.length > 200) throw new Error("Invalid request ID");
     const row = this.db.prepare("SELECT data FROM jobs WHERE request_id=?").get(requestId);
@@ -244,6 +253,7 @@ export class Store {
     this.save(job, "queued", task.kind);
     return job;
   }
+
   save(job: Job, kind: string, detail = ""): void {
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -261,12 +271,14 @@ export class Store {
     this.notifyEvents();
     this.wakeJobs?.();
   }
+
   event(jobId: string, kind: string, detail: string): void {
     this.db
       .prepare("INSERT INTO events(job_id,at,kind,detail) VALUES (?,?,?,?)")
       .run(jobId, this.now(), kind, detail.slice(0, 16000));
     this.notifyEvents();
   }
+
   subscribeEvents(listener: () => void): () => void {
     if (this.eventListeners.size === 0) this.eventSequence = this.sequence();
     this.eventListeners.add(listener);
@@ -274,6 +286,7 @@ export class Store {
       this.eventListeners.delete(listener);
     };
   }
+
   private notifyEvents(): void {
     if (this.eventNotificationQueued) return;
     this.eventNotificationQueued = true;
@@ -288,18 +301,22 @@ export class Store {
       for (const listener of this.eventListeners) listener();
     });
   }
+
   events(after = 0, jobId?: string): JobEvent[] {
     const rows = jobId
       ? this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId)
       : this.db.prepare("SELECT * FROM (SELECT * FROM events ORDER BY seq DESC LIMIT 100) ORDER BY seq").all();
     return rows.map(storedEvent);
   }
+
   sequence(): number {
     return Number(this.db.prepare("SELECT COALESCE(MAX(seq),0) AS seq FROM events").get()!["seq"]);
   }
+
   instanceId(): string {
     return this.db.prepare("SELECT value FROM settings WHERE key='instance_id'").get()!["value"] as string;
   }
+
   eventsSince(after: number, jobId?: string, prId?: string): JobEvent[] {
     const rows =
       prId !== undefined
@@ -309,15 +326,18 @@ export class Store {
           : this.db.prepare("SELECT * FROM events WHERE seq>? AND job_id=? ORDER BY seq LIMIT 200").all(after, jobId);
     return rows.map(storedEvent);
   }
+
   activityBefore(before: number): JobEvent[] {
     return this.db
       .prepare("SELECT * FROM events WHERE seq<? AND kind!='progress' ORDER BY seq DESC LIMIT 201")
       .all(before)
       .map(storedEvent);
   }
+
   paused(): boolean {
     return this.db.prepare("SELECT value FROM settings WHERE key='paused'").get()?.["value"] === "true";
   }
+
   setPaused(value: boolean): void {
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -332,6 +352,7 @@ export class Store {
     }
     this.wakeJobs?.();
   }
+
   close(): void {
     if (this.closed) return;
     this.closed = true;

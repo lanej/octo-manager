@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { parseCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
+
 export async function subscriptionsCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed,
     [command, id] = positionals;

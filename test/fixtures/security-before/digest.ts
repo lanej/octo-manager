@@ -5,9 +5,11 @@ import { join, resolve } from "node:path";
 import { cleanText } from "../../../src/text.js";
 import { shortId } from "../../../src/tracking/identifiers.js";
 import type { AgentMessage } from "../../../src/tracking/inbox.js";
+
 function quote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
+
 function entry(message: AgentMessage): { group: string; lines: string[] } {
   const lines = message.body.split("\n").filter((line) => line !== "" && !line.startsWith("[octo-delivery:"));
   const first = lines[0] ?? "Octo update",
@@ -42,6 +44,7 @@ function entry(message: AgentMessage): { group: string; lines: string[] } {
     ],
   };
 }
+
 export function renderDigest(
   id: string,
   number: number,

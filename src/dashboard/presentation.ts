@@ -26,6 +26,7 @@ export interface Palette {
 export function plain(text: string): TextChunk {
   return { __isChunk: true, text };
 }
+
 const graphemes = new Intl.Segmenter();
 
 function clip(line: string, width: number): string {
@@ -64,7 +65,7 @@ function pillChunk(label: string, tone: StatusTone, palette: Palette): TextChunk
 function subject(row: RecordView, width: number, palette: Palette) {
   const text = clip(line(row.delivery?.subject ?? row.label), width);
   const address = row.url === undefined ? undefined : dashboardLink(row.url);
-  return address === undefined ? fg(palette.accent)(text) : linkChunk(text, address.url, palette);
+  return !address ? fg(palette.accent)(text) : linkChunk(text, address.url, palette);
 }
 
 export function listContent(
@@ -84,14 +85,14 @@ export function listContent(
   for (const row of rows) {
     const current = row.id === selected;
     const delivery = row.delivery;
-    if (delivery !== undefined && group !== delivery.group) {
+    if (delivery && group !== delivery.group) {
       chunks.push(fg(palette.muted)(clip(delivery.group, width)), plain("\n"));
       group = delivery.group;
     }
     const prefix = current ? fg(palette.accent)(bold("› ")) : plain("  ");
     const text = subject(row, width - 2, palette);
     chunks.push(prefix, current ? bg(palette.tab)(bold(text)) : text, plain("\n"));
-    if (delivery !== undefined) {
+    if (delivery) {
       const title = delivery.title;
       if (title !== undefined && title.trim() !== "")
         chunks.push(plain("  "), plain(clip(line(title), width - 2)), plain("\n"));
@@ -133,7 +134,7 @@ function fact(value: DetailLine, palette: Palette): TextChunk[] {
   const reference = referenceFields.has(label) ? dashboardLink(detail) : undefined;
   return [
     fg(palette.muted)(`${label}: `),
-    reference === undefined ? plain(detail) : linkChunk(line(reference.label), reference.url, palette),
+    !reference ? plain(detail) : linkChunk(line(reference.label), reference.url, palette),
   ];
 }
 
@@ -190,9 +191,9 @@ export function detailContent(
   palette: Palette,
   screen: Screen,
 ): StyledText {
-  if (row === undefined) return new StyledText([]);
+  if (!row) return new StyledText([]);
   const delivery = row.delivery;
-  if (delivery !== undefined && screen !== "Reviews") {
+  if (delivery && screen !== "Reviews") {
     const hasFeedback = delivery.feedback.length > 1;
     const highlighted = [
       subject(row, width, palette),

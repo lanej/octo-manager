@@ -6,6 +6,7 @@ import type { ObservationInput } from "../src/tracking/types.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { Type } from "typebox";
 import { Check } from "typebox/value";
+
 const Result = Type.Object(
   {
     pr: Type.Object({ id: Type.String(), url: Type.String() }, { additionalProperties: true }),

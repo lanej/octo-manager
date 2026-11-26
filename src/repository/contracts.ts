@@ -1,5 +1,6 @@
 import { IssueConfigSchema } from "../issues/config.js";
 import { Type, type Static } from "typebox";
+
 export enum NotificationState {
   ReviewFeedback = "review_feedback",
   ChecksFailed = "checks_failed",

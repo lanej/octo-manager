@@ -15,6 +15,7 @@ import { sqlShape, statementKind } from "./sql.js";
 import { context, observers, type Cycle, type ScopeObserver } from "./scope.js";
 
 const channel = "sqlite.db.query";
+
 export function queryEventsSupported(): boolean {
   let seen = false;
   const observe = () => {
@@ -30,11 +31,13 @@ export function queryEventsSupported(): boolean {
   }
   return seen;
 }
+
 interface QueryEvent {
   sql: string;
   duration: number | bigint;
   database: { location(): string | null };
 }
+
 function isQueryEvent(event: unknown): event is QueryEvent {
   if (typeof event !== "object" || event === null) return false;
   const e = event as Partial<QueryEvent>;
@@ -64,6 +67,7 @@ export class Recorder implements ScopeObserver {
   private started = performance.now();
   private closed = false;
   private database: string;
+
   constructor(private directory: string) {
     directory = resolve(directory);
     this.directory = directory;
@@ -72,6 +76,7 @@ export class Recorder implements ScopeObserver {
     observers.set(directory, this);
     subscribe(channel, this.receive);
   }
+
   cycle(name: string): Cycle | undefined {
     if (this.closed) return undefined;
     if (!this.scopes.has(name)) {
@@ -85,6 +90,7 @@ export class Recorder implements ScopeObserver {
     }
     return { name, open: true, queries: 0, writes: 0, unknown: 0 };
   }
+
   finish(cycle: Cycle, elapsedMs: number): void {
     if (this.closed) return;
     const scope = this.scopes.get(cycle.name);
@@ -94,6 +100,7 @@ export class Recorder implements ScopeObserver {
     scope.elapsedMs += elapsedMs;
     scope.maxElapsedMs = Math.max(scope.maxElapsedMs, elapsedMs);
   }
+
   private receive = (event: unknown): void => {
     const start = performance.now();
     const current = context.getStore();
@@ -183,6 +190,7 @@ export class Recorder implements ScopeObserver {
       this.report.observerElapsedMs += performance.now() - start;
     }
   };
+
   stop() {
     if (!this.closed) {
       this.closed = true;

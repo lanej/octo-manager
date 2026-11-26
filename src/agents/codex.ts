@@ -13,13 +13,16 @@ import type { ThreadReadParams } from "./protocol/v2/ThreadReadParams.js";
 import type { ThreadResumeParams } from "./protocol/v2/ThreadResumeParams.js";
 import type { TurnStartParams } from "./protocol/v2/TurnStartParams.js";
 import type { ThreadTurnsListParams } from "./protocol/v2/ThreadTurnsListParams.js";
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function threadState(value: unknown): unknown {
   if (!object(value) || !object(value["thread"]) || !object(value["thread"]["status"])) return undefined;
   return value["thread"]["status"]["type"];
 }
+
 export interface QueuedMessage {
   queueId: string;
   clientId: string;
@@ -33,6 +36,7 @@ export interface QueueConnection {
   received(agent: AgentRef, bodies: string[]): Promise<{ bodies: string[]; complete: boolean }>;
   close(): void;
 }
+
 function queuedMessage(value: unknown): QueuedMessage {
   if (
     !object(value) ||
@@ -54,12 +58,14 @@ function queuedMessage(value: unknown): QueuedMessage {
     ...(body === undefined ? {} : { body }),
   };
 }
+
 export function codexSocketPath(socket?: string): string {
   return (
     socket ??
     join(process.env["CODEX_HOME"] ?? join(homedir(), ".codex"), "app-server-control", "app-server-control.sock")
   );
 }
+
 export class DeliveryError extends Error {
   constructor(
     message: string,
@@ -70,6 +76,7 @@ export class DeliveryError extends Error {
     super(message);
   }
 }
+
 export interface AgentAcceptance {
   turnId?: string;
   queueId?: string;
@@ -83,6 +90,7 @@ export interface AgentConnection {
   find(agent: AgentRef, deliveryId: string, expectedBody?: string): Promise<AgentAcceptance & { found: boolean }>;
   close(): void;
 }
+
 // WHY: The existing daemon accepts WebSocket frames over its Unix socket; the CLI proxy forwards raw bytes rather than newline JSON.
 export class CodexConnection implements AgentConnection {
   private socket: WebSocket;
@@ -99,6 +107,7 @@ export class CodexConnection implements AgentConnection {
   >();
   private ready: Promise<InitializeResponse>;
   private runtimeVersion: string | undefined;
+
   constructor(
     socketPath?: string,
     private delivery: "turn" | "queue" = "turn",
@@ -119,7 +128,7 @@ export class CodexConnection implements AgentConnection {
       }
       if (typeof m === "object" && m !== null && "id" in m && typeof m.id === "number") {
         const p = this.pending.get(m.id);
-        if (p === undefined) return;
+        if (!p) return;
         this.pending.delete(m.id);
         clearTimeout(p.timer);
         if ("error" in m && m.error !== null && m.error !== undefined)
@@ -167,6 +176,7 @@ export class CodexConnection implements AgentConnection {
     });
     void this.ready.catch(() => {});
   }
+
   private fail(error: Error): void {
     for (const p of this.pending.values()) {
       clearTimeout(p.timer);
@@ -174,6 +184,7 @@ export class CodexConnection implements AgentConnection {
     }
     this.pending.clear();
   }
+
   private call(method: string, params: unknown): Promise<any> {
     if (this.socket.readyState !== WebSocket.OPEN)
       return Promise.reject(new DeliveryError("Codex connection unavailable"));
@@ -194,6 +205,7 @@ export class CodexConnection implements AgentConnection {
       });
     });
   }
+
   async dispatch(
     method:
       | "thread/start"
@@ -209,6 +221,7 @@ export class CodexConnection implements AgentConnection {
     const value: unknown = await this.call(method, params);
     return value;
   }
+
   async prepare(agent: AgentRef): Promise<{ busy: boolean; version?: string }> {
     const info = await this.ready;
     const version = codexVersion(info);
@@ -243,6 +256,7 @@ export class CodexConnection implements AgentConnection {
       ...(version === undefined ? {} : { version }),
     };
   }
+
   async send(agent: AgentRef, deliveryId: string, text: string): Promise<AgentAcceptance> {
     if (this.delivery === "queue") return this.enqueue(agent, deliveryId, text);
     const params: TurnStartParams = {
@@ -260,6 +274,7 @@ export class CodexConnection implements AgentConnection {
       throw new DeliveryError("Codex delivery acceptance is unknown", true);
     }
   }
+
   private async enqueue(agent: AgentRef, deliveryId: string, text: string): Promise<{ queueId: string; note: string }> {
     const params: ThreadQueueAddParams = {
       threadId: agent.sessionId,
@@ -282,6 +297,7 @@ export class CodexConnection implements AgentConnection {
       throw new DeliveryError("Codex queue acceptance is unknown; inspect before retrying", true);
     }
   }
+
   async find(
     agent: AgentRef,
     deliveryId: string,
@@ -352,12 +368,13 @@ export class CodexConnection implements AgentConnection {
       }
       const next = result["nextCursor"];
       if (next === undefined || next === null || next === "")
-        return queued === undefined ? { found: false } : { found: true, ...queued };
+        return !queued ? { found: false } : { found: true, ...queued };
       if (typeof next !== "string") throw new DeliveryError("Codex history cursor invalid");
       cursor = next;
     }
-    return queued === undefined ? { found: false } : { found: true, ...queued };
+    return !queued ? { found: false } : { found: true, ...queued };
   }
+
   async queued(agent: AgentRef): Promise<QueuedMessage[]> {
     await this.ready;
     const values: QueuedMessage[] = [],
@@ -384,6 +401,7 @@ export class CodexConnection implements AgentConnection {
     }
     throw new DeliveryError("Queue inspection bound reached; coverage is incomplete");
   }
+
   async enqueueQueued(agent: AgentRef, clientId: string, body: string): Promise<QueuedMessage> {
     await this.ready;
     const params: ThreadQueueAddParams = {
@@ -398,6 +416,7 @@ export class CodexConnection implements AgentConnection {
       throw new DeliveryError("Queue admission does not confirm the intended digest revision", true);
     return item;
   }
+
   async cancelQueued(agent: AgentRef, queueId: string): Promise<boolean> {
     await this.ready;
     const params: ThreadQueueDeleteParams = {
@@ -409,6 +428,7 @@ export class CodexConnection implements AgentConnection {
       throw new DeliveryError("Invalid queue cancellation response", true);
     return result["deleted"];
   }
+
   async received(agent: AgentRef, bodies: string[]): Promise<{ bodies: string[]; complete: boolean }> {
     await this.ready;
     const expected = new Set(bodies),
@@ -451,6 +471,7 @@ export class CodexConnection implements AgentConnection {
     }
     return { bodies: [...found], complete: false };
   }
+
   close(): void {
     this.fail(new DeliveryError("Codex client closed"));
     this.socket.close();

@@ -5,6 +5,7 @@ import { Check } from "typebox/value";
 import { compact } from "../tracking/messages.js";
 import { shortId } from "../tracking/identifiers.js";
 import type { AcknowledgeAgentDigestResponse } from "../gen/octomanager/v2/notifications_pb.js";
+
 const ReceiptSchema = Type.Object(
   {
     id: Type.String({ minLength: 1, maxLength: 200 }),
@@ -15,6 +16,7 @@ const ReceiptSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
 export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
   if (response.receipt === undefined) throw new Error("Missing digest receipt");
   const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);
@@ -39,6 +41,7 @@ export function agentReceiptOutput(response: AcknowledgeAgentDigestResponse) {
     })),
   };
 }
+
 export function receiptOutput(response: AcknowledgeAgentDigestResponse, state?: string) {
   if (response.receipt === undefined) throw new Error("Missing digest receipt");
   const receipt: unknown = unwire(DomainDigestReceiptSchema, response.receipt);

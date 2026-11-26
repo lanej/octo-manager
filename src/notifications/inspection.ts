@@ -51,6 +51,7 @@ const submissionStates: Record<SubmissionState, DomainArchivedSubmissionState> =
   uncertain: DomainArchivedSubmissionState.UNCERTAIN,
   cancelled: DomainArchivedSubmissionState.CANCELLED,
 };
+
 function lookup<T extends { id: string }>(read: () => T[]) {
   let values: Map<string, T> | undefined;
   return (id: string) => {
@@ -58,6 +59,7 @@ function lookup<T extends { id: string }>(read: () => T[]) {
     return values.get(id);
   };
 }
+
 export type MessageSnapshot = Pick<DigestRevision, "dispatchId" | "body" | "messageIds" | "createdAt" | "mergeTarget">;
 type Sources = Pick<Store, "tracking" | "assessments" | "merging" | "issues" | "submissions">;
 
@@ -76,15 +78,15 @@ export function inspectMessage(
   const items = snapshot.messageIds.map((id) => {
     const message = store.tracking.inbox.get(id);
     const current = message !== undefined && applicable(message);
-    const summary = message?.notice === undefined ? "Historical notification" : noticeLabel(message.notice);
+    const summary = !message?.notice ? "Historical notification" : noticeLabel(message.notice);
     const item = create(NotificationItemSchema, {
       id,
       applicable: current,
       ...(message?.acknowledgedAt === undefined ? {} : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
       summary: current ? summary : `Stale · ${summary}`,
-      ...(full && message !== undefined ? { untrustedBody: message.body } : {}),
+      ...(full && message ? { untrustedBody: message.body } : {}),
     });
-    if (message !== undefined && message.recipientAgentId !== recipient)
+    if (message && message.recipientAgentId !== recipient)
       throw new Error("Frozen member belongs to another recipient");
     const source: NotificationSource = message?.source ?? {
       kind: "unavailable",
@@ -103,21 +105,21 @@ export function inspectMessage(
     switch (source.kind) {
       case "action": {
         const value = action(source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         const assessmentId = message?.notice?.assessmentId;
         const assessment = assessmentId === undefined ? undefined : store.assessments.get(assessmentId);
         item.source = {
           case: "action",
           value: create(GetActionResponseSchema, {
             action: wireAction(value, full),
-            ...(assessment === undefined ? {} : { assessment: wireAssessment(assessment, full) }),
+            ...(!assessment ? {} : { assessment: wireAssessment(assessment, full) }),
           }),
         };
         return item;
       }
       case "merge": {
         const value = entry(source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         item.source = {
           case: "merge",
           value: {
@@ -132,7 +134,7 @@ export function inspectMessage(
       }
       case "issue": {
         const value = issue(source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         const projected = wireIssue(value);
         item.source = {
           case: "issue",
@@ -147,7 +149,7 @@ export function inspectMessage(
             ...(full && message?.notice?.issueEventId !== undefined
               ? (() => {
                   const evidence = store.issues.subscriptions.evidence(message.notice.issueEventId);
-                  return evidence === undefined ? {} : { evidence: wireIssueEvidence(evidence) };
+                  return !evidence ? {} : { evidence: wireIssueEvidence(evidence) };
                 })()
               : {}),
             stage: projected.stage,
@@ -159,7 +161,7 @@ export function inspectMessage(
       }
       case "submission": {
         const value = submission(source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         item.source = {
           case: "submission",
           value: {
@@ -177,7 +179,7 @@ export function inspectMessage(
       }
       case "participants": {
         const value = store.tracking.prs().find((value) => value.id === source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         const participants = store.tracking.participants(value.id);
         item.source = {
           case: "participants",
@@ -197,7 +199,7 @@ export function inspectMessage(
       }
       case "reference": {
         const value = reference(source.id);
-        if (value === undefined) return unavailable(source.id);
+        if (!value) return unavailable(source.id);
         item.source = {
           case: "reference",
           value: {
@@ -211,9 +213,7 @@ export function inspectMessage(
       case "unavailable":
         return unavailable(
           id,
-          message === undefined
-            ? NotificationUnavailableReason.MISSING_SOURCE
-            : NotificationUnavailableReason.UNKNOWN_SOURCE,
+          !message ? NotificationUnavailableReason.MISSING_SOURCE : NotificationUnavailableReason.UNKNOWN_SOURCE,
         );
     }
   });
@@ -229,8 +229,6 @@ export function inspectMessage(
     items,
     createdAtMs: BigInt(snapshot.createdAt),
     ...(full ? { untrustedBody: snapshot.body } : {}),
-    ...(full && snapshot.mergeTarget !== undefined
-      ? { mergeTarget: wire(DomainReceiptTargetSchema, snapshot.mergeTarget) }
-      : {}),
+    ...(full && snapshot.mergeTarget ? { mergeTarget: wire(DomainReceiptTargetSchema, snapshot.mergeTarget) } : {}),
   });
 }

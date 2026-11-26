@@ -14,17 +14,18 @@ export class Messages {
     private digests: DigestService,
     private presentation?: (message: AgentMessage) => MessagePresentation,
   ) {}
+
   private resolve(id: string) {
     const grouped = this.store.digests.findDelivery(id);
     const single = this.store.tracking.inbox.get(id);
-    if (grouped !== undefined && single !== undefined) throw new Error("Invalid ambiguous message ID; use a longer ID");
-    if (grouped !== undefined)
+    if (grouped && single) throw new Error("Invalid ambiguous message ID; use a longer ID");
+    if (grouped)
       return {
         kind: "grouped" as const,
         revision: grouped,
         recipient: this.store.digests.get(grouped.digestId).agentId,
       };
-    if (single !== undefined)
+    if (single)
       return {
         kind: "single" as const,
         revision: {
@@ -37,12 +38,14 @@ export class Messages {
       };
     throw new Error("Message not found");
   }
+
   get(id: string, full = false) {
     const value = this.resolve(id);
     return inspectMessage(this.store, value.revision, value.recipient, full, (message) =>
       this.digests.applicable(message),
     );
   }
+
   read(id: string, agentId: string) {
     const value = this.resolve(id);
     if (value.recipient !== agentId) throw new Error("Message belongs to another agent");
@@ -55,12 +58,12 @@ export class Messages {
       delete item.untrustedBody;
       if (!item.applicable) continue;
       const row = this.store.tracking.inbox.get(item.id);
-      const current = row === undefined ? undefined : this.presentation?.(row);
-      if (frozenTarget !== undefined && isDeepStrictEqual(frozenTarget, current?.mergeTarget)) currentOffer = true;
+      const current = !row ? undefined : this.presentation?.(row);
+      if (frozenTarget && isDeepStrictEqual(frozenTarget, current?.mergeTarget)) currentOffer = true;
       const text = current?.instructions;
       if (text !== undefined && text !== "") instructions.set(text, [...(instructions.get(text) ?? []), item.id]);
     }
-    if (frozenTarget !== undefined && !currentOffer) {
+    if (frozenTarget && !currentOffer) {
       delete message.mergeTarget;
       message.summary = `Stale merge offer · ${message.summary}`;
     }

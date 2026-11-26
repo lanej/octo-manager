@@ -17,14 +17,17 @@ export interface FailedHandoff {
   reason: string;
   at: number;
 }
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 export function handoffId(url: string, sessionId: string): string {
   return createHash("sha256")
     .update(JSON.stringify([canonicalPR(url), sessionId]))
     .digest("hex");
 }
+
 export function parseHandoff(value: unknown): Handoff {
   if (!object(value) || !object(value["owner"])) throw new Error("Invalid PR handoff");
   const owner = value["owner"],
@@ -64,12 +67,14 @@ export function parseHandoff(value: unknown): Handoff {
     createdAt,
   };
 }
+
 async function privateDirectory(path: string): Promise<void> {
   await mkdir(path, { recursive: true, mode: 0o700 });
   if (!(await lstat(path)).isDirectory() || (await lstat(path)).isSymbolicLink())
     throw new Error("Handoff directory must be private and not a symlink");
   await chmod(path, 0o700);
 }
+
 async function statusFile(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, "utf8");
@@ -78,19 +83,23 @@ async function statusFile(path: string): Promise<string | undefined> {
     throw error;
   }
 }
+
 export class Handoffs {
   private root: string;
+
   constructor(
     directory: string,
     private now: () => number = Date.now,
   ) {
     this.root = join(directory, "handoffs");
   }
+
   private async directories(): Promise<void> {
     await privateDirectory(this.root);
     await privateDirectory(join(this.root, "pending"));
     await privateDirectory(join(this.root, "failed"));
   }
+
   async watch(onChange: () => void, onError: (error: Error) => void): Promise<FSWatcher> {
     await this.directories();
     const watcher = watch(join(this.root, "pending"), (_event, filename) => {
@@ -99,6 +108,7 @@ export class Handoffs {
     watcher.on("error", onError);
     return watcher;
   }
+
   async enqueue(url: string, owner: AgentTarget, cwd: string): Promise<Handoff> {
     const request = parseHandoff({
       id: handoffId(url, owner.sessionId),
@@ -124,6 +134,7 @@ export class Handoffs {
     }
     return request;
   }
+
   private async entries(folder: "pending" | "failed"): Promise<string[]> {
     try {
       return (await readdir(join(this.root, folder)))
@@ -135,6 +146,7 @@ export class Handoffs {
       throw error;
     }
   }
+
   async drain(accept: (handoff: Handoff) => { accepted: true } | { accepted: false; reason: string }): Promise<void> {
     for (const file of (await this.entries("pending")).slice(0, 20)) {
       const path = join(this.root, "pending", file);
@@ -179,6 +191,7 @@ export class Handoffs {
       await unlink(path);
     }
   }
+
   async status(sessionId: string): Promise<{ pending: Handoff[]; failed: FailedHandoff[] }> {
     const pending: Handoff[] = [],
       failed: FailedHandoff[] = [];

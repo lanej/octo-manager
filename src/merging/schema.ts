@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+
 export function migrateMerging(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (version === 15 || version === 14 || version === 13) return;

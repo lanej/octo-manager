@@ -1,6 +1,7 @@
 import { ghRead } from "../github/reads.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import { record, single, type RebaseSource } from "./types.js";
+
 export async function rebaseSource(url: string, signal: AbortSignal): Promise<RebaseSource> {
   const parts = new URL(canonicalPR(url)).pathname.split("/");
   if (parts[1] === undefined || parts[2] === undefined || parts[4] === undefined)

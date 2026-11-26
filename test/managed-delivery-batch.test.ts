@@ -87,6 +87,7 @@ async function fixture(targets: AgentTarget[], recorded = true) {
     },
   };
 }
+
 const owner = (sessionId: string, harness = "codex"): AgentTarget => ({
   harness,
   endpoint: "local",

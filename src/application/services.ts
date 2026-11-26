@@ -25,6 +25,7 @@ import type { ApplicationInputs } from "./inputs.js";
 export interface Closeable {
   close(): Promise<void>;
 }
+
 export function createServices(
   directory: string,
   store: Store,
@@ -100,7 +101,7 @@ export function createServices(
   );
   const submissions = register(
     new SubmissionService(store.submissions, tracking, {
-      ...(trackingConfig.submissionModels === undefined ? {} : { models: trackingConfig.submissionModels }),
+      ...(!trackingConfig.submissionModels ? {} : { models: trackingConfig.submissionModels }),
       ...options.submissionOptions,
     }),
   );
@@ -178,10 +179,9 @@ export function createServices(
     },
     changed(scope?: InputScope) {
       // Unknown scoped changes retain conservative intake invalidation; known observations do not.
-      if (scope !== undefined && (scope.source === undefined || scope.notificationEligibility === true))
-        notifications.wake();
+      if (scope && (scope.source === undefined || scope.notificationEligibility === true)) notifications.wake();
       digests.wake(scopedDigestInputs && scope?.recipients !== "all" ? scope?.prId : undefined);
-      if (scope === undefined) {
+      if (!scope) {
         assessments.wake();
         repairs.wake();
         tracking.inputsChanged();
@@ -213,4 +213,5 @@ export function createServices(
     },
   };
 }
+
 export type ApplicationServices = ReturnType<typeof createServices>;

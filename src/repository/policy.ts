@@ -19,7 +19,7 @@ export function inheritedAutomation(
   checksComplete: boolean | undefined,
 ): "keep" | "apply" | "revoke" | "inspect_checks" | "inspect_setting" {
   const current = entries.find((entry) => !terminal(entry.state));
-  if (current === undefined) {
+  if (!current) {
     const settled = entries.some(
       (entry) => terminal(entry.state) && (entry.trackingEpoch ?? entry.ready?.epoch ?? 0) === policy.epoch,
     );
@@ -29,7 +29,7 @@ export function inheritedAutomation(
   }
   if (explicit === undefined) return "inspect_setting";
   if (explicit) return "keep";
-  if (current === undefined) return policy.autoMerge ? "apply" : "keep";
+  if (!current) return policy.autoMerge ? "apply" : "keep";
   if (
     current.autoMerge === policy.autoMerge &&
     current.autoMergeSource === "inherited" &&

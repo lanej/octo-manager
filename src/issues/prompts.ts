@@ -1,4 +1,5 @@
 import { IssueStage, Role, type IssueRecord, type IssuePolicy, type Assignment } from "./contracts.js";
+
 export function assignmentPrompt(issue: IssueRecord, policy: IssuePolicy, purpose: Assignment["purpose"]): string {
   const authorizedPublish = policy.publish || issue.publicationVersion === issue.brief?.version;
   return [

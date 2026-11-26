@@ -120,7 +120,7 @@ function listing(): RecordView[] {
 function repaint() {
   let rows = listing();
   const history = workerHistory;
-  if (history !== undefined && history.instance === snapshot?.instanceId)
+  if (history && history.instance === snapshot?.instanceId)
     rows = rows.map((row) =>
       row.jobId === history.job
         ? {
@@ -132,14 +132,14 @@ function repaint() {
   const selected = view.selected() ?? rows[0];
   const reviews =
     view.screen === "Reviews" || (view.inspecting && (view.screen === "Attention" || view.screen === "Deliveries"));
-  if (selected !== undefined && (reviews || view.screen === "Tracking")) {
+  if (selected && (reviews || view.screen === "Tracking")) {
     const selectedFrame = interest.url === selected.url ? frame : undefined;
     rows = rows.map((row) => {
       if (row.id !== selected.id) return row;
       if (reviews)
         return {
           ...row,
-          ...(row.delivery === undefined || selectedFrame?.pullRequest?.title === undefined
+          ...(!row.delivery || selectedFrame?.pullRequest?.title === undefined
             ? {}
             : {
                 delivery: {
@@ -227,8 +227,7 @@ async function loadWorker(force = false) {
 async function loadActivity(cursors?: bigint[]) {
   const current = snapshot;
   if (view.screen !== "Activity" || connection !== "Live" || current === undefined || reading) return;
-  if (cursors === undefined && (activityError !== "" || pageCursors.length > 1 || pageSequence === current.sequence))
-    return;
+  if (!cursors && (activityError !== "" || pageCursors.length > 1 || pageSequence === current.sequence)) return;
   reading = true;
   const target = cursors ?? pageCursors;
   const before = target.at(-1) ?? 0n;
@@ -315,7 +314,7 @@ async function command(key: string) {
   if (screen === "Activity" && (key === "h" || key === "l" || key === "u")) {
     if (key === "u") {
       await Promise.all([
-        operationsError === "" || retryPage !== undefined ? loadActivity(retryPage ?? [0n]) : undefined,
+        operationsError === "" || retryPage ? loadActivity(retryPage ?? [0n]) : undefined,
         loadOperations(true),
       ]);
       return;

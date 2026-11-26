@@ -21,6 +21,7 @@ import {
 import { Recorder, queryEventsSupported } from "./recorder.js";
 
 const maximumFileBytes = 8 * 1024 * 1024;
+
 export class CaptureError extends Error {
   constructor(
     message: string,
@@ -29,20 +30,24 @@ export class CaptureError extends Error {
     super(message);
   }
 }
+
 export class PerformanceDiagnostics {
   private active: { capture: PerformanceCapture; recorder: Recorder; timer: NodeJS.Timeout } | undefined;
   private last: PerformanceCapture | undefined;
   private root: string;
+
   constructor(
     directory: string,
     private supported = queryEventsSupported,
   ) {
     this.root = resolve(directory, "diagnostics", "performance");
   }
+
   private file(id: string): string {
     if (!/^[a-f0-9]{32}$/u.test(id)) throw new CaptureError("Invalid capture ID", "invalid");
     return join(this.root, id + ".json");
   }
+
   private secureDirectories(): void {
     for (const path of [resolve(this.root, ".."), this.root]) {
       try {
@@ -55,6 +60,7 @@ export class PerformanceDiagnostics {
         throw new Error("Unsafe diagnostics directory");
     }
   }
+
   private save(capture: PerformanceCapture, initial = false): void {
     const data = toJsonString(PerformanceCaptureSchema, capture);
     if (Buffer.byteLength(data) > maximumFileBytes) throw new Error("Capture exceeds artifact bound");
@@ -75,6 +81,7 @@ export class PerformanceDiagnostics {
       }
     }
   }
+
   start(requestId: string, durationMs: number): PerformanceCapture {
     if (
       requestId.length === 0 ||
@@ -96,8 +103,7 @@ export class PerformanceDiagnostics {
     } catch (error) {
       if (!(error instanceof CaptureError && error.kind === "missing")) throw error;
     }
-    if (this.active !== undefined)
-      throw new CaptureError("Capture already active: " + this.active.capture.id, "conflict");
+    if (this.active) throw new CaptureError("Capture already active: " + this.active.capture.id, "conflict");
     if (!this.supported())
       throw new CaptureError(
         "Runtime does not publish sqlite.db.query events; install a supported native build",
@@ -138,6 +144,7 @@ export class PerformanceDiagnostics {
       return capture;
     }
   }
+
   get(id: string): PerformanceCapture {
     const file = this.file(id);
     if (this.active?.capture.id === id) return this.active.capture;
@@ -176,13 +183,15 @@ export class PerformanceDiagnostics {
       if (fd !== undefined) closeSync(fd);
     }
   }
+
   stop(id: string): PerformanceCapture {
     this.file(id);
     return this.active?.capture.id === id ? this.finish(State.STOPPED) : this.get(id);
   }
+
   private finish(state: State): PerformanceCapture {
     const active = this.active;
-    if (active === undefined) throw new Error("No active capture");
+    if (!active) throw new Error("No active capture");
     clearTimeout(active.timer);
     active.capture.report = active.recorder.stop();
     active.capture.endedAtMs = BigInt(Date.now());
@@ -197,7 +206,8 @@ export class PerformanceDiagnostics {
     }
     return active.capture;
   }
+
   close(): void {
-    if (this.active !== undefined) this.finish(State.STOPPED);
+    if (this.active) this.finish(State.STOPPED);
   }
 }

@@ -1,5 +1,6 @@
 import { Type } from "typebox";
 import { checked, Sha } from "./contracts.js";
+
 export type MergeProgress =
   | { state: "pending"; requestId: string }
   | { state: "merged"; sha: string }
@@ -18,6 +19,7 @@ const response = Type.Object({
     }),
   ),
 });
+
 export function mergeProgress(value: unknown, requestId?: string): MergeProgress {
   const parsed = checked(response, value);
   switch (parsed.status) {

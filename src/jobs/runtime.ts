@@ -22,6 +22,7 @@ import {
   removeFixture,
 } from "./fixture.js";
 import { readPullRequest } from "./github.js";
+
 interface Active {
   jobId: string;
   attempt: number;
@@ -31,6 +32,7 @@ interface Active {
   exited: Promise<void>;
   killTimer?: NodeJS.Timeout;
 }
+
 export function processAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -39,18 +41,21 @@ export function processAlive(pid: number): boolean {
     return !(typeof error === "object" && error !== null && "code" in error && error.code === "ESRCH");
   }
 }
+
 export function transient(error: string): boolean {
   return (
     /\b(429|500|502|503|504)\b|ECONNRESET|ETIMEDOUT|EAI_AGAIN|temporarily unavailable|rate limit/i.test(error) &&
     !/auth|credential|login|401|403/i.test(error)
   );
 }
+
 export interface JobRuntimeOptions {
   now: () => number;
   workerPath: string;
   model?: string;
   workerEnv?: NodeJS.ProcessEnv;
 }
+
 export class JobRuntime {
   private readonly jobWork: ScheduledTask;
   private active: Active | undefined;
@@ -59,6 +64,7 @@ export class JobRuntime {
   private recoveryPids = new Set<number>();
   private finalSnapshot: Snapshot | undefined;
   private readonly now: () => number;
+
   constructor(
     private directory: string,
     private store: Store,
@@ -69,6 +75,7 @@ export class JobRuntime {
     this.now = options.now;
     this.jobWork = scheduler.task("jobs", () => this.tickJobs());
   }
+
   recover(): void {
     for (const job of this.store.jobs()) {
       let observedExit = false;
@@ -101,9 +108,11 @@ export class JobRuntime {
       );
     }
   }
+
   wake(): void {
     this.jobWork.wake();
   }
+
   checkpointable(): boolean {
     return (
       this.active === undefined &&
@@ -119,33 +128,39 @@ export class JobRuntime {
         )
     );
   }
+
   stop(abort = false): void {
     this.stopping = true;
     this.jobWork.close();
-    if (abort && this.active !== undefined) this.abort(this.active);
+    if (abort && this.active) this.abort(this.active);
   }
+
   async close(): Promise<void> {
     this.stop(true);
-    if (this.active !== undefined) await this.active.exited;
+    if (this.active) await this.active.exited;
   }
+
   finish(): void {
     this.finalSnapshot = { ...this.snapshot(), scheduler: "stopped" };
     this.stopped = true;
   }
+
   snapshot(): Snapshot {
-    if (this.finalSnapshot !== undefined) return this.finalSnapshot;
+    if (this.finalSnapshot) return this.finalSnapshot;
     const recoveryPid = [...this.recoveryPids][0];
     return {
       scheduler: this.stopped ? "stopped" : this.stopping ? "stopping" : this.store.paused() ? "paused" : "running",
-      worker: recoveryPid !== undefined ? "recovering" : this.active !== undefined ? "busy" : "idle",
+      worker: recoveryPid !== undefined ? "recovering" : this.active ? "busy" : "idle",
       jobs: this.store.jobs(),
       events: this.store.events(),
       ...(recoveryPid !== undefined ? { recoveryPid } : {}),
     };
   }
+
   private notify(): void {
     this.changed();
   }
+
   private change(
     id: string,
     status: Status,
@@ -164,6 +179,7 @@ export class JobRuntime {
     this.notify();
     return job;
   }
+
   command(value: JobCommand): Job;
   command(value: unknown): unknown;
   command(value: unknown): unknown {
@@ -204,9 +220,11 @@ export class JobRuntime {
     }
     throw new Error("Unsupported command or arguments");
   }
+
   tick(): void {
     this.jobWork.runNow();
   }
+
   private tickJobs(): number | undefined {
     if (this.stopping || this.stopped) return undefined;
     for (const pid of this.recoveryPids)
@@ -224,7 +242,7 @@ export class JobRuntime {
       }
     // Unresolved inherited PIDs have no child-process exit event in this owner.
     if (this.recoveryPids.size > 0) return this.now() + 100;
-    if (this.active !== undefined || this.store.paused()) return undefined;
+    if (this.active || this.store.paused()) return undefined;
     const now = this.now();
     const jobs = this.store
       .jobs()
@@ -234,7 +252,7 @@ export class JobRuntime {
           : job,
       );
     const job = nextReady(jobs, now);
-    if (job === undefined) {
+    if (!job) {
       const pending = jobs.filter((value) => value.status === "queued" || value.status === "retry_wait");
       return pending.length === 0 ? undefined : Math.min(...pending.map((value) => value.availableAt));
     }
@@ -255,7 +273,7 @@ export class JobRuntime {
     };
     this.active = active;
     active.exited = this.run(active).finally(() => {
-      if (active.killTimer !== undefined) clearTimeout(active.killTimer);
+      if (active.killTimer) clearTimeout(active.killTimer);
       if (this.active === active) {
         this.active = undefined;
         this.store.event(active.jobId, "worker_idle", "Worker slot released");
@@ -265,6 +283,7 @@ export class JobRuntime {
     });
     return undefined;
   }
+
   private cancel(id: string): Job {
     const job = this.store.get(id);
     if (job.status === "queued" || job.status === "retry_wait")
@@ -275,11 +294,13 @@ export class JobRuntime {
     if (this.active?.jobId === id) this.abort(this.active);
     return next;
   }
+
   private abort(active: Active): void {
     active.abort.abort();
     if (active.child?.connected === true) active.child.send({ type: "abort" }, () => {});
-    if (active.killTimer === undefined) active.killTimer = setTimeout(() => active.child?.kill("SIGKILL"), 5000);
+    if (!active.killTimer) active.killTimer = setTimeout(() => active.child?.kill("SIGKILL"), 5000);
   }
+
   private async run(active: Active): Promise<void> {
     const outcome: {
       failure?: string;
@@ -381,7 +402,7 @@ export class JobRuntime {
       // WHY: A child cannot begin model/tool work until its PID is durable for crash recovery.
       job = this.store.get(job.id);
       const attempt = job.attempts.at(-1);
-      if (attempt === undefined) throw new Error("Missing worker attempt");
+      if (!attempt) throw new Error("Missing worker attempt");
       if (child.pid !== undefined) attempt.pid = child.pid;
       this.store.save(job, "worker_started", `Attempt ${String(active.attempt)}`);
       if (job.status === "conflicted") job = this.change(job.id, "resolving", "Pi is resolving the conflict");

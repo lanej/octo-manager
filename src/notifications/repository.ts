@@ -11,10 +11,12 @@ function integer(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error("Invalid inbox integer");
   return value;
 }
+
 function text(value: unknown): string {
   if (typeof value !== "string" || value === "") throw new Error("Invalid inbox text");
   return value;
 }
+
 const applicable = /* sql */ `
   (NOT EXISTS(
   SELECT 1
@@ -202,6 +204,7 @@ function decode(row: Record<string, unknown>): AgentMessage {
     ...(row["acknowledged_at_ms"] === null ? {} : { acknowledgedAt: integer(row["acknowledged_at_ms"]) }),
   };
 }
+
 export class NotificationRepository {
   // rationale: Store constructs this repository before completing notification migrations.
   private byId: StatementSync | undefined;
@@ -212,17 +215,21 @@ export class NotificationRepository {
   private workflowRecovery: StatementSync | undefined;
   private actionRecovery: StatementSync | undefined;
   private noticeById: StatementSync | undefined;
+
   constructor(
     private db: DatabaseSync,
     private now: () => number,
     private directory: string,
   ) {}
+
   newMessageId(): string {
     return allocateMessageId(this.db);
   }
+
   render(id: string, notice: SafeNotice): string {
     return renderDirectNotice(this.notice(id) ?? notice, id, this.directory);
   }
+
   recoverWorkflows(): void {
     const rows = (this.workflowRecovery ??= this.db.prepare(
       `${messagesQuery} WHERE action_id='' AND applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=delivery_id)`,
@@ -250,7 +257,7 @@ export class NotificationRepository {
                 ? "participants"
                 : "merge",
         assessment: "not_required",
-        ...(subject === undefined ? {} : { subject }),
+        ...(!subject ? {} : { subject }),
         ...(typeof pr === "string" ? { prUrl: pr } : {}),
       };
       this.freezeNotice(id, notice);
@@ -260,6 +267,7 @@ export class NotificationRepository {
       this.markReplacement(message.id, id);
     }
   }
+
   legacyActionMessages(): AgentMessage[] {
     return (this.actionRecovery ??= this.db.prepare(
       `SELECT m.* FROM (${query}) m WHERE applicable=1 AND acknowledged_at_ms IS NULL AND NOT EXISTS(SELECT 1 FROM safe_agent_notices n WHERE n.message_id=m.delivery_id)`,
@@ -267,6 +275,7 @@ export class NotificationRepository {
       .all()
       .map(decode);
   }
+
   isReplaced(id: string): boolean {
     return (
       this.db
@@ -276,20 +285,23 @@ export class NotificationRepository {
         .get(id, id) !== undefined
     );
   }
+
   supersede(originalId: string, replacementId: string): void {
     this.db
       .prepare("INSERT OR IGNORE INTO safe_notice_supersessions(original_id,replacement_id) VALUES(?,?)")
       .run(originalId, replacementId);
   }
+
   markReplacement(originalId: string, replacementId: string): void {
     this.db
       .prepare("INSERT INTO safe_notice_replacements(original_id,replacement_id) VALUES(?,?)")
       .run(originalId, replacementId);
   }
+
   freezeNotice(id: string, notice: SafeNotice): void {
     parseNotice(notice);
     const ids = (table: string, column = "id") =>
-      this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table) === undefined
+      !this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)
         ? []
         : this.db
             .prepare(`SELECT ${column} FROM ${table}`)
@@ -316,7 +328,7 @@ export class NotificationRepository {
         : {
             assessment: reference(notice.assessmentId, ids("evidence_assessments")),
           }),
-      ...(notice.subject === undefined
+      ...(!notice.subject
         ? {}
         : {
             subject: reference(
@@ -340,18 +352,20 @@ export class NotificationRepository {
       .prepare("INSERT OR IGNORE INTO safe_agent_notices(message_id,notice_json) VALUES(?,?)")
       .run(id, JSON.stringify(notice));
   }
+
   notice(id: string): SafeNotice | undefined {
     const row = (this.noticeById ??= this.db.prepare(
       "SELECT notice_json FROM safe_agent_notices WHERE message_id=?",
     )).get(id);
-    return row === undefined ? undefined : parseNotice(JSON.parse(String(row["notice_json"])));
+    return !row ? undefined : parseNotice(JSON.parse(String(row["notice_json"])));
   }
+
   private source(message: AgentMessage, notice: SafeNotice | undefined): NotificationSource {
     if (message.actionId !== "") return { kind: "action", id: message.actionId };
     if (message.issueId !== undefined) return { kind: "issue", id: message.issueId };
     if (message.submissionId !== undefined) return { kind: "submission", id: message.submissionId };
     if (message.participantPRId !== undefined) return { kind: "participants", id: message.participantPRId };
-    if (notice?.subject !== undefined) {
+    if (notice?.subject) {
       switch (notice.subject.kind) {
         case "action":
           return { kind: "action", id: notice.subject.id };
@@ -384,29 +398,31 @@ export class NotificationRepository {
     }
     return { kind: "unavailable" };
   }
+
   private withNotice(message: AgentMessage): AgentMessage {
     const notice = this.notice(message.id);
     return {
       ...message,
       source: this.source(message, notice),
-      ...(notice === undefined ? {} : { notice }),
+      ...(!notice ? {} : { notice }),
     };
   }
 
   get(id: string): AgentMessage | undefined {
     const row = (this.byId ??= this.db.prepare(`${messagesQuery} WHERE delivery_id=?`)).get(id);
-    if (row !== undefined) return this.withNotice(decode(row));
+    if (row) return this.withNotice(decode(row));
     const prefix = compactId(id);
     if (!/^[a-f0-9]{8,32}$/.test(prefix)) return undefined;
     const matches = (this.byPrefix ??= this.db.prepare(
       `${messagesQuery} WHERE replace(delivery_id,'-','') LIKE ? LIMIT 2`,
     )).all(prefix + "%");
     if (matches.length > 1) throw new Error("Invalid ambiguous ID prefix; use a longer ID");
-    return matches[0] === undefined ? undefined : this.withNotice(decode(matches[0]));
+    return !matches[0] ? undefined : this.withNotice(decode(matches[0]));
   }
+
   record(id: string, body: string): AgentMessage {
     const previous = this.get(id);
-    if (previous !== undefined) return previous;
+    if (previous) return previous;
     if (body === "" || body.length > 1024 * 1024) throw new Error("Invalid inbox message size");
     this.db
       .prepare(
@@ -414,9 +430,10 @@ export class NotificationRepository {
       )
       .run(nextInboxSequence(this.db), id, body, this.now(), this.now());
     const result = this.get(id);
-    if (result === undefined) throw new Error("Message was not recorded");
+    if (!result) throw new Error("Message was not recorded");
     return result;
   }
+
   list(
     agentId: string,
     after = 0,
@@ -439,6 +456,7 @@ export class NotificationRepository {
       hasMore: rows.length > 200,
     };
   }
+
   uncovered(agentId: string, after = 0): { messages: AgentMessage[]; nextSequence: number; hasMore: boolean } {
     integer(after);
     const rows = (this.uncoveredPage ??= this.db.prepare(
@@ -451,14 +469,15 @@ export class NotificationRepository {
       hasMore: rows.length > 200,
     };
   }
+
   acknowledge(id: string, agentId: string): AgentMessage {
     const message = this.get(id);
-    if (message === undefined) throw new Error("Message not found");
+    if (!message) throw new Error("Message not found");
     if (message.recipientAgentId !== agentId) throw new Error("Message belongs to another agent");
     if (message.acknowledgedAt !== undefined) return message;
     this.db
       .prepare(
-        this.db.prepare("SELECT 1 FROM safe_recovery_messages WHERE id=?").get(message.id) !== undefined
+        this.db.prepare("SELECT 1 FROM safe_recovery_messages WHERE id=?").get(message.id)
           ? "UPDATE safe_recovery_messages SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
           : message.issueId !== undefined
             ? "UPDATE issue_notices SET acknowledged_at_ms=? WHERE id=? AND acknowledged_at_ms IS NULL"
@@ -472,9 +491,10 @@ export class NotificationRepository {
       )
       .run(this.now(), message.id);
     const result = this.get(message.id);
-    if (result === undefined) throw new Error("Message not found after acknowledgment");
+    if (!result) throw new Error("Message not found after acknowledgment");
     return result;
   }
+
   defer(id: string, at: number): void {
     this.db.prepare("UPDATE delivery_messages SET next_check_at_ms=? WHERE delivery_id=?").run(integer(at), id);
   }

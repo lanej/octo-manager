@@ -4,6 +4,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import type { AcknowledgeMessageRequest, ListAgentMessagesRequest } from "../gen/octomanager/v2/tracking_pb.js";
 import type { AgentMessage } from "./inbox.js";
 import type { TrackingStore } from "./store.js";
+
 function wire(message: AgentMessage) {
   return {
     ...message,
@@ -13,6 +14,7 @@ function wire(message: AgentMessage) {
     ...(message.acknowledgedAt === undefined ? {} : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
   };
 }
+
 export function inboxRoutes(store: TrackingStore, readyHead?: (message: AgentMessage) => string | undefined) {
   return {
     listAgentMessages(request: ListAgentMessagesRequest) {
@@ -43,7 +45,7 @@ export function inboxRoutes(store: TrackingStore, readyHead?: (message: AgentMes
           store.agents().map((agent) => agent.id),
         );
         const message = store.inbox.get(request.id);
-        if (message === undefined) throw new ConnectError("Message not found", Code.NotFound);
+        if (!message) throw new ConnectError("Message not found", Code.NotFound);
         if (message.recipientAgentId !== agentId)
           throw new ConnectError("Message belongs to another agent", Code.PermissionDenied);
         if (request.expectedBody !== undefined && request.expectedBody !== message.body)

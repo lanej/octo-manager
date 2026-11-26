@@ -18,6 +18,7 @@ function gate() {
   });
   return { promise, release };
 }
+
 async function within<T>(promise: Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -33,6 +34,7 @@ async function within<T>(promise: Promise<T>): Promise<T> {
     clearTimeout(timer);
   }
 }
+
 class Queue implements QueueConnection {
   readonly started = gate();
   readonly enqueued = gate();
@@ -41,10 +43,12 @@ class Queue implements QueueConnection {
   blocked = false;
   closed = false;
   preparations = 0;
+
   constructor(
     private entered: () => void,
     private exited: () => void,
   ) {}
+
   async prepare() {
     this.preparations++;
     this.entered();
@@ -57,27 +61,33 @@ class Queue implements QueueConnection {
       this.exited();
     }
   }
+
   queued() {
     return Promise.resolve(this.slots);
   }
+
   enqueueQueued(_agent: unknown, clientId: string, body: string) {
     const item = { queueId: clientId, clientId, body };
     this.slots.push(item);
     this.enqueued.release();
     return Promise.resolve(item);
   }
+
   cancelQueued(_agent: unknown, queueId: string) {
     this.slots = this.slots.filter((item) => item.queueId !== queueId);
     return Promise.resolve(true);
   }
+
   received() {
     return Promise.resolve({ bodies: [], complete: true });
   }
+
   close() {
     this.closed = true;
     this.unblock.release();
   }
 }
+
 async function fixture(count: number, options: { now?: () => number; intervalMs?: number } = {}) {
   const now = options.now ?? (() => 1000);
   const scheduler = new WorkScheduler(now);

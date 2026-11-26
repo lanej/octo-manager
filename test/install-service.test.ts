@@ -8,6 +8,7 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { SchedulerService } from "../src/gen/octomanager/v2/scheduler_pb.js";
 import { test, expect } from "bun:test";
 import { serviceDefinition, startService, managerAvailable, type ServiceInput } from "../src/install/service.js";
+
 const input: ServiceInput = {
   home: "/fixture/home",
   release: "/fixture/release",
@@ -17,6 +18,7 @@ const input: ServiceInput = {
   codexHome: "/fixture/codex",
 };
 const image = "a".repeat(64);
+
 async function nativeFixture<T>(action: (selected: ServiceInput, launch: () => void) => Promise<T>): Promise<T> {
   const state = await mkdtemp("/tmp/octo-service-proof-");
   const server = createServer(
@@ -79,6 +81,7 @@ async function nativeFixture<T>(action: (selected: ServiceInput, launch: () => v
     await rm(state, { recursive: true, force: true });
   }
 }
+
 test("Linux service activation starts a stopped installed unit and verifies the exact native owner", async () => {
   await nativeFixture(async (selected, launch) => {
     const definition = serviceDefinition("linux", selected, 1000),

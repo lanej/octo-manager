@@ -1,7 +1,9 @@
 import { MessageCategory, type HeuristicClassifier, type CategoryDecision } from "../types.js";
+
 function decision(category: MessageCategory, rule: string, reason: string): CategoryDecision {
   return { category, rule, reason };
 }
+
 function cleanOverview(body: string): boolean {
   let overview = body.replace(/\s*<sub>Review effort: [A-Za-z ]+<\/sub>\s*$/i, "").trim();
   const details = overview.indexOf("<details>");
@@ -25,6 +27,7 @@ function cleanOverview(body: string): boolean {
     lines.length === 2 || (lines.length === 3 && /^.+ (?:have|has) no active review issues\.$/i.test(lines[1] ?? ""))
   );
 }
+
 export const copilotHeuristic: HeuristicClassifier = {
   id: "copilot-review-patterns",
   version: 1,

@@ -18,6 +18,7 @@ export class CodexSessionReference implements CredentialStore {
     private directory: string,
     private now: () => number = Date.now,
   ) {}
+
   async read(providerId: string, options?: AuthOperationOptions): Promise<Credential | undefined> {
     options?.signal?.throwIfAborted();
     if (providerId !== "openai-codex") return undefined;
@@ -49,12 +50,15 @@ export class CodexSessionReference implements CredentialStore {
       throw new Error("Existing Codex authentication needs refreshing through Codex");
     return { type: "oauth", access, refresh: "", expires };
   }
+
   async list(options?: AuthOperationOptions): Promise<readonly CredentialInfo[]> {
     return (await this.read("openai-codex", options)) ? [{ providerId: "openai-codex", type: "oauth" }] : [];
   }
+
   async modify(): Promise<never> {
     throw new Error("Codex authentication is read-only; Codex owns refresh and login");
   }
+
   async delete(): Promise<never> {
     throw new Error("Codex authentication is read-only; sign out through Codex");
   }

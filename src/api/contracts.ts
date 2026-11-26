@@ -21,6 +21,7 @@ import {
   WriterSchema,
   SubmissionState,
 } from "../submissions/contracts.js";
+
 const text = Type.String();
 const integer = Type.Integer();
 const object = (properties: Record<string, import("typebox").TSchema>) =>

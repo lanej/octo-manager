@@ -428,7 +428,7 @@ export async function verifyStartedService(
         target["expected_identity"] !== expectedIdentity ||
         target["retirement_policy"] !== "successful-exit" ||
         target["stop_accepted"] !== false ||
-        (original !== undefined && sameProcess(target["process"], original.process))
+        (original && sameProcess(target["process"], original.process))
       )
         throw new IncompleteActivation("native-started-service-image-or-process-differs");
       if (target["ready"] === true) {

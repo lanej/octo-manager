@@ -5,6 +5,7 @@ import { readObservation } from "../tracking/github.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import type { ObservationInput } from "../tracking/types.js";
 import { checked, Sha, type MergeEntry } from "./contracts.js";
+
 const GateSchema = Type.Object({
   stack: Type.Optional(
     Type.Union([
@@ -85,11 +86,13 @@ export interface MergeProvider {
   ): Promise<string | MergeProgress>;
   result?(url: string, requestId: string, signal: AbortSignal): Promise<MergeProgress>;
 }
+
 function location(url: string) {
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split("/");
   if (owner === undefined || repo === undefined || number === undefined) throw new Error("Invalid PR location");
   return { owner, repo, number, root: `repos/${owner}/${repo}` };
 }
+
 export async function readMergeReadiness(
   url: string,
   observation: ObservationInput,
@@ -163,6 +166,7 @@ export async function readMergeReadiness(
     ...(pr.merged && pr.mergeCommit !== null ? { mergeCommit: pr.mergeCommit.oid } : {}),
   };
 }
+
 export const mergeProvider: MergeProvider = {
   readiness: readMergeReadiness,
   async inspect(url, signal) {

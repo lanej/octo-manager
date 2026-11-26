@@ -4,6 +4,7 @@ import { test, expect } from "bun:test";
 import { create } from "@bufbuild/protobuf";
 import { AcknowledgeAgentDigestResponseSchema } from "../src/gen/octomanager/v2/notifications_pb.js";
 import { receiptOutput, agentReceiptOutput } from "../src/notifications/receipt-output.js";
+
 test("receipt output bounds dense revision metadata and exposes omitted item retrieval without history", () => {
   const response = create(AcknowledgeAgentDigestResponseSchema, {
     receipt: wire(DomainDigestReceiptSchema, {

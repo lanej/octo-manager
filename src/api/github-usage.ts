@@ -10,6 +10,7 @@ const states: Record<ForecastState, GitHubForecastState> = {
   at_risk: GitHubForecastState.AT_RISK,
   exhausted: GitHubForecastState.EXHAUSTED,
 };
+
 function forecast(value: QuotaForecast | undefined) {
   if (value === undefined) return undefined;
   return {
@@ -26,8 +27,9 @@ function forecast(value: QuotaForecast | undefined) {
         }),
   };
 }
+
 function budget(value: GitHubBudget | undefined) {
-  return value === undefined
+  return !value
     ? undefined
     : {
         limit: value.limit,
@@ -37,6 +39,7 @@ function budget(value: GitHubBudget | undefined) {
         forecast: forecast(value.forecast),
       };
 }
+
 export function wireGitHubUsage(value: GitHubReadUsage): WireUsage {
   return create(GitHubReadUsageSchema, {
     startedAtMs: BigInt(value.startedAtMs),

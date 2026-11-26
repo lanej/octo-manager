@@ -45,16 +45,20 @@ async function fixture() {
     },
   };
 }
+
 class GitHub implements PublisherGitHub {
   writes = 0;
   lostReply = false;
   found: RemotePR | undefined;
+
   revisions() {
     return Promise.resolve({ head: "a".repeat(40), base: "b".repeat(40) });
   }
+
   find() {
     return Promise.resolve(this.found);
   }
+
   create(input: PublicationInput, marker: string, dispatched: () => void) {
     dispatched();
     this.writes++;
@@ -73,6 +77,7 @@ class GitHub implements PublisherGitHub {
     return Promise.resolve(this.found);
   }
 }
+
 test("local contract initialization preserves authored templates and validates explicit format without semantic gates", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-contract-"));
   try {
@@ -333,6 +338,7 @@ test("recovered publication must match the exact draft, repository and branch id
     await h.close();
   }
 });
+
 async function run(args: string[], cwd: string, state: string, extra: Record<string, string> = {}) {
   const child = Bun.spawn(
     [process.execPath, resolve("src/cli.ts"), ...args, "--json", "--state", state, "--cwd", cwd],
@@ -351,6 +357,7 @@ async function run(args: string[], cwd: string, state: string, extra: Record<str
   const value: unknown = JSON.parse(stdout === "" ? stderr : stdout);
   return { code, stdout, stderr, value };
 }
+
 test("real CLI validates offline and rejects invalid drafts before storing a receipt; valid input returns pending without a daemon", async () => {
   const h = await fixture();
   try {

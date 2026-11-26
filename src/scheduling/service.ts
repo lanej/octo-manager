@@ -21,6 +21,7 @@ interface Pending {
   run: () => Promise<void>;
   reject: (error: Error) => void;
 }
+
 export class GitHubScheduler extends EventEmitter implements RequestDispatch {
   private task: ScheduledTask | undefined;
   private heartbeat: ScheduledTask | undefined;
@@ -36,6 +37,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
   private interests = new Map<string, number>();
   private reviews = new Map<string, Promise<void>>();
   private abort = new AbortController();
+
   constructor(
     readonly store: ScheduleStore,
     readonly policy: SchedulerPolicy,
@@ -45,9 +47,11 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
   ) {
     super();
   }
+
   get signal(): AbortSignal {
     return this.abort.signal;
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("github-dispatch", () => {
       const reviews = this.store.reviews();
@@ -65,6 +69,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.task.wake();
     if (this.dashboards > 0) this.heartbeat.wake();
   }
+
   dashboardInterest(): () => void {
     this.dashboards++;
     if (this.dashboards === 1) {
@@ -79,11 +84,13 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       }
     };
   }
+
   private changed(): void {
     if (this.closed) return;
     this.sequence++;
     this.emit("change");
   }
+
   private nextDeadline(reviews: readonly ScheduledRefresh[]): number | undefined {
     let next = Infinity;
     if (!this.busy && this.queue.length > 0) {
@@ -104,13 +111,16 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         next = Math.min(next, entry.dueAtMs);
     return Number.isFinite(next) ? next : undefined;
   }
+
   interactive<T>(work: () => T): T {
     return this.priority.run(true, work);
   }
+
   deadline(resource: GitHubResource): number {
     const state = this.store.dispatch();
     return resource === "core" ? state.coreRetryAtMs : state.graphqlRetryAtMs;
   }
+
   defer(resource: GitHubResource, until: number): void {
     const state = this.store.dispatch();
     if (resource === "core") state.coreRetryAtMs = Math.max(state.coreRetryAtMs, until);
@@ -119,6 +129,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.task?.wake();
     this.changed();
   }
+
   dispatch<T>(resource: GitHubResource, work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (this.closed) return Promise.reject(new GitHubRequestCancelledError("GitHub scheduler is stopping"));
     if (signal?.aborted === true) return Promise.reject(new GitHubRequestCancelledError());
@@ -150,6 +161,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       this.changed();
     });
   }
+
   interest(raw: string): () => void {
     const url = canonicalPR(raw);
     this.interests.set(url, (this.interests.get(url) ?? 0) + 1);
@@ -164,11 +176,12 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       this.task?.wake();
     };
   }
+
   ensureReviews(raw: string, force = false): void {
     const url = canonicalPR(raw),
       key = `reviews:${url}`;
     const previous = this.store.get(key);
-    if (previous === undefined)
+    if (!previous)
       this.store.save({
         key,
         kind: RefreshKind.Reviews,
@@ -186,6 +199,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.task?.wake();
     this.changed();
   }
+
   reviewState(raw: string) {
     const url = canonicalPR(raw);
     return {
@@ -193,6 +207,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       schedule: this.store.get(`reviews:${url}`),
     };
   }
+
   private refreshReviews(reviews = this.store.reviews()): void {
     for (const entry of reviews) {
       if (entry.kind !== RefreshKind.Reviews || this.reviews.has(entry.key)) continue;
@@ -242,6 +257,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       this.reviews.set(entry.key, work);
     }
   }
+
   tick(): void {
     if (this.closed) return;
     this.sequence++;
@@ -251,6 +267,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
     this.pump();
     this.emit("tick");
   }
+
   private pump(): void {
     if (this.busy || this.queue.length === 0) return;
     const dispatch = this.store.dispatch();
@@ -261,7 +278,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
         (item.resource === "core" ? dispatch.coreRetryAtMs : dispatch.graphqlRetryAtMs) <= this.now(),
     );
     const item = ready.find((value) => value.interactive !== this.lastInteractive) ?? ready[0];
-    if (item === undefined) return;
+    if (!item) return;
     this.queue = this.queue.filter((value) => value !== item);
     this.lastInteractive = item.interactive;
     this.busy = true;
@@ -284,6 +301,7 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       })
       .catch(() => {});
   }
+
   status() {
     const state = this.store.dispatch();
     return {
@@ -298,12 +316,13 @@ export class GitHubScheduler extends EventEmitter implements RequestDispatch {
       graphqlRetryAtMs: state.graphqlRetryAtMs,
     };
   }
+
   async close(): Promise<void> {
     this.closed = true;
     this.task?.close();
     this.heartbeat?.close();
     this.abort.abort();
     for (const item of this.queue.splice(0)) item.reject(new GitHubRequestCancelledError("GitHub scheduler stopped"));
-    await Promise.all([...this.reviews.values(), ...(this.inFlight === undefined ? [] : [this.inFlight])]);
+    await Promise.all([...this.reviews.values(), ...(!this.inFlight ? [] : [this.inFlight])]);
   }
 }

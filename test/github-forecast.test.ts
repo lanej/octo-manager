@@ -2,6 +2,7 @@ import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { forecastQuota, ForecastState, QuotaHistory } from "../src/github/forecast.js";
 import type { GitHubBudget } from "../src/github/usage.js";
+
 const budget = (remaining: number, observedAtMs: number, resetAtMs = 3600000): GitHubBudget => ({
   limit: 5000,
   remaining,

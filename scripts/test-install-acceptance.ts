@@ -6,6 +6,7 @@ import { Check } from "typebox/value";
 import { schedulerClient } from "../src/client.js";
 import { runtimeLifecycle } from "../src/lifecycle-rpc.js";
 import { randomUUID } from "node:crypto";
+
 const { values } = parseArgs({
   options: { start: { type: "boolean" } },
   args: process.argv.slice(2),
@@ -23,9 +24,11 @@ const ResultSchema = Type.Object(
   { additionalProperties: true },
 );
 type Result = Static<typeof ResultSchema>;
+
 function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
+
 async function command(
   args: string[],
   env: NodeJS.ProcessEnv,
@@ -38,6 +41,7 @@ async function command(
   ]);
   return { code, stdout, stderr };
 }
+
 const home = await mkdtemp("/tmp/om-install-"),
   state = join(home, "state"),
   codex = join(home, "codex"),
@@ -60,6 +64,7 @@ let foreground: ReturnType<typeof Bun.spawn> | undefined,
   stopped = false,
   startupAttempted = false,
   restorePaused: boolean | undefined;
+
 async function invokeInstaller(): Promise<{
   code: number;
   stdout: string;
@@ -75,6 +80,7 @@ async function invokeInstaller(): Promise<{
   ];
   return command(args, env);
 }
+
 async function install(): Promise<Result> {
   const result = await invokeInstaller();
   assert(result.code === 0, `Installer failed: ${result.stderr}`);
@@ -82,6 +88,7 @@ async function install(): Promise<Result> {
   assert(Check(ResultSchema, value), "Invalid installer result");
   return value;
 }
+
 async function ready(): Promise<void> {
   const until = Date.now() + 10000;
   while (Date.now() < until) {
@@ -96,6 +103,7 @@ async function ready(): Promise<void> {
   }
   throw new Error("Installed coordinator API did not become ready");
 }
+
 try {
   if (!start && process.platform === "linux") {
     const probe = await command(["systemctl", "--user", "show-environment"], env);

@@ -10,6 +10,7 @@ import { readObservation } from "../src/tracking/github.js";
 import { publicPullRequest } from "../src/jobs/github.js";
 import { loadTrackingConfig, selectProfile } from "../src/tracking/config.js";
 import { ActionState } from "../src/tracking/types.js";
+
 const url = "https://github.com/owner/private/pull/1";
 const input = {
   observedAt: 1000,

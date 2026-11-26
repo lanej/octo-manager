@@ -71,15 +71,18 @@ function message(kind: SafeNotice["kind"], index = 1, override: Partial<SafeNoti
     },
   };
 }
+
 function quoted(body: string): string {
   return body
     .split("\n")
     .map((line) => (line === "" ? ">" : `> ${line}`))
     .join("\n>\n");
 }
+
 function queued(rows: AgentMessage[], state = directory, presentation?: MessagePresentation): string {
   return renderDigest(rows, state, receipt, presentation === undefined ? undefined : () => presentation).body;
 }
+
 function headings(bodies: string[]): string {
   return [
     "| First line |",
@@ -142,6 +145,7 @@ export function messageDocumentation(): string {
   ];
   return lines.join("\n\n") + "\n";
 }
+
 export async function updateMessageDocumentation(check: boolean, output = target): Promise<void> {
   const expected = messageDocumentation();
   if (check) {
@@ -158,6 +162,7 @@ export async function updateMessageDocumentation(check: boolean, output = target
   await mkdir(dirname(fileURLToPath(output)), { recursive: true });
   await writeFile(output, expected);
 }
+
 if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args.some((arg) => arg !== "--check") || args.length > 1)

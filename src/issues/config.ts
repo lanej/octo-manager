@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
 import { Role, clarificationTimeout, type IssuePolicy } from "./contracts.js";
+
 const profile = Type.Object(
   {
     harness: Type.String({ minLength: 1 }),
@@ -34,11 +35,13 @@ export const IssueConfigSchema = Type.Object(
   { additionalProperties: false },
 );
 export type IssueConfig = Static<typeof IssueConfigSchema>;
+
 function read(path: string): string {
   const info = lstatSync(path);
   if (!info.isFile() || info.size > 65536) throw new Error("Issue policy must be a regular file of at most 64 KiB");
   return readFileSync(path, "utf8");
 }
+
 export function loadIssuePolicy(root: string): IssuePolicy {
   const source = read(join(root, "octo-manager.toml"));
   const parsed: unknown = Bun.TOML.parse(source);

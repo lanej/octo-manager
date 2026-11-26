@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createApplicationFixture } from "./support/application.js";
 import { trackedCodeHost } from "../src/issues/composition.js";
+
 test("coordinator commits cannot execute agent-edited hooks or content filters", async () => {
   const directory = await mkdtemp("/tmp/octo-issue-git-");
   const root = join(directory, "repo");

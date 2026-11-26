@@ -46,7 +46,7 @@ export function dashboardLink(value: string): DashboardLink | undefined {
 
 export function markdownReference(value: string): string | undefined {
   const address = dashboardLink(value);
-  if (address === undefined) return undefined;
+  if (!address) return undefined;
   const label = address.label.replace(/[\\[\]]/gu, "\\$&");
   return `[${label}](<${address.url}>)`;
 }
@@ -64,7 +64,7 @@ export const compactMarkdownLinks: MarkdownInlineHook = (spans) => {
     const destination = label?.link?.url;
     if (
       span.text === " " &&
-      span.link === undefined &&
+      !span.link &&
       destination !== undefined &&
       open?.text === "(" &&
       open.link?.url === destination &&
@@ -76,7 +76,7 @@ export const compactMarkdownLinks: MarkdownInlineHook = (spans) => {
       hiddenThrough = index + 3;
       continue;
     }
-    if (span.link !== undefined && dashboardLink(span.link.url) === undefined) {
+    if (span.link && !dashboardLink(span.link.url)) {
       const unlinked = { ...span };
       delete unlinked.link;
       compact.push(unlinked);

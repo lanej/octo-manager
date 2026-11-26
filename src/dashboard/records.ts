@@ -88,7 +88,7 @@ function pill(label: string, value: string | undefined, tone: StatusTone): Detai
 
 function reference(label: string, url: string): DetailLine {
   const link = dashboardLink(url);
-  return link === undefined
+  return !link
     ? field(label, url === "" ? undefined : "Unsupported URL")
     : { kind: "link", label, value: link.label, link };
 }
@@ -300,7 +300,7 @@ function prRecord(
     const variant = value?.variant;
     const label = index === 0 ? "Checks" : "Workflows";
     if (variant?.case !== "variant1" && variant?.case !== "variant2")
-      return [pill(label, variant === undefined ? undefined : "Incomplete", "neutral")];
+      return [pill(label, !variant ? undefined : "Incomplete", "neutral")];
     const complete = variant.case === "variant1";
     return [
       pill(label, complete ? "complete" : "partial", complete ? "info" : "warning"),

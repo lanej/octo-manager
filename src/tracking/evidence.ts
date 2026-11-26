@@ -3,9 +3,11 @@ import { ActionState, type ActionEventContext, type TargetBase } from "./types.j
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function json(value: unknown): unknown {
   return typeof value === "string" ? JSON.parse(value) : value;
 }
+
 export function targetBase(value: unknown): TargetBase | undefined {
   if (value === null || value === undefined) return undefined;
   const raw = json(value);
@@ -19,6 +21,7 @@ export function targetBase(value: unknown): TargetBase | undefined {
     throw new Error("Invalid target base evidence");
   return { ref: raw["ref"], sha: raw["sha"] };
 }
+
 export function actionContext(value: unknown): ActionEventContext | undefined {
   if (value === null || value === undefined) return undefined;
   const raw = json(value);

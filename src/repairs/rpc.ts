@@ -8,6 +8,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { RepairState as WireState, type RequestRebaseRequest } from "../gen/octomanager/v2/repairs_pb.js";
 import { RepairState, type RepairAttempt } from "./types.js";
 import type { RepairService } from "./service.js";
+
 const states: Record<RepairState, WireState> = {
   [RepairState.Queued]: WireState.QUEUED,
   [RepairState.Running]: WireState.RUNNING,
@@ -17,6 +18,7 @@ const states: Record<RepairState, WireState> = {
   [RepairState.Failed]: WireState.FAILED,
   [RepairState.Uncertain]: WireState.UNCERTAIN,
 };
+
 export function wireRepair(a: RepairAttempt) {
   return {
     id: a.id,
@@ -45,12 +47,14 @@ export function wireRepair(a: RepairAttempt) {
     })),
   };
 }
+
 const decisions: Record<RecipeDecision, ConflictDecision> = {
   [RecipeDecision.Pending]: ConflictDecision.PENDING,
   [RecipeDecision.Applied]: ConflictDecision.APPLIED,
   [RecipeDecision.Declined]: ConflictDecision.DECLINED,
   [RecipeDecision.Error]: ConflictDecision.ERROR,
 };
+
 function wireCase(c: ConflictCase, url: string) {
   return {
     id: BigInt(c.id),
@@ -73,11 +77,13 @@ function wireCase(c: ConflictCase, url: string) {
     agentResult: c.agentResult,
   };
 }
+
 function caseNumber(id: bigint) {
   if (id < 0n || id > BigInt(Number.MAX_SAFE_INTEGER))
     throw new ConnectError("Invalid conflict case ID", Code.InvalidArgument);
   return Number(id);
 }
+
 export function repairRoutes(service: RepairService) {
   return {
     listConflictCases(r: ListConflictCasesRequest) {
@@ -92,7 +98,7 @@ export function repairRoutes(service: RepairService) {
       const id = caseNumber(r.id);
       try {
         const c = service.conflicts?.get(id);
-        if (c === undefined) throw new Error("Not found");
+        if (!c) throw new Error("Not found");
         return {
           conflictCase: wireCase(c, service.store.get(c.repairId).request.prUrl),
         };

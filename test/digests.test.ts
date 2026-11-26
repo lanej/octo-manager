@@ -12,12 +12,14 @@ import { DigestService } from "../src/notifications/service.js";
 import { DigestState } from "../src/notifications/types.js";
 import type { AgentRef } from "../src/tracking/types.js";
 import { DeliveryError, type QueueConnection, type QueuedMessage } from "../src/agents/codex.js";
+
 const target = {
   harness: "codex",
   endpoint: "local",
   sessionId: "synthetic-agent",
   label: "/fixture/project",
 };
+
 class Queue implements QueueConnection {
   slots: QueuedMessage[] = [];
   history: string[] = [];
@@ -31,9 +33,11 @@ class Queue implements QueueConnection {
   inspections = 0;
   onCancel: (() => void) | undefined;
   onInspect: (() => void) | undefined;
+
   prepare(): Promise<{ busy: boolean }> {
     return Promise.resolve({ busy: false });
   }
+
   queued(): Promise<QueuedMessage[]> {
     this.inspections++;
     this.onInspect?.();
@@ -50,6 +54,7 @@ class Queue implements QueueConnection {
       ? Promise.reject(new Error("Queue coverage incomplete"))
       : Promise.resolve(structuredClone(this.slots));
   }
+
   enqueueQueued(_agent: AgentRef, clientId: string, body: string): Promise<QueuedMessage> {
     this.operations.push("add");
     const item = { queueId: `queue-${String(++this.serial)}`, clientId, body };
@@ -60,6 +65,7 @@ class Queue implements QueueConnection {
     }
     return Promise.resolve(item);
   }
+
   cancelQueued(_agent: AgentRef, id: string): Promise<boolean> {
     this.operations.push("cancel");
     this.onCancel?.();
@@ -75,14 +81,17 @@ class Queue implements QueueConnection {
     if (mode === "lose_after") return Promise.reject(new Error("Lost withdrawal response after effect"));
     return Promise.resolve(item !== undefined);
   }
+
   received(_agent: AgentRef, bodies: string[]): Promise<{ bodies: string[]; complete: boolean }> {
     return Promise.resolve({
       bodies: this.history.filter((body) => bodies.includes(body)),
       complete: this.coverage,
     });
   }
+
   close(): void {}
 }
+
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), "octo-digest-"));
   let now = 1000;
@@ -177,6 +186,7 @@ async function fixture() {
     },
   };
 }
+
 test("one digest per agent, immutable revisions, and withdrawal occurs before replacement", async () => {
   const f = await fixture();
   try {

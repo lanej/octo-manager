@@ -31,6 +31,7 @@ const pr = {
   merged: false,
   mergeable: true,
 };
+
 function old(id: number, conclusion = ""): CheckObservation {
   return {
     id: `run:${String(id)}`,
@@ -43,6 +44,7 @@ function old(id: number, conclusion = ""): CheckObservation {
     url: `https://github.com/owner/repo/actions/runs/9/job/${String(id + 1000)}`,
   };
 }
+
 const workflow: CheckObservation = {
   id: "workflow:9:2",
   key: "workflow:9",
@@ -53,6 +55,7 @@ const workflow: CheckObservation = {
   at: 2000,
   url,
 };
+
 function observation(checks: CheckObservation[], workflows: CheckObservation[] = []): ObservationInput {
   return {
     observedAt: 1000,
@@ -66,6 +69,7 @@ function observation(checks: CheckObservation[], workflows: CheckObservation[] =
     feedback: { state: "complete", value: [] },
   };
 }
+
 function source(job: (id: number) => unknown, requested: number[] = [], present: readonly CheckObservation[] = []) {
   return async (path: string): Promise<unknown> => {
     const id = /\/actions\/jobs\/(\d+)$/u.exec(path)?.[1];
@@ -105,6 +109,7 @@ function source(job: (id: number) => unknown, requested: number[] = [], present:
     return [];
   };
 }
+
 function job(id: number) {
   const checkId = id - 1000;
   return {

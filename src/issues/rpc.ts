@@ -9,6 +9,7 @@ import {
 import { IssueStage, Waiting, type IssueRecord, type Assignment } from "./contracts.js";
 import { issueNotificationKind, wireIssueSubscription } from "./subscription-wire.js";
 import type { IssueService } from "./service.js";
+
 const stages: Record<IssueStage, WireStage> = {
   investigation: WireStage.INVESTIGATION,
   ready: WireStage.READY,
@@ -26,6 +27,7 @@ const waiting: Record<Waiting, WireWaiting> = {
   awaiting_approval: WireWaiting.AWAITING_APPROVAL,
   paused: WireWaiting.PAUSED,
 };
+
 export function wireIssue(issue: IssueRecord, assignment?: Assignment) {
   return {
     id: issue.id,
@@ -42,9 +44,10 @@ export function wireIssue(issue: IssueRecord, assignment?: Assignment) {
     externallyClosed: issue.externalClosed,
     approvedVersion: issue.approvedVersion,
     workspace: issue.workspace,
-    assignment: assignment === undefined ? undefined : wireAssignment(assignment),
+    assignment: !assignment ? undefined : wireAssignment(assignment),
   };
 }
+
 function wireAssignment(item: Assignment) {
   return {
     id: item.id,
@@ -59,6 +62,7 @@ function wireAssignment(item: Assignment) {
     evidence: item.result?.evidence ?? [],
   };
 }
+
 function operation(value: IssueOperation): string {
   switch (value) {
     case IssueOperation.APPROVE:
@@ -83,6 +87,7 @@ function operation(value: IssueOperation): string {
       throw new Error("Unsupported issue operation");
   }
 }
+
 function perform<T>(work: () => T): T {
   try {
     return work();
@@ -90,10 +95,12 @@ function perform<T>(work: () => T): T {
     throw new ConnectError(error instanceof Error ? error.message : "Issue operation failed", Code.FailedPrecondition);
   }
 }
+
 function subscriptionIssue(service: IssueService, id: string): IssueRecord {
   if (id.trim().length === 0) throw new Error("Issue ID required");
   return service.store.get(id);
 }
+
 export function issueRoutes(
   service: IssueService,
 ): Pick<

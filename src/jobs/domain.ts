@@ -70,10 +70,12 @@ export const jobTransitions: Record<Status, Status[]> = {
   failed: ["queued"],
   interrupted: ["queued"],
 };
+
 export function transition(job: Job, next: Status, now: number): Job {
   if (!jobTransitions[job.status].includes(next)) throw new Error(`Invalid transition: ${job.status} -> ${next}`);
   return { ...job, status: next, updatedAt: now };
 }
+
 export function parseTask(value: unknown): Task {
   if (!value || typeof value !== "object") throw new Error("Task must be an object");
   const v = value as Record<string, unknown>;
@@ -88,13 +90,16 @@ export function parseTask(value: unknown): Task {
   }
   throw new Error("Unsupported task or fields");
 }
+
 export function digest(task: Task): string {
   return createHash("sha256").update(JSON.stringify(task)).digest("hex");
 }
+
 export function nextReady(jobs: Job[], now: number): Job | undefined {
   // WHY: The store supplies durable insertion order; wall-clock adjustments must not reorder accepted work.
   return jobs.find((j) => j.status === "queued" && j.availableAt <= now);
 }
+
 export function retryDelay(retryCount: number): number | undefined {
   return [1000, 5000][retryCount];
 }

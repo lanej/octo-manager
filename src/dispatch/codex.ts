@@ -9,6 +9,7 @@ import type { TurnStartParams } from "../agents/protocol/v2/TurnStartParams.js";
 import { checked } from "../merging/contracts.js";
 import { result, ResultSchema, Role, type Assignment } from "../issues/contracts.js";
 import type { AgentDispatcher, DispatchStatus } from "../issues/ports.js";
+
 const turnSchema = Type.Object({
   id: Type.String(),
   status: Type.String(),
@@ -31,6 +32,7 @@ const threadResponse = Type.Object({
   thread: Type.Object({ id: Type.String() }),
 });
 const turnsResponse = Type.Object({ data: Type.Array(turnSchema) });
+
 function jsonValue(value: unknown): JsonValue {
   if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number")
     return value;
@@ -42,6 +44,7 @@ function jsonValue(value: unknown): JsonValue {
   }
   throw new Error("Invalid output schema value");
 }
+
 function strictSchema(value: JsonValue): JsonValue {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(strictSchema);
@@ -57,14 +60,18 @@ function strictSchema(value: JsonValue): JsonValue {
   }
   return output;
 }
+
 function completedResult(text: string) {
   const value: unknown = JSON.parse(text);
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid structured result");
   return result(Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null)));
 }
+
 export class CodexDispatcher implements AgentDispatcher {
   readonly harness = "codex";
+
   constructor(private socket?: string) {}
+
   async submit(
     assignment: Assignment,
     checkpoint: (sessionId: string) => void,
@@ -146,6 +153,7 @@ export class CodexDispatcher implements AgentDispatcher {
       connection.close();
     }
   }
+
   async inspect(assignment: Assignment, signal: AbortSignal): Promise<DispatchStatus> {
     if (assignment.sessionId.length === 0)
       return {
@@ -207,6 +215,7 @@ export class CodexDispatcher implements AgentDispatcher {
       connection.close();
     }
   }
+
   async cancel(assignment: Assignment, signal: AbortSignal): Promise<boolean> {
     if (assignment.sessionId.length === 0)
       throw new Error("Cannot confirm cancellation without session and turn identities");

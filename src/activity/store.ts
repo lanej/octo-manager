@@ -6,6 +6,7 @@ function integer(value: unknown): number {
     throw new Error("Invalid activity cursor or time");
   return value;
 }
+
 function report(row: Record<string, unknown>): ActivityReport {
   if (typeof row["payload"] !== "string") throw new Error("Invalid stored activity");
   const value: unknown = JSON.parse(row["payload"]);
@@ -15,6 +16,7 @@ function report(row: Record<string, unknown>): ActivityReport {
     recordedAt: integer(row["recorded_at_ms"]),
   };
 }
+
 export class ActivityStore {
   constructor(
     private readonly db: DatabaseSync,
@@ -22,7 +24,7 @@ export class ActivityStore {
     private readonly changed?: () => void,
   ) {
     const version = db.prepare("PRAGMA user_version").get();
-    if (version === undefined) throw new Error("Missing database version");
+    if (!version) throw new Error("Missing database version");
     const current = integer(version["user_version"]);
     if (current > 15) throw new Error("Activity database is newer than this application");
     if (current >= 2) return;
@@ -44,13 +46,14 @@ export class ActivityStore {
       PRAGMA user_version=2;
       COMMIT;`);
   }
+
   record(value: unknown): ActivityReport {
     const input = activityInput(value);
     const payload = JSON.stringify(input);
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const existing = this.db.prepare("SELECT * FROM agent_activity WHERE request_id=?").get(input.requestId);
-      if (existing !== undefined) {
+      if (existing) {
         if (existing["payload"] !== payload)
           throw new Error("Activity request ID already used with a different report");
         const result = report(existing);
@@ -77,6 +80,7 @@ export class ActivityStore {
       throw error;
     }
   }
+
   list(after: number, before?: number): ActivityReport[] {
     if (before !== undefined)
       return this.db

@@ -18,15 +18,18 @@ function gate() {
   });
   return { promise, release };
 }
+
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+
 async function until(predicate: () => boolean, timeout = 1000) {
   const deadline = Date.now() + timeout;
   while (!predicate() && Date.now() < deadline) await sleep(5);
   expect(predicate()).toBe(true);
 }
+
 const profile: RepairProfile = {
   repository: "owner/repo",
   harness: "pi",
@@ -38,6 +41,7 @@ const profile: RepairProfile = {
 };
 const head = "a".repeat(40),
   base = "b".repeat(40);
+
 async function fixture(options: RepairOptions = {}, now: () => number = Date.now) {
   const directory = await mkdtemp(join(tmpdir(), "octo-repair-scheduling-"));
   const store = new Store(directory, now);

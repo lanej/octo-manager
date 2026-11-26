@@ -1,4 +1,5 @@
 import type { Assignment, IssueReference, IssueRecord, StageResult, TrackerObservation } from "./contracts.js";
+
 // Write adapters must invoke authorize immediately before dispatch, after any awaited preparation.
 export interface IssueTracker {
   provider: string;

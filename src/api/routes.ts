@@ -37,6 +37,7 @@ function task(value?: WireTask) {
     return parseTask({ kind: "summarize_pr", url: value.kind.value.url });
   throw new ConnectError("A supported task is required", Code.InvalidArgument);
 }
+
 function jobOperation<T>(work: () => T): T {
   try {
     return work();
@@ -52,6 +53,7 @@ function jobOperation<T>(work: () => T): T {
     throw new ConnectError("Coordinator operation failed", Code.Internal);
   }
 }
+
 export function schedulerRoutes(application: ApplicationApi, router: ConnectRouter): void {
   const tracking = application.services.tracking;
   const messages = new Messages(
@@ -60,7 +62,7 @@ export function schedulerRoutes(application: ApplicationApi, router: ConnectRout
     application.services.merging.receipts.presentation,
   );
   const owner = (value?: { harness: string; endpoint: string; sessionId: string; label?: string | undefined }) => {
-    if (value === undefined) throw new ConnectError("Owner is required", Code.InvalidArgument);
+    if (!value) throw new ConnectError("Owner is required", Code.InvalidArgument);
     return {
       harness: value.harness,
       endpoint: value.endpoint,
@@ -237,7 +239,7 @@ export function schedulerRoutes(application: ApplicationApi, router: ConnectRout
       getRepositoryPolicy(r) {
         return trackingOperation(() => {
           const policy = application.store.submissions.policy(r.repository.toLowerCase(), r.version);
-          if (policy === undefined)
+          if (!policy)
             throw new ConnectError("Policy not found; submit a PR to analyze repository guidelines", Code.NotFound);
           const tier = complexity(r.tier === "" ? "standard" : r.tier);
           return {
@@ -270,7 +272,7 @@ export function schedulerRoutes(application: ApplicationApi, router: ConnectRout
       async getTrackedPullRequest(r) {
         return trackingOperation(() => ({
           pr: wirePR(tracking.store.pr(r.id)),
-          ...(application.store.repositories.get(tracking.store.pr(r.id).id) === undefined
+          ...(!application.store.repositories.get(tracking.store.pr(r.id).id)
             ? {}
             : {
                 repositoryPolicy: wire(
@@ -313,7 +315,7 @@ export function schedulerRoutes(application: ApplicationApi, router: ConnectRout
             assessment = application.store.assessments.latest(action.id);
           return {
             action: wireAction(action, r.full),
-            ...(assessment === undefined ? {} : { assessment: wireAssessment(assessment, r.full) }),
+            ...(!assessment ? {} : { assessment: wireAssessment(assessment, r.full) }),
           };
         });
       },

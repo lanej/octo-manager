@@ -6,7 +6,7 @@ import { agentProjection } from "./agent-output.js";
 
 export function agentResponse(parsed: ReturnType<typeof parseCommand>, raw: unknown): string {
   const project = agentProjection(parsed);
-  if (project === undefined) throw new Error("Missing agent output projection");
+  if (!project) throw new Error("Missing agent output projection");
   const normalized: unknown = JSON.parse(
     JSON.stringify(raw === undefined ? null : raw, (key, value: unknown) => {
       if (typeof value === "bigint" && !Number.isSafeInteger(Number(value))) return value.toString();
@@ -42,6 +42,7 @@ export function printResult(parsed: ReturnType<typeof parseCommand>, result: unk
         ),
   );
 }
+
 export function printFailure(error: unknown, args: string[], env: NodeJS.ProcessEnv): void {
   const message = error instanceof Error ? error.message : "CLI operation failed";
   if (agentMode(args.includes("--agent"), env)) {

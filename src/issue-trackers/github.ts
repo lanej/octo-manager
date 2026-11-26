@@ -4,6 +4,7 @@ import { githubReads } from "../github/reads.js";
 import { checked } from "../merging/contracts.js";
 import type { IssueTracker } from "../issues/ports.js";
 import type { IssueReference, IssueComment } from "../issues/contracts.js";
+
 const item = Type.Object({
   id: Type.Number(),
   body: Type.Union([Type.String(), Type.Null()]),
@@ -18,15 +19,20 @@ const issueSchema = Type.Object({
   updated_at: Type.String(),
   pull_request: Type.Optional(Type.Object({ url: Type.String() })),
 });
+
 function base(ref: IssueReference): string {
   if (ref.provider !== "github" || !/^[\w.-]+\/[\w.-]+$/u.test(ref.project) || !/^[1-9]\d*$/u.test(ref.externalId))
     throw new Error("Invalid GitHub issue identity");
   return `repos/${ref.project}/issues`;
 }
+
 const marker = (key: string) => `<!-- octo-issue:${key} -->`;
+
 export class GitHubIssueTracker implements IssueTracker {
   readonly provider = "github";
+
   constructor(private reads: Pick<typeof githubReads, "read" | "post" | "patch"> = githubReads) {}
+
   identify(url: string): IssueReference {
     const match = /^https:\/\/github.com\/([\w.-]+\/[\w.-]+)\/issues\/([1-9]\d*)\/?$/u.exec(url);
     if (match?.[1] == null || match[2] == null) throw new Error("Expected a github.com issue URL");
@@ -37,6 +43,7 @@ export class GitHubIssueTracker implements IssueTracker {
       url: url.replace(/\/$/u, ""),
     };
   }
+
   verifyRepository(root: string, ref: IssueReference): void {
     const remote = execFileSync("git", ["remote", "get-url", "origin"], {
       cwd: root,
@@ -50,6 +57,7 @@ export class GitHubIssueTracker implements IssueTracker {
       .toLowerCase();
     if (project !== expected) throw new Error("Issue does not belong to the selected repository checkout");
   }
+
   async observe(ref: IssueReference, signal: AbortSignal) {
     const value = checked(issueSchema, await this.reads.read(`${base(ref)}/${ref.externalId}`, signal));
     if (value.pull_request != null) throw new Error("Use PR tracking for pull requests");
@@ -82,11 +90,13 @@ export class GitHubIssueTracker implements IssueTracker {
       revision: value.updated_at,
     };
   }
+
   async findPost(ref: IssueReference, key: string, signal: AbortSignal) {
     const observation = await this.observe(ref, signal);
     if (!observation.complete) throw new Error("Incomplete comment evidence prevents write reconciliation");
     return observation.comments.find((comment) => comment.body.includes(marker(key)))?.url;
   }
+
   async post(
     ref: IssueReference,
     key: string,
@@ -105,6 +115,7 @@ export class GitHubIssueTracker implements IssueTracker {
     );
     return response.html_url;
   }
+
   async findFollowUp(ref: IssueReference, key: string, signal: AbortSignal) {
     for (let page = 1; page <= 10; page++) {
       const values = checked(
@@ -122,6 +133,7 @@ export class GitHubIssueTracker implements IssueTracker {
     }
     throw new Error("Incomplete issue inventory prevents follow-up reconciliation");
   }
+
   async createFollowUp(
     ref: IssueReference,
     key: string,
@@ -141,6 +153,7 @@ export class GitHubIssueTracker implements IssueTracker {
     );
     return response.html_url;
   }
+
   async close(ref: IssueReference, signal: AbortSignal, authorize: () => void): Promise<void> {
     await this.reads.patch(
       `${base(ref)}/${ref.externalId}`,

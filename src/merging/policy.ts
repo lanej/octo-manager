@@ -7,9 +7,11 @@ import { actionableFeedback } from "../tracking/review-signals.js";
 import { compact } from "../tracking/messages.js";
 import type { ObservationInput, TrackedPR } from "../tracking/types.js";
 import type { Dependency, PRReference } from "./contracts.js";
+
 export function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
+
 export function feedbackKey(observation: ObservationInput): string | undefined {
   if (
     observation.feedback?.state !== "complete" ||
@@ -28,12 +30,14 @@ export function feedbackKey(observation: ObservationInput): string | undefined {
       .sort(),
   ]);
 }
+
 export function pendingReviewReason(observation: ObservationInput): string | undefined {
   if (observation.reviews.state !== "complete") return "Complete review evidence is required";
   if (observation.reviews.value.some((review) => pendingReview(review.state)))
     return "A pending review must be submitted or dismissed";
   return undefined;
 }
+
 export function reviewGate(observation: ObservationInput, assessment?: MergeEntry["ready"]): string | undefined {
   const pending = pendingReviewReason(observation);
   if (pending !== undefined) return pending;
@@ -49,11 +53,13 @@ export function reviewGate(observation: ObservationInput, assessment?: MergeEntr
     return "Review feedback requires owner assessment";
   return undefined;
 }
+
 export function graphKey(dependencies: Dependency[], prId: string): string {
   return fingerprint(
     dependencies.filter((edge) => edge.active && edge.dependentId === prId).sort((a, b) => a.id.localeCompare(b.id)),
   );
 }
+
 export function acyclic(edges: Pick<Dependency, "dependentId" | "prerequisiteId">[]): void {
   const active = new Set<string>(),
     done = new Set<string>();
@@ -67,11 +73,13 @@ export function acyclic(edges: Pick<Dependency, "dependentId" | "prerequisiteId"
   }
   for (const edge of edges) visit(edge.dependentId);
 }
+
 export interface ReferenceSource {
   key: string;
   text: string;
   url: string;
 }
+
 // Preserve character offsets so evidence excerpts still point at the original line.
 function referenceProse(text: string): string {
   let fence: string | undefined;
@@ -97,6 +105,7 @@ function referenceProse(text: string): string {
     })
     .join("\n");
 }
+
 export function references(
   pr: Pick<TrackedPR, "id" | "url">,
   sources: ReferenceSource[],
@@ -151,6 +160,7 @@ export function references(
   }
   return [...result.values()];
 }
+
 export function readyFor(
   entry: import("./contracts.js").MergeEntry,
   pr: TrackedPR,
@@ -169,6 +179,7 @@ export function readyFor(
     ready.graph === graphKey(dependencies, pr.id)
   );
 }
+
 export function checkGate(
   entry: Pick<import("./contracts.js").MergeEntry, "method" | "checks" | "noCi" | "ready">,
   snapshot: import("./github.js").MergeSnapshot,

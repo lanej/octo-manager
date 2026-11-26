@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, mkdirSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join, dirname, resolve, relative } from "node:path";
 import { execFileSync } from "node:child_process";
+
 const version = execFileSync("codex", ["--version"], {
   encoding: "utf8",
 }).trim();

@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
+
 const owner = {
   harness: "codex",
   endpoint: "local",

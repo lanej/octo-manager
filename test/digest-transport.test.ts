@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { WebSocketServer } from "ws";
 import { CodexConnection } from "../src/agents/codex.js";
+
 test("native queue transport confirms withdrawal, preserves opaque content and bounds receipt coverage", async () => {
   const directory = await mkdtemp("/tmp/oc-dws-"),
     path = join(directory, "sock"),

@@ -26,6 +26,7 @@ const url = "https://github.com/owner/repo/pull/42";
 const head = "a".repeat(40);
 const baselineCommit = "3142760ac951c667bde382044d1814cbdec3a682";
 const fixedId = "deadbeef-1234-4567-89ab-0123456789ab";
+
 export function snapshot(body: string): ObservationInput {
   return {
     observedAt: 1,
@@ -51,12 +52,15 @@ export function snapshot(body: string): ObservationInput {
     },
   };
 }
+
 function serialized(value: unknown): string {
   return JSON.stringify(value, (_, item: unknown) => (typeof item === "bigint" ? String(item) : item));
 }
+
 function exposed(text: string): boolean {
   return text.includes(attackMarker);
 }
+
 function obedientOwner(text: string) {
   // Deliberate worst-case simulator, not a model evaluation. Its only effect is an in-memory record.
   const sink: { tool: string; value: string; destination: string }[] = [];
@@ -68,6 +72,7 @@ function obedientOwner(text: string) {
     });
   return sink;
 }
+
 async function deliver(tracking: TrackingService, store: Store): Promise<void> {
   for (let attempt = 0; attempt < 100; attempt++) {
     tracking.tick();
@@ -86,6 +91,7 @@ async function deliver(tracking: TrackingService, store: Store): Promise<void> {
   }
   throw new Error("Controlled delivery did not complete");
 }
+
 async function current(body: string, assess: Assess) {
   const directory = await mkdtemp(join(tmpdir(), "octo-before-after-"));
   const store = new Store(directory),
@@ -175,6 +181,7 @@ async function current(body: string, assess: Assess) {
     await rm(directory, { recursive: true, force: true });
   }
 }
+
 function sourceFingerprint(directory = new URL("../../src/", import.meta.url)): string {
   const hash = createHash("sha256");
   function visit(root: URL): void {
@@ -192,6 +199,7 @@ function sourceFingerprint(directory = new URL("../../src/", import.meta.url)): 
   visit(directory);
   return hash.digest("hex");
 }
+
 export async function runBeforeAfter() {
   const hostile = await current(attack, () => Promise.resolve({ disposition: "no_change_suggested", analysis }));
   const forbiddenTool = await current(

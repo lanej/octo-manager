@@ -14,6 +14,7 @@ import { join, resolve } from "node:path";
 import { Command, Option, CommanderError, InvalidArgumentError } from "commander";
 import { agentMode, readOnlyCommand } from "./mode.js";
 import type { CommandSpec, ParsedCommand, Options } from "./contracts.js";
+
 export type { ParsedCommand } from "./contracts.js";
 const identity = ["--agent-id <id>", "--thread-id <id>", "--harness <name>", "--endpoint <name>", "--label <topic>"];
 const request = ["--request-id <id>"];
@@ -81,11 +82,13 @@ const compatibility: CommandSpec[] = [
     description: "Stored publication inspection",
   },
 ];
+
 function integer(value: string): string {
   if (!/^\d+$/u.test(value) || !Number.isSafeInteger(Number(value)))
     throw new InvalidArgumentError("Expected a nonnegative safe integer");
   return value;
 }
+
 export function commandTree(
   env: NodeJS.ProcessEnv,
   execute: (parsed: ParsedCommand) => void | Promise<void>,
@@ -117,7 +120,7 @@ export function commandTree(
     ) {
       const prefix = words.slice(0, i + 1).join(" ");
       let group = groups.get(prefix);
-      if (group === undefined) {
+      if (!group) {
         group = parent.command(words[i] ?? "").description(`${prefix} commands`);
         groups.set(prefix, group);
       }
@@ -189,4 +192,5 @@ export function commandTree(
   }
   return root;
 }
+
 export { CommanderError };

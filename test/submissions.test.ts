@@ -27,6 +27,7 @@ import {
 import type { SubmissionGitHub, PublishedPR } from "../src/submissions/github.js";
 import type { RunStage } from "../src/submissions/worker.js";
 import type { AgentConnection } from "../src/agents/codex.js";
+
 const owner = {
   harness: "codex" as const,
   endpoint: "local",
@@ -44,6 +45,7 @@ const request = (id: string): SubmissionInput => ({
   draft: false,
   owner,
 });
+
 async function until(predicate: () => boolean): Promise<void> {
   const end = Date.now() + 5000;
   while (!predicate()) {
@@ -51,6 +53,7 @@ async function until(predicate: () => boolean): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }
+
 class GitHub implements SubmissionGitHub {
   revision = "policy-v1";
   private = false;
@@ -58,6 +61,7 @@ class GitHub implements SubmissionGitHub {
   loseResponse = false;
   beforeVerify: (() => void) | undefined;
   published = new Map<string, PublishedPR>();
+
   snapshot(input: SubmissionInput): Promise<RepositorySnapshot> {
     return Promise.resolve({
       repository: input.repository,
@@ -76,13 +80,16 @@ class GitHub implements SubmissionGitHub {
       sourceDigest: hash(this.revision),
     });
   }
+
   verify(): Promise<void> {
     this.beforeVerify?.();
     return Promise.resolve();
   }
+
   find(input: SubmissionInput): Promise<PublishedPR | undefined> {
     return Promise.resolve(this.published.get(input.requestId));
   }
+
   publish(input: SubmissionInput, draft: { body: string }, marker: string): Promise<PublishedPR> {
     this.writes++;
     const value = {
@@ -95,6 +102,7 @@ class GitHub implements SubmissionGitHub {
     return this.loseResponse ? Promise.reject(new Error("Connection closed after create")) : Promise.resolve(value);
   }
 }
+
 function runner(roles: Role[], block = false, draft: { title?: string; body?: string } = {}): RunStage {
   return (role, _input, _schema, instructions, model) => {
     roles.push(role);
@@ -153,6 +161,7 @@ function runner(roles: Role[], block = false, draft: { title?: string; body?: st
     });
   };
 }
+
 async function harness(run: RunStage, github = new GitHub()) {
   const directory = await mkdtemp(join(tmpdir(), "octo-submission-test-"));
   let store = new Store(directory),
@@ -212,6 +221,7 @@ async function harness(run: RunStage, github = new GitHub()) {
     },
   };
 }
+
 test("publishes once, enrolls, reuses policy, and keeps private submissions supported", async () => {
   const roles: Role[] = [],
     h = await harness(runner(roles));

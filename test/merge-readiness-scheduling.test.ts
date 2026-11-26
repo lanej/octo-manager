@@ -25,6 +25,7 @@ async function settle() {
     await Promise.resolve();
   }
 }
+
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), "octo-merge-readiness-clock-"));
   const config = defaultTrackingConfig();

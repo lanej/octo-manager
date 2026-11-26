@@ -14,8 +14,10 @@ import { expandInlineSequences } from "../src/repairs/yaml.js";
 import { RecipeDecision } from "../src/repairs/cases.js";
 import { RebaseWorkspace } from "../src/repairs/git.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+
 const exec = promisify(execFile);
 const url = "https://github.com/owner/repo/pull/42";
+
 async function git(cwd: string, args: string[]): Promise<string> {
   const r = await exec(
     "git",
@@ -24,6 +26,7 @@ async function git(cwd: string, args: string[]): Promise<string> {
   );
   return r.stdout.trim();
 }
+
 async function fixture(conflicting = false) {
   const root = await mkdtemp(join(tmpdir(), "octo-rebase-"));
   const remote = join(root, "remote.git"),
@@ -102,6 +105,7 @@ async function fixture(conflicting = false) {
   };
   return { root, remote, source, config, observe, workspace };
 }
+
 async function wait(coordinator: ApplicationFixture, id: string, state?: RepairState) {
   for (let i = 0; i < 400; i++) {
     const a = coordinator.store.repairs.get(id);
@@ -115,6 +119,7 @@ async function wait(coordinator: ApplicationFixture, id: string, state?: RepairS
   }
   throw new Error(`Repair did not settle: ${JSON.stringify(coordinator.store.repairs.get(id))}`);
 }
+
 function enroll(coordinator: ApplicationFixture) {
   return coordinator.store.tracking.track(url, {
     harness: "codex",

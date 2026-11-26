@@ -17,6 +17,7 @@ import {
   type PRObservation,
   type CheckObservation,
 } from "./types.js";
+
 export interface Finding {
   sourceKey: string;
   blocker: Blocker;
@@ -24,11 +25,13 @@ export interface Finding {
   evidenceUrl: string;
 }
 const failed = new Set(["failure", "timed_out", "cancelled", "action_required", "startup_failure", "stale", "error"]);
+
 function latest<T>(items: T[], key: (item: T) => string, at: (item: T) => number): T[] {
   const map = new Map<string, T>();
   for (const item of items) if (!map.has(key(item)) || at(item) >= at(map.get(key(item))!)) map.set(key(item), item);
   return [...map.values()];
 }
+
 export function currentChecks(o: PRObservation) {
   return o.checks.state === "unavailable"
     ? []
@@ -37,7 +40,7 @@ export function currentChecks(o: PRObservation) {
           (c) =>
             c.headSha === o.headSha &&
             !(
-              o.workflows !== undefined &&
+              o.workflows &&
               o.workflows.state !== "unavailable" &&
               o.workflows.value.some((candidate) => checkReplaces(c, candidate))
             ),
@@ -46,6 +49,7 @@ export function currentChecks(o: PRObservation) {
         (c) => c.at,
       );
 }
+
 export function currentReviews(o: PRObservation) {
   return o.reviews.state === "unavailable"
     ? []
@@ -55,6 +59,7 @@ export function currentReviews(o: PRObservation) {
         (r) => r.at,
       );
 }
+
 export function findings(o: PRObservation, url: string): Finding[] {
   if (terminalPR(o.lifecycle)) return feedbackFindings(o);
   const found: Finding[] = [];
@@ -66,7 +71,7 @@ export function findings(o: PRObservation, url: string): Finding[] {
         kind: "conflict",
         headSha: o.headSha,
         baseSha,
-        ...(o.targetBase !== undefined ? { baseRef: o.targetBase.ref } : {}),
+        ...(o.targetBase ? { baseRef: o.targetBase.ref } : {}),
       },
       summary: "Merge conflict",
       evidenceUrl: url,
@@ -100,6 +105,7 @@ export function findings(o: PRObservation, url: string): Finding[] {
       });
   return [...found, ...feedbackFindings(o)];
 }
+
 function feedbackFindings(o: PRObservation): Finding[] {
   const found: Finding[] = [];
   for (const feedback of o.feedback?.state === "complete" ? o.feedback.value : []) {
@@ -113,6 +119,7 @@ function feedbackFindings(o: PRObservation): Finding[] {
   }
   return found;
 }
+
 export function closeProgress(
   a: Action,
   o: PRObservation,
@@ -137,7 +144,7 @@ export function closeProgress(
     if (!actionableFeedback(b.feedback)) return supersede("Review lifecycle update has no findings");
     if (o.feedback?.state === "complete") {
       const newer = o.feedback.value.find((f) => f.source === b.feedback.source && f.id === b.feedback.id);
-      if (newer !== undefined && newer.revision !== b.feedback.revision)
+      if (newer && newer.revision !== b.feedback.revision)
         return supersede("Comment edited; newer feedback replaces this revision");
     }
     return undefined;
@@ -175,30 +182,26 @@ export function closeProgress(
   if (b.kind !== "changes_requested" && b.headSha !== o.headSha) return supersede("PR head changed");
   if (b.kind === "conflict") {
     if (b.baseSha !== (o.targetBase?.sha ?? o.baseSha)) return supersede("Base head changed");
-    if (o.targetBase !== undefined && b.baseRef !== o.targetBase.ref)
-      return supersede("Target base evidence refreshed");
+    if (o.targetBase && b.baseRef !== o.targetBase.ref) return supersede("Target base evidence refreshed");
     if (o.mergeability === "mergeable") return resolve("GitHub confirms no merge conflict");
   }
   if (b.kind === "check_failed" && o.checks.state === "complete") {
     const current = currentChecks(o);
     const exact = current.find((check) => check.id === b.sourceId);
-    if (exact !== undefined) {
+    if (exact) {
       if (successfulCheck(exact)) return resolve("GitHub confirms check succeeded");
       return undefined;
     }
     const previous = o.checks.value.find((check) => check.id === b.sourceId) ?? openingCheck?.();
-    const workflows = o.workflows === undefined || o.workflows.state === "unavailable" ? [] : o.workflows.value;
-    if (previous !== undefined && [...current, ...workflows].some((candidate) => checkReplaces(previous, candidate)))
+    const workflows = !o.workflows || o.workflows.state === "unavailable" ? [] : o.workflows.value;
+    if (previous && [...current, ...workflows].some((candidate) => checkReplaces(previous, candidate)))
       return supersede("A newer check execution replaced this failure");
   }
   if (b.kind === "changes_requested" && o.reviews.state === "complete") {
     const r = currentReviews(o).find((r) => r.author === b.reviewer);
-    if (
-      r !== undefined &&
-      (reviewState(r.state) === ReviewState.Approved || reviewState(r.state) === ReviewState.Dismissed)
-    )
+    if (r && (reviewState(r.state) === ReviewState.Approved || reviewState(r.state) === ReviewState.Dismissed))
       return resolve("GitHub confirms review approved or dismissed");
-    if (r !== undefined && r.id !== b.reviewId) return supersede("A newer review replaced this request");
+    if (r && r.id !== b.reviewId) return supersede("A newer review replaced this request");
   }
 }
 

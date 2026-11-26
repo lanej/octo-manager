@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+
 export function migrateTracking(db: DatabaseSync): void {
   db.exec("PRAGMA foreign_keys=ON");
   const version = Number(db.prepare("PRAGMA user_version").get()!["user_version"]);

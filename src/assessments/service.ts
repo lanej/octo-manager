@@ -5,6 +5,7 @@ import { assessmentRunner, type Assess } from "./runner.js";
 import type { TrackingService } from "../tracking/service.js";
 import { unfinished, type Action } from "../tracking/types.js";
 import { successfulCheck } from "../tracking/checks.js";
+
 function eligible(action: Action): boolean {
   const b = action.blocker;
   return (
@@ -13,6 +14,7 @@ function eligible(action: Action): boolean {
     (b.kind === "check_results" && b.checks.some((check) => !successfulCheck(check)))
   );
 }
+
 export function boundedInput(
   action: Action,
   prUrl: string,
@@ -42,11 +44,13 @@ export function boundedInput(
   }
   return input;
 }
+
 export class AssessmentService {
   private work: Promise<void> | undefined;
   private task: ScheduledTask | undefined;
   private stopped = false;
   private abort = new AbortController();
+
   constructor(
     readonly store: AssessmentStore,
     private tracking: TrackingService,
@@ -54,25 +58,29 @@ export class AssessmentService {
     private assess: Assess = assessmentRunner(),
     private now: () => number = Date.now,
   ) {}
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("assessments", () => this.tick());
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   tick(): Promise<void> {
     if (this.stopped) return Promise.resolve();
     this.synchronize();
-    if (this.work !== undefined) return this.work;
+    if (this.work) return this.work;
     const item = this.store.reconciliationCandidates().find((item) => item.state === "pending");
-    if (item === undefined) return Promise.resolve();
+    if (!item) return Promise.resolve();
     this.work = this.run(item).finally(() => {
       this.work = undefined;
       this.task?.wake();
     });
     return this.work;
   }
+
   private current(item: Assessment): boolean {
     const action = this.tracking.store.action(item.input.actionId),
       pr = this.tracking.store.pr(action.prId);
@@ -85,6 +93,7 @@ export class AssessmentService {
       this.store.latest(action.id)?.id === item.id
     );
   }
+
   private synchronize(): void {
     for (const item of this.store.reconciliationCandidates())
       if (item.state !== "superseded" && !this.current(item)) {
@@ -100,7 +109,7 @@ export class AssessmentService {
     for (const action of this.tracking.store.unfinishedActions()) {
       if (!eligible(action) || !unfinished(action)) continue;
       const pr = this.tracking.store.pr(action.prId);
-      if (pr.enabled && pr.observation !== undefined)
+      if (pr.enabled && pr.observation)
         this.store.ensure(
           boundedInput(action, pr.url, pr.observation.headSha, undefined, pr.trackingEpoch),
           this.model,
@@ -123,6 +132,7 @@ export class AssessmentService {
       });
     }
   }
+
   private async run(item: Assessment): Promise<void> {
     try {
       const action = this.tracking.store.action(item.input.actionId);
@@ -161,6 +171,7 @@ export class AssessmentService {
       if (!this.stopped) this.synchronize();
     }
   }
+
   retry(id: string): Assessment {
     const item = this.store.get(id);
     if (!this.current(item)) throw new Error("Assessment no longer applies");
@@ -174,12 +185,14 @@ export class AssessmentService {
       return next;
     });
   }
+
   checkpointable(): boolean {
     return (
       this.work === undefined &&
       !this.store.reconciliationCandidates().some((item) => item.state === "pending" || item.state === "running")
     );
   }
+
   async close(): Promise<void> {
     this.stopped = true;
     this.task?.close();

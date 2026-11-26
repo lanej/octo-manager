@@ -30,6 +30,7 @@ function input(state: string): ServiceInput {
     codexHome: state,
   };
 }
+
 test.each(["not-found", "loaded"])(
   "installer refuses an owner lock with %s inactive zero-PID unit",
   async (loadState) => {

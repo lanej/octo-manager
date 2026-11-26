@@ -5,6 +5,7 @@ import { successfulCheck } from "./checks.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import { failedStepLogs } from "./job-logs.js";
 import { githubReads } from "../github/reads.js";
+
 export function compact(value: string, limit: number): string {
   const clean = Array.from(stripVTControlCharacters(value))
     .filter(
@@ -21,6 +22,7 @@ export function compact(value: string, limit: number): string {
   }
   return text + "…";
 }
+
 export function logExcerpt(log: string): string | undefined {
   const lines = log
     .split("\n")
@@ -33,6 +35,7 @@ export function logExcerpt(log: string): string | undefined {
   if (at < 0) return undefined;
   return compact(lines.slice(at, at + 4).join("\n"), 480);
 }
+
 export type ReadFailedLog = (repository: string, run: string, job: string, signal: AbortSignal) => Promise<string>;
 const failedLog: ReadFailedLog = async (repository, run, job, signal) => {
   const bounded = signal;
@@ -40,6 +43,7 @@ const failedLog: ReadFailedLog = async (repository, run, job, signal) => {
   const result = await githubReads.raw(`repos/${repository}/actions/jobs/${job}/logs`, {}, bounded);
   return failedStepLogs(result.body, metadata, { job, run });
 };
+
 export async function readFailureExcerpt(
   action: Action,
   prUrl: string,
@@ -62,6 +66,7 @@ export async function readFailureExcerpt(
     return undefined;
   }
 }
+
 export function agentMessage(
   action: Action,
   prUrl: string,

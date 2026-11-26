@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SubmissionInputSchema, PolicySchema, BriefSchema, SubmissionSchema } from "../src/submissions/contracts.js";
+
 const directory = new URL("../schemas/", import.meta.url);
 await mkdir(directory, { recursive: true });
 for (const [name, schema] of Object.entries({

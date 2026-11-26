@@ -61,6 +61,7 @@ export function wireJob(job: Job) {
     error: job.error,
   });
 }
+
 export function wireEvent(event: JobEvent) {
   return create(JobEventSchema, {
     sequence: BigInt(event.seq),
@@ -70,15 +71,15 @@ export function wireEvent(event: JobEvent) {
     detail: event.detail,
     prId: event.prId,
     actionId: event.actionId,
-    actionContext:
-      event.actionContext !== undefined
-        ? {
-            ...event.actionContext,
-            state: actionStates[event.actionContext.state],
-          }
-        : undefined,
+    actionContext: event.actionContext
+      ? {
+          ...event.actionContext,
+          state: actionStates[event.actionContext.state],
+        }
+      : undefined,
   });
 }
+
 export function wireSnapshot(application: SnapshotSource) {
   // WHY: A single owner executes these synchronous reads without yielding; the cursor covers exactly the state returned.
   const snapshot = application.jobs.snapshot();

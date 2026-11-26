@@ -16,6 +16,7 @@ import {
   type TrackerObservation,
 } from "../src/issues/contracts.js";
 import type { IssueTracker, AgentDispatcher, DispatchStatus, IssueCodeHost } from "../src/issues/ports.js";
+
 const brief = {
   version: 1,
   outcome: "Correct the result",
@@ -25,6 +26,7 @@ const brief = {
   questions: [],
   blockingQuestions: false,
 };
+
 function fixture(overrides: Partial<IssuePolicy> = {}) {
   let now = 100000;
   const db = new DatabaseSync(":memory:");
@@ -190,6 +192,7 @@ function fixture(overrides: Partial<IssuePolicy> = {}) {
     counts: () => ({ closeCount, createCount, cancelCount }),
   };
 }
+
 test("issue steel thread requires brief approval, tests, merge and separate verification", async () => {
   const f = fixture();
   try {

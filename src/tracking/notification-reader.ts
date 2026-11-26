@@ -1,5 +1,6 @@
 import { githubReads, GitHubRateLimitError, type GitHubReads } from "../github/reads.js";
 import { canonicalPR } from "../github/pr-identity.js";
+
 export interface NotificationUpdate {
   id: string;
   updatedAt: number;
@@ -22,14 +23,17 @@ export interface NotificationReader {
   identity(signal: AbortSignal): Promise<string>;
   page(query: NotificationQuery, signal: AbortSignal): Promise<NotificationPage>;
 }
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 export class NotificationAccessError extends Error {
   constructor(readonly retryAt: number | undefined) {
     super("GitHub notification access unavailable; check authentication, rate limits and connectivity");
   }
 }
+
 function header(stdout: string, name: string): string | undefined {
   return stdout
     .split(/\r?\n\r?\n/u)[0]
@@ -38,6 +42,7 @@ function header(stdout: string, name: string): string | undefined {
     ?.slice(name.length + 1)
     .trim();
 }
+
 export function notificationAccessError(stdout: string): NotificationAccessError {
   const date = Date.parse(header(stdout, "date") ?? ""),
     now = Number.isFinite(date) ? date : Date.now();
@@ -52,6 +57,7 @@ export function notificationAccessError(stdout: string): NotificationAccessError
   if (header(stdout, "x-ratelimit-remaining") === "0" && Number.isFinite(reset)) candidates.push(reset * 1000 + 1000);
   return new NotificationAccessError(candidates.length === 0 ? undefined : Math.max(...candidates));
 }
+
 async function request(
   reads: Pick<GitHubReads, "raw">,
   path: string,
@@ -71,6 +77,7 @@ async function request(
     throw new NotificationAccessError(undefined);
   }
 }
+
 export function parseNotification(value: unknown): NotificationUpdate {
   if (!record(value) || typeof value["id"] !== "string" || typeof value["updated_at"] !== "string")
     throw new Error("Invalid GitHub notification");
@@ -85,6 +92,7 @@ export function parseNotification(value: unknown): NotificationUpdate {
   }
   return result;
 }
+
 export function parseNotificationResponse(stdout: string): NotificationPage {
   const split = stdout.search(/\r?\n\r?\n/u);
   if (split < 0) throw new Error("Missing GitHub response headers");
@@ -117,6 +125,7 @@ export function parseNotificationResponse(stdout: string): NotificationPage {
   result.more = field("link")?.includes('rel="next"') === true;
   return result;
 }
+
 export function githubNotificationReader(reads: Pick<GitHubReads, "raw"> = githubReads): NotificationReader {
   return {
     async identity(signal) {
@@ -140,4 +149,5 @@ export function githubNotificationReader(reads: Pick<GitHubReads, "raw"> = githu
     },
   };
 }
+
 export const githubNotifications = githubNotificationReader();

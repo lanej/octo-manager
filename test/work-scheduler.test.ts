@@ -8,6 +8,7 @@ function gate() {
   });
   return { promise, release };
 }
+
 async function microtasks() {
   await Promise.resolve();
   await Promise.resolve();

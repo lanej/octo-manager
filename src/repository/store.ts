@@ -3,10 +3,12 @@ import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { AutomationPolicySchema, type AutomationPolicy } from "./contracts.js";
 
 const policyValidator = Compile(AutomationPolicySchema);
+
 function storedPolicy(value: unknown): AutomationPolicy {
   if (!policyValidator.Check(value)) throw new Error("Invalid merge-chain data");
   return value;
 }
+
 export class RepositoryPolicyStore {
   private policyByPr: StatementSync | undefined;
   private policiesForTick: StatementSync | undefined;
@@ -17,14 +19,16 @@ export class RepositoryPolicyStore {
     const row = (this.policyByPr ??= this.db.prepare("SELECT value FROM settings WHERE key=?")).get(
       `repository-policy:${prId}`,
     );
-    return row === undefined ? undefined : storedPolicy(JSON.parse(String(row["value"])));
+    return !row ? undefined : storedPolicy(JSON.parse(String(row["value"])));
   }
+
   save(policy: AutomationPolicy): void {
     storedPolicy(policy);
     this.db
       .prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
       .run(`repository-policy:${policy.prId}`, JSON.stringify(policy));
   }
+
   enabledPolicies(): Map<string, AutomationPolicy> {
     return new Map(
       (this.policiesForTick ??= this.db.prepare(

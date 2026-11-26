@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { runBeforeAfter } from "../test/support/security-before-after.js";
+
 const directory = resolve(process.argv[2] ?? "build/security-before-after");
 const report = await runBeforeAfter();
 await mkdir(directory, { recursive: true });

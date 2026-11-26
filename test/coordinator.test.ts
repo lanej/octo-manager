@@ -11,7 +11,9 @@ import { processAlive } from "../src/jobs/runtime.js";
 import { request } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
 import { record } from "../src/api/codec.js";
+
 const fake = fileURLToPath(new URL("./fake-worker.mjs", import.meta.url));
+
 async function waitFor<T>(read: () => T, predicate: (value: T) => boolean, timeout = 10000): Promise<T> {
   const end = Date.now() + timeout;
   while (true) {
@@ -21,6 +23,7 @@ async function waitFor<T>(read: () => T, predicate: (value: T) => boolean, timeo
     await new Promise((r) => setTimeout(r, 20));
   }
 }
+
 async function withCoordinator(
   mode: string,
   run: (c: ApplicationFixture, directory: string) => Promise<void>,
@@ -40,9 +43,11 @@ async function withCoordinator(
     await rm(directory, { recursive: true, force: true });
   }
 }
+
 function submit(c: ApplicationFixture, requestId: string) {
   return c.command({ op: "submit", requestId, task: { kind: "resolve_conflict" } });
 }
+
 test("real IPC submissions deduplicate, pause, dispatch FIFO and record conflict states", async () => {
   await withCoordinator("resolve", async (c, directory) => {
     c.command({ op: "pause" });

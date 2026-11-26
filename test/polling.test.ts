@@ -12,6 +12,7 @@ import type { ObservationInput } from "../src/tracking/types.js";
 import { RefreshKind, ScheduleState } from "../src/scheduling/contracts.js";
 import { TrackingState } from "../src/tracking/retirement.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
+
 const url = "https://github.com/owner/repo/pull/1";
 test("tracking arms the rate-limit deadline without a periodic upkeep timer", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-poll-cooldown-"));
@@ -35,6 +36,7 @@ test("tracking arms the rate-limit deadline without a periodic upkeep timer", as
     await rm(directory, { recursive: true, force: true });
   }
 });
+
 function observation(head = "head"): ObservationInput {
   return {
     observedAt: 1,
@@ -49,6 +51,7 @@ function observation(head = "head"): ObservationInput {
     workflows: { state: "complete", value: [] },
   };
 }
+
 test("idle polling doubles to a bounded ceiling and resets on meaningful changes", () => {
   let state: PollState | undefined;
   for (const expected of [60000, 120000, 240000, 480000, 900000, 900000]) {

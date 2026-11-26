@@ -15,10 +15,12 @@ interface Pending {
   resolve: (value: PRMetadata) => void;
   reject: (error: unknown) => void;
 }
+
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid GitHub metadata");
   return Object.fromEntries(Object.entries(value));
 }
+
 function metadata(value: unknown): PRMetadata {
   const repository = record(value);
   const raw = record(repository["pullRequest"]);
@@ -52,10 +54,13 @@ function metadata(value: unknown): PRMetadata {
     target: { ref: pr.base.ref, sha: target["oid"] },
   };
 }
+
 export class GitHubMetadata {
   private pending: Pending[] = [];
   private scheduled = false;
+
   constructor(private query: Query = (query, signal) => githubReads.query(query, signal)) {}
+
   read(url: string, signal?: AbortSignal): Promise<PRMetadata> {
     const result = new Promise<PRMetadata>((resolve, reject) => {
       this.pending.push({ url, signal, resolve, reject });
@@ -72,6 +77,7 @@ export class GitHubMetadata {
     }
     return result;
   }
+
   private async flush(pending: Pending[]): Promise<void> {
     for (let start = 0; start < pending.length; start += 10) {
       const batch = pending.slice(start, start + 10).filter((item) => {
@@ -122,4 +128,5 @@ export class GitHubMetadata {
     }
   }
 }
+
 export const githubMetadata = new GitHubMetadata();

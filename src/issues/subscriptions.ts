@@ -56,16 +56,19 @@ export interface IssueSubscription {
   mode: "legacy" | "selected";
   events: IssueNotificationKind[];
 }
+
 function parsed(value: unknown): unknown {
   if (typeof value !== "string") throw new Error("Invalid stored issue subscription");
   const decoded: unknown = JSON.parse(value);
   return decoded;
 }
+
 function events(value: unknown): IssueNotificationKind[] {
   const decoded = parsed(value);
   if (!Check(selection, decoded)) throw new Error("Invalid stored issue event selection");
   return decoded;
 }
+
 function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
@@ -86,6 +89,7 @@ CREATE TABLE IF NOT EXISTS issue_notification_status(issue_id TEXT PRIMARY KEY R
 CREATE TABLE IF NOT EXISTS issue_refresh_failures(issue_id TEXT PRIMARY KEY REFERENCES managed_issues(id),data TEXT NOT NULL CHECK(json_valid(data))) STRICT;
 CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON issue_notification_events BEGIN SELECT RAISE(ABORT,'Issue event evidence is immutable'); END;`);
   }
+
   list(issue: IssueRecord): IssueSubscription[] {
     const rows = this.db
       .prepare("SELECT agent_id,events FROM issue_subscriptions WHERE issue_id=? ORDER BY agent_id")
@@ -103,6 +107,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       },
     );
   }
+
   private atomic<T>(work: () => T): T {
     this.db.exec("SAVEPOINT issue_notifications");
     try {
@@ -114,22 +119,24 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       throw error;
     }
   }
+
   set(issue: IssueRecord, agentId: string, selected: IssueNotificationKind[] | undefined): IssueSubscription[] {
     return this.atomic(() => this.setInside(issue, agentId, selected));
   }
+
   private setInside(
     issue: IssueRecord,
     agentId: string,
     selected: IssueNotificationKind[] | undefined,
   ): IssueSubscription[] {
-    if (agentId.length === 0 || this.db.prepare("SELECT id FROM agent_refs WHERE id=?").get(agentId) === undefined)
+    if (agentId.length === 0 || !this.db.prepare("SELECT id FROM agent_refs WHERE id=?").get(agentId))
       throw new Error("Registered subscriber agent required");
-    if (selected !== undefined && !Check(selection, selected)) throw new Error("Invalid issue event selection");
+    if (selected && !Check(selection, selected)) throw new Error("Invalid issue event selection");
     this.db
       .prepare(
         "INSERT INTO issue_subscriptions VALUES(?,?,?) ON CONFLICT(issue_id,agent_id) DO UPDATE SET events=excluded.events",
       )
-      .run(issue.id, agentId, selected === undefined ? null : JSON.stringify(selected));
+      .run(issue.id, agentId, !selected ? null : JSON.stringify(selected));
     const effective = selected ?? defaults;
     // Historical digests and receipts stay immutable; current applicability fences future delivery.
     for (const row of this.db
@@ -145,13 +152,15 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
     this.changed?.();
     return this.list(issue);
   }
+
   evidence(id: string): IssueNotificationEvidence | undefined {
     const row = this.db.prepare("SELECT data FROM issue_notification_events WHERE id=?").get(id);
-    if (row === undefined) return undefined;
+    if (!row) return undefined;
     const value = parsed(row["data"]);
     if (!Check(evidence, value)) throw new Error("Invalid stored issue event evidence");
     return value;
   }
+
   private emit(
     issue: IssueRecord,
     kind: IssueNotificationKind,
@@ -181,10 +190,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       at: this.now(),
     };
     this.db.prepare("INSERT INTO issue_notification_events VALUES(?,?,?)").run(id, issue.id, JSON.stringify(event));
-    if (
-      this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get() === undefined
-    )
-      return;
+    if (!this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get()) return;
     this.changed?.();
     for (const subscription of this.list(issue)) {
       if (!subscription.events.includes(kind)) continue;
@@ -215,11 +221,12 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       this.db.prepare("INSERT INTO issue_notification_members VALUES(?,?,?)").run(messageId, id, kind);
     }
   }
+
   failure(issue: IssueRecord, detail: string): void {
     this.atomic(() => {
       const digest = createHash("sha256").update(detail).digest("hex");
       const previous = this.db.prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?").get(issue.id);
-      if (previous !== undefined) {
+      if (previous) {
         const value = parsed(previous["data"]);
         if (!Check(failureEvidence, value)) throw new Error("Invalid stored issue refresh failure");
         if (value.digest === digest) return;
@@ -238,18 +245,16 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       this.emit(issue, IssueNotificationKind.RefreshFailure, value.revision, "", detail);
     });
   }
+
   status(issue: IssueRecord, revision: string, emit = true): void {
-    if (
-      this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get() === undefined
-    )
-      return;
+    if (!this.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='issue_notices'").get()) return;
     const kind = IssueNotificationKind.Coordinator;
     const actionable = issue.waiting !== Waiting.None || issue.stage === IssueStage.Done;
     const effectiveRevision = actionable ? revision : "inactive";
     const previous = this.db
       .prepare("SELECT kind,revision FROM issue_notification_status WHERE issue_id=?")
       .get(issue.id);
-    if (previous === undefined && actionable) {
+    if (!previous && actionable) {
       const legacy = this.db
         .prepare(
           "SELECT n.id FROM issue_notices n LEFT JOIN issue_notification_members m ON m.message_id=n.id WHERE n.issue_id=? AND n.applicable=1 AND m.message_id IS NULL ORDER BY n.sequence DESC LIMIT 1",
@@ -282,6 +287,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
     if (actionable && emit) this.emit(issue, kind, revision, "", issue.detail);
     this.changed?.();
   }
+
   sourceIssueIds(): ReadonlySet<string> {
     return new Set(
       this.db
@@ -298,6 +304,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         .map((row) => String(row["issue_id"])),
     );
   }
+
   observesSource(issue: IssueRecord): boolean {
     return (
       this.db
@@ -314,11 +321,13 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
         ) !== undefined
     );
   }
+
   observe(issue: IssueRecord, observed: TrackerObservation): void {
     this.atomic(() => {
       this.observeInside(issue, observed);
     });
   }
+
   private observeInside(issue: IssueRecord, observed: TrackerObservation): void {
     if (!observed.complete) return;
     const current = {
@@ -332,7 +341,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       })),
     };
     const row = this.db.prepare("SELECT data FROM issue_source_observations WHERE issue_id=?").get(issue.id);
-    if (row !== undefined) {
+    if (row) {
       const previous = parsed(row["data"]);
       if (!Check(snapshot, previous)) throw new Error("Invalid stored issue source observation");
       if (previous.title !== current.title)
@@ -369,7 +378,7 @@ CREATE TRIGGER IF NOT EXISTS immutable_issue_notification_event BEFORE UPDATE ON
       )
       .run(issue.id, JSON.stringify(current));
     const failure = this.db.prepare("SELECT data FROM issue_refresh_failures WHERE issue_id=?").get(issue.id);
-    if (failure !== undefined) {
+    if (failure) {
       const value = parsed(failure["data"]);
       if (!Check(failureEvidence, value)) throw new Error("Invalid stored issue refresh failure");
       this.emit(

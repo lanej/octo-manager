@@ -11,6 +11,7 @@ import { NotificationState } from "../src/repository/contracts.js";
 import { schedulerClient } from "../src/client.js";
 import { unwire } from "../src/api/codec.js";
 import { DomainRepositoryAutomationPolicySchema } from "../src/gen/octomanager/v2/domain_pb.js";
+
 const url = "https://github.com/owner/repo/pull/1";
 const owner = {
   harness: "codex",
@@ -19,6 +20,7 @@ const owner = {
 };
 const config =
   'schema_version = 1\n[merging]\nauto_merge = "project_stage"\n[notifications.instructions]\nreview_feedback = "Repair the review findings."\n';
+
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), "octo-repository-policy-"));
   const root = join(await realpath(directory), "repo");
@@ -142,6 +144,7 @@ async function fixture() {
     },
   };
 }
+
 test("repository stage inheritance reloads locally, preserves explicit off, and survives restart", async () => {
   const f = await fixture();
   try {

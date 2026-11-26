@@ -1,6 +1,7 @@
 import { expandInlineSequences, validYamlCandidate, yamlRecipe } from "./yaml.js";
 import { RecipeDecision, type ConflictStore } from "./cases.js";
 import type { RebaseWorkspace } from "./git.js";
+
 export async function mechanicalConflicts(
   workspace: RebaseWorkspace,
   paths: string[],
@@ -25,7 +26,7 @@ export async function mechanicalConflicts(
       remaining.push(path);
       continue;
     }
-    if (captured.inputs === undefined) {
+    if (!captured.inputs) {
       store.decide(
         id,
         RecipeDecision.Declined,

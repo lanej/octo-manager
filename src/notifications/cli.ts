@@ -17,6 +17,7 @@ import { resolve, join } from "node:path";
 import { homedir } from "node:os";
 import type { parseCommand } from "../cli/arguments.js";
 import { schedulerClient } from "../client.js";
+
 export async function notificationsCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed,
     [command, id] = positionals;
@@ -99,7 +100,7 @@ export async function notificationsCLI(parsed: ReturnType<typeof parseCommand>):
     printResult(parsed, {
       ...record(toJson(NotificationMessageSchema, message)),
       id: id ?? message.id,
-      ...(merge === undefined ? {} : { merge }),
+      ...(!merge ? {} : { merge }),
     });
     return true;
   }

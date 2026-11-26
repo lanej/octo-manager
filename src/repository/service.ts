@@ -13,19 +13,23 @@ import { EntryState, terminal } from "../merging/contracts.js";
 import { NotificationState } from "./contracts.js";
 import type { MergeStore } from "../merging/store.js";
 import { defaults, type AutomationPolicy, type Instructions } from "./contracts.js";
+
 export class RepositoryPolicies {
   private monitor = new RepositoryPolicyMonitor();
   private reconcileAt: number | undefined;
   private watchRetryAt: number | undefined;
+
   constructor(
     private store: RepositoryPolicyStore,
     private tracking: TrackingStore,
     private merging: MergeStore,
     private event: (kind: string, detail: string, prId?: string) => void,
   ) {}
+
   watch(changed: () => void): void {
     this.monitor.start(changed);
   }
+
   scheduled(now: number): number | undefined {
     if (this.reconcileAt !== undefined && now >= this.reconcileAt) {
       this.monitor.invalidate();
@@ -46,14 +50,17 @@ export class RepositoryPolicies {
     else this.watchRetryAt = undefined;
     return Math.min(this.reconcileAt, this.watchRetryAt ?? Infinity);
   }
+
   close(): void {
     this.monitor.close();
     this.reconcileAt = undefined;
     this.watchRetryAt = undefined;
   }
+
   get(prId: string): AutomationPolicy | undefined {
     return this.store.get(prId);
   }
+
   bind(prId: string, agentId: string, cwd?: string): void {
     if (cwd === undefined || this.tracking.pr(prId).ownerAgentId !== agentId) return;
     const git = (...args: string[]) =>
@@ -87,6 +94,7 @@ export class RepositoryPolicies {
     });
     this.tick();
   }
+
   tick(refresh = true): { monitorFiles: boolean } {
     if (refresh) this.monitor.invalidate();
     let monitorFiles = false;
@@ -101,7 +109,7 @@ export class RepositoryPolicies {
     const disable = this.merging.inheritedDisableCandidates(stale.map((pr) => pr.id));
     for (const pr of contexts) {
       const prior = policies.get(pr.id);
-      if (prior === undefined || !pr.enabled) continue;
+      if (!prior || !pr.enabled) continue;
       if (!matchesBinding(prior, pr)) {
         if (disable.has(pr.id)) this.merging.disableInherited(pr.id);
         const error = "Repository policy requires enrollment by the current owner and tracking epoch";
@@ -180,6 +188,7 @@ export class RepositoryPolicies {
     this.monitor.retain(roots);
     return { monitorFiles };
   }
+
   forMessage(message: AgentMessage): string | undefined {
     const actionId = message.actionId === "" ? this.merging.readinessAction(message.id) : message.actionId;
     const action = actionId === undefined ? undefined : this.tracking.action(actionId);
@@ -188,7 +197,7 @@ export class RepositoryPolicies {
     const noticeEntry = this.merging.noticeEntry(message.id);
     const entry = noticeEntry ?? this.merging.entries(prId).find((value) => !terminal(value.state));
     let state: NotificationState | undefined;
-    if (entry !== undefined && noticeEntry !== undefined) {
+    if (entry && noticeEntry) {
       if (entry.state === EntryState.Merged) state = NotificationState.Merged;
       else if (entry.state === EntryState.Uncertain) state = NotificationState.MergeUncertain;
       else if (entry.state === EntryState.WaitingOwner) {
@@ -202,10 +211,9 @@ export class RepositoryPolicies {
               operation.head === pr.observation?.headSha &&
               operation.state === OperationState.Failed,
           );
-        state =
-          failed && entry.ready === undefined ? NotificationState.MergeBlocked : NotificationState.OwnerReviewRequired;
+        state = failed && !entry.ready ? NotificationState.MergeBlocked : NotificationState.OwnerReviewRequired;
       } else if (entry.state === EntryState.Blocked) state = NotificationState.MergeBlocked;
-    } else if (action !== undefined) {
+    } else if (action) {
       switch (action.blocker.kind) {
         case "review_feedback":
         case "changes_requested":
@@ -251,6 +259,7 @@ export class RepositoryPolicies {
     }
     return state === undefined ? undefined : this.instructions(prId, message.recipientAgentId, [state]);
   }
+
   instructions(prId: string, agentId: string, states: NotificationState[]): string | undefined {
     const pr = this.tracking.pr(prId),
       policy = this.get(prId);

@@ -10,6 +10,7 @@ function http(status: number, body: unknown, headers: Record<string, string> = {
     body: JSON.stringify(body),
   };
 }
+
 test("conditional reads reuse only server-confirmed evidence and replace changed responses", async () => {
   const calls: GitHubRequest[] = [];
   const replies = [

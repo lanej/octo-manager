@@ -2,6 +2,7 @@ import { test, expect } from "bun:test";
 import { renderDigest } from "../src/notifications/render.js";
 import type { AgentMessage } from "../src/tracking/inbox.js";
 import type { SafeNotice } from "../src/security/notifications.js";
+
 function message(id: string, notice: SafeNotice): AgentMessage {
   return {
     id,
@@ -15,6 +16,7 @@ function message(id: string, notice: SafeNotice): AgentMessage {
     notice,
   };
 }
+
 test("identical safe updates collapse while every source is receipted", () => {
   const notice: SafeNotice = {
     version: 1,

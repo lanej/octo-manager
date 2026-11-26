@@ -27,6 +27,7 @@ import {
 } from "../gen/octomanager/v2/tracking_pb.js";
 import { ActionState, DeliveryState, type AgentRef, type Action, type Delivery, type TrackedPR } from "./types.js";
 import type { TrackingService } from "./service.js";
+
 export const actionStates: Record<ActionState, WireActionState> = {
   open: WireActionState.OPEN,
   acknowledged: WireActionState.ACKNOWLEDGED,
@@ -47,6 +48,7 @@ const checkWatchStates: Record<CheckWatchState, WireCheckWatchState> = {
   cancelled: WireCheckWatchState.CANCELLED,
   expired: WireCheckWatchState.EXPIRED,
 };
+
 export function wireCheckWatch(watch: CheckWatch) {
   return {
     ...watch,
@@ -56,6 +58,7 @@ export function wireCheckWatch(watch: CheckWatch) {
     updatedAtMs: BigInt(watch.updatedAt),
   };
 }
+
 const deliveryStates: Record<DeliveryState, WireDeliveryState> = {
   pending: WireDeliveryState.PENDING,
   sending: WireDeliveryState.SENDING,
@@ -64,6 +67,7 @@ const deliveryStates: Record<DeliveryState, WireDeliveryState> = {
   unavailable: WireDeliveryState.UNAVAILABLE,
   cancelled: WireDeliveryState.CANCELLED,
 };
+
 export function wirePR(p: TrackedPR) {
   return create(TrackedPullRequestSchema, {
     id: p.id,
@@ -90,12 +94,12 @@ export function wirePR(p: TrackedPR) {
           mergeability: p.observation.mergeability,
           checks: wire(DomainCheckEvidenceSchema, p.observation.checks),
           reviews: wire(DomainReviewEvidenceSchema, p.observation.reviews),
-          ...(p.observation.workflows === undefined
+          ...(!p.observation.workflows
             ? {}
             : {
                 workflows: wire(DomainCheckEvidenceSchema, p.observation.workflows),
               }),
-          ...(p.observation.feedback === undefined
+          ...(!p.observation.feedback
             ? {}
             : {
                 feedback: wire(DomainFeedbackEvidenceSchema, p.observation.feedback),
@@ -104,6 +108,7 @@ export function wirePR(p: TrackedPR) {
       : undefined,
   });
 }
+
 export function wireAction(a: Action, full = false) {
   const notice = actionNotice(a, "");
   if (!full)
@@ -179,19 +184,21 @@ export function wireAction(a: Action, full = false) {
     updatedAtMs: BigInt(a.updatedAt),
   });
 }
+
 export function wireDelivery(d: Delivery, message?: AgentMessage) {
   return create(ActionDeliverySchema, {
     id: d.id,
     actionId: d.actionId,
     recipientAgentId: d.recipientAgentId,
     state: deliveryStates[d.progress.state],
-    ...(message === undefined ? {} : { messageSequence: BigInt(message.sequence) }),
+    ...(!message ? {} : { messageSequence: BigInt(message.sequence) }),
     ...(message?.acknowledgedAt === undefined ? {} : { acknowledgedAtMs: BigInt(message.acknowledgedAt) }),
     progress: wire(DomainDeliveryProgressSchema, d.progress),
     createdAtMs: BigInt(d.createdAt),
     updatedAtMs: BigInt(d.updatedAt),
   });
 }
+
 export function wireAgent(agent: AgentRef) {
   return create(AgentReferenceSchema, {
     id: agent.id,
@@ -201,7 +208,7 @@ export function wireAgent(agent: AgentRef) {
       sessionId: agent.sessionId,
       ...(agent.label === undefined ? {} : { label: agent.label }),
     },
-    ...(agent.lastObservedRuntime === undefined
+    ...(!agent.lastObservedRuntime
       ? {}
       : {
           harnessVersion: agent.lastObservedRuntime.version,
@@ -209,6 +216,7 @@ export function wireAgent(agent: AgentRef) {
         }),
   });
 }
+
 export function wireTracking(service: TrackingService) {
   const s = service.store.snapshot();
   return create(TrackingSnapshotSchema, {
@@ -226,6 +234,7 @@ export function wireTracking(service: TrackingService) {
     })),
   });
 }
+
 export async function trackingOperation<T>(work: () => T | Promise<T>): Promise<T> {
   try {
     return await work();

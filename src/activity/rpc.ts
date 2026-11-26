@@ -25,6 +25,7 @@ export const activityOutcomes: Record<ActivityOutcome, WireOutcome> = {
   [ActivityOutcome.Failed]: WireOutcome.FAILED,
   [ActivityOutcome.Uncertain]: WireOutcome.UNCERTAIN,
 };
+
 export function wireActivityInput(input: ActivityInput) {
   return {
     ...input,
@@ -32,6 +33,7 @@ export function wireActivityInput(input: ActivityInput) {
     outcome: activityOutcomes[input.outcome],
   };
 }
+
 function wireReport(report: ActivityReport) {
   return create(ActivityReportSchema, {
     sequence: BigInt(report.sequence),
@@ -39,6 +41,7 @@ function wireReport(report: ActivityReport) {
     report: wireActivityInput(report),
   });
 }
+
 function fromWire(input: WireInput | undefined): unknown {
   if (input === undefined) throw new ConnectError("Activity report is required", Code.InvalidArgument);
   return {
@@ -47,6 +50,7 @@ function fromWire(input: WireInput | undefined): unknown {
     outcome: Object.entries(activityOutcomes).find(([, value]) => value === input.outcome)?.[0],
   };
 }
+
 export function activityRoutes(
   store: ActivityStore,
   sequence: () => number,

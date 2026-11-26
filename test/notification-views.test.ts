@@ -10,8 +10,10 @@ import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { renderNotice, noticeView, type SafeNotice } from "../src/security/notifications.js";
 import { digestGroups, renderDigest, messageReceiptId } from "../src/notifications/render.js";
 import type { AgentMessage } from "../src/notifications/message.js";
+
 const pr = "https://github.com/owner/repo/pull/13";
 const actionId = "deadbeef-1234-4567-89ab-0123456789ab";
+
 function message(head: string, id: string): AgentMessage {
   return {
     id,
@@ -32,6 +34,7 @@ function message(head: string, id: string): AgentMessage {
     },
   };
 }
+
 test("notice links identify both the pull request and its exact commit", () => {
   const head = "a".repeat(40),
     notice: SafeNotice = {

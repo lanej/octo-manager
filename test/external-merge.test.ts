@@ -23,6 +23,7 @@ const target = {
   endpoint: "local",
   sessionId: "external-merge",
 };
+
 function snapshot(sha = head): MergeSnapshot {
   const observation: ObservationInput = {
     observedAt: 1000,
@@ -60,6 +61,7 @@ function snapshot(sha = head): MergeSnapshot {
     methods: ["squash"],
   };
 }
+
 async function fixture(
   run: (f: {
     current: () => ApplicationFixture;

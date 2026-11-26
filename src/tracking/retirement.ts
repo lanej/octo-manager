@@ -2,6 +2,7 @@ import { PRLifecycle, pendingReview, terminalPR, prLifecycle } from "./states.js
 import type { DatabaseSync } from "node:sqlite";
 import { CheckWatchState, checkEvidence, checksFinished, type CheckWatches } from "./checks.js";
 import type { PRObservation } from "./types.js";
+
 export enum TrackingState {
   Watching = "watching",
   Draining = "draining",
@@ -19,6 +20,7 @@ export interface Lifecycle {
   archivedAt?: number;
   archiveReason?: ArchiveReason;
 }
+
 export function lifecycle(row: Record<string, unknown>): Lifecycle {
   const state = row["tracking_state"] ?? (row["enabled"] === 0 ? TrackingState.Disabled : TrackingState.Watching);
   const checkedState = Object.values(TrackingState).find((value) => value === state);
@@ -39,6 +41,7 @@ export function lifecycle(row: Record<string, unknown>): Lifecycle {
   }
   return result;
 }
+
 export function migrateRetirement(db: DatabaseSync, now: number): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (version === 15 || version === 14 || version === 13 || version === 12 || version === 11) return;
@@ -80,6 +83,7 @@ export function migrateRetirement(db: DatabaseSync, now: number): void {
     throw error;
   }
 }
+
 export class RetirementStore {
   constructor(
     private db: DatabaseSync,
@@ -87,6 +91,7 @@ export class RetirementStore {
     private checks: CheckWatches,
     private event: (kind: string, detail: string, prId: string) => void,
   ) {}
+
   private set(id: string, state: TrackingState, deadline: number | null, reason: ArchiveReason | null): void {
     this.db
       .prepare(
@@ -102,15 +107,18 @@ export class RetirementStore {
         id,
       );
   }
+
   resumeInside(id: string): void {
     this.set(id, TrackingState.Watching, null, null);
   }
+
   disableInside(id: string): void {
     this.set(id, TrackingState.Disabled, null, null);
   }
+
   observeInside(id: string, observation: PRObservation): void {
     const row = this.db.prepare("SELECT * FROM tracked_prs WHERE id=?").get(id);
-    if (row === undefined) throw new Error("Tracked PR not found");
+    if (!row) throw new Error("Tracked PR not found");
     const current = lifecycle(row);
     if (current.state === TrackingState.Disabled) return;
     if (!terminalPR(observation.lifecycle)) {
@@ -130,16 +138,17 @@ export class RetirementStore {
       checkEvidence(observation).state === "complete" &&
       observation.reviews.state === "complete" &&
       !observation.reviews.value.some((review) => pendingReview(review.state)) &&
-      (observation.feedback === undefined || observation.feedback.state === "complete") &&
+      (!observation.feedback || observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
     ) {
       this.set(id, TrackingState.Archived, null, ArchiveReason.Settled);
       this.event("pr_archived", "Polling stopped after a final complete refresh; unread deliveries retained", id);
     }
   }
+
   cachedMergedInside(id: string, observation: PRObservation): void {
     const row = this.db.prepare("SELECT * FROM tracked_prs WHERE id=?").get(id);
-    if (row === undefined) return;
+    if (!row) return;
     const current = lifecycle(row);
     if (current.state === TrackingState.Disabled || current.state === TrackingState.Archived) return;
     const evidence = checkEvidence(observation);
@@ -149,13 +158,14 @@ export class RetirementStore {
       (evidence.value.length === 0 || checksFinished(evidence)) &&
       observation.reviews.state === "complete" &&
       !observation.reviews.value.some((review) => pendingReview(review.state)) &&
-      (observation.feedback === undefined || observation.feedback.state === "complete") &&
+      (!observation.feedback || observation.feedback.state === "complete") &&
       !this.checks.hasWaiting(id)
     ) {
       this.set(id, TrackingState.Archived, null, ArchiveReason.Settled);
       this.event("pr_archived", "Cached merged PR settled during startup; history and unread deliveries retained", id);
     }
   }
+
   expire(): string[] {
     const rows = this.db
       .prepare("SELECT id FROM tracked_prs WHERE tracking_state='draining' AND drain_deadline_ms<=?")

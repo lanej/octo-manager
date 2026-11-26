@@ -24,6 +24,7 @@ let attempt = 0;
 let started = false;
 let aborted = false;
 const pending = new Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
+
 function send(value: object): Promise<void> {
   return new Promise((resolve) => {
     if (process.connected)
@@ -33,9 +34,11 @@ function send(value: object): Promise<void> {
     else resolve();
   });
 }
+
 function workerAborted(): boolean {
   return aborted;
 }
+
 function stop(): void {
   aborted = true;
   for (const request of pending.values()) request.reject(new Error("Worker aborted"));
@@ -44,6 +47,7 @@ function stop(): void {
   setTimeout(() => process.exit(0), 5000).unref();
   if (!session) process.exit(0);
 }
+
 process.on("disconnect", stop);
 process.on("SIGTERM", stop);
 process.on("message", (value: unknown) => {
@@ -79,6 +83,7 @@ process.on("message", (value: unknown) => {
     stop();
   }
 });
+
 function callTool(name: string, args: unknown): Promise<unknown> {
   if (aborted) return Promise.reject(new Error("Worker aborted"));
   const id = randomUUID();
@@ -87,6 +92,7 @@ function callTool(name: string, args: unknown): Promise<unknown> {
     send({ type: "tool", id, name, args });
   });
 }
+
 function tool(
   name: string,
   description: string,
@@ -103,6 +109,7 @@ function tool(
     }),
   };
 }
+
 function diagnosis(error: unknown, provider?: WorkerProvider): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/needs refreshing/i.test(message)) return "Existing Codex authentication needs refreshing through Codex";
@@ -118,6 +125,7 @@ function diagnosis(error: unknown, provider?: WorkerProvider): string {
   if (/budget/i.test(message)) return "Attempt exceeded the model turn or tool budget";
   return "Pi worker failed; check provider access and model configuration";
 }
+
 function prStage(raw: Record<string, unknown>): StageTask {
   const role = raw["role"];
   if (role !== "policy" && role !== "change" && role !== "writer") throw new Error("Invalid PR worker role");
@@ -127,6 +135,7 @@ function prStage(raw: Record<string, unknown>): StageTask {
   const schema = record(raw["schema"]);
   return { kind: "pr_stage", role, instructions, schema, input: raw["input"] };
 }
+
 async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): Promise<void> {
   let flushTimer: NodeJS.Timeout | undefined;
   let budgetExceeded = false;
@@ -239,7 +248,7 @@ async function run(task: Task | RepairWorkerTask | StageTask, modelId: string): 
       ) {
         budgetExceeded = true;
         const current = session;
-        if (current !== undefined)
+        if (current)
           current.abort().catch(() => {
             process.exit(1);
           });

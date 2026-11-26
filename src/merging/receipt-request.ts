@@ -19,9 +19,9 @@ export function requestReceiptMerge(
   digests: DigestService,
 ) {
   const { receiptId, agentId, agentTarget, expectedPr, expectedHead } = request;
-  if (agentId !== "" && agentTarget !== undefined) throw new Error("Invalid mixed recipient references");
+  if (agentId !== "" && agentTarget) throw new Error("Invalid mixed recipient references");
   let recipient = agentId;
-  if (agentTarget !== undefined) {
+  if (agentTarget) {
     recipient = tracking.sessionAgent(
       agentTarget.harness,
       agentTarget.sessionId,
@@ -40,6 +40,6 @@ export function requestReceiptMerge(
   const version = digests.store.delivery(receiptId);
   digests.acknowledge(version.digestId, version.revision, recipient);
   const target = version.mergeTarget;
-  if (target === undefined) return { state: "blocked", reason: "This message has no merge target" };
+  if (!target) return { state: "blocked", reason: "This message has no merge target" };
   return store.transaction(() => receipts.request(target, version.dispatchId, recipient));
 }

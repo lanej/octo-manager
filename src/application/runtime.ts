@@ -12,6 +12,7 @@ export interface Application {
   close(): Promise<void>;
   onRetired(listener: () => void): () => void;
 }
+
 export class ApplicationRuntime implements Application {
   private readonly activation = new Activation();
   private nativeCalls = 0;
@@ -23,6 +24,7 @@ export class ApplicationRuntime implements Application {
   private checkpointWork: Promise<ActivationReport> | undefined;
   private releaseDispatch: (() => void) | undefined;
   private listeners = new Set<() => void>();
+
   constructor(
     private store: Store,
     private jobs: JobRuntime,
@@ -32,19 +34,23 @@ export class ApplicationRuntime implements Application {
     private diagnostics: PerformanceDiagnostics,
     private transport: ApiTransport,
   ) {}
+
   onRetired(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
     };
   }
+
   private retired(): void {
     for (const listener of this.listeners) listener();
     this.listeners.clear();
   }
+
   isStopping(): boolean {
     return this.stopping || this.stopped;
   }
+
   start(): Promise<void> {
     if (this.isStopping()) return Promise.reject(new Error("Coordinator is stopping"));
     return (this.startWork ??= (async () => {
@@ -63,6 +69,7 @@ export class ApplicationRuntime implements Application {
       }
     })());
   }
+
   nativeAdmission(method: string): () => void {
     if (method === "RuntimeLifecycle" || method === "GetServerInfo") return () => {};
     if (this.stopping) throw new Error("Coordinator is stopping");
@@ -71,6 +78,7 @@ export class ApplicationRuntime implements Application {
       this.nativeCalls--;
     };
   }
+
   async lifecycle(
     action: string,
     incarnation: string,
@@ -123,7 +131,7 @@ export class ApplicationRuntime implements Application {
       return report();
     }
     if (action !== "checkpoint") throw new Error("Unsupported lifecycle action");
-    if (this.checkpointWork !== undefined) {
+    if (this.checkpointWork) {
       const current = report().targets[0];
       if (current.process.native_id === incarnation && current.checkpoint?.run_id === operation) {
         await this.checkpointWork;
@@ -168,7 +176,7 @@ export class ApplicationRuntime implements Application {
   }
 
   close(): Promise<void> {
-    if (this.closeWork !== undefined) return this.closeWork;
+    if (this.closeWork) return this.closeWork;
     this.stopping = true;
     this.workScheduler.stop();
     this.jobs.stop(true);
@@ -183,6 +191,7 @@ export class ApplicationRuntime implements Application {
     })();
     return this.closeWork;
   }
+
   private dispose(): Promise<void> {
     return (this.disposeWork ??= (async () => {
       this.workScheduler.stop();

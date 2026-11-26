@@ -2,6 +2,7 @@ import { GitHubRequestCancelledError, throwIfGitHubCancelled } from "./errors.js
 import { Octokit } from "@octokit/core";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+
 const exec = promisify(execFile);
 export interface GitHubRequest {
   method: "GET" | "POST" | "PUT" | "PATCH";
@@ -19,6 +20,7 @@ export type GitHubTransport = (
   signal?: AbortSignal,
   beforeSend?: () => void,
 ) => Promise<GitHubResponse>;
+
 async function credential(): Promise<string> {
   try {
     const { stdout } = await exec("gh", ["auth", "token", "--hostname", "github.com"], {
@@ -32,9 +34,11 @@ async function credential(): Promise<string> {
     throw new Error("GitHub authentication unavailable; run gh auth login -h github.com and restart Octo");
   }
 }
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function response(value: unknown): GitHubResponse {
   if (!record(value) || typeof value["status"] !== "number" || !record(value["headers"]))
     throw new Error("Invalid GitHub SDK response");
@@ -51,6 +55,7 @@ function response(value: unknown): GitHubResponse {
   if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("GitHub response exceeds 2 MiB");
   return { status: value["status"], headers, body };
 }
+
 async function boundedFetch(
   input: Parameters<typeof fetch>[0],
   init: RequestInit | undefined,
@@ -81,6 +86,7 @@ async function boundedFetch(
     headers: result.headers,
   });
 }
+
 export function sdkTransport(
   auth: () => Promise<string> = credential,
   fetcher: (input: Parameters<typeof fetch>[0], init?: RequestInit) => Promise<Response> = fetch,
@@ -107,11 +113,10 @@ export function sdkTransport(
         await octokit.request({
           method: request.method,
           url: "/" + request.path.replace(/^\//u, ""),
-          ...(request.headers === undefined ? {} : { headers: request.headers }),
-          ...(request.data === undefined ? {} : { data: request.data }),
+          ...(!request.headers ? {} : { headers: request.headers }),
+          ...(!request.data ? {} : { data: request.data }),
           request: {
-            signal:
-              signal === undefined ? AbortSignal.timeout(20000) : AbortSignal.any([signal, AbortSignal.timeout(20000)]),
+            signal: !signal ? AbortSignal.timeout(20000) : AbortSignal.any([signal, AbortSignal.timeout(20000)]),
           },
         }),
       );

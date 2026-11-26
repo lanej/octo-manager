@@ -9,6 +9,7 @@ import {
   DomainArchivedSubmissionSummarySchema,
   DomainRepositoryPolicySchema,
 } from "../gen/octomanager/v2/domain_pb.js";
+
 export async function submissionsCLI(parsed: ParsedCommand): Promise<void> {
   const [command, id] = parsed.positionals;
   const client = schedulerClient(resolve(parsed.values.state ?? join(homedir(), ".local/state/octo-manager")));

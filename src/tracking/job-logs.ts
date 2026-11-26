@@ -1,5 +1,6 @@
 import { Type } from "typebox";
 import { Check } from "typebox/value";
+
 const timestamp = Type.Union([Type.String(), Type.Null()]);
 const job = Type.Object({
   id: Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
@@ -12,6 +13,7 @@ const job = Type.Object({
     }),
   ),
 });
+
 export function failedStepLogs(log: string, metadata: unknown, expected: { job: string; run: string }): string {
   if (!Check(job, metadata)) throw new Error("Invalid GitHub job metadata");
   if (String(metadata.id) !== expected.job || String(metadata.run_id) !== expected.run)

@@ -33,8 +33,10 @@ import type { TrackingConfig } from "./config.js";
 import { selectProfile } from "./config.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import { alreadyReported, checkWatchFindings, closeProgress, findings } from "./policy.js";
+
 type Row = Record<string, any>;
 const parse = (s: unknown): any => JSON.parse(s as string);
+
 export class TrackingStore {
   private readonly observations: ObservationRepository;
   private agentById: StatementSync | undefined;
@@ -43,6 +45,7 @@ export class TrackingStore {
   readonly retirement: RetirementStore;
   readonly inbox: AgentInbox;
   readonly checks: CheckWatches;
+
   constructor(
     private db: DatabaseSync,
     private now: () => number,
@@ -67,9 +70,9 @@ export class TrackingStore {
       for (const action of this.actions()) {
         if (!unfinished(action)) continue;
         const observation = observations.get(action.prId);
-        if (observation !== undefined && prLifecycle(observation.lifecycle) === PRLifecycle.Merged) {
+        if (observation && prLifecycle(observation.lifecycle) === PRLifecycle.Merged) {
           const progress = this.closeProgress(action, observation);
-          if (progress !== undefined) {
+          if (progress) {
             this.saveAction({ ...action, progress, updatedAt: this.now() }, `action_${progress.state}`);
             this.cancelDeliveries(action.id, "PR merged");
           }
@@ -97,6 +100,7 @@ export class TrackingStore {
       }
     });
   }
+
   transaction<T>(fn: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -108,12 +112,14 @@ export class TrackingStore {
       throw e;
     }
   }
+
   agents(): AgentRef[] {
     return this.db
       .prepare("SELECT * FROM agent_refs ORDER BY rowid")
       .all()
       .map((r: Row) => this.agentRow(r));
   }
+
   private agentRow(r: Row): AgentRef {
     return {
       id: r["id"],
@@ -131,9 +137,10 @@ export class TrackingStore {
           }),
     };
   }
+
   agent(id: string): AgentRef {
     const row = (this.agentById ??= this.db.prepare("SELECT * FROM agent_refs WHERE id=?")).get(id);
-    if (row === undefined) throw new Error("Agent not found");
+    if (!row) throw new Error("Agent not found");
     return this.agentRow(row);
   }
 
@@ -150,9 +157,11 @@ export class TrackingStore {
       );
     return String(rows[0]?.["id"]);
   }
+
   registerAgent(t: AgentTarget): AgentRef {
     return this.transaction(() => this.register(t));
   }
+
   private register(t: AgentTarget): AgentRef {
     if (
       !supportedTrackingTarget(t) ||
@@ -172,43 +181,51 @@ export class TrackingStore {
       (a) => a.harness === t.harness && a.endpoint === t.endpoint && a.sessionId === t.sessionId,
     )!;
   }
+
   runtime(id: string, version: string): void {
     this.db
       .prepare("UPDATE agent_refs SET harness_version=?,version_observed_at_ms=? WHERE id=?")
       .run(version, this.now(), id);
   }
+
   reconcileCachedRetirement(): void {
     this.transaction(() => {
       for (const pr of this.prs())
-        if (pr.enabled && pr.observation !== undefined && prLifecycle(pr.observation.lifecycle) === PRLifecycle.Merged)
+        if (pr.enabled && pr.observation && prLifecycle(pr.observation.lifecycle) === PRLifecycle.Merged)
           this.retirement.cachedMergedInside(pr.id, pr.observation);
     });
   }
+
   prs(): TrackedPR[] {
     return this.db
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
       .all()
       .map((r: Row) => this.trackedPR(r));
   }
+
   observationHead(prId: string): string | undefined {
     return this.observations.head(prId);
   }
+
   referenceObservation(prId: string) {
     return this.observations.reference(prId);
   }
+
   prContexts(): Omit<TrackedPR, "observation">[] {
     return this.db
       .prepare("SELECT * FROM tracked_prs ORDER BY rowid")
       .all()
       .map((row) => this.decodePRContext(row));
   }
+
   private trackedPR(r: Row): TrackedPR {
     const observation = this.observations.latest(String(r["id"]));
     return {
       ...this.decodePRContext(r),
-      ...(observation === undefined ? {} : { observation }),
+      ...(!observation ? {} : { observation }),
     };
   }
+
   private decodePRContext(r: Row): Omit<TrackedPR, "observation"> {
     return {
       id: r["id"],
@@ -229,19 +246,23 @@ export class TrackingStore {
           }),
     };
   }
+
   private prRow(id: string) {
     const row = (this.prByIdentity ??= this.db.prepare(
       "SELECT * FROM tracked_prs WHERE rowid=(SELECT min(rowid) FROM (SELECT rowid FROM tracked_prs WHERE id=? UNION ALL SELECT rowid FROM tracked_prs WHERE url=?))",
     )).get(id, id);
-    if (row === undefined) throw new Error("Tracked PR not found");
+    if (!row) throw new Error("Tracked PR not found");
     return row;
   }
+
   prContext(id: string): Omit<TrackedPR, "observation"> {
     return this.decodePRContext(this.prRow(id));
   }
+
   pr(id: string): TrackedPR {
     return this.trackedPR(this.prRow(id));
   }
+
   track(url: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {
       url = canonicalPR(url);
@@ -268,6 +289,7 @@ export class TrackingStore {
       return this.pr(id);
     });
   }
+
   actions(prId?: string): Action[] {
     const rows =
       prId === undefined
@@ -275,12 +297,14 @@ export class TrackingStore {
         : this.db.prepare("SELECT * FROM actions WHERE pr_id=? ORDER BY rowid").all(prId);
     return rows.map((row) => this.trackedAction(row));
   }
+
   unfinishedActions(): Action[] {
     return this.db
       .prepare("SELECT * FROM actions WHERE state IN ('open','acknowledged','working') ORDER BY rowid")
       .all()
       .map((row) => this.trackedAction(row));
   }
+
   private trackedAction(r: Row): Action {
     return {
       id: r["id"],
@@ -297,10 +321,11 @@ export class TrackingStore {
       updatedAt: r["updated_at_ms"],
     };
   }
+
   action(id: string): Action {
     const query = this.db.prepare("SELECT * FROM actions WHERE id=?");
     let row = query.get(id);
-    if (row === undefined) {
+    if (!row) {
       const resolved = resolveId(
         id,
         this.db
@@ -310,9 +335,10 @@ export class TrackingStore {
       );
       if (resolved !== undefined) row = query.get(resolved);
     }
-    if (row === undefined) throw new Error("Action not found");
+    if (!row) throw new Error("Action not found");
     return this.trackedAction(row);
   }
+
   private saveAction(a: Action, kind: string): void {
     this.db
       .prepare(
@@ -339,7 +365,7 @@ export class TrackingStore {
     const context = actionContext({
       state: a.progress.state,
       prUrl: this.pr(a.prId).url,
-      ...(actor === undefined
+      ...(!actor
         ? {}
         : {
             actorAgentId: actor.id,
@@ -350,12 +376,14 @@ export class TrackingStore {
     });
     this.event(kind, a.summary, a.prId, a.id, context);
   }
+
   deliveries(): Delivery[] {
     return this.db
       .prepare("SELECT * FROM deliveries ORDER BY rowid")
       .all()
       .map((r: Row) => this.deliveryRow(r));
   }
+
   deliveryCandidates(): (Delivery & { messageRecorded: boolean })[] {
     return this.db
       .prepare(
@@ -367,6 +395,7 @@ export class TrackingStore {
         messageRecorded: r["message_recorded"] === 1,
       }));
   }
+
   private deliveryRow(r: Row): Delivery {
     return {
       id: r["id"],
@@ -391,6 +420,7 @@ export class TrackingStore {
         outcome: parse(r["outcome_json"]),
       }));
   }
+
   saveDelivery(d: Delivery, kind: string): void {
     this.db
       .prepare(
@@ -410,6 +440,7 @@ export class TrackingStore {
     const a = this.action(d.actionId);
     this.event(kind, d.id, a.prId, a.id);
   }
+
   saveAttempt(a: DeliveryAttempt): void {
     this.db
       .prepare(
@@ -417,9 +448,11 @@ export class TrackingStore {
       )
       .run(a.deliveryId, a.number, a.startedAt, a.harnessVersion ?? null, a.outcome.state, JSON.stringify(a.outcome));
   }
+
   private enqueue(a: Action): void {
     for (const participant of this.subscriptions.list(this.pr(a.prId))) this.enqueueFor(a, participant.agentId);
   }
+
   private enqueueFor(a: Action, recipientAgentId: string): void {
     if (
       this.deliveries().some(
@@ -443,6 +476,7 @@ export class TrackingStore {
       "delivery_pending",
     );
   }
+
   noticeForAction(action: Action, recipient: string): SafeNotice {
     const pr = this.pr(action.prId),
       item = this.assessments.latest(action.id);
@@ -465,6 +499,7 @@ export class TrackingStore {
       role: recipient === action.ownerAgentId ? "owner" : "observer",
     };
   }
+
   prepareSafeRecovery(): void {
     this.transaction(() => {
       this.inbox.recoverWorkflows();
@@ -472,7 +507,7 @@ export class TrackingStore {
       if (messages.size === 0) return;
       for (const delivery of this.deliveries()) {
         const message = messages.get(delivery.id);
-        if (message === undefined) continue;
+        if (!message) continue;
         const action = this.action(delivery.actionId),
           pr = this.pr(action.prId);
         const id = this.inbox.newMessageId(),
@@ -521,6 +556,7 @@ export class TrackingStore {
       }
     });
   }
+
   notifyAssessment(action: Action, status: SafeNotice["assessment"], assessment: { id: string; head: string }): void {
     const deliveries = this.deliveries().filter((delivery) => delivery.actionId === action.id);
     const pr = this.pr(action.prId);
@@ -573,6 +609,7 @@ export class TrackingStore {
       }
     }
   }
+
   cancelAssessmentNotices(assessmentId: string): void {
     for (const delivery of this.deliveries()) {
       if (
@@ -594,9 +631,11 @@ export class TrackingStore {
       );
     }
   }
+
   participants(id: string) {
     return this.subscriptions.list(this.pr(id));
   }
+
   subscribe(id: string, target: AgentTarget) {
     return this.transaction(() => {
       const pr = this.pr(id),
@@ -610,6 +649,7 @@ export class TrackingStore {
       return this.participants(pr.id);
     });
   }
+
   unsubscribe(id: string, agentId: string) {
     return this.transaction(() => {
       const pr = this.pr(id),
@@ -647,6 +687,7 @@ export class TrackingStore {
       return this.participants(pr.id);
     });
   }
+
   replaceCompletionNotifications(actionId: string, recipients: readonly string[]): void {
     if (!this.db.isTransaction) {
       this.transaction(() => {
@@ -663,6 +704,7 @@ export class TrackingStore {
       throw new Error("Invalid completion replacement");
     this.cancelDeliveries(actionId, "Replaced by an immutable readiness notice", true, recipients);
   }
+
   private cancelDeliveries(
     actionId: string,
     reason: string,
@@ -690,6 +732,7 @@ export class TrackingStore {
         "delivery_cancelled",
       );
   }
+
   assign(id: string, target: AgentTarget): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id),
@@ -714,6 +757,7 @@ export class TrackingStore {
       return this.pr(p.id);
     });
   }
+
   untrack(id: string): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
@@ -724,6 +768,7 @@ export class TrackingStore {
       return this.pr(p.id);
     });
   }
+
   observe(id: string, input: ObservationInput, config: TrackingConfig, expectedEpoch?: number): TrackedPR {
     return this.transaction(() => {
       const p = this.pr(id);
@@ -772,6 +817,7 @@ export class TrackingStore {
       return this.pr(p.id);
     });
   }
+
   private closeProgress(action: Action, observation: PRObservation) {
     const openedOnTerminalPR =
       action.blocker.kind === "review_feedback" && terminalPR(this.observations.lifecycle(action.openedObservationId));
@@ -785,6 +831,7 @@ export class TrackingStore {
   refreshOutcome(id: string, outcome: "cancelled" | "retry_scheduled" | "recovered", message: string): void {
     this.event(`pr_refresh_${outcome}`, message.slice(0, 1000), this.prContext(id).id);
   }
+
   refreshError(id: string, message: string): void {
     this.transaction(() => {
       const p = this.pr(id);
@@ -794,6 +841,7 @@ export class TrackingStore {
       this.event("pr_refresh_failed", message, p.id);
     });
   }
+
   progress(id: string, agentId: string, working: boolean): Action {
     return this.transaction(() => {
       const a = this.action(id);
@@ -816,9 +864,11 @@ export class TrackingStore {
       return next;
     });
   }
+
   acknowledgeMessage(id: string, agentId: string) {
     return this.transaction(() => this.acknowledgeMessageInside(id, agentId));
   }
+
   acknowledgeMessageInside(id: string, agentId: string) {
     if (!this.db.isTransaction) throw new Error("Receipt requires a coordinator transaction");
     const before = this.inbox.get(id),
@@ -835,6 +885,7 @@ export class TrackingStore {
     }
     return message;
   }
+
   retryDelivery(id: string): Delivery {
     return this.transaction(() => {
       const d = this.deliveries().find((d) => d.id === id);
@@ -858,6 +909,7 @@ export class TrackingStore {
       return next;
     });
   }
+
   reprofile(id: string, config: TrackingConfig): Action {
     return this.transaction(() => {
       const a = this.action(id);
@@ -871,6 +923,7 @@ export class TrackingStore {
       return next;
     });
   }
+
   snapshot(): TrackingSnapshot {
     return {
       prs: this.prs(),

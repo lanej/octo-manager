@@ -9,6 +9,7 @@ import { createApplicationFixture, type ApplicationFixture } from "../test/suppo
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { ChainState, EntryState } from "../src/merging/contracts.js";
 import { githubReads } from "../src/github/reads.js";
+
 const owner = process.env["OCTO_ACCEPTANCE_OWNER"];
 if (process.env["OCTO_LIVE_MERGE_ACCEPTANCE"] !== "1" || owner === undefined || !/^[A-Za-z0-9-]+$/u.test(owner))
   throw new Error(
@@ -21,6 +22,7 @@ const repositories = [`${owner}/octo-merge-library-${stamp}`, `${owner}/octo-mer
 const created: string[] = [];
 let coordinator: ApplicationFixture | undefined;
 let passed = false;
+
 async function command(binary: string, args: string[], cwd = directory): Promise<string> {
   const result = await exec(binary, args, {
     cwd,
@@ -29,6 +31,7 @@ async function command(binary: string, args: string[], cwd = directory): Promise
   });
   return result.stdout.trim();
 }
+
 async function fixture(repository: string, revision?: string): Promise<{ url: string; initial: string }> {
   const path = join(directory, repository.split("/").at(-1) ?? "fixture");
   await mkdir(path);
@@ -82,6 +85,7 @@ async function fixture(repository: string, revision?: string): Promise<{ url: st
   );
   return { url, initial };
 }
+
 try {
   const library = repositories[0],
     application = repositories[1];

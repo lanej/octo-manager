@@ -2,6 +2,7 @@ import { GitHubRequestCancelledError } from "./errors.js";
 import type { RequestDispatch } from "../scheduling/service.js";
 import { sdkTransport, type GitHubTransport, type GitHubResponse, type GitHubRequest } from "./sdk.js";
 import { GitHubUsage, type GitHubReadUsage, type GitHubResource } from "./usage.js";
+
 interface CachedResponse {
   etag: string;
   body: string;
@@ -11,11 +12,13 @@ export interface GitHubQueryResult {
   data: Record<string, unknown>;
   errors: unknown[];
 }
+
 function seconds(value: string | undefined): number | undefined {
   if (value === undefined || !/^\d+$/u.test(value)) return undefined;
   const result = Number(value) * 1000;
   return Number.isSafeInteger(result) ? result : undefined;
 }
+
 function json(body: string): unknown {
   try {
     return JSON.parse(body) as unknown;
@@ -23,12 +26,14 @@ function json(body: string): unknown {
     throw new Error("Invalid GitHub JSON response");
   }
 }
+
 export class GitHubRateLimitError extends Error {
   constructor(readonly retryAtMs: number) {
     super(`GitHub rate limit; reads paused until ${new Date(retryAtMs).toISOString()}`);
     this.name = "GitHubRateLimitError";
   }
 }
+
 export class GitHubHTTPError extends Error {
   constructor(
     readonly status: number,
@@ -37,6 +42,7 @@ export class GitHubHTTPError extends Error {
     super(message);
   }
 }
+
 export class GitHubReads {
   private queue: Promise<void> = Promise.resolve();
   private cache = new Map<string, CachedResponse>();
@@ -45,25 +51,30 @@ export class GitHubReads {
   private rateLimitAttempts: Record<Resource, number> = { core: 0, graphql: 0 };
   private readonly metrics: GitHubUsage;
   private dispatcher: RequestDispatch | undefined;
+
   setDispatcher(value: RequestDispatch): () => void {
     this.dispatcher = value;
     return () => {
       if (this.dispatcher === value) this.dispatcher = undefined;
     };
   }
+
   constructor(
     private run: GitHubTransport = sdkTransport(),
     private now: () => number = Date.now,
   ) {
     this.metrics = new GitHubUsage(now);
   }
+
   usage(): GitHubReadUsage {
     return this.metrics.snapshot(this.retryAtMs);
   }
+
   read(path: string, signal?: AbortSignal): Promise<unknown> {
     // rationale: Share one read queue and cooldown across tracking, repairs, submissions, and review clients.
     return this.enqueue(() => this.request(path, signal));
   }
+
   query(query: string, signal?: AbortSignal): Promise<GitHubQueryResult> {
     return this.enqueue(async () => {
       const result = await this.exchange({ method: "POST", path: "graphql", data: { query } }, "graphql", signal);
@@ -84,6 +95,7 @@ export class GitHubReads {
       };
     });
   }
+
   write(
     path: string,
     fields: Record<string, string | boolean>,
@@ -94,6 +106,7 @@ export class GitHubReads {
       return json((await this.exchange({ method: "PUT", path, data: fields }, "core", signal, beforeSend)).body);
     });
   }
+
   patch(
     path: string,
     fields: Record<string, string | boolean>,
@@ -104,9 +117,11 @@ export class GitHubReads {
       json((await this.exchange({ method: "PATCH", path, data: fields }, "core", signal, beforeSend)).body),
     );
   }
+
   raw(path: string, headers: Record<string, string>, signal?: AbortSignal): Promise<GitHubResponse> {
     return this.enqueue(() => this.exchange({ method: "GET", path, headers }, "core", signal));
   }
+
   post(
     path: string,
     fields: Record<string, string | boolean>,
@@ -117,8 +132,9 @@ export class GitHubReads {
       json((await this.exchange({ method: "POST", path, data: fields }, "core", signal, beforeSend)).body),
     );
   }
+
   private enqueue<T>(workItem: () => Promise<T>): Promise<T> {
-    if (this.dispatcher !== undefined) return workItem();
+    if (this.dispatcher) return workItem();
     const work = this.queue.then(workItem);
     this.queue = work.then(
       () => {},
@@ -126,13 +142,14 @@ export class GitHubReads {
     );
     return work;
   }
+
   private remember(path: string, value: CachedResponse | undefined): void {
     const previous = this.cache.get(path);
-    if (previous !== undefined) {
+    if (previous) {
       this.cacheBytes -= Buffer.byteLength(previous.body);
       this.cache.delete(path);
     }
-    if (value === undefined) return;
+    if (!value) return;
     this.cache.set(path, value);
     this.cacheBytes += Buffer.byteLength(value.body);
     while (this.cache.size > 128 || this.cacheBytes > 16 * 1024 * 1024) {
@@ -141,26 +158,28 @@ export class GitHubReads {
       this.remember(oldest, undefined);
     }
   }
+
   private request(path: string, signal?: AbortSignal): Promise<unknown> {
-    if (this.dispatcher !== undefined) {
-      const bounded = signal === undefined ? this.dispatcher.signal : AbortSignal.any([signal, this.dispatcher.signal]);
+    if (this.dispatcher) {
+      const bounded = !signal ? this.dispatcher.signal : AbortSignal.any([signal, this.dispatcher.signal]);
       return this.dispatcher.dispatch("core", () => this.requestNow(path, bounded), bounded);
     }
     return this.requestNow(path, signal);
   }
+
   private async requestNow(path: string, signal?: AbortSignal): Promise<unknown> {
     const cached = this.cache.get(path);
     const result = await this.exchangeNow(
       {
         method: "GET",
         path,
-        headers: cached === undefined ? {} : { "if-none-match": cached.etag },
+        headers: !cached ? {} : { "if-none-match": cached.etag },
       },
       "core",
       signal,
     );
     if (result.status === 304) {
-      if (cached === undefined) throw new Error("GitHub returned 304 without cached evidence");
+      if (!cached) throw new Error("GitHub returned 304 without cached evidence");
       this.remember(path, cached);
       this.metrics.reused();
       return json(cached.body);
@@ -170,14 +189,15 @@ export class GitHubReads {
     this.remember(path, etag === undefined ? undefined : { etag, body: result.body });
     return value;
   }
+
   private async exchange(
     request: GitHubRequest,
     resource: Resource,
     signal?: AbortSignal,
     beforeSend?: () => void,
   ): Promise<GitHubResponse> {
-    if (this.dispatcher !== undefined) {
-      const bounded = signal === undefined ? this.dispatcher.signal : AbortSignal.any([signal, this.dispatcher.signal]);
+    if (this.dispatcher) {
+      const bounded = !signal ? this.dispatcher.signal : AbortSignal.any([signal, this.dispatcher.signal]);
       return this.dispatcher.dispatch(
         resource,
         () => this.exchangeNow(request, resource, bounded, beforeSend),
@@ -186,6 +206,7 @@ export class GitHubReads {
     }
     return this.exchangeNow(request, resource, signal, beforeSend);
   }
+
   private async exchangeNow(
     request: GitHubRequest,
     resource: Resource,
@@ -255,6 +276,7 @@ export class GitHubReads {
     return result;
   }
 }
+
 export const githubReads = new GitHubReads();
 
 export type ReadGitHub = (path: string, signal?: AbortSignal) => Promise<unknown>;

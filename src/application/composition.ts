@@ -52,7 +52,7 @@ export async function assembleApplication(directory: string, options: Applicatio
         {
           now,
           ...(options.model === undefined ? {} : { model: options.model }),
-          ...(options.workerEnv === undefined ? {} : { workerEnv: options.workerEnv }),
+          ...(!options.workerEnv ? {} : { workerEnv: options.workerEnv }),
           workerPath: options.workerPath ?? workerModule("job", new URL("../worker.js", import.meta.url).href),
         },
         workScheduler,
@@ -111,6 +111,7 @@ export async function assembleApplication(directory: string, options: Applicatio
     throw error;
   }
 }
+
 export async function createApplication(directory: string, options: ApplicationOptions = {}): Promise<Application> {
   return (await assembleApplication(directory, options)).runtime;
 }

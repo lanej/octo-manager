@@ -19,15 +19,19 @@ export interface PublisherGitHub {
   find(input: PublicationInput, marker: string): Promise<RemotePR | undefined>;
   create(input: PublicationInput, marker: string, dispatched: () => void): Promise<RemotePR>;
 }
+
 class Rejected extends PublicationError {}
+
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid GitHub response.");
   return Object.fromEntries(Object.entries(value));
 }
+
 function text(value: unknown): string {
   if (typeof value !== "string" || value === "") throw new Error("Missing GitHub response field.");
   return value;
 }
+
 function remote(value: unknown): RemotePR {
   const item = object(value),
     head = object(item["head"]),
@@ -46,8 +50,10 @@ function remote(value: unknown): RemotePR {
     state: text(item["state"]),
   };
 }
+
 export class GitHubPublisher implements PublisherGitHub {
   constructor(private transport: GitHubTransport = sdkTransport()) {}
+
   private async read(path: string): Promise<unknown> {
     const response = await this.transport({ method: "GET", path });
     if (response.status < 200 || response.status >= 300)
@@ -58,6 +64,7 @@ export class GitHubPublisher implements PublisherGitHub {
     const value: unknown = JSON.parse(response.body);
     return value;
   }
+
   async revisions(input: PublicationInput): Promise<{ head: string; base: string }> {
     const ref = async (name: string) =>
       text(
@@ -68,6 +75,7 @@ export class GitHubPublisher implements PublisherGitHub {
     const [head, base] = await Promise.all([ref(input.headRef), ref(input.baseRef)]);
     return { head, base };
   }
+
   async find(input: PublicationInput, marker: string): Promise<RemotePR | undefined> {
     const owner = input.repository.split("/")[0] ?? "";
     let unrelated: string | undefined;
@@ -96,6 +104,7 @@ export class GitHubPublisher implements PublisherGitHub {
       "PR lookup exceeded its bounded coverage; inspect before retrying.",
     );
   }
+
   async create(input: PublicationInput, marker: string, dispatched: () => void): Promise<RemotePR> {
     const result = await this.transport(
       {
@@ -122,6 +131,7 @@ export class GitHubPublisher implements PublisherGitHub {
     return remote(value);
   }
 }
+
 function verify(input: PublicationInput, item: RemotePR, marker: string): void {
   if (
     item.url.split("/").slice(3, 5).join("/").toLowerCase() !== input.repository.toLowerCase() ||
@@ -137,12 +147,13 @@ function verify(input: PublicationInput, item: RemotePR, marker: string): void {
     throw new Error("Published PR differs from the frozen request; inspect the remote PR before retrying.");
   }
 }
+
 export async function publishRequest(
   store: PublicationStore,
   id: string,
   github: PublisherGitHub = new GitHubPublisher(),
   enroll: (value: Publication) => Promise<void> = async (value) => {
-    if (value.input.track === undefined || value.url === undefined) return;
+    if (!value.input.track || value.url === undefined) return;
     await trackingRequest(store.directory.replace(/[/\\]publications$/u, ""), "track", undefined, {
       url: value.url,
       cwd: value.input.root,
@@ -155,11 +166,11 @@ export async function publishRequest(
 ): Promise<void> {
   store.get(id);
   const lock = store.lock(id);
-  if (lock === undefined) return;
+  if (!lock) return;
   let value = store.get(id);
   try {
     if (value.state === "published") {
-      if (value.input.track !== undefined && value.tracking !== "active") {
+      if (value.input.track && value.tracking !== "active") {
         try {
           await enroll(value);
           value = { ...value, tracking: "active" };
@@ -172,7 +183,7 @@ export async function publishRequest(
     }
     const marker = `<!-- octo-submission:${id} -->`;
     const existing = await github.find(value.input, marker);
-    if (existing !== undefined) {
+    if (existing) {
       value = { ...value, attempted: true };
       store.save(value);
       verify(value.input, existing, marker);
@@ -207,7 +218,7 @@ export async function publishRequest(
       delete value.error;
       store.save(value);
     }
-    if (value.input.track !== undefined && value.tracking !== "active") {
+    if (value.input.track && value.tracking !== "active") {
       try {
         await enroll(value);
         value = { ...value, tracking: "active" };

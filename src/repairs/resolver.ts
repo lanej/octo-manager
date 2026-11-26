@@ -2,6 +2,7 @@ import { workerModule } from "../package-root.js";
 import { fork } from "node:child_process";
 import { record, single, type RepairProfile, type RepairWorkerTask } from "./types.js";
 import type { RebaseWorkspace } from "./git.js";
+
 export type ResolveConflicts = (
   workspace: RebaseWorkspace,
   paths: string[],
@@ -35,7 +36,7 @@ export const createConflictResolver =
       await new Promise<void>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", (code) => {
-          if (!completed || failure !== undefined || signal.aborted || code !== 0)
+          if (!completed || failure || signal.aborted || code !== 0)
             reject(failure ?? new Error("Repair session interrupted or timed out"));
           else resolve();
         });

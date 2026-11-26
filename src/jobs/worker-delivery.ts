@@ -1,5 +1,5 @@
 export async function sendWorkerResult(value: object, attempt: number): Promise<void> {
-  if (!process.connected || process.send === undefined) throw new Error("Worker result channel is disconnected");
+  if (!process.connected || !process.send) throw new Error("Worker result channel is disconnected");
   await new Promise<void>((resolve, reject) => {
     const cleanup = () => {
       clearTimeout(timer);

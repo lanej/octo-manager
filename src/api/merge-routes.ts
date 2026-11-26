@@ -3,14 +3,17 @@ import { wire, unwire, record } from "./codec.js";
 import { trackingOperation } from "../tracking/rpc.js";
 import * as api from "../gen/octomanager/v2/domain_pb.js";
 import { CommandSchema, checked } from "../merging/contracts.js";
+
 function list(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Expected merge records");
   return value;
 }
+
 function text(value: unknown): string {
   if (typeof value !== "string") throw new Error("Expected merge result text");
   return value;
 }
+
 export function mergeRoutes(merging: MergeService) {
   return {
     setAutoMerge(r: import("../gen/octomanager/v2/domain_pb.js").SetAutoMergeRequest) {

@@ -24,6 +24,7 @@ const input: ObservationInput = {
   workflows: { state: "complete", value: [] },
   reviews: { state: "complete", value: [] },
 };
+
 function artifact(sessionId = "owner", address = url) {
   return {
     session_id: sessionId,
@@ -41,6 +42,7 @@ function artifact(sessionId = "owner", address = url) {
     },
   };
 }
+
 async function hookProcess(
   directory: string,
   input: string,
@@ -63,9 +65,11 @@ async function hookProcess(
   assert.equal(await child.exited, 0, error);
   return { output, error };
 }
+
 async function hook(directory: string, event: object): Promise<string> {
   return (await hookProcess(directory, JSON.stringify(event))).output;
 }
+
 async function until(check: () => boolean): Promise<void> {
   for (let i = 0; i < 500; i++) {
     if (check()) return;

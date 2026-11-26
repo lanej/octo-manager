@@ -11,6 +11,7 @@ import {
 } from "../src/gen/octomanager/v2/domain_pb.js";
 import { fromBinary, toBinary } from "@bufbuild/protobuf";
 import { readFileSync, readdirSync } from "node:fs";
+
 const roundtrip = (schema: import("@bufbuild/protobuf").DescMessage, value: unknown) =>
   unwire(schema, fromBinary(schema, toBinary(schema, wire(schema, value))));
 test("typed API preserves uncertain reference kinds, literal policy versions, and evidence coverage", () => {

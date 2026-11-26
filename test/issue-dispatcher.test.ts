@@ -8,6 +8,7 @@ import { Type } from "typebox";
 import { checked } from "../src/merging/contracts.js";
 import { CodexDispatcher } from "../src/dispatch/codex.js";
 import { AttemptState, Role, type Assignment } from "../src/issues/contracts.js";
+
 test("Codex dispatcher checkpoints session before turn and reconciles structured completion", async () => {
   const directory = await mkdtemp("/tmp/octo-issue-ws-");
   const path = join(directory, "socket");

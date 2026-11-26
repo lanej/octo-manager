@@ -18,8 +18,10 @@ import {
 import { feedbackRevision } from "../src/tracking/feedback.js";
 import { ActionState } from "../src/tracking/types.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+
 const owner = { harness: "codex", endpoint: "local", sessionId: "owner" };
 const url = "https://github.com/owner/repo/pull/1";
+
 function observation(at: number, lifecycle: "open" | "closed" = "open", status = "completed"): ObservationInput {
   return {
     observedAt: at,
@@ -46,6 +48,7 @@ function observation(at: number, lifecycle: "open" | "closed" = "open", status =
     reviews: { state: "complete", value: [] },
   };
 }
+
 async function fixture() {
   const directory = await mkdtemp("/tmp/om-retire-");
   let now = 1000;
@@ -73,6 +76,7 @@ async function fixture() {
     },
   };
 }
+
 test("closed PR drains, archives after a final refresh and retains unread final failure", async () => {
   const f = await fixture();
   try {

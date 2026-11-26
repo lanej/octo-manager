@@ -40,16 +40,17 @@ const terminal = new Set([
 ]);
 export const successfulCheck = (check: CheckObservation): boolean =>
   ["success", "neutral", "skipped"].includes(check.conclusion);
+
 export function checkEvidence(observation: PRObservation): ObservationPart<CheckObservation[]> {
   const parts = [observation.checks, observation.workflows];
   const entries = parts
-    .flatMap((part) => (part === undefined || part.state === "unavailable" ? [] : part.value))
+    .flatMap((part) => (!part || part.state === "unavailable" ? [] : part.value))
     .filter((check) => check.headSha === observation.headSha);
   const current = new Map<string, CheckObservation>();
   for (const check of entries) {
     const key = check.id.startsWith("status:") ? check.key : check.id;
     const previous = current.get(key);
-    if (previous === undefined || check.at > previous.at) current.set(key, check);
+    if (!previous || check.at > previous.at) current.set(key, check);
   }
   const value = [...current.values()]
     .filter((check) => !entries.some((candidate) => checkReplaces(check, candidate)))
@@ -62,6 +63,7 @@ export function checkEvidence(observation: PRObservation): ObservationPart<Check
         reason: `Checks: ${observation.checks.state}; workflows: ${observation.workflows?.state ?? "unknown"}. Waiting for complete coverage.`,
       };
 }
+
 function executionFinished(check: CheckObservation): boolean {
   return (
     terminal.has(check.conclusion) &&
@@ -70,9 +72,11 @@ function executionFinished(check: CheckObservation): boolean {
       : check.status === "completed")
   );
 }
+
 export function checksFinished(evidence: ObservationPart<CheckObservation[]>): boolean {
   return evidence.state === "complete" && evidence.value.length > 0 && evidence.value.every(executionFinished);
 }
+
 export function checkReplaces(previous: CheckObservation, candidate: CheckObservation): boolean {
   if (candidate.headSha !== previous.headSha) return false;
   const workflow = /^workflow:([1-9][0-9]*):([1-9][0-9]*)$/.exec(candidate.id);
@@ -102,6 +106,7 @@ export function checkReplaces(previous: CheckObservation, candidate: CheckObserv
     newAttempt = /^workflow:\d+:(\d+)$/.exec(candidate.id)?.[1];
   return oldAttempt !== undefined && newAttempt !== undefined && BigInt(newAttempt) > BigInt(oldAttempt);
 }
+
 function retainEvidence(
   previous: ObservationPart<CheckObservation[]>,
   current: ObservationPart<CheckObservation[]>,
@@ -120,6 +125,7 @@ function retainEvidence(
     reason: "Waiting for complete terminal evidence for previously observed executions",
   };
 }
+
 export function checkResultPreview(result: Extract<Blocker, { kind: "check_results" }>) {
   const checks: CheckObservation[] = [];
   let size = 0;
@@ -137,18 +143,22 @@ export function checkResultPreview(result: Extract<Blocker, { kind: "check_resul
     fullEvidence: "Use the supplied inspect argv for the complete immutable result snapshot",
   };
 }
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function string(value: unknown): string {
   if (typeof value !== "string") throw new Error("Invalid check evidence text");
   return value;
 }
+
 function integer(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
     throw new Error("Invalid check evidence integer");
   return value;
 }
+
 export function workflowObservation(value: unknown): CheckObservation {
   if (!object(value)) throw new Error("Invalid workflow run");
   const id = integer(value["id"]),
@@ -175,6 +185,7 @@ export function workflowObservation(value: unknown): CheckObservation {
     url: string(value["html_url"]),
   };
 }
+
 export function storedCheckEvidence(value: unknown): ObservationPart<CheckObservation[]> | undefined {
   if (value === null || value === undefined) return undefined;
   const raw: unknown = typeof value === "string" ? JSON.parse(value) : value;
@@ -217,16 +228,19 @@ export function storedCheckEvidence(value: unknown): ObservationPart<CheckObserv
     ? { state: "complete", value: checks }
     : { state: "partial", value: checks, reason: string(raw["reason"]) };
 }
+
 export class CheckWatches {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
   ) {}
+
   hasWaiting(prId: string): boolean {
     return (
       this.db.prepare("SELECT 1 FROM check_watches WHERE pr_id=? AND state='waiting' LIMIT 1").get(prId) !== undefined
     );
   }
+
   list(prId?: string): CheckWatch[] {
     return this.db
       .prepare("SELECT * FROM check_watches WHERE (? IS NULL OR pr_id=?) ORDER BY rowid")
@@ -234,7 +248,7 @@ export class CheckWatches {
       .map((row) => {
         const state = Object.values(CheckWatchState).find((state) => state === row["state"]);
         const evidence = storedCheckEvidence(row["evidence_json"]);
-        if (state === undefined || evidence === undefined) throw new Error("Invalid stored check watch");
+        if (state === undefined || !evidence) throw new Error("Invalid stored check watch");
         return {
           id: string(row["id"]),
           prId: string(row["pr_id"]),
@@ -248,6 +262,7 @@ export class CheckWatches {
         };
       });
   }
+
   reconciliationChecks(prId: string, observation?: PRObservation | string): CheckReconciliationContext {
     if (observation === undefined)
       return {
@@ -262,7 +277,7 @@ export class CheckWatches {
           value.headSha === headSha,
       )
       .at(-1);
-    if (watch === undefined || watch.evidence.state === "unavailable") return { checks: [] };
+    if (!watch || watch.evidence.state === "unavailable") return { checks: [] };
     const candidates = watch.evidence.value
       .filter((check) => check.id.startsWith("run:"))
       .sort((a, b) => a.id.localeCompare(b.id));
@@ -270,7 +285,7 @@ export class CheckWatches {
     const key = `check-reconciliation:${prId}`;
     const saved = this.db.prepare("SELECT value FROM settings WHERE key=?").get(key);
     let after = "";
-    if (saved !== undefined) {
+    if (saved) {
       const cursor: unknown = JSON.parse(String(saved["value"]));
       if (!object(cursor) || typeof cursor["headSha"] !== "string" || typeof cursor["after"] !== "string")
         throw new Error("Invalid check reconciliation cursor");
@@ -288,6 +303,7 @@ export class CheckWatches {
       },
     };
   }
+
   private save(watch: CheckWatch): void {
     this.db
       .prepare(
@@ -305,6 +321,7 @@ export class CheckWatches {
         watch.replacementHeadSha ?? null,
       );
   }
+
   observe(observation: PRObservation, forceNew = false): CheckWatch[] {
     const watches = this.list(observation.prId),
       results: CheckWatch[] = [];
@@ -348,10 +365,10 @@ export class CheckWatches {
           return evidence.value.some((candidate) => checkReplaces(refreshed, candidate));
         }));
     if (
-      watch === undefined &&
+      !watch &&
       observation.lifecycle === "open" &&
       (forceNew ||
-        previous === undefined ||
+        !previous ||
         previous.state === CheckWatchState.Cancelled ||
         previous.state === CheckWatchState.Expired ||
         previous.state === CheckWatchState.Superseded ||
@@ -363,12 +380,12 @@ export class CheckWatches {
         headSha: observation.headSha,
         generation: sameHead.length + 1,
         state: CheckWatchState.Waiting,
-        evidence: previous === undefined ? evidence : retainEvidence(enrich(previous.evidence), evidence),
+        evidence: !previous ? evidence : retainEvidence(enrich(previous.evidence), evidence),
         createdAt: this.now(),
         updatedAt: this.now(),
       };
     }
-    if (watch !== undefined) {
+    if (watch) {
       const retained = retainEvidence(enrich(watch.evidence), evidence);
       const next = {
         ...watch,
@@ -381,6 +398,7 @@ export class CheckWatches {
     }
     return results;
   }
+
   cancel(prId: string, state: CheckWatchState.Cancelled | CheckWatchState.Expired = CheckWatchState.Cancelled): void {
     for (const watch of this.list(prId).filter((watch) => watch.state === CheckWatchState.Waiting))
       this.save({
@@ -400,13 +418,13 @@ export function checkRunObservation(value: unknown, url: string): CheckObservati
     at = Date.parse(string(value["started_at"] ?? value["completed_at"] ?? ""));
   return {
     id: `run:${String(id)}`,
-    key: `run:${app === undefined ? "" : String(integer(app["id"]))}:${name}`,
+    key: `run:${!app ? "" : String(integer(app["id"]))}:${name}`,
     name,
     headSha: string(value["head_sha"]),
     status: string(value["status"]),
     conclusion: string(value["conclusion"] ?? ""),
     at: Number.isNaN(at) ? 0 : at,
     url: typeof value["html_url"] === "string" ? value["html_url"] : url,
-    ...(suite === undefined ? {} : { suiteId: integer(suite["id"]) }),
+    ...(!suite ? {} : { suiteId: integer(suite["id"]) }),
   };
 }

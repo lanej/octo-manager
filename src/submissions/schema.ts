@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+
 export function migrateSubmissions(db: DatabaseSync): void {
   const version = Number(db.prepare("PRAGMA user_version").get()?.["user_version"]);
   if (
@@ -40,6 +41,7 @@ export function migrateSubmissions(db: DatabaseSync): void {
     CREATE TRIGGER IF NOT EXISTS monotonic_operation_receipt BEFORE UPDATE OF acknowledged_at_ms ON operation_notifications WHEN OLD.acknowledged_at_ms IS NOT NULL AND NEW.acknowledged_at_ms IS NOT OLD.acknowledged_at_ms BEGIN SELECT RAISE(ABORT,'Message receipt is immutable'); END;
     PRAGMA user_version=9; COMMIT;`);
 }
+
 export function nextInboxSequence(db: DatabaseSync): number {
   const row = db.prepare("UPDATE inbox_sequence SET value=value+1 WHERE id=1 RETURNING value").get();
   if (typeof row?.["value"] !== "number") throw new Error("Inbox sequence unavailable");

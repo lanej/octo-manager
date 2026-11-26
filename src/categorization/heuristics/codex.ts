@@ -1,5 +1,7 @@
 import { MessageCategory, type GitHubMessage, type HeuristicClassifier, type CategoryDecision } from "../types.js";
+
 export const codexAuthor = "chatgpt-codex-connector[bot]";
+
 export function isCodexSummary(message: GitHubMessage): boolean {
   return (
     message.author.toLowerCase() === codexAuthor &&
@@ -7,15 +9,19 @@ export function isCodexSummary(message: GitHubMessage): boolean {
     message.body.includes("<!-- codex-pull-request-review-summary -->")
   );
 }
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 const progress = new Set(["pending", "queued", "running", "in_progress"]);
 const inconclusive = new Set(["inconclusive", "cancelled", "failed", "error"]);
 const finished = new Set(["completed", "skipped"]);
+
 function decision(category: MessageCategory, rule: string, reason: string): CategoryDecision {
   return { category, rule, reason };
 }
+
 export const codexHeuristic: HeuristicClassifier = {
   id: "codex-review-state",
   version: 2,

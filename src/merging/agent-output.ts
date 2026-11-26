@@ -1,4 +1,5 @@
 import { fields, rows } from "../cli/projection.js";
+
 const entry = fields([
   "id",
   "chainId",

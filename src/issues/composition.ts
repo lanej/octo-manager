@@ -9,6 +9,7 @@ import type { TrackingService } from "../tracking/service.js";
 import type { IssueCodeHost } from "./ports.js";
 import { updateIssuePR } from "./publication.js";
 import { currentMergeChecks } from "../merging/checks.js";
+
 export function trackedCodeHost(
   tracking: TrackingService,
   stateDirectory: string,
@@ -29,8 +30,7 @@ export function trackedCodeHost(
       return git("rev-parse", "HEAD");
     },
     async publish(key, issue, value, signal, authorize) {
-      if (value.draft === undefined || value.head === undefined)
-        throw new Error("Tested head and caller-written PR draft required");
+      if (!value.draft || value.head === undefined) throw new Error("Tested head and caller-written PR draft required");
       const { git, checkFilters } = await issueGit(issue, signal, authorize);
       await checkFilters();
       const head = await git("rev-parse", "HEAD");
@@ -108,7 +108,7 @@ export function trackedCodeHost(
     inspect(url) {
       const pr = tracking.store.prs().find((item) => item.url === url);
       const observation = pr?.observation;
-      if (pr === undefined || observation === undefined) return undefined;
+      if (!pr || !observation) return undefined;
       const checks = currentMergeChecks(observation);
       return {
         merged: observation.lifecycle === "merged",

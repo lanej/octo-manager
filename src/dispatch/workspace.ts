@@ -3,7 +3,9 @@ import { promisify } from "node:util";
 import { Type } from "typebox";
 import { checked } from "../merging/contracts.js";
 import type { IssueWorkspace } from "../issues/ports.js";
+
 const exec = promisify(execFile);
+
 export class ManagedIssueWorkspace implements IssueWorkspace {
   async allocate(root: string, ownerId: string, issueId: string): Promise<string> {
     const { stdout: remote } = await exec("git", ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], {

@@ -8,6 +8,7 @@ import { Store } from "../src/coordinator/store.js";
 import { DatabaseSync } from "node:sqlite";
 import { ActionState, DeliveryState, type ObservationInput } from "../src/tracking/types.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
+
 const target = { harness: "codex", endpoint: "local", sessionId: "thread-one" };
 const url = "https://github.com/owner/repo/pull/1";
 const observation = (patch: Partial<ObservationInput> = {}): ObservationInput => ({

@@ -1,5 +1,6 @@
 import { cleanText } from "../text.js";
 import { canonicalPR } from "../github/pr-identity.js";
+
 export enum RepairState {
   Queued = "queued",
   Running = "running",
@@ -66,10 +67,12 @@ export interface RepairWorkerTask {
   instructions: string;
   paths: string[];
 }
+
 export function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Invalid repair object");
   return Object.fromEntries(Object.entries(value));
 }
+
 export function single(value: unknown, name: string, limit = 200): string {
   if (
     typeof value !== "string" ||
@@ -80,6 +83,7 @@ export function single(value: unknown, name: string, limit = 200): string {
     throw new Error(`Invalid repair ${name}`);
   return value;
 }
+
 export function rebaseInput(value: unknown): RebaseInput {
   const r = record(value);
   return {
@@ -88,6 +92,7 @@ export function rebaseInput(value: unknown): RebaseInput {
     profile: single(r["profile"], "profile"),
   };
 }
+
 export function repairProfile(value: unknown): RepairProfile {
   const r = record(value);
   const repository = single(r["repository"], "repository").toLowerCase();
@@ -122,6 +127,7 @@ export function repairProfile(value: unknown): RepairProfile {
     timeoutMs: timeout,
   };
 }
+
 export function activeRepair(state: RepairState): boolean {
   return state === RepairState.Queued || state === RepairState.Running || state === RepairState.AwaitingChecks;
 }
@@ -193,6 +199,7 @@ export function storedRepair(value: unknown): RepairAttempt {
   }
   return a;
 }
+
 export function repairWorkerTask(value: unknown): RepairWorkerTask {
   const raw = record(value);
   const paths = raw["paths"];

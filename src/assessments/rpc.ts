@@ -1,5 +1,6 @@
 import { AssessmentState, AssessmentDisposition } from "../gen/octomanager/v2/tracking_pb.js";
 import type { Assessment, AssessmentResult } from "./contracts.js";
+
 const states: Record<Assessment["state"], AssessmentState> = {
   pending: AssessmentState.PENDING,
   running: AssessmentState.RUNNING,
@@ -13,6 +14,7 @@ const dispositions: Record<AssessmentResult["disposition"], AssessmentDispositio
   no_change_suggested: AssessmentDisposition.NO_CHANGE_SUGGESTED,
   insufficient_context: AssessmentDisposition.INSUFFICIENT_CONTEXT,
 };
+
 export function wireAssessment(item: Assessment, full = false) {
   return {
     id: item.id,
@@ -30,7 +32,7 @@ export function wireAssessment(item: Assessment, full = false) {
     ...(full
       ? {
           untrustedEvidence: item.input.evidence,
-          ...(item.result === undefined
+          ...(!item.result
             ? {}
             : {
                 disposition: dispositions[item.result.disposition],

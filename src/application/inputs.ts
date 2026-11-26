@@ -5,6 +5,7 @@ interface InputTargets {
   jobs(): void;
   recipient(agentId: string): void;
 }
+
 export class ApplicationInputs {
   private generation = 0;
   private broad = 0;
@@ -16,19 +17,19 @@ export class ApplicationInputs {
   private pendingJobs = false;
   private pendingRecipients = new Set<string>();
   recipient = (id: string): void => {
-    if (this.targets !== undefined) this.targets.recipient(id);
+    if (this.targets) this.targets.recipient(id);
     else this.pendingRecipients.add(id);
   };
   changed = (scope?: InputScope): void => {
     this.generation++;
-    if (scope === undefined) this.roster++;
+    if (!scope) this.roster++;
     else if (scope.prId !== undefined) this.references.set(scope.prId, this.generation);
-    if (scope === undefined || scope.recipients === "all") this.broad++;
-    if (this.targets !== undefined) {
+    if (!scope || scope.recipients === "all") this.broad++;
+    if (this.targets) {
       this.targets.changed(scope);
       return;
     }
-    if (scope === undefined) this.pendingBroad = true;
+    if (!scope) this.pendingBroad = true;
     else {
       const key = scope.prId === undefined ? `source:${scope.source ?? "unknown"}` : `pr:${scope.prId}`;
       const previous = this.pending.get(key);
@@ -38,7 +39,7 @@ export class ApplicationInputs {
         ...(previous?.notificationEligibility === true || scope.notificationEligibility === true
           ? { notificationEligibility: true }
           : {}),
-        ...(previous === undefined || previous.source === scope.source
+        ...(!previous || previous.source === scope.source
           ? scope.source === undefined
             ? {}
             : { source: scope.source }
@@ -47,14 +48,15 @@ export class ApplicationInputs {
     }
   };
   jobs = (): void => {
-    if (this.targets !== undefined) this.targets.jobs();
+    if (this.targets) this.targets.jobs();
     else this.pendingJobs = true;
   };
   broadRevision = (): string => String(this.broad);
   referenceRevision = (prId?: string): string =>
     prId === undefined ? String(this.roster) : [this.roster, this.references.get(prId) ?? 0].join(":");
+
   bind(targets: InputTargets): void {
-    if (this.targets !== undefined) throw new Error("Application inputs already bound");
+    if (this.targets) throw new Error("Application inputs already bound");
     this.targets = targets;
     if (this.pendingBroad) targets.changed();
     else for (const scope of this.pending.values()) targets.changed(scope);

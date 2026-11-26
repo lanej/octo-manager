@@ -1,14 +1,17 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { Check } from "typebox/value";
 import { createHash } from "node:crypto";
+
 const text = (maxLength = 8000) => Type.String({ minLength: 1, maxLength });
 const object = <T extends Record<string, TSchema>>(properties: T) =>
   Type.Object(properties, { additionalProperties: false });
 const strings = (maxItems = 100) => Type.Array(text(), { maxItems });
 export const policyAnalystVersion = 3;
+
 export function isPullRequestTemplate(path: string): boolean {
   return /^(?:\.github\/|docs\/)?pull_request_template(?:\.md|\/[^/]+\.md)$/iu.test(path);
 }
+
 export enum SubmissionState {
   Queued = "queued",
   Analyzing = "analyzing",
@@ -200,6 +203,7 @@ export type Requirement = Static<typeof RequirementSchema>;
 export type PolicyAnalysis = Static<typeof PolicyAnalysisSchema>;
 export type RepositoryPolicy = Static<typeof PolicySchema>;
 export type ChangeAnalysis = Static<typeof ChangeAnalysisSchema>;
+
 export function normalizeChangeEvidence(change: ChangeAnalysis): ChangeAnalysis {
   return {
     ...change,
@@ -210,6 +214,7 @@ export function normalizeChangeEvidence(change: ChangeAnalysis): ChangeAnalysis 
     ),
   };
 }
+
 export type WriterDraft = Static<typeof WriterSchema>;
 export type PrBrief = Static<typeof BriefSchema>;
 export type Role = "policy" | "change" | "writer";
@@ -272,6 +277,7 @@ export function parse(schema: TSchema, value: unknown): unknown {
   if (!Check(schema, value)) throw new Error("Invalid structured PR data");
   return value;
 }
+
 export function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (typeof value === "object" && value !== null)
@@ -283,9 +289,11 @@ export function canonical(value: unknown): string {
   if (typeof text !== "string") throw new Error("Invalid non-JSON data");
   return text;
 }
+
 export function hash(value: unknown): string {
   return createHash("sha256").update(canonical(value)).digest("hex");
 }
+
 export const stockProfiles: Record<
   Complexity,
   { minWords: number; maxWords: number; guidance: string; advisory: true }
@@ -309,18 +317,21 @@ export const stockProfiles: Record<
     guidance: "Cross-boundary, migration, concurrency, security, breaking-change or rollout concerns",
   },
 };
+
 export function renderTemplate(policy: RepositoryPolicy, tier: Complexity): string {
   const profiles = policy.complexityProfiles ?? stockProfiles;
   return policy.analysis.template !== ""
     ? policy.analysis.template
     : `<What changes and why>\n\n<Concrete example when useful>\n\n<Material compatibility, limitations, or rollout details when applicable>\n\n<!-- Advisory ${String(profiles[tier].minWords)}–${String(profiles[tier].maxWords)} words; omit unused sections. -->`;
 }
+
 export function applicable(requirement: Requirement, files: string[]): boolean {
   return (
     requirement.scope === "*" ||
     files.some((file) => file === requirement.scope || file.startsWith(requirement.scope.replace(/\/$/, "") + "/"))
   );
 }
+
 export function policyBlockers(analysis: PolicyAnalysis, sources: Source[]): string[] {
   const blockers = [...analysis.blockers];
   const ids = new Set<string>();
@@ -331,7 +342,7 @@ export function policyBlockers(analysis: PolicyAnalysis, sources: Source[]): str
       (source) => source.path === requirement.sourcePath && source.sha === requirement.sourceSha,
     );
     if (
-      source === undefined ||
+      !source ||
       !source.text
         .split("\n")
         .slice(requirement.line - 1, requirement.line - 1 + requirement.quote.split("\n").length)
@@ -351,6 +362,7 @@ export function policyBlockers(analysis: PolicyAnalysis, sources: Source[]): str
   }
   return blockers;
 }
+
 export function publicationBlockers(brief: PrBrief, policy: RepositoryPolicy, files: string[]): string[] {
   const checks = brief.draft.requirementChecks;
   const blockers = [...brief.change.blockers, ...brief.draft.blockers, ...policy.analysis.blockers];
@@ -451,7 +463,7 @@ export function anchorPolicy(
     const source = sources.find(
       (source) => source.path === requirement.sourcePath && source.sha === requirement.sourceSha,
     );
-    if (source === undefined) return requirement;
+    if (!source) return requirement;
     const index = source.text.indexOf(requirement.quote);
     if (index < 0 || source.text.indexOf(requirement.quote, index + 1) >= 0) return requirement;
     const line = source.text.slice(0, index).split("\n").length;

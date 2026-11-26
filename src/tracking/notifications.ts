@@ -10,6 +10,7 @@ import {
   type NotificationPage,
 } from "./notification-reader.js";
 import type { TrackingService } from "./service.js";
+
 const CursorSchema = Type.Object(
   {
     since: Type.Integer({ minimum: 0 }),
@@ -30,26 +31,30 @@ const StatusSchema = Type.Object(
   { additionalProperties: false },
 );
 type Status = Static<typeof StatusSchema>;
+
 export class NotificationStore {
   constructor(
     private db: DatabaseSync,
     private now: () => number,
     private event: (kind: string, detail: string) => void,
   ) {}
+
   cursor(account: string): Cursor {
     const row = this.db.prepare("SELECT data FROM notification_cursors WHERE account=?").get(account);
-    if (row === undefined) return { since: 0, page: 1 };
+    if (!row) return { since: 0, page: 1 };
     const value: unknown = JSON.parse(String(row["data"]));
     if (!Check(CursorSchema, value)) throw new Error("Invalid notification cursor");
     return value;
   }
+
   status(): Status {
     const row = this.db.prepare("SELECT value FROM settings WHERE key='github_notification_monitor'").get();
-    if (row === undefined) return { nextPollAt: 0 };
+    if (!row) return { nextPollAt: 0 };
     const value: unknown = JSON.parse(String(row["value"]));
     if (!Check(StatusSchema, value)) throw new Error("Invalid notification monitor status");
     return value;
   }
+
   statusResult(value: Status): void {
     if (!Check(StatusSchema, value)) throw new Error("Invalid notification monitor status");
     const old = this.status();
@@ -71,12 +76,14 @@ export class NotificationStore {
       throw error;
     }
   }
+
   eligible(): boolean {
     return (
       this.db.prepare("SELECT id FROM tracked_prs WHERE enabled=1 AND tracking_state='archived' LIMIT 1").get() !==
       undefined
     );
   }
+
   page(account: string, page: NotificationPage): void {
     const cursor = this.cursor(account),
       next: Cursor = { ...cursor };
@@ -106,7 +113,7 @@ export class NotificationStore {
           .prepare("SELECT id FROM tracked_prs WHERE url=? AND enabled=1 AND tracking_state='archived'")
           .get(update.prUrl);
         if (
-          pr !== undefined &&
+          pr &&
           Number(
             this.db
               .prepare("INSERT OR IGNORE INTO notification_seen VALUES(?,?,?)")
@@ -130,10 +137,12 @@ export class NotificationStore {
       throw error;
     }
   }
+
   nextRefreshAt(): number | undefined {
     const value = this.db.prepare("SELECT min(next_check_ms) AS next FROM notification_refreshes").get()?.["next"];
     return typeof value === "number" ? value : undefined;
   }
+
   pending(): { id: string; revision: number }[] {
     return this.db
       .prepare("SELECT pr_id,revision FROM notification_refreshes WHERE next_check_ms<=? LIMIT 20")
@@ -143,29 +152,35 @@ export class NotificationStore {
         revision: Number(row["revision"]),
       }));
   }
+
   finish(id: string, revision: number): void {
     this.db.prepare("DELETE FROM notification_refreshes WHERE pr_id=? AND revision=?").run(id, revision);
   }
+
   defer(id: string, revision: number): void {
     this.db
       .prepare("UPDATE notification_refreshes SET next_check_ms=? WHERE pr_id=? AND revision=?")
       .run(this.now() + 60000, id, revision);
   }
 }
+
 export class NotificationService {
   private task: ScheduledTask | undefined;
   private work: Promise<void> | undefined;
   private stopped = false;
   private controller: AbortController | undefined;
+
   constructor(
     private store: NotificationStore,
     private tracking: TrackingService,
     private now: () => number = Date.now,
     private reader: NotificationReader = githubNotifications,
   ) {}
+
   private isStopped(): boolean {
     return this.stopped;
   }
+
   start(scheduler: WorkScheduler): void {
     this.task = scheduler.task("notification-flush", async () => {
       await this.flush();
@@ -182,17 +197,20 @@ export class NotificationService {
     });
     this.task.wake();
   }
+
   wake(): void {
     this.task?.wake();
   }
+
   flush(): Promise<void> {
-    if (this.work !== undefined) return this.work;
+    if (this.work) return this.work;
     if (this.isStopped()) return Promise.resolve();
     this.work = this.run().finally(() => {
       this.work = undefined;
     });
     return this.work;
   }
+
   private async run(): Promise<void> {
     const status = this.store.status();
     if (this.store.eligible() && status.nextPollAt <= this.now()) {
@@ -243,21 +261,24 @@ export class NotificationService {
         await this.tracking.refresh(request.id);
         if (this.isStopped()) return;
         const pr = this.tracking.store.pr(request.id);
-        if (pr.lastRefreshError !== undefined) this.store.defer(request.id, request.revision);
+        if (pr.lastRefreshError) this.store.defer(request.id, request.revision);
         else this.store.finish(request.id, request.revision);
       } catch {
         this.store.defer(request.id, request.revision);
       }
     }
   }
+
   stop(): void {
     this.stopped = true;
     this.task?.close();
     this.controller?.abort();
   }
+
   checkpointable(): boolean {
     return this.work === undefined;
   }
+
   async close(): Promise<void> {
     this.stop();
     await this.work;

@@ -10,6 +10,7 @@ import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readMergeReadiness } from "../src/merging/github.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 import type { GitHubGate } from "../src/merging/github.js";
+
 test("readiness reuses tracking evidence and fits default request spacing with only eligibility reads", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-readiness-dispatch-"));
   let now = 0;

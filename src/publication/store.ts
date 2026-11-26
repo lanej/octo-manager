@@ -42,21 +42,25 @@ const PublicationSchema = Type.Object({
 });
 export type PublicationInput = Static<typeof InputSchema>;
 export type Publication = Static<typeof PublicationSchema>;
+
 function parsePublication(text: string): Publication {
   const value: unknown = JSON.parse(text);
   if (!Check(PublicationSchema, value))
     throw new PublicationError("invalid_receipt", "Publication receipt is invalid; preserve it for inspection.");
   return value;
 }
+
 export function privateDirectory(path: string): void {
   mkdirSync(path, { recursive: true, mode: 0o700 });
   if (lstatSync(path).isSymbolicLink())
     throw new PublicationError("linked_state", "The publication state directory must not be a symlink.");
   chmodSync(path, 0o700);
 }
+
 export class PublicationStore {
   private db: DatabaseSync;
   readonly directory: string;
+
   constructor(state: string) {
     this.directory = join(state, "publications");
     privateDirectory(this.directory);
@@ -73,9 +77,11 @@ export class PublicationStore {
       "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS requests(id TEXT PRIMARY KEY, request_key TEXT NOT NULL UNIQUE, digest TEXT NOT NULL, data TEXT NOT NULL);",
     );
   }
+
   close(): void {
     this.db.close();
   }
+
   accept(input: PublicationInput, requestKey?: string): Publication {
     const fingerprint = digest(input),
       key = requestKey ?? fingerprint;
@@ -94,6 +100,7 @@ export class PublicationStore {
       throw new PublicationError("request_changed", "Request ID already has different content; use a new request ID.");
     return parsePublication(row["data"]);
   }
+
   adoptLegacy(id: string, input: PublicationInput): Publication {
     if (!/^[a-f0-9-]{36}$/u.test(id)) throw new PublicationError("invalid_id", "Use a complete legacy submission ID.");
     const value: Publication = {
@@ -107,14 +114,17 @@ export class PublicationStore {
       .run(id, "legacy:" + id, digest(input), JSON.stringify(value));
     return this.get(id);
   }
+
   get(id: string): Publication {
     const row = this.db.prepare("SELECT data FROM requests WHERE id=?").get(id);
     if (typeof row?.["data"] !== "string") throw new PublicationError("not_found", "Publication request not found.");
     return parsePublication(row["data"]);
   }
+
   save(value: Publication): void {
     this.db.prepare("UPDATE requests SET data=? WHERE id=?").run(JSON.stringify(value), value.id);
   }
+
   list(before: number, limit = 8): { items: Publication[]; next: number | undefined } {
     const rows = this.db
       .prepare("SELECT rowid,data FROM requests WHERE rowid<? ORDER BY rowid DESC LIMIT ?")
@@ -124,9 +134,10 @@ export class PublicationStore {
       next: rows.length > limit ? Number(rows[limit - 1]?.["rowid"]) : undefined,
     };
   }
+
   retry(id: string): Publication {
     const lock = this.lock(id);
-    if (lock === undefined) return this.get(id);
+    if (!lock) return this.get(id);
     try {
       const current = this.get(id);
       if (current.state === "published" || current.state === "pending") return current;
@@ -138,9 +149,10 @@ export class PublicationStore {
       lock.close();
     }
   }
+
   launchFailure(id: string): Publication {
     const lock = this.lock(id);
-    if (lock === undefined) return this.get(id);
+    if (!lock) return this.get(id);
     try {
       const current = this.get(id);
       if (current.state !== "pending") return current;
@@ -158,6 +170,7 @@ export class PublicationStore {
       lock.close();
     }
   }
+
   lock(id: string): DatabaseSync | undefined {
     if (!/^[a-f0-9-]{36}$/u.test(id))
       throw new PublicationError("invalid_id", "Use a complete publication request ID.");
@@ -181,17 +194,16 @@ export class PublicationStore {
     return lock;
   }
 }
+
 export function receipt(value: Publication): Record<string, unknown> {
   const tracking =
     value.tracking ??
-    (value.input.track !== undefined && (value.state === "pending" || value.state === "published")
-      ? "pending"
-      : undefined);
+    (value.input.track && (value.state === "pending" || value.state === "published") ? "pending" : undefined);
   return {
     id: value.id,
     state: value.state,
     ...(value.url === undefined ? {} : { url: value.url }),
-    ...(value.error === undefined ? {} : { error: value.error }),
+    ...(!value.error ? {} : { error: value.error }),
     ...(tracking === undefined ? {} : { tracking }),
   };
 }

@@ -5,6 +5,7 @@ import { nextInboxSequence } from "../submissions/schema.js";
 import { compact } from "./messages.js";
 import { shortId } from "./identifiers.js";
 import type { AgentRef, TrackedPR } from "./types.js";
+
 export enum ParticipantRole {
   Owner = "owner",
   Observer = "observer",
@@ -15,6 +16,7 @@ export interface Participant {
   label: string;
   harness: string;
 }
+
 export function migrateSubscriptions(db: DatabaseSync): void {
   const version = db.prepare("PRAGMA user_version").get()?.["user_version"];
   if (version === 15 || version === 14 || version === 13 || version === 12) return;
@@ -36,6 +38,7 @@ export function migrateSubscriptions(db: DatabaseSync): void {
     CREATE TRIGGER IF NOT EXISTS monotonic_participant_receipt BEFORE UPDATE OF acknowledged_at_ms ON participant_messages WHEN OLD.acknowledged_at_ms IS NOT NULL AND NEW.acknowledged_at_ms IS NOT OLD.acknowledged_at_ms BEGIN SELECT RAISE(ABORT,'Participant receipt is immutable'); END;
     PRAGMA user_version=12;COMMIT;`);
 }
+
 export class Subscriptions {
   constructor(
     private db: DatabaseSync,
@@ -43,6 +46,7 @@ export class Subscriptions {
     private agent: (id: string) => AgentRef,
     private notices: NotificationRepository,
   ) {}
+
   includes(prId: string, agentId: string): boolean {
     return (
       this.db
@@ -52,6 +56,7 @@ export class Subscriptions {
         .get(prId, agentId, agentId) !== undefined
     );
   }
+
   list(pr: TrackedPR): Participant[] {
     const ids = [
       pr.ownerAgentId,
@@ -72,6 +77,7 @@ export class Subscriptions {
       };
     });
   }
+
   addInside(pr: TrackedPR, agentId: string): boolean {
     if (!pr.enabled) throw new Error("PR tracking is disabled; only explicit tracking can resume it");
     if (pr.ownerAgentId === agentId) return false;
@@ -81,6 +87,7 @@ export class Subscriptions {
       ) > 0
     );
   }
+
   removeInside(pr: TrackedPR, agentId: string): boolean {
     if (pr.ownerAgentId === agentId) throw new Error("Owner cannot unsubscribe; assign ownership or untrack the PR");
     return (
@@ -88,6 +95,7 @@ export class Subscriptions {
       0
     );
   }
+
   publishInside(pr: TrackedPR): void {
     if (!this.db.isTransaction) throw new Error("Participant update requires a coordinator transaction");
     this.db

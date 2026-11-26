@@ -35,12 +35,14 @@ export interface ActivityReport extends ActivityInput {
   sequence: number;
   recordedAt: number;
 }
+
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error("Invalid activity object");
   }
   return Object.fromEntries(Object.entries(value));
 }
+
 function text(value: unknown, field: string, limit = 200): string {
   if (
     typeof value !== "string" ||
@@ -52,9 +54,11 @@ function text(value: unknown, field: string, limit = 200): string {
   }
   return value;
 }
+
 function optionalText(value: unknown, field: string): string | undefined {
   return value === undefined ? undefined : text(value, field);
 }
+
 export function activityInput(value: unknown): ActivityInput {
   const input = object(value);
   const name = Object.values(ActivityName).find((item) => item === input["name"]);

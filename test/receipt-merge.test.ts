@@ -20,6 +20,7 @@ import { references } from "../src/merging/policy.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { agentMessage } from "../src/tracking/messages.js";
 import { renderDigest, messageReceiptId } from "../src/notifications/render.js";
+
 const url = "https://github.com/owner/repo/pull/38";
 const head = "a".repeat(40),
   base = "b".repeat(40);
@@ -28,6 +29,7 @@ const owner = {
   endpoint: "local",
   sessionId: "receipt-merge-owner",
 };
+
 function snapshot(): MergeSnapshot {
   return {
     observation: {
@@ -64,6 +66,7 @@ function snapshot(): MergeSnapshot {
     methods: ["squash"],
   };
 }
+
 async function fixture(initialReview: string | null = null) {
   const directory = await mkdtemp(join(tmpdir(), "octo-receipt-merge-"));
   const config = defaultTrackingConfig();
@@ -197,6 +200,7 @@ async function fixture(initialReview: string | null = null) {
     },
   };
 }
+
 test("Ready offers one read command; hook receipt alone cannot merge; explicit CLI request survives restart and replays once", async () => {
   const f = await fixture();
   try {
@@ -980,6 +984,7 @@ function reviewFeedback(body = "Please introduce a persistence repository") {
     reviewId: "review",
   });
 }
+
 async function ownerAssessment(f: Awaited<ReturnType<typeof fixture>>) {
   const child = Bun.spawn(
     [
@@ -1005,6 +1010,7 @@ async function ownerAssessment(f: Awaited<ReturnType<typeof fixture>>) {
   ]);
   expect(code, output + error).toBe(0);
 }
+
 async function refreshedReceipt(f: Awaited<ReturnType<typeof fixture>>) {
   await f.coordinator.merging.receipts.refresh();
   await f.coordinator.digests.flush();
@@ -1015,6 +1021,7 @@ async function refreshedReceipt(f: Awaited<ReturnType<typeof fixture>>) {
   if (id === undefined) throw new Error("Missing current readiness command");
   return { id, body };
 }
+
 test("pending provider reviews withdraw Ready, reject old receipts and cannot be assessed", async () => {
   const f = await fixture();
   try {

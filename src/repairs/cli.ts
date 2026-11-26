@@ -12,6 +12,7 @@ import {
   ListRepairsResponseSchema,
 } from "../gen/octomanager/v2/repairs_pb.js";
 import type { parseCommand } from "../cli/arguments.js";
+
 export async function repairsCLI(parsed: ReturnType<typeof parseCommand>): Promise<boolean> {
   const { values, positionals } = parsed;
   const command = positionals[0];

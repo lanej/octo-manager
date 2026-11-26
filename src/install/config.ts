@@ -1,10 +1,13 @@
 import { join } from "node:path";
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 export function shellQuote(value: string): string {
   return "'" + value.replaceAll("'", "'\"'\"'") + "'";
 }
+
 export function codexHooks(value: unknown, launcher: string, state: string): Record<string, unknown> {
   if (!object(value)) throw new Error("Invalid existing Codex hooks file");
   const result = structuredClone(value);
@@ -15,7 +18,7 @@ export function codexHooks(value: unknown, launcher: string, state: string): Rec
   for (const event of ["SessionStart", "UserPromptSubmit", "PostToolUse"]) {
     const previous = hooks[event];
     if (previous !== undefined && !Array.isArray(previous)) throw new Error("Invalid existing Codex hook event");
-    const groups: unknown[] = previous === undefined ? [] : previous;
+    const groups: unknown[] = !previous ? [] : previous;
     const exists = groups.some(
       (group) =>
         object(group) &&
@@ -33,6 +36,7 @@ export function codexHooks(value: unknown, launcher: string, state: string): Rec
   }
   return result;
 }
+
 export function desktopConfig(value: unknown): Record<string, unknown> {
   if (!object(value)) throw new Error("Invalid Octo configuration");
   const result = structuredClone(value);
@@ -45,6 +49,7 @@ export function desktopConfig(value: unknown): Record<string, unknown> {
   if (local["delivery"] === undefined) local["delivery"] = "queue";
   return result;
 }
+
 function xml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -53,7 +58,9 @@ function xml(value: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
 }
+
 export const serviceLabel = "com.lanej.octo-manager";
+
 export function launchAgent(
   home: string,
   release: string,

@@ -29,6 +29,7 @@ import { terminalStates, type JobEvent } from "./jobs/domain.js";
 
 requireBun(process.versions["bun"]);
 process.umask(0o077);
+
 async function execute(parsed: ParsedCommand): Promise<void> {
   switch (parsed.capability) {
     case "issues":
@@ -279,6 +280,7 @@ async function execute(parsed: ParsedCommand): Promise<void> {
   } else throw new Error("Unsupported command; see --help");
   printResult(parsed, result);
 }
+
 commandTree(process.env, execute)
   .parseAsync(process.argv.slice(2), { from: "user" })
   .catch((error: unknown) => {

@@ -5,6 +5,7 @@ import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import type { QueuedMessage, QueueConnection } from "../src/agents/codex.js";
 import type { ObservationInput } from "../src/tracking/types.js";
+
 const input: ObservationInput = {
   observedAt: 1000,
   headSha: "head",

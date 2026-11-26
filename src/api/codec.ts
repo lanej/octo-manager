@@ -1,10 +1,12 @@
 import { fromJson, toJson, type DescMessage, type MessageShape, type JsonValue } from "@bufbuild/protobuf";
 import { shapes } from "../gen/api/shapes.js";
+
 export function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("Invalid structured API record");
   return Object.fromEntries(Object.entries(value));
 }
+
 function convert(name: string, value: unknown, encode: boolean): JsonValue {
   if (name === "string") {
     if (typeof value !== "string") throw new Error("Invalid API text");
@@ -21,7 +23,7 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
     return name === "int64" && encode ? String(number) : number;
   }
   const shape = shapes[name];
-  if (shape === undefined) throw new Error(`Unknown API shape ${name}`);
+  if (!shape) throw new Error(`Unknown API shape ${name}`);
   switch (shape.kind) {
     case "enum": {
       const index = encode
@@ -52,7 +54,7 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
           .filter((v) => input[v.key] !== undefined);
         if (present.length !== 1) throw new Error("API variant must select one alternative");
         const selected = present[0];
-        if (selected === undefined) throw new Error("Missing API variant");
+        if (!selected) throw new Error("Missing API variant");
         return convert(selected.variant, input[selected.key], false);
       }
       const matches = shape.variants.flatMap((variant) => {
@@ -64,7 +66,7 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
       });
       if (matches.length !== 1) throw new Error(`Invalid or ambiguous API variant ${name}`);
       const selected = matches[0];
-      if (selected === undefined) throw new Error("Missing API variant");
+      if (!selected) throw new Error("Missing API variant");
       return { [selected.field]: selected.value };
     }
     case "object": {
@@ -84,10 +86,12 @@ function convert(name: string, value: unknown, encode: boolean): JsonValue {
     }
   }
 }
+
 export function wire<S extends DescMessage>(schema: S, value: unknown): MessageShape<S> {
   const name = schema.name;
   return fromJson(schema, convert(name, value, true));
 }
+
 export function unwire<S extends DescMessage>(schema: S, value: MessageShape<S>): unknown {
   return convert(schema.name, toJson(schema, value), false);
 }

@@ -9,6 +9,7 @@ import {
   IncompleteActivation,
   type CheckpointBinding,
 } from "./activation.js";
+
 export interface ServiceInput {
   home: string;
   release: string;
@@ -30,13 +31,16 @@ export interface ServiceResult {
   reason?: string;
 }
 export type ServiceRunner = (command: string, args: string[]) => string;
+
 function quote(value: string): string {
   if (/[\r\n]/u.test(value) || value.includes(String.fromCharCode(0))) throw new Error("Invalid service value");
   return '"' + value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("%", "%%") + '"';
 }
+
 function execQuote(value: string): string {
   return quote(value.replaceAll("$", () => "$$"));
 }
+
 export function serviceDefinition(platform: string, input: ServiceInput, uid: number): ServiceDefinition {
   if (platform === "darwin")
     return {
@@ -78,6 +82,7 @@ export function serviceDefinition(platform: string, input: ServiceInput, uid: nu
       .join("\n")}\nRestart=on-failure\nRestartSec=2\nTimeoutStopSec=15\n\n[Install]\nWantedBy=default.target\n`,
   };
 }
+
 export async function startService(
   definition: ServiceDefinition,
   input: ServiceInput,
@@ -122,7 +127,7 @@ export async function startService(
   if (selectedServiceIdentity(input, run) !== expectedIdentity)
     throw new IncompleteActivation("native-selected-artifact-identity-changed-before-retirement");
   if (activation === "checkpointed") {
-    if (binding === undefined) throw new Error("Checkpoint binding missing after owner guard");
+    if (!binding) throw new Error("Checkpoint binding missing after owner guard");
     await retireService(definition, input, run, binding);
   }
   try {
@@ -133,7 +138,7 @@ export async function startService(
       run("systemctl", ["--user", "is-active", "--quiet", definition.target]);
     } else {
       if (activation === "checkpointed") {
-        if (binding === undefined) throw new Error("Missing retired owner binding");
+        if (!binding) throw new Error("Missing retired owner binding");
         confirmRetiredService(definition, run, binding);
         run("/bin/launchctl", ["bootout", definition.target]);
       }
@@ -170,6 +175,7 @@ export async function startService(
   await verifyStartedService(definition, input, run, expectedIdentity, binding);
   return { ...result, started: true };
 }
+
 export function managerAvailable(definition: ServiceDefinition, run: ServiceRunner): boolean {
   try {
     if (definition.kind === "systemd") run("systemctl", ["--user", "show-environment"]);

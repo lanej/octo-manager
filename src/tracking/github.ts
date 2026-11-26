@@ -13,6 +13,7 @@ import { ghRead, GitHubRateLimitError, type ReadGitHub } from "../github/reads.j
 import { githubMetadata } from "./metadata.js";
 import type { ObservationInput, ObservationPart, CheckObservation } from "./types.js";
 import { GitHubRequestCancelledError } from "../github/errors.js";
+
 export class GitHubObservationChangedError extends Error {
   constructor() {
     super("GitHub PR revisions changed during observation; refresh again");
@@ -53,12 +54,15 @@ async function collection<T>(
       : { state: "unavailable", reason: "GitHub collection unavailable" };
   }
 }
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function positive(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 }
+
 function checkReference(value: unknown, root: string, id: string): boolean {
   if (typeof value !== "string") return false;
   try {
@@ -72,6 +76,7 @@ function checkReference(value: unknown, root: string, id: string): boolean {
     return false;
   }
 }
+
 async function reconcileCheck(
   check: CheckObservation,
   root: string,
@@ -124,6 +129,7 @@ async function reconcileCheck(
     return undefined;
   }
 }
+
 export async function readObservation(
   url: string,
   signal?: AbortSignal,
@@ -137,7 +143,7 @@ export async function readObservation(
   const [, owner, repo, , number] = new URL(canonicalPR(url)).pathname.split("/");
   if (owner === undefined || repo === undefined || number === undefined) throw new Error("Invalid GitHub PR URL");
   const root = `repos/${owner}/${repo}`;
-  const initial = readMetadata !== undefined ? await readMetadata(canonicalPR(url), signal) : undefined;
+  const initial = readMetadata ? await readMetadata(canonicalPR(url), signal) : undefined;
   const pr = initial?.pr ?? trackingPR(await read(`${root}/pulls/${number}`, signal));
   // rationale: The PR payload can retain an ancestor base SHA after the target branch advances.
   const refPath = `${root}/git/ref/heads/${encodeURIComponent(pr.base.ref)}`;
@@ -156,8 +162,7 @@ export async function readObservation(
       throw new Error("Invalid GitHub target branch observation");
     return { ref: pr.base.ref, sha: raw.object.sha };
   };
-  const target =
-    initial !== undefined ? initial.target : pr.state === "open" && !pr.merged ? await readTarget() : undefined;
+  const target = initial ? initial.target : pr.state === "open" && !pr.merged ? await readTarget() : undefined;
   const observedAt = now();
   const [runs, statuses, reviews, inline, conversation, workflows] = await Promise.all([
     collection(
@@ -220,11 +225,11 @@ export async function readObservation(
   const offset = next < 0 ? 0 : next;
   const selected = [...missing.slice(offset), ...missing.slice(0, offset)].slice(0, 10);
   const last = selected.at(-1);
-  if (last !== undefined) retainedContext.selected?.(last.id);
+  if (last) retainedContext.selected?.(last.id);
   const reconciled = new Map<string, CheckObservation>();
   for (const check of selected) {
     const result = await reconcileCheck(check, root, read, signal);
-    if (result !== undefined) reconciled.set(check.id, result);
+    if (result) reconciled.set(check.id, result);
   }
   const retained = missing.map((check) => reconciled.get(check.id) ?? check);
   const workflowEvidence = workflows.state === "unavailable" ? [] : workflows.value;
@@ -284,14 +289,10 @@ export async function readObservation(
               ? "Waiting for terminal evidence for retained executions"
               : "Some check sources are incomplete",
           };
-  const latest = readMetadata === undefined ? undefined : await readMetadata(canonicalPR(url), signal);
-  const [latestPR, latestTarget] =
-    latest === undefined
-      ? await Promise.all([
-          read(`${root}/pulls/${number}`, signal).then(trackingPR),
-          target === undefined ? undefined : readTarget(),
-        ])
-      : [latest.pr, latest.target];
+  const latest = !readMetadata ? undefined : await readMetadata(canonicalPR(url), signal);
+  const [latestPR, latestTarget] = !latest
+    ? await Promise.all([read(`${root}/pulls/${number}`, signal).then(trackingPR), !target ? undefined : readTarget()])
+    : [latest.pr, latest.target];
   if (
     latestPR.head.sha !== pr.head.sha ||
     latestPR.base.ref !== pr.base.ref ||
@@ -305,7 +306,7 @@ export async function readObservation(
     observedAt,
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
-    ...(target === undefined ? {} : { targetBase: target }),
+    ...(!target ? {} : { targetBase: target }),
     ...(initial?.description === undefined ? {} : { description: initial.description }),
     lifecycle: pr.merged ? PRLifecycle.Merged : prLifecycle(pr.state),
     mergeability: pr.mergeable === true ? "mergeable" : pr.mergeable === false ? "conflicting" : "unknown",

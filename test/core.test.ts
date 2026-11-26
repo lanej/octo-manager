@@ -14,6 +14,7 @@ import {
   finishFixture,
   removeFixture,
 } from "../src/jobs/fixture.js";
+
 const temp = () => mkdtemp(join(tmpdir(), "pg-"));
 test("jobs follow explicit conflict, completion and cancellation contracts", () => {
   const job = { status: "queued", updatedAt: 0 } as Job;

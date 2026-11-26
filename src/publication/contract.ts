@@ -42,6 +42,7 @@ export interface Finding {
   code: string;
   fix: string;
 }
+
 export class PublicationError extends Error {
   constructor(
     readonly code: string,
@@ -50,6 +51,7 @@ export class PublicationError extends Error {
     super(message);
   }
 }
+
 export const contractPath = ".octo/pr-contract.json";
 export const skillPath = ".agents/skills/pr-description/SKILL.md";
 export const stockTemplate = "<!-- octo:describe-change -->\n\n<!-- octo:explain-why -->\n";
@@ -90,9 +92,11 @@ export function githubRepository(remote: string): string | undefined {
     return undefined;
   return /^\/([\w.-]+\/[\w.-]+?)(?:\.git)?$/u.exec(url.pathname)?.[1];
 }
+
 export function digest(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
+
 export function safePath(root: string, path: string): string {
   const target = resolve(root, path);
   const offset = relative(root, target);
@@ -111,6 +115,7 @@ export function safePath(root: string, path: string): string {
   }
   return target;
 }
+
 export function readContract(root: string): {
   contract: Contract;
   hash: string;
@@ -136,6 +141,7 @@ export function readContract(root: string): {
   safePath(root, value.template);
   return { contract: value, hash: digest(value) };
 }
+
 export function validateDraft(draft: Draft, contract: Contract): Finding[] {
   const findings: Finding[] = [];
   const add = (code: string, fix: string) => {
@@ -152,7 +158,7 @@ export function validateDraft(draft: Draft, contract: Contract): Finding[] {
   if (maximum !== undefined && Array.from(draft.title).length > maximum)
     add("title_length", `Shorten the title to ${String(maximum)} characters.`);
   const prefixes = contract.title?.prefixes;
-  if (prefixes !== undefined && prefixes.length > 0 && !prefixes.some((prefix) => draft.title.startsWith(prefix)))
+  if (prefixes && prefixes.length > 0 && !prefixes.some((prefix) => draft.title.startsWith(prefix)))
     add("title_prefix", `Start the title with one of: ${prefixes.join(", ")}.`);
   const headings = new Set<string>();
   let fence: string | undefined;
@@ -178,6 +184,7 @@ export function validateDraft(draft: Draft, contract: Contract): Finding[] {
   if (Buffer.byteLength(draft.body) > 65536) add("body_size", "Keep the description within GitHub's 64 KiB limit.");
   return findings;
 }
+
 function install(root: string, path: string, text: string): void {
   const target = safePath(root, path);
   mkdirSync(dirname(target), { recursive: true });
@@ -187,6 +194,7 @@ function install(root: string, path: string, text: string): void {
     if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) throw error;
   }
 }
+
 export function initialize(
   root: string,
   selected?: string,

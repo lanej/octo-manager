@@ -15,6 +15,7 @@ function database(path = ":memory:"): DatabaseSync {
     INSERT INTO settings VALUES('github_dispatch','{"nextAtMs":0,"coreRetryAtMs":0,"graphqlRetryAtMs":0}');`);
   return db;
 }
+
 function schedule(key = "reviews:one"): ScheduledRefresh {
   return {
     key,

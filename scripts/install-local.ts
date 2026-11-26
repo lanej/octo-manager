@@ -30,9 +30,11 @@ interface StagedRelease {
 }
 let stagedRelease: StagedRelease | undefined;
 const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function run(command: string, args: string[], cwd = source): string {
   return execFileSync(command, args, {
     cwd,
@@ -41,6 +43,7 @@ function run(command: string, args: string[], cwd = source): string {
     maxBuffer: 8 * 1024 * 1024,
   });
 }
+
 async function exists(path: string): Promise<boolean> {
   try {
     await lstat(path);
@@ -50,12 +53,14 @@ async function exists(path: string): Promise<boolean> {
     throw error;
   }
 }
+
 async function privateDirectory(path: string): Promise<void> {
   await mkdir(path, { recursive: true, mode: 0o700 });
   if (!(await lstat(path)).isDirectory() || (await lstat(path)).isSymbolicLink())
     throw new Error(`Installation directory is not a regular directory: ${path}`);
   await chmod(path, 0o700);
 }
+
 async function atomic(path: string, content: string, mode: number): Promise<void> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -66,12 +71,14 @@ async function atomic(path: string, content: string, mode: number): Promise<void
     await rm(temporary, { force: true });
   }
 }
+
 async function json(path: string): Promise<unknown> {
   if (!(await exists(path))) return {};
   if ((await lstat(path)).isSymbolicLink())
     throw new Error(`Preserve symlinked configuration; update its source explicitly: ${path}`);
   return JSON.parse(await readFile(path, "utf8"));
 }
+
 async function configure(path: string, value: unknown, backup: string): Promise<void> {
   const serialized = JSON.stringify(value, null, 2) + "\n";
   if (await exists(path)) {
@@ -81,6 +88,7 @@ async function configure(path: string, value: unknown, backup: string): Promise<
   }
   await atomic(path, serialized, 0o600);
 }
+
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
@@ -276,6 +284,7 @@ async function main(): Promise<void> {
     await rm(lock, { recursive: true });
   }
 }
+
 main().catch((error: unknown) => {
   if (error instanceof IncompleteActivation) {
     console.log(

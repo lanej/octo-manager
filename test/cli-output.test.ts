@@ -6,9 +6,11 @@ import { parseCommand } from "../src/cli/arguments.js";
 import { agentResponse, printFailure } from "../src/cli/output.js";
 import { commandSpecs } from "../src/cli/command-tree.js";
 import { agentProjection, agentOutputExceptions } from "../src/cli/agent-output.js";
+
 function output(args: string[], raw: unknown): unknown {
   return JSON.parse(agentResponse(parseCommand(args, { OCTO_MANAGER_AGENT: "1" }), raw));
 }
+
 test("explicit JSON is separate from agent detection and full inspection never replays a mutation", () => {
   expect(parseCommand(["pr", "list"], {}).output).toEqual({
     agent: false,

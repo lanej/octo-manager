@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { commandTree, CommanderError } from "../src/cli/command-tree.js";
 import { parseCommand } from "../src/cli/arguments.js";
+
 test("Commander provides nested help and rejects invalid input before invoking a capability", async () => {
   let calls = 0,
     output = "";

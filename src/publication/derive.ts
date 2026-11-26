@@ -7,6 +7,7 @@ import { execFile } from "node:child_process";
 import { runStage, type RunStage } from "../submissions/worker.js";
 import { digest, readContract, safePath, PublicationError, ContractSchema, githubRepository } from "./contract.js";
 import { sdkTransport, type GitHubTransport } from "../github/sdk.js";
+
 const exec = promisify(execFile);
 const StyleSchema = Type.Object(
   {
@@ -23,6 +24,7 @@ export interface Sample {
   body: string;
   url: string;
 }
+
 export function sampleStatistics(samples: Sample[]) {
   const median = (values: number[]) => {
     const sorted = [...values].sort((a, b) => a - b),
@@ -40,6 +42,7 @@ export function sampleStatistics(samples: Sample[]) {
     advisory: true,
   };
 }
+
 export async function recentSamples(
   root: string,
   remote: string,
@@ -94,6 +97,7 @@ export async function recentSamples(
   }
   return samples;
 }
+
 export async function deriveGuidance(
   root: string,
   options: { remote: string; count: number; model: string },
