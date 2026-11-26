@@ -1,6 +1,6 @@
 import { pendingReview, ReviewState, reviewState } from "../tracking/states.js";
 import { ReviewAssessmentSource, type MergeEntry } from "./contracts.js";
-import { currentMergeChecks } from "./checks.js";
+import { currentMergeChecks, mergeStatusContext } from "./checks.js";
 import { createHash } from "node:crypto";
 import { canonicalPR } from "../github/pr-identity.js";
 import { actionableFeedback } from "../tracking/review-signals.js";
@@ -197,8 +197,11 @@ export function checkGate(
   if (snapshot.review !== null && snapshot.review !== "APPROVED") return `GitHub review gate: ${snapshot.review}`;
   if (observation.checks.state !== "complete" || observation.workflows?.state !== "complete")
     return "Complete check evidence is required";
-  const expected = [...new Set([...snapshot.required, ...entry.checks])];
-  if (expected.length === 0 && !entry.noCi) return "Owner must declare expected checks or explicit no CI";
+  const expected = [
+    ...new Set([...snapshot.required, ...entry.checks.filter((name) => mergeStatusContext(name) === undefined)]),
+  ];
+  if (expected.length === 0 && entry.checks.length === 0 && !entry.noCi)
+    return "Owner must declare expected checks or explicit no CI";
   for (const name of expected) {
     const matches = currentMergeChecks(observation).filter(
       (check) => check.headSha === observation.headSha && check.name === name,
@@ -212,6 +215,11 @@ export function checkGate(
       )
     )
       return `Waiting for passing check: ${name}`;
+  }
+  for (const name of entry.checks) {
+    const context = mergeStatusContext(name);
+    if (context !== undefined && snapshot.passingMergeStatuses?.includes(context) !== true)
+      return `Waiting for passing test-merge status: ${context}`;
   }
   return undefined;
 }

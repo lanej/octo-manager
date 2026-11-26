@@ -8,6 +8,7 @@ import { GitHubReads } from "../src/github/reads.js";
 import { GitHubScheduler } from "../src/scheduling/service.js";
 import { defaultSchedulerPolicy } from "../src/scheduling/contracts.js";
 import { readMergeReadiness } from "../src/merging/github.js";
+import { checkGate } from "../src/merging/policy.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 import type { GitHubGate } from "../src/merging/github.js";
 
@@ -294,5 +295,132 @@ test("closed readiness confirms facts without open mergeability or native-stack 
       openObservation,
     ),
     /target branch has not settled/u,
+  );
+});
+
+test("named Actions status only counts on the current test merge commit", async () => {
+  const head = "a".repeat(40),
+    base = "b".repeat(40),
+    oldBase = "c".repeat(40),
+    context = "Pi macOS verification",
+    linux = "resources (ubuntu-latest)";
+  const observation: ObservationInput = {
+    observedAt: 0,
+    headSha: head,
+    baseSha: base,
+    targetBase: { ref: "main", sha: base },
+    lifecycle: "open",
+    mergeability: "mergeable",
+    reviews: { state: "complete", value: [] },
+    feedback: { state: "complete", value: [] },
+    workflows: { state: "complete", value: [] },
+    checks: {
+      state: "complete",
+      value: [
+        {
+          id: "check:1",
+          key: "check:linux",
+          name: linux,
+          headSha: head,
+          status: "completed",
+          conclusion: "success",
+          at: 0,
+          url: "https://github.com/owner/repo/actions/runs/1",
+        },
+        {
+          id: "status:2",
+          key: "status:mac",
+          name: context,
+          headSha: head,
+          status: "success",
+          conclusion: "success",
+          at: 0,
+          url: "https://github.com/owner/repo/actions/runs/2",
+        },
+      ],
+    },
+  };
+  const success = {
+    context,
+    state: "SUCCESS",
+    creator: { __typename: "Bot", login: "github-actions" },
+  };
+  const commit = {
+    parents: { nodes: [{ oid: base }, { oid: head }] },
+    status: { s0: success },
+  };
+  const checks = [linux, `merge-status:${context}`];
+  const selected = async (potentialMergeCommit: GitHubGate["potentialMergeCommit"], expectedChecks = checks) => {
+    const reads = {
+      query: (query: string) => {
+        expect(query.includes("potentialMergeCommit")).toBe(
+          expectedChecks.some((name) => name.startsWith("merge-status:")),
+        );
+        if (expectedChecks === checks) expect(query).toContain('context(name:"Pi macOS verification")');
+        return Promise.resolve({
+          data: {
+            repository: {
+              squashMergeAllowed: true,
+              mergeCommitAllowed: false,
+              rebaseMergeAllowed: false,
+              pullRequest: {
+                headRefOid: head,
+                baseRefOid: base,
+                baseRefName: "main",
+                merged: false,
+                state: "OPEN",
+                isDraft: false,
+                mergeable: "MERGEABLE",
+                mergeStateStatus: "CLEAN",
+                reviewDecision: null,
+                mergeCommit: null,
+                baseRef: {
+                  target: { oid: base },
+                  branchProtectionRule: null,
+                },
+                potentialMergeCommit,
+              },
+            },
+          },
+          errors: [],
+        });
+      },
+      read: (path: string) => {
+        expect(path).toBe("repos/owner/repo/rules/branches/main");
+        return Promise.resolve([]);
+      },
+    };
+    const snapshot = await readMergeReadiness(
+      "https://github.com/owner/repo/pull/38",
+      observation,
+      AbortSignal.timeout(15000),
+      reads,
+      expectedChecks,
+    );
+    return checkGate({ method: "squash", checks: expectedChecks, noCi: false }, snapshot);
+  };
+
+  expect(await selected(commit)).toBeUndefined();
+  expect(await selected(null, [linux, context])).toBeUndefined();
+  for (const invalid of [
+    null,
+    { ...commit, status: null },
+    { ...commit, parents: { nodes: [{ oid: oldBase }, { oid: head }] } },
+    { ...commit, parents: { nodes: [{ oid: base }, { oid: oldBase }] } },
+    { ...commit, status: { s0: { ...success, state: "FAILURE" } } },
+    {
+      ...commit,
+      status: {
+        s0: {
+          ...success,
+          creator: { ...success.creator, login: "another-bot" },
+        },
+      },
+    },
+  ]) {
+    expect(await selected(invalid)).toBe("Waiting for passing test-merge status: Pi macOS verification");
+  }
+  expect(await selected(commit, [...checks, "required verification"])).toBe(
+    "Waiting for expected check: required verification",
   );
 });

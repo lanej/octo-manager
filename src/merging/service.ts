@@ -68,7 +68,12 @@ export class MergeService {
       store,
       tracking,
       (id, observation) =>
-        this.snapshot(id, AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]), observation),
+        this.snapshot(
+          id,
+          AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]),
+          observation,
+          this.store.entries(id).find((entry) => !terminal(entry.state))?.checks,
+        ),
       now,
       options.repositoryInstructions,
     );
@@ -403,13 +408,14 @@ export class MergeService {
     prId: string,
     signal: AbortSignal = this.abort.signal,
     cached?: import("../tracking/types.js").PRObservation,
+    expectedChecks?: readonly string[],
   ): Promise<MergeSnapshot> {
     const pr = this.store.tracking.pr(prId),
       epoch = pr.trackingEpoch;
     const result =
       cached && this.provider.readiness
-        ? await this.provider.readiness(pr.url, cached, signal)
-        : await this.provider.inspect(pr.url, signal);
+        ? await this.provider.readiness(pr.url, cached, signal, expectedChecks)
+        : await this.provider.inspect(pr.url, signal, expectedChecks);
     if (cached) {
       if (
         result.observation.headSha !== cached.headSha ||
@@ -525,7 +531,7 @@ export class MergeService {
     }
     if (entry.state === EntryState.WaitingChecks && entry.nextAt === 0)
       entry = this.store.state(entry, EntryState.WaitingChecks, "Inspecting current GitHub merge eligibility");
-    const snapshot = await this.snapshot(pr.id);
+    const snapshot = await this.snapshot(pr.id, this.abort.signal, undefined, entry.checks);
     pr = this.store.tracking.pr(pr.id);
     if (!this.active(entry)) return;
     if (!readyFor(entry, pr, this.store.dependencies())) {
