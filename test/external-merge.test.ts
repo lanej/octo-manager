@@ -1,4 +1,6 @@
-import { test } from "bun:test";
+import { jest, test } from "bun:test";
+import { setImmediate } from "node:timers/promises";
+import { WorkScheduler } from "../src/scheduling/work.js";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -69,6 +71,7 @@ function snapshot(sha = head): MergeSnapshot {
 async function fixture(
   run: (f: {
     current: () => ApplicationFixture;
+    clock: () => number;
     remote: Map<string, MergeSnapshot>;
     ready: (url?: string) => MergeEntry;
     closePR: (url?: string) => void;
@@ -142,6 +145,7 @@ async function fixture(
   try {
     await run({
       current: () => coordinator,
+      clock: () => now,
       remote,
       ready,
       closePR,
@@ -471,3 +475,169 @@ test("closed reconciliation prefers fresh readiness proof and rejects mismatchin
     assert.equal(f.reads(), 0);
     assert.equal(f.effects(), 0);
   }));
+
+async function settleScheduledWork() {
+  for (let i = 0; i < 30; i++) {
+    jest.advanceTimersByTime(0);
+    await setImmediate();
+  }
+}
+
+for (const retry of [
+  {
+    label: "transient failure",
+    failure: new Error("Confirmation unavailable"),
+    at: 61000,
+  },
+  {
+    label: "rate limit",
+    failure: new GitHubRateLimitError(180000),
+    at: 180000,
+  },
+]) {
+  test(`manual closure retries after ${retry.label} without new input`, async () => {
+    jest.useFakeTimers({ now: 1000 });
+    try {
+      await fixture(async (f) => {
+        const entry = f.ready();
+        f.closePR();
+        const coordinator = f.current();
+        assert.equal(coordinator.store.tracking.pr(first).state, "archived");
+        const scheduler = new WorkScheduler(f.clock);
+        f.intercept(() => {
+          throw retry.failure;
+        });
+        try {
+          coordinator.merging.start(scheduler);
+          scheduler.start();
+          await settleScheduledWork();
+          assert.equal(f.reads(), 1);
+          assert.equal(
+            coordinator.store.merging.entryById(entry.id)?.state,
+            EntryState.Blocked,
+          );
+          assert.equal(
+            coordinator.store.merging.entryById(entry.id)?.nextAt,
+            retry.at,
+          );
+          f.intercept(undefined);
+          const beforeRetry = retry.at - f.clock() - 1;
+          f.advance(beforeRetry);
+          jest.advanceTimersByTime(beforeRetry);
+          await settleScheduledWork();
+          assert.equal(f.reads(), 1);
+          f.advance(1);
+          jest.advanceTimersByTime(1);
+          await settleScheduledWork();
+          assert.equal(f.reads(), 2);
+          assert.equal(
+            coordinator.store.merging.entryById(entry.id)?.state,
+            EntryState.Merged,
+          );
+          assert.equal(
+            coordinator.store.merging.entryById(entry.id)?.mergeCommit,
+            commit,
+          );
+          assert.equal(
+            coordinator.store.merging.chain(entry.chainId).state,
+            ChainState.Completed,
+          );
+          assert.equal(f.effects(), 0);
+        } finally {
+          await scheduler.close();
+        }
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+}
+
+test("manual closure retries remain parked when read authority is withdrawn", async () => {
+  jest.useFakeTimers({ now: 1000 });
+  try {
+    for (const change of [
+      "pause",
+      "cancel",
+      "untrack",
+      "uncertain",
+      "assessment",
+    ] as const) {
+      await fixture(async (f) => {
+        const entry = f.ready();
+        f.closePR();
+        const coordinator = f.current();
+        const store = coordinator.store.merging;
+        const pending = { ...entry, nextAt: 61000 };
+        store.saveEntry(pending);
+        switch (change) {
+          case "pause":
+            store.control(entry.chainId, ChainState.Paused);
+            break;
+          case "cancel":
+            store.control(entry.chainId, ChainState.Cancelled);
+            break;
+          case "untrack":
+            coordinator.store.tracking.untrack(entry.prId);
+            break;
+          case "uncertain":
+            store.state(
+              pending,
+              EntryState.Uncertain,
+              "External outcome remains uncertain",
+            );
+            break;
+          case "assessment": {
+            delete pending.ready;
+            store.saveEntry(pending);
+            break;
+          }
+        }
+        let passes = 0;
+        const scheduler = new WorkScheduler(
+          f.clock,
+          undefined,
+          (_key, work) => {
+            passes++;
+            return work();
+          },
+        );
+        try {
+          coordinator.merging.start(scheduler);
+          scheduler.start();
+          await settleScheduledWork();
+          assert.equal(passes, 1, `${change}: initial pass`);
+          assert.equal(
+            f.reads(),
+            0,
+            `${change}: confirmation must remain parked`,
+          );
+          f.advance(180000);
+          jest.advanceTimersByTime(180000);
+          await settleScheduledWork();
+          assert.equal(
+            passes,
+            1,
+            `${change}: no retry timer without eligibility`,
+          );
+          assert.equal(f.reads(), 0, `${change}: no confirmation retry`);
+          assert.notEqual(
+            store.entryById(entry.id)?.state,
+            EntryState.Merged,
+            change,
+          );
+          assert.notEqual(
+            store.chain(entry.chainId).state,
+            ChainState.Completed,
+            change,
+          );
+          assert.equal(f.effects(), 0, `${change}: no write authority`);
+        } finally {
+          await scheduler.close();
+        }
+      });
+    }
+  } finally {
+    jest.useRealTimers();
+  }
+});
