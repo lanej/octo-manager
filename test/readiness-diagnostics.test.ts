@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { schedulerClient } from "../src/client.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { EntryState } from "../src/merging/contracts.js";
 import type { MergeProvider, MergeSnapshot } from "../src/merging/github.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -57,7 +57,7 @@ function snapshot(): MergeSnapshot {
 test("RPC rejects a stale readiness head with a refresh diagnostic and preserves the assessment guard", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-readiness-rpc-"));
   const current = snapshot();
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     mergeOptions: { intervalMs: 600000 },
     trackingOptions: {
       read: () => Promise.resolve(structuredClone(current.observation)),
@@ -138,7 +138,7 @@ test("queued merge reports inspection before the actual eligibility gate, then p
       return Promise.resolve(current.mergeCommit);
     },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => now,
     mergeOptions: { provider },
   });

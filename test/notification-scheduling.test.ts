@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { TrackingState } from "../src/tracking/retirement.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 
@@ -22,7 +22,7 @@ test("first PR archived by drain expiry wakes the sleeping notification monitor"
     checks: { state: "unavailable", reason: "Controlled incomplete checks" },
     reviews: { state: "complete", value: [] },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => now,
     trackingOptions: {
       read: () => Promise.resolve(observation),

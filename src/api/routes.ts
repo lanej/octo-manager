@@ -38,7 +38,7 @@ import {
   type Task as WireTask,
 } from "../gen/octomanager/v2/scheduler_pb.js";
 import { parseTask } from "../jobs/domain.js";
-import type { Coordinator } from "../coordinator.js";
+import type { ApplicationApi } from "../application/api.js";
 import { wireEvent, wireJob, wireSnapshot } from "./snapshot.js";
 
 function task(value?: WireTask) {
@@ -68,14 +68,14 @@ function jobOperation<T>(work: () => T): T {
   }
 }
 export function schedulerRoutes(
-  coordinator: Coordinator,
+  application: ApplicationApi,
   router: ConnectRouter,
 ): void {
-  const tracking = coordinator.tracking;
+  const tracking = application.services.tracking;
   const messages = new Messages(
-    coordinator.store,
-    coordinator.digests,
-    coordinator.merging.receipts.presentation,
+    application.store,
+    application.services.digests,
+    application.services.merging.receipts.presentation,
   );
   const owner = (value?: {
     harness: string;
@@ -95,12 +95,12 @@ export function schedulerRoutes(
   router.service(
     SchedulerService,
     {
-      ...issueRoutes(coordinator.issues),
-      ...diagnosticsRoutes(coordinator.diagnostics),
+      ...issueRoutes(application.services.issues),
+      ...diagnosticsRoutes(application.diagnostics),
       async runtimeLifecycle(r) {
         return {
           report: wireLifecycle(
-            await coordinator.lifecycle(
+            await application.runtime.lifecycle(
               actionName(r.action),
               r.expectedNativeId,
               r.runId,
@@ -110,11 +110,11 @@ export function schedulerRoutes(
           ),
         };
       },
-      ...dashboardRoutes(coordinator),
+      ...dashboardRoutes(application),
       getServerInfo() {
         return { apiVersion: 2 };
       },
-      ...mergeRoutes(coordinator),
+      ...mergeRoutes(application.services.merging),
       subscribePullRequest(r) {
         return trackingOperation(() => {
           const participants = tracking.subscribe(r.id, owner(r.agent));
@@ -152,9 +152,9 @@ export function schedulerRoutes(
             ...requestReceiptMerge(
               request,
               tracking.store,
-              coordinator.store.merging,
-              coordinator.merging.receipts,
-              coordinator.digests,
+              application.store.merging,
+              application.services.merging.receipts,
+              application.services.digests,
             ),
           }),
         }));
@@ -165,7 +165,7 @@ export function schedulerRoutes(
             throw new Error("Invalid mixed recipient references");
           const agentId =
             r.agentTarget === undefined
-              ? coordinator.store.merging.actor(r.agentId)
+              ? application.store.merging.actor(r.agentId)
               : tracking.store.sessionAgent(
                   r.agentTarget.harness,
                   r.agentTarget.sessionId,
@@ -187,7 +187,7 @@ export function schedulerRoutes(
             throw new Error("Invalid mixed recipient references");
           const agentId =
             r.agentTarget === undefined
-              ? coordinator.store.merging.actor(r.agentId)
+              ? application.store.merging.actor(r.agentId)
               : tracking.store.sessionAgent(
                   r.agentTarget.harness,
                   r.agentTarget.sessionId,
@@ -207,8 +207,8 @@ export function schedulerRoutes(
           const version =
             r.receiptId === ""
               ? undefined
-              : coordinator.store.digests.delivery(r.receiptId);
-          const inspection = coordinator.digests.inspect(
+              : application.store.digests.delivery(r.receiptId);
+          const inspection = application.services.digests.inspect(
             version?.digestId ?? r.id,
             version?.revision ?? r.revision,
           );
@@ -222,7 +222,7 @@ export function schedulerRoutes(
       },
       listAgentDigests(r) {
         return {
-          digests: coordinator.store.digests
+          digests: application.store.digests
             .list(r.agentId)
             .slice(-100)
             .map((value) => wire(DomainAgentDigestSchema, value)),
@@ -237,7 +237,7 @@ export function schedulerRoutes(
           const version =
             r.receiptId === ""
               ? undefined
-              : coordinator.store.digests.delivery(r.receiptId);
+              : application.store.digests.delivery(r.receiptId);
           const id = version?.digestId ?? r.id,
             number = version?.revision ?? r.revision;
           const agentId =
@@ -250,14 +250,14 @@ export function schedulerRoutes(
                     ? undefined
                     : r.agentTarget.endpoint,
                 );
-          const messages = coordinator.digests.acknowledge(
+          const messages = application.services.digests.acknowledge(
             id,
             number,
             agentId,
             r.expectedBody,
           );
           return digestReceipt(
-            coordinator.digests,
+            application.services.digests,
             tracking.store,
             id,
             number,
@@ -269,12 +269,12 @@ export function schedulerRoutes(
         return trackingOperation(() => ({
           submission: wire(
             DomainArchivedSubmissionSchema,
-            archiveSubmission(coordinator.store.submissions.get(r.id)),
+            archiveSubmission(application.store.submissions.get(r.id)),
           ),
         }));
       },
       listSubmissions(r) {
-        const page = coordinator.store.submissions.summaryPage(
+        const page = application.store.submissions.summaryPage(
           r.beforeRowId === 0n
             ? Number.MAX_SAFE_INTEGER
             : Number(r.beforeRowId),
@@ -296,7 +296,7 @@ export function schedulerRoutes(
       },
       getRepositoryPolicy(r) {
         return trackingOperation(() => {
-          const policy = coordinator.store.submissions.policy(
+          const policy = application.store.submissions.policy(
             r.repository.toLowerCase(),
             r.version,
           );
@@ -318,14 +318,14 @@ export function schedulerRoutes(
         }));
       },
       ...inboxRoutes(tracking.store, (message) =>
-        coordinator.merging.receipts.inboxReadyHead(message),
+        application.services.merging.receipts.inboxReadyHead(message),
       ),
-      ...repairRoutes(coordinator.repairs),
+      ...repairRoutes(application.services.repairs),
       ...activityRoutes(
-        coordinator.store.activity,
-        () => coordinator.store.sequence(),
-        (after) => coordinator.store.eventsSince(after).map(wireEvent),
-        (before) => coordinator.store.activityBefore(before).map(wireEvent),
+        application.store.activity,
+        () => application.store.sequence(),
+        (after) => application.store.eventsSince(after).map(wireEvent),
+        (before) => application.store.activityBefore(before).map(wireEvent),
       ),
       async trackPullRequest(r) {
         return trackingOperation(() => ({
@@ -338,13 +338,13 @@ export function schedulerRoutes(
       async getTrackedPullRequest(r) {
         return trackingOperation(() => ({
           pr: wirePR(tracking.store.pr(r.id)),
-          ...(coordinator.store.repositories.get(tracking.store.pr(r.id).id) ===
+          ...(application.store.repositories.get(tracking.store.pr(r.id).id) ===
           undefined
             ? {}
             : {
                 repositoryPolicy: wire(
                   DomainRepositoryAutomationPolicySchema,
-                  coordinator.store.repositories.get(
+                  application.store.repositories.get(
                     tracking.store.pr(r.id).id,
                   ),
                 ),
@@ -357,7 +357,7 @@ export function schedulerRoutes(
           return {
             pr: wirePR(tracking.store.pr(r.id)),
             refresh: wireRefresh(
-              coordinator.store.schedules.get(
+              application.store.schedules.get(
                 `tracking:${tracking.store.pr(r.id).id}`,
               ),
             ),
@@ -387,7 +387,7 @@ export function schedulerRoutes(
       getAction(r) {
         return trackingOperation(() => {
           const action = tracking.store.action(r.id),
-            assessment = coordinator.store.assessments.latest(action.id);
+            assessment = application.store.assessments.latest(action.id);
           return {
             action: wireAction(action, r.full),
             ...(assessment === undefined
@@ -399,14 +399,16 @@ export function schedulerRoutes(
       getAssessment(r) {
         return trackingOperation(() => ({
           assessment: wireAssessment(
-            coordinator.store.assessments.get(r.id),
+            application.store.assessments.get(r.id),
             r.full,
           ),
         }));
       },
       retryAssessment(r) {
         return trackingOperation(() => ({
-          assessment: wireAssessment(coordinator.assessments.retry(r.id)),
+          assessment: wireAssessment(
+            application.services.assessments.retry(r.id),
+          ),
         }));
       },
       async acknowledgeAction(r) {
@@ -442,7 +444,7 @@ export function schedulerRoutes(
         return {
           job: wireJob(
             jobOperation(() =>
-              coordinator.command({
+              application.jobs.command({
                 op: "submit",
                 requestId: request.requestId,
                 task: parsed,
@@ -455,18 +457,20 @@ export function schedulerRoutes(
         return {
           job: wireJob(
             jobOperation(() =>
-              coordinator.command({ op: "get", id: request.id }),
+              application.jobs.command({ op: "get", id: request.id }),
             ),
           ),
         };
       },
       getPullRequest(request) {
         return trackingOperation(() => {
-          coordinator.githubScheduler.ensureReviews(
+          application.services.githubScheduler.ensureReviews(
             request.url,
             request.refresh,
           );
-          const view = coordinator.githubScheduler.reviewState(request.url);
+          const view = application.services.githubScheduler.reviewState(
+            request.url,
+          );
           return {
             pullRequest: wireDetails(view.details),
             refresh: wireRefresh(view.schedule),
@@ -474,13 +478,13 @@ export function schedulerRoutes(
         });
       },
       getSnapshot() {
-        return { snapshot: wireSnapshot(coordinator) };
+        return { snapshot: wireSnapshot(application) };
       },
       cancelJob(request) {
         return {
           job: wireJob(
             jobOperation(() =>
-              coordinator.command({ op: "cancel", id: request.id }),
+              application.jobs.command({ op: "cancel", id: request.id }),
             ),
           ),
         };
@@ -489,16 +493,16 @@ export function schedulerRoutes(
         return {
           job: wireJob(
             jobOperation(() =>
-              coordinator.command({ op: "retry", id: request.id }),
+              application.jobs.command({ op: "retry", id: request.id }),
             ),
           ),
         };
       },
       setPaused(request) {
         jobOperation(() =>
-          coordinator.command({ op: request.paused ? "pause" : "resume" }),
+          application.jobs.command({ op: request.paused ? "pause" : "resume" }),
         );
-        return { snapshot: wireSnapshot(coordinator) };
+        return { snapshot: wireSnapshot(application) };
       },
       listEvents(request) {
         if (request.jobId !== undefined && request.prId !== undefined)
@@ -508,14 +512,14 @@ export function schedulerRoutes(
           );
         if (
           request.afterSequence < 0n ||
-          request.afterSequence > BigInt(coordinator.store.sequence())
+          request.afterSequence > BigInt(application.store.sequence())
         )
           throw new ConnectError(
             "Cursor is outside retained history",
             Code.OutOfRange,
           );
         return {
-          events: coordinator.store
+          events: application.store
             .eventsSince(
               Number(request.afterSequence),
               request.jobId,
@@ -530,14 +534,14 @@ export function schedulerRoutes(
             "Choose job or PR filter",
             Code.InvalidArgument,
           );
-        if (request.instanceId !== coordinator.store.instanceId())
+        if (request.instanceId !== application.store.instanceId())
           throw new ConnectError(
             "State instance changed; obtain a fresh snapshot",
             Code.FailedPrecondition,
           );
         if (
           request.afterSequence < 0n ||
-          request.afterSequence > BigInt(coordinator.store.sequence())
+          request.afterSequence > BigInt(application.store.sequence())
         )
           throw new ConnectError(
             "Cursor is ahead of retained history; obtain a fresh snapshot",
@@ -545,9 +549,9 @@ export function schedulerRoutes(
           );
         let cursor = Number(request.afterSequence);
         while (!context.signal.aborted) {
-          if (coordinator.isStopping())
+          if (application.runtime.isStopping())
             throw new ConnectError("Coordinator is stopping", Code.Unavailable);
-          const events = coordinator.store.eventsSince(
+          const events = application.store.eventsSince(
             cursor,
             request.jobId,
             request.prId,
@@ -567,7 +571,7 @@ export function schedulerRoutes(
         (next) => async (request) => {
           let release: () => void;
           try {
-            release = coordinator.nativeAdmission(request.method.name);
+            release = application.runtime.nativeAdmission(request.method.name);
           } catch {
             throw new ConnectError("Coordinator is stopping", Code.Unavailable);
           }
@@ -578,7 +582,7 @@ export function schedulerRoutes(
           }
         },
         inputIntake(() => {
-          coordinator.inputsChanged();
+          application.inputs.changed();
         }),
       ],
     },

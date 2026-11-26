@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import type { ObservationInput } from "../src/tracking/types.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -27,7 +27,7 @@ const observation: ObservationInput = {
 test("real CLI auto-detects agent JSON, retains explicit JSON/full inspection and rejects mutation detail replay", async () => {
   let offline = false;
   const directory = await mkdtemp("/tmp/om-agent-cli-"),
-    coordinator = new Coordinator(directory, {
+    coordinator = await createApplicationFixture(directory, {
       trackingOptions: {
         read: () =>
           offline

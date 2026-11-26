@@ -17,7 +17,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { GitHubHTTPError } from "../src/github/reads.js";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -97,7 +100,7 @@ function snapshot(head = a): MergeSnapshot {
 }
 async function fixture(
   run: (
-    c: Coordinator,
+    c: ApplicationFixture,
     advance: () => void,
     snapshots: Map<string, MergeSnapshot>,
     writes: string[],
@@ -110,8 +113,8 @@ async function fixture(
     failMerge?: boolean;
     conflictMerge?: boolean;
     authMerge?: boolean;
-    inspect?: (c: Coordinator, url: string) => void;
-    beforeSend?: (c: Coordinator) => void;
+    inspect?: (c: ApplicationFixture, url: string) => void;
+    beforeSend?: (c: ApplicationFixture) => void;
   } = {},
 ): Promise<void> {
   const directory = await mkdtemp(join(tmpdir(), "octo-merging-"));
@@ -160,7 +163,7 @@ async function fixture(
   const config = defaultTrackingConfig();
   config.merging = { pin: profile };
   config.endpoints = {};
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => now,
     trackingConfig: config,
     trackingOptions: {
@@ -204,7 +207,7 @@ async function fixture(
     await rm(directory, { recursive: true, force: true });
   }
 }
-function enroll(c: Coordinator, url: string, head = a) {
+function enroll(c: ApplicationFixture, url: string, head = a) {
   const pr = c.store.tracking.track(url, agent);
   return c.store.tracking.observe(pr.id, observation(head), c.tracking.config);
 }

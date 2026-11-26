@@ -8,7 +8,7 @@ import { DatabaseSync } from "node:sqlite";
 import { toBinary } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { schedulerClient } from "../src/client.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { digest, type Job } from "../src/jobs/domain.js";
 import { GetSnapshotResponseSchema } from "../src/gen/octomanager/v2/scheduler_pb.js";
 
@@ -16,7 +16,7 @@ test(
   "retained snapshots cross 4 MiB while responses remain bounded",
   async () => {
     const directory = await mkdtemp(join(tmpdir(), "octo-snapshot-size-"));
-    const coordinator = new Coordinator(directory);
+    const coordinator = await createApplicationFixture(directory);
     let database: DatabaseSync | undefined;
     try {
       await coordinator.start();

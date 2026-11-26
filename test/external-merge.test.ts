@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import { GitHubRateLimitError } from "../src/github/reads.js";
 import {
@@ -65,7 +68,7 @@ function snapshot(sha = head): MergeSnapshot {
 }
 async function fixture(
   run: (f: {
-    current: () => Coordinator;
+    current: () => ApplicationFixture;
     remote: Map<string, MergeSnapshot>;
     ready: (url?: string) => MergeEntry;
     closePR: (url?: string) => void;
@@ -103,8 +106,8 @@ async function fixture(
       return Promise.reject(new Error("Unexpected merge effect"));
     },
   };
-  const create = () =>
-    new Coordinator(directory, {
+  const create = async () =>
+    await createApplicationFixture(directory, {
       now: () => now,
       trackingConfig: config,
       mergeOptions: {
@@ -115,7 +118,7 @@ async function fixture(
         },
       },
     });
-  let coordinator = create();
+  let coordinator = await create();
   const ready = (url = first) => {
     const pr = coordinator.store.tracking.track(url, target);
     const value = remote.get(url);
@@ -144,7 +147,7 @@ async function fixture(
       closePR,
       restart: async () => {
         await coordinator.close();
-        coordinator = create();
+        coordinator = await create();
       },
       advance: (milliseconds) => {
         now += milliseconds;

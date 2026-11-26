@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { trackedCodeHost } from "../src/issues/composition.js";
 test("coordinator commits cannot execute agent-edited hooks or content filters", async () => {
   const directory = await mkdtemp("/tmp/octo-issue-git-");
@@ -46,7 +46,7 @@ test("coordinator commits cannot execute agent-edited hooks or content filters",
   git("-c", "core.hooksPath=/dev/null", "commit", "-m", "Seed fixture");
   git("config", "core.hooksPath", ".githooks");
   git("worktree", "add", "-b", "issue-feature", workspace);
-  const coordinator = new Coordinator(state);
+  const coordinator = await createApplicationFixture(state);
   try {
     const issue = coordinator.issues.enroll(
       "github",
@@ -118,7 +118,7 @@ test("the code-host adapter reconciles a linked remediation PR without opening a
   git("-c", "core.hooksPath=/dev/null", "commit", "-m", "Seed fixture");
   git("worktree", "add", "-b", "issue-feature", workspace);
   const head = git("rev-parse", "HEAD");
-  const coordinator = new Coordinator(state);
+  const coordinator = await createApplicationFixture(state);
   let reads = 0;
   try {
     const issue = coordinator.issues.enroll(

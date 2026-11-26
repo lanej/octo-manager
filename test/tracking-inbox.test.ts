@@ -190,10 +190,10 @@ test("immutable inbox survives restart, reconciles before replay and requires a 
 });
 
 test("typed inbox and CLI expose immutable payloads, page by recipient and record receipt independently of action acceptance", async () => {
-  const { Coordinator } = await import("../src/coordinator.js");
+  const { createApplicationFixture } = await import("./support/application.js");
   const { schedulerClient } = await import("../src/client.js");
   const directory = await mkdtemp(join(tmpdir(), "octo-inbox-api-"));
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingOptions: {
       read: () => Promise.resolve(input),
       connect: () => ({

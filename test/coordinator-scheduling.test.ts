@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -11,7 +11,7 @@ const workerPath = fileURLToPath(new URL("./fake-worker.mjs", import.meta.url));
 
 test("idle coordinator does not repeatedly read the jobs table", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-idle-jobs-"));
-  const coordinator = new Coordinator(directory, { workerPath });
+  const coordinator = await createApplicationFixture(directory, { workerPath });
   try {
     await coordinator.start();
     await sleep(25);
@@ -19,7 +19,7 @@ test("idle coordinator does not repeatedly read the jobs table", async () => {
     try {
       await sleep(350);
       expect(reads).not.toHaveBeenCalled();
-      coordinator.inputsChanged();
+      coordinator.inputs.changed();
       await sleep(30);
       expect(reads).not.toHaveBeenCalled();
     } finally {
@@ -33,7 +33,7 @@ test("idle coordinator does not repeatedly read the jobs table", async () => {
 
 test("job writes and resume wake dispatch, with retry availability scheduled at its deadline", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-due-jobs-"));
-  const coordinator = new Coordinator(directory, { workerPath });
+  const coordinator = await createApplicationFixture(directory, { workerPath });
   try {
     await coordinator.start();
     coordinator.store.setPaused(true);
@@ -63,7 +63,7 @@ test("job writes and resume wake dispatch, with retry availability scheduled at 
 
 test("repository reconciliation sleeps without configured files and wakes on input intake", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-idle-policy-"));
-  const coordinator = new Coordinator(directory, { workerPath });
+  const coordinator = await createApplicationFixture(directory, { workerPath });
   try {
     await coordinator.start();
     await sleep(25);
@@ -71,7 +71,7 @@ test("repository reconciliation sleeps without configured files and wakes on inp
     try {
       await sleep(1100);
       expect(reads).not.toHaveBeenCalled();
-      coordinator.inputsChanged();
+      coordinator.inputs.changed();
       await sleep(20);
       expect(reads).toHaveBeenCalledTimes(1);
     } finally {

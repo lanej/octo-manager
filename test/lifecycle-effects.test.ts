@@ -33,7 +33,7 @@ for (const fixture of [
     await writeFile(
       entry,
       `
-import { Coordinator } from ${JSON.stringify(join(source, "coordinator.ts"))};
+import { createApplicationFixture } from ${JSON.stringify(join(source, "../test/support/application.ts"))};
 import { defaultTrackingConfig } from ${JSON.stringify(join(source, "tracking/config.ts"))};
 import { DeliveryError } from ${JSON.stringify(join(source, "agents/codex.ts"))};
 import { SubmissionState, Complexity } from ${JSON.stringify(join(source, "submissions/contracts.ts"))};
@@ -42,7 +42,7 @@ const fixture=${JSON.stringify(fixture)}, statusPath=${JSON.stringify(statusPath
 let sends=0, closes=0, rejectHeld;
 const observation={observedAt:1000,headSha:"a".repeat(40),baseSha:"b".repeat(40),lifecycle:"open",mergeability:"conflicting",checks:{state:"complete",value:[]},reviews:{state:"complete",value:[]}};
 const config=defaultTrackingConfig(); config.endpoints.local={delivery:"turn"};
-const coordinator=new Coordinator(state,{now:()=>1000,trackingConfig:config,notificationReader:{identity:async()=>"fixture",page:async()=>({updates:[],more:false,notModified:true,pollSeconds:60000})},trackingOptions:{read:async()=>observation,connect:()=>({prepare:async()=>({busy:false,version:"fixture"}),find:async()=>({found:false}),send:async()=>{sends++;if(fixture==="lost")throw new DeliveryError("Fixture accepted remote request; ACK lost",true);return new Promise((_,reject)=>{rejectHeld=reject;});},close:()=>{closes++;rejectHeld?.(new DeliveryError("Fixture close while ACK held",true));}})},mergeOptions:{provider:{inspect:async()=>{throw new Error("No external inspection");},merge:async()=>{throw new Error("No external mutation");}}}});
+const coordinator=await createApplicationFixture(state,{now:()=>1000,trackingConfig:config,notificationReader:{identity:async()=>"fixture",page:async()=>({updates:[],more:false,notModified:true,pollSeconds:60000})},trackingOptions:{read:async()=>observation,connect:()=>({prepare:async()=>({busy:false,version:"fixture"}),find:async()=>({found:false}),send:async()=>{sends++;if(fixture==="lost")throw new DeliveryError("Fixture accepted remote request; ACK lost",true);return new Promise((_,reject)=>{rejectHeld=reject;});},close:()=>{closes++;rejectHeld?.(new DeliveryError("Fixture close while ACK held",true));}})},mergeOptions:{provider:{inspect:async()=>{throw new Error("No external inspection");},merge:async()=>{throw new Error("No external mutation");}}}});
 let submission;
 if(fixture==="held"||fixture==="lost") { const pr=coordinator.store.tracking.track("https://github.com/example/example/pull/1",{harness:"codex",endpoint:"local",sessionId:"fixture"});coordinator.store.tracking.observe(pr.id,observation,config); }
 else { const request={requestId:"fixture",repository:"example/example",headRef:"fixture",headSha:"a".repeat(40),baseRef:"main",purpose:"Retained publication",validation:[],draft:false,owner:{harness:"codex",endpoint:"local",sessionId:"fixture"}};const value=coordinator.store.submissions.request(request);submission=value.id;coordinator.store.submissions.save({...value,state:fixture,brief:{schemaVersion:1,request,baseSha:"b".repeat(40),policyVersion:1,change:{tier:Complexity.Routine,rationale:"Retained",outcome:"Retained",claims:[],limitations:[],blockers:[]},draft:{title:"fix: retained",body:"Retained",requirementChecks:[],blockers:[]}}});coordinator.store.submissions.deferReconciliation(value.id,0,Number.MAX_SAFE_INTEGER); }

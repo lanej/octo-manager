@@ -4,14 +4,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { Coordinator } from '../src/coordinator.js';
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from '../src/client.js';
 import { JobStatus } from '../src/gen/octomanager/v2/scheduler_pb.js';
 
 const code = (expected: Code) => (error: unknown) => error instanceof ConnectError && error.code === expected;
 test('generated Connect contract has typed failures, atomic snapshot cursors, replay and bounded pagination', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'om-'));
-  const coordinator = new Coordinator(directory,{reviewReader:async url=>({url,title:"Controlled PR",state:"open",headSha:"abc",observedAtMs:1234,messages:[{id:"review:1",url,author:"reviewer",kind:"review",state:"APPROVED",bodyMarkdown:"Looks good",atMs:1233,path:"",commitSha:"abc",bodyTruncated:false}],mayHaveMoreMessages:false})});
+  const coordinator = await createApplicationFixture(directory,{reviewReader:url=>Promise.resolve({url,title:"Controlled PR",state:"open",headSha:"abc",observedAtMs:1234,messages:[{id:"review:1",url,author:"reviewer",kind:"review",state:"APPROVED",bodyMarkdown:"Looks good",atMs:1233,path:"",commitSha:"abc",bodyTruncated:false}],mayHaveMoreMessages:false})});
   try {
     await coordinator.start(); coordinator.command({ op: 'pause' });
     const client = schedulerClient(directory);
@@ -55,7 +55,7 @@ test('generated Connect contract has typed failures, atomic snapshot cursors, re
     assert.equal(next.events.length, 5);
     assert.equal(next.events.at(-1)!.sequence, BigInt(coordinator.store.sequence()));
     await coordinator.close();
-    const replacement = new Coordinator(directory);
+    const replacement = await createApplicationFixture(directory);
     try {
       await replacement.start();
       const resumed = (await schedulerClient(directory).getSnapshot({})).snapshot!;

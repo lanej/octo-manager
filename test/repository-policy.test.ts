@@ -4,7 +4,10 @@ import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, writeFile, rm, symlink, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import {
   EntryState,
   ChainState,
@@ -104,7 +107,7 @@ async function fixture() {
       },
     },
   };
-  let coordinator: Coordinator = new Coordinator(
+  let coordinator: ApplicationFixture = await createApplicationFixture(
     join(directory, "state"),
     options,
   );
@@ -163,7 +166,10 @@ async function fixture() {
     },
     async reopen() {
       await coordinator.close();
-      coordinator = new Coordinator(join(directory, "state"), options);
+      coordinator = await createApplicationFixture(
+        join(directory, "state"),
+        options,
+      );
     },
     async close() {
       await coordinator.close();
@@ -687,7 +693,7 @@ test("idle policy enforcement batches stale historical contexts while retaining 
 
 test("policy file instruction changes invalidate notification inputs independently of merge settings", async () => {
   const f = await fixture();
-  const changed = spyOn(f.c, "inputsChanged");
+  const beforeRevision = f.c.inputs.broadRevision();
   try {
     const before = f.c.store.merging.entry(url);
     await writeFile(
@@ -702,12 +708,11 @@ test("policy file instruction changes invalidate notification inputs independent
       f.c.store.repositories.get(f.pr.id)?.instructions.review_feedback,
     ).toBe("Inspect the new policy instructions.");
     expect(f.c.store.merging.entry(url)).toEqual(before);
-    expect(changed).toHaveBeenCalled();
-    changed.mockClear();
+    const changedRevision = f.c.inputs.broadRevision();
+    expect(changedRevision).not.toBe(beforeRevision);
     f.c.store.repositories.tick();
-    expect(changed).not.toHaveBeenCalled();
+    expect(f.c.inputs.broadRevision()).toBe(changedRevision);
   } finally {
-    changed.mockRestore();
     await f.close();
   }
 });

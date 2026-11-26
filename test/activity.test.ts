@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { Store } from "../src/coordinator/store.js";
 import {
@@ -53,7 +53,7 @@ async function cli(args: string[], cwd?: string): Promise<string> {
 
 test("agent CLI reports survive restart without a worker or tracked PR and replay once", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-activity-"));
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     const reportArgs = [
@@ -212,7 +212,7 @@ test("agent CLI reports survive restart without a worker or tracked PR and repla
 
 test("recent activity pages bound a large history and retain forward replay and older evidence", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-activity-recent-"));
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     for (let i = 1; i <= 12000; i++)
       coordinator.store.event(
@@ -343,7 +343,7 @@ test("tracking CLI enrolls from a deep directory with a bounded recognizable lab
   const directory = await mkdtemp(join(tmpdir(), "octo-deep-session-"));
   const cwd = join(directory, "a".repeat(100), "b".repeat(100), "octo-manager");
   await mkdir(cwd, { recursive: true });
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     await cli(

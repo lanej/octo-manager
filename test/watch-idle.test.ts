@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 
 test(
   "Watch delivers new events when unrelated full snapshot data is unreadable",
   async () => {
     const directory = await mkdtemp(join(tmpdir(), "octo-watch-idle-"));
-    const coordinator = new Coordinator(directory);
+    const coordinator = await createApplicationFixture(directory);
     const abort = new AbortController();
     let database: DatabaseSync | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;

@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { readObservation } from "../src/tracking/github.js";
 import { publicPullRequest } from "../src/jobs/github.js";
@@ -22,7 +22,7 @@ const input = {
 };
 test("CLI enrollment, typed API progress and replay work without a summary worker", async () => {
   const dir = await mkdtemp(join(tmpdir(), "octo-api-"));
-  const coordinator = new Coordinator(dir, {
+  const coordinator = await createApplicationFixture(dir, {
     trackingOptions: {
       read: async () => input,
       connect: () => ({

@@ -7,7 +7,7 @@ import { shortId } from "../src/tracking/identifiers.js";
 import { test, expect, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { WorkScheduler } from "../src/scheduling/work.js";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { codexHook } from "../src/integrations/codex.js";
 import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
@@ -48,7 +48,7 @@ for (const callback of ["presentation", "ownerFeedbackCovered"] as const) {
       callback === "presentation"
         ? { presentation: () => ({ defer: blocked }) }
         : { ownerFeedbackCovered: () => blocked };
-    const coordinator = new Coordinator(directory, {
+    const coordinator = await createApplicationFixture(directory, {
       trackingConfig: config,
       now: () => 1000,
       digestOptions: { connect: () => queue, ...callbacks },
@@ -119,7 +119,7 @@ test("owner readiness wakes queue cleanup and old receipts flag stale items", as
     received: () => Promise.resolve({ bodies: [], complete: true }),
     close: () => {},
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingConfig: config,
     digestOptions: {
       connect: () => queue,
@@ -323,7 +323,7 @@ test("coordinator combines both producers and atomically receipts exact members 
     checks: { state: "complete", value: [] },
     reviews: { state: "complete", value: [] },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingConfig: config,
     trackingOptions: {
       read: () => Promise.resolve(input),
@@ -512,7 +512,7 @@ test("opaque receipts infer the caller, hide revision machinery and never acknow
     checks: { state: "complete", value: [] },
     reviews: { state: "complete", value: [] },
   };
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingConfig: config,
     trackingOptions: { read: () => Promise.resolve(input) },
     digestOptions: { connect: () => queue, intervalMs: 10 },
@@ -648,7 +648,7 @@ test("default discovery skips scheduler bookkeeping but still queues a fresh not
     close() {},
   };
   let now = 1000;
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     now: () => now,
     trackingConfig: config,
     digestOptions: { connect: () => queue },

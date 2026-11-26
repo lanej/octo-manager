@@ -19,7 +19,10 @@ import {
   ScheduleState,
 } from "../src/scheduling/contracts.js";
 import { GitHubReads } from "../src/github/reads.js";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 
 const url = "https://github.com/owner/repo/pull/31";
@@ -223,16 +226,19 @@ test("dashboard frames update automatically and cached refresh RPCs share reques
     tickMs: 100,
     requestSpacingMs: 100,
   };
-  const coordinator: Coordinator = new Coordinator(directory, {
-    trackingConfig: config,
-    reviewReader: () =>
-      coordinator.githubScheduler.dispatch("core", () => {
-        calls++;
-        return new Promise<typeof details>((resolve) => {
-          finish = resolve;
-        });
-      }),
-  });
+  const coordinator: ApplicationFixture = await createApplicationFixture(
+    directory,
+    {
+      trackingConfig: config,
+      reviewReader: () =>
+        coordinator.githubScheduler.dispatch("core", () => {
+          calls++;
+          return new Promise<typeof details>((resolve) => {
+            finish = resolve;
+          });
+        }),
+    },
+  );
   const controller = new AbortController();
   try {
     coordinator.store.schedules.saveDispatch({

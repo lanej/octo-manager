@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { Coordinator } from "../src/coordinator.js";
+import { createApplicationFixture } from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import type { QueuedMessage, QueueConnection } from "../src/agents/codex.js";
@@ -20,7 +20,7 @@ test("subscription RPCs feed participant-aware per-agent digests and compact CLI
   config.endpoints["local"] = { delivery: "queue", socket: "/synthetic" };
   const slots = new Map<string, QueuedMessage>();
   let serial = 0;
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingConfig: config,
     trackingOptions: {
       read: () => Promise.resolve(input),

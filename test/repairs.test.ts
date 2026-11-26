@@ -12,7 +12,10 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { devNull, tmpdir } from "node:os";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import { schedulerClient } from "../src/client.js";
 import { defaultTrackingConfig } from "../src/tracking/config.js";
 import {
@@ -126,7 +129,11 @@ async function fixture(conflicting = false) {
   };
   return { root, remote, source, config, observe, workspace };
 }
-async function wait(coordinator: Coordinator, id: string, state?: RepairState) {
+async function wait(
+  coordinator: ApplicationFixture,
+  id: string,
+  state?: RepairState,
+) {
   for (let i = 0; i < 400; i++) {
     const a = coordinator.store.repairs.get(id);
     if (
@@ -145,7 +152,7 @@ async function wait(coordinator: Coordinator, id: string, state?: RepairState) {
     `Repair did not settle: ${JSON.stringify(coordinator.store.repairs.get(id))}`,
   );
 }
-function enroll(coordinator: Coordinator) {
+function enroll(coordinator: ApplicationFixture) {
   return coordinator.store.tracking.track(url, {
     harness: "codex",
     endpoint: "local",
@@ -158,7 +165,7 @@ test("RPC rebase uses Git without an agent, pushes the linear result, verifies G
   const f = await fixture();
   let agents = 0;
   const before = await f.source();
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: {
@@ -209,7 +216,7 @@ test("RPC rebase uses Git without an agent, pushes the linear result, verifies G
 test("conflicts escalate only unresolved text, then checks gate the exact leased push", async () => {
   const f = await fixture(true);
   let agents = 0;
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: {
@@ -263,7 +270,7 @@ test("failed local validation preserves the remote source branch", async () => {
   assert(profile !== undefined);
   profile.checks = [[process.execPath, "-e", "process.exit(1)"]];
   const before = await f.source();
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: {
@@ -331,7 +338,7 @@ test("unknown push completion survives restart without repeating the repair", as
       return w;
     },
   };
-  let c = new Coordinator(directory, {
+  let c = await createApplicationFixture(directory, {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: options,
@@ -346,7 +353,7 @@ test("unknown push completion survives restart without repeating the repair", as
     });
     assert.equal((await wait(c, a.id)).state, RepairState.Uncertain);
     await c.close();
-    c = new Coordinator(directory, {
+    c = await createApplicationFixture(directory, {
       trackingConfig: f.config,
       trackingOptions: { read: f.observe },
       repairOptions: options,
@@ -385,7 +392,7 @@ test("empty and pending hosted checks cannot pass; transient reads retry without
       }));
     return o;
   };
-  const c = new Coordinator(directory, {
+  const c = await createApplicationFixture(directory, {
     now: () => now,
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
@@ -455,7 +462,7 @@ test("awaiting GitHub verification survives restart and a failing hosted check f
       }));
     return o;
   };
-  let c = new Coordinator(directory, {
+  let c = await createApplicationFixture(directory, {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: { source: f.source, workspace: f.workspace, observe },
@@ -471,7 +478,7 @@ test("awaiting GitHub verification survives restart and a failing hosted check f
     await wait(c, a.id, RepairState.AwaitingChecks);
     await c.close();
     failed = true;
-    c = new Coordinator(directory, {
+    c = await createApplicationFixture(directory, {
       trackingConfig: f.config,
       trackingOptions: { read: f.observe },
       repairOptions: { source: f.source, workspace: f.workspace, observe },
@@ -500,7 +507,7 @@ test("successful named commit statuses satisfy verification as well as completed
       }));
     return o;
   };
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: { source: f.source, workspace: f.workspace, observe },
@@ -570,7 +577,7 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
   const f = await yamlFixture();
   const directory = join(f.root, "state");
   let agents = 0;
-  let c = new Coordinator(directory, {
+  let c = await createApplicationFixture(directory, {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: {
@@ -619,7 +626,7 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
     assert.match(detail.baseBlob ?? "", /^[0-9a-f]{40}$/u);
     await c.close();
     await rm(join(directory, "repairs"), { recursive: true, force: true });
-    c = new Coordinator(directory, {
+    c = await createApplicationFixture(directory, {
       trackingConfig: f.config,
       trackingOptions: { read: f.observe },
     });
@@ -640,7 +647,7 @@ test("inline YAML conflicts resolve through expansion and Git without an agent; 
 test("ambiguous YAML is retained as a declined recipe and escalates with its original three versions", async () => {
   const f = await yamlFixture(true);
   let agents = 0;
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: {
@@ -727,7 +734,7 @@ test("large inline sequences decline within the explicit comparison budget", () 
 test("multiline execution failures remain readable through storage and RPC", async () => {
   const f = await fixture();
   const message = "Source unavailable\nRetry after the remote recovers";
-  const c = new Coordinator(join(f.root, "state"), {
+  const c = await createApplicationFixture(join(f.root, "state"), {
     trackingConfig: f.config,
     trackingOptions: { read: f.observe },
     repairOptions: { source: () => Promise.reject(new Error(message)) },

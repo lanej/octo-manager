@@ -15,7 +15,10 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Coordinator } from "../src/coordinator.js";
+import {
+  createApplicationFixture,
+  type ApplicationFixture,
+} from "./support/application.js";
 import { Handoffs } from "../src/integrations/handoffs.js";
 import {
   codexHooks,
@@ -162,7 +165,7 @@ test("invalid hook log levels report a fixed configuration error without logging
 
 test("successful hooks produce no diagnostics with default or disabled logging", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-hook-success-"));
-  const coordinator = new Coordinator(directory);
+  const coordinator = await createApplicationFixture(directory);
   try {
     await coordinator.start();
     for (const logLevel of [undefined, "off"]) {
@@ -279,7 +282,7 @@ test("hook logging refuses symlinks and retains the original failure on stderr w
 test("native PR attachment survives offline intake, preserves ownership and recovers exact unread notices with independent receipts", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-native-"));
   const handoffs = new Handoffs(directory);
-  let coordinator: Coordinator | undefined;
+  let coordinator: ApplicationFixture | undefined;
   try {
     assert((await hook(directory, artifact())).includes("handoff queued"));
     await hook(directory, artifact());
@@ -290,7 +293,7 @@ test("native PR attachment survives offline intake, preserves ownership and reco
       tool_response: { ...failed.tool_response, isError: true },
     });
     assert.equal((await handoffs.status("failed")).pending.length, 0);
-    coordinator = new Coordinator(directory, {
+    coordinator = await createApplicationFixture(directory, {
       trackingOptions: {
         read: () => Promise.resolve(input),
         connect: () => ({
@@ -515,7 +518,7 @@ test("hook installation appends idempotently without rewriting custom hooks and 
 
 test("automatic recovery skips a full historical page before selecting current unread notifications", async () => {
   const directory = await mkdtemp(join(tmpdir(), "octo-native-history-"));
-  const coordinator = new Coordinator(directory, {
+  const coordinator = await createApplicationFixture(directory, {
     trackingOptions: {
       read: () => Promise.resolve(input),
       connect: () => ({
