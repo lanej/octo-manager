@@ -21,23 +21,60 @@ const owner = {
 const config =
   'schema_version = 1\n[merging]\nauto_merge = "project_stage"\n[notifications.instructions]\nreview_feedback = "Repair the review findings."\n';
 
-async function fixture() {
+async function fixture(overflow = false) {
   const directory = await mkdtemp(join(tmpdir(), "octo-repository-policy-"));
   const root = join(await realpath(directory), "repo");
   const git = Bun.spawnSync(["git", "init", "-q", root]);
   if (git.exitCode !== 0) throw new Error(git.stderr.toString());
   Bun.spawnSync(["git", "-C", root, "remote", "add", "origin", "git@github.com:owner/repo.git"]);
-  await writeFile(join(root, "octo-manager.toml"), config);
+  await writeFile(
+    join(root, "octo-manager.toml"),
+    config +
+      (overflow
+        ? `
+[[merging.check_substitutions]]
+base = "main"
+owner_prs_only = true
+replace = ["resources (macos-latest)", "Pi shared resources"]
+require = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"]
+`
+        : ""),
+  );
   await writeFile(join(root, ".source-code.json"), JSON.stringify({ schema_version: 1, stage: "alpha" }));
   let writes = 0,
-    decline = false;
+    decline = false,
+    linuxPassed = false,
+    requiredByGitHub: string[] = [],
+    now = Date.now();
+  const checkEvidence = () => {
+    const run = {
+      id: "ci",
+      key: "ci",
+      name: "CI",
+      headSha: "a".repeat(40),
+      status: "completed",
+      conclusion: "success",
+      at: 1000,
+      url,
+    };
+    return {
+      state: "complete" as const,
+      value: overflow
+        ? [
+            { ...run, id: "mac", key: "mac", name: "resources (macos-latest)", status: "queued", conclusion: "" },
+            ...(linuxPassed ? [{ ...run, name: "resources (ubuntu-latest)" }] : []),
+          ]
+        : [run],
+    };
+  };
   const options = {
+    ...(overflow ? { now: () => now } : {}),
     trackingOptions: {
       read: () => Promise.reject(new Error("Controlled unavailable provider")),
     },
     mergeOptions: {
       provider: {
-        inspect: () =>
+        inspect: (_url: string, _signal: AbortSignal, checks?: readonly string[]) =>
           Promise.resolve({
             observation: {
               ...coordinator.store.tracking.pr(url).observation,
@@ -47,21 +84,7 @@ async function fixture() {
               targetBase: { ref: "main", sha: "b".repeat(40) },
               lifecycle: "open" as const,
               mergeability: "mergeable" as const,
-              checks: {
-                state: "complete" as const,
-                value: [
-                  {
-                    id: "ci",
-                    key: "ci",
-                    name: "CI",
-                    headSha: "a".repeat(40),
-                    status: "completed" as const,
-                    conclusion: "success",
-                    at: 1000,
-                    url,
-                  },
-                ],
-              },
+              checks: checkEvidence(),
               workflows: { state: "complete" as const, value: [] },
               reviews: { state: "complete" as const, value: [] },
               feedback: { state: "complete" as const, value: [] },
@@ -69,9 +92,12 @@ async function fixture() {
             draft: false,
             gate: "CLEAN",
             review: null,
-            required: [],
+            required: requiredByGitHub,
             queueRequired: false,
             methods: ["squash" as const],
+            ...(checks?.includes("merge-status:Pi macOS verification") === true
+              ? { passingMergeStatuses: ["Pi macOS verification"] }
+              : {}),
           }),
         merge: (_url: string, _head: string, _method: string, _signal: AbortSignal, beforeSend: () => void) => {
           beforeSend();
@@ -92,23 +118,10 @@ async function fixture() {
       headSha: "a".repeat(40),
       baseSha: "b".repeat(40),
       targetBase: { ref: "main", sha: "b".repeat(40) },
+      ...(overflow ? { pullRequestSource: { author: "owner", repository: "owner/repo" } } : {}),
       lifecycle: "open",
       mergeability: "mergeable",
-      checks: {
-        state: "complete",
-        value: [
-          {
-            id: "ci",
-            key: "ci",
-            name: "CI",
-            headSha: "a".repeat(40),
-            status: "completed",
-            conclusion: "success",
-            at: 1000,
-            url,
-          },
-        ],
-      },
+      checks: checkEvidence(),
       workflows: { state: "complete", value: [] },
       reviews: { state: "complete", value: [] },
       feedback: { state: "complete", value: [] },
@@ -130,6 +143,14 @@ async function fixture() {
     },
     decline() {
       decline = true;
+    },
+    finishLinux() {
+      linuxPassed = true;
+      now += 60000;
+    },
+    requireOnGitHub(checks: string[]) {
+      requiredByGitHub = checks;
+      now += 60000;
     },
     get c() {
       return coordinator;
@@ -257,6 +278,60 @@ test("fresh inherited enrollment learns checks and merges only after an exact-he
     expect(f.c.store.merging.entries()[0]?.state).toBe(EntryState.Merged);
     f.c.store.repositories.tick();
     expect(f.c.store.merging.entries()).toHaveLength(1);
+  } finally {
+    await f.close();
+  }
+});
+
+test("inferred Pi policy waits for Linux and can merge while hosted macOS is queued", async () => {
+  const f = await fixture(true);
+  try {
+    const entry = () => f.c.store.merging.entry(url);
+    const required = ["resources (ubuntu-latest)", "merge-status:Pi macOS verification"];
+    expect(entry().checks).toEqual(required);
+    const tracked = f.c.store.tracking.pr(f.pr.id);
+    const observation = tracked.observation;
+    if (!observation) throw new Error("Missing expected observation");
+    expect(observation.pullRequestSource).toEqual({ author: "owner", repository: "owner/repo" });
+    const raw = ["Pi shared resources", "unrelated"];
+    expect(f.c.store.merging.inferredChecks(tracked, raw)).toEqual(["unrelated", ...required]);
+    const absent = { ...observation };
+    delete absent.pullRequestSource;
+    for (const hostedOnly of [
+      absent,
+      { ...observation, pullRequestSource: { author: "external", repository: "owner/repo" } },
+      { ...observation, pullRequestSource: { author: "owner", repository: "owner/fork" } },
+      { ...observation, targetBase: { ref: "release", sha: "b".repeat(40) } },
+    ]) {
+      expect(f.c.store.merging.inferredChecks({ ...tracked, observation: hostedOnly }, raw)).toEqual(raw);
+    }
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    f.c.store.merging.ready(url, f.pr.ownerAgentId, "a".repeat(40));
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    expect(entry().detail).toContain("resources (ubuntu-latest)");
+    f.requireOnGitHub(["resources (macos-latest)"]);
+    f.finishLinux();
+    await f.c.merging.tick();
+    expect(f.writes).toBe(0);
+    expect(entry().detail).toContain("resources (macos-latest)");
+    f.requireOnGitHub([]);
+    await f.c.merging.tick();
+    expect(f.writes).toBe(1);
+    expect(f.c.store.merging.entries()[0]?.state).toBe(EntryState.Merged);
+  } finally {
+    await f.close();
+  }
+});
+
+test("repository check substitutions preserve an explicit PR check policy", async () => {
+  const f = await fixture(true);
+  try {
+    const checks = ["resources (macos-latest)"];
+    f.c.store.merging.configure(url, f.pr.ownerAgentId, checks, false);
+    f.c.store.repositories.tick();
+    expect(f.c.store.merging.entry(url).checks).toEqual(checks);
   } finally {
     await f.close();
   }

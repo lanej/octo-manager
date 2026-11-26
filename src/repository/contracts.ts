@@ -34,6 +34,20 @@ export const InstructionsSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+const checkNames = Type.Array(Type.String({ minLength: 1, maxLength: 100 }), { minItems: 1, maxItems: 16 });
+const CheckSubstitutionsSchema = Type.Array(
+  Type.Object(
+    {
+      replace: checkNames,
+      require: checkNames,
+      base: Type.Optional(Type.String({ minLength: 1, maxLength: 255 })),
+      owner_prs_only: Type.Optional(Type.Boolean()),
+    },
+    { additionalProperties: false },
+  ),
+  { maxItems: 16 },
+);
+export type CheckSubstitution = Static<typeof CheckSubstitutionsSchema>[number];
 export const ConfigSchema = Type.Object(
   {
     schema_version: Type.Literal(1),
@@ -42,6 +56,7 @@ export const ConfigSchema = Type.Object(
       Type.Object(
         {
           auto_merge: Type.Optional(Type.Union([Type.Boolean(), Type.Literal("project_stage")])),
+          check_substitutions: Type.Optional(CheckSubstitutionsSchema),
         },
         { additionalProperties: false },
       ),
@@ -67,7 +82,11 @@ export const AutomationPolicySchema = Type.Object(
   },
   { additionalProperties: false },
 );
-export type AutomationPolicy = Static<typeof AutomationPolicySchema>;
+export const StoredAutomationPolicySchema = Type.Object(
+  { ...AutomationPolicySchema.properties, checkSubstitutions: Type.Optional(CheckSubstitutionsSchema) },
+  { additionalProperties: false },
+);
+export type AutomationPolicy = Static<typeof StoredAutomationPolicySchema>;
 export type Instructions = Static<typeof InstructionsSchema>;
 export const defaults: Record<NotificationState, string> = {
   review_feedback: "Inspect and address actionable review findings using the installed project guidance.",

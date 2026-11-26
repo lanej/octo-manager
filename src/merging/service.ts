@@ -67,13 +67,8 @@ export class MergeService {
     this.receipts = new ReceiptMerges(
       store,
       tracking,
-      (id, observation) =>
-        this.snapshot(
-          id,
-          AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]),
-          observation,
-          this.store.entries(id).find((entry) => !terminal(entry.state))?.checks,
-        ),
+      (id, observation, checks) =>
+        this.snapshot(id, AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]), observation, checks),
       now,
       options.repositoryInstructions,
     );

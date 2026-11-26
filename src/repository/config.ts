@@ -49,6 +49,7 @@ export function loadRepositoryConfig(root: string) {
       .digest("hex"),
     ...(stage === undefined ? {} : { stage }),
     autoMerge: autoMergeForStage(configured, stage),
+    ...(!config.merging?.check_substitutions ? {} : { checkSubstitutions: config.merging.check_substitutions }),
     instructions: config.notifications?.instructions ?? {},
   };
 }

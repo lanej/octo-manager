@@ -1,6 +1,8 @@
 import type { ReferenceObservation } from "../tracking/observations.js";
 import { NoticeSubjectKind, type SafeNotice } from "../security/notifications.js";
 import { currentMergeChecks } from "./checks.js";
+import { matchesBinding, substituteDiscoveredChecks } from "../repository/policy.js";
+import type { AutomationPolicy } from "../repository/contracts.js";
 import { NoticeReadinessSchema, type NoticeReadiness } from "./receipt-types.js";
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -96,11 +98,29 @@ export class MergeStore {
     readonly tracking: TrackingStore,
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
+    private repositoryPolicy?: (prId: string) => AutomationPolicy | undefined,
   ) {
     db.exec(`CREATE INDEX IF NOT EXISTS merge_entries_by_pr ON merge_entries(pr_id);
       CREATE INDEX IF NOT EXISTS merge_operations_by_pr ON merge_operations(pr_id);
       CREATE INDEX IF NOT EXISTS references_by_pr ON pr_references(pr_id);
       CREATE INDEX IF NOT EXISTS readiness_notices_by_pr ON merge_notices(pr_id,subject_kind,applicable,subject_id);`);
+  }
+
+  inferredChecks(pr: TrackedPR, names: readonly string[]): string[] {
+    const policy = this.repositoryPolicy?.(pr.id);
+    if (!policy || policy.status !== "valid" || !matchesBinding(policy, pr)) return [...new Set(names)];
+    const [, owner, repo] = new URL(pr.url).pathname.toLowerCase().split("/");
+    const source = pr.observation?.pullRequestSource;
+    const rules = (policy.checkSubstitutions ?? []).filter(
+      (rule) =>
+        (rule.base === undefined || rule.base === pr.observation?.targetBase?.ref) &&
+        (rule.owner_prs_only !== true ||
+          (owner !== undefined &&
+            repo !== undefined &&
+            source?.author.toLowerCase() === owner &&
+            source.repository.toLowerCase() === `${owner}/${repo}`)),
+    );
+    return substituteDiscoveredChecks(names, rules);
   }
 
   readinessCandidates(): Set<string> {
@@ -559,13 +579,12 @@ export class MergeStore {
         const observation = pr.observation;
         const checks = !observation
           ? []
-          : [
-              ...new Set(
-                [observation.checks, observation.workflows].flatMap((part) =>
-                  !part || part.state !== "complete" ? [] : part.value.map((check) => check.name),
-                ),
+          : this.inferredChecks(
+              pr,
+              [observation.checks, observation.workflows].flatMap((part) =>
+                !part || part.state !== "complete" ? [] : part.value.map((check) => check.name),
               ),
-            ];
+            );
         this.queue({
           requestId,
           actorId,
@@ -829,7 +848,10 @@ export class MergeStore {
             entries: [
               {
                 prUrl: pr.url,
-                checks: [...new Set(currentMergeChecks(observation).map((check) => check.name))],
+                checks: this.inferredChecks(
+                  pr,
+                  currentMergeChecks(observation).map((check) => check.name),
+                ),
               },
             ],
           },

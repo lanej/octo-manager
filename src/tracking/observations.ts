@@ -1,7 +1,7 @@
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { storedCheckEvidence } from "./checks.js";
 import { storedFeedback, storedReviews } from "./feedback.js";
-import { targetBase } from "./evidence.js";
+import { revisionEvidence } from "./evidence.js";
 import { prLifecycle, type PRLifecycle } from "./states.js";
 import type { CheckObservation, ObservationInput, PRObservation } from "./types.js";
 
@@ -42,7 +42,10 @@ export class SQLiteObservationRepository implements ObservationRepository {
         JSON.stringify(input.checks),
         reviews.state,
         JSON.stringify(reviews),
-        input.targetBase === undefined ? null : JSON.stringify(input.targetBase),
+        // The existing revision envelope preserves source provenance without changing older rows.
+        input.targetBase === undefined
+          ? null
+          : JSON.stringify({ ...input.targetBase, source: input.pullRequestSource }),
         input.feedback === undefined ? null : JSON.stringify(input.feedback),
         input.workflows === undefined ? null : JSON.stringify(input.workflows),
         input.description ?? null,
@@ -96,7 +99,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
   }
 
   private decode(row: Record<string, unknown>): PRObservation {
-    const target = targetBase(row["target_base_json"]);
+    const revision = revisionEvidence(row["target_base_json"]);
     const feedback = storedFeedback(row["feedback_json"]);
     const workflows = storedCheckEvidence(row["workflow_runs_json"]);
     const checks = storedCheckEvidence(row["checks_json"]);
@@ -111,7 +114,7 @@ export class SQLiteObservationRepository implements ObservationRepository {
       mergeability: mergeability(row["mergeability"]),
       checks,
       reviews: storedReviews(row["reviews_json"]),
-      ...(!target ? {} : { targetBase: target }),
+      ...revision,
       ...(!feedback ? {} : { feedback }),
       ...(!workflows ? {} : { workflows }),
       ...(typeof row["description"] === "string" ? { description: row["description"] } : {}),

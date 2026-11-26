@@ -305,6 +305,8 @@ export async function readObservation(
     : [latest.pr, latest.target];
   if (
     latestPR.head.sha !== pr.head.sha ||
+    latestPR.pullRequestSource?.author !== pr.pullRequestSource?.author ||
+    latestPR.pullRequestSource?.repository !== pr.pullRequestSource?.repository ||
     latestPR.base.ref !== pr.base.ref ||
     latestTarget?.sha !== target?.sha ||
     latestPR.state !== pr.state ||
@@ -317,6 +319,7 @@ export async function readObservation(
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
     ...(!target ? {} : { targetBase: target }),
+    ...(target && pr.pullRequestSource ? { pullRequestSource: pr.pullRequestSource } : {}),
     ...(initial?.description === undefined ? {} : { description: initial.description }),
     lifecycle: pr.merged ? PRLifecycle.Merged : prLifecycle(pr.state),
     mergeability: pr.mergeable === true ? "mergeable" : pr.mergeable === false ? "conflicting" : "unknown",

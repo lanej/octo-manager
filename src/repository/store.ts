@@ -1,8 +1,8 @@
 import { Compile } from "typebox/compile";
 import type { DatabaseSync, StatementSync } from "node:sqlite";
-import { AutomationPolicySchema, type AutomationPolicy } from "./contracts.js";
+import { StoredAutomationPolicySchema, type AutomationPolicy } from "./contracts.js";
 
-const policyValidator = Compile(AutomationPolicySchema);
+const policyValidator = Compile(StoredAutomationPolicySchema);
 
 function storedPolicy(value: unknown): AutomationPolicy {
   if (!policyValidator.Check(value)) throw new Error("Invalid merge-chain data");

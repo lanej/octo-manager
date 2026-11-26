@@ -36,7 +36,7 @@ export class ReceiptMerges {
   constructor(
     private store: MergeStore,
     private tracking: TrackingService,
-    private inspect: (prId: string, observation: PRObservation) => Promise<MergeSnapshot>,
+    private inspect: (prId: string, observation: PRObservation, checks: readonly string[]) => Promise<MergeSnapshot>,
     private now: () => number,
     private repositoryInstructions?: (message: AgentMessage) => string | undefined,
   ) {}
@@ -70,23 +70,24 @@ export class ReceiptMerges {
 
   private policyKey(pr: TrackedPR): string {
     const entry = this.store.entries(pr.id).find((e) => !terminal(e.state));
-    return fingerprint(
-      !entry
-        ? null
-        : [
-            entry.id,
-            entry.method,
-            entry.checks,
-            entry.noCi,
-            entry.autoMerge,
-            entry.state,
-            entry.ready?.source,
-            entry.ready?.head,
-            entry.ready?.feedback,
-            this.store.chain(entry.chainId).state,
-            this.store.busy(pr.id),
-          ],
-    );
+    if (!entry) {
+      const names = [...new Set(pr.observation ? currentMergeChecks(pr.observation).map((check) => check.name) : [])];
+      const inferred = this.store.inferredChecks(pr, names);
+      return fingerprint(JSON.stringify(names) === JSON.stringify(inferred) ? null : inferred);
+    }
+    return fingerprint([
+      entry.id,
+      entry.method,
+      entry.checks,
+      entry.noCi,
+      entry.autoMerge,
+      entry.state,
+      entry.ready?.source,
+      entry.ready?.head,
+      entry.ready?.feedback,
+      this.store.chain(entry.chainId).state,
+      this.store.busy(pr.id),
+    ]);
   }
 
   presentation = (message: AgentMessage): MessagePresentation => {
@@ -230,16 +231,25 @@ export class ReceiptMerges {
         eligible = false;
       try {
         if (!dependencyBlocked) {
-          const snapshot = await this.inspect(pr.id, selected.pr.observation);
+          const expectedChecks =
+            authorized?.checks ??
+            this.store.inferredChecks(
+              pr,
+              currentMergeChecks(selected.pr.observation).map((check) => check.name),
+            );
+          const snapshot = await this.inspect(pr.id, selected.pr.observation, expectedChecks);
           const fresh = this.tracking.store.pr(pr.id);
           const existing = this.store.entries(pr.id).find((e) => !terminal(e.state));
           target.method = existing?.method ?? snapshot.methods[0] ?? "squash";
           const assessment = this.store.ownerAssessment(fresh);
           const policy = {
             method: target.method,
-            checks: existing?.checks ?? [
-              ...new Set(currentMergeChecks(snapshot.observation).map((check) => check.name)),
-            ],
+            checks:
+              existing?.checks ??
+              this.store.inferredChecks(
+                fresh,
+                currentMergeChecks(snapshot.observation).map((check) => check.name),
+              ),
             noCi: existing?.noCi ?? false,
             ...(!assessment ? {} : { ready: assessment }),
           };
@@ -409,7 +419,10 @@ export class ReceiptMerges {
           {
             prUrl: pr.url,
             method: target.method,
-            checks: [...new Set(currentMergeChecks(o).map((c) => c.name))],
+            checks: this.store.inferredChecks(
+              pr,
+              currentMergeChecks(o).map((check) => check.name),
+            ),
           },
         ],
       });
