@@ -39,7 +39,7 @@ interface ReconciliationInputs {
 }
 
 export interface DigestOptions {
-  // Changes with every non-clock reconciliation input; omission retains full discovery on each pass.
+  // Broad input key; scoped wakeups invalidate recipient checks independently. Omission keeps full discovery on explicit passes.
   inputRevision?: () => string;
   presentation?: (message: AgentMessage) => MessagePresentation;
   ownerFeedbackCovered?: (message: AgentMessage) => boolean;
@@ -62,6 +62,8 @@ export class DigestService {
   private generation = 0;
   private stopped = false;
   private inputDirty = false;
+  private dirtyPRs = new Set<string>();
+  private dirtyRecipients = new Set<string>();
   private connections = new Set<QueueConnection>();
   private checks = new Map<
     string,
@@ -110,9 +112,13 @@ export class DigestService {
       if (this.discovery !== undefined)
         return this.discovery.then(() => this.nextDeadline());
       const inputsChanged = this.inputDirty;
+      const prIds = [...this.dirtyPRs];
+      const recipientIds = [...this.dirtyRecipients];
       this.inputDirty = false;
-      return this.requestDiscovery(inputsChanged).then(() =>
-        this.nextDeadline(),
+      this.dirtyPRs.clear();
+      this.dirtyRecipients.clear();
+      return this.requestDiscovery(inputsChanged, prIds, recipientIds).then(
+        () => this.nextDeadline(),
       );
     });
     this.started = true;
@@ -123,17 +129,31 @@ export class DigestService {
       return this.requestDiscovery().then(() => this.waitIdle());
     this.generation++;
     this.inputDirty = true;
+    this.dirtyPRs.clear();
+    this.dirtyRecipients.clear();
     this.scheduled?.runNow();
     return this.waitIdle();
   }
-  private requestDiscovery(inputsChanged = true): Promise<void> {
+  private requestDiscovery(
+    inputsChanged = true,
+    prIds: readonly string[] = [],
+    recipientIds: readonly string[] = [],
+  ): Promise<void> {
     if (this.stopped) return Promise.resolve();
     this.discovery ??= performanceScope(
       this.directory,
       "digest-discovery",
-      () => this.discover(inputsChanged),
+      () => this.discover(inputsChanged, prIds, recipientIds),
     )
       .catch((error: unknown) => {
+        if (this.started) {
+          if (inputsChanged) this.inputDirty = true;
+          else {
+            for (const prId of prIds) this.dirtyPRs.add(prId);
+            for (const agentId of recipientIds)
+              this.dirtyRecipients.add(agentId);
+          }
+        }
         for (const waiter of this.idleWaiters) waiter.reject(error);
         this.idleWaiters.clear();
         throw error;
@@ -141,20 +161,36 @@ export class DigestService {
       .finally(() => {
         this.discovery = undefined;
         this.schedule();
-        if (this.inputDirty) this.scheduled?.wake();
+        if (this.hasInputChanges()) this.scheduled?.wake();
         this.settleIdle();
       });
     return this.discovery;
   }
-  wake(): void {
+  // Ownership or subscription changes need an unscoped wake so former recipients receive cleanup.
+  wake(prId?: string): void {
     if (!this.started || this.stopped) return;
     this.generation++;
-    this.inputDirty = true;
+    if (prId === undefined) {
+      this.inputDirty = true;
+      this.dirtyPRs.clear();
+      this.dirtyRecipients.clear();
+    } else if (!this.inputDirty) this.dirtyPRs.add(prId);
     this.scheduled?.wake();
+  }
+  wakeRecipient(agentId: string): void {
+    if (!this.started || this.stopped) return;
+    this.generation++;
+    if (!this.inputDirty) this.dirtyRecipients.add(agentId);
+    this.scheduled?.wake();
+  }
+  private hasInputChanges(): boolean {
+    return (
+      this.inputDirty || this.dirtyPRs.size > 0 || this.dirtyRecipients.size > 0
+    );
   }
   private nextDeadline(): number | undefined {
     if (!this.started || this.stopped) return undefined;
-    if (this.inputDirty) return this.now();
+    if (this.hasInputChanges()) return this.now();
     let at = Infinity;
     for (const [agentId, check] of this.checks) {
       if (!this.running.has(agentId) && !this.queued.has(agentId))
@@ -249,14 +285,48 @@ export class DigestService {
       previous.at > this.now()
     );
   }
-  private async discover(inputsChanged: boolean): Promise<void> {
+  private async discoverRecipients(
+    prIds: readonly string[],
+    recipientIds: readonly string[],
+  ): Promise<void> {
+    const recipients = new Map<string, AgentRef>();
+    for (const agentId of recipientIds)
+      recipients.set(agentId, this.tracking.store.agent(agentId));
+    for (const prId of prIds) {
+      const pr = this.tracking.store.prContext(prId);
+      for (const participant of this.tracking.store.subscriptions.list(pr)) {
+        const agent = this.tracking.store.agent(participant.agentId);
+        recipients.set(agent.id, agent);
+      }
+    }
+    for (const agent of recipients.values()) {
+      await setImmediate();
+      if (this.stopped) break;
+      this.agents.set(agent.id, agent);
+      // Keep signatures and retry history, but invalidate the broad-revision shortcut for this recipient.
+      const previous = this.checks.get(agent.id);
+      if (previous !== undefined) delete previous.inputRevision;
+      if (!this.managed(agent.id)) continue;
+      this.queued.set(agent.id, {
+        agent,
+        urgent: this.pending(agent.id).length > 0,
+      });
+    }
+  }
+  private async discover(
+    inputsChanged: boolean,
+    prIds: readonly string[],
+    recipientIds: readonly string[],
+  ): Promise<void> {
     if (!inputsChanged) {
+      await this.discoverRecipients(prIds, recipientIds);
       for (const [agentId, check] of this.checks) {
         const agent = this.agents.get(agentId);
         if (
           agent !== undefined &&
           check.at <= this.now() &&
-          !this.running.has(agentId)
+          !this.running.has(agentId) &&
+          !this.queued.has(agentId)
         )
           this.queued.set(agentId, { agent, urgent: false });
       }
@@ -342,7 +412,7 @@ export class DigestService {
   }
   private waitIdle(): Promise<void> {
     if (
-      !this.inputDirty &&
+      !this.hasInputChanges() &&
       this.discovery === undefined &&
       this.running.size === 0 &&
       this.queued.size === 0
@@ -354,7 +424,7 @@ export class DigestService {
   }
   private settleIdle(): void {
     if (
-      this.inputDirty ||
+      this.hasInputChanges() ||
       this.discovery !== undefined ||
       this.running.size > 0 ||
       this.queued.size > 0
@@ -1059,7 +1129,7 @@ export class DigestService {
       this.discovery === undefined &&
       this.running.size === 0 &&
       this.queued.size === 0 &&
-      !this.inputDirty &&
+      !this.hasInputChanges() &&
       this.store
         .list()
         .every((value) => terminal(value) && !value.cleanupPending)
@@ -1068,6 +1138,8 @@ export class DigestService {
   async close(): Promise<void> {
     this.stopped = true;
     this.inputDirty = false;
+    this.dirtyPRs.clear();
+    this.dirtyRecipients.clear();
     this.queued.clear();
     this.scheduled?.close();
     for (const connection of this.connections) connection.close();

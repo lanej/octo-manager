@@ -39,8 +39,8 @@ export interface MergeOptions {
   provider?: MergeProvider;
   prepare?: Preparer;
   intervalMs?: number;
-  // Changes with every persisted reference-discovery input; omission retains full scans.
-  referenceInputRevision?: () => string;
+  // No argument identifies roster-wide input; a PR argument identifies only that PR's reference input.
+  referenceInputRevision?: (prId?: string) => string;
 }
 export class MergeService {
   private task: ScheduledTask | undefined;
@@ -48,8 +48,9 @@ export class MergeService {
   private abort = new AbortController();
   private provider: MergeProvider;
   private prepare: Preparer;
-  private referenceInputRevision: (() => string) | undefined;
+  private referenceInputRevision: ((prId?: string) => string) | undefined;
   private scannedRevision: string | undefined;
+  private scannedInputs = new Map<string, string>();
   constructor(
     readonly store: MergeStore,
     private tracking: TrackingService,
@@ -281,9 +282,22 @@ export class MergeService {
   }
   private async run(): Promise<void> {
     const revision = this.referenceInputRevision?.();
-    if (revision === undefined || revision !== this.scannedRevision) {
+    if (
+      revision === undefined ||
+      revision !== this.scannedRevision ||
+      [...this.scannedInputs].some(
+        ([id, previous]) => this.referenceInputRevision?.(id) !== previous,
+      )
+    ) {
       const prs = this.store.tracking.prContexts();
-      for (const pr of prs.filter((pr) => pr.enabled)) {
+      const enabled = prs.filter((pr) => pr.enabled);
+      const ids = new Set(enabled.map((pr) => pr.id));
+      for (const id of this.scannedInputs.keys())
+        if (!ids.has(id)) this.scannedInputs.delete(id);
+      for (const pr of enabled) {
+        const input = this.referenceInputRevision?.(pr.id);
+        if (input !== undefined && input === this.scannedInputs.get(pr.id))
+          continue;
         await setImmediate();
         if (this.abort.signal.aborted) return;
         const observation = this.store.tracking.referenceObservation(pr.id);
@@ -291,6 +305,7 @@ export class MergeService {
           { ...pr, ...(observation === undefined ? {} : { observation }) },
           prs,
         );
+        if (input !== undefined) this.scannedInputs.set(pr.id, input);
       }
       this.scannedRevision = revision;
     }
