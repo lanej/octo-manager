@@ -41,10 +41,23 @@ export const diagnostics = [
   "Issues",
 ] as const;
 export type Screen = (typeof primary)[number] | (typeof diagnostics)[number];
+export interface DeliveryPresentation {
+  subject: string;
+  title?: string;
+  condition: string;
+  group: "Needs intervention" | "In progress" | "Delivered / closed";
+  next: string;
+  observed: string;
+  identity: string[];
+  verification: string[];
+  authority: string[];
+  feedback: string[];
+}
 export interface RecordView {
   id: string;
   label: string;
   detail: string;
+  delivery?: DeliveryPresentation;
   url?: string;
   prId?: string;
   jobId?: string;
@@ -126,7 +139,7 @@ function prRecord(
   url: string,
   pr: TrackedPullRequest | undefined,
   time: (value?: bigint) => string,
-) {
+): { rank: number; record: RecordView } {
   const tracking = snapshot.tracking;
   const merge = snapshot.mergeStatuses.find((entry) => entry.prId === pr?.id);
   const observation = pr?.observation;
@@ -275,14 +288,22 @@ function prRecord(
     return [
       "",
       `• ${action.summary}`,
-      field("Owner disposition", enumName(ActionState, action.state)),
+      ...(action.blocker.case === "reviewFeedback"
+        ? [
+            field("Review source", action.blocker.value.source),
+            field("Reviewer", action.blocker.value.author),
+          ]
+        : []),
       field("Evidence head", action.evidenceHeadSha),
       field("Evidence", action.evidenceUrl),
       ...routes.flatMap((delivery) => [
         field(
-          `Transport to ${delivery.recipientAgentId}`,
-          enumName(DeliveryState, delivery.state),
+          "Recipient",
+          tracking?.agents.find(
+            (agent) => agent.id === delivery.recipientAgentId,
+          )?.target?.label ?? delivery.recipientAgentId,
         ),
+        field("Transport", enumName(DeliveryState, delivery.state)),
         field(
           "Receipt",
           delivery.acknowledgedAtMs === undefined
@@ -292,6 +313,7 @@ function prRecord(
             : time(delivery.acknowledgedAtMs),
         ),
       ]),
+      field("Owner disposition", enumName(ActionState, action.state)),
     ];
   });
   if (pr?.refreshError !== undefined)
@@ -343,32 +365,57 @@ function prRecord(
       label: `${prLabel(url)} · ${condition}`,
       url,
       ...(pr === undefined ? {} : { prId: pr.id }),
-      detail: [
-        prLabel(url),
-        url,
-        "",
+      delivery: {
+        subject: prLabel(url),
         condition,
-        field("Next", next),
-        field("Observed", time(observation?.observedAtMs)),
-        field("Owner", owner?.target?.label ?? pr?.ownerAgentId, "Unassigned"),
-        field("Monitoring", enumName(TrackingState, pr?.trackingState)),
-        field("PR state", observation?.lifecycle),
-        field("Mergeability", observation?.mergeability),
-        field("Head", observation?.headSha),
-        field("PR base", observation?.baseSha),
-        field("Target", observation?.targetBase?.ref),
-        field("Target head", observation?.targetBase?.sha),
-        field("Refresh error", pr?.refreshError, "None reported"),
-        field("Auto merge", merge?.autoMerge === true ? "On" : "Off"),
-        field("Authority source", merge?.autoMergeSource),
-        ...(merge?.prerequisiteUrls.map((address) =>
-          field("Requires merge", address),
-        ) ?? []),
-        "",
-        ...evidence,
-        "",
-        "Tracked actions",
-        ...actionDetails,
+        group:
+          rank < 0
+            ? "Delivered / closed"
+            : rank < 100
+              ? "Needs intervention"
+              : "In progress",
+        next,
+        observed: time(observation?.observedAtMs),
+        identity: [
+          field(
+            "Owner",
+            owner?.target?.label ?? pr?.ownerAgentId,
+            "Unassigned",
+          ),
+          field("Monitoring", enumName(TrackingState, pr?.trackingState)),
+          field("PR state", observation?.lifecycle),
+          field("Head", observation?.headSha),
+          field("PR base", observation?.baseSha),
+          field("Target", observation?.targetBase?.ref),
+          field("Target head", observation?.targetBase?.sha),
+        ],
+        verification: [
+          field("Mergeability", observation?.mergeability),
+          ...evidence,
+          field("Refresh error", pr?.refreshError, "None reported"),
+        ],
+        authority: [
+          field("Auto merge", merge?.autoMerge === true ? "On" : "Off"),
+          field("Authority source", merge?.autoMergeSource),
+          field("Coordinator progress", merge?.state),
+          field(
+            "Merge result",
+            rank === -2
+              ? "Confirmed"
+              : merge?.state === "uncertain"
+                ? "Unconfirmed"
+                : "No confirmation in stored evidence",
+          ),
+          ...(merge?.prerequisiteUrls.map((address) =>
+            field("Requires merge", address),
+          ) ?? []),
+        ],
+        feedback:
+          actionDetails.length === 0
+            ? ["No retained actions for this PR."]
+            : actionDetails.slice(1),
+      },
+      detail: [
         ...repairs.flatMap((repair) => [
           "",
           field("Repair state", enumName(RepairState, repair.state)),
@@ -496,11 +543,17 @@ function quota(
   time: Time,
 ) {
   if (budget === undefined) return field(name, "Awaiting quota evidence");
+  const filled =
+    budget.limit === 0
+      ? 0
+      : Math.min(28, Math.ceil((budget.remaining / budget.limit) * 28));
   return [
+    name + " quota",
     field(
       name,
       `${String(budget.remaining)} / ${String(budget.limit)}${sampledAt >= budget.resetAtMs ? " · observation expired" : ""}`,
     ),
+    "▮".repeat(filled) + "░".repeat(28 - filled),
     field("Reset", time(budget.resetAtMs)),
     field("Forecast", enumName(GitHubForecastState, budget.forecast?.state)),
     field("Forecast evidence", budget.forecast?.reason),
@@ -522,18 +575,25 @@ function minuteChart(
   );
   if (minutes.length === 0 || maximum === 0n)
     return ["No minute traffic recorded"];
-  return metrics.map((metric) =>
-    field(
-      metric === "cacheReuses" ? "Cache" : metric.toUpperCase(),
-      minutes
-        .map((minute) =>
-          minute[metric] === 0n
-            ? "·"
-            : levels.at(Number((minute[metric] * 7n) / maximum)),
-        )
-        .join(""),
+  return [
+    field("Scale", `0–${String(maximum)} per minute · oldest → newest`),
+    ...metrics.map(
+      (metric) =>
+        (metric === "cacheReuses"
+          ? "Cache:"
+          : metric === "graphql"
+            ? "GraphQL:"
+            : "REST:"
+        ).padEnd(10) +
+        minutes
+          .map((minute) =>
+            minute[metric] === 0n
+              ? "·"
+              : levels.at(Number((minute[metric] * 7n) / maximum)),
+          )
+          .join(""),
     ),
-  );
+  ];
 }
 
 function githubRows(
@@ -550,7 +610,10 @@ function githubRows(
       label: "GitHub reads and quota",
       detail: [
         quota("REST", usage.rest, usage.sampledAtMs, time),
+        "",
         quota("GraphQL points", usage.graphql, usage.sampledAtMs, time),
+        "",
+        "Scheduler activity",
         field("Requests", usage.requests),
         field("Confirmed cache reuses", usage.cacheReuses),
         field("Rate limits", usage.rateLimits),

@@ -65,7 +65,7 @@ test("Tracking retains the selected PR and inspection when observations reorder"
   await terminal.waitForFrame((frame) => frame.includes("› owner/repo #2"));
   terminal.mockInput.pressEscape();
   await terminal.waitForFrame((frame) =>
-    frame.includes("Octo Manager  /  Attention"),
+    frame.includes("OCTO MANAGER  / Attention"),
   );
   expect(terminal.captureCharFrame()).toContain("Merge outcome unknown");
 });
@@ -97,4 +97,41 @@ test("Attention excludes closed PRs with historical uncertain merge operations",
   expect(
     records("Deliveries", snapshot, () => "Unknown", 24).map((row) => row.prId),
   ).toEqual(["open", "closed"]);
+});
+
+test("wide Attention keeps long subjects inside the list and shows delivery evidence beside it", async () => {
+  await using terminal = await createTestRenderer({
+    width: 108,
+    height: 21,
+    kittyKeyboard: true,
+  });
+  const subject =
+    "an-intentionally-long-organization-name/a-long-repository-name";
+  const snapshot = create(SnapshotSchema, {
+    tracking: {
+      prs: [
+        {
+          id: "first",
+          url: `https://github.com/${subject}/pull/1`,
+          enabled: true,
+        },
+      ],
+    },
+    mergeStatuses: [{ prId: "first", state: "uncertain" }],
+  });
+  const view = dashboardView(terminal.renderer, {
+    changed() {},
+    action() {},
+    quit() {},
+  });
+  view.update(
+    records("Attention", snapshot, () => "Unknown", 24),
+    "Live",
+    "",
+  );
+  await terminal.flush();
+  const frame = terminal.captureCharFrame();
+  expect(frame).toContain("│  │");
+  expect(frame).toContain("NEXT ACTION");
+  expect(frame).toMatch(/› an-intentionally-long-[\w-]+…\s*│/u);
 });

@@ -1,4 +1,8 @@
 import {
+  bg,
+  bold,
+  fg,
+  StyledText,
   BoxRenderable,
   type CliRenderer,
   type KeyEvent,
@@ -15,37 +19,60 @@ import {
   type Screen,
 } from "./records.js";
 
+import {
+  detailContent,
+  listContent,
+  plain,
+  type Palette,
+} from "./presentation.js";
+
 type Theme = "terminal" | "dark" | "light" | "contrast" | "mono";
+const colorful = {
+  accent: "#65cfc1",
+  muted: "#aab8c7",
+  border: "#4c6176",
+  surface: "#263344",
+  tab: "#244742",
+  warning: "#f0c678",
+  success: "#8fd2a6",
+  info: "#8dbcf0",
+};
+const mono = {
+  accent: "#ffffff",
+  muted: "#cccccc",
+  border: "#999999",
+  surface: "#262626",
+  tab: "#404040",
+  warning: "#ffffff",
+  success: "#ffffff",
+  info: "#ffffff",
+  foreground: "#ffffff",
+  background: "#000000",
+};
 const palettes = {
-  terminal: { accent: "#6091a5", hint: "#729b62" },
-  dark: {
-    accent: "#88c0d0",
-    hint: "#a3be8c",
-    foreground: "#eceff4",
-    background: "#2e3440",
-  },
+  terminal: colorful,
+  dark: { ...colorful, foreground: "#eceff4", background: "#151e29" },
   light: {
-    accent: "#245c72",
-    hint: "#325c22",
+    accent: "#125f57",
+    muted: "#465466",
+    border: "#718699",
+    surface: "#e4e9ef",
+    tab: "#c4e4dc",
+    warning: "#754a00",
+    success: "#17613b",
+    info: "#24598d",
     foreground: "#222831",
-    background: "#f1f2f4",
+    background: "#f1f5f8",
   },
   contrast: {
+    ...mono,
     accent: "#00ffff",
-    hint: "#ffff00",
-    foreground: "#ffffff",
-    background: "#000000",
+    warning: "#ffff00",
+    info: "#9eccff",
+    success: "#b0f8b0",
   },
-  mono: {
-    accent: "#ffffff",
-    hint: "#ffffff",
-    foreground: "#ffffff",
-    background: "#000000",
-  },
-} satisfies Record<
-  Theme,
-  { accent: string; hint: string; foreground?: string; background?: string }
->;
+  mono,
+} satisfies Record<Theme, Palette>;
 
 export function dashboardTheme(value: string | undefined): Theme {
   switch (value) {
@@ -78,12 +105,7 @@ export function dashboardView(
   controls: Controls,
   theme: Theme = "terminal",
 ) {
-  const palette: {
-    accent: string;
-    hint: string;
-    foreground?: string;
-    background?: string;
-  } = palettes[theme];
+  const palette: Palette = palettes[theme];
   const foreground =
     palette.foreground === undefined ? {} : { fg: palette.foreground };
   if (palette.background !== undefined)
@@ -100,7 +122,7 @@ export function dashboardView(
   });
   const footer = new TextRenderable(renderer, {
     height: 1,
-    fg: palette.hint,
+    fg: palette.muted,
     wrapMode: "none",
   });
   const status = new TextRenderable(renderer, {
@@ -112,11 +134,28 @@ export function dashboardView(
     flexGrow: 1,
     minHeight: 0,
     flexDirection: "row",
+    gap: 2,
   });
   const list = new TextRenderable(renderer, {
     ...foreground,
     wrapMode: "none",
     flexShrink: 0,
+  });
+  const listPanel = new BoxRenderable(renderer, {
+    border: true,
+    borderColor: palette.accent,
+    titleColor: palette.accent,
+    paddingX: 1,
+    flexShrink: 0,
+  });
+  const detailPanel = new BoxRenderable(renderer, {
+    border: true,
+    borderColor: palette.border,
+    titleColor: palette.muted,
+    paddingX: 1,
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: 0,
   });
   const inspector = new ScrollBoxRenderable(renderer, {
     flexGrow: 1,
@@ -127,7 +166,7 @@ export function dashboardView(
   const details = new TextRenderable(renderer, {
     ...foreground,
     width: "100%",
-    wrapMode: "char",
+    wrapMode: "word",
   });
   const markdown = new MarkdownRenderable(renderer, {
     ...foreground,
@@ -142,8 +181,10 @@ export function dashboardView(
   inspector.add(details);
   inspector.add(markdown);
   inspector.add(log);
-  body.add(list);
-  body.add(inspector);
+  listPanel.add(list);
+  detailPanel.add(inspector);
+  body.add(listPanel);
+  body.add(detailPanel);
   for (const node of [header, tabs, body, status, footer])
     renderer.root.add(node);
 
@@ -152,8 +193,8 @@ export function dashboardView(
   let rows: readonly RecordView[] = [];
   let connection = "Connecting";
   let notice = "";
-  let prevList = "";
-  let prevDetails = "";
+  let previousList = "";
+  let previousDetails = "";
   let prevMarkdown = "";
   let prevLog = "";
   let logFocused = false;
@@ -177,7 +218,25 @@ export function dashboardView(
     const compact = renderer.height < 7;
     const wide = renderer.width >= 96 && !compact;
     const single = screen === "GitHub";
-    const visibleRows = Math.max(1, renderer.height - 4);
+    const inDiagnostics = diagnostics.some((name) => name === screen);
+    const stackedTabs = inDiagnostics && renderer.width < 82;
+    const stackedFooter =
+      !compact && renderer.width < 82 && renderer.height >= 11;
+    tabs.height = stackedTabs ? 2 : 1;
+    footer.height = stackedFooter ? 2 : 1;
+    const fullDetail =
+      current.inspecting &&
+      item?.delivery !== undefined &&
+      (screen === "Attention" || screen === "Deliveries");
+    const detailedRows = rows.some((row) => row.delivery !== undefined);
+    const availableRows = Math.max(
+      1,
+      renderer.height - (notice === "" ? 5 : 6),
+    );
+    const visibleRows = Math.max(
+      1,
+      Math.floor(availableRows / (detailedRows ? 4 : 1)),
+    );
     current.first = Math.max(
       0,
       Math.min(current.first, rows.length - visibleRows),
@@ -188,13 +247,24 @@ export function dashboardView(
         Math.max(current.first, index - visibleRows + 1),
       );
 
-    header.content = `Octo Manager  /  ${screen}    ${connection}`;
+    const indicator = connection === "Live" ? palette.success : palette.warning;
+    header.content = new StyledText([
+      fg(palette.accent)(bold(" OCTO MANAGER ")),
+      plain(` / ${screen}   `),
+      bg(palette.surface)(fg(indicator)(` ● ${connection.toUpperCase()} `)),
+    ]);
     const navigation = primary.some((value) => value === screen)
       ? primary
       : diagnostics;
-    tabs.content = navigation
-      .map((name, i) => `${String(i + 1)} ${name}`)
-      .join("  ");
+    tabs.content = new StyledText(
+      navigation.flatMap((name, i) => {
+        const label = ` ${String(i + 1)} ${name} `;
+        return [
+          name === screen ? bg(palette.tab)(bold(label)) : plain(label),
+          plain(stackedTabs && i === 2 ? "\n" : " "),
+        ];
+      }),
+    );
     status.content = safeText(notice.replaceAll("\n", " "));
     tabs.visible = !compact;
     status.visible = !compact && notice !== "";
@@ -202,40 +272,60 @@ export function dashboardView(
     header.visible = renderer.height > 1;
     const keys =
       screen === "Activity"
-        ? "h/l Pages   r Reconcile"
+        ? item?.operationId === undefined
+          ? "h/l Pages"
+          : "h/l Pages   r Reconcile"
         : screen === "Output" || screen === "Runtime"
           ? "Tab Worker events   p/c/r Controls"
           : screen === "GitHub" || screen === "Issues"
             ? "u Refresh"
-            : screen === "Tracking"
+            : screen === "Tracking" || fullDetail
               ? "u Refresh   a Auto merge   o Open"
               : "u Refresh   o Open";
+    const shortcuts =
+      current.inspecting || single
+        ? "q Quit   Esc Back   [/] Scroll"
+        : "q Quit   d Diagnostics   j/k Move   Enter Inspect";
     footer.content = compact
       ? "q Quit"
-      : current.inspecting
-        ? `q Quit   Esc Back   [/] Scroll   ${keys}`
-        : `q Quit   d Diagnostics   j/k Move   Enter Inspect   ${keys}`;
-    list.width = wide ? Math.floor(renderer.width * 0.42) : renderer.width;
-    list.visible =
-      item === undefined || (!single && (wide || !current.inspecting));
-    inspector.visible =
+      : `${shortcuts}${stackedFooter ? "\n" : "   "}${keys}`;
+    const listWidth =
+      wide && item !== undefined && !single
+        ? Math.max(32, Math.floor(renderer.width * 0.35))
+        : renderer.width;
+    listPanel.width = listWidth;
+    listPanel.title = ` ${screen.toUpperCase()} · ${String(rows.length)} `;
+    listPanel.visible =
+      item === undefined ||
+      (!single && !fullDetail && (wide || !current.inspecting));
+    detailPanel.visible =
       item !== undefined && (single || wide || current.inspecting);
-    const nextList = rows
-      .slice(current.first, current.first + visibleRows)
-      .map(
-        (row) =>
-          `${row.id === current.id ? "›" : " "} ${safeText(row.label.replaceAll("\n", " "))}`,
-      )
-      .join("\n");
-    const listContent =
-      nextList === ""
-        ? connection === "Live"
-          ? `No ${screen.toLowerCase()} records`
-          : "Waiting for Octo…"
-        : nextList;
-    if (listContent !== prevList) {
-      prevList = listContent;
-      list.content = listContent;
+    const detailWidth = listPanel.visible
+      ? renderer.width - listWidth - 6
+      : renderer.width - 4;
+    const detailTitle =
+      item?.delivery !== undefined
+        ? "DELIVERY DETAIL"
+        : screen === "Activity"
+          ? "OPERATION & EVENT EVIDENCE"
+          : screen.toUpperCase();
+    detailPanel.title = ` ${detailTitle} `;
+    detailPanel.borderColor =
+      current.inspecting || single ? palette.accent : palette.border;
+    if (listPanel.visible) {
+      const listText = listContent(
+        rows.slice(current.first, current.first + visibleRows),
+        current.id,
+        screen,
+        listWidth - 4,
+        connection,
+        palette,
+      );
+      const listKey = JSON.stringify(listText.chunks);
+      if (listKey !== previousList) {
+        list.content = listText;
+        previousList = listKey;
+      }
     }
     details.visible = !logFocused;
     markdown.visible = !logFocused && item?.markdown !== undefined;
@@ -252,10 +342,18 @@ export function dashboardView(
       log.content = logText === "" ? "No worker events retained" : logText;
       prevLog = logText;
     }
-    const content = safeText(item?.detail ?? "");
-    if (content !== prevDetails) {
-      prevDetails = content;
-      details.content = content;
+    if (detailPanel.visible) {
+      const detailText = detailContent(
+        item,
+        Math.max(1, detailWidth),
+        palette,
+        screen,
+      );
+      const detailKey = JSON.stringify(detailText.chunks);
+      if (detailKey !== previousDetails) {
+        details.content = detailText;
+        previousDetails = detailKey;
+      }
     }
   }
 

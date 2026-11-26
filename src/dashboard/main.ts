@@ -151,6 +151,15 @@ function repaint() {
       if (reviews)
         return {
           ...row,
+          ...(row.delivery === undefined ||
+          selectedFrame?.pullRequest?.title === undefined
+            ? {}
+            : {
+                delivery: {
+                  ...row.delivery,
+                  title: selectedFrame.pullRequest.title,
+                },
+              }),
           detail: view.screen === "Reviews" ? row.label : row.detail,
           markdown: reviewDetail(
             interest.reviews ? selectedFrame : undefined,
