@@ -13,7 +13,7 @@ import { RepositoryPolicyMonitor } from "../src/repository/monitor.js";
 import { loadRepositoryConfig } from "../src/repository/config.js";
 
 async function until(predicate: () => boolean) {
-  const end = Date.now() + (process.env.CI === undefined ? 1500 : 10000);
+  const end = Date.now() + (process.env["CI"] === undefined ? 1500 : 10000);
   while (!predicate()) {
     if (Date.now() >= end)
       throw new Error("Repository file change was not observed");

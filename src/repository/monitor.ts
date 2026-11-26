@@ -38,7 +38,7 @@ export class RepositoryPolicyMonitor {
           if (
             filename === null ||
             ["octo-manager.toml", ".source-code.json", basename(path)].includes(
-              String(filename),
+              filename,
             )
           )
             invalidated();
@@ -46,7 +46,7 @@ export class RepositoryPolicyMonitor {
         root.watchers.push(directory);
         directory.on("error", invalidated);
         const parent = watch(dirname(path), (_event, filename) => {
-          if (filename !== null && String(filename) !== basename(path)) return;
+          if (filename !== null && filename !== basename(path)) return;
           try {
             const current = lstatSync(path);
             if (

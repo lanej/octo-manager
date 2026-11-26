@@ -44,7 +44,9 @@ export async function assembleApplication(
     const policyWork = workScheduler.task("repository-policy", () =>
       ownedStore.repositories.scheduled(now()),
     );
-    ownedStore.repositories.watch(policyWork.wake);
+    ownedStore.repositories.watch(() => {
+      policyWork.wake();
+    });
     register({
       close: () => {
         ownedStore.repositories.close();
