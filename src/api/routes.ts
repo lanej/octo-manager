@@ -270,17 +270,17 @@ export function schedulerRoutes(application: ApplicationApi, router: ConnectRout
         return { prs: tracking.store.prs().map(wirePR) };
       },
       async getTrackedPullRequest(r) {
-        return trackingOperation(() => ({
-          pr: wirePR(tracking.store.pr(r.id)),
-          ...(!application.store.repositories.get(tracking.store.pr(r.id).id)
-            ? {}
-            : {
-                repositoryPolicy: wire(
-                  DomainRepositoryAutomationPolicySchema,
-                  application.store.repositories.get(tracking.store.pr(r.id).id),
-                ),
-              }),
-        }));
+        return trackingOperation(() => {
+          const pr = tracking.store.pr(r.id);
+          const policy = application.store.repositories.get(pr.id);
+          if (!policy) return { pr: wirePR(pr) };
+          const publicPolicy = { ...policy };
+          delete publicPolicy.checkSubstitutions;
+          return {
+            pr: wirePR(pr),
+            repositoryPolicy: wire(DomainRepositoryAutomationPolicySchema, publicPolicy),
+          };
+        });
       },
       refreshTrackedPullRequest(r) {
         return trackingOperation(() => {

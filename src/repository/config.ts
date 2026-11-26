@@ -29,6 +29,9 @@ export function loadRepositoryConfig(root: string) {
   if (!Check(ConfigSchema, config)) throw new Error("Invalid octo-manager.toml configuration");
   for (const text of Object.values(config.notifications?.instructions ?? {}))
     if (Buffer.byteLength(text) > 1000) throw new Error("Instruction text exceeds 1000 UTF-8 bytes");
+  for (const rule of config.merging?.check_substitutions ?? [])
+    if (rule.replace.every((name) => rule.require.includes(name)))
+      throw new Error("A check substitution must retain a hosted fallback outside its replacement requirements");
   const manifest = read(join(root, ".source-code.json"));
   const installed: unknown = manifest === undefined ? undefined : JSON.parse(manifest);
   const stage =
@@ -49,6 +52,7 @@ export function loadRepositoryConfig(root: string) {
       .digest("hex"),
     ...(stage === undefined ? {} : { stage }),
     autoMerge: autoMergeForStage(configured, stage),
+    ...(!config.merging?.check_substitutions ? {} : { checkSubstitutions: config.merging.check_substitutions }),
     instructions: config.notifications?.instructions ?? {},
   };
 }

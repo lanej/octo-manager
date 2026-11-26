@@ -5,8 +5,19 @@ import { readObservation } from "../tracking/github.js";
 import { canonicalPR } from "../github/pr-identity.js";
 import type { ObservationInput } from "../tracking/types.js";
 import { checked, Sha, type MergeEntry } from "./contracts.js";
-
+import { mergeStatusContext } from "./checks.js";
+const CommitOID = Type.Object({ oid: Sha });
+const MergeStatus = Type.Object({
+  context: Type.String(),
+  state: Type.String(),
+  creator: Type.Union([Type.Object({ __typename: Type.String(), login: Type.String() }), Type.Null()]),
+});
+const PotentialMergeCommit = Type.Object({
+  parents: Type.Object({ nodes: Type.Array(CommitOID) }),
+  status: Type.Union([Type.Record(Type.String(), Type.Union([MergeStatus, Type.Null()])), Type.Null()]),
+});
 const GateSchema = Type.Object({
+  potentialMergeCommit: Type.Optional(Type.Union([PotentialMergeCommit, Type.Null()])),
   stack: Type.Optional(
     Type.Union([
       Type.Null(),
@@ -73,10 +84,16 @@ export interface MergeSnapshot {
   methods: MergeEntry["method"][];
   mergeCommit?: string;
   nativePrerequisites?: string[];
+  passingMergeStatuses?: string[];
 }
 export interface MergeProvider {
-  readiness?(url: string, observation: ObservationInput, signal: AbortSignal): Promise<MergeSnapshot>;
-  inspect(url: string, signal: AbortSignal): Promise<MergeSnapshot>;
+  readiness?(
+    url: string,
+    observation: ObservationInput,
+    signal: AbortSignal,
+    expectedChecks?: readonly string[],
+  ): Promise<MergeSnapshot>;
+  inspect(url: string, signal: AbortSignal, expectedChecks?: readonly string[]): Promise<MergeSnapshot>;
   merge(
     url: string,
     head: string,
@@ -98,9 +115,21 @@ export async function readMergeReadiness(
   observation: ObservationInput,
   signal: AbortSignal,
   reads: Pick<typeof githubReads, "query" | "read"> = githubReads,
+  expectedChecks: readonly string[] = [],
 ): Promise<MergeSnapshot> {
   const { owner, repo, number, root } = location(url);
-  const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
+  const contexts = [...new Set(expectedChecks.map(mergeStatusContext))].filter(
+    (context): context is string => context !== undefined && context !== "",
+  );
+  const statusFields = contexts.map(
+    (context, index) =>
+      `s${String(index)}: context(name:${JSON.stringify(context)}) { context state creator { __typename login } }`,
+  );
+  const potentialMerge =
+    statusFields.length > 0
+      ? `potentialMergeCommit { parents(first:3) { nodes { oid } } status { ${statusFields.join(" ")} } }`
+      : "";
+  const query = `query { repository(owner:${JSON.stringify(owner)},name:${JSON.stringify(repo)}) { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:${number}) { stack { baseRefName entries(first:50) { nodes { pullRequest { url state } } pageInfo { hasNextPage } } } ${potentialMerge} headRefOid baseRefName baseRefOid merged state isDraft mergeable mergeStateStatus reviewDecision mergeCommit { oid } baseRef { target { oid } branchProtectionRule { requiredStatusCheckContexts } } } } }`;
   const result = await reads.query(query, signal);
   if (result.errors.length > 0) throw new Error("Merge eligibility unavailable");
   const repository = checked(RepoSchema, result.data["repository"]),
@@ -121,6 +150,23 @@ export async function readMergeReadiness(
     (pr.baseRef?.target.oid !== observation.targetBase?.sha && observation.lifecycle === "open")
   )
     throw new Error("PR changed during eligibility inspection");
+  const testCommit = pr.potentialMergeCommit;
+  const parents = testCommit?.parents.nodes;
+  const passingMergeStatuses =
+    lifecycle === "open" &&
+    parents?.length === 2 &&
+    parents[0]?.oid === observation.targetBase?.sha &&
+    parents[1]?.oid === observation.headSha
+      ? contexts.filter((context, index) => {
+          const status = testCommit?.status?.[`s${String(index)}`];
+          return (
+            status?.context === context &&
+            status.state === "SUCCESS" &&
+            status.creator?.__typename === "Bot" &&
+            status.creator.login === "github-actions"
+          );
+        })
+      : [];
   const rules =
     lifecycle === "open"
       ? checked(RulesSchema, await reads.read(`${root}/rules/branches/${encodeURIComponent(pr.baseRefName)}`, signal))
@@ -148,6 +194,7 @@ export async function readMergeReadiness(
   return {
     observation,
     nativePrerequisites,
+    ...(contexts.length === 0 ? {} : { passingMergeStatuses }),
     draft: pr.isDraft,
     gate: pr.mergeStateStatus,
     review: pr.reviewDecision,
@@ -168,9 +215,11 @@ export async function readMergeReadiness(
 }
 
 export const mergeProvider: MergeProvider = {
-  readiness: readMergeReadiness,
-  async inspect(url, signal) {
-    return readMergeReadiness(url, await readObservation(url, signal), signal);
+  readiness(url, observation, signal, expectedChecks) {
+    return readMergeReadiness(url, observation, signal, githubReads, expectedChecks);
+  },
+  async inspect(url, signal, expectedChecks) {
+    return readMergeReadiness(url, await readObservation(url, signal), signal, githubReads, expectedChecks);
   },
   async merge(url, head, method, signal, beforeSend) {
     const { root, number } = location(url);

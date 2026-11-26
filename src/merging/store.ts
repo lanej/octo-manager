@@ -1,6 +1,9 @@
 import type { ReferenceObservation } from "../tracking/observations.js";
 import { NoticeSubjectKind, type SafeNotice } from "../security/notifications.js";
 import { currentMergeChecks } from "./checks.js";
+import { matchesBinding, substituteDiscoveredChecks } from "../repository/policy.js";
+import { CheckSubstitutionsSchema, type AutomationPolicy, type CheckSubstitution } from "../repository/contracts.js";
+import { Type } from "typebox";
 import { NoticeReadinessSchema, type NoticeReadiness } from "./receipt-types.js";
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -44,6 +47,12 @@ import {
   type QueueInput,
   type PreparationProfile,
 } from "./contracts.js";
+
+const CheckInference = Type.Object({ names: Type.Array(Type.String()), rules: CheckSubstitutionsSchema });
+
+function substitutionKey(rule: CheckSubstitution): string {
+  return fingerprint([rule.base, rule.owner_prs_only === true, [...rule.replace].sort(), [...rule.require].sort()]);
+}
 
 function settingSource(value: string | undefined, entries: readonly MergeEntry[]): "explicit" | "inherited" {
   if (value !== undefined) {
@@ -90,17 +99,60 @@ export class MergeStore {
   private entriesByPr: StatementSync | undefined;
   private settingByPr: StatementSync | undefined;
   private inheritedCandidates: StatementSync | undefined;
+  private inferenceByEntry: StatementSync | undefined;
 
   constructor(
     private db: DatabaseSync,
     readonly tracking: TrackingStore,
     readonly now: () => number,
     private event: (kind: string, detail: string, prId?: string) => void,
+    private repositoryPolicy?: (prId: string) => AutomationPolicy | undefined,
   ) {
     db.exec(`CREATE INDEX IF NOT EXISTS merge_entries_by_pr ON merge_entries(pr_id);
       CREATE INDEX IF NOT EXISTS merge_operations_by_pr ON merge_operations(pr_id);
       CREATE INDEX IF NOT EXISTS references_by_pr ON pr_references(pr_id);
       CREATE INDEX IF NOT EXISTS readiness_notices_by_pr ON merge_notices(pr_id,subject_kind,applicable,subject_id);`);
+  }
+
+  private applicableCheckSubstitutions(pr: TrackedPR): CheckSubstitution[] {
+    const policy = this.repositoryPolicy?.(pr.id);
+    if (!policy || policy.status !== "valid" || !matchesBinding(policy, pr)) return [];
+    const [, owner, repo] = new URL(pr.url).pathname.toLowerCase().split("/");
+    const source = pr.observation?.pullRequestSource;
+    return (policy.checkSubstitutions ?? []).filter(
+      (rule) =>
+        (rule.base === undefined || rule.base === pr.observation?.targetBase?.ref) &&
+        (rule.owner_prs_only !== true ||
+          (owner !== undefined &&
+            repo !== undefined &&
+            source?.author.toLowerCase() === owner &&
+            source.repository.toLowerCase() === `${owner}/${repo}`)),
+    );
+  }
+
+  inferredChecks(pr: TrackedPR, names: readonly string[]): string[] {
+    return substituteDiscoveredChecks(names, this.applicableCheckSubstitutions(pr));
+  }
+
+  expectedChecks(entry: MergeEntry, pr: TrackedPR): string[] {
+    const raw = (this.inferenceByEntry ??= this.db.prepare("SELECT value FROM settings WHERE key=?")).get(
+      `merge-check-inference:${entry.id}`,
+    );
+    if (!raw) return entry.checks;
+    const initial = checked(CheckInference, JSON.parse(String(raw["value"])));
+    const observed = pr.observation ? currentMergeChecks(pr.observation).map((check) => check.name) : [];
+    const enrolledRules = new Set(initial.rules.map(substitutionKey));
+    const rules = this.applicableCheckSubstitutions(pr).filter((rule) => enrolledRules.has(substitutionKey(rule)));
+    const triggers = new Set(initial.rules.flatMap((rule) => rule.replace));
+    const names = [...initial.names, ...observed.filter((name) => triggers.has(name))];
+    const currentRules = new Set(rules.map(substitutionKey));
+    const expired = initial.rules.filter(
+      (rule) => !currentRules.has(substitutionKey(rule)) && rule.replace.some((name) => names.includes(name)),
+    );
+    const hosted = expired.flatMap((rule) => rule.replace.filter((name) => !rule.require.includes(name)));
+    const checks = [...new Set([...substituteDiscoveredChecks(names, rules), ...hosted])];
+    if (checks.length > 50) throw new Error("Declare explicit checks when inference exceeds 50 names");
+    return checks;
   }
 
   readinessCandidates(): Set<string> {
@@ -389,7 +441,7 @@ export class MergeStore {
     return next;
   }
 
-  queue(input: QueueInput, autoMerge = true): MergeChain {
+  queue(input: QueueInput, autoMerge = true, source: "explicit" | "inferred" = "explicit"): MergeChain {
     return this.transaction(() => {
       const digest = fingerprint(input),
         existing = this.chains().find((chain) => chain.requestId === input.requestId);
@@ -425,14 +477,22 @@ export class MergeStore {
           .run(`merge-setting:${pr.id}`, JSON.stringify({ source: "explicit", epoch: pr.trackingEpoch }));
         if (item.noCi === true && (item.checks?.length ?? 0) > 0)
           throw new Error("Choose expected checks or an explicit no-CI declaration");
+        const id = randomUUID();
+        const checks = item.checks ?? [];
+        const rules = source === "inferred" ? this.applicableCheckSubstitutions(pr) : [];
+        if (rules.length > 0) {
+          this.db
+            .prepare("INSERT INTO settings(key,value) VALUES(?,?)")
+            .run(`merge-check-inference:${id}`, JSON.stringify({ names: checks, rules }));
+        }
         this.saveEntry({
-          id: randomUUID(),
+          id,
           autoMerge,
           trackingEpoch: pr.trackingEpoch,
           chainId: chain.id,
           prId: pr.id,
           method: item.method ?? "squash",
-          checks: item.checks ?? [],
+          checks: substituteDiscoveredChecks(checks, rules),
           noCi: item.noCi === true,
           state: EntryState.Waiting,
           detail: "Waiting for dependency and owner readiness",
@@ -566,11 +626,15 @@ export class MergeStore {
                 ),
               ),
             ];
-        this.queue({
-          requestId,
-          actorId,
-          entries: [{ prUrl: pr.url, checks }],
-        });
+        this.queue(
+          {
+            requestId,
+            actorId,
+            entries: [{ prUrl: pr.url, checks }],
+          },
+          true,
+          "inferred",
+        );
         entry = this.entry(pr.id);
       }
       this.db
@@ -766,6 +830,7 @@ export class MergeStore {
       if ((noCi && checks.length > 0) || (!noCi && checks.length === 0))
         throw new Error("Declare expected checks or explicit no CI");
       const entry = this.entry(pr.id);
+      this.db.prepare("DELETE FROM settings WHERE key=?").run(`merge-check-inference:${entry.id}`);
       delete entry.ready;
       return this.state(entry, EntryState.WaitingOwner, "Check policy changed; owner readiness required", {
         checks,
@@ -834,6 +899,7 @@ export class MergeStore {
             ],
           },
           false,
+          "inferred",
         );
         previous = this.entry(pr.id);
       }
@@ -841,6 +907,7 @@ export class MergeStore {
       const inheritedOwnerAssessment =
         entry.ready?.source === ReviewAssessmentSource.Owner && readyFor(entry, pr, this.dependencies());
       if (receipt) {
+        entry.checks = this.expectedChecks(entry, pr);
         const gate = reviewGate(observation, inheritedOwnerAssessment ? entry.ready : undefined);
         if (gate !== undefined) throw new Error(gate);
       }

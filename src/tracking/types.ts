@@ -88,6 +88,10 @@ export interface TargetBase {
   ref: string;
   sha: string;
 }
+export interface PullRequestSource {
+  author: string;
+  repository: string;
+}
 export interface ActionEventContext {
   state: ActionState;
   prUrl: string;
@@ -104,6 +108,7 @@ export interface PRObservation {
   headSha: string;
   baseSha: string;
   targetBase?: TargetBase;
+  pullRequestSource?: PullRequestSource;
   lifecycle: PRLifecycleValue;
   mergeability: "mergeable" | "conflicting" | "unknown";
   checks: ObservationPart<CheckObservation[]>;

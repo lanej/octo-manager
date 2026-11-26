@@ -1,4 +1,4 @@
-import { ActionState, type ActionEventContext, type TargetBase } from "./types.js";
+import { ActionState, type ActionEventContext, type PullRequestSource, type TargetBase } from "./types.js";
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -8,8 +8,14 @@ function json(value: unknown): unknown {
   return typeof value === "string" ? JSON.parse(value) : value;
 }
 
-export function targetBase(value: unknown): TargetBase | undefined {
-  if (value === null || value === undefined) return undefined;
+export function pullRequestSource(author: unknown, repository: unknown): PullRequestSource | undefined {
+  return typeof author === "string" && author !== "" && typeof repository === "string" && repository !== ""
+    ? { author, repository }
+    : undefined;
+}
+
+export function revisionEvidence(value: unknown): { targetBase?: TargetBase; pullRequestSource?: PullRequestSource } {
+  if (value === null || value === undefined) return {};
   const raw = json(value);
   if (
     !object(raw) ||
@@ -19,7 +25,13 @@ export function targetBase(value: unknown): TargetBase | undefined {
     raw["sha"] === ""
   )
     throw new Error("Invalid target base evidence");
-  return { ref: raw["ref"], sha: raw["sha"] };
+  const source = object(raw["source"])
+    ? pullRequestSource(raw["source"]["author"], raw["source"]["repository"])
+    : undefined;
+  return {
+    targetBase: { ref: raw["ref"], sha: raw["sha"] },
+    ...(source === undefined ? {} : { pullRequestSource: source }),
+  };
 }
 
 export function actionContext(value: unknown): ActionEventContext | undefined {
@@ -45,6 +57,7 @@ export function trackingPR(value: unknown): {
   state: "open" | "closed";
   merged: boolean;
   mergeable: unknown;
+  pullRequestSource?: PullRequestSource;
 } {
   if (!object(value) || !object(value["head"]) || !object(value["base"]))
     throw new Error("Invalid GitHub PR observation");
@@ -63,7 +76,12 @@ export function trackingPR(value: unknown): {
     (state !== "open" && state !== "closed")
   )
     throw new Error("Invalid GitHub PR observation");
+  const source = pullRequestSource(
+    object(value["user"]) ? value["user"]["login"] : undefined,
+    object(head["repo"]) ? head["repo"]["full_name"] : undefined,
+  );
   return {
+    ...(source === undefined ? {} : { pullRequestSource: source }),
     head: { sha: head["sha"] },
     base: { sha: base["sha"], ref: base["ref"] },
     state,

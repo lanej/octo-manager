@@ -30,8 +30,16 @@ function metadata(value: unknown): PRMetadata {
     !["MERGEABLE", "CONFLICTING", "UNKNOWN"].includes(String(raw["mergeable"]))
   )
     throw new Error("Invalid GitHub PR metadata");
+  const headRepository = raw["headRepository"];
   const pr = trackingPR({
-    head: { sha: raw["headRefOid"] },
+    user: raw["author"],
+    head: {
+      sha: raw["headRefOid"],
+      repo:
+        headRepository === undefined || headRepository === null
+          ? undefined
+          : { full_name: record(headRepository)["nameWithOwner"] },
+    },
     base: {
       sha: raw["baseRefOid"],
       ref: raw["baseRefName"],
@@ -95,6 +103,8 @@ export class GitHubMetadata {
           pullRequest(number: ${number}) {
             body state merged mergeable headRefOid baseRefOid baseRefName
             baseRef { target { oid } }
+            author { login }
+            headRepository { nameWithOwner }
           }
         }`;
       });

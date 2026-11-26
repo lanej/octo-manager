@@ -67,8 +67,8 @@ export class MergeService {
     this.receipts = new ReceiptMerges(
       store,
       tracking,
-      (id, observation) =>
-        this.snapshot(id, AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]), observation),
+      (id, observation, checks) =>
+        this.snapshot(id, AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]), observation, checks),
       now,
       options.repositoryInstructions,
     );
@@ -403,13 +403,14 @@ export class MergeService {
     prId: string,
     signal: AbortSignal = this.abort.signal,
     cached?: import("../tracking/types.js").PRObservation,
+    expectedChecks?: readonly string[],
   ): Promise<MergeSnapshot> {
     const pr = this.store.tracking.pr(prId),
       epoch = pr.trackingEpoch;
     const result =
       cached && this.provider.readiness
-        ? await this.provider.readiness(pr.url, cached, signal)
-        : await this.provider.inspect(pr.url, signal);
+        ? await this.provider.readiness(pr.url, cached, signal, expectedChecks)
+        : await this.provider.inspect(pr.url, signal, expectedChecks);
     if (cached) {
       if (
         result.observation.headSha !== cached.headSha ||
@@ -525,7 +526,15 @@ export class MergeService {
     }
     if (entry.state === EntryState.WaitingChecks && entry.nextAt === 0)
       entry = this.store.state(entry, EntryState.WaitingChecks, "Inspecting current GitHub merge eligibility");
-    const snapshot = await this.snapshot(pr.id);
+    const checks = this.store.expectedChecks(entry, pr);
+    const checkPolicy = fingerprint([...checks].sort());
+    if (entry.receiptId !== undefined && fingerprint([...entry.checks].sort()) !== checkPolicy) {
+      this.store.state(entry, EntryState.Blocked, "Check policy changed after receipt authorization", {
+        nextAt: Number.MAX_SAFE_INTEGER,
+      });
+      return;
+    }
+    const snapshot = await this.snapshot(pr.id, this.abort.signal, undefined, checks);
     pr = this.store.tracking.pr(pr.id);
     if (!this.active(entry)) return;
     if (!readyFor(entry, pr, this.store.dependencies())) {
@@ -536,14 +545,20 @@ export class MergeService {
       });
       return;
     }
-    const gate = checkGate(entry, snapshot);
+    if (fingerprint([...this.store.expectedChecks(entry, pr)].sort()) !== checkPolicy) {
+      this.store.state(entry, EntryState.WaitingChecks, "Inferred check policy changed during eligibility inspection", {
+        nextAt: this.now() + 60000,
+      });
+      return;
+    }
+    const gate = checkGate({ ...entry, checks }, snapshot);
     if (gate !== undefined) {
       this.store.state(entry, entry.receiptId === undefined ? EntryState.WaitingChecks : EntryState.Blocked, gate, {
         nextAt: entry.receiptId === undefined ? this.now() + 60000 : Number.MAX_SAFE_INTEGER,
       });
       return;
     }
-    await this.execute(entry, snapshot, expectedGraph);
+    await this.execute(entry, snapshot, expectedGraph, undefined, checkPolicy);
   }
 
   private async execute(
@@ -551,6 +566,7 @@ export class MergeService {
     snapshot: MergeSnapshot,
     expectedGraph: string,
     preparation?: { profile: PreparationProfile; commit: string; key: string },
+    checkPolicy?: string,
   ): Promise<void> {
     const pr = this.store.tracking.pr(entry.prId),
       target = snapshot.observation.targetBase;
@@ -635,11 +651,18 @@ export class MergeService {
         );
       } else {
         const result = await this.provider.merge(pr.url, operation.head, entry.method, this.abort.signal, () => {
-          if (
-            !this.active(entry, operation) ||
-            !readyFor(entry, this.store.tracking.pr(pr.id), this.store.dependencies())
-          )
-            throw new EffectNotStarted("Merge context changed before GitHub dispatch");
+          const current = this.store.tracking.pr(pr.id);
+          try {
+            if (
+              this.active(entry, operation) &&
+              readyFor(entry, current, this.store.dependencies()) &&
+              fingerprint([...this.store.expectedChecks(entry, current)].sort()) === checkPolicy
+            )
+              return;
+          } catch {
+            // Any unavailable policy evidence revokes authorization before the request is sent.
+          }
+          throw new EffectNotStarted("Merge context changed before GitHub dispatch");
         });
         if (typeof result !== "string") {
           if (result.state === "pending") {

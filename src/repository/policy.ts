@@ -1,5 +1,13 @@
 import { terminal, type MergeEntry } from "../merging/contracts.js";
-import type { AutomationPolicy } from "./contracts.js";
+import type { AutomationPolicy, CheckSubstitution } from "./contracts.js";
+
+export function substituteDiscoveredChecks(names: readonly string[], rules: readonly CheckSubstitution[]): string[] {
+  const observed = new Set(names);
+  const matching = rules.filter(({ replace }) => replace.some((name) => observed.has(name)));
+  for (const { replace } of matching) for (const name of replace) observed.delete(name);
+  for (const { require } of matching) for (const name of require) observed.add(name);
+  return [...observed];
+}
 
 export function autoMergeForStage(configured: boolean | "project_stage", stage: AutomationPolicy["stage"]): boolean {
   return configured === "project_stage" ? stage === "research" || stage === "alpha" : configured;

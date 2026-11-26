@@ -13,6 +13,8 @@ const repository = {
     baseRefOid: "ancestor",
     baseRefName: "main",
     baseRef: { target: { oid: "current-target" } },
+    author: { login: "owner" },
+    headRepository: { nameWithOwner: "owner/repo" },
   },
 };
 test("multiple PR metadata reads use one GraphQL query and retain distinct target and PR base evidence", async () => {
@@ -28,6 +30,7 @@ test("multiple PR metadata reads use one GraphQL query and retain distinct targe
             ...repository.pullRequest,
             headRefOid: "second-head",
             mergeable: "UNKNOWN",
+            headRepository: null,
           },
         },
       },
@@ -41,6 +44,8 @@ test("multiple PR metadata reads use one GraphQL query and retain distinct targe
   assert.equal(first.pr.base.sha, "ancestor");
   assert.equal(first.pr.mergeable, false);
   assert.deepEqual(first.target, { ref: "main", sha: "current-target" });
+  assert.deepEqual(first.pr.pullRequestSource, { author: "owner", repository: "owner/repo" });
+  assert.equal(second.pr.pullRequestSource, undefined);
   assert.equal(second.pr.head.sha, "second-head");
   assert.equal(second.pr.mergeable, null);
 });

@@ -1,6 +1,10 @@
 import { checkReplaces } from "../tracking/checks.js";
 import type { CheckObservation, PRObservation, ObservationInput } from "../tracking/types.js";
-
+const MERGE_STATUS_PREFIX = "merge-status:";
+export function mergeStatusContext(check: string): string | undefined {
+  if (check.startsWith(MERGE_STATUS_PREFIX)) return check.slice(MERGE_STATUS_PREFIX.length);
+  return undefined;
+}
 export function currentMergeChecks(observation: ObservationInput | PRObservation): CheckObservation[] {
   const workflows =
     observation.workflows && observation.workflows.state !== "unavailable" ? observation.workflows.value : [];
