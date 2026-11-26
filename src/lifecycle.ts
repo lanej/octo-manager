@@ -100,12 +100,7 @@ export function artifactIdentity(): string | null {
   const names = [
     ...files(join(root, program)),
     ...files(join(root, "node_modules")),
-    ...[
-      "package.json",
-      "bun.lock",
-      "build/octo-manager-tui",
-      ...(nativeAot ? ["release.json"] : []),
-    ]
+    ...["package.json", "bun.lock", ...(nativeAot ? ["release.json"] : [])]
       .map((name) => join(root, name))
       .filter(existsSync),
   ];

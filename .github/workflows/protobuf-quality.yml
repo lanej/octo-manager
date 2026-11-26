@@ -7,11 +7,11 @@ on:
       - '**/buf.work.yaml'
       - '**/buf.lock'
       - '.protobuf-quality.json'
-      - '.protobuf-quality/main.go'
-      - '.protobuf-quality/go.mod'
-      - '.protobuf-quality/go.sum'
       - '.source-code.json'
       - 'scripts/check-protobuf.py'
+      - 'scripts/check-proto-json.ts'
+      - 'package.json'
+      - 'bun.lock'
       - 'scripts/check-source-code.py'
       - '.agents/skills/source-code-lifecycle/references/stages.json'
       - '.github/workflows/protobuf-quality.yml'
@@ -23,11 +23,11 @@ on:
       - '**/buf.work.yaml'
       - '**/buf.lock'
       - '.protobuf-quality.json'
-      - '.protobuf-quality/main.go'
-      - '.protobuf-quality/go.mod'
-      - '.protobuf-quality/go.sum'
       - '.source-code.json'
       - 'scripts/check-protobuf.py'
+      - 'scripts/check-proto-json.ts'
+      - 'package.json'
+      - 'bun.lock'
       - 'scripts/check-source-code.py'
       - '.agents/skills/source-code-lifecycle/references/stages.json'
       - '.github/workflows/protobuf-quality.yml'
@@ -43,15 +43,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: '.protobuf-quality/go.mod'
-          cache-dependency-path: '.protobuf-quality/go.sum'
       - uses: bufbuild/buf-action@v1
         with:
           version: '1.75.0'
           setup_only: true
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile --ignore-scripts
       - run: python3 scripts/check-protobuf.py tools
-      - run: python3 scripts/check-source-code.py protobuf
+      - run: python3 scripts/check-protobuf.py all
         env:
           PROTOBUF_AGAINST: '.git#ref=${{ github.event.pull_request.base.sha || github.event.before }}'
