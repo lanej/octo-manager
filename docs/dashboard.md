@@ -16,3 +16,5 @@ Reviews shows cached review bodies and their observed revision. Tracking shows e
 Output and Runtime show selected worker runs and their recent events. Use `h/l` to move between runs, Tab to switch between output and worker events, `p` to pause or resume the scheduler, `c` to cancel, and `r` to retry. GitHub shows quota gauges and forecasts, with a shared scale for the per-minute request and cache history. Issues shows the versioned brief, waiting state, and current assignment. Issue approvals and answers use the [issue CLI](issues.md#commands).
 
 A failed observation leaves cached content visible and the connection or refresh error visible. Activity reconciliation uses the selected saved operation ID and reports request acceptance while awaiting evidence. See the [activity guide](activity.md) and [scheduler guide](polling-and-auto-merge.md).
+
+The terminal and dark palettes use a bundled Sage snapshot from Dotfiles’ generated `terminal-ui.json`. Refresh `src/dashboard/sage-terminal-ui.json` from the generated export when updating the palette or shared glyphs. Monochrome uses the export’s ASCII fallbacks.

@@ -16,19 +16,11 @@ import { diagnostics, primary, safeText, type RecordView, type Screen } from "./
 
 import { detailContent, listContent, plain, type Palette } from "./presentation.js";
 
+import { dashboardGlyph, darkCanvas, terminalPalette } from "./theme.js";
+
 type Theme = "terminal" | "dark" | "light" | "contrast" | "mono";
-const colorful = {
-  accent: "#65cfc1",
-  muted: "#aab8c7",
-  border: "#4c6176",
-  surface: "#263344",
-  tab: "#244742",
-  warning: "#f0c678",
-  danger: "#f8a7a3",
-  success: "#8fd2a6",
-  info: "#8dbcf0",
-};
 const mono = {
+  ascii: true,
   accent: "#ffffff",
   muted: "#cccccc",
   border: "#999999",
@@ -42,8 +34,8 @@ const mono = {
   background: "#000000",
 };
 const palettes = {
-  terminal: colorful,
-  dark: { ...colorful, foreground: "#eceff4", background: "#151e29" },
+  terminal: terminalPalette,
+  dark: { ...terminalPalette, ...darkCanvas },
   light: {
     accent: "#125f57",
     muted: "#465466",
@@ -220,10 +212,14 @@ export function dashboardView(renderer: CliRenderer, controls: Controls, theme: 
     if (index >= 0) current.first = Math.min(index, Math.max(current.first, index - visibleRows + 1));
 
     const indicator = connection === "Live" ? palette.success : palette.warning;
+    const connectionGlyph = dashboardGlyph(
+      connection === "Live" ? "connected" : connection === "Connecting" ? "connecting" : "disconnected",
+      palette.ascii,
+    );
     header.content = new StyledText([
       fg(palette.accent)(bold(" OCTO MANAGER ")),
       plain(` / ${screen}   `),
-      bg(palette.surface)(fg(indicator)(` ● ${connection.toUpperCase()} `)),
+      bg(palette.surface)(fg(indicator)(` ${connectionGlyph} ${connection.toUpperCase()} `)),
     ]);
     const navigation = primary.some((value) => value === screen) ? primary : diagnostics;
     tabs.content = new StyledText(

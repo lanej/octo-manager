@@ -50,7 +50,7 @@ test("Tracking retains the selected PR and inspection when observations reorder"
   terminal.mockInput.pressKey("d");
   terminal.mockInput.pressKey("4");
   await terminal.flush();
-  expect(terminal.captureCharFrame()).toContain("› owner/repo #1");
+  expect(terminal.captureCharFrame()).toContain(" owner/repo #1");
   terminal.mockInput.pressKey("j");
   terminal.mockInput.pressEnter();
   await terminal.flush();
@@ -68,7 +68,7 @@ test("Tracking retains the selected PR and inspection when observations reorder"
   expect(terminal.captureCharFrame()).not.toContain("owner/repo #1");
 
   terminal.mockInput.pressEscape();
-  await terminal.waitForFrame((frame) => frame.includes("› owner/repo #2"));
+  await terminal.waitForFrame((frame) => frame.includes(" owner/repo #2"));
   terminal.mockInput.pressEscape();
   await terminal.waitForFrame((frame) => frame.includes("OCTO MANAGER  / Attention"));
   expect(terminal.captureCharFrame()).toContain("Merge outcome unknown");
@@ -132,7 +132,7 @@ test("wide Attention keeps long subjects inside the list and shows delivery evid
   const frame = terminal.captureCharFrame();
   expect(frame).toContain("│  │");
   expect(frame).toContain("NEXT ACTION");
-  expect(frame).toMatch(/› an-intentionally-long-[\w-]+…\s*│/u);
+  expect(frame).toMatch(/ an-intentionally-long-[\w-]+…\s*│/u);
 });
 
 test("delivery evidence retains its exact link target and distinct categorical pills", async () => {
@@ -206,9 +206,9 @@ test("delivery evidence retains its exact link target and distinct categorical p
   expect(text).toContain("Target branch:  main");
   const spans = terminal.captureSpans().lines.flatMap((line) => line.spans);
   const color = (value: string) => spans.find((span) => span.text.trim() === value)?.fg.toInts();
-  expect(color("watching")).toEqual([143, 210, 166, 255]);
-  expect(color("uncertain")).toEqual([240, 198, 120, 255]);
-  expect(color("Unavailable")).toEqual([170, 184, 199, 255]);
+  expect(color("watching")).toEqual([166, 205, 130, 255]);
+  expect(color("uncertain")).toEqual([232, 200, 139, 255]);
+  expect(color("Unavailable")).toEqual([163, 177, 167, 255]);
   const selected = view.selected();
   const evidenceFact = selected?.delivery?.feedback.find(
     (item) => typeof item !== "string" && item.label === "Evidence",
@@ -351,4 +351,72 @@ test("Attention keeps uncertain repairs and scopes failed repairs to the tracked
   repair.originalHead = "old-head";
   repair.state = RepairState.UNCERTAIN;
   expect(condition()).toBe("Repair outcome unknown");
+});
+
+test("delivery distinguishes passing current checks, approval, and confirmed merge", () => {
+  const head = "a".repeat(40);
+  const pr = {
+    id: "pr",
+    url: "https://github.com/owner/repo/pull/31",
+    enabled: true,
+    trackingState: TrackingState.WATCHING,
+  };
+  const delivery = (status: string, conclusion: string, checkHead: string, state: string) => {
+    const snapshot = create(SnapshotSchema, {
+      tracking: {
+        prs: [
+          {
+            ...pr,
+            observation: {
+              lifecycle: state === "merged" ? "merged" : "open",
+              headSha: head,
+              checks: {
+                variant: {
+                  case: "variant1",
+                  value: {
+                    value: {
+                      items: [{ name: "CI", status, conclusion, headSha: checkHead }],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      mergeStatuses: [{ prId: pr.id, state }],
+    });
+    return records("Deliveries", snapshot, () => "Unknown", 24)[0]?.delivery;
+  };
+  const awaiting = delivery("completed", "success", head, "waiting_owner");
+  expect(awaiting?.verification).toContainEqual({
+    kind: "pill",
+    label: "Checks",
+    value: "passed",
+    tone: "success",
+    glyph: "checksPassed",
+  });
+  expect(awaiting?.authority).toContainEqual({
+    kind: "pill",
+    label: "Coordinator progress",
+    value: "waiting owner",
+    tone: "warning",
+    glyph: "approval",
+  });
+  expect(delivery("in_progress", "success", head, "waiting_owner")?.verification[1]).toMatchObject({
+    value: "complete",
+  });
+  expect(delivery("completed", "skipped", head, "waiting_owner")?.verification[1]).toMatchObject({
+    value: "complete",
+  });
+  expect(delivery("completed", "success", "b".repeat(40), "waiting_owner")?.verification[1]).toMatchObject({
+    value: "complete",
+  });
+  expect(delivery("completed", "success", head, "merged")?.authority).toContainEqual({
+    kind: "pill",
+    label: "Merge result",
+    value: "Confirmed",
+    tone: "success",
+    glyph: "merged",
+  });
 });

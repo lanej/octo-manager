@@ -9,7 +9,10 @@ import {
 } from "./records.js";
 import { dashboardLink } from "./links.js";
 
+import { dashboardGlyph, type DashboardGlyph } from "./theme.js";
+
 export interface Palette {
+  ascii?: boolean;
   accent: string;
   muted: string;
   border: string;
@@ -57,9 +60,10 @@ function linkChunk(label: string, address: string, palette: Palette): TextChunk 
   return link(address)(underline(fg(palette.accent)(label)));
 }
 
-function pillChunk(label: string, tone: StatusTone, palette: Palette): TextChunk {
+function pillChunk(label: string, tone: StatusTone, palette: Palette, glyph?: DashboardGlyph): TextChunk {
   const color = tone === "neutral" ? palette.muted : palette[tone];
-  return bg(palette.surface)(fg(color)(` ${line(label)} `));
+  const mark = glyph !== undefined ? dashboardGlyph(glyph, palette.ascii) + " " : "";
+  return bg(palette.surface)(fg(color)(` ${mark}${line(label)} `));
 }
 
 function subject(row: RecordView, width: number, palette: Palette) {
@@ -89,7 +93,7 @@ export function listContent(
       chunks.push(fg(palette.muted)(clip(delivery.group, width)), plain("\n"));
       group = delivery.group;
     }
-    const prefix = current ? fg(palette.accent)(bold("› ")) : plain("  ");
+    const prefix = current ? fg(palette.accent)(bold(dashboardGlyph("selected", palette.ascii) + " ")) : plain("  ");
     const text = subject(row, width - 2, palette);
     chunks.push(prefix, current ? bg(palette.tab)(bold(text)) : text, plain("\n"));
     if (delivery) {
@@ -123,7 +127,7 @@ function fact(value: DetailLine, palette: Palette): TextChunk[] {
     const content =
       value.kind === "link"
         ? linkChunk(line(value.link.label), value.link.url, palette)
-        : pillChunk(value.value, value.tone, palette);
+        : pillChunk(value.value, value.tone, palette, value.glyph);
     return [label, content];
   }
   const text = safeText(value);
