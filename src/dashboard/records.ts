@@ -26,6 +26,8 @@ import {
 
 import { dashboardLink, markdownReference, type DashboardLink } from "./links.js";
 
+import type { DashboardGlyph } from "./theme.js";
+
 export const primary = ["Attention", "Deliveries", "Activity"] as const;
 export const diagnostics = ["Reviews", "Output", "Runtime", "Tracking", "GitHub", "Issues"] as const;
 export type Screen = (typeof primary)[number] | (typeof diagnostics)[number];
@@ -36,7 +38,7 @@ type DetailFact = {
 };
 export type DetailLine =
   | string
-  | (DetailFact & { kind: "pill"; tone: StatusTone })
+  | (DetailFact & { kind: "pill"; tone: StatusTone; glyph?: DashboardGlyph })
   | (DetailFact & { kind: "link"; link: DashboardLink });
 
 export interface DeliveryPresentation {
@@ -77,12 +79,13 @@ function field(name: string, value: string | bigint | number | undefined, fallba
   return `${name}: ${value === undefined || value === "" ? fallback : String(value)}`;
 }
 
-function pill(label: string, value: string | undefined, tone: StatusTone): DetailLine {
+function pill(label: string, value: string | undefined, tone: StatusTone, glyph?: DashboardGlyph): DetailLine {
   return {
     kind: "pill",
     label,
     value: value === undefined || value === "" ? "Unknown" : value,
     tone,
+    ...(glyph === undefined ? {} : { glyph }),
   };
 }
 
@@ -302,8 +305,26 @@ function prRecord(
     if (variant?.case !== "variant1" && variant?.case !== "variant2")
       return [pill(label, !variant ? undefined : "Incomplete", "neutral")];
     const complete = variant.case === "variant1";
+    const items = variant.value.value?.items ?? [];
+    const head = observation?.headSha;
+    const passed =
+      complete &&
+      head !== undefined &&
+      head !== "" &&
+      items.length > 0 &&
+      items.every(
+        (check) =>
+          check.headSha === head &&
+          (check.status === "completed" || check.status === "success") &&
+          check.conclusion === "success",
+      );
     return [
-      pill(label, complete ? "complete" : "partial", complete ? "info" : "warning"),
+      pill(
+        label,
+        passed ? "passed" : complete ? "complete" : "partial",
+        passed ? "success" : complete ? "info" : "warning",
+        passed ? "checksPassed" : undefined,
+      ),
       ...(variant.value.value?.items.map(
         (check) =>
           `  ${check.name ?? "Unknown check"} · ${check.conclusion ?? check.status ?? "unknown"} · ${check.headSha === undefined || check.headSha === "" ? "unpinned" : check.headSha === observation?.headSha ? "current head" : "different head"}`,
@@ -327,7 +348,12 @@ function prRecord(
         identity: [
           field("Owner", owner?.target?.label ?? pr?.ownerAgentId, "Unassigned"),
           pill("Monitoring", enumName(TrackingState, pr?.trackingState), enumTone(monitoringTones, pr?.trackingState)),
-          pill("PR state", observation?.lifecycle, prStateTone(observation?.lifecycle)),
+          pill(
+            "PR state",
+            observation?.lifecycle,
+            prStateTone(observation?.lifecycle),
+            observation?.lifecycle === "merged" ? "merged" : undefined,
+          ),
           field("Head", observation?.headSha),
           field("PR base", observation?.baseSha),
           observation?.targetBase?.ref === undefined || observation.targetBase.ref === ""
@@ -351,7 +377,12 @@ function prRecord(
         authority: [
           pill("Auto merge", merge?.autoMerge === true ? "On" : "Off", merge?.autoMerge === true ? "info" : "neutral"),
           field("Authority source", merge?.autoMergeSource),
-          pill("Coordinator progress", merge?.state.replaceAll("_", " "), mergeProgressTone(merge?.state)),
+          pill(
+            "Coordinator progress",
+            merge?.state.replaceAll("_", " "),
+            mergeProgressTone(merge?.state),
+            merge?.state === "waiting_owner" ? "approval" : undefined,
+          ),
           pill(
             "Merge result",
             rank === -2
@@ -360,6 +391,7 @@ function prRecord(
                 ? "Unconfirmed"
                 : "No confirmation in stored evidence",
             rank === -2 ? "success" : merge?.state === "uncertain" ? "warning" : "neutral",
+            rank === -2 ? "merged" : undefined,
           ),
           ...(merge?.prerequisiteUrls.map((address) => reference("Requires merge", address)) ?? []),
         ],
